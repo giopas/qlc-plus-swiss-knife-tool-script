@@ -1,0 +1,18 @@
+# Old scripts and test files — kept locally, not published
+Old and tests/
+
+# macOS metadata
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Editor/IDE folders
+.vscode/
+.idea/
+
+# Local environment
+*.env

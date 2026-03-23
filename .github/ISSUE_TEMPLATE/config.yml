@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: QLC+ Official Project
+    url: https://github.com/mcallegari/qlcplus
+    about: For issues with QLC+ itself (not this script), please use the official repository.
+  - name: QLC+ Community Forum
+    url: https://www.qlcplus.org/forum/
+    about: General QLC+ questions and community discussions.

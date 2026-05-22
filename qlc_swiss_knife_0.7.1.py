@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-  QLC+ SWISS KNIFE — Unified Live Console Toolkit (v0.7)
+  QLC+ SWISS KNIFE — Unified Live Console Toolkit (v0.7.1)
 ================================================================================
   A single, ergonomic interface combining four essential QLC+ 5.x utilities:
 
@@ -824,10 +824,16 @@ class SetlistSlot:
             for step in chaser_node.findall('q:Step', NS):
                 fid = step.text
                 qn = id_to_name.get(fid, f"Unknown ID {fid}")
+                raw_hold = step.get('Hold', '4294967294')
+                # '0' means the chaser Speed block controls hold (i.e. infinite
+                # when Duration="Common" / "4294967294").  Normalise to the
+                # explicit infinite sentinel so the UI and saved XML are correct.
+                if raw_hold == '0':
+                    raw_hold = '4294967294'
                 self.setlist_data.append({
                     "txt_name": qn, "qxw_name": qn, "qxw_id": fid,
                     "in": step.get('FadeIn', '0'),
-                    "hold": step.get('Hold', '4294967294'),
+                    "hold": raw_hold,
                     "out": step.get('FadeOut', '0')
                 })
         self.refresh_left_tree()
@@ -1335,6 +1341,15 @@ class SetlistSlot:
             if master_chaser is not None:
                 for step in master_chaser.findall('q:Step', NS):
                     master_chaser.remove(step)
+                # Ensure Speed/SpeedModes are correct for per-step infinite hold
+                spd = master_chaser.find('q:Speed', NS)
+                if spd is not None:
+                    spd.set('Duration', '4294967294')
+                spm = master_chaser.find('q:SpeedModes', NS)
+                if spm is not None:
+                    spm.set('FadeIn', 'PerStep')
+                    spm.set('FadeOut', 'PerStep')
+                    spm.set('Duration', 'Common')
 
         if master_chaser is None:
             return
@@ -1845,6 +1860,15 @@ class SetlistManagerTab:
                 if master_chaser is not None:
                     for step in master_chaser.findall('q:Step', NS):
                         master_chaser.remove(step)
+                    # Ensure Speed/SpeedModes are correct for per-step infinite hold
+                    spd = master_chaser.find('q:Speed', NS)
+                    if spd is not None:
+                        spd.set('Duration', '4294967294')
+                    spm = master_chaser.find('q:SpeedModes', NS)
+                    if spm is not None:
+                        spm.set('FadeIn', 'PerStep')
+                        spm.set('FadeOut', 'PerStep')
+                        spm.set('Duration', 'Common')
 
             if master_chaser is None:
                 slot_summaries.append((slot, 0, False))

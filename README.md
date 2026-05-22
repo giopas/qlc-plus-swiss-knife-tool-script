@@ -62,7 +62,7 @@ git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
 cd qlc-plus-swiss-knife-tool-script
 
 # Run the app
-python3 qlc_swiss_knife_0.7.py
+python3 qlc_swiss_knife_0.7.1.py
 ```
 
 On **Windows** you can also double-click the `.py` file if Python is associated with `.py` files in your system.

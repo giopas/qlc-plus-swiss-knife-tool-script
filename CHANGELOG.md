@@ -5,6 +5,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [0.7.1] — 2026-05-22
+
+### Setlist Manager — Chaser Step Hold Time Fix
+
+**Fixed**
+- Chaser steps with `Hold="0"` in the QXW XML were being misread as zero-duration holds. In QLC+, a value of `0` means "defer to the Chaser's Common speed setting" (effectively infinite). The parser now normalises `0` → `4294967294` (the explicit infinite sentinel) on load, so the UI displays and saves hold times correctly.
+- When generating cloned Chasers, the `Speed` and `SpeedModes` blocks are now explicitly written with `Duration=4294967294`, `FadeIn=PerStep`, `FadeOut=PerStep`, and `Duration=Common`, ensuring per-step infinite hold is preserved correctly in the exported workspace.
+
+---
+
 ## [0.7] — 2026-05-22
 
 ### Setlist Manager — Major Refactor: Multi-Slot Architecture

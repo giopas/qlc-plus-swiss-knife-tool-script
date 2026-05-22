@@ -44,7 +44,7 @@ These are near-term improvements focused on robustness and usability of existing
 - [ ] Interactive 2D stage plot view (click a fixture to highlight it in the checklist)
 - [ ] Export checklist as an editable spreadsheet (`.xlsx` / `.csv`)
 - [ ] Comparison mode: diff two `.qxw` workspaces to spot changes in the patch
-- [ ] Support for QLC+ fixture definition files (`.qxf`) to enrich fixture metadata
+- [x] Support for QLC+ fixture definition files (`.qxf`) to enrich fixture metadata — *(implemented in Fixture Configurator, v0.5)*
 
 ---
 
@@ -75,7 +75,10 @@ These are near-term improvements focused on robustness and usability of existing
 | v0.2 | Dictionary Manager added |
 | v0.3 | Setup Checklist added |
 | v0.4 | Trigger Manager added; unified shell with shared workspace state; dark/light theme engine |
+| v0.5 | Fixture Configurator tab: 2D stage canvas, `.qxf` loading, DMX auto-assign, QXW generation from template |
+| v0.6 | Function Assignment Panel in Fixture Configurator: intelligent auto-mapping with name-role and spatial proximity strategies |
+| v0.7 | Setlist Manager multi-slot architecture (one slot per CueList); "Rename to CueList" and "Unassign All" actions; nested VC frame ancestry fix in Trigger Manager |
 
 ---
 
-*Last updated: March 2026*
+*Last updated: May 2026*

@@ -7,9 +7,17 @@
 
 ---
 
+## Screenshots
+
+| Dark Theme | Light Theme |
+|:---:|:---:|
+| ![Dark Theme](screenshots/qlc_swiss_knife_dark_theme.png) | ![Light Theme](screenshots/qlc_swiss_knife_light_theme.png) |
+
+---
+
 ## What is it?
 
-QLC+ Swiss Knife is a single-file Python 3 desktop application that brings four essential live-production utilities together under one roof. Instead of juggling separate scripts or manual XML editing, you get a clean tabbed interface that reads your `.qxw` workspace and lets you manage it visually.
+QLC+ Swiss Knife is a single-file Python 3 desktop application that brings five essential live-production utilities together under one roof. Instead of juggling separate scripts or manual XML editing, you get a clean tabbed interface that reads your `.qxw` workspace and lets you manage it visually.
 
 It runs on **Windows, macOS, and Linux** with nothing more than a standard Python 3 installation (tkinter included).
 
@@ -18,7 +26,7 @@ It runs on **Windows, macOS, and Linux** with nothing more than a standard Pytho
 ## Features
 
 ### 🎵 Setlist Manager
-Build complete show cue lists directly from a plain-text setlist. Map songs to existing QLC+ functions, generate pristine cloned cue sequences, and export a ready-to-print **PDF** — all without touching the XML by hand.
+Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab — manage an entire show with multiple cue lists in a single session. Map songs to QLC+ functions, generate pristine cloned cue sequences, rename Chasers to match their CueList caption, and export per-slot **PDFs** — all without touching the XML by hand.
 
 ### 📖 Dictionary Manager
 Create and maintain `ID → description` mapping files that annotate your QLC+ function pool with human-readable labels. Shared across all tabs so your annotations stay consistent throughout the session.
@@ -27,7 +35,10 @@ Create and maintain `ID → description` mapping files that annotate your QLC+ f
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** and text checklists — ideal for pre-show setup or handing off to crew.
 
 ### 🎛 Trigger Manager
-Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Spot conflicts, fix missing assignments, and write changes back to the workspace without opening the QLC+ XML editor.
+Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Correctly resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace.
+
+### 🔧 Fixture Configurator
+Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas** to set positions. Configure stage dimensions, auto-assign DMX addresses, then load a `.qxw` template and **generate a ready-to-use workspace** with all fixture blocks and 3D monitor positions populated from your canvas layout. An intelligent **Function Assignment Panel** auto-maps template functions to rig fixtures using name-role matching and spatial proximity.
 
 ---
 
@@ -51,7 +62,7 @@ git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
 cd qlc-plus-swiss-knife-tool-script
 
 # Run the app
-python3 qlc_swiss_knife_0.4.py
+python3 qlc_swiss_knife_0.7.py
 ```
 
 On **Windows** you can also double-click the `.py` file if Python is associated with `.py` files in your system.
@@ -69,6 +80,12 @@ On **Windows** you can also double-click the `.py` file if Python is associated 
 | Windows 10/11 | ✅ Tested |
 | macOS (12+) | ✅ Tested |
 | Linux (Ubuntu/Debian) | ✅ Tested |
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a full history of changes across all versions.
 
 ---
 

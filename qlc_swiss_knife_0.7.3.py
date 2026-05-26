@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-  QLC+ SWISS KNIFE — Unified Live Console Toolkit (v0.7.2)
+  QLC+ SWISS KNIFE — Unified Live Console Toolkit (v0.7.3)
 ================================================================================
-  A single, ergonomic interface combining four essential QLC+ 5.x utilities:
+  A single, ergonomic interface combining five essential QLC+ 5.x utilities:
 
     1. SETLIST MANAGER   — Build show cue lists from text setlists, map to
                            QLC+ functions, generate pristine clones, export PDF.
@@ -17,6 +17,9 @@
                            definitions, place fixtures on a 2-D stage canvas,
                            assign names and DMX patches, then generate a ready-
                            to-use .qxw file cloned from a template workspace.
+    6. ID BROWSER        — Inspect every Function and Virtual Console widget
+                           ID in the loaded workspace.  Sort by ID, name/caption,
+                           type, or position.  Export to CSV or PDF.
 
   Zero external dependencies — pure Python 3 stdlib + tkinter.
   Works on Windows, macOS, and Linux.
@@ -256,6 +259,7 @@ class QLCSwissKnife:
         self.func_by_id = {}         # fid -> name
         self.func_detailed = {}      # fid -> {name, type, contains}
         self.vc_buttons = {}         # fid -> {captions, frames}
+        self.vc_widgets = []         # list of widget dicts (ID Browser)
         self.available_frames = set()
         self.chasers = {}            # chaser_name -> fid
         self.highest_func_id = 0
@@ -275,6 +279,7 @@ class QLCSwissKnife:
         self.setup_mgr.on_theme_changed()
         self.trigger_mgr.on_theme_changed()
         self.fixture_cfg.on_theme_changed()
+        self.id_browser.on_theme_changed()
 
     # ══════════════════════════════════════════════════════════════════════════
     # SHELL UI
@@ -361,6 +366,11 @@ class QLCSwissKnife:
         self.notebook.add(self.tab_fixture_cfg, text="  🔧  Fixture Configurator  ")
         self.fixture_cfg = FixtureConfiguratorTab(self.tab_fixture_cfg, self)
 
+        # Tab 6 — ID Browser
+        self.tab_id_browser = tk.Frame(self.notebook)
+        self.notebook.add(self.tab_id_browser, text="  🔍  ID Browser  ")
+        self.id_browser = IDBrowserTab(self.tab_id_browser, self)
+
         self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
         # ── Status Bar ────────────────────────────────────────────────────────
@@ -401,6 +411,7 @@ class QLCSwissKnife:
         self.setup_mgr.on_theme_changed()
         self.trigger_mgr.on_theme_changed()
         self.fixture_cfg.on_theme_changed()
+        self.id_browser.on_theme_changed()
 
     def apply_theme(self):
         t = THEMES[self.current_theme]
@@ -560,12 +571,13 @@ class QLCSwissKnife:
             self.setup_mgr.on_qxw_loaded()
             self.trigger_mgr.on_qxw_loaded()
             self.fixture_cfg.on_qxw_loaded()
+            self.id_browser.on_qxw_loaded()
 
             fc = len(self.func_detailed)
             fix_count = len(self.fixture_map)
             vc_count = len(self.vc_buttons)
             self.lbl_counts.config(
-                text=f"Functions: {fc}  |  Fixtures: {fix_count}  |  VC Buttons: {vc_count}"
+                text=f"Functions: {fc}  |  Fixtures: {fix_count}  |  VC Buttons: {vc_count}  |  VC Widgets: {len(self.vc_widgets)}"
             )
             self.set_status(f"Loaded: {os.path.basename(filename)}")
 
@@ -582,6 +594,7 @@ class QLCSwissKnife:
         self.func_by_id.clear()
         self.func_detailed.clear()
         self.vc_buttons.clear()
+        self.vc_widgets.clear()
         self.available_frames.clear()
         self.chasers.clear()
         self.highest_func_id = 0
@@ -690,17 +703,68 @@ class QLCSwissKnife:
         from the root down to the current node — so every button gets tagged
         with ALL enclosing frame names, not just its direct parent.
         This makes the Frame filter work correctly for nested frames.
+
+        Also populates self.vc_widgets with a complete record of every
+        widget (Button, Frame, SoloFrame, Slider, Knob, SpeedDial, XYPad,
+        Label, Clock, VUMeter, AudioTrigger, Animation) including its own
+        widget ID, geometry, type, caption, and linked function if any.
         """
         if frame_ancestry is None:
             frame_ancestry = []
 
         tag_name = node.tag.replace(f"{{{QLC_NS_URI}}}", "")
 
+        # ── All named/placed widget types ─────────────────────────────────────
+        _WIDGET_TYPES = {
+            "Button", "Slider", "Knob", "SpeedDial", "XYPad",
+            "Label", "Clock", "VUMeter", "AudioTrigger", "Animation",
+            "Frame", "SoloFrame", "CueList",
+        }
+
         if tag_name in ["Frame", "SoloFrame"]:
             caption = node.get('Caption', frame_ancestry[-1] if frame_ancestry else "[No Frame]")
             self.available_frames.add(caption)
             frame_ancestry = frame_ancestry + [caption]   # new list — don't mutate caller's
 
+        if tag_name in _WIDGET_TYPES:
+            wid      = node.get('ID', '')
+            caption  = node.get('Caption', '').replace('\n', ' ').strip()
+            wx       = node.get('X', '')
+            wy       = node.get('Y', '')
+            ww       = node.get('Width', '')
+            wh       = node.get('Height', '')
+
+            # Linked function — Button, Slider, Knob, SpeedDial, Animation
+            func_node = node.find('q:Function', NS)
+            if func_node is not None:
+                fid = func_node.get('ID', '')
+                if fid in ("4294967295", "-1"):
+                    fid = ''
+            else:
+                # CueList uses <Chaser> child text
+                chaser_node = node.find('q:Chaser', NS)
+                fid = (chaser_node.text or '').strip() if chaser_node is not None else ''
+                if fid in ("4294967295", "-1"):
+                    fid = ''
+
+            fname = self.func_by_id.get(fid, '') if fid else ''
+            frame_path = " › ".join(frame_ancestry) if frame_ancestry else "[Root]"
+
+            if wid:  # only store widgets that actually have an ID attribute
+                self.vc_widgets.append({
+                    'widget_id':  wid,
+                    'type':       tag_name,
+                    'caption':    caption,
+                    'func_id':    fid,
+                    'func_name':  fname,
+                    'frame_path': frame_path,
+                    'x':          wx,
+                    'y':          wy,
+                    'w':          ww,
+                    'h':          wh,
+                })
+
+        # ── Legacy vc_buttons population (unchanged — other tabs depend on it) ─
         if tag_name == "Button":
             caption = node.get('Caption')
             func_node = node.find('q:Function', NS)
@@ -711,8 +775,6 @@ class QLCSwissKnife:
                     if f_id not in self.vc_buttons:
                         self.vc_buttons[f_id] = {'captions': set(), 'frames': set()}
                     self.vc_buttons[f_id]['captions'].add(clean_cap)
-                    # Tag the button with every ancestor frame so that
-                    # filtering by any level in the hierarchy works correctly.
                     for anc in frame_ancestry:
                         self.vc_buttons[f_id]['frames'].add(anc)
 
@@ -5632,6 +5694,618 @@ class FunctionAssignPanel(tk.Frame):
         self.cfg._func_assignments[self._selected_func_id] = list(range(n))
         self.refresh()
         self._populate_slots(self._selected_func_id)
+
+
+# ██████████████████████████████████████████████████████████████████████████████
+#  TAB 6 — ID BROWSER
+# ██████████████████████████████████████████████████████████████████████████████
+
+import csv as _csv
+
+class IDBrowserTab:
+    """
+    Inspect every Function and Virtual Console widget ID in the loaded workspace.
+
+    Two views (inner notebook):
+      • Functions  — all Engine functions: ID, Name, Type, Steps/Contains
+      • VC Widgets — all Virtual Console widgets: Widget ID, Type, Caption,
+                     Linked Func ID, Linked Func Name, Frame Path, X, Y, W, H
+
+    Every column is sortable by clicking the header (click again to reverse).
+    Filter bar for quick text search across all visible columns.
+    Export to CSV or PDF (PDF renderer re-uses the raw-PDF engine from the
+    Setlist tab — zero external dependencies).
+    """
+
+    # ── type → emoji icon ────────────────────────────────────────────────────
+    _FUNC_ICONS = {
+        'Scene':      '🎨', 'Chaser':   '🔄', 'Sequence': '📋',
+        'Show':       '🎬', 'Script':   '📝', 'Collection': '📦',
+        'Audio':      '🎵', 'Video':    '🎥', 'EFX':      '✨',
+        'RGBMatrix':  '🌈',
+    }
+    _WIDGET_ICONS = {
+        'Button':       '🔘', 'Frame':      '🗂', 'SoloFrame':  '🗂',
+        'Slider':       '🎚', 'Knob':       '🎛', 'SpeedDial':  '⏱',
+        'XYPad':        '🕹', 'Label':      '🏷', 'Clock':      '🕐',
+        'VUMeter':      '📊', 'AudioTrigger': '🎤', 'Animation': '💫',
+        'CueList':      '📋',
+    }
+
+    def __init__(self, parent, app):
+        self.parent = parent
+        self.app    = app
+
+        # Sort state: (column_key, reverse)
+        self._func_sort  = ('id_int', False)
+        self._widget_sort = ('widget_id_int', False)
+
+        # Cached sorted+filtered rows (list of dicts)
+        self._func_rows   = []
+        self._widget_rows = []
+
+        self._build_ui()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # UI CONSTRUCTION
+    # ══════════════════════════════════════════════════════════════════════════
+    def _build_ui(self):
+        t = THEMES[self.app.current_theme]
+
+        # ── top toolbar ───────────────────────────────────────────────────────
+        tb = tk.Frame(self.parent, padx=10, pady=6)
+        tb.pack(fill=tk.X)
+
+        tk.Label(tb, text="🔍 ID Browser",
+                 font=("Helvetica", 10, "bold")).pack(side=tk.LEFT)
+
+        ttk.Button(tb, text="📤 Export CSV",  style="Export.TButton",
+                   command=self._export_csv).pack(side=tk.RIGHT, padx=(4, 0))
+        ttk.Button(tb, text="📄 Export PDF",  style="Export.TButton",
+                   command=self._export_pdf).pack(side=tk.RIGHT, padx=(4, 0))
+
+        # search bar
+        tk.Label(tb, text="  🔎", font=("Helvetica", 10)).pack(side=tk.LEFT, padx=(20, 0))
+        self._search_var = tk.StringVar()
+        self._search_var.trace_add('write', lambda *_: self._apply_filter())
+        ttk.Entry(tb, textvariable=self._search_var, width=28).pack(side=tk.LEFT, padx=4)
+        ttk.Button(tb, text="✕", style="Normal.TButton",
+                   command=lambda: self._search_var.set("")).pack(side=tk.LEFT)
+
+        # ── inner notebook (Functions / VC Widgets) ───────────────────────────
+        self._inner_nb = ttk.Notebook(self.parent)
+        self._inner_nb.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 4))
+        self._inner_nb.bind("<<NotebookTabChanged>>", lambda _: self._apply_filter())
+
+        # ── Functions pane ────────────────────────────────────────────────────
+        func_frame = tk.Frame(self._inner_nb)
+        self._inner_nb.add(func_frame, text="  ⚙  Functions  ")
+
+        fcols = [
+            ("id_int",    "ID",       60,  "e"),
+            ("icon",      "",         30,  "c"),
+            ("name",      "Name",    340,  "w"),
+            ("type",      "Type",    120,  "w"),
+            ("contains",  "Contains / Steps", 420, "w"),
+        ]
+        self._func_tree, _ = self._make_tree(func_frame, fcols, self._on_func_heading)
+
+        # ── VC Widgets pane ───────────────────────────────────────────────────
+        vc_frame = tk.Frame(self._inner_nb)
+        self._inner_nb.add(vc_frame, text="  🖥  VC Widgets  ")
+
+        wcols = [
+            ("widget_id_int", "Widget ID", 80,  "e"),
+            ("icon",          "",          30,  "c"),
+            ("type",          "Type",     110,  "w"),
+            ("caption",       "Caption",  220,  "w"),
+            ("func_id",       "Func ID",   70,  "e"),
+            ("func_name",     "Func Name",220,  "w"),
+            ("frame_path",    "Frame Path",260, "w"),
+            ("x",             "X",         52,  "e"),
+            ("y",             "Y",         52,  "e"),
+            ("w",             "W",         52,  "e"),
+            ("h",             "H",         52,  "e"),
+        ]
+        self._widget_tree, _ = self._make_tree(vc_frame, wcols, self._on_widget_heading)
+
+    def _make_tree(self, parent, col_defs, heading_cmd):
+        """Create a Treeview + vertical scrollbar. Returns (tree, scrollbar)."""
+        col_keys = [c[0] for c in col_defs]
+        tree = ttk.Treeview(parent, columns=col_keys, show="headings",
+                            selectmode="browse")
+        for key, label, width, anchor in col_defs:
+            tree.heading(key, text=label,
+                         command=lambda k=key: heading_cmd(k))
+            tree.column(key, width=width, minwidth=max(30, width // 2),
+                        anchor=anchor, stretch=(label not in ("", "ID", "Widget ID",
+                                                               "X","Y","W","H","Func ID")))
+        vsb = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vsb.pack(side=tk.LEFT, fill=tk.Y)
+        return tree, vsb
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # LIFECYCLE HOOKS
+    # ══════════════════════════════════════════════════════════════════════════
+    def on_qxw_loaded(self):
+        self._search_var.set("")
+        self._func_sort   = ('id_int', False)
+        self._widget_sort = ('widget_id_int', False)
+        self._rebuild_rows()
+        self._populate_func_tree()
+        self._populate_widget_tree()
+
+    def on_theme_changed(self):
+        pass  # ttk styles handled globally
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # DATA PREPARATION
+    # ══════════════════════════════════════════════════════════════════════════
+    def _rebuild_rows(self):
+        """Convert shared maps into flat row dicts for both views."""
+        # Functions
+        self._func_rows = []
+        for fid, d in self.app.func_detailed.items():
+            try:
+                id_int = int(fid)
+            except (ValueError, TypeError):
+                id_int = 0
+            self._func_rows.append({
+                'id_int':   id_int,
+                'fid':      fid,
+                'icon':     self._FUNC_ICONS.get(d.get('type', ''), '•'),
+                'name':     d.get('name', ''),
+                'type':     d.get('type', ''),
+                'contains': d.get('contains', ''),
+            })
+
+        # VC Widgets
+        self._widget_rows = []
+        for w in self.app.vc_widgets:
+            try:
+                wid_int = int(w['widget_id'])
+            except (ValueError, TypeError):
+                wid_int = 0
+            try:
+                fid_int = int(w['func_id']) if w['func_id'] else -1
+            except (ValueError, TypeError):
+                fid_int = -1
+            self._widget_rows.append({
+                'widget_id_int': wid_int,
+                'widget_id':     w['widget_id'],
+                'icon':          self._WIDGET_ICONS.get(w['type'], '▪'),
+                'type':          w['type'],
+                'caption':       w['caption'],
+                'func_id':       w['func_id'],
+                'func_id_int':   fid_int,
+                'func_name':     w['func_name'],
+                'frame_path':    w['frame_path'],
+                'x':             w['x'],
+                'y':             w['y'],
+                'w':             w['w'],
+                'h':             w['h'],
+            })
+
+    def _apply_filter(self):
+        self._populate_func_tree()
+        self._populate_widget_tree()
+
+    def _matches(self, row, query):
+        """Return True if any string value in row contains query (case-insensitive)."""
+        if not query:
+            return True
+        q = query.lower()
+        return any(q in str(v).lower() for v in row.values())
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # TREE POPULATION
+    # ══════════════════════════════════════════════════════════════════════════
+    def _populate_func_tree(self):
+        query = self._search_var.get().strip()
+        col, rev = self._func_sort
+
+        rows = [r for r in self._func_rows if self._matches(r, query)]
+        rows.sort(key=lambda r: (r.get(col, 0) if isinstance(r.get(col, 0), int)
+                                 else str(r.get(col, '')).lower()),
+                  reverse=rev)
+
+        self._func_tree.delete(*self._func_tree.get_children())
+        for r in rows:
+            self._func_tree.insert("", tk.END, iid=f"f_{r['fid']}", values=(
+                r['fid'], r['icon'], r['name'], r['type'], r['contains']
+            ))
+        self._update_sort_arrows(self._func_tree,
+                                 ["id_int","icon","name","type","contains"],
+                                 col, rev,
+                                 ["ID","","Name","Type","Contains / Steps"])
+
+    def _populate_widget_tree(self):
+        query = self._search_var.get().strip()
+        col, rev = self._widget_sort
+
+        rows = [r for r in self._widget_rows if self._matches(r, query)]
+        rows.sort(key=lambda r: (r.get(col, 0) if isinstance(r.get(col, 0), int)
+                                 else str(r.get(col, '')).lower()),
+                  reverse=rev)
+
+        self._widget_tree.delete(*self._widget_tree.get_children())
+        for i, r in enumerate(rows):
+            self._widget_tree.insert("", tk.END, iid=f"w_{i}", values=(
+                r['widget_id'], r['icon'], r['type'], r['caption'],
+                r['func_id'], r['func_name'], r['frame_path'],
+                r['x'], r['y'], r['w'], r['h']
+            ))
+        self._update_sort_arrows(self._widget_tree,
+                                 ["widget_id_int","icon","type","caption",
+                                  "func_id","func_name","frame_path",
+                                  "x","y","w","h"],
+                                 col, rev,
+                                 ["Widget ID","","Type","Caption",
+                                  "Func ID","Func Name","Frame Path",
+                                  "X","Y","W","H"])
+
+    def _update_sort_arrows(self, tree, col_keys, active_col, reverse, labels):
+        """Redraw column headings with a ▲/▼ indicator on the active sort column."""
+        for key, label in zip(col_keys, labels):
+            if key == active_col:
+                arrow = " ▲" if not reverse else " ▼"
+            else:
+                arrow = ""
+            tree.heading(key, text=label + arrow)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SORT HANDLERS
+    # ══════════════════════════════════════════════════════════════════════════
+    def _on_func_heading(self, col):
+        cur_col, cur_rev = self._func_sort
+        self._func_sort = (col, not cur_rev if col == cur_col else False)
+        self._populate_func_tree()
+
+    def _on_widget_heading(self, col):
+        cur_col, cur_rev = self._widget_sort
+        self._widget_sort = (col, not cur_rev if col == cur_col else False)
+        self._populate_widget_tree()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # HELPERS — which view is active
+    # ══════════════════════════════════════════════════════════════════════════
+    def _active_view(self):
+        """Return 'functions' or 'widgets' based on inner notebook selection."""
+        try:
+            idx = self._inner_nb.index(self._inner_nb.select())
+        except Exception:
+            idx = 0
+        return 'functions' if idx == 0 else 'widgets'
+
+    def _active_rows_and_cols(self):
+        """Return (rows, col_headers) for the currently visible view."""
+        query = self._search_var.get().strip()
+        if self._active_view() == 'functions':
+            col, rev = self._func_sort
+            rows = [r for r in self._func_rows if self._matches(r, query)]
+            rows.sort(
+                key=lambda r: (r.get(col, 0) if isinstance(r.get(col, 0), int)
+                               else str(r.get(col, '')).lower()),
+                reverse=rev)
+            headers = ["ID", "Icon", "Name", "Type", "Contains / Steps"]
+            flat = [(r['fid'], r['icon'], r['name'], r['type'], r['contains'])
+                    for r in rows]
+        else:
+            col, rev = self._widget_sort
+            rows = [r for r in self._widget_rows if self._matches(r, query)]
+            rows.sort(
+                key=lambda r: (r.get(col, 0) if isinstance(r.get(col, 0), int)
+                               else str(r.get(col, '')).lower()),
+                reverse=rev)
+            headers = ["Widget ID", "Icon", "Type", "Caption",
+                       "Func ID", "Func Name", "Frame Path",
+                       "X", "Y", "W", "H"]
+            flat = [(r['widget_id'], r['icon'], r['type'], r['caption'],
+                     r['func_id'], r['func_name'], r['frame_path'],
+                     r['x'], r['y'], r['w'], r['h'])
+                    for r in rows]
+        return flat, headers
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # EXPORT — CSV
+    # ══════════════════════════════════════════════════════════════════════════
+    def _export_csv(self):
+        if not self.app.func_detailed and not self.app.vc_widgets:
+            return messagebox.showwarning("No Data", "Load a QXW workspace first.")
+
+        flat, headers = self._active_rows_and_cols()
+        view = self._active_view()
+
+        bn = (os.path.splitext(os.path.basename(self.app.current_qxw_file))[0]
+              if self.app.current_qxw_file else "workspace")
+        default = f"{bn}_{'functions' if view == 'functions' else 'vc_widgets'}.csv"
+
+        fp = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV", "*.csv"), ("All Files", "*.*")],
+            title="Export CSV",
+            initialfile=default)
+        if not fp:
+            return
+
+        try:
+            with open(fp, 'w', newline='', encoding='utf-8') as fh:
+                writer = _csv.writer(fh)
+                writer.writerow(headers)
+                for row in flat:
+                    writer.writerow(row)
+            messagebox.showinfo("Exported", f"CSV saved to:\n{fp}")
+        except Exception as e:
+            traceback.print_exc(file=sys.stderr)
+            messagebox.showerror("Error", f"CSV export failed:\n{e}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # EXPORT — PDF  (raw-PDF renderer, zero external deps)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _export_pdf(self):
+        if not self.app.func_detailed and not self.app.vc_widgets:
+            return messagebox.showwarning("No Data", "Load a QXW workspace first.")
+
+        flat, headers = self._active_rows_and_cols()
+        view = self._active_view()
+
+        # ── paper-size dialog ─────────────────────────────────────────────────
+        dlg = tk.Toplevel(self.parent)
+        dlg.title("PDF Export Settings")
+        dlg.geometry("320x200")
+        dlg.resizable(False, False)
+        dlg.grab_set()
+        t = THEMES[self.app.current_theme]
+        dlg.configure(bg=t["bg"])
+
+        tk.Label(dlg, text="Paper size:", font=("Helvetica", 9),
+                 bg=t["bg"], fg=t["fg"]).pack(anchor="w", padx=16, pady=(16, 2))
+        paper_var = tk.StringVar(value="A4 Landscape")
+        ttk.Combobox(dlg, textvariable=paper_var, state="readonly", width=22,
+                     values=["A4 Portrait", "A4 Landscape",
+                             "US Letter Portrait", "US Letter Landscape"]
+                     ).pack(anchor="w", padx=32)
+
+        tk.Label(dlg, text="Font size:", font=("Helvetica", 9),
+                 bg=t["bg"], fg=t["fg"]).pack(anchor="w", padx=16, pady=(12, 2))
+        fsize_var = tk.StringVar(value="8")
+        ttk.Combobox(dlg, textvariable=fsize_var, state="readonly", width=8,
+                     values=["7","8","9","10"]).pack(anchor="w", padx=32)
+
+        result = {"go": False}
+        def _go(): result["go"] = True; dlg.destroy()
+        bf = tk.Frame(dlg, bg=t["bg"])
+        bf.pack(fill=tk.X, padx=16, pady=16)
+        ttk.Button(bf, text="Cancel",     style="Normal.TButton",
+                   command=dlg.destroy).pack(side=tk.RIGHT, padx=(8,0))
+        ttk.Button(bf, text="Export PDF", style="Save.TButton",
+                   command=_go).pack(side=tk.RIGHT)
+        dlg.wait_window()
+        if not result["go"]:
+            return
+
+        paper_sizes = {
+            "A4 Portrait":        (595.0, 842.0),
+            "A4 Landscape":       (842.0, 595.0),
+            "US Letter Portrait": (612.0, 792.0),
+            "US Letter Landscape":(792.0, 612.0),
+        }
+        W, H = paper_sizes.get(paper_var.get(), (842.0, 595.0))
+        try:
+            fsize = int(fsize_var.get())
+        except ValueError:
+            fsize = 8
+
+        bn = (os.path.splitext(os.path.basename(self.app.current_qxw_file))[0]
+              if self.app.current_qxw_file else "workspace")
+        default = f"{bn}_{'functions' if view == 'functions' else 'vc_widgets'}.pdf"
+        fp = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF", "*.pdf"), ("All Files", "*.*")],
+            title="Export PDF",
+            initialfile=default)
+        if not fp:
+            return
+
+        try:
+            pdf_bytes = self._build_pdf(flat, headers, W, H, fsize, view)
+            with open(fp, "wb") as fh:
+                fh.write(pdf_bytes)
+            messagebox.showinfo("Exported", f"PDF saved to:\n{fp}")
+        except Exception as e:
+            traceback.print_exc(file=sys.stderr)
+            messagebox.showerror("Error", f"PDF export failed:\n{e}")
+
+    # ── Raw-PDF builder ───────────────────────────────────────────────────────
+    def _build_pdf(self, rows, headers, W, H, fsize, view):
+        """
+        Generates a minimal valid PDF with a table of the supplied rows.
+        Uses only Python stdlib (zlib).  Matches the style of the Setlist PDF.
+        """
+        # ── column widths ─────────────────────────────────────────────────────
+        T_PAD   = 14
+        ROW_H   = fsize + 8
+        HDR_H   = fsize + 10
+        TITLE_H = 34
+
+        usable_w = W - 2 * T_PAD
+
+        # Fixed widths for well-known short columns; the rest share flex space
+        _FIXED = {"ID": 40, "Widget ID": 56, "Icon": 20, "": 20,
+                  "Func ID": 48, "X": 36, "Y": 36, "W": 36, "H": 36, "Type": 80}
+        fixed_w  = sum(_FIXED.get(h, 0) for h in headers)
+        flex_h   = [h for h in headers if _FIXED.get(h, 0) == 0]
+        flex_w   = max(50, (usable_w - fixed_w) / max(1, len(flex_h)))
+
+        col_w = [_FIXED.get(h, flex_w) for h in headers]
+        # Clip total to usable width
+        total = sum(col_w)
+        if total > usable_w:
+            scale = usable_w / total
+            col_w = [cw * scale for cw in col_w]
+
+        col_x = []
+        cx = T_PAD
+        for cw in col_w:
+            col_x.append(cx); cx += cw
+
+        # ── PDF colour helpers ────────────────────────────────────────────────
+        hdr_col  = (0.12, 0.12, 0.18)
+        alt_col  = (0.93, 0.95, 1.00)
+        white    = (1.0, 1.0, 1.0)
+        dark_hdr = (0.22, 0.30, 0.45)
+
+        pages, cur = [], []
+
+        def sc(r, g, b): cur.append(f"{r:.4f} {g:.4f} {b:.4f} RG")
+        def fc(r, g, b): cur.append(f"{r:.4f} {g:.4f} {b:.4f} rg")
+        def lw(w):       cur.append(f"{w} w")
+
+        def rfill(x, y, w, h, col):
+            fc(*col); cur.append(f"{x:.2f} {y:.2f} {w:.2f} {h:.2f} re f")
+
+        def rbox(x, y, w, h, fcol, scol, wd=0.4):
+            fc(*fcol); sc(*scol); lw(wd)
+            cur.append(f"{x:.2f} {y:.2f} {w:.2f} {h:.2f} re B")
+
+        def txt(x, y, s, sz=8, bold=False):
+            s = str(s).encode('latin-1', errors='replace').decode('latin-1')
+            s = s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            cur.append(
+                f"BT {'/F2' if bold else '/F1'} {sz} Tf "
+                f"{x:.2f} {y:.2f} Td ({s}) Tj ET")
+
+        def finish_page():
+            if cur:
+                pages.append(zlib.compress("\n".join(cur).encode("latin-1")))
+                cur.clear()
+
+        title_text = (
+            f"Functions — {os.path.basename(self.app.current_qxw_file or 'workspace')}"
+            if view == 'functions' else
+            f"VC Widgets — {os.path.basename(self.app.current_qxw_file or 'workspace')}"
+        )
+        doc_date = datetime.date.today().strftime("%Y-%m-%d")
+
+        def draw_header(pn):
+            rfill(0, H - TITLE_H, W, TITLE_H, hdr_col)
+            cur.append("1 1 1 rg")
+            txt(T_PAD, H - TITLE_H + 12, title_text, sz=11, bold=True)
+            txt(W - 180, H - TITLE_H + 18, f"Date: {doc_date}", sz=8)
+            txt(W - 180, H - TITLE_H + 8,  f"Page {pn}", sz=8)
+            T_TOP = H - TITLE_H - 4
+            hy = T_TOP - HDR_H
+            for cxi, cwi in zip(col_x, col_w):
+                rbox(cxi, hy, cwi, HDR_H, dark_hdr, (0.1, 0.2, 0.35), 0.2)
+            cur.append("1 1 1 rg")
+            for hdr, cxi in zip(headers, col_x):
+                txt(cxi + 3, hy + 4, hdr, sz=fsize, bold=True)
+            return hy
+
+        pn = 1
+        cy = draw_header(pn)
+
+        MAX_CHARS_PER_CELL = 60   # truncate long strings to avoid overflow
+
+        for ri, row in enumerate(rows):
+            cy -= ROW_H
+            if cy < T_PAD + ROW_H:
+                finish_page()
+                pn += 1
+                cy = draw_header(pn)
+                cy -= ROW_H
+            rc = alt_col if ri % 2 == 0 else white
+            for cxi, cwi in zip(col_x, col_w):
+                rbox(cxi, cy, cwi, ROW_H, rc, (0.80, 0.84, 0.92), 0.2)
+            cur.append("0 0 0 rg")
+            for cell, cxi, cwi in zip(row, col_x, col_w):
+                cell_s = str(cell)
+                # Truncate to fit column width (rough char-width estimate)
+                max_chars = max(4, int(cwi / (fsize * 0.52)))
+                if len(cell_s) > max_chars:
+                    cell_s = cell_s[:max_chars - 1] + "…"
+                txt(cxi + 3, cy + 3, cell_s, sz=fsize)
+
+        finish_page()
+
+        # ── Build minimal PDF structure ───────────────────────────────────────
+        obj, xref = [], []
+
+        def add(content):
+            xref.append(sum(len(o) for o in obj) + len(obj))  # approximate
+            obj.append(content)
+
+        # obj 1 — catalog
+        add(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+
+        # obj 2 — pages dict (patched later)
+        add(b"2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n")
+
+        # obj 3 — font Helvetica
+        add(b"3 0 obj\n<< /Type /Font /Subtype /Type1 "
+            b"/BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n")
+
+        # obj 4 — font Helvetica-Bold
+        add(b"4 0 obj\n<< /Type /Font /Subtype /Type1 "
+            b"/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n")
+
+        page_obj_nums = []
+        NEXT = 5
+
+        stream_obj_nums = []
+        for pg_data in pages:
+            n = NEXT + len(stream_obj_nums) * 2
+            stream_obj_nums.append(n)
+
+        for i, pg_data in enumerate(pages):
+            sn = NEXT + i * 2         # stream object number
+            pn = NEXT + i * 2 + 1    # page object number
+            page_obj_nums.append(pn)
+
+            stream_obj = (
+                f"{sn} 0 obj\n"
+                f"<< /Length {len(pg_data)} /Filter /FlateDecode >>\n"
+                f"stream\n"
+            ).encode("latin-1") + pg_data + b"\nendstream\nendobj\n"
+            add(stream_obj)
+
+            page_obj = (
+                f"{pn} 0 obj\n"
+                f"<< /Type /Page /Parent 2 0 R "
+                f"/MediaBox [0 0 {W:.2f} {H:.2f}] "
+                f"/Contents {sn} 0 R "
+                f"/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> >>\n"
+                f"endobj\n"
+            ).encode("latin-1")
+            add(page_obj)
+
+        # Patch pages dict
+        kids = " ".join(f"{n} 0 R" for n in page_obj_nums)
+        obj[1] = (
+            f"2 0 obj\n<< /Type /Pages "
+            f"/Kids [{kids}] /Count {len(page_obj_nums)} >>\nendobj\n"
+        ).encode("latin-1")
+
+        # Assemble PDF body
+        body = b"%PDF-1.4\n"
+        offsets = []
+        for o in obj:
+            offsets.append(len(body))
+            body += o
+
+        xref_pos = len(body)
+        n_obj = len(obj) + 1
+        xref_table = f"xref\n0 {n_obj}\n0000000000 65535 f \n"
+        for off in offsets:
+            xref_table += f"{off:010d} 00000 n \n"
+
+        trailer = (
+            f"trailer\n<< /Size {n_obj} /Root 1 0 R >>\n"
+            f"startxref\n{xref_pos}\n%%EOF\n"
+        )
+        return body + xref_table.encode("latin-1") + trailer.encode("latin-1")
 
 
 # ██████████████████████████████████████████████████████████████████████████████

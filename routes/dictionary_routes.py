@@ -1,25 +1,6 @@
-"""
-routes/dictionary_routes.py
-===========================
-Dictionary Manager API — porting in progress.
+"""routes/dictionary_routes.py — Dictionary Manager API (fully implemented)."""
 
-PORTING GUIDE
--------------
-Source class: DictionaryManagerTab  (qlc_swiss_knife_0.7.3.py)
-Key methods to port:
-  - load_txt() / save_txt()    → read/write ID→description .txt files
-  - update_inspector()         → merge descriptions with func_detailed
-  - on_qxw_loaded()            → re-populate after workspace load
-
-Planned endpoints:
-  GET  /api/dictionary          → all ID→description entries
-  POST /api/dictionary          → create or update an entry
-  DELETE /api/dictionary/<id>   → remove an entry
-  POST /api/dictionary/load     → load a .txt dictionary file
-  POST /api/dictionary/save     → save current dictionary to .txt
-"""
-
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from core import workspace as ws
 
 bp = Blueprint('dictionary', __name__, url_prefix='/api/dictionary')
@@ -29,6 +10,43 @@ bp = Blueprint('dictionary', __name__, url_prefix='/api/dictionary')
 def get_dictionary():
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
-    # shared_descriptions lives in ws._state but is populated by the dict tab
-    return jsonify({'status': 'not_implemented',
-                    'message': 'Dictionary Manager porting in progress.'})
+    return jsonify(ws.get_dictionary())
+
+
+@bp.route('/<fid>', methods=['PATCH'])
+def update_entry(fid):
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    ws.update_description(fid, data.get('desc', ''))
+    return jsonify({'ok': True})
+
+
+@bp.route('/load', methods=['POST'])
+def load_dict():
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    path = (data.get('path') or '').strip()
+    if not path:
+        return jsonify({'error': 'No path provided.'}), 400
+    try:
+        count = ws.load_dictionary(path)
+        return jsonify({'ok': True, 'count': count})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/save', methods=['POST'])
+def save_dict():
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    path = (data.get('path') or '').strip()
+    if not path:
+        return jsonify({'error': 'No path provided.'}), 400
+    try:
+        ws.save_dictionary(path)
+        return jsonify({'ok': True, 'path': path})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

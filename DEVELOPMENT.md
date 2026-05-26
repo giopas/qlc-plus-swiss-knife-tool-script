@@ -38,29 +38,49 @@ app.py                  Flask entry point — registers blueprints, auto-opens b
 requirements.txt        Single dependency: flask>=3.0
 
 core/
-  workspace.py          Shared state + ALL parsing logic (extracted from 0.7.3)
+  workspace.py          Shared state + ALL parsing logic.
                         Public API: load_qxw(), get_state(), get_functions(),
-                                    get_vc_widgets(), get_fixtures()
+                                    get_vc_widgets(), get_fixtures(),
+                                    get_triggers(), update_trigger(), save_triggers(),
+                                    get_dictionary(), update_description(),
+                                    load_dictionary(), save_dictionary(),
+                                    get_cuelist_slots(), get_slot_songs(), set_slot_songs()
 
 routes/
   workspace_routes.py   GET /          → SPA shell
                         POST /api/load → load a .qxw (path or file upload)
                         GET  /api/status
                         POST /api/reload
-  id_browser_routes.py  GET /api/functions   ✅ fully wired
-                        GET /api/vc-widgets  ✅ fully wired
-  setlist_routes.py     stubs — see porting guide below
-  dictionary_routes.py  stubs — see porting guide below
-  checklist_routes.py   stubs (GET /api/checklist/fixtures already works)
-  triggers_routes.py    stubs — see porting guide below
-  fixture_routes.py     stubs — see porting guide below
+  id_browser_routes.py  GET /api/functions      ✅
+                        GET /api/vc-widgets     ✅
+  setlist_routes.py     GET  /api/setlist/slots           ✅
+                        GET  /api/setlist/<id>/songs      ✅
+                        POST /api/setlist/<id>/songs      ✅
+                        POST /api/setlist/load            ✅
+                        POST /api/setlist/save            ✅
+  dictionary_routes.py  GET  /api/dictionary/             ✅
+                        PATCH /api/dictionary/<fid>       ✅
+                        POST /api/dictionary/load         ✅
+                        POST /api/dictionary/save         ✅
+  checklist_routes.py   GET  /api/checklist/fixtures      ✅
+                        POST /api/checklist/export-txt    ✅
+  triggers_routes.py    GET  /api/triggers/               ✅
+                        GET  /api/triggers/duplicates     ✅
+                        PATCH /api/triggers/<uid>         ✅
+                        POST /api/triggers/save           ✅
+  fixture_routes.py     GET  /api/fixture/rig             ✅
 
 templates/
-  index.html            Single-page app shell (all 6 tab panels, ID Browser wired)
+  index.html            Single-page app shell — all 6 tabs fully implemented
 
 static/
   css/style.css         Catppuccin Mocha theme (CSS custom properties)
-  js/app.js             Tab switching, file loading, ID Browser, CSV export
+  js/app.js             Tab switching, file loading, ID Browser, invalidation
+  js/setlist.js         Setlist Manager tab logic
+  js/dictionary.js      Dictionary Manager tab logic
+  js/checklist.js       Setup Checklist tab logic
+  js/triggers.js        Trigger Manager tab logic
+  js/fixture.js         Fixture tab logic
 ```
 
 ---
@@ -76,12 +96,12 @@ static/
 | Status bar counts | ✅ |
 | **ID Browser — Functions** | ✅ sortable, filterable, CSV export |
 | **ID Browser — VC Widgets** | ✅ sortable, filterable, CSV export |
-| Checklist fixtures data (`/api/checklist/fixtures`) | ✅ |
-| Setlist Manager | 🔲 stub |
-| Dictionary Manager | 🔲 stub |
-| Setup Checklist (UI) | 🔲 stub |
-| Trigger Manager | 🔲 stub |
-| Fixture Configurator | 🔲 stub |
+| **Setlist Manager** | ✅ slot list, song editor, load/save TXT |
+| **Dictionary Manager** | ✅ editable table, load/save TXT |
+| **Setup Checklist** | ✅ sortable fixture table, export TXT |
+| **Trigger Manager** | ✅ editable table, MIDI/key edit, save to QXW, duplicates check |
+| **Fixture tab** | ✅ read-only workspace fixture table |
+| Fixture Configurator (canvas / QXF / QXW generation) | 🔲 planned for v1.1 |
 
 ---
 

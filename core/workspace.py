@@ -34,6 +34,10 @@ _MAX_TXT_BYTES =  5 * 1024 * 1024   #  5 MB
 _state: dict = {
     'path':               None,
     'loaded':             False,
+    # Raw XML (kept alive for trigger save-back and QXW generation)
+    'xml_tree':           None,
+    'qxw_root':           None,
+    # Parsed maps
     'fixture_map':        {},   # fid -> {name, universe, address, groups, pos}
     'group_map':          {},   # group_id -> group_name
     'fixture_groups_map': {},   # fid -> [group_names]
@@ -42,10 +46,13 @@ _state: dict = {
     'func_detailed':      {},   # fid -> {name, type, contains}
     'vc_buttons':         {},   # fid -> {captions, frames}
     'vc_widgets':         [],   # list of widget dicts (ID Browser)
+    'trigger_items':      {},   # uid -> {type, caption, func, key, uni, ch, _node}
     'available_frames':   set(),
     'chasers':            {},   # chaser_name -> fid
+    'cuelist_slots':      [],   # [{id, caption, chaser_id, chaser_name}]
     'highest_func_id':    0,
-    'shared_descriptions': {},  # fid -> description string
+    'shared_descriptions': {},  # fid -> description string (Dictionary Manager)
+    'dict_file':          None, # path to loaded dictionary .txt
     'error':              None,
 }
 
@@ -75,9 +82,13 @@ def load_qxw(path: str) -> dict:
     _reset()
     tree = _safe_parse_xml(path)
     root = tree.getroot()
-    _state['path']   = path
-    _state['loaded'] = True
+    _state['path']     = path
+    _state['loaded']   = True
+    _state['xml_tree'] = tree
+    _state['qxw_root'] = root
     _parse_shared_data(root)
+    _parse_triggers(root)
+    _parse_cuelist_slots(root)
     _state['error'] = None
     return get_state()
 
@@ -111,12 +122,141 @@ def get_fixtures() -> list:
     return rows
 
 
-def get_triggers() -> list:
+def get_triggers(assigned_only: bool = False) -> list:
+    """Return trigger_items as a sorted JSON-safe list (no _node)."""
+    rows = []
+    for uid, d in _state['trigger_items'].items():
+        has = bool(d['key'] or (d['uni'] and d['ch']))
+        if assigned_only and not has:
+            continue
+        rows.append({
+            'uid':     uid,
+            'type':    d['type'],
+            'caption': d['caption'],
+            'func':    d['func'],
+            'key':     d['key'],
+            'uni':     d['uni'],
+            'ch':      d['ch'],
+            'has':     has,
+        })
+    return rows
+
+
+def update_trigger(uid: str, key: str, universe: str, channel: str) -> bool:
     """
-    Return all VC widgets that have keyboard/MIDI bindings.
-    (Stub — full porting from TriggerManagerTab in progress.)
+    Update Key / MIDI Input on the in-memory XML node for one trigger.
+    Returns True on success, False if uid not found.
     """
-    return []
+    d = _state['trigger_items'].get(uid)
+    if d is None:
+        return False
+    node = d['_node']
+
+    # Key
+    kn = node.find(f'{{{QLC_NS_URI}}}Key')
+    if key:
+        if kn is None:
+            kn = ET.SubElement(node, f'{{{QLC_NS_URI}}}Key')
+        kn.text = key
+    elif kn is not None:
+        node.remove(kn)
+
+    # MIDI Input
+    inp = node.find(f'{{{QLC_NS_URI}}}Input')
+    if universe and channel:
+        if inp is None:
+            inp = ET.SubElement(node, f'{{{QLC_NS_URI}}}Input', {'ID': '0'})
+        inp.set('Universe', universe)
+        inp.set('Channel', channel)
+    elif inp is not None:
+        node.remove(inp)
+
+    d['key'] = key
+    d['uni'] = universe
+    d['ch']  = channel
+    return True
+
+
+def save_triggers() -> str:
+    """Write the modified XML tree back to the .qxw file. Returns path."""
+    if not _state['loaded'] or not _state['path']:
+        raise RuntimeError('No workspace loaded.')
+    _state['xml_tree'].write(
+        _state['path'],
+        encoding='utf-8',
+        xml_declaration=True,
+    )
+    return _state['path']
+
+
+# ── Dictionary Manager ────────────────────────────────────────────────────────
+
+def get_dictionary() -> list:
+    """Return shared_descriptions merged with func_detailed as a list."""
+    rows = []
+    for fid, info in _state['func_detailed'].items():
+        if '(Auto-Clone)' in info['name'] or '(Setlist)' in info['name']:
+            continue
+        rows.append({
+            'id':   fid,
+            'name': info['name'],
+            'type': info['type'],
+            'desc': _state['shared_descriptions'].get(fid, ''),
+        })
+    rows.sort(key=lambda r: _int(r['id']))
+    return rows
+
+
+def update_description(fid: str, desc: str):
+    _state['shared_descriptions'][fid] = desc
+
+
+def load_dictionary(path: str) -> int:
+    """Parse a pipe-delimited dictionary TXT. Returns count of entries loaded."""
+    lines = _safe_read_txt(path)
+    count = 0
+    for line in lines:
+        cl = line.strip()
+        if not cl or cl.startswith('ID|'):
+            continue
+        parts = cl.split('|')
+        if len(parts) >= 3 and parts[0].isdigit():
+            fid  = parts[0].strip()
+            desc = '|'.join(parts[2:]).strip().replace('\\n', '\n')
+            _state['shared_descriptions'][fid] = desc
+            count += 1
+    _state['dict_file'] = path
+    return count
+
+
+def save_dictionary(path: str):
+    """Write shared_descriptions to a pipe-delimited TXT file."""
+    import csv, io
+    lines = ['ID|Name|Description\n']
+    for fid in sorted(_state['shared_descriptions'], key=lambda x: _int(x)):
+        name = _state['func_by_id'].get(fid, '')
+        desc = _state['shared_descriptions'].get(fid, '').replace('\n', '\\n')
+        lines.append(f'{fid}|{name}|{desc}\n')
+    with open(path, 'w', encoding='utf-8') as f:
+        f.writelines(lines)
+
+
+# ── Setlist slots ─────────────────────────────────────────────────────────────
+
+def get_cuelist_slots() -> list:
+    return list(_state['cuelist_slots'])
+
+
+# In-memory song lists per slot (not persisted to QXW — user loads/saves TXT)
+_slot_songs: dict = {}   # slot_id -> [song strings]
+
+
+def get_slot_songs(slot_id: str) -> list:
+    return list(_slot_songs.get(slot_id, []))
+
+
+def set_slot_songs(slot_id: str, songs: list):
+    _slot_songs[slot_id] = [s for s in songs if s.strip()]
 
 
 # =============================================================================
@@ -126,6 +266,8 @@ def get_triggers() -> list:
 def _reset():
     _state['path']               = None
     _state['loaded']             = False
+    _state['xml_tree']           = None
+    _state['qxw_root']           = None
     _state['fixture_map']        = {}
     _state['group_map']          = {}
     _state['fixture_groups_map'] = {}
@@ -134,10 +276,13 @@ def _reset():
     _state['func_detailed']      = {}
     _state['vc_buttons']         = {}
     _state['vc_widgets']         = []
+    _state['trigger_items']      = {}
     _state['available_frames']   = set()
     _state['chasers']            = {}
+    _state['cuelist_slots']      = []
     _state['highest_func_id']    = 0
     _state['error']              = None
+    _slot_songs.clear()
 
 
 def _int(s, default=0) -> int:
@@ -349,3 +494,108 @@ def _parse_vc_node(node: ET.Element, frame_ancestry: list):
 
     for child in node:
         _parse_vc_node(child, frame_ancestry)
+
+
+# =============================================================================
+# TRIGGER PARSING  (extracted from TriggerManagerTab._parse_triggers)
+# =============================================================================
+
+def _parse_triggers(qxw_root: ET.Element):
+    """Walk VC XML and populate _state['trigger_items'] with Key/MIDI data."""
+    _state['trigger_items'].clear()
+    vc_root = qxw_root.find('q:VirtualConsole', NS)
+    if vc_root is not None:
+        _walk_triggers(vc_root)
+
+
+def _walk_triggers(node: ET.Element):
+    tag = node.tag.replace(f'{{{QLC_NS_URI}}}', '')
+
+    if tag == 'Button':
+        wid = node.get('ID', '')
+        cap = node.get('Caption', 'Unnamed').replace('\n', ' ').strip()
+        fn  = node.find('q:Function', NS)
+        fid = fn.get('ID') if fn is not None else None
+        if fid and fid not in ('4294967295', '-1'):
+            fname = _state['func_by_id'].get(fid, f'ID {fid}')
+        else:
+            fname = ''
+        kn  = node.find('q:Key', NS)
+        inp = node.find('q:Input', NS)
+        _state['trigger_items'][f'btn_{wid}'] = {
+            'type': 'Button', 'caption': cap, 'func': fname,
+            'key': kn.text if kn is not None and kn.text else '',
+            'uni': inp.get('Universe', '') if inp is not None else '',
+            'ch':  inp.get('Channel',  '') if inp is not None else '',
+            '_node': node,
+        }
+
+    elif tag == 'CueList':
+        wid = node.get('ID', '')
+        cap = node.get('Caption', 'Unnamed CueList').replace('\n', ' ').strip()
+        cn  = node.find('q:Chaser', NS)
+        fid = (cn.text or '').strip() if cn is not None else ''
+        fname = _state['func_by_id'].get(fid, f'ID {fid}') if fid and fid not in ('4294967295', '-1') else 'Empty'
+        for action in ('Next', 'Previous', 'Stop'):
+            tn = node.find(f'q:{action}', NS)
+            if tn is not None:
+                kn  = tn.find('q:Key', NS)
+                inp = tn.find('q:Input', NS)
+                _state['trigger_items'][f'cl_{wid}_{action}'] = {
+                    'type': f'CueList ({action})', 'caption': cap, 'func': fname,
+                    'key': kn.text if kn is not None and kn.text else '',
+                    'uni': inp.get('Universe', '') if inp is not None else '',
+                    'ch':  inp.get('Channel',  '') if inp is not None else '',
+                    '_node': tn,
+                }
+
+    elif tag in ('Slider', 'Knob', 'SpeedDial'):
+        wid = node.get('ID', '')
+        cap = node.get('Caption', f'Unnamed {tag}').replace('\n', ' ').strip()
+        fn  = node.find('q:Function', NS)
+        fid = fn.get('ID') if fn is not None else None
+        fname = _state['func_by_id'].get(fid, f'{tag} (Level)') if fid and fid not in ('4294967295', '-1') else f'{tag} (Level)'
+        inp   = node.find('q:Input', NS)
+        has   = inp is not None and inp.get('Universe', '')
+        if fid and fid not in ('4294967295', '-1') or has:
+            _state['trigger_items'][f'{tag.lower()}_{wid}'] = {
+                'type': tag, 'caption': cap, 'func': fname,
+                'key': '',
+                'uni': inp.get('Universe', '') if inp is not None else '',
+                'ch':  inp.get('Channel',  '') if inp is not None else '',
+                '_node': node,
+            }
+
+    for child in node:
+        _walk_triggers(child)
+
+
+# =============================================================================
+# CUELIST / SETLIST SLOT PARSING
+# =============================================================================
+
+def _parse_cuelist_slots(qxw_root: ET.Element):
+    """Find all CueList widgets in VC and pair them with their Chaser."""
+    _state['cuelist_slots'].clear()
+    vc_root = qxw_root.find('q:VirtualConsole', NS)
+    if vc_root is None:
+        return
+    _collect_cuelist_slots(vc_root)
+
+
+def _collect_cuelist_slots(node: ET.Element):
+    tag = node.tag.replace(f'{{{QLC_NS_URI}}}', '')
+    if tag == 'CueList':
+        wid = node.get('ID', '')
+        cap = node.get('Caption', f'CueList {wid}').replace('\n', ' ').strip()
+        cn  = node.find('q:Chaser', NS)
+        chaser_id   = (cn.text or '').strip() if cn is not None else ''
+        chaser_name = _state['func_by_id'].get(chaser_id, '') if chaser_id else ''
+        _state['cuelist_slots'].append({
+            'id':          wid,
+            'caption':     cap,
+            'chaser_id':   chaser_id,
+            'chaser_name': chaser_name,
+        })
+    for child in node:
+        _collect_cuelist_slots(child)

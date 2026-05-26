@@ -22,17 +22,13 @@
   </div>
 
   <div id="header-center">
-    <!-- File path input -->
-    <input id="path-input" type="text" placeholder="Paste .qxw path here…" spellcheck="false">
+    <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false">
     <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()">Load</button>
-
-    <!-- Upload button (drag-and-drop fallback) -->
     <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window">
       📂 Browse…
       <input id="file-input" type="file" accept=".qxw" style="display:none"
              onchange="loadFromInput(this)">
     </label>
-
     <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
             title="Reload file from disk" disabled>↺ Reload</button>
   </div>
@@ -46,11 +42,11 @@
      TAB BAR
 ══════════════════════════════════════════════════════════════════════════ -->
 <nav id="tab-bar">
-  <button class="tab-btn active" data-tab="setlist"   onclick="showTab('setlist')">🎵 Setlist</button>
+  <button class="tab-btn active" data-tab="setlist"    onclick="showTab('setlist')">🎵 Setlist</button>
   <button class="tab-btn"        data-tab="dictionary" onclick="showTab('dictionary')">📖 Dictionary</button>
   <button class="tab-btn"        data-tab="checklist"  onclick="showTab('checklist')">📋 Checklist</button>
   <button class="tab-btn"        data-tab="triggers"   onclick="showTab('triggers')">🎛 Triggers</button>
-  <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixture</button>
+  <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixtures</button>
   <button class="tab-btn"        data-tab="id-browser" onclick="showTab('id-browser')">🔍 ID Browser</button>
 </nav>
 
@@ -59,58 +55,166 @@
 ══════════════════════════════════════════════════════════════════════════ -->
 <main id="content">
 
-  <!-- ── Setlist Manager ──────────────────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 1 — SETLIST MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-setlist" class="tab-panel active">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🎵</div>
-      <h2>Setlist Manager</h2>
-      <p>Porting in progress — see <code>routes/setlist_routes.py</code> for the plan.</p>
-      <p class="hint">In the meantime the tkinter version (v0.7.3) on <code>main</code> is fully functional.</p>
+
+    <div class="tab-toolbar">
+      <input id="setlist-path" type="text" class="filter-input" style="flex:1"
+             placeholder="Setlist .txt path (e.g. /Users/you/show.txt)…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadSetlistFile()">📂 Load TXT</button>
+      <button class="btn btn-surface" onclick="saveSetlistFile()">💾 Save TXT</button>
+      <button class="btn btn-surface" onclick="refreshSlots()">↺ Refresh</button>
+    </div>
+
+    <div class="tab-split">
+
+      <!-- Slot list (left pane) -->
+      <div class="slot-pane">
+        <div class="pane-header">CueList Slots</div>
+        <div id="slot-list">
+          <div class="slot-empty">Load a workspace to see slots</div>
+        </div>
+      </div>
+
+      <!-- Song editor (right pane) -->
+      <div class="song-pane">
+        <div class="pane-header" id="song-pane-title">Select a slot →</div>
+        <textarea id="song-editor"
+                  placeholder="Select a slot on the left, then type one song per line…"
+                  disabled></textarea>
+        <div class="pane-footer">
+          <span id="song-count" class="hint-text"></span>
+          <span style="flex:1"></span>
+          <button class="btn btn-green" id="btn-save-songs"
+                  onclick="saveSongs()" disabled>💾 Save Songs</button>
+        </div>
+      </div>
+
     </div>
   </section>
 
-  <!-- ── Dictionary Manager ───────────────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 2 — DICTIONARY MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-dictionary" class="tab-panel">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">📖</div>
-      <h2>Dictionary Manager</h2>
-      <p>Porting in progress — see <code>routes/dictionary_routes.py</code> for the plan.</p>
+
+    <div class="tab-toolbar">
+      <input id="dict-filter" class="filter-input" type="text"
+             placeholder="Filter functions…" oninput="filterDictionary(this.value)">
+      <input id="dict-path" type="text" class="filter-input" style="flex:1"
+             placeholder="Dictionary .txt path…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadDictFile()">📂 Load Dict</button>
+      <button class="btn btn-surface" onclick="saveDictFile()">💾 Save Dict</button>
     </div>
+
+    <div id="dict-table-wrap" class="table-wrap"></div>
+
+    <!-- Inline edit panel (bottom) -->
+    <div id="dict-edit-panel">
+      <span id="dict-edit-label">Select a row to edit its description</span>
+      <textarea id="dict-desc-input" rows="2"
+                placeholder="Description…" disabled></textarea>
+      <button class="btn btn-green" id="btn-save-dict-entry"
+              onclick="saveDictEntry()" disabled>Save</button>
+    </div>
+
   </section>
 
-  <!-- ── Setup Checklist ──────────────────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 3 — SETUP CHECKLIST
+  ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-checklist" class="tab-panel">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">📋</div>
-      <h2>Setup Checklist</h2>
-      <p>Porting in progress — see <code>routes/checklist_routes.py</code> for the plan.</p>
-      <p class="hint">Fixture data is already parsed — <code>GET /api/checklist/fixtures</code> works now.</p>
+
+    <div class="tab-toolbar">
+      <input id="chk-filter" class="filter-input" type="text"
+             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
+      <button class="btn btn-surface" onclick="exportChecklistTxt()">⬇ Export TXT</button>
     </div>
+
+    <div id="chk-table-wrap"></div>
+
   </section>
 
-  <!-- ── Trigger Manager ──────────────────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 4 — TRIGGER MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-triggers" class="tab-panel">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🎛</div>
-      <h2>Trigger Manager</h2>
-      <p>Porting in progress — see <code>routes/triggers_routes.py</code> for the plan.</p>
+
+    <div class="tab-toolbar">
+      <input id="trg-filter" class="filter-input" type="text"
+             placeholder="Filter triggers…"
+             oninput="filterTriggers(this.value)">
+      <label class="toggle-label">
+        <input type="checkbox" id="trg-assigned-only"
+               onchange="filterTriggers(document.getElementById('trg-filter').value)">
+        Assigned only
+      </label>
+      <button class="btn btn-surface" onclick="checkDuplicates()">🔍 Duplicates</button>
+      <button class="btn btn-green"   onclick="saveTriggers()">💾 Save to QXW</button>
+    </div>
+
+    <div class="tab-split">
+
+      <!-- Trigger table -->
+      <div id="trg-table-wrap" class="table-wrap"></div>
+
+      <!-- Side edit panel -->
+      <div id="trg-edit-panel">
+        <div class="pane-header">Edit Trigger</div>
+        <div id="trg-edit-info" class="hint-text field-group">Select a row to edit</div>
+        <div id="trg-edit-form" class="field-group" style="display:none">
+          <div>
+            <label class="field-label">Caption</label>
+            <div id="trg-caption-display" style="font-size:11px;color:var(--text);
+                 font-family:var(--font-mono);padding:2px 0;word-break:break-word"></div>
+          </div>
+          <div>
+            <label class="field-label">Key Sequence</label>
+            <input id="trg-key-input" class="field-input" type="text"
+                   placeholder="e.g. F1">
+          </div>
+          <div>
+            <label class="field-label">MIDI Universe</label>
+            <input id="trg-uni-input" class="field-input" type="text"
+                   placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">MIDI Channel</label>
+            <input id="trg-ch-input" class="field-input" type="text"
+                   placeholder="0">
+          </div>
+          <button class="btn btn-accent" onclick="applyTriggerEdit()">✓ Apply</button>
+          <button class="btn btn-red"    onclick="clearTriggerEdit()">✕ Clear</button>
+        </div>
+      </div>
+
     </div>
   </section>
 
-  <!-- ── Fixture Configurator ─────────────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 5 — FIXTURE CONFIGURATOR (read-only workspace view)
+  ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-fixture" class="tab-panel">
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🔧</div>
-      <h2>Fixture Configurator</h2>
-      <p>Porting in progress — see <code>routes/fixture_routes.py</code> for the plan.</p>
-      <p class="hint">The 2D canvas will be an HTML5 <code>&lt;canvas&gt;</code> with drag-and-drop positioning.</p>
+
+    <div class="tab-toolbar">
+      <input id="fix-filter" class="filter-input" type="text"
+             placeholder="Filter fixtures…" oninput="filterFixtures(this.value)">
+      <span class="hint-text" style="margin-left:auto">
+        Workspace fixtures — read only &nbsp;|&nbsp; Full configurator planned for v1.1
+      </span>
     </div>
+
+    <div id="fix-table-wrap"></div>
+
   </section>
 
-  <!-- ── ID Browser ───────────────────────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 6 — ID BROWSER
+  ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-id-browser" class="tab-panel">
 
-    <!-- Sub-tab bar -->
     <div id="id-browser-subtabs">
       <button class="subtab-btn active" data-subtab="functions"
               onclick="showSubtab('functions')">⚙ Functions</button>
@@ -118,7 +222,6 @@
               onclick="showSubtab('vc-widgets')">🖥 VC Widgets</button>
     </div>
 
-    <!-- ── Functions sub-tab ──────────────────────────────────────────────── -->
     <div id="subtab-functions" class="subtab-panel active">
       <div class="subtab-toolbar">
         <input id="fn-filter" class="filter-input" type="text"
@@ -128,7 +231,6 @@
       <div id="fn-table-wrap"></div>
     </div>
 
-    <!-- ── VC Widgets sub-tab ─────────────────────────────────────────────── -->
     <div id="subtab-vc-widgets" class="subtab-panel">
       <div class="subtab-toolbar">
         <input id="vc-filter" class="filter-input" type="text"
@@ -160,6 +262,12 @@
   </div>
 </div>
 
+<!-- ── JS modules ──────────────────────────────────────────────────────────── -->
 <script src="/static/js/app.js"></script>
+<script src="/static/js/setlist.js"></script>
+<script src="/static/js/dictionary.js"></script>
+<script src="/static/js/checklist.js"></script>
+<script src="/static/js/triggers.js"></script>
+<script src="/static/js/fixture.js"></script>
 </body>
 </html>

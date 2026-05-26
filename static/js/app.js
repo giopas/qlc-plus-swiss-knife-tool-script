@@ -39,9 +39,14 @@ function showTab(tabId) {
     p.classList.toggle('active', p.id === `tab-${tabId}`);
   });
 
-  // Lazy-load ID Browser data on first visit
-  if (tabId === 'id-browser') {
-    _ensureIdBrowserLoaded();
+  // Lazy-load tab data on first visit (each module guards with its own flag)
+  switch (tabId) {
+    case 'id-browser': _ensureIdBrowserLoaded(); break;
+    case 'setlist':    ensureSetlistLoaded();     break;
+    case 'dictionary': ensureDictionaryLoaded();  break;
+    case 'checklist':  ensureChecklistLoaded();   break;
+    case 'triggers':   ensureTriggersLoaded();    break;
+    case 'fixture':    ensureFixturesLoaded();    break;
   }
 }
 
@@ -82,9 +87,15 @@ async function _doLoad(fetchOpts) {
   try {
     const res  = await fetch('/api/load', fetchOpts);
     const data = await res.json();
-    if (!res.ok || data.error) { setStatus(data.error || 'Load failed.', 'error'); return; }
+    if (!res.ok || data.error) {
+      const msg = data.error || 'Load failed.';
+      setStatus(msg, 'error');
+      // Also log to console so the terminal/devtools shows what went wrong
+      console.error('[QLC Swiss Knife] Load error:', msg);
+      return;
+    }
     _updateHeader(data);
-    _invalidateIdBrowser();
+    _invalidateAllTabs();
     setStatus(`Loaded: ${data.path ? data.path.split(/[\\/]/).pop() : 'workspace'}`);
 
     // If ID Browser tab is already open, refresh it
@@ -99,23 +110,48 @@ async function _doLoad(fetchOpts) {
 async function _refreshAfterLoad() {
   const data = await _apiJson('/api/status');
   _updateHeader(data);
+  _invalidateAllTabs();
+}
+
+// ── Invalidate all tab caches after a workspace load ─────────────────────────
+function _invalidateAllTabs() {
   _invalidateIdBrowser();
+  if (typeof invalidateSetlist    === 'function') invalidateSetlist();
+  if (typeof invalidateDictionary === 'function') invalidateDictionary();
+  if (typeof invalidateChecklist  === 'function') invalidateChecklist();
+  if (typeof invalidateTriggers   === 'function') invalidateTriggers();
+  if (typeof invalidateFixtures   === 'function') invalidateFixtures();
+  // Re-load whichever tab is currently visible
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+  if (activeTab) showTab(activeTab);
 }
 
 function _updateHeader(state) {
-  const nameEl   = document.getElementById('ws-name');
+  const nameEl    = document.getElementById('ws-name');
   const reloadBtn = document.getElementById('btn-reload');
-  if (state.loaded && state.path) {
-    const name = state.path.split(/[\\/]/).pop();
-    nameEl.textContent = name;
-    nameEl.className = '';
-    document.getElementById('path-input').value = state.path;
-    reloadBtn.disabled = false;
+  const pathInput = document.getElementById('path-input');
+
+  if (state.loaded) {
+    // Path mode: show path in input and enable Reload
+    if (state.path) {
+      const name = state.path.split(/[\\/]/).pop();
+      nameEl.textContent  = name;
+      nameEl.className    = '';
+      pathInput.value     = state.path;
+      reloadBtn.disabled  = false;
+
+    // Upload mode: show original filename, leave path input alone, disable Reload
+    } else if (state.original_name) {
+      nameEl.textContent = state.original_name + '  (uploaded)';
+      nameEl.className   = '';
+      reloadBtn.disabled = true;
+    }
   } else {
     nameEl.textContent = 'No workspace loaded';
-    nameEl.className = 'ws-unloaded';
+    nameEl.className   = 'ws-unloaded';
     reloadBtn.disabled = true;
   }
+
   document.getElementById('status-counts').textContent =
     `Functions: ${state.func_count ?? '—'}  |  ` +
     `Fixtures: ${state.fixture_count ?? '—'}  |  ` +

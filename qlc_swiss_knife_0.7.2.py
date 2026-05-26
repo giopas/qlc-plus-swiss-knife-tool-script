@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-  QLC+ SWISS KNIFE — Unified Live Console Toolkit (v0.7.1)
+  QLC+ SWISS KNIFE — Unified Live Console Toolkit (v0.7.2)
 ================================================================================
   A single, ergonomic interface combining four essential QLC+ 5.x utilities:
 
@@ -41,7 +41,8 @@ if platform.system() == "Darwin":
     os.environ['SYSTEM_VERSION_COMPAT'] = '0'
     os.environ['TK_SILENCE_DEPRECATION'] = '1'
 
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405 — mitigated via _safe_parse_xml size guard
+from xml.sax.saxutils import escape as _xml_escape  # nosec B406 — output escaper, not a parser
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
@@ -51,6 +52,74 @@ from tkinter import ttk, messagebox, filedialog
 QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
+
+# ==============================================================================
+# SAFE FILE / XML HELPERS
+# ==============================================================================
+_MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB — well above any real QXW/QXF file
+_MAX_TXT_BYTES =  5 * 1024 * 1024   # 5 MB  — generous for setlist / dictionary TXT
+
+
+def _safe_parse_xml(path):
+    """
+    Parse an XML file with a size guard that mitigates "billion laughs"
+    (exponential entity expansion) denial-of-service attacks.
+
+    Python's xml.etree.ElementTree does NOT expand external entities (so XXE
+    is not a risk) but it DOES process internal entity references, which means
+    a crafted file with nested entities can exhaust RAM before the parser
+    finishes.  A hard file-size cap is the zero-external-dependency mitigation.
+
+    Raises ValueError  if the file exceeds _MAX_XML_BYTES.
+    Raises ET.ParseError if the file is not valid XML.
+    """
+    size = os.path.getsize(path)
+    if size > _MAX_XML_BYTES:
+        raise ValueError(
+            f"File is too large to parse safely ({size // (1024*1024)} MB). "
+            f"Maximum allowed size is {_MAX_XML_BYTES // (1024*1024)} MB."
+        )
+    return ET.parse(path)  # nosec B314 — this IS the guarded wrapper; size check above mitigates DoS
+
+
+def _safe_read_txt(path):
+    """
+    Read a text file into a list of lines with a size guard that prevents
+    memory exhaustion when an unexpectedly large file is accidentally opened.
+
+    Raises ValueError if the file exceeds _MAX_TXT_BYTES.
+    """
+    size = os.path.getsize(path)
+    if size > _MAX_TXT_BYTES:
+        raise ValueError(
+            f"File is too large to load ({size // 1024} KB). "
+            f"Maximum allowed size is {_MAX_TXT_BYTES // 1024} KB."
+        )
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.readlines()
+
+
+def _find_by_id(parent, tag_local, fid, ns_uri=QLC_NS_URI):
+    """
+    Return the first child element whose local tag matches *tag_local* and
+    whose 'ID' attribute equals *fid* (compared as strings).
+
+    This replaces f-string XPath expressions like
+        parent.find(f"q:Tag[@ID='{fid}']", NS)
+    which are vulnerable to XPath injection if *fid* ever contains
+    metacharacters such as single-quotes or bracket sequences.
+    """
+    tag_full = f"{{{ns_uri}}}{tag_local}"
+    for child in parent:
+        if child.tag == tag_full and child.get("ID") == str(fid):
+            return child
+    return None
+
+
+def _findall_by_id(parent, tag_local, fid, ns_uri=QLC_NS_URI):
+    """Like _find_by_id but returns all matching children as a list."""
+    tag_full = f"{{{ns_uri}}}{tag_local}"
+    return [c for c in parent if c.tag == tag_full and c.get("ID") == str(fid)]
 
 # ==============================================================================
 # SHARED CONSTANTS & HELPERS
@@ -476,7 +545,7 @@ class QLCSwissKnife:
     def load_qxw(self, filename):
         """Loads a QXW, parses shared maps, then notifies all tabs."""
         try:
-            self.xml_tree = ET.parse(filename)
+            self.xml_tree = _safe_parse_xml(filename)
             self.qxw_root = self.xml_tree.getroot()
             self.current_qxw_file = filename
 
@@ -561,8 +630,9 @@ class QLCSwissKnife:
 
             uni_node = fix.find('q:Universe', NS)
             addr_node = fix.find('q:Address', NS)
-            universe = int(uni_node.text) if uni_node is not None else 0
-            address = int(addr_node.text) if addr_node is not None else 0
+            # Clamp to valid DMX ranges (0–255 universes, 0–511 channels, 0-indexed)
+            universe = max(0, min(255, int(uni_node.text))) if uni_node is not None else 0
+            address  = max(0, min(511, int(addr_node.text))) if addr_node is not None else 0
 
             groups = self.fixture_groups_map.get(f_id, [])
             group_str = ", ".join(groups) if groups else "None"
@@ -849,8 +919,8 @@ class SetlistSlot:
 
     def load_txt(self, filename):
         try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                lines = [l.strip() for l in f.readlines() if l.strip()]
+            raw_lines = _safe_read_txt(filename)
+            lines = [l.strip() for l in raw_lines if l.strip()]
             self.current_txt_file = filename
             self.lbl_txt.config(text=os.path.basename(filename))
             self.setlist_data.clear()
@@ -984,7 +1054,7 @@ class SetlistSlot:
             return
         # Rename in XML
         engine = self.mgr.app.qxw_root.find('q:Engine', NS)
-        func = engine.find(f"q:Function[@ID='{cid}']", NS)
+        func = _find_by_id(engine, 'Function', cid)
         if func is None:
             return messagebox.showerror("Error", f"Function ID {cid} not found in XML.")
         old_name = func.get('Name', '')
@@ -1064,7 +1134,7 @@ class SetlistSlot:
         if not fp:
             return
         try:
-            xl = ['', f'<Function ID="NEW_ID" Type="Chaser" Name="{self.chaser_var.get()}">',
+            xl = ['', f'<Function ID="NEW_ID" Type="Chaser" Name="{_xml_escape(self.chaser_var.get())}">',
                   ' <Speed FadeIn="0" FadeOut="0" Duration="4294967294"/>',
                   ' <Direction>Forward</Direction>', ' <RunOrder>Loop</RunOrder>',
                   ' <SpeedModes FadeIn="PerStep" FadeOut="PerStep" Duration="Common"/>']
@@ -1337,7 +1407,7 @@ class SetlistSlot:
                     cn.text = mc_id; linked = True
         else:
             mc_id = app.chasers.get(target_name)
-            master_chaser = engine.find(f"q:Function[@ID='{mc_id}']", NS)
+            master_chaser = _find_by_id(engine, 'Function', mc_id)
             if master_chaser is not None:
                 for step in master_chaser.findall('q:Step', NS):
                     master_chaser.remove(step)
@@ -1374,7 +1444,7 @@ class SetlistSlot:
             bid = d["qxw_id"]
             if not bid:
                 continue
-            base = engine.find(f"q:Function[@ID='{bid}']", NS)
+            base = _find_by_id(engine, 'Function', bid)
             if base is None:
                 continue
             txt_n = d["txt_name"] or f"Step {step_count}"
@@ -1436,9 +1506,27 @@ class SetlistSlot:
 
         try:
             xb = ET.tostring(app.qxw_root, encoding="utf-8").decode("utf-8")
-            with open(nf, "w", encoding="utf-8") as f:
-                f.write('<?xml version="1.0" encoding="UTF-8"?>\n'
-                        '<!DOCTYPE Workspace>\n' + xb)
+            xml_content = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                           '<!DOCTYPE Workspace>\n' + xb)
+            # Use 'x' mode (exclusive create) when writing a new file to avoid
+            # a TOCTOU race between the existence check above and the actual
+            # write.  Fall back to 'w' (overwrite) when the user explicitly
+            # chose to overwrite an existing file (ans is True).
+            write_mode = "w" if (os.path.exists(nf)) else "x"
+            try:
+                with open(nf, write_mode, encoding="utf-8") as f:
+                    f.write(xml_content)
+            except FileExistsError:
+                # Race: another process created the file between our check and
+                # the open — treat it the same as the user choosing "No".
+                while os.path.exists(nf):
+                    m2 = re.search(r'(\d+)$', bn)
+                    bn = (bn[:m2.start()]
+                          + str(int(m2.group(1)) + 1).zfill(len(m2.group(1)))
+                          ) if m2 else bn + "_1"
+                    nf = os.path.join(odir, bn + ".qxw")
+                with open(nf, "x", encoding="utf-8") as f:
+                    f.write(xml_content)
             app.current_qxw_file = nf
             t2 = THEMES[app.current_theme]
             app.lbl_qxw.config(text=os.path.basename(nf), fg=t2["lbl_green"])
@@ -1856,7 +1944,7 @@ class SetlistManagerTab:
                         cn.text = mc_id; linked = True
             else:
                 mc_id = app.chasers.get(target_name)
-                master_chaser = engine.find(f"q:Function[@ID='{mc_id}']", NS)
+                master_chaser = _find_by_id(engine, 'Function', mc_id)
                 if master_chaser is not None:
                     for step in master_chaser.findall('q:Step', NS):
                         master_chaser.remove(step)
@@ -1894,7 +1982,7 @@ class SetlistManagerTab:
                 bid = d["qxw_id"]
                 if not bid:
                     continue
-                base = engine.find(f"q:Function[@ID='{bid}']", NS)
+                base = _find_by_id(engine, 'Function', bid)
                 if base is None:
                     continue
                 txt_n = d["txt_name"] or f"Step {step_count}"
@@ -1954,9 +2042,21 @@ class SetlistManagerTab:
 
         try:
             xb = ET.tostring(app.qxw_root, encoding="utf-8").decode("utf-8")
-            with open(nf, "w", encoding="utf-8") as f:
-                f.write('<?xml version="1.0" encoding="UTF-8"?>\n'
-                        '<!DOCTYPE Workspace>\n' + xb)
+            xml_content = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                           '<!DOCTYPE Workspace>\n' + xb)
+            write_mode = "w" if (os.path.exists(nf)) else "x"
+            try:
+                with open(nf, write_mode, encoding="utf-8") as f:
+                    f.write(xml_content)
+            except FileExistsError:
+                while os.path.exists(nf):
+                    m2 = re.search(r'(\d+)$', bn)
+                    bn = (bn[:m2.start()]
+                          + str(int(m2.group(1)) + 1).zfill(len(m2.group(1)))
+                          ) if m2 else bn + "_1"
+                    nf = os.path.join(odir, bn + ".qxw")
+                with open(nf, "x", encoding="utf-8") as f:
+                    f.write(xml_content)
             app.current_qxw_file = nf
             t2 = THEMES[app.current_theme]
             app.lbl_qxw.config(text=os.path.basename(nf), fg=t2["lbl_green"])
@@ -1982,8 +2082,7 @@ class SetlistManagerTab:
 
     def load_desc(self, filename):
         try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            lines = _safe_read_txt(filename)
             self.app.shared_descriptions.clear()
             current_id = None
             for line in lines:
@@ -2193,8 +2292,7 @@ class DictionaryManagerTab:
 
     def load_txt(self, filename):
         try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            lines = _safe_read_txt(filename)
             self.current_txt_file = filename
             self.lbl_txt.config(text=os.path.basename(filename))
             for line in lines:
@@ -2273,7 +2371,8 @@ class DictionaryManagerTab:
             self.text_info.insert(tk.END, "Load a QXW file to inspect.")
             self.text_info.config(state=tk.DISABLED); return
 
-        func_node = self.app.qxw_root.find(f"q:Engine/q:Function[@ID='{f_id}']", NS)
+        engine_node = self.app.qxw_root.find('q:Engine', NS)
+        func_node = _find_by_id(engine_node, 'Function', f_id) if engine_node is not None else None
         if func_node is None:
             self.text_info.insert(tk.END, "Function not found in QXW.")
             self.text_info.config(state=tk.DISABLED); return
@@ -2484,8 +2583,9 @@ class SetupChecklistTab:
 
             un = fix.find('q:Universe', NS)
             ad = fix.find('q:Address', NS)
-            universe = int(un.text) + 1 if un is not None else 1
-            address = int(ad.text) + 1 if ad is not None else 1
+            # Clamp to valid DMX ranges (display as 1-indexed)
+            universe = max(1, min(256, int(un.text) + 1)) if un is not None else 1
+            address  = max(1, min(512, int(ad.text) + 1)) if ad is not None else 1
 
             md = monitor.get(fid, {"x": 0, "y": 0, "z": 0, "xr": "0", "yr": "0", "zr": "0", "in_3d": False})
 
@@ -3042,8 +3142,18 @@ class TriggerManagerTab:
         nf = os.path.join(odir, f"{bn}.qxw")
         try:
             xb = ET.tostring(self.app.qxw_root, encoding="utf-8").decode("utf-8")
-            with open(nf, "w", encoding="utf-8") as f:
-                f.write('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb)
+            xml_content = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                           '<!DOCTYPE Workspace>\n' + xb)
+            write_mode = "w" if os.path.exists(nf) else "x"
+            try:
+                with open(nf, write_mode, encoding="utf-8") as f:
+                    f.write(xml_content)
+            except FileExistsError:
+                # Race condition fallback — append suffix and retry atomically
+                bn = bn + "_1"
+                nf = os.path.join(odir, f"{bn}.qxw")
+                with open(nf, "x", encoding="utf-8") as f:
+                    f.write(xml_content)
             self.app.current_qxw_file = nf
             t = THEMES[self.app.current_theme]
             self.app.lbl_qxw.config(text=os.path.basename(nf), fg=t["lbl_green"])
@@ -3344,8 +3454,9 @@ class FixtureConfiguratorTab:
                 m2 = re.match(r"([\d.]+)\"?$", text)
                 if m2:
                     return int(float(m2.group(1)) * 25.4)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[warn] _display_to_mm: could not parse imperial value {text!r}: {e}",
+                      file=sys.stderr)
             return None
         else:
             try:
@@ -3612,8 +3723,16 @@ class FixtureConfiguratorTab:
         """Parse a .qxf file and store its definition."""
         QXF_NS = "http://www.qlcplus.org/FixtureDefinition"
         ns = {"f": QXF_NS}
-        tree = ET.parse(path)
+        tree = _safe_parse_xml(path)
         root = tree.getroot()
+
+        # Validate namespace so a stray non-QXF XML file fails loudly
+        if QXF_NS not in (root.tag or ""):
+            raise ValueError(
+                f"Not a valid QXF fixture definition file.\n"
+                f"Expected namespace '{QXF_NS}' in root element, "
+                f"got: '{root.tag}'"
+            )
 
         mfg   = root.findtext("f:Manufacturer", default="Unknown", namespaces=ns)
         model = root.findtext("f:Model",        default="Unknown", namespaces=ns)
@@ -3678,11 +3797,11 @@ class FixtureConfiguratorTab:
             mode_n  = fix.find("q:Mode", NS)
             mode    = mode_n.text if mode_n is not None else "Default"
             uni_n   = fix.find("q:Universe", NS)
-            universe = int(uni_n.text) if uni_n is not None else 0
+            universe = max(0, min(255, int(uni_n.text))) if uni_n is not None else 0
             addr_n  = fix.find("q:Address", NS)
-            address = int(addr_n.text) if addr_n is not None else 0
+            address  = max(0, min(511, int(addr_n.text))) if addr_n is not None else 0
             ch_n    = fix.find("q:Channels", NS)
-            ch_count = int(ch_n.text) if ch_n is not None else 7
+            ch_count = max(1, min(512, int(ch_n.text))) if ch_n is not None else 7
 
             # Skip duplicates
             if (name, address, universe) in existing_keys:
@@ -3785,8 +3904,9 @@ class FixtureConfiguratorTab:
                 dict_map = {e['name']: e.get('description', '')
                             for e in self.app.dict_mgr.dict_data.values()
                             if isinstance(e, dict) and 'name' in e}
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[warn] _parse_template_funcs: could not build dict_map: {e}",
+                      file=sys.stderr)
 
         for func in qxw_root.findall('q:Engine/q:Function', NS):
             fid   = func.get('ID')
@@ -4873,7 +4993,7 @@ class FixtureConfiguratorTab:
             self._set_info(f"Template set to: {os.path.basename(path)}")
             # Pre-populate rig from this template
             try:
-                tree = ET.parse(path)
+                tree = _safe_parse_xml(path)
                 self._import_fixtures_from_qxw(tree.getroot())
             except Exception as e:
                 self._set_info(f"Template loaded (could not read fixtures: {e})")
@@ -4881,7 +5001,7 @@ class FixtureConfiguratorTab:
     def _get_template_root(self):
         """Returns a deep-copy of the template XML root (from file or main workspace)."""
         if self._template_file and os.path.exists(self._template_file):
-            tree = ET.parse(self._template_file)
+            tree = _safe_parse_xml(self._template_file)
             return copy.deepcopy(tree.getroot())
         elif self.app.qxw_root is not None:
             return copy.deepcopy(self.app.qxw_root)
@@ -5025,7 +5145,8 @@ class FixtureConfiguratorTab:
             assignment = self._func_assignments.get(func_id, list(range(new_count)))
 
             for rig_pos, rig_fixture_idx in enumerate(assignment):
-                if rig_fixture_idx >= new_count:
+                # Reject both out-of-range-high AND negative (-1 = "unassigned") values
+                if not (0 <= rig_fixture_idx < new_count):
                     continue
                 tmpl_slot = rig_pos % n_slots if n_slots > 0 else 0
                 if tmpl_slot < len(old_slot_vals):
@@ -5085,9 +5206,9 @@ class FixtureConfiguratorTab:
             if not old_channels:
                 continue
 
-            # Collect unique channel numbers from old entries
+            # Collect unique channel numbers from old entries (clamped to valid range)
             ch_nums = list(dict.fromkeys(
-                int(ch.get("Channel", ch.text or "0"))
+                max(0, min(511, int(ch.get("Channel", ch.text or "0"))))
                 for ch in old_channels
             ))
             # Remove old channel entries

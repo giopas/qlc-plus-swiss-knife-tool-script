@@ -15,6 +15,7 @@ monolithic qlc_swiss_knife_0.7.3.py.  The tkinter-specific parts
 is identical.
 """
 
+import copy
 import os
 import re
 import xml.etree.ElementTree as ET  # nosec B405
@@ -247,8 +248,11 @@ def get_cuelist_slots() -> list:
     return list(_state['cuelist_slots'])
 
 
-# In-memory song lists per slot (not persisted to QXW — user loads/saves TXT)
-_slot_songs: dict = {}   # slot_id -> [song strings]
+# In-memory song lists per slot (simple string list, for TXT load/save)
+_slot_songs: dict = {}    # slot_id -> [song strings]
+
+# Detailed slot data: full song rows with func assignment and timing
+_slot_details: dict = {}  # slot_id -> [{txt_name, qxw_id, qxw_name, in, hold, out}]
 
 
 def get_slot_songs(slot_id: str) -> list:
@@ -257,6 +261,186 @@ def get_slot_songs(slot_id: str) -> list:
 
 def set_slot_songs(slot_id: str, songs: list):
     _slot_songs[slot_id] = [s for s in songs if s.strip()]
+
+
+def get_slot_details(slot_id: str) -> list:
+    """Return the detailed song list for a slot."""
+    return list(_slot_details.get(slot_id, []))
+
+
+def set_slot_details(slot_id: str, rows: list):
+    """
+    Replace the detailed song list for a slot.
+    Each row must be a dict with keys:
+      txt_name, qxw_id, qxw_name, in, hold, out
+    """
+    _slot_details[slot_id] = list(rows)
+    # Keep the simple string list in sync
+    _slot_songs[slot_id] = [r.get('txt_name', '') for r in rows]
+
+
+def update_song_detail(slot_id: str, row_idx: int, patch: dict):
+    """Merge patch into a single song row."""
+    rows = _slot_details.setdefault(slot_id, [])
+    while len(rows) <= row_idx:
+        rows.append({'txt_name': '', 'qxw_id': '', 'qxw_name': '', 'in': '0', 'hold': '4294967294', 'out': '0'})
+    rows[row_idx].update(patch)
+
+
+def get_available_chasers() -> list:
+    """Return [{'id': fid, 'name': name}] for all Chaser functions."""
+    rows = []
+    for name, fid in _state['chasers'].items():
+        rows.append({'id': fid, 'name': name})
+    rows.sort(key=lambda r: _int(r['id']))
+    return rows
+
+
+def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
+    """
+    Clone each song's base function, build/update a Chaser with the cloned steps,
+    then write a new QXW file (incrementing the filename).
+
+    Parameters
+    ----------
+    slot_id           : str   — CueList widget ID
+    target_chaser_id  : str | None
+        Existing chaser function ID to target. If None or empty, creates a new one.
+
+    Returns
+    -------
+    str  — path of the newly written .qxw file
+    """
+    if not _state['loaded'] or not _state['qxw_root']:
+        raise RuntimeError('No workspace loaded.')
+
+    songs = _slot_details.get(slot_id, [])
+    if not songs:
+        raise ValueError('No song details loaded for this slot.')
+
+    root   = _state['qxw_root']
+    engine = root.find('q:Engine', NS)
+    if engine is None:
+        raise ValueError('Template has no <Engine> element.')
+
+    linked = False
+    create_new = not target_chaser_id or target_chaser_id == '__new__'
+
+    if create_new:
+        _state['highest_func_id'] += 1
+        mc_id = str(_state['highest_func_id'])
+        master = ET.SubElement(
+            engine, f'{{{QLC_NS_URI}}}Function',
+            {'ID': mc_id, 'Type': 'Chaser',
+             'Name': f'Setlist Chaser Slot{slot_id} (Auto)'}
+        )
+        ET.SubElement(master, f'{{{QLC_NS_URI}}}Speed',
+                      {'FadeIn': '0', 'FadeOut': '0', 'Duration': '4294967294'})
+        ET.SubElement(master, f'{{{QLC_NS_URI}}}Direction').text = 'Forward'
+        ET.SubElement(master, f'{{{QLC_NS_URI}}}RunOrder').text  = 'Loop'
+        ET.SubElement(master, f'{{{QLC_NS_URI}}}SpeedModes',
+                      {'FadeIn': 'PerStep', 'FadeOut': 'PerStep', 'Duration': 'Common'})
+        # Auto-link to the corresponding CueList widget
+        slot_info = next((s for s in _state['cuelist_slots'] if s['id'] == slot_id), None)
+        cap = slot_info['caption'] if slot_info else None
+        linked_cl = None
+        if cap:
+            for cl in root.findall('.//q:CueList', NS):
+                if cl.get('Caption', '') == cap:
+                    linked_cl = cl; break
+        if linked_cl is None:
+            for cl in root.findall('.//q:CueList', NS):
+                cn = cl.find('q:Chaser', NS)
+                if cn is not None and cn.text in ('4294967295', '-1'):
+                    linked_cl = cl; break
+        if linked_cl is not None:
+            cn = linked_cl.find('q:Chaser', NS)
+            if cn is not None:
+                cn.text = mc_id; linked = True
+    else:
+        mc_id  = target_chaser_id
+        master = _find_by_id(engine, 'Function', mc_id)
+        if master is None:
+            raise ValueError(f'Chaser ID {mc_id} not found in workspace.')
+        for step in master.findall('q:Step', NS):
+            master.remove(step)
+        spd = master.find('q:Speed', NS)
+        if spd is not None:
+            spd.set('Duration', '4294967294')
+        spm = master.find('q:SpeedModes', NS)
+        if spm is not None:
+            spm.set('FadeIn', 'PerStep'); spm.set('FadeOut', 'PerStep'); spm.set('Duration', 'Common')
+
+    # Clone base functions and add steps
+    step_count = 0
+    active_ids: set = set()
+    for d in songs:
+        bid = d.get('qxw_id', '')
+        if not bid:
+            continue
+        base = _find_by_id(engine, 'Function', bid)
+        if base is None:
+            continue
+        txt_n = d.get('txt_name') or f'Step {step_count}'
+        _state['highest_func_id'] += 1
+        cid = str(_state['highest_func_id'])
+        active_ids.add(cid)
+        clone = copy.deepcopy(base)
+        clone.set('ID', cid)
+        clone.set('Name', f'{txt_n} (Setlist)')
+        engine.append(clone)
+        sa = {
+            'Number':  str(step_count),
+            'FadeIn':  str(d.get('in', '0')),
+            'Hold':    str(d.get('hold', '4294967294')),
+            'FadeOut': str(d.get('out', '0')),
+        }
+        step_el = ET.SubElement(master, f'{{{QLC_NS_URI}}}Step', sa)
+        step_el.text = cid
+        step_count += 1
+
+    # Remove stale Setlist clones no longer referenced
+    used_by_others: set = set()
+    for f in engine.findall('q:Function', NS):
+        if f.get('ID') == mc_id:
+            continue
+        for step in f.findall('q:Step', NS):
+            if step.text:
+                used_by_others.add(step.text)
+    for func in engine.findall('q:Function', NS):
+        fn  = func.get('Name', '')
+        fid = func.get('ID')
+        if ('(Setlist)' in fn) and (fid not in active_ids) and (fid not in used_by_others):
+            engine.remove(func)
+
+    # Determine output filename
+    src = _state['path'] or 'workspace.qxw'
+    odir = os.path.dirname(src)
+    obn  = os.path.splitext(os.path.basename(src))[0]
+    m    = re.search(r'(\d+)$', obn)
+    if m:
+        bn = obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
+    else:
+        bn = f'{obn}_GIG_READY'
+
+    nf = os.path.join(odir, bn + '.qxw')
+    counter = 0
+    while os.path.exists(nf):
+        counter += 1
+        m2 = re.search(r'(\d+)$', bn)
+        if m2:
+            bn = bn[:m2.start()] + str(int(m2.group(1)) + 1).zfill(len(m2.group(1)))
+        else:
+            bn = f'{bn}_{counter}'
+        nf = os.path.join(odir, bn + '.qxw')
+
+    xb = ET.tostring(root, encoding='utf-8').decode('utf-8')
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb
+    with open(nf, 'w', encoding='utf-8') as f:
+        f.write(xml_content)
+
+    _state['path'] = nf
+    return nf
 
 
 # =============================================================================
@@ -283,6 +467,7 @@ def _reset():
     _state['highest_func_id']    = 0
     _state['error']              = None
     _slot_songs.clear()
+    _slot_details.clear()
 
 
 def _int(s, default=0) -> int:
@@ -363,6 +548,10 @@ def _parse_shared_data(qxw_root: ET.Element):
         )
 
     # ── Fixtures ──────────────────────────────────────────────────────────────
+    _COLOR_PALETTE = ["#00e5ff", "#ff007f", "#39ff14", "#ffff00",
+                      "#ff8c00", "#b026ff", "#ff3333"]
+    _model_color_map: dict = {}
+
     for fix in qxw_root.findall('q:Engine/q:Fixture', NS):
         f_id_node = fix.find('q:ID', NS)
         f_id = fix.get('ID')
@@ -373,6 +562,17 @@ def _parse_shared_data(qxw_root: ET.Element):
         f_name = (f_name_node.text or "").strip() if f_name_node is not None else ""
         if not f_name:
             f_name = f"Fixture {f_id}"
+
+        mfg_node   = fix.find('q:Manufacturer', NS)
+        model_node = fix.find('q:Model',        NS)
+        mode_node  = fix.find('q:Mode',         NS)
+        mfg   = mfg_node.text   if mfg_node   is not None else "Unknown"
+        model = model_node.text if model_node  is not None else "Unknown"
+        mode  = mode_node.text  if mode_node   is not None else "Default"
+
+        if model not in _model_color_map:
+            _model_color_map[model] = _COLOR_PALETTE[len(_model_color_map) % len(_COLOR_PALETTE)]
+        color = _model_color_map[model]
 
         uni_node  = fix.find('q:Universe', NS)
         addr_node = fix.find('q:Address', NS)
@@ -391,6 +591,17 @@ def _parse_shared_data(qxw_root: ET.Element):
                 'address':  address  + 1,
                 'groups':   group_str,
                 'pos':      pos_str,
+                # Fixture type info
+                'manufacturer': mfg,
+                'model':    f"{mfg} {model}",
+                'mode':     mode,
+                'patch':    f"U{universe+1}.{address+1:03d}",
+                'color':    color,
+                # Raw 3D coords for blueprint PDF
+                'x_mm':     pos[0],
+                'y_mm':     pos[1],
+                'z_mm':     pos[2],
+                'in_3d':    pos[0] != 0 or pos[1] != 0 or pos[2] != 0,
             }
 
     # ── Functions ─────────────────────────────────────────────────────────────

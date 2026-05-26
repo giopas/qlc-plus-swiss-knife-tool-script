@@ -60,6 +60,7 @@
   ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-setlist" class="tab-panel active">
 
+    <!-- Row 1: file I/O -->
     <div class="tab-toolbar">
       <input id="setlist-path" type="text" class="filter-input" style="flex:1"
              placeholder="Setlist .txt path (e.g. /Users/you/show.txt)…" spellcheck="false">
@@ -68,9 +69,9 @@
       <button class="btn btn-surface" onclick="refreshSlots()">↺ Refresh</button>
     </div>
 
-    <div class="tab-split">
+    <div class="tab-split" style="height:calc(100vh - 200px)">
 
-      <!-- Slot list (left pane) -->
+      <!-- Left: slot list -->
       <div class="slot-pane">
         <div class="pane-header">CueList Slots</div>
         <div id="slot-list">
@@ -78,20 +79,61 @@
         </div>
       </div>
 
-      <!-- Song editor (right pane) -->
-      <div class="song-pane">
+      <!-- Right: song detail editor -->
+      <div class="song-pane" style="display:flex;flex-direction:column;overflow:hidden">
+
+        <!-- Pane header with slot title -->
         <div class="pane-header" id="song-pane-title">Select a slot →</div>
-        <textarea id="song-editor"
-                  placeholder="Select a slot on the left, then type one song per line…"
-                  disabled></textarea>
+
+        <!-- Song toolbar: add/remove row + generate/export -->
+        <div class="tab-toolbar" id="song-toolbar" style="flex-wrap:wrap;gap:4px;padding:4px 8px;border-top:none">
+          <button class="btn btn-surface" id="btn-add-song"    onclick="slAddRow()"    disabled>➕ Add Song</button>
+          <button class="btn btn-surface" id="btn-remove-song" onclick="slRemoveRow()" disabled>🗑 Remove</button>
+          <button class="btn btn-surface" id="btn-move-song-up"   onclick="slMoveRow(-1)" disabled>⬆</button>
+          <button class="btn btn-surface" id="btn-move-song-dn"   onclick="slMoveRow(1)"  disabled>⬇</button>
+          <span style="flex:1"></span>
+          <!-- Target chaser selector -->
+          <label class="field-label" style="margin:0 4px 0 0">Chaser:</label>
+          <select id="sl-chaser-select" class="filter-input" style="width:180px" disabled>
+            <option value="__new__">— Create new chaser —</option>
+          </select>
+          <button class="btn btn-accent"  id="btn-generate-qxw" onclick="slGenerateQxw()" disabled>🚀 Generate QXW</button>
+          <button class="btn btn-surface" id="btn-export-sl-pdf" onclick="slExportPdf()"   disabled>📄 Export PDF</button>
+        </div>
+
+        <!-- Song detail table -->
+        <div id="song-detail-wrap" style="flex:1;overflow-y:auto;overflow-x:hidden">
+          <table id="song-detail-table" class="song-detail-table">
+            <thead>
+              <tr>
+                <th style="width:32px">#</th>
+                <th style="min-width:160px">Song Name</th>
+                <th style="min-width:200px">QLC+ Function</th>
+                <th style="width:80px">Fade In</th>
+                <th style="width:80px">Hold</th>
+                <th style="width:80px">Fade Out</th>
+                <th style="width:28px"></th>
+              </tr>
+            </thead>
+            <tbody id="song-detail-body">
+              <tr id="song-placeholder-row">
+                <td colspan="7" style="text-align:center;color:var(--overlay0);padding:20px">
+                  Select a slot on the left to edit its songs.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer: count + save -->
         <div class="pane-footer">
           <span id="song-count" class="hint-text"></span>
           <span style="flex:1"></span>
           <button class="btn btn-green" id="btn-save-songs"
-                  onclick="saveSongs()" disabled>💾 Save Songs</button>
+                  onclick="slSaveDetails()" disabled>💾 Save Songs</button>
         </div>
-      </div>
 
+      </div>
     </div>
   </section>
 
@@ -194,19 +236,142 @@
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 5 — FIXTURE CONFIGURATOR (read-only workspace view)
+       TAB 5 — FIXTURE CONFIGURATOR
   ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-fixture" class="tab-panel">
 
-    <div class="tab-toolbar">
-      <input id="fix-filter" class="filter-input" type="text"
-             placeholder="Filter fixtures…" oninput="filterFixtures(this.value)">
-      <span class="hint-text" style="margin-left:auto">
-        Workspace fixtures — read only &nbsp;|&nbsp; Full configurator planned for v1.1
+    <!-- Toolbar row 1: fixture operations -->
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <button class="btn-primary" onclick="fixAddDialog()">➕ Add Fixture</button>
+      <button class="btn-danger"  onclick="fixRemoveSelected()">🗑 Remove</button>
+      <button class="btn-normal"  onclick="fixMoveRow(-1)">⬆</button>
+      <button class="btn-normal"  onclick="fixMoveRow(1)">⬇</button>
+      <button class="btn-normal"  onclick="fixAutoDmx()">⚙ Auto-DMX</button>
+      <button class="btn-normal"  onclick="fixImportWorkspace()">📥 Import from Workspace</button>
+
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+        <label class="field-label" style="margin:0">View:</label>
+        <button id="fix-btn-view-top"   class="btn-normal btn-view-active" onclick="fixSetView('top')">⬛ Top</button>
+        <button id="fix-btn-view-front" class="btn-normal" onclick="fixSetView('front')">⬛ Front</button>
+        <button id="fix-btn-view-side"  class="btn-normal" onclick="fixSetView('side')">⬛ Side</button>
+        <button id="fix-btn-snap" class="btn-normal btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()">🔲 Snap</button>
       </span>
     </div>
 
-    <div id="fix-table-wrap"></div>
+    <!-- Toolbar row 2: stage dims + QXF + actions -->
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px;background:var(--surface);border-top:1px solid var(--overlay0)">
+      <label class="field-label">QXF:</label>
+      <input id="fix-qxf-path" class="filter-input" type="text"
+             placeholder="Path to .qxf file…" style="width:260px">
+      <button class="btn-normal" onclick="fixLoadQxf()">📂 Load QXF</button>
+
+      <span style="margin-left:12px;display:flex;gap:6px;align-items:center">
+        <label class="field-label">W(mm):</label>
+        <input id="fix-stage-w" class="filter-input" type="number" value="8000" min="1000" max="50000" style="width:64px">
+        <label class="field-label">D(mm):</label>
+        <input id="fix-stage-d" class="filter-input" type="number" value="6000" min="1000" max="50000" style="width:64px">
+        <label class="field-label">H(mm):</label>
+        <input id="fix-stage-h" class="filter-input" type="number" value="4000" min="500"  max="20000" style="width:64px">
+        <label class="field-label" style="margin-left:8px">Grid:</label>
+        <input id="fix-grid-cols" class="filter-input" type="number" value="8" min="1" max="26" style="width:36px">
+        <span class="hint-text">×</span>
+        <input id="fix-grid-rows" class="filter-input" type="number" value="6" min="1" max="20" style="width:36px">
+      </span>
+
+      <span style="margin-left:auto;display:flex;gap:4px">
+        <button class="btn-normal" onclick="fixExportPdf()">🖼 Blueprint PDF</button>
+        <button class="btn-save"   onclick="fixGenerateQxw()">🚀 Generate QXW</button>
+      </span>
+    </div>
+
+    <!-- Main split: rig table left, canvas right -->
+    <div class="tab-split" style="height:calc(100vh - 260px)">
+
+      <!-- Left: rig table -->
+      <div class="fix-rig-pane">
+        <div id="fix-rig-table-wrap">
+          <div style="padding:20px;color:var(--overlay0);font-size:12px">
+            Load a workspace or add fixtures with ➕ to build your rig.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: canvas -->
+      <div class="fix-canvas-pane">
+        <canvas id="fix-canvas"></canvas>
+      </div>
+
+    </div>
+
+    <!-- Add fixture modal -->
+    <div id="fix-add-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box">
+        <h3 style="margin:0 0 12px">Add Fixture to Rig</h3>
+
+        <div class="field-group">
+          <label class="field-label">Fixture Type</label>
+          <select id="fix-add-type" class="field-input" onchange="fixAddTypeChanged()">
+            <option value="__custom__">Custom (enter manually)</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Mode</label>
+          <div id="fix-add-mode-wrap">
+            <select id="fix-add-mode" class="field-input input-sm" onchange="fixAddModeChanged()">
+              <option value="">— Select mode —</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Name</label>
+          <input id="fix-add-name" class="field-input" type="text" placeholder="My Fixture 1">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Manufacturer</label>
+            <input id="fix-add-mfg" class="field-input" type="text" placeholder="Generic">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Model</label>
+            <input id="fix-add-model" class="field-input" type="text" placeholder="Par LED">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Universe (1-indexed)</label>
+            <input id="fix-add-universe" class="field-input" type="number" value="1" min="1" max="256">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Address (1-indexed)</label>
+            <input id="fix-add-address" class="field-input" type="number" value="1" min="1" max="512">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Channels</label>
+            <input id="fix-add-channels" class="field-input" type="number" value="7" min="1" max="512">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Count</label>
+            <input id="fix-add-count" class="field-input" type="number" value="1" min="1" max="64">
+          </div>
+          <div class="field-group" style="flex:2">
+            <label class="field-label">Stage Role</label>
+            <select id="fix-add-role" class="field-input">
+              <option>Custom</option>
+              <option>Front Left</option><option>Front Center</option><option>Front Right</option>
+              <option>Back Left</option><option>Back Center</option><option>Back Right</option>
+              <option>Side Left</option><option>Side Right</option><option>Center</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+          <button class="btn-normal" onclick="fixAddModalClose()">Cancel</button>
+          <button class="btn-save"   onclick="fixAddConfirm()">Add to Rig</button>
+        </div>
+      </div>
+    </div>
 
   </section>
 

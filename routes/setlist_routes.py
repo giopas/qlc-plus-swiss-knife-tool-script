@@ -1,10 +1,13 @@
-"""routes/setlist_routes.py — Setlist Manager API (fully implemented)."""
+"""routes/setlist_routes.py — Setlist Manager API."""
 
-from flask import Blueprint, jsonify, request
+import os
+from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
+from core import pdf as pdf_mod
 
 bp = Blueprint('setlist', __name__, url_prefix='/api/setlist')
 
+# ── Slots ──────────────────────────────────────────────────────────────────────
 
 @bp.route('/slots')
 def slots():
@@ -12,6 +15,16 @@ def slots():
         return jsonify({'error': 'No workspace loaded.'}), 400
     return jsonify(ws.get_cuelist_slots())
 
+
+@bp.route('/chasers')
+def chasers():
+    """Return available Chaser functions for the target selector."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    return jsonify(ws.get_available_chasers())
+
+
+# ── Song lists (simple strings — for TXT load/save) ───────────────────────────
 
 @bp.route('/<slot_id>/songs')
 def get_songs(slot_id):
@@ -24,13 +37,47 @@ def get_songs(slot_id):
 def set_songs(slot_id):
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
-    data = request.get_json(force=True) or {}
+    data  = request.get_json(force=True) or {}
     songs = data.get('songs', [])
     if not isinstance(songs, list):
         return jsonify({'error': 'songs must be a list.'}), 400
     ws.set_slot_songs(slot_id, songs)
     return jsonify({'ok': True, 'count': len(songs)})
 
+
+# ── Detailed song rows (with func assignment + timing) ────────────────────────
+
+@bp.route('/<slot_id>/details')
+def get_details(slot_id):
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    return jsonify(ws.get_slot_details(slot_id))
+
+
+@bp.route('/<slot_id>/details', methods=['POST'])
+def set_details(slot_id):
+    """Replace the full detailed song list for a slot."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    rows = data.get('rows', [])
+    if not isinstance(rows, list):
+        return jsonify({'error': 'rows must be a list.'}), 400
+    ws.set_slot_details(slot_id, rows)
+    return jsonify({'ok': True, 'count': len(rows)})
+
+
+@bp.route('/<slot_id>/details/<int:row_idx>', methods=['PATCH'])
+def patch_detail(slot_id, row_idx):
+    """Patch a single song row."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    ws.update_song_detail(slot_id, row_idx, data)
+    return jsonify({'ok': True})
+
+
+# ── TXT load/save ─────────────────────────────────────────────────────────────
 
 @bp.route('/load', methods=['POST'])
 def load_setlist():
@@ -69,8 +116,8 @@ def save_setlist():
     if not path:
         return jsonify({'error': 'No path provided.'}), 400
     try:
-        slots = ws.get_cuelist_slots()
-        lines = [
+        slots  = ws.get_cuelist_slots()
+        lines  = [
             '# QLC+ Swiss Knife — Setlist\n',
             '# Format: slot_id|song1|song2|...\n',
         ]
@@ -84,3 +131,82 @@ def save_setlist():
         return jsonify({'ok': True, 'path': path})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ── Chaser / QXW generation ───────────────────────────────────────────────────
+
+@bp.route('/<slot_id>/generate-qxw', methods=['POST'])
+def generate_qxw(slot_id):
+    """
+    Clone base functions → build/update a Chaser → write a new .qxw file.
+    Body: {target_chaser_id: str|"__new__"}
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data              = request.get_json(force=True) or {}
+    target_chaser_id  = (data.get('target_chaser_id') or '').strip() or None
+    try:
+        new_path = ws.generate_slot_qxw(slot_id, target_chaser_id)
+        return jsonify({'ok': True, 'path': new_path,
+                        'filename': os.path.basename(new_path)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ── PDF export ────────────────────────────────────────────────────────────────
+
+@bp.route('/<slot_id>/export-pdf', methods=['POST'])
+def export_pdf(slot_id):
+    """Return a setlist PDF as application/pdf."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+
+    data      = request.get_json(force=True) or {}
+    show_name = (data.get('show_name') or 'Untitled').strip()
+    paper     = data.get('paper', 'A4 Landscape')
+    inc_notes = bool(data.get('include_notes', False))
+
+    paper_sizes = {
+        'A4 Portrait':         (595.0,  842.0),
+        'A4 Landscape':        (842.0,  595.0),
+        'US Letter Portrait':  (612.0,  792.0),
+        'US Letter Landscape': (792.0,  612.0),
+    }
+    W, H = paper_sizes.get(paper, (842.0, 595.0))
+
+    # Prefer detailed rows; fall back to simple string list
+    songs = ws.get_slot_details(slot_id)
+    if not songs:
+        plain = ws.get_slot_songs(slot_id)
+        songs = [{'txt_name': s, 'qxw_name': '', 'qxw_id': '',
+                  'in': '0', 'hold': '4294967294', 'out': '0'}
+                 for s in plain]
+
+    slot_info = next((s for s in ws.get_cuelist_slots() if s['id'] == slot_id), None)
+    slot_label = slot_info['caption'] if slot_info else f'Slot {slot_id}'
+
+    selected_cols = [
+        ('num',      '#'),
+        ('song',     'Song'),
+        ('cue',      'Cue'),
+        ('fade_in',  'Fade In'),
+        ('hold',     'Hold'),
+        ('fade_out', 'Fade Out'),
+    ]
+    for col_key in (data.get('columns') or []):
+        pass  # future: allow caller to restrict columns
+
+    pdf_bytes = pdf_mod.build_setlist_pdf(
+        songs, slot_label=slot_label, show_name=show_name,
+        selected_cols=selected_cols, include_notes=inc_notes,
+        W=W, H=H,
+    )
+    if pdf_bytes is None:
+        return jsonify({'error': 'No songs to export.'}), 400
+
+    filename = f'setlist_{slot_id}.pdf'
+    return Response(
+        pdf_bytes,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename={filename}'},
+    )

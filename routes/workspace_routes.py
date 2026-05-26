@@ -48,6 +48,8 @@ def load():
     tmp  = None
 
     try:
+        original_name = None   # only set in upload mode
+
         if request.is_json:
             data = request.get_json(force=True)
             path = (data or {}).get('path', '').strip()
@@ -60,13 +62,21 @@ def load():
             f = request.files.get('file')
             if not f:
                 return jsonify({'error': 'No file uploaded.'}), 400
-            suffix = os.path.splitext(f.filename or '')[-1] or '.qxw'
+            original_name = f.filename or 'workspace.qxw'
+            suffix = os.path.splitext(original_name)[-1] or '.qxw'
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
             f.save(tmp.name)
             tmp.close()
             path = tmp.name
 
         state = ws.load_qxw(path)
+
+        # For upload mode: don't expose the temp path to the client.
+        # The real path is gone after this request; show the original name instead.
+        if original_name:
+            state['path']          = None
+            state['original_name'] = original_name
+
         return jsonify(state)
 
     except Exception as e:

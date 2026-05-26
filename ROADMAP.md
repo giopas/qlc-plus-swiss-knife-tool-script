@@ -79,6 +79,7 @@ These are near-term improvements focused on robustness and usability of existing
 | v0.6 | Function Assignment Panel in Fixture Configurator: intelligent auto-mapping with name-role and spatial proximity strategies |
 | v0.7 | Setlist Manager multi-slot architecture (one slot per CueList); "Rename to CueList" and "Unassign All" actions; nested VC frame ancestry fix in Trigger Manager |
 | v0.7.1 | Bugfix: Chaser step `Hold="0"` now correctly parsed as infinite; generated Chasers write explicit per-step Speed/SpeedModes blocks |
+| v0.7.2 | Security hardening: 9 fixes (XML injection, DoS via oversized files, XPath injection, negative-index bypass, unbounded reads, DMX range validation, TOCTOU race, silent exceptions, missing namespace check) |
 
 ---
 

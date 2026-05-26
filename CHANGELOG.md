@@ -5,6 +5,46 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [0.7.2] — 2026-05-26
+
+### Security hardening release
+*Fixes 9 security issues identified in a full static + manual audit of v0.7.1. No functional changes; all existing behaviour is preserved.*
+
+**Fixed — MEDIUM: XML injection in "Export XML Code" (`export_txt`)**
+The chaser name was embedded raw into an f-string XML template. A workspace with a specially crafted function name could produce an injected, malformed exported XML block. `xml.sax.saxutils.escape` (stdlib, zero new dependencies) is now applied to the name before embedding.
+
+**Fixed — MEDIUM: Denial-of-service via oversized XML ("billion laughs")**
+All four `ET.parse()` call sites (`load_qxw()`, `_parse_qxf()`, `_load_template_dialog()`, `_get_template_root()`) are replaced by a new `_safe_parse_xml()` helper that enforces a 50 MB file-size cap before handing off to the parser. Community-shared QXW/QXF files are a realistic delivery vector.
+
+**Fixed — LOW: XPath injection via f-string query construction (6 sites)**
+XPath predicates in `rename_chaser_to_cuelist()`, `SetlistSlot.save_qxw()`, `save_all_slots()`, and `DictionaryManagerTab.update_inspector()` were built by interpolating XML attribute values into f-strings. A new `_find_by_id()` helper iterates child elements directly instead, eliminating any possibility of XPath metacharacter injection.
+
+**Fixed — LOW: Negative-index bypass in QXW generation (`_build_qxw`)**
+Unassigned fixture slots stored `-1` in `_func_assignments`. The guard only blocked values ≥ `new_count`, so `-1` passed through and produced `<FixtureVal ID="-1">` — an invalid reference that silently breaks functions in QLC+. Guard changed to `0 <= idx < new_count`.
+
+**Fixed — LOW: Unbounded file reads into memory (3 sites)**
+`SetlistSlot.load_txt()`, `SetlistManagerTab.load_desc()`, and `DictionaryManagerTab.load_txt()` called `readlines()` with no size guard. A new `_safe_read_txt()` helper enforces a 5 MB cap before reading.
+
+**Fixed — LOW: Unbounded integer parsing for DMX values (7 sites)**
+Universe, address, and channel numbers from XML were converted with bare `int()` and no range validation. All sites now clamp to valid DMX ranges on parse (universe 0–255, address 0–511, channels 1–512).
+
+**Fixed — LOW: TOCTOU race condition in file save (3 sites)**
+`SetlistSlot.save_qxw()`, `SetlistManagerTab.save_all_slots()`, and `TriggerManagerTab.save_qxw()` checked `os.path.exists()` then opened with `open("w")`, creating a race window. Fixed by using Python's `'x'` (exclusive-create) open mode for new files.
+
+**Fixed — INFORMATIONAL: Silent exception swallowing (2 sites)**
+Two `except Exception: pass` clauses in `FixtureConfiguratorTab` now log a `[warn]` line to stderr instead of silently discarding errors.
+
+**Fixed — INFORMATIONAL: Missing namespace validation in QXF parser**
+If a non-QXF XML file was opened accidentally, `findtext()` calls would silently return `"Unknown"` for every field. A namespace check is now performed immediately after parsing and raises a clear `ValueError` if the root element is wrong.
+
+**Added**
+- `_safe_parse_xml(path)` — central XML parsing entry point with 50 MB size guard (replaces 4 direct `ET.parse()` call sites)
+- `_safe_read_txt(path)` — central text-file reader with 5 MB size guard (replaces 3 direct `open()/readlines()` call sites)
+- `_find_by_id(parent, tag_local, fid)` — safe XPath-free element lookup by ID attribute (replaces 6 f-string XPath constructions)
+- `_findall_by_id(parent, tag_local, fid)` — as above, returns all matching children as a list
+
+---
+
 ## [0.7.1] — 2026-05-22
 
 ### Setlist Manager — Chaser Step Hold Time Fix

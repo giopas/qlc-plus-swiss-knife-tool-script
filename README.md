@@ -9,15 +9,23 @@
 
 ## Screenshots
 
-| Dark Theme | Light Theme |
+| Setlist Manager | Dictionary |
 |:---:|:---:|
-| ![Dark Theme](screenshots/qlc_swiss_knife_dark_theme.png) | ![Light Theme](screenshots/qlc_swiss_knife_light_theme.png) |
+| ![Setlist Manager](screenshots/tab1_setlist_manager.png) | ![Dictionary](screenshots/tab2_dictionary.png) |
+
+| Setup Checklist | Triggers |
+|:---:|:---:|
+| ![Setup Checklist](screenshots/tab3_setup_checklist.png) | ![Triggers](screenshots/tab4_triggers.png) |
+
+| Fixture Configurator | ID Browser |
+|:---:|:---:|
+| ![Fixture Configurator](screenshots/tab5_fixture_configurator.png) | ![ID Browser](screenshots/tab6_id_browser.png) |
 
 ---
 
 ## What is it?
 
-QLC+ Swiss Knife is a single-file Python 3 desktop application that brings five essential live-production utilities together under one roof. Instead of juggling separate scripts or manual XML editing, you get a clean tabbed interface that reads your `.qxw` workspace and lets you manage it visually.
+QLC+ Swiss Knife is a single-file Python 3 desktop application that brings six essential live-production utilities together under one roof. Instead of juggling separate scripts or manual XML editing, you get a clean tabbed interface that reads your `.qxw` workspace and lets you manage it visually.
 
 It runs on **Windows, macOS, and Linux** with nothing more than a standard Python 3 installation (tkinter included).
 
@@ -39,6 +47,9 @@ Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadshe
 
 ### 🔧 Fixture Configurator
 Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas** to set positions. Configure stage dimensions, auto-assign DMX addresses, then load a `.qxw` template and **generate a ready-to-use workspace** with all fixture blocks and 3D monitor positions populated from your canvas layout. An intelligent **Function Assignment Panel** auto-maps template functions to rig fixtures using name-role matching and spatial proximity.
+
+### 🔍 ID Browser
+Inspect every function and Virtual Console widget in your workspace at a glance. The **Functions sub-tab** lists all Engine functions with their ID, type, and step/content count. The **VC Widgets sub-tab** covers every widget type — Buttons, Frames, Sliders, Knobs, XYPads, CueLists, and more — showing each widget's ID, type, caption, linked function, frame ancestry path, and geometry. Both views support **live filtering** across all columns, **click-to-sort** column headers with ascending/descending toggle, **Export CSV** (current filter + sort applied), and **Export PDF** with a configurable paper/font-size dialog.
 
 ---
 
@@ -62,7 +73,7 @@ git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
 cd qlc-plus-swiss-knife-tool-script
 
 # Run the app
-python3 qlc_swiss_knife_0.7.2.py
+python3 qlc_swiss_knife_0.7.3.py
 ```
 
 On **Windows** you can also double-click the `.py` file if Python is associated with `.py` files in your system.

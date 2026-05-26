@@ -5,6 +5,31 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [0.7.3] — 2026-05-26
+
+### New Tab: ID Browser — Functions & VC Widgets inspector
+
+**Extended parser — `_parse_vc_node`**
+The Virtual Console walker now captures every VC widget type: `Button`, `Frame`, `SoloFrame`, `Slider`, `Knob`, `SpeedDial`, `XYPad`, `Label`, `Clock`, `VUMeter`, `AudioTrigger`, `Animation`, and `CueList`. For each widget the parser stores: widget ID, type, caption, geometry (X / Y / W / H), linked function ID + name, and the full frame ancestry path. Results accumulate in a new shared list `app.vc_widgets`. The existing `vc_buttons` dict is still populated exactly as before — nothing in the other tabs is affected.
+
+**Added — Tab 6: 🔍 ID Browser**
+
+Two inner sub-tabs:
+
+- **⚙ Functions** — all Engine functions from `func_detailed`. Columns: `ID`, icon, `Name`, `Type`, `Contains / Steps`.
+- **🖥 VC Widgets** — all Virtual Console widgets from `vc_widgets`. Columns: `Widget ID`, icon, `Type`, `Caption`, `Func ID`, `Func Name`, `Frame Path`, `X`, `Y`, `W`, `H`.
+
+Features shared by both sub-tabs:
+- **Sortable columns**: click any column header to sort ascending; click again to reverse. Active sort column shows a ▲ / ▼ arrow.
+- **Live filter**: search bar in the toolbar — filters across all visible columns simultaneously.
+- **Export CSV**: dumps the currently visible view (with active filter and sort applied) to a UTF-8 CSV file via Python's built-in `csv` module — no extra dependencies.
+- **Export PDF**: same raw-PDF renderer used by the Setlist tab, with a paper-size / font-size dialog. Landscape A4 default suits the wider VC Widgets table.
+
+**Updated — status bar**
+The status bar now shows `VC Widgets: N` alongside the existing workspace counts.
+
+---
+
 ## [0.7.2] — 2026-05-26
 
 ### Security hardening release

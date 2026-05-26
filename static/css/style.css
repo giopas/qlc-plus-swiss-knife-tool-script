@@ -1,0 +1,410 @@
+/* ============================================================================
+   QLC+ Swiss Knife — Web UI  (Catppuccin Mocha palette)
+   ============================================================================ */
+
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #1e1e2e;
+  --base:      #1e1e2e;
+  --mantle:    #181825;
+  --crust:     #11111b;
+  --surface0:  #313244;
+  --surface1:  #45475a;
+  --surface2:  #585b70;
+  --overlay0:  #6c7086;
+  --overlay1:  #7f849c;
+  --text:      #cdd6f4;
+  --subtext0:  #a6adc8;
+  --subtext1:  #bac2de;
+  --lavender:  #b4befe;
+  --blue:      #89b4fa;
+  --sapphire:  #74c7ec;
+  --sky:       #89dceb;
+  --teal:      #94e2d5;
+  --green:     #a6e3a1;
+  --yellow:    #f9e2af;
+  --peach:     #fab387;
+  --maroon:    #eba0ac;
+  --red:       #f38ba8;
+  --mauve:     #cba6f7;
+  --pink:      #f5c2e7;
+  --flamingo:  #f2cdcd;
+
+  --header-h:   52px;
+  --tabbar-h:   38px;
+  --statusbar-h:28px;
+  --border-r:   6px;
+
+  --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+/* ── Layout skeleton ───────────────────────────────────────────────────────── */
+body {
+  display: grid;
+  grid-template-rows: var(--header-h) var(--tabbar-h) 1fr var(--statusbar-h);
+  grid-template-areas:
+    "header"
+    "tabbar"
+    "content"
+    "statusbar";
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+#app-header {
+  grid-area: header;
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface0);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  user-select: none;
+}
+
+#header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#logo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue);
+  letter-spacing: .03em;
+}
+
+#version-badge {
+  font-size: 10px;
+  color: var(--overlay1);
+  font-style: italic;
+}
+
+#header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#path-input {
+  flex: 1;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: var(--border-r);
+  color: var(--text);
+  padding: 5px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+#path-input:focus { border-color: var(--blue); }
+#path-input::placeholder { color: var(--overlay0); }
+
+#header-right {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+#ws-name {
+  color: var(--green);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+#ws-name.ws-unloaded { color: var(--overlay0); font-weight: normal; }
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.btn {
+  border: none;
+  border-radius: var(--border-r);
+  padding: 5px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter .12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn:hover  { filter: brightness(1.15); }
+.btn:active { filter: brightness(0.90); }
+.btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+
+.btn-accent  { background: var(--blue);    color: var(--mantle); font-weight: 600; }
+.btn-surface { background: var(--surface0); color: var(--text); }
+.btn-green   { background: var(--green);   color: var(--mantle); font-weight: 600; }
+.btn-red     { background: var(--red);     color: var(--mantle); font-weight: 600; }
+
+/* ── Tab bar ───────────────────────────────────────────────────────────────── */
+#tab-bar {
+  grid-area: tabbar;
+  background: var(--mantle);
+  border-bottom: 2px solid var(--surface0);
+  display: flex;
+  align-items: stretch;
+  padding: 0 8px;
+  gap: 2px;
+  overflow-x: auto;
+}
+#tab-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: var(--subtext0);
+  padding: 0 16px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color .12s, border-color .12s;
+  white-space: nowrap;
+}
+.tab-btn:hover  { color: var(--text); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ── Content area ──────────────────────────────────────────────────────────── */
+#content {
+  grid-area: content;
+  overflow: hidden;
+  position: relative;
+}
+
+.tab-panel {
+  display: none;
+  height: 100%;
+  overflow: hidden;
+  flex-direction: column;
+}
+.tab-panel.active { display: flex; }
+
+/* ── "Coming soon" placeholder ─────────────────────────────────────────────── */
+.coming-soon {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--subtext0);
+  text-align: center;
+  padding: 40px;
+}
+.coming-soon-icon { font-size: 3.5rem; }
+.coming-soon h2   { font-size: 1.4rem; color: var(--text); }
+.coming-soon p    { max-width: 480px; line-height: 1.6; }
+.coming-soon code {
+  background: var(--surface0);
+  color: var(--blue);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.coming-soon .hint { color: var(--overlay1); font-size: 12px; }
+
+/* ── ID Browser ─────────────────────────────────────────────────────────────── */
+#tab-id-browser {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+}
+#tab-id-browser.active { display: flex; }
+
+#id-browser-subtabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 12px 0;
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface0);
+  flex-shrink: 0;
+}
+
+.subtab-btn {
+  border: none;
+  background: var(--surface0);
+  color: var(--subtext0);
+  padding: 5px 14px;
+  border-radius: var(--border-r) var(--border-r) 0 0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.subtab-btn:hover  { background: var(--surface1); color: var(--text); }
+.subtab-btn.active { background: var(--bg); color: var(--blue); font-weight: 600; }
+
+.subtab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.subtab-panel.active { display: flex; }
+
+.subtab-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--base);
+  border-bottom: 1px solid var(--surface0);
+  flex-shrink: 0;
+}
+
+.filter-input {
+  flex: 0 0 280px;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: var(--border-r);
+  color: var(--text);
+  padding: 5px 10px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+.filter-input:focus { border-color: var(--blue); }
+.filter-input::placeholder { color: var(--overlay0); }
+
+/* Table wrapper */
+#fn-table-wrap, #vc-table-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
+/* ── Grid.js theme overrides (match Catppuccin) ────────────────────────────── */
+.gridjs-wrapper {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.gridjs-container {
+  background: var(--base) !important;
+  color: var(--text) !important;
+}
+th.gridjs-th {
+  background: var(--mantle) !important;
+  color: var(--subtext1) !important;
+  border-bottom: 1px solid var(--surface0) !important;
+  border-right: 1px solid var(--surface0) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  padding: 8px 10px !important;
+  user-select: none;
+}
+th.gridjs-th-sort:hover { background: var(--surface0) !important; cursor: pointer; }
+th.gridjs-th-sort .gridjs-th-content { display: flex; align-items: center; gap: 4px; }
+
+td.gridjs-td {
+  background: var(--base) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--surface0) !important;
+  border-right: 1px solid var(--surface1) !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  font-family: var(--font-mono);
+}
+tr:hover td.gridjs-td { background: var(--surface0) !important; }
+
+.gridjs-footer { background: var(--mantle) !important; border-top: 1px solid var(--surface0) !important; }
+.gridjs-pagination button { background: var(--surface0) !important; color: var(--text) !important;
+  border: 1px solid var(--surface1) !important; border-radius: 4px !important; }
+.gridjs-pagination button:hover { background: var(--surface1) !important; }
+.gridjs-pagination button[disabled] { opacity: .4; }
+.gridjs-pagination-summary { color: var(--subtext0) !important; font-size: 11px !important; }
+
+/* Type badges */
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  letter-spacing: .02em;
+}
+.badge-Chaser    { background: #313244; color: var(--blue); }
+.badge-Scene     { background: #313244; color: var(--green); }
+.badge-Sequence  { background: #313244; color: var(--teal); }
+.badge-EFX       { background: #313244; color: var(--mauve); }
+.badge-Script    { background: #313244; color: var(--yellow); }
+.badge-Show      { background: #313244; color: var(--peach); }
+.badge-Audio     { background: #313244; color: var(--pink); }
+.badge-Collection{ background: #313244; color: var(--lavender); }
+.badge-RGBMatrix { background: #313244; color: var(--sapphire); }
+.badge-Button    { background: #313244; color: var(--blue); }
+.badge-Slider    { background: #313244; color: var(--teal); }
+.badge-Knob      { background: #313244; color: var(--teal); }
+.badge-Frame     { background: #313244; color: var(--overlay1); }
+.badge-SoloFrame { background: #313244; color: var(--maroon); }
+.badge-CueList   { background: #313244; color: var(--peach); }
+.badge-Label     { background: #313244; color: var(--subtext0); }
+.badge-XYPad     { background: #313244; color: var(--sapphire); }
+.badge-default   { background: #313244; color: var(--subtext1); }
+
+/* ── Status bar ────────────────────────────────────────────────────────────── */
+#status-bar {
+  grid-area: statusbar;
+  background: var(--mantle);
+  border-top: 1px solid var(--surface0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--subtext0);
+  user-select: none;
+}
+
+#status-msg {
+  color: var(--green);
+  font-style: italic;
+  transition: opacity .4s;
+}
+
+/* ── Drop overlay ───────────────────────────────────────────────────────────── */
+#drop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 17, 27, .85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: none;
+}
+#drop-overlay.visible {
+  display: flex;
+  pointer-events: all;
+}
+#drop-hint {
+  border: 3px dashed var(--blue);
+  border-radius: 16px;
+  padding: 60px 80px;
+  color: var(--blue);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: var(--mantle); }
+::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--surface2); }

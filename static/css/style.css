@@ -408,3 +408,262 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 ::-webkit-scrollbar-track { background: var(--mantle); }
 ::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--surface2); }
+
+/* =============================================================================
+   TAB SHARED LAYOUT  (used by setlist, dictionary, checklist, triggers, fixture)
+   ============================================================================= */
+
+/* ── Toolbar (shared by all real tabs) ──────────────────────────────────────── */
+.tab-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--base);
+  border-bottom: 1px solid var(--surface0);
+  flex-shrink: 0;
+}
+
+/* ── Split pane (setlist / triggers) ─────────────────────────────────────────── */
+.tab-split {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Generic pane header / footer ───────────────────────────────────────────── */
+.pane-header {
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface0);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--subtext1);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+
+.pane-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--mantle);
+  border-top: 1px solid var(--surface0);
+  flex-shrink: 0;
+}
+
+.hint-text {
+  font-size: 11px;
+  color: var(--overlay1);
+  font-style: italic;
+}
+
+/* ── Table wrappers (content area fills remaining height) ───────────────────── */
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+}
+
+/* =============================================================================
+   SETLIST TAB
+   ============================================================================= */
+
+.slot-pane {
+  width: 270px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--surface0);
+  overflow: hidden;
+}
+
+.song-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#slot-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.slot-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--surface0);
+  transition: background .1s;
+}
+.slot-item:hover  { background: var(--surface0); }
+.slot-item.active { background: var(--surface1); }
+.slot-caption { font-size: 12px; font-weight: 600; color: var(--text); }
+.slot-item.active .slot-caption { color: var(--blue); }
+.slot-sub { font-size: 11px; color: var(--subtext0); margin-top: 2px;
+            font-family: var(--font-mono); }
+.slot-empty { padding: 20px; color: var(--overlay0); font-size: 12px;
+              text-align: center; }
+
+#song-editor {
+  flex: 1;
+  resize: none;
+  background: var(--base);
+  color: var(--text);
+  border: none;
+  outline: none;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+}
+#song-editor::placeholder { color: var(--overlay0); }
+#song-editor:disabled { color: var(--overlay1); cursor: not-allowed; }
+
+/* =============================================================================
+   CUSTOM TABLE  (dictionary, triggers — click-to-edit)
+   ============================================================================= */
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.custom-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--mantle);
+  color: var(--subtext1);
+  border-bottom: 1px solid var(--surface0);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.custom-table th:hover { background: var(--surface0); }
+.custom-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--surface0);
+  font-family: var(--font-mono);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;            /* needed for text-overflow on table cells */
+}
+.custom-table td.td-wrap { white-space: normal; }
+.custom-table tbody tr { cursor: pointer; transition: background .08s; }
+.custom-table tbody tr:hover td { background: var(--surface0); }
+.custom-table tbody tr.row-active td { background: var(--surface1); color: var(--blue); }
+.custom-table .no-val { color: var(--overlay0); }
+.custom-table .sort-asc::after  { content: ' ↑'; color: var(--blue); }
+.custom-table .sort-desc::after { content: ' ↓'; color: var(--blue); }
+
+/* ── Dictionary edit panel ──────────────────────────────────────────────────── */
+#dict-edit-panel {
+  flex-shrink: 0;
+  background: var(--mantle);
+  border-top: 1px solid var(--surface0);
+  padding: 8px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+#dict-edit-label {
+  font-size: 11px;
+  color: var(--subtext0);
+  white-space: nowrap;
+  padding-top: 4px;
+  min-width: 130px;
+}
+#dict-desc-input {
+  flex: 1;
+  background: var(--surface0);
+  color: var(--text);
+  border: 1px solid var(--surface1);
+  border-radius: var(--border-r);
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+  min-height: 34px;
+  max-height: 90px;
+}
+#dict-desc-input:focus  { border-color: var(--blue); }
+#dict-desc-input::placeholder { color: var(--overlay0); }
+
+/* =============================================================================
+   TRIGGERS TAB
+   ============================================================================= */
+
+#trg-edit-panel {
+  width: 230px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--surface0);
+  background: var(--mantle);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.field-group { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--subtext0);
+  margin-bottom: 2px;
+}
+
+.field-input {
+  width: 100%;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: var(--border-r);
+  color: var(--text);
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+}
+.field-input:focus { border-color: var(--blue); }
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--subtext0);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.toggle-label input[type=checkbox] { cursor: pointer; accent-color: var(--blue); }
+
+/* has-trigger indicator in triggers table */
+.dot-yes { color: var(--green);   font-size: 14px; }
+.dot-no  { color: var(--surface2); font-size: 14px; }
+
+/* key/MIDI cells */
+.key-cell  { color: var(--yellow); font-family: var(--font-mono); }
+.midi-cell { color: var(--sapphire); font-family: var(--font-mono); }
+
+/* =============================================================================
+   CHECKLIST / FIXTURE  (Grid.js tables reuse existing .gridjs-* rules)
+   ============================================================================= */
+
+#chk-table-wrap, #fix-table-wrap {
+  flex: 1;
+  overflow: auto;
+}

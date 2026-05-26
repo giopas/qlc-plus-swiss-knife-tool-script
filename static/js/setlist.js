@@ -113,7 +113,7 @@ function _clearSongEditor() {
 
 function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
-   'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-save-songs']
+   'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = !on;
@@ -304,6 +304,45 @@ async function slGenerateQxw() {
   if (res.error) { setStatus(res.error, 'error'); return; }
   setStatus(`QXW saved → ${res.filename}`, 'ok');
   await _fetchChasers();  // refresh chaser list in case a new one was created
+}
+
+// ── Export XML TXT (raw Chaser XML block, like original script) ───────────────
+
+function slExportXmlTxt() {
+  if (!_selectedSlot || !_songRows.length) {
+    setStatus('Select a slot with songs first.', 'warn'); return;
+  }
+  const slot = _slotData.find(s => s.id === _selectedSlot);
+  const chaserName = slot?.chaser_name || `Slot ${_selectedSlot}`;
+  const _x = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  const lines = [
+    '',
+    `<Function ID="NEW_ID" Type="Chaser" Name="${_x(chaserName)}">`,
+    ' <Speed FadeIn="0" FadeOut="0" Duration="4294967294"/>',
+    ' <Direction>Forward</Direction>',
+    ' <RunOrder>Loop</RunOrder>',
+    ' <SpeedModes FadeIn="PerStep" FadeOut="PerStep" Duration="Common"/>',
+  ];
+  let sc = 0;
+  for (const d of _songRows) {
+    if (d.qxw_id) {
+      lines.push(
+        ` <Step Number="${sc}" FadeIn="${d.in||0}" Hold="${d.hold||4294967294}" FadeOut="${d.out||0}">${d.qxw_id}</Step>`
+      );
+      sc++;
+    }
+  }
+  lines.push('</Function>', '');
+
+  const txt  = lines.join('\n');
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `Slot${_selectedSlot}_Code_Export.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus(`XML TXT exported (${sc} steps).`);
 }
 
 // ── Export PDF ────────────────────────────────────────────────────────────────

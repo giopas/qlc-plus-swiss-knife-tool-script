@@ -1,6 +1,6 @@
 """routes/dictionary_routes.py — Dictionary Manager API (fully implemented)."""
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
 
 bp = Blueprint('dictionary', __name__, url_prefix='/api/dictionary')
@@ -50,3 +50,24 @@ def save_dict():
         return jsonify({'ok': True, 'path': path})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/export-txt', methods=['POST'])
+def export_txt():
+    """Download the full dictionary (all functions) as ID|Name|Description TXT."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    rows = ws.get_dictionary()
+    lines = ['ID|Name|Type|Description\n']
+    for r in sorted(rows, key=lambda x: int(x['id']) if str(x['id']).isdigit() else 0):
+        desc = (r.get('desc') or '').replace('\n', '\\n')
+        lines.append(f"{r['id']}|{r['name']}|{r.get('type','')}|{desc}\n")
+    import os
+    state = ws.get_state()
+    bn = os.path.splitext(os.path.basename(state.get('path') or 'workspace'))[0]
+    filename = f'{bn}_ID_dictionary.txt'
+    return Response(
+        ''.join(lines),
+        mimetype='text/plain',
+        headers={'Content-Disposition': f'attachment; filename={filename}'},
+    )

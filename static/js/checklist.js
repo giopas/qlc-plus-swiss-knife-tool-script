@@ -75,6 +75,38 @@ function _renderChecklistTable(data) {
   }).render(wrap);
 }
 
+// ── Export Blueprint PDF ──────────────────────────────────────────────────────
+
+async function exportChecklistPdf() {
+  const state = await _apiJson('/api/status');
+  if (!state.loaded) { setStatus('No workspace loaded.', 'warn'); return; }
+  const showName = prompt('Show name for PDF:', 'My Show') || 'Untitled';
+  const paper    = 'A3 Landscape';
+  try {
+    const res = await fetch('/api/checklist/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ show_name: showName, paper }),
+    });
+    if (!res.ok) {
+      const e = await res.json();
+      setStatus(e.error || 'Export failed.', 'error'); return;
+    }
+    const blob = await res.blob();
+    const cd   = res.headers.get('Content-Disposition') || '';
+    const m    = cd.match(/filename=([^\s;]+)/);
+    const name = m ? m[1] : 'blueprint.pdf';
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setStatus(`Blueprint PDF downloaded → ${name}`);
+  } catch (e) {
+    setStatus('Export error: ' + e.message, 'error');
+  }
+}
+
 // ── Export TXT ────────────────────────────────────────────────────────────────
 
 async function exportChecklistTxt() {

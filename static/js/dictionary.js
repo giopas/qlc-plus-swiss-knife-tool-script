@@ -10,6 +10,7 @@ let _dictFiltered   = [];   // filtered view
 let _dictSort       = { col: 'id', dir: 1 };
 let _dictSelFid     = null; // currently selected function ID
 let _dictLoaded     = false;
+let _dictTypeFilter = '';   // '' = all types
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -36,21 +37,44 @@ async function _loadDictionary() {
   if (data.error) { setStatus(data.error, 'error'); return; }
   _dictData     = Array.isArray(data) ? data : [];
   _dictFiltered = _dictData;
-  _renderDictTable(_sortDict(_dictData));
+  _populateTypeFilter();
+  _applyDictFilters();
 }
 
 // ── Filter ────────────────────────────────────────────────────────────────────
 
 function filterDictionary(q) {
-  q = (q || '').toLowerCase().trim();
-  _dictFiltered = q
-    ? _dictData.filter(r =>
-        r.id.includes(q) ||
-        r.name.toLowerCase().includes(q) ||
-        (r.type || '').toLowerCase().includes(q) ||
-        (r.desc || '').toLowerCase().includes(q))
-    : _dictData;
+  _applyDictFilters(q);
+}
+
+function filterDictByType(type) {
+  _dictTypeFilter = type || '';
+  _applyDictFilters();
+}
+
+function _applyDictFilters(q) {
+  if (q === undefined) q = (document.getElementById('dict-filter')?.value || '').trim();
+  q = q.toLowerCase().trim();
+  let result = _dictData;
+  if (_dictTypeFilter)
+    result = result.filter(r => (r.type || '') === _dictTypeFilter);
+  if (q)
+    result = result.filter(r =>
+      r.id.includes(q) ||
+      r.name.toLowerCase().includes(q) ||
+      (r.type || '').toLowerCase().includes(q) ||
+      (r.desc || '').toLowerCase().includes(q));
+  _dictFiltered = result;
   _renderDictTable(_sortDict(_dictFiltered));
+}
+
+function _populateTypeFilter() {
+  const sel = document.getElementById('dict-type-filter');
+  if (!sel) return;
+  const types = [...new Set(_dictData.map(r => r.type || '').filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All types</option>'
+    + types.map(t => `<option value="${_de(t)}">${_de(t)}</option>`).join('');
+  sel.value = _dictTypeFilter;
 }
 
 // ── Sort ──────────────────────────────────────────────────────────────────────
@@ -195,6 +219,29 @@ async function saveDictFile() {
   });
   if (result.error) { setStatus(result.error, 'error'); return; }
   setStatus(`Dictionary saved → ${result.path.split(/[\\/]/).pop()}`);
+}
+
+// ── Export TXT download ───────────────────────────────────────────────────────
+
+async function exportDictTxt() {
+  const state = await _apiJson('/api/status');
+  if (!state.loaded) { setStatus('No workspace loaded.', 'warn'); return; }
+  try {
+    const res = await fetch('/api/dictionary/export-txt', { method: 'POST' });
+    if (!res.ok) { setStatus('Export failed.', 'error'); return; }
+    const blob = await res.blob();
+    const cd   = res.headers.get('Content-Disposition') || '';
+    const m    = cd.match(/filename=([^\s;]+)/);
+    const name = m ? m[1] : 'dictionary.txt';
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setStatus(`Exported ${_dictData.length} entries → ${name}`);
+  } catch (e) {
+    setStatus('Export error: ' + e.message, 'error');
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

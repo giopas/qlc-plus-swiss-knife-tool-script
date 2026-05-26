@@ -97,8 +97,9 @@
           <select id="sl-chaser-select" class="filter-input" style="width:180px" disabled>
             <option value="__new__">— Create new chaser —</option>
           </select>
-          <button class="btn btn-accent"  id="btn-generate-qxw" onclick="slGenerateQxw()" disabled>🚀 Generate QXW</button>
-          <button class="btn btn-surface" id="btn-export-sl-pdf" onclick="slExportPdf()"   disabled>📄 Export PDF</button>
+          <button class="btn btn-accent"  id="btn-generate-qxw"    onclick="slGenerateQxw()"   disabled>🚀 Generate QXW</button>
+          <button class="btn btn-surface" id="btn-export-sl-pdf"   onclick="slExportPdf()"    disabled>📄 PDF</button>
+          <button class="btn btn-surface" id="btn-export-sl-xml"   onclick="slExportXmlTxt()" disabled>📝 XML TXT</button>
         </div>
 
         <!-- Song detail table -->
@@ -145,10 +146,15 @@
     <div class="tab-toolbar">
       <input id="dict-filter" class="filter-input" type="text"
              placeholder="Filter functions…" oninput="filterDictionary(this.value)">
+      <select id="dict-type-filter" class="filter-input" style="width:140px"
+              onchange="filterDictByType(this.value)">
+        <option value="">All types</option>
+      </select>
       <input id="dict-path" type="text" class="filter-input" style="flex:1"
              placeholder="Dictionary .txt path…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadDictFile()">📂 Load Dict</button>
-      <button class="btn btn-surface" onclick="saveDictFile()">💾 Save Dict</button>
+      <button class="btn btn-surface" onclick="loadDictFile()">📂 Load</button>
+      <button class="btn btn-surface" onclick="saveDictFile()">💾 Save</button>
+      <button class="btn btn-surface" onclick="exportDictTxt()">⬇ Export TXT</button>
     </div>
 
     <div id="dict-table-wrap" class="table-wrap"></div>
@@ -172,7 +178,9 @@
     <div class="tab-toolbar">
       <input id="chk-filter" class="filter-input" type="text"
              placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
+      <span style="flex:1"></span>
       <button class="btn btn-surface" onclick="exportChecklistTxt()">⬇ Export TXT</button>
+      <button class="btn btn-surface" onclick="exportChecklistPdf()">🖼 Blueprint PDF</button>
     </div>
 
     <div id="chk-table-wrap"></div>

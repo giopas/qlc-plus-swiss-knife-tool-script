@@ -660,10 +660,225 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 .midi-cell { color: var(--sapphire); font-family: var(--font-mono); }
 
 /* =============================================================================
-   CHECKLIST / FIXTURE  (Grid.js tables reuse existing .gridjs-* rules)
+   CHECKLIST  (Grid.js)
    ============================================================================= */
 
-#chk-table-wrap, #fix-table-wrap {
+#chk-table-wrap {
   flex: 1;
   overflow: auto;
 }
+
+/* =============================================================================
+   FIXTURE CONFIGURATOR
+   ============================================================================= */
+
+/* Rig table / canvas split */
+.fix-rig-pane {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  border-right: 1px solid var(--surface1);
+}
+.fix-canvas-pane {
+  flex: 0 0 420px;
+  min-width: 280px;
+  position: relative;
+  background: var(--crust);
+}
+#fix-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+/* Rig table */
+#fix-rig-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+#fix-rig-table-wrap thead th {
+  background: var(--mantle);
+  color: var(--subtext1);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 6px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+#fix-rig-table-wrap thead th:hover { color: var(--blue); }
+#fix-rig-table-wrap tbody tr {
+  border-bottom: 1px solid var(--surface0);
+  cursor: pointer;
+  transition: background .12s;
+}
+#fix-rig-table-wrap tbody tr:hover       { background: var(--surface0); }
+#fix-rig-table-wrap tbody tr.row-active  { background: var(--surface1); }
+#fix-rig-table-wrap tbody td {
+  padding: 5px 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+#fix-rig-table-wrap td input {
+  background: var(--surface1);
+  color: var(--text);
+  border: 1px solid var(--surface2);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 11px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Button variants used in fixture toolbar */
+.btn-danger {
+  background: var(--red);
+  color: var(--crust);
+  border: none;
+  border-radius: var(--border-r);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.btn-danger:hover { filter: brightness(1.15); }
+
+.btn-view-active {
+  background: var(--blue) !important;
+  color: var(--crust) !important;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal-box {
+  background: var(--mantle);
+  border: 1px solid var(--surface1);
+  border-radius: 10px;
+  padding: 24px;
+  min-width: 420px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+.modal-box h3 {
+  color: var(--blue);
+  font-size: 15px;
+}
+
+/* Color dot in rig table */
+.fix-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.3);
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* ── Song Detail Table ────────────────────────────────────────────────────── */
+.song-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.song-detail-table thead th {
+  background: var(--mantle);
+  color: var(--subtext0);
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--surface0);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.song-detail-table tbody tr.song-row {
+  border-bottom: 1px solid var(--surface0);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.song-detail-table tbody tr.song-row:hover { background: var(--surface0); }
+.song-detail-table tbody tr.song-row.row-active { background: rgba(137,180,250,.12); }
+.song-detail-table td { padding: 3px 6px; vertical-align: middle; }
+.song-detail-table .song-num {
+  color: var(--overlay0);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  width: 32px;
+}
+.song-field {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  outline: none;
+}
+.song-field:focus {
+  background: var(--surface0);
+  border-color: var(--blue);
+}
+.song-fn-sel {
+  background: var(--surface0);
+  color: var(--text);
+  border: 1px solid var(--surface1);
+  font-size: 11px;
+  cursor: pointer;
+}
+.song-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+  width: 72px;
+}
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--overlay0);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.btn-icon:hover { color: var(--red); background: rgba(243,139,168,.12); }
+
+/* ── Input-sm (used in modal selects) ────────────────────────────────────── */
+.input-sm {
+  width: 100%;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  outline: none;
+}
+.input-sm:focus { border-color: var(--blue); }

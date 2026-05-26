@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ QLC+ Swiss Knife</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- Grid.js — zero-config sortable/filterable tables -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════════════════════ -->
+<header id="app-header">
+  <div id="header-left">
+    <span id="logo">⚡ QLC+ SWISS KNIFE</span>
+    <span id="version-badge">v{{ version }}</span>
+  </div>
+
+  <div id="header-center">
+    <!-- File path input -->
+    <input id="path-input" type="text" placeholder="Paste .qxw path here…" spellcheck="false">
+    <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()">Load</button>
+
+    <!-- Upload button (drag-and-drop fallback) -->
+    <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window">
+      📂 Browse…
+      <input id="file-input" type="file" accept=".qxw" style="display:none"
+             onchange="loadFromInput(this)">
+    </label>
+
+    <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
+            title="Reload file from disk" disabled>↺ Reload</button>
+  </div>
+
+  <div id="header-right">
+    <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB BAR
+══════════════════════════════════════════════════════════════════════════ -->
+<nav id="tab-bar">
+  <button class="tab-btn active" data-tab="setlist"   onclick="showTab('setlist')">🎵 Setlist</button>
+  <button class="tab-btn"        data-tab="dictionary" onclick="showTab('dictionary')">📖 Dictionary</button>
+  <button class="tab-btn"        data-tab="checklist"  onclick="showTab('checklist')">📋 Checklist</button>
+  <button class="tab-btn"        data-tab="triggers"   onclick="showTab('triggers')">🎛 Triggers</button>
+  <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixture</button>
+  <button class="tab-btn"        data-tab="id-browser" onclick="showTab('id-browser')">🔍 ID Browser</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB PANELS
+══════════════════════════════════════════════════════════════════════════ -->
+<main id="content">
+
+  <!-- ── Setlist Manager ──────────────────────────────────────────────────── -->
+  <section id="tab-setlist" class="tab-panel active">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">🎵</div>
+      <h2>Setlist Manager</h2>
+      <p>Porting in progress — see <code>routes/setlist_routes.py</code> for the plan.</p>
+      <p class="hint">In the meantime the tkinter version (v0.7.3) on <code>main</code> is fully functional.</p>
+    </div>
+  </section>
+
+  <!-- ── Dictionary Manager ───────────────────────────────────────────────── -->
+  <section id="tab-dictionary" class="tab-panel">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">📖</div>
+      <h2>Dictionary Manager</h2>
+      <p>Porting in progress — see <code>routes/dictionary_routes.py</code> for the plan.</p>
+    </div>
+  </section>
+
+  <!-- ── Setup Checklist ──────────────────────────────────────────────────── -->
+  <section id="tab-checklist" class="tab-panel">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">📋</div>
+      <h2>Setup Checklist</h2>
+      <p>Porting in progress — see <code>routes/checklist_routes.py</code> for the plan.</p>
+      <p class="hint">Fixture data is already parsed — <code>GET /api/checklist/fixtures</code> works now.</p>
+    </div>
+  </section>
+
+  <!-- ── Trigger Manager ──────────────────────────────────────────────────── -->
+  <section id="tab-triggers" class="tab-panel">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">🎛</div>
+      <h2>Trigger Manager</h2>
+      <p>Porting in progress — see <code>routes/triggers_routes.py</code> for the plan.</p>
+    </div>
+  </section>
+
+  <!-- ── Fixture Configurator ─────────────────────────────────────────────── -->
+  <section id="tab-fixture" class="tab-panel">
+    <div class="coming-soon">
+      <div class="coming-soon-icon">🔧</div>
+      <h2>Fixture Configurator</h2>
+      <p>Porting in progress — see <code>routes/fixture_routes.py</code> for the plan.</p>
+      <p class="hint">The 2D canvas will be an HTML5 <code>&lt;canvas&gt;</code> with drag-and-drop positioning.</p>
+    </div>
+  </section>
+
+  <!-- ── ID Browser ───────────────────────────────────────────────────────── -->
+  <section id="tab-id-browser" class="tab-panel">
+
+    <!-- Sub-tab bar -->
+    <div id="id-browser-subtabs">
+      <button class="subtab-btn active" data-subtab="functions"
+              onclick="showSubtab('functions')">⚙ Functions</button>
+      <button class="subtab-btn" data-subtab="vc-widgets"
+              onclick="showSubtab('vc-widgets')">🖥 VC Widgets</button>
+    </div>
+
+    <!-- ── Functions sub-tab ──────────────────────────────────────────────── -->
+    <div id="subtab-functions" class="subtab-panel active">
+      <div class="subtab-toolbar">
+        <input id="fn-filter" class="filter-input" type="text"
+               placeholder="Filter functions…" oninput="filterFunctions(this.value)">
+        <button class="btn btn-surface" onclick="exportCsv('functions')">⬇ Export CSV</button>
+      </div>
+      <div id="fn-table-wrap"></div>
+    </div>
+
+    <!-- ── VC Widgets sub-tab ─────────────────────────────────────────────── -->
+    <div id="subtab-vc-widgets" class="subtab-panel">
+      <div class="subtab-toolbar">
+        <input id="vc-filter" class="filter-input" type="text"
+               placeholder="Filter widgets…" oninput="filterVcWidgets(this.value)">
+        <button class="btn btn-surface" onclick="exportCsv('vc-widgets')">⬇ Export CSV</button>
+      </div>
+      <div id="vc-table-wrap"></div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STATUS BAR
+══════════════════════════════════════════════════════════════════════════ -->
+<footer id="status-bar">
+  <span id="status-counts">Functions: —  |  Fixtures: —  |  VC Widgets: —</span>
+  <span id="status-msg"></span>
+</footer>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DROP OVERLAY
+══════════════════════════════════════════════════════════════════════════ -->
+<div id="drop-overlay">
+  <div id="drop-hint">
+    <div style="font-size:4rem; margin-bottom:0.5rem;">📂</div>
+    <div>Drop your .qxw workspace here</div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

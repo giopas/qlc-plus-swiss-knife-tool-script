@@ -399,10 +399,48 @@ document.addEventListener('drop', e => {
 });
 
 // =============================================================================
+// THEME TOGGLE  (dark = Catppuccin Mocha / light = Catppuccin Latte)
+// =============================================================================
+
+// Themes cycle: dark (Mocha) → grey (Macchiato) → light (Latte) → dark…
+const _THEMES = ['dark', 'grey', 'light'];
+const _THEME_ICONS = { dark: '🌙', grey: '🌤', light: '☀️' };
+const _THEME_TITLES = { dark: 'Dark (Mocha)', grey: 'Grey (Macchiato)', light: 'Light (Latte)' };
+
+function toggleTheme() {
+  const current = _getCurrentTheme();
+  const next    = _THEMES[(_THEMES.indexOf(current) + 1) % _THEMES.length];
+  _applyTheme(next);
+}
+
+function _getCurrentTheme() {
+  if (document.body.classList.contains('theme-light')) return 'light';
+  if (document.body.classList.contains('theme-grey'))  return 'grey';
+  return 'dark';
+}
+
+function _applyTheme(theme) {
+  document.body.classList.remove('theme-light', 'theme-grey');
+  if (theme === 'light') document.body.classList.add('theme-light');
+  if (theme === 'grey')  document.body.classList.add('theme-grey');
+  const btn = document.getElementById('btn-theme');
+  if (btn) { btn.textContent = _THEME_ICONS[theme]; btn.title = _THEME_TITLES[theme]; }
+  try { localStorage.setItem('qlc-theme', theme); } catch {}
+  // Redraw canvas if fixture module is loaded
+  if (typeof _drawCanvas === 'function') _drawCanvas();
+}
+
+// =============================================================================
 // INIT
 // =============================================================================
 
 (async function init() {
+  // Restore theme preference
+  try {
+    const saved = localStorage.getItem('qlc-theme');
+    if (saved && _THEMES.includes(saved) && saved !== 'dark') _applyTheme(saved);
+  } catch {}
+
   // Restore state if a workspace was already loaded in a previous request
   const state = await _apiJson('/api/status');
   _updateHeader(state);

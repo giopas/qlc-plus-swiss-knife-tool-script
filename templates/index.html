@@ -33,7 +33,8 @@
             title="Reload file from disk" disabled>↺ Reload</button>
   </div>
 
-  <div id="header-right">
+  <div id="header-right" style="display:flex;align-items:center;gap:8px">
+    <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()" title="Toggle light / dark theme">🌙</button>
     <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
   </div>
 </header>
@@ -342,19 +343,19 @@
 
     <!-- Toolbar row 1: fixture operations -->
     <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
-      <button class="btn-primary" onclick="fixAddDialog()">➕ Add Fixture</button>
-      <button class="btn-danger"  onclick="fixRemoveSelected()">🗑 Remove</button>
-      <button class="btn-normal"  onclick="fixMoveRow(-1)">⬆</button>
-      <button class="btn-normal"  onclick="fixMoveRow(1)">⬇</button>
-      <button class="btn-normal"  onclick="fixAutoDmx()">⚙ Auto-DMX</button>
-      <button class="btn-normal"  onclick="fixImportWorkspace()">📥 Import from Workspace</button>
+      <button class="btn btn-success" onclick="fixAddDialog()">➕ Add Fixture</button>
+      <button class="btn btn-danger"  onclick="fixRemoveSelected()">🗑 Remove</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(-1)">⬆</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(1)">⬇</button>
+      <button class="btn btn-surface" onclick="fixAutoDmx()">⚙ Auto-DMX</button>
+      <button class="btn btn-surface" onclick="fixImportWorkspace()">📥 Import from Workspace</button>
 
       <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
         <label class="field-label" style="margin:0">View:</label>
-        <button id="fix-btn-view-top"   class="btn-normal btn-view-active" onclick="fixSetView('top')">⬛ Top</button>
-        <button id="fix-btn-view-front" class="btn-normal" onclick="fixSetView('front')">⬛ Front</button>
-        <button id="fix-btn-view-side"  class="btn-normal" onclick="fixSetView('side')">⬛ Side</button>
-        <button id="fix-btn-snap" class="btn-normal btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()">🔲 Snap</button>
+        <button id="fix-btn-view-top"   class="btn btn-surface btn-view-active" onclick="fixSetView('top')">⬛ Top</button>
+        <button id="fix-btn-view-front" class="btn btn-surface" onclick="fixSetView('front')">⬛ Front</button>
+        <button id="fix-btn-view-side"  class="btn btn-surface" onclick="fixSetView('side')">⬛ Side</button>
+        <button id="fix-btn-snap" class="btn btn-surface btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()">🔲 Snap</button>
       </span>
     </div>
 
@@ -363,7 +364,7 @@
       <label class="field-label">QXF:</label>
       <input id="fix-qxf-path" class="filter-input" type="text"
              placeholder="Path to .qxf file…" style="width:260px">
-      <button class="btn-normal" onclick="fixLoadQxf()">📂 Load QXF</button>
+      <button class="btn btn-surface" onclick="fixLoadQxf()">📂 Load QXF</button>
 
       <span style="margin-left:12px;display:flex;gap:6px;align-items:center">
         <label class="field-label">W(mm):</label>
@@ -386,8 +387,8 @@
           <option value="US Letter Landscape">US Letter Landscape</option>
           <option value="US Letter Portrait">US Letter Portrait</option>
         </select>
-        <button class="btn-normal" onclick="fixExportPdf()">🖼 Blueprint PDF</button>
-        <button class="btn-save"   onclick="fixGenerateQxw()">🚀 Generate QXW</button>
+        <button class="btn btn-surface" onclick="fixExportPdf()">🖼 Blueprint PDF</button>
+        <button class="btn btn-primary" onclick="fixGenerateQxw()">🚀 Generate QXW</button>
       </span>
     </div>
 
@@ -477,8 +478,8 @@
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
-          <button class="btn-normal" onclick="fixAddModalClose()">Cancel</button>
-          <button class="btn-save"   onclick="fixAddConfirm()">Add to Rig</button>
+          <button class="btn btn-surface" onclick="fixAddModalClose()">Cancel</button>
+          <button class="btn btn-success" onclick="fixAddConfirm()">Add to Rig</button>
         </div>
       </div>
     </div>

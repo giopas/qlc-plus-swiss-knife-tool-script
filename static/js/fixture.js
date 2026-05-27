@@ -457,6 +457,12 @@ function _resizeCanvas() {
   _canvas.height = pane.clientHeight || 400;
 }
 
+// ── CSS variable reader (theme-aware canvas colors) ───────────────────────────
+
+function _cv(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim() || '#888';
+}
+
 // ── Canvas draw dispatcher ────────────────────────────────────────────────────
 
 function _drawCanvas() {
@@ -477,52 +483,63 @@ const _MARGIN_T = 16;
 const _MARGIN_B = 40;
 
 function _drawTopView(W, H) {
-  const ctx = _ctx;
+  const ctx   = _ctx;
   const drawW = W - _MARGIN_L - _MARGIN_R;
   const drawH = H - _TITLE_H - _MARGIN_T - _MARGIN_B;
   const ox = _MARGIN_L, oy = _TITLE_H + _MARGIN_T;
 
+  // Resolve theme colors at draw time
+  const cBase    = _cv('--base');
+  const cMantle  = _cv('--mantle');
+  const cSurface0= _cv('--surface0');
+  const cSurface1= _cv('--surface1');
+  const cSurface2= _cv('--surface2');
+  const cOverlay0= _cv('--overlay0');
+  const cSubtext0= _cv('--subtext0');
+  const cText    = _cv('--text');
+  const cBlue    = _cv('--blue');
+
   // Background
-  ctx.fillStyle = '#1e1e2e';
+  ctx.fillStyle = cBase;
   ctx.fillRect(0, 0, W, H);
 
   // Title
-  ctx.fillStyle = '#cdd6f4';
+  ctx.fillStyle = cText;
   ctx.font = 'bold 13px monospace';
   ctx.fillText('Top View  (X → / Z ↓)', 8, 18);
 
-  // Stage area (checkerboard)
+  // Stage area (checkerboard cells)
   const cellW = drawW / _stage.cols;
   const cellH = drawH / _stage.rows;
   for (let r = 0; r < _stage.rows; r++) {
     for (let c = 0; c < _stage.cols; c++) {
-      ctx.fillStyle = (r + c) % 2 === 0 ? '#181825' : '#1e1e2e';
+      ctx.fillStyle = (r + c) % 2 === 0 ? cMantle : cBase;
       ctx.fillRect(ox + c * cellW, oy + r * cellH, cellW, cellH);
     }
   }
 
   // Audience band at bottom
-  ctx.fillStyle = 'rgba(137,180,250,0.08)';
+  ctx.fillStyle = `${cBlue}22`;
   ctx.fillRect(ox, oy + drawH, drawW, 24);
-  ctx.fillStyle = '#89b4fa';
+  ctx.fillStyle = cBlue;
   ctx.font = '11px monospace';
   ctx.fillText('AUDIENCE', ox + drawW / 2 - 32, oy + drawH + 16);
 
   // SL / SR labels
-  ctx.fillStyle = '#6c7086';
+  ctx.fillStyle = cOverlay0;
   ctx.font = '11px monospace';
   ctx.fillText('SR', ox + 4, oy + drawH / 2);
   ctx.fillText('SL', ox + drawW - 18, oy + drawH / 2);
 
-  // Grid lines + column labels (A-H)
-  ctx.strokeStyle = '#313244';
-  ctx.lineWidth = 0.5;
+  // Grid lines + column labels (A–Z)
   const colLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  ctx.strokeStyle = cSurface1;
+  ctx.lineWidth = 0.8;
   for (let c = 0; c <= _stage.cols; c++) {
     const x = ox + c * cellW;
     ctx.beginPath(); ctx.moveTo(x, oy); ctx.lineTo(x, oy + drawH); ctx.stroke();
     if (c < _stage.cols) {
-      ctx.fillStyle = '#6c7086';
+      ctx.fillStyle = cOverlay0;
       ctx.font = '9px monospace';
       ctx.fillText(colLabels[c] || String(c+1), x + cellW/2 - 4, oy - 4);
     }
@@ -531,19 +548,19 @@ function _drawTopView(W, H) {
     const y = oy + r * cellH;
     ctx.beginPath(); ctx.moveTo(ox, y); ctx.lineTo(ox + drawW, y); ctx.stroke();
     if (r < _stage.rows) {
-      ctx.fillStyle = '#6c7086';
+      ctx.fillStyle = cOverlay0;
       ctx.font = '9px monospace';
       ctx.fillText(String(r + 1), ox - 18, y + cellH/2 + 4);
     }
   }
 
   // Stage border
-  ctx.strokeStyle = '#585b70';
+  ctx.strokeStyle = cSurface2;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(ox, oy, drawW, drawH);
 
   // Dimension labels
-  ctx.fillStyle = '#a6adc8';
+  ctx.fillStyle = cSubtext0;
   ctx.font = '10px monospace';
   ctx.fillText(`${(_stage.w_mm/1000).toFixed(1)} m`, ox + drawW / 2 - 18, oy + drawH + 36);
   ctx.save();
@@ -559,14 +576,12 @@ function _drawTopView(W, H) {
     const clr = f.color || '#888';
     const fg  = _contrastColor(clr);
     _drawFixtureDot(ctx, px, py, clr, fg, i === _selectedIdx);
-    // Name label
     ctx.fillStyle = fg;
     ctx.font = '9px monospace';
     const lbl = (f.name || '').substring(0, 10);
     ctx.fillText(lbl, px - lbl.length * 2.8, py + 14);
-    // Grid cell label
     if (f.grid_cell) {
-      ctx.fillStyle = '#a6adc8';
+      ctx.fillStyle = cSubtext0;
       ctx.font = '8px monospace';
       ctx.fillText(f.grid_cell, px - 6, py - 12);
     }
@@ -589,10 +604,18 @@ function _drawElevationView(axis, W, H) {
   const ox = _MARGIN_L, oy = _TITLE_H + _MARGIN_T;
   const spanMm = isfront ? _stage.w_mm : _stage.d_mm;
 
-  ctx.fillStyle = '#1e1e2e';
+  const cBase    = _cv('--base');
+  const cSurface0= _cv('--surface0');
+  const cSurface1= _cv('--surface1');
+  const cSurface2= _cv('--surface2');
+  const cOverlay0= _cv('--overlay0');
+  const cSubtext0= _cv('--subtext0');
+  const cText    = _cv('--text');
+
+  ctx.fillStyle = cBase;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#cdd6f4';
+  ctx.fillStyle = cText;
   ctx.font = 'bold 13px monospace';
   ctx.fillText(isfront ? 'Front View  (X → / Y ↑)' : 'Side View  (Z → / Y ↑)', 8, 18);
 
@@ -600,23 +623,23 @@ function _drawElevationView(axis, W, H) {
   for (const tier of _HEIGHT_TIERS) {
     const yBot = oy + drawH - (Math.min(tier.min, _stage.h_mm) / _stage.h_mm) * drawH;
     const yTop = oy + drawH - (Math.min(tier.max, _stage.h_mm) / _stage.h_mm) * drawH;
-    ctx.fillStyle = 'rgba(49,50,68,0.4)';
+    ctx.fillStyle = `${cSurface0}66`;
     ctx.fillRect(ox, yTop, drawW, yBot - yTop);
-    ctx.fillStyle = '#45475a';
+    ctx.fillStyle = cOverlay0;
     ctx.font = '9px monospace';
     ctx.fillText(tier.label, ox + 4, yTop + 11);
-    ctx.strokeStyle = '#313244';
+    ctx.strokeStyle = cSurface1;
     ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(ox, yTop); ctx.lineTo(ox + drawW, yTop); ctx.stroke();
   }
 
   // Border
-  ctx.strokeStyle = '#585b70';
+  ctx.strokeStyle = cSurface2;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(ox, oy, drawW, drawH);
 
   // Dimension labels
-  ctx.fillStyle = '#a6adc8';
+  ctx.fillStyle = cSubtext0;
   ctx.font = '10px monospace';
   ctx.fillText(`${(spanMm/1000).toFixed(1)} m`, ox + drawW/2 - 18, oy + drawH + 16);
   ctx.save();
@@ -656,7 +679,7 @@ function _drawFixtureDot(ctx, px, py, color, fg, selected) {
   ctx.fillStyle   = color;
   ctx.fill();
   if (selected) {
-    ctx.strokeStyle = '#f5c2e7';
+    ctx.strokeStyle = _cv('--pink');
     ctx.lineWidth   = 2.5;
     ctx.stroke();
   }

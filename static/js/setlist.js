@@ -9,9 +9,11 @@ let _slotData      = [];   // [{id, caption, chaser_id, chaser_name}]
 let _selectedSlot  = null; // slot id currently being edited
 let _setlistLoaded = false;
 let _chasers       = [];   // [{id, name}] — available Chaser functions
-let _functions     = [];   // [{id, name, type}] — all workspace functions (for dropdown)
+let _functions     = [];   // [{id, name, type}] — all workspace functions (for dropdown + pool)
 let _songRows      = [];   // [{txt_name, qxw_id, qxw_name, in, hold, out}] — current slot
 let _selectedSong  = -1;   // selected row index in _songRows
+let _poolFiltered  = [];   // filtered view of _functions for the pool panel
+let _selectedPoolIdx = -1; // index into _poolFiltered
 
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -53,6 +55,8 @@ async function _fetchChasers() {
 async function _fetchFunctions() {
   const data = await _apiJson('/api/functions');
   _functions = Array.isArray(data) ? data : [];
+  _poolFiltered = _functions;
+  _renderFnPool(_poolFiltered);
 }
 
 // ── Slot list ──────────────────────────────────────────────────────────────────
@@ -121,7 +125,96 @@ function _setEditorEnabled(on) {
     });
 }
 
-// ── Song detail table render ──────────────────────────────────────────────────
+// ── Function pool panel ───────────────────────────────────────────────────────
+
+const _FN_TYPE_ICON = {
+  Chaser:'🔄', Scene:'🎬', Sequence:'📋', EFX:'✨', Script:'📝',
+  Show:'🎭', Audio:'🎵', Collection:'📦', RGBMatrix:'🌈',
+};
+
+function _renderFnPool(list) {
+  const wrap = document.getElementById('fn-pool-list');
+  if (!wrap) return;
+
+  const countEl = document.getElementById('fn-pool-count');
+  if (countEl) countEl.textContent = list.length ? `${list.length} functions` : '';
+
+  if (!list.length) {
+    wrap.innerHTML = `<div class="slot-empty">${
+      _functions.length === 0 ? 'Load a workspace to see functions' : 'No results'
+    }</div>`;
+    return;
+  }
+
+  wrap.innerHTML = list.map((f, i) => {
+    const icon = _FN_TYPE_ICON[f.type] || '◻';
+    const sel  = i === _selectedPoolIdx ? ' fn-pool-item-active' : '';
+    return `<div class="fn-pool-item${sel}" data-idx="${i}"
+                 ondblclick="slAssignFromPool()"
+                 onclick="slPoolSelect(${i})"
+                 title="${_esc(f.type)}: ${_esc(f.name)}">
+      <span class="fn-pool-icon">${icon}</span>
+      <span class="fn-pool-id">${_esc(f.id)}</span>
+      <span class="fn-pool-name">${_esc(f.name)}</span>
+    </div>`;
+  }).join('');
+}
+
+function filterFnPool(q) {
+  q = (q || '').toLowerCase().trim();
+  _poolFiltered = q
+    ? _functions.filter(f =>
+        f.id.includes(q) ||
+        f.name.toLowerCase().includes(q) ||
+        (f.type || '').toLowerCase().includes(q))
+    : _functions;
+  _selectedPoolIdx = -1;
+  _renderFnPool(_poolFiltered);
+  _updatePoolAssignBtn();
+}
+
+function slPoolSelect(idx) {
+  _selectedPoolIdx = idx;
+  // Highlight in pool
+  document.querySelectorAll('.fn-pool-item').forEach((el, i) => {
+    el.classList.toggle('fn-pool-item-active', i === idx);
+  });
+  _updatePoolAssignBtn();
+}
+
+function _updatePoolAssignBtn() {
+  const btn = document.getElementById('btn-pool-assign');
+  if (btn) btn.disabled = _selectedPoolIdx < 0 || _selectedSong < 0 || !_selectedSlot;
+}
+
+function slAssignFromPool() {
+  if (_selectedPoolIdx < 0 || _selectedSong < 0) return;
+  const fn  = _poolFiltered[_selectedPoolIdx];
+  if (!fn) return;
+  const row = _songRows[_selectedSong];
+  if (!row) return;
+
+  row.qxw_id   = fn.id;
+  row.qxw_name = fn.name;
+
+  // Update the dropdown in the rendered table row
+  const body = document.getElementById('song-detail-body');
+  const sel  = body?.querySelector(`tr[data-idx="${_selectedSong}"] .song-fn-sel`);
+  if (sel) sel.value = fn.id;
+
+  // Show a small flash on the assigned row
+  const tr = body?.querySelector(`tr[data-idx="${_selectedSong}"]`);
+  if (tr) {
+    tr.classList.add('row-flash');
+    setTimeout(() => tr.classList.remove('row-flash'), 600);
+  }
+
+  // Auto-advance to next song row
+  if (_selectedSong < _songRows.length - 1) {
+    slSelectRow(_selectedSong + 1);
+    _updatePoolAssignBtn();
+  }
+}
 
 function _renderSongTable() {
   const body = document.getElementById('song-detail-body');
@@ -150,6 +243,10 @@ function _renderSongTable() {
       <td><input class="song-field" type="text" value="${_esc(row.txt_name||'')}"
             onchange="slCellChanged(${i},'txt_name',this.value)"
             onclick="event.stopPropagation()"></td>
+      <td style="text-align:center">
+        <button class="btn-icon" title="Assign selected pool function to this row"
+                onclick="slSelectRow(${i});slAssignFromPool();event.stopPropagation()">◀</button>
+      </td>
       <td>
         <select class="song-field song-fn-sel"
                 onchange="slCellChanged(${i},'qxw_id',this.value);slSyncFnName(${i},this)"
@@ -188,6 +285,7 @@ function slSelectRow(idx) {
   document.querySelectorAll('#song-detail-body tr.song-row').forEach((tr, i) => {
     tr.classList.toggle('row-active', i === idx);
   });
+  _updatePoolAssignBtn();
 }
 
 function slCellChanged(idx, field, value) {

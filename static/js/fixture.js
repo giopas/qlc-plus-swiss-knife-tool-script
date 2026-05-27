@@ -42,9 +42,11 @@ const _HEIGHT_TIERS = [
 // ── Public API ────────────────────────────────────────────────────────────────
 
 function invalidateFixtures() {
-  _fixLoaded  = false;
-  _rig        = [];
+  _fixLoaded   = false;
+  _rig         = [];
   _selectedIdx = -1;
+  // Clear the server-side configurator rig so next visit re-imports from new workspace
+  fetch('/api/fixture/configurator/clear', { method: 'POST' }).catch(() => {});
   _renderRigTable();
   if (_canvas) _drawCanvas();
 }
@@ -72,7 +74,24 @@ async function _initConfigurator() {
   _canvas.addEventListener('mouseup',    _onCanvasMouseUp);
   _canvas.addEventListener('mouseleave', _onCanvasMouseUp);
 
-  await Promise.all([_fetchRig(), _fetchQxfDefs(), _fetchStage()]);
+  await Promise.all([_fetchQxfDefs(), _fetchStage()]);
+  await _fetchRig();          // fetch rig after stage so dims are ready
+
+  // Auto-populate from workspace if configurator rig is still empty
+  if (_rig.length === 0) {
+    const status = await _apiJson('/api/status');
+    if (status.loaded) {
+      const res = await _apiPost('/api/fixture/configurator/import-from-workspace', {});
+      if (res.rig && res.rig.length) {
+        _rig   = res.rig;
+        _stage = { ..._stage, ...(res.stage || {}) };
+        _assignColors();
+        _syncStageFields();
+        setStatus(`Auto-imported ${_rig.length} fixture(s) from workspace.`, 'ok');
+      }
+    }
+  }
+
   _syncStageFields();
   _renderRigTable();
   _drawCanvas();

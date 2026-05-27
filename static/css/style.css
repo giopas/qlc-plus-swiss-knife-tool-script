@@ -37,6 +37,9 @@
 
   --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Text color on colored (accent/success/danger) buttons — flips in light theme */
+  --btn-label: var(--mantle);
 }
 
 /* ── Reset ─────────────────────────────────────────────────────────────────── */
@@ -138,19 +141,30 @@ body {
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: filter .12s;
+  transition: filter .12s, background .15s, color .15s;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  /* default (neutral) style */
+  background: var(--surface0);
+  color: var(--text);
 }
-.btn:hover  { filter: brightness(1.15); }
-.btn:active { filter: brightness(0.90); }
-.btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+.btn:hover  { filter: brightness(1.12); }
+.btn:active { filter: brightness(0.88); }
+.btn:disabled { opacity: .38; cursor: not-allowed; filter: none; }
 
-.btn-accent  { background: var(--blue);    color: var(--mantle); font-weight: 600; }
+/* Semantic variants — all use .btn as base */
+.btn-primary,
+.btn-accent  { background: var(--blue);  color: var(--btn-label); font-weight: 600; }
+
+.btn-success,
+.btn-green   { background: var(--green); color: var(--btn-label); font-weight: 600; }
+
+.btn-danger,
+.btn-red     { background: var(--red);   color: var(--btn-label); font-weight: 600; }
+
+/* .btn-surface is the explicit neutral — same as base .btn */
 .btn-surface { background: var(--surface0); color: var(--text); }
-.btn-green   { background: var(--green);   color: var(--mantle); font-weight: 600; }
-.btn-red     { background: var(--red);     color: var(--mantle); font-weight: 600; }
 
 /* ── Tab bar ───────────────────────────────────────────────────────────────── */
 #tab-bar {
@@ -339,24 +353,24 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   font-family: var(--font-ui);
   letter-spacing: .02em;
 }
-.badge-Chaser    { background: #313244; color: var(--blue); }
-.badge-Scene     { background: #313244; color: var(--green); }
-.badge-Sequence  { background: #313244; color: var(--teal); }
-.badge-EFX       { background: #313244; color: var(--mauve); }
-.badge-Script    { background: #313244; color: var(--yellow); }
-.badge-Show      { background: #313244; color: var(--peach); }
-.badge-Audio     { background: #313244; color: var(--pink); }
-.badge-Collection{ background: #313244; color: var(--lavender); }
-.badge-RGBMatrix { background: #313244; color: var(--sapphire); }
-.badge-Button    { background: #313244; color: var(--blue); }
-.badge-Slider    { background: #313244; color: var(--teal); }
-.badge-Knob      { background: #313244; color: var(--teal); }
-.badge-Frame     { background: #313244; color: var(--overlay1); }
-.badge-SoloFrame { background: #313244; color: var(--maroon); }
-.badge-CueList   { background: #313244; color: var(--peach); }
-.badge-Label     { background: #313244; color: var(--subtext0); }
-.badge-XYPad     { background: #313244; color: var(--sapphire); }
-.badge-default   { background: #313244; color: var(--subtext1); }
+.badge-Chaser    { background: var(--surface0); color: var(--blue); }
+.badge-Scene     { background: var(--surface0); color: var(--green); }
+.badge-Sequence  { background: var(--surface0); color: var(--teal); }
+.badge-EFX       { background: var(--surface0); color: var(--mauve); }
+.badge-Script    { background: var(--surface0); color: var(--yellow); }
+.badge-Show      { background: var(--surface0); color: var(--peach); }
+.badge-Audio     { background: var(--surface0); color: var(--pink); }
+.badge-Collection{ background: var(--surface0); color: var(--lavender); }
+.badge-RGBMatrix { background: var(--surface0); color: var(--sapphire); }
+.badge-Button    { background: var(--surface0); color: var(--blue); }
+.badge-Slider    { background: var(--surface0); color: var(--teal); }
+.badge-Knob      { background: var(--surface0); color: var(--teal); }
+.badge-Frame     { background: var(--surface0); color: var(--overlay1); }
+.badge-SoloFrame { background: var(--surface0); color: var(--maroon); }
+.badge-CueList   { background: var(--surface0); color: var(--peach); }
+.badge-Label     { background: var(--surface0); color: var(--subtext0); }
+.badge-XYPad     { background: var(--surface0); color: var(--sapphire); }
+.badge-default   { background: var(--surface0); color: var(--subtext1); }
 
 /* ── Status bar ────────────────────────────────────────────────────────────── */
 #status-bar {
@@ -681,18 +695,18 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
    FIXTURE CONFIGURATOR
    ============================================================================= */
 
-/* Rig table / canvas split */
+/* Rig table / canvas split — canvas is the main view, rig is the sidebar */
 .fix-rig-pane {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 360px;
+  min-width: 220px;
   overflow: auto;
   border-right: 1px solid var(--surface1);
 }
 .fix-canvas-pane {
-  flex: 0 0 420px;
-  min-width: 280px;
+  flex: 1;
+  min-width: 300px;
   position: relative;
-  background: var(--crust);
+  background: var(--base);
 }
 #fix-canvas {
   width: 100%;
@@ -746,23 +760,11 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   box-sizing: border-box;
 }
 
-/* Button variants used in fixture toolbar */
-.btn-danger {
-  background: var(--red);
-  color: var(--crust);
-  border: none;
-  border-radius: var(--border-r);
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: filter .15s;
-}
-.btn-danger:hover { filter: brightness(1.15); }
-
+/* Active state for view-toggle buttons (Top / Front / Side / Snap) */
 .btn-view-active {
-  background: var(--blue) !important;
-  color: var(--crust) !important;
+  background: var(--blue);
+  color: var(--btn-label);
+  font-weight: 600;
 }
 
 /* Modal overlay */
@@ -848,7 +850,7 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 /* Pool column header */
 .pool-col-header {
   display: grid;
-  grid-template-columns: 3fr 36px 20px 2fr;
+  grid-template-columns: 1fr 36px 22px;
   gap: 4px;
   padding: 3px 8px;
   border-bottom: 1px solid var(--surface1);
@@ -902,7 +904,7 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 .fn-pool-item-active        { background: rgba(137,180,250,.18) !important; }
 .pool-item-row {
   display: grid;
-  grid-template-columns: 3fr 36px 20px 2fr;
+  grid-template-columns: 1fr 36px 22px;
   gap: 4px;
   align-items: center;
   width: 100%;
@@ -914,18 +916,27 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
                  text-align: right; flex-shrink: 0; }
 .pool-col-uses { color: var(--overlay0); font-size: 10px; text-align: center; }
 .pool-used     { color: var(--yellow) !important; font-weight: 600; }
-.pool-col-vc   { color: var(--teal); font-size: 10px; overflow: hidden;
-                 text-overflow: ellipsis; white-space: nowrap; }
+.pool-col-vc   { display: none; }   /* moved to own line below */
 .pool-col-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pool-col-id   { color: var(--overlay0); font-family: var(--font-mono); font-size: 10px; text-align: right; }
+
+/* VC caption line — always full width, wrappable */
+.pool-item-vc {
+  color: var(--teal);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  white-space: normal;
+  line-height: 1.4;
+  padding-top: 2px;
+}
+/* Description line — full width, wrappable */
 .pool-item-desc {
   color: var(--overlay1);
   font-size: 10px;
   font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-top: 2px;
+  white-space: normal;
+  line-height: 1.4;
+  padding-top: 1px;
 }
 
 /* Flash animation when a function is assigned */
@@ -1209,11 +1220,17 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   background: var(--mantle);
 }
 
-/* Chaser dropdown in actions pane */
+/* Chaser dropdown in actions pane — compact */
 .fb-chaser-sel {
   width: 100%;
-  font-size: 11px;
-  padding: 3px 5px;
+  font-size: 10px;
+  padding: 2px 4px;
+  height: 22px;
+  background: var(--surface0);
+  color: var(--text);
+  border: 1px solid var(--surface1);
+  border-radius: 4px;
+  outline: none;
 }
 
 /* ── Fixture canvas resize handle ─────────────────────────────────────────── */
@@ -1227,6 +1244,83 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 }
 .fix-canvas-resize-handle:hover,
 .fix-canvas-resize-handle:active { background: var(--blue); }
+
+/* =============================================================================
+   GREY THEME  (Catppuccin Macchiato — midpoint between Mocha and Latte)
+   Toggle by adding class "theme-grey" to <body>
+   ============================================================================= */
+
+body.theme-grey {
+  --bg:        #24273a;
+  --base:      #24273a;
+  --mantle:    #1e2030;
+  --crust:     #181926;
+  --surface0:  #363a4f;
+  --surface1:  #494d64;
+  --surface2:  #5b6078;
+  --overlay0:  #6e738d;
+  --overlay1:  #8087a2;
+  --text:      #cad3f5;
+  --subtext0:  #a5adcb;
+  --subtext1:  #b8c0e0;
+  --lavender:  #b7bdf8;
+  --blue:      #8aadf4;
+  --sapphire:  #7dc4e4;
+  --sky:       #91d7e3;
+  --teal:      #8bd5ca;
+  --green:     #a6da95;
+  --yellow:    #eed49f;
+  --peach:     #f5a97f;
+  --maroon:    #ee99a0;
+  --red:       #ed8796;
+  --mauve:     #c6a0f6;
+  --pink:      #f5bde6;
+  --flamingo:  #f0c6c6;
+  --btn-label: var(--mantle);
+}
+
+/* =============================================================================
+   LIGHT THEME  (Catppuccin Latte)
+   Toggle by adding class "theme-light" to <body>
+   ============================================================================= */
+
+body.theme-light {
+  /* Palette overrides */
+  --bg:        #eff1f5;
+  --base:      #eff1f5;
+  --mantle:    #e6e9ef;
+  --crust:     #dce0e8;
+  --surface0:  #ccd0da;
+  --surface1:  #bcc0cc;
+  --surface2:  #acb0be;
+  --overlay0:  #9ca0b0;
+  --overlay1:  #8c8fa1;
+  --text:      #4c4f69;
+  --subtext0:  #6c6f85;
+  --subtext1:  #5c5f77;
+  --lavender:  #7287fd;
+  --blue:      #1e66f5;
+  --sapphire:  #209fb5;
+  --sky:       #04a5e5;
+  --teal:      #179299;
+  --green:     #40a02b;
+  --yellow:    #df8e1d;
+  --peach:     #fe640b;
+  --maroon:    #e64553;
+  --red:       #d20f39;
+  --mauve:     #8839ef;
+  --pink:      #ea76cb;
+  --flamingo:  #dd7878;
+
+  /* In light mode, colored buttons need light/white text for contrast */
+  --btn-label: #ffffff;
+}
+
+/* Theme toggle button */
+#btn-theme {
+  font-size: 14px;
+  padding: 3px 8px;
+}
 
 /* ── VC badge in dictionary ───────────────────────────────────────────────── */
 .vc-badge {

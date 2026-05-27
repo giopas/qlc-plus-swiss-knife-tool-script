@@ -385,25 +385,23 @@ function _renderFnPool(list) {
       const usesHtml = uses > 0
         ? `<span class="pool-col-uses pool-used" title="Used by ${uses} song(s)">★${uses}</span>`
         : `<span class="pool-col-uses"></span>`;
-      const vcTxt  = f.vc_button || '';
-      const vcHtml = vcTxt
-        ? `<span class="pool-col-vc" title="${_esc(vcTxt)}">${_esc(vcTxt.length > 10 ? vcTxt.substring(0,9)+'…' : vcTxt)}</span>`
-        : `<span class="pool-col-vc"></span>`;
-      const descHtml = f.desc
-        ? `<div class="pool-item-desc" title="${_esc(f.desc)}">${_esc(f.desc.length > 80 ? f.desc.substring(0,79)+'…' : f.desc)}</div>`
+      const vcTxt   = f.vc_button || '';
+      const vcHtml  = vcTxt
+        ? `<div class="pool-item-vc">🎛 ${_esc(vcTxt)}</div>`
         : '';
-      const tooltip = `${f.type}: ${f.name}${f.vc_button ? '\nVC: '+f.vc_button : ''}${f.desc ? '\n'+f.desc.substring(0,120) : ''}`;
+      const descHtml = f.desc
+        ? `<div class="pool-item-desc">${_esc(f.desc)}</div>`
+        : '';
       html += `
         <div class="fn-pool-item${sel}" data-pidx="${pIdx}"
              ondblclick="slAssignFromPool()"
-             onclick="slPoolSelect(${pIdx})"
-             title="${_esc(tooltip)}">
+             onclick="slPoolSelect(${pIdx})">
           <div class="pool-item-row">
             <span class="pool-col-name fn-pool-name">${_esc(f.name)}</span>
             <span class="fn-pool-id">${_esc(f.id)}</span>
-            ${usesHtml}${vcHtml}
+            ${usesHtml}
           </div>
-          ${descHtml}
+          ${vcHtml}${descHtml}
         </div>`;
     }
     html += `</div>`;

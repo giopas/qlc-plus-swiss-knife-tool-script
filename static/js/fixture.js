@@ -806,24 +806,32 @@ async function _apiDelete(url) {
   } catch(e) { return {error: String(e)}; }
 }
 
-// ── Canvas pane drag-resize ───────────────────────────────────────────────────
+// ── Rig-pane drag-resize ──────────────────────────────────────────────────────
+// The handle sits between .fix-rig-pane (fixed width, left) and
+// .fix-canvas-pane (flex:1, right).  We resize the RIG pane; the canvas pane
+// automatically fills the remaining space via flex:1, and its ResizeObserver
+// fires _resizeCanvas() + _drawCanvas() so the stage always fills the canvas.
 
 function _initCanvasResize() {
-  const handle    = document.getElementById('fix-canvas-resize-handle');
-  const canvasPane = document.querySelector('.fix-canvas-pane');
-  if (!handle || !canvasPane) return;
+  const handle  = document.getElementById('fix-canvas-resize-handle');
+  const rigPane = document.querySelector('.fix-rig-pane');
+  if (!handle || !rigPane) return;
 
   let startX = 0, startW = 0;
   handle.addEventListener('mousedown', e => {
     e.preventDefault();
     startX = e.clientX;
-    startW = canvasPane.getBoundingClientRect().width;
+    startW = rigPane.getBoundingClientRect().width;
 
     const onMove = ev => {
-      const delta = startX - ev.clientX;   // drag left → wider canvas
-      const newW  = Math.max(220, Math.min(900, startW + delta));
-      canvasPane.style.flex  = 'none';
-      canvasPane.style.width = newW + 'px';
+      // drag right → wider rig pane (canvas shrinks)
+      // drag left  → narrower rig pane (canvas grows)
+      const delta = ev.clientX - startX;
+      const newW  = Math.max(180, Math.min(700, startW + delta));
+      rigPane.style.flex  = `0 0 ${newW}px`;
+      rigPane.style.width = `${newW}px`;
+      // ResizeObserver on canvas parent fires automatically, but call
+      // explicitly too for snappy feedback before the observer fires.
       _resizeCanvas();
       _drawCanvas();
     };

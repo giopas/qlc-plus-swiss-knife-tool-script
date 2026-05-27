@@ -9,11 +9,14 @@ let _slotData      = [];   // [{id, caption, chaser_id, chaser_name}]
 let _selectedSlot  = null; // slot id currently being edited
 let _setlistLoaded = false;
 let _chasers       = [];   // [{id, name}] — available Chaser functions
-let _functions     = [];   // [{id, name, type}] — all workspace functions (for dropdown + pool)
-let _songRows      = [];   // [{txt_name, qxw_id, qxw_name, in, hold, out}] — current slot
+let _functions     = [];   // [{id, name, type, contains, vc_button, desc}]
+let _songRows      = [];   // [{txt_name, qxw_id, qxw_name, in, hold, out}]
 let _selectedSong  = -1;   // selected row index in _songRows
 let _poolFiltered  = [];   // filtered view of _functions for the pool panel
 let _selectedPoolIdx = -1; // index into _poolFiltered
+
+// Collapsed type groups in pool
+const _poolGroupCollapsed = new Set();
 
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -54,8 +57,8 @@ async function _fetchChasers() {
 
 async function _fetchFunctions() {
   const data = await _apiJson('/api/functions');
-  _functions = Array.isArray(data) ? data : [];
-  _poolFiltered = _functions;
+  _functions    = Array.isArray(data) ? data : [];
+  _poolFiltered = _functions.slice();
   _renderFnPool(_poolFiltered);
 }
 
@@ -98,6 +101,8 @@ async function selectSlot(slotId) {
   _setEditorEnabled(true);
   _renderSongTable();
   _updateSongCount();
+  // Re-render pool to refresh usage counts
+  _renderFnPool(_poolFiltered);
 }
 
 function _clearSongEditor() {
@@ -117,7 +122,7 @@ function _clearSongEditor() {
 
 function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
-   'btn-import-slot-txt','btn-export-slot-txt',
+   'btn-import-slot-txt','btn-export-slot-txt','btn-auto-match',
    'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
@@ -132,12 +137,28 @@ const _FN_TYPE_ICON = {
   Show:'🎭', Audio:'🎵', Collection:'📦', RGBMatrix:'🌈',
 };
 
+// Preferred display order for function type groups
+const _TYPE_ORDER = ['Chaser','Scene','Sequence','EFX','Script','Show','Audio','Collection','RGBMatrix'];
+
+/** Count how many _songRows reference each function id → {fid: count} */
+function _computeUsageCounts() {
+  const counts = {};
+  for (const row of _songRows) {
+    if (row.qxw_id) {
+      counts[row.qxw_id] = (counts[row.qxw_id] || 0) + 1;
+    }
+  }
+  return counts;
+}
+
 function _renderFnPool(list) {
   const wrap = document.getElementById('fn-pool-list');
   if (!wrap) return;
 
   const countEl = document.getElementById('fn-pool-count');
-  if (countEl) countEl.textContent = list.length ? `${list.length} functions` : '';
+  if (countEl) countEl.textContent = list.length
+    ? `${list.length} function${list.length !== 1 ? 's' : ''}`
+    : '';
 
   if (!list.length) {
     wrap.innerHTML = `<div class="slot-empty">${
@@ -146,18 +167,100 @@ function _renderFnPool(list) {
     return;
   }
 
-  wrap.innerHTML = list.map((f, i) => {
-    const icon = _FN_TYPE_ICON[f.type] || '◻';
-    const sel  = i === _selectedPoolIdx ? ' fn-pool-item-active' : '';
-    return `<div class="fn-pool-item${sel}" data-idx="${i}"
-                 ondblclick="slAssignFromPool()"
-                 onclick="slPoolSelect(${i})"
-                 title="${_esc(f.type)}: ${_esc(f.name)}">
-      <span class="fn-pool-icon">${icon}</span>
-      <span class="fn-pool-id">${_esc(f.id)}</span>
-      <span class="fn-pool-name">${_esc(f.name)}</span>
+  const usageCounts = _computeUsageCounts();
+
+  // Group functions by type
+  const groups = {};
+  for (const f of list) {
+    const t = f.type || 'Other';
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(f);
+  }
+
+  const sortedTypes = Object.keys(groups).sort((a, b) => {
+    const ai = _TYPE_ORDER.indexOf(a), bi = _TYPE_ORDER.indexOf(b);
+    if (ai >= 0 && bi >= 0) return ai - bi;
+    if (ai >= 0) return -1;
+    if (bi >= 0) return 1;
+    return a.localeCompare(b);
+  });
+
+  let html = `
+    <div class="pool-col-header">
+      <span class="pool-col-name">Function</span>
+      <span class="pool-col-id">ID</span>
+      <span class="pool-col-uses" title="Times used in current slot">★</span>
+      <span class="pool-col-vc" title="VC Button caption">VC</span>
     </div>`;
-  }).join('');
+
+  for (const type of sortedTypes) {
+    const icon = _FN_TYPE_ICON[type] || '◻';
+    const fns  = groups[type];
+    const collapsed = _poolGroupCollapsed.has(type);
+    html += `
+      <div class="pool-type-header" onclick="togglePoolGroup('${_esc(type)}')">
+        <span class="pool-grp-toggle">${collapsed ? '▶' : '▼'}</span>
+        <span>${icon} ${_esc(type)}</span>
+        <span class="pool-grp-count">${fns.length}</span>
+      </div>
+      <div class="pool-type-group${collapsed ? ' pool-grp-collapsed' : ''}">`;
+
+    for (const f of fns) {
+      // Resolve index in _poolFiltered for click selection
+      const pIdx = _poolFiltered.indexOf(f);
+      const sel   = pIdx === _selectedPoolIdx ? ' fn-pool-item-active' : '';
+      const uses  = usageCounts[f.id] || 0;
+
+      // Contains count
+      const cntList = f.contains ? f.contains.split(',').filter(Boolean) : [];
+      const cntsHtml = cntList.length
+        ? `<span class="pool-col-contains" title="Contains ${cntList.length} step(s)">${cntList.length}</span>`
+        : `<span class="pool-col-contains"></span>`;
+
+      // Uses star
+      const usesHtml = uses > 0
+        ? `<span class="pool-col-uses pool-used" title="Used by ${uses} song(s)">★${uses}</span>`
+        : `<span class="pool-col-uses"></span>`;
+
+      // VC button caption (truncated)
+      const vcTxt = f.vc_button || '';
+      const vcHtml = vcTxt
+        ? `<span class="pool-col-vc" title="${_esc(vcTxt)}">${_esc(vcTxt.length > 10 ? vcTxt.substring(0,9) + '…' : vcTxt)}</span>`
+        : `<span class="pool-col-vc"></span>`;
+
+      // Description snippet
+      const descHtml = f.desc
+        ? `<div class="pool-item-desc" title="${_esc(f.desc)}">${_esc(f.desc.length > 80 ? f.desc.substring(0,79) + '…' : f.desc)}</div>`
+        : '';
+
+      const tooltip = `${f.type}: ${f.name}${f.desc ? '\n' + f.desc.substring(0,120) : ''}`;
+      html += `
+        <div class="fn-pool-item${sel}" data-pidx="${pIdx}"
+             ondblclick="slAssignFromPool()"
+             onclick="slPoolSelect(${pIdx})"
+             title="${_esc(tooltip)}">
+          <div class="pool-item-row">
+            <span class="pool-col-name fn-pool-name">${_esc(f.name)}</span>
+            <span class="fn-pool-id">${_esc(f.id)}</span>
+            ${usesHtml}
+            ${vcHtml}
+          </div>
+          ${descHtml}
+        </div>`;
+    }
+    html += `</div>`;
+  }
+
+  wrap.innerHTML = html;
+}
+
+function togglePoolGroup(type) {
+  if (_poolGroupCollapsed.has(type)) {
+    _poolGroupCollapsed.delete(type);
+  } else {
+    _poolGroupCollapsed.add(type);
+  }
+  _renderFnPool(_poolFiltered);
 }
 
 function filterFnPool(q) {
@@ -166,8 +269,10 @@ function filterFnPool(q) {
     ? _functions.filter(f =>
         f.id.includes(q) ||
         f.name.toLowerCase().includes(q) ||
-        (f.type || '').toLowerCase().includes(q))
-    : _functions;
+        (f.type || '').toLowerCase().includes(q) ||
+        (f.vc_button || '').toLowerCase().includes(q) ||
+        (f.desc || '').toLowerCase().includes(q))
+    : _functions.slice();
   _selectedPoolIdx = -1;
   _renderFnPool(_poolFiltered);
   _updatePoolAssignBtn();
@@ -175,9 +280,8 @@ function filterFnPool(q) {
 
 function slPoolSelect(idx) {
   _selectedPoolIdx = idx;
-  // Highlight in pool
-  document.querySelectorAll('.fn-pool-item').forEach((el, i) => {
-    el.classList.toggle('fn-pool-item-active', i === idx);
+  document.querySelectorAll('.fn-pool-item').forEach(el => {
+    el.classList.toggle('fn-pool-item-active', parseInt(el.dataset.pidx) === idx);
   });
   _updatePoolAssignBtn();
 }
@@ -202,12 +306,15 @@ function slAssignFromPool() {
   const sel  = body?.querySelector(`tr[data-idx="${_selectedSong}"] .song-fn-sel`);
   if (sel) sel.value = fn.id;
 
-  // Show a small flash on the assigned row
+  // Flash feedback on the assigned row
   const tr = body?.querySelector(`tr[data-idx="${_selectedSong}"]`);
   if (tr) {
     tr.classList.add('row-flash');
     setTimeout(() => tr.classList.remove('row-flash'), 600);
   }
+
+  // Refresh pool to update ★ usage counts
+  _renderFnPool(_poolFiltered);
 
   // Auto-advance to next song row
   if (_selectedSong < _songRows.length - 1) {
@@ -216,11 +323,50 @@ function slAssignFromPool() {
   }
 }
 
+// ── Auto-match all unmatched songs ─────────────────────────────────────────────
+
+async function slAutoMatch() {
+  if (!_selectedSlot || !_songRows.length) {
+    setStatus('Select a slot with songs first.', 'warn'); return;
+  }
+
+  // Only match rows that have no function assigned yet
+  const unmatched = _songRows
+    .map((r, i) => ({ idx: i, name: r.txt_name }))
+    .filter(x => x.name && !_songRows[x.idx].qxw_id);
+
+  if (!unmatched.length) {
+    setStatus('All songs already have a function assigned.', 'ok'); return;
+  }
+
+  setStatus(`Auto-matching ${unmatched.length} song(s)…`);
+  const res = await _apiPost('/api/setlist/auto-match', {
+    songs: unmatched.map(x => x.name),
+  });
+  if (res.error) { setStatus(res.error, 'error'); return; }
+
+  let matched = 0;
+  res.forEach((m, i) => {
+    if (m.matched_id) {
+      const row = _songRows[unmatched[i].idx];
+      row.qxw_id   = m.matched_id;
+      row.qxw_name = m.matched_name;
+      matched++;
+    }
+  });
+
+  _renderSongTable();
+  _renderFnPool(_poolFiltered);  // refresh ★ counts
+  setStatus(`Auto-matched ${matched} of ${unmatched.length} song(s).`, matched > 0 ? 'ok' : 'warn');
+}
+
+// ── Song detail table ──────────────────────────────────────────────────────────
+
 function _renderSongTable() {
   const body = document.getElementById('song-detail-body');
   if (!body) return;
   if (!_songRows.length) {
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--overlay0);padding:20px">
+    body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--overlay0);padding:20px">
       No songs. Click ➕ Add Song to start.
     </td></tr>`;
     return;
@@ -233,10 +379,10 @@ function _renderSongTable() {
   const fnOptsWithBlank = `<option value="">— none —</option>${fnOpts}`;
 
   body.innerHTML = _songRows.map((row, i) => {
-    const sel  = i === _selectedSong ? ' row-active' : '';
-    const inV  = _fmtMs(row.in   ?? '0');
-    const holdV= _fmtMs(row.hold ?? '4294967294');
-    const outV = _fmtMs(row.out  ?? '0');
+    const sel   = i === _selectedSong ? ' row-active' : '';
+    const inV   = _fmtMs(row.in   ?? '0');
+    const holdV = _fmtMs(row.hold ?? '4294967294');
+    const outV  = _fmtMs(row.out  ?? '0');
     return `
     <tr class="song-row${sel}" data-idx="${i}" onclick="slSelectRow(${i})">
       <td class="song-num">${i + 1}</td>
@@ -297,13 +443,13 @@ function slSyncFnName(idx, sel) {
   const opt = sel.options[sel.selectedIndex];
   _songRows[idx].qxw_name = opt ? opt.text.replace(/\s*\[.*?\]\s*$/, '') : '';
   _songRows[idx].qxw_id   = sel.value;
+  _renderFnPool(_poolFiltered);  // refresh ★ usage counts
 }
 
 function slAddRow() {
   _songRows.push({ txt_name: '', qxw_id: '', qxw_name: '', in: '0', hold: '4294967294', out: '0' });
   _renderSongTable();
   _updateSongCount();
-  // Scroll to bottom
   const wrap = document.getElementById('song-detail-wrap');
   if (wrap) wrap.scrollTop = wrap.scrollHeight;
 }
@@ -319,6 +465,7 @@ function slRemoveRowAt(idx) {
   _selectedSong = Math.min(_selectedSong, _songRows.length - 1);
   _renderSongTable();
   _updateSongCount();
+  _renderFnPool(_poolFiltered);
 }
 
 function slMoveRow(dir) {
@@ -365,10 +512,7 @@ async function slSaveDetails() {
   setStatus(`Saved ${rows.length} songs for slot ${_selectedSlot}.`, 'ok');
 }
 
-// ── Legacy: save songs as plain strings (for TXT compat) ─────────────────────
-
 async function saveSongs() {
-  // Alias kept for backward compatibility (called by old btn-save-songs)
   await slSaveDetails();
 }
 
@@ -395,17 +539,17 @@ async function saveSetlistFile() {
 
 async function slGenerateQxw() {
   if (!_selectedSlot) return;
-  await slSaveDetails();  // flush UI state first
+  await slSaveDetails();
   const sel = document.getElementById('sl-chaser-select');
   const targetId = sel?.value || '__new__';
   const res = await _apiPost(`/api/setlist/${_selectedSlot}/generate-qxw`,
                              { target_chaser_id: targetId });
   if (res.error) { setStatus(res.error, 'error'); return; }
   setStatus(`QXW saved → ${res.filename}`, 'ok');
-  await _fetchChasers();  // refresh chaser list in case a new one was created
+  await _fetchChasers();
 }
 
-// ── Per-slot TXT import (browser file picker, one song per line) ─────────────
+// ── Per-slot TXT import ───────────────────────────────────────────────────────
 
 function slImportSongsTxt(input) {
   if (!input.files.length || !_selectedSlot) return;
@@ -419,7 +563,6 @@ function slImportSongsTxt(input) {
 
     if (!lines.length) { setStatus('File is empty or has no song lines.', 'warn'); return; }
 
-    // Confirm overwrite if slot already has songs
     if (_songRows.length > 0) {
       const ok = confirm(
         `Replace ${_songRows.length} existing song(s) in this slot with ${lines.length} song(s) from "${file.name}"?`
@@ -427,22 +570,21 @@ function slImportSongsTxt(input) {
       if (!ok) { input.value = ''; return; }
     }
 
-    // Build detail rows from plain song names
     _songRows = lines.map(name => ({
       txt_name: name, qxw_id: '', qxw_name: '', in: '0', hold: '4294967294', out: '0',
     }));
     _renderSongTable();
     _updateSongCount();
+    _renderFnPool(_poolFiltered);
 
-    // Auto-save to server
     await slSaveDetails();
     setStatus(`Imported ${lines.length} song(s) from "${file.name}".`, 'ok');
   };
   reader.readAsText(file, 'utf-8');
-  input.value = '';   // reset so the same file can be re-imported
+  input.value = '';
 }
 
-// ── Per-slot TXT export (download, one song per line) ─────────────────────────
+// ── Per-slot TXT export ───────────────────────────────────────────────────────
 
 function slExportSongsTxt() {
   if (!_selectedSlot || !_songRows.length) {
@@ -469,7 +611,7 @@ function slExportSongsTxt() {
   setStatus(`Exported ${_songRows.length} song(s) → ${label}_setlist.txt`);
 }
 
-// ── Export XML TXT (raw Chaser XML block, like original script) ───────────────
+// ── Export XML TXT ────────────────────────────────────────────────────────────
 
 function slExportXmlTxt() {
   if (!_selectedSlot || !_songRows.length) {
@@ -532,6 +674,42 @@ async function slExportPdf() {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     setStatus('Setlist PDF downloaded.', 'ok');
   } catch (err) { setStatus(String(err), 'error'); }
+}
+
+// ── Pool panel resize ─────────────────────────────────────────────────────────
+
+function _initPoolResize() {
+  const handle  = document.getElementById('pool-resize-handle');
+  const poolPane = document.querySelector('.fn-pool-pane');
+  if (!handle || !poolPane) return;
+
+  let startX = 0, startW = 0;
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startX = e.clientX;
+    startW = poolPane.getBoundingClientRect().width;
+
+    const onMove = ev => {
+      const delta = startX - ev.clientX;   // dragging left increases pool width
+      const newW  = Math.max(200, Math.min(600, startW + delta));
+      poolPane.style.width = newW + 'px';
+      poolPane.style.flexShrink = '0';
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+}
+
+// Initialise resize handle once DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initPoolResize);
+} else {
+  _initPoolResize();
 }
 
 // ── Time formatting helpers ───────────────────────────────────────────────────

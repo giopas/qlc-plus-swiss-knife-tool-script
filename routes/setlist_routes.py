@@ -133,6 +133,33 @@ def save_setlist():
         return jsonify({'error': str(e)}), 500
 
 
+# ── Auto-match song names to QLC+ functions ──────────────────────────────────
+
+@bp.route('/auto-match', methods=['POST'])
+def auto_match():
+    """
+    Auto-match a list of song name strings to QLC+ function IDs.
+    Uses the 4-stage find_best_match algorithm (exact→substring→token→fuzzy).
+    Body : {songs: [str]}
+    Returns: [{txt_name, matched_id, matched_name}]
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data  = request.get_json(force=True) or {}
+    songs = data.get('songs', [])
+    if not isinstance(songs, list):
+        return jsonify({'error': 'songs must be a list.'}), 400
+    results = []
+    for s in songs:
+        matched_name, matched_id = ws.find_best_match(str(s))
+        results.append({
+            'txt_name':     s,
+            'matched_id':   matched_id,
+            'matched_name': matched_name,
+        })
+    return jsonify(results)
+
+
 # ── Chaser / QXW generation ───────────────────────────────────────────────────
 
 @bp.route('/<slot_id>/generate-qxw', methods=['POST'])

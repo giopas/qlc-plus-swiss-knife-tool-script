@@ -803,14 +803,27 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   margin-right: 4px;
 }
 
+/* ── Pool resize handle ───────────────────────────────────────────────────── */
+.pool-resize-handle {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--surface0);
+  cursor: col-resize;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 2;
+}
+.pool-resize-handle:hover,
+.pool-resize-handle:active { background: var(--blue); }
+
 /* ── Function Pool Panel ──────────────────────────────────────────────────── */
 .fn-pool-pane {
-  width: 260px;
+  width: 320px;
   min-width: 200px;
+  max-width: 600px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--surface0);
   background: var(--mantle);
   overflow: hidden;
 }
@@ -825,11 +838,62 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   overflow-y: auto;
   overflow-x: hidden;
 }
-.fn-pool-item {
+.fn-pool-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-top: 1px solid var(--surface0);
+  flex-shrink: 0;
+}
+
+/* Pool column header */
+.pool-col-header {
+  display: grid;
+  grid-template-columns: 1fr 32px 28px 52px;
+  gap: 4px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--surface1);
+  background: var(--crust);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--overlay0);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Pool type group headers */
+.pool-type-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
+  padding: 4px 8px;
+  background: var(--surface0);
+  color: var(--subtext1);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--surface1);
+  position: sticky;
+  top: 22px;
+  z-index: 1;
+}
+.pool-type-header:hover { background: var(--surface1); }
+.pool-grp-toggle { font-size: 8px; color: var(--overlay1); width: 10px; }
+.pool-grp-count  { margin-left: auto; color: var(--overlay0); font-size: 10px; }
+.pool-type-group { }
+.pool-grp-collapsed { display: none; }
+
+/* Pool items */
+.fn-pool-item {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
   cursor: pointer;
   border-bottom: 1px solid var(--surface0);
   font-size: 11px;
@@ -838,18 +902,32 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 }
 .fn-pool-item:hover         { background: var(--surface0); }
 .fn-pool-item-active        { background: rgba(137,180,250,.18) !important; }
-.fn-pool-icon  { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
-.fn-pool-id    { color: var(--overlay0); font-family: var(--font-mono); font-size: 10px;
-                 min-width: 28px; flex-shrink: 0; }
-.fn-pool-name  { color: var(--text); overflow: hidden; text-overflow: ellipsis;
-                 white-space: nowrap; }
-.fn-pool-footer {
-  display: flex;
+.pool-item-row {
+  display: grid;
+  grid-template-columns: 1fr 32px 28px 52px;
+  gap: 4px;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-top: 1px solid var(--surface0);
-  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+}
+.fn-pool-name  { color: var(--text); overflow: hidden; text-overflow: ellipsis;
+                 white-space: nowrap; min-width: 0; }
+.fn-pool-id    { color: var(--overlay0); font-family: var(--font-mono); font-size: 10px;
+                 text-align: right; flex-shrink: 0; }
+.pool-col-uses { color: var(--overlay0); font-size: 10px; text-align: center; }
+.pool-used     { color: var(--yellow) !important; font-weight: 600; }
+.pool-col-vc   { color: var(--teal); font-size: 10px; overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; }
+.pool-col-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pool-col-id   { color: var(--overlay0); font-family: var(--font-mono); font-size: 10px; text-align: right; }
+.pool-item-desc {
+  color: var(--overlay1);
+  font-size: 10px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-top: 2px;
 }
 
 /* Flash animation when a function is assigned */

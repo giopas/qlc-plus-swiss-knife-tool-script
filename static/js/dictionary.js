@@ -5,12 +5,13 @@
 'use strict';
 
 // ── Module state ──────────────────────────────────────────────────────────────
-let _dictData       = [];   // [{id, name, type, desc}]
-let _dictFiltered   = [];   // filtered view
+let _dictData       = [];   // [{id, name, type, desc, vc_button}]
+let _dictFiltered   = [];
 let _dictSort       = { col: 'id', dir: 1 };
-let _dictSelFid     = null; // currently selected function ID
+let _dictSelFid     = null;
 let _dictLoaded     = false;
-let _dictTypeFilter = '';   // '' = all types
+let _dictTypeFilter = '';
+let _dictVcFilter   = '';   // '' | 'has' | 'none'
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -41,14 +42,17 @@ async function _loadDictionary() {
   _applyDictFilters();
 }
 
-// ── Filter ────────────────────────────────────────────────────────────────────
+// ── Filters ───────────────────────────────────────────────────────────────────
 
-function filterDictionary(q) {
-  _applyDictFilters(q);
-}
+function filterDictionary(q) { _applyDictFilters(q); }
 
 function filterDictByType(type) {
   _dictTypeFilter = type || '';
+  _applyDictFilters();
+}
+
+function filterDictByVc(val) {
+  _dictVcFilter = val || '';
   _applyDictFilters();
 }
 
@@ -58,12 +62,17 @@ function _applyDictFilters(q) {
   let result = _dictData;
   if (_dictTypeFilter)
     result = result.filter(r => (r.type || '') === _dictTypeFilter);
+  if (_dictVcFilter === 'has')
+    result = result.filter(r => r.vc_button);
+  else if (_dictVcFilter === 'none')
+    result = result.filter(r => !r.vc_button);
   if (q)
     result = result.filter(r =>
       r.id.includes(q) ||
       r.name.toLowerCase().includes(q) ||
-      (r.type || '').toLowerCase().includes(q) ||
-      (r.desc || '').toLowerCase().includes(q));
+      (r.type        || '').toLowerCase().includes(q) ||
+      (r.desc        || '').toLowerCase().includes(q) ||
+      (r.vc_button   || '').toLowerCase().includes(q));
   _dictFiltered = result;
   _renderDictTable(_sortDict(_dictFiltered));
 }
@@ -107,15 +116,15 @@ function _renderDictTable(rows) {
   }
 
   const cols = [
-    { key: 'id',   label: 'ID',          w: '60px'  },
-    { key: 'type', label: 'Type',         w: '100px' },
-    { key: 'name', label: 'Name',         w: '35%'   },
-    { key: 'desc', label: 'Description',  w: ''      },
+    { key: 'id',        label: 'ID',         w: '55px'  },
+    { key: 'type',      label: 'Type',        w: '90px'  },
+    { key: 'name',      label: 'Name',        w: '28%'   },
+    { key: 'vc_button', label: 'VC Button',   w: '14%'   },
+    { key: 'desc',      label: 'Description', w: ''      },
   ];
 
   const sortArrow = k =>
-    _dictSort.col !== k ? '' :
-    (_dictSort.dir === 1 ? ' ↑' : ' ↓');
+    _dictSort.col !== k ? '' : (_dictSort.dir === 1 ? ' ↑' : ' ↓');
 
   const ths = cols.map(c =>
     `<th onclick="_dictSortBy('${c.key}')"
@@ -126,10 +135,14 @@ function _renderDictTable(rows) {
 
   const trs = rows.map(r => {
     const active = r.id === _dictSelFid ? ' row-active' : '';
+    const vcHtml = r.vc_button
+      ? `<span class="vc-badge" title="${_de(r.vc_button)}">${_de(r.vc_button.length > 18 ? r.vc_button.substring(0,17)+'…' : r.vc_button)}</span>`
+      : `<span class="no-val">—</span>`;
     return `<tr class="${active}" onclick="_selectDictRow('${r.id}')">
-      <td>${_de(r.id)}</td>
+      <td style="font-family:var(--font-mono);color:var(--overlay0)">${_de(r.id)}</td>
       <td>${_badge(r.type)}</td>
       <td class="td-wrap">${_de(r.name)}</td>
+      <td>${vcHtml}</td>
       <td class="td-wrap">${r.desc
         ? _de(r.desc)
         : '<span class="no-val">—</span>'}</td>
@@ -149,17 +162,15 @@ function _selectDictRow(fid) {
   const row   = _dictData.find(r => r.id === fid);
   if (!row) return;
 
-  // Highlight row
   document.querySelectorAll('#dict-table-wrap tr.row-active')
     .forEach(tr => tr.classList.remove('row-active'));
-  document.querySelectorAll('#dict-table-wrap tr')
-    .forEach(tr => {
-      if (tr.querySelector(`td`)?.textContent.trim() === fid)
-        tr.classList.add('row-active');
-    });
+  document.querySelectorAll('#dict-table-wrap tr').forEach(tr => {
+    if (tr.querySelector('td')?.textContent.trim() === fid)
+      tr.classList.add('row-active');
+  });
 
   document.getElementById('dict-edit-label').textContent =
-    `[${row.id}] ${row.name}`;
+    `[${row.id}] ${row.name}${row.vc_button ? '  •  VC: ' + row.vc_button : ''}`;
   const ta = document.getElementById('dict-desc-input');
   ta.value    = row.desc || '';
   ta.disabled = false;
@@ -185,12 +196,39 @@ async function saveDictEntry() {
     body: JSON.stringify({ desc }),
   });
   if (result.error) { setStatus(result.error, 'error'); return; }
-  // Update local cache
   const row = _dictData.find(r => r.id === _dictSelFid);
   if (row) row.desc = desc;
-  // Re-render to reflect change
   _renderDictTable(_sortDict(_dictFiltered));
   setStatus(`Description saved for ID ${_dictSelFid}`);
+}
+
+// ── Browse TXT file (client-side import) ──────────────────────────────────────
+
+function importDictTxtFile(input) {
+  if (!input.files.length) return;
+  const file   = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines  = e.target.result.split(/\r?\n/);
+    let   count  = 0;
+    for (const line of lines) {
+      const cl = line.trim();
+      if (!cl || cl.startsWith('#') || cl.startsWith('ID|')) continue;
+      const parts = cl.split('|');
+      if (parts.length < 3) continue;
+      const fid  = parts[0].trim();
+      if (!fid.match(/^\d+$/)) continue;
+      // Support both ID|Name|Desc and ID|Name|Type|Desc formats
+      const desc = (parts.length >= 4 ? parts.slice(3) : parts.slice(2))
+                   .join('|').replace(/\\n/g, '\n').trim();
+      const row  = _dictData.find(r => r.id === fid);
+      if (row && desc) { row.desc = desc; count++; }
+    }
+    _applyDictFilters();
+    setStatus(`Imported ${count} description(s) from "${file.name}". Click Save on each row or use Save TXT.`, 'ok');
+  };
+  reader.readAsText(file, 'utf-8');
+  input.value = '';
 }
 
 // ── Load / Save TXT ───────────────────────────────────────────────────────────
@@ -205,7 +243,6 @@ async function loadDictFile() {
   });
   if (result.error) { setStatus(result.error, 'error'); return; }
   setStatus(`Loaded ${result.count} description(s) from file`);
-  // Refresh table to show loaded descriptions
   await _loadDictionary();
 }
 
@@ -245,6 +282,6 @@ async function exportDictTxt() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function _de(s) {   // escape HTML for dict table cells
+function _de(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

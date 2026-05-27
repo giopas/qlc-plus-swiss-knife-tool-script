@@ -247,16 +247,19 @@ def save_triggers() -> str:
 # ── Dictionary Manager ────────────────────────────────────────────────────────
 
 def get_dictionary() -> list:
-    """Return shared_descriptions merged with func_detailed as a list."""
+    """Return shared_descriptions merged with func_detailed as a list (includes vc_button)."""
     rows = []
     for fid, info in _state['func_detailed'].items():
         if '(Auto-Clone)' in info['name'] or '(Setlist)' in info['name']:
             continue
+        vc    = _state['vc_buttons'].get(fid, {})
+        capts = vc.get('captions', [])
         rows.append({
-            'id':   fid,
-            'name': info['name'],
-            'type': info['type'],
-            'desc': _state['shared_descriptions'].get(fid, ''),
+            'id':        fid,
+            'name':      info['name'],
+            'type':      info['type'],
+            'desc':      _state['shared_descriptions'].get(fid, ''),
+            'vc_button': ', '.join(capts) if capts else '',
         })
     rows.sort(key=lambda r: _int(r['id']))
     return rows

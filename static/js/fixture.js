@@ -424,7 +424,8 @@ async function fixGenerateQxw() {
 
 async function fixExportPdf() {
   const showName = prompt('Show name for PDF:', 'My Show') || 'Untitled';
-  const paper    = 'A3 Landscape';
+  const paperSel = document.getElementById('fix-pdf-paper');
+  const paper    = paperSel?.value || 'A3 Landscape';
   try {
     const resp = await fetch('/api/fixture/configurator/export-pdf', {
       method: 'POST',
@@ -434,7 +435,7 @@ async function fixExportPdf() {
     if (!resp.ok) { const e = await resp.json(); setStatus(e.error || 'Error', 'error'); return; }
     const blob = await resp.blob();
     _downloadBlob(blob, 'blueprint.pdf');
-    setStatus('Blueprint PDF downloaded.', 'ok');
+    setStatus(`Blueprint PDF (${paper}) downloaded.`, 'ok');
   } catch (err) { setStatus(String(err), 'error'); }
 }
 
@@ -782,10 +783,41 @@ async function _apiDelete(url) {
   } catch(e) { return {error: String(e)}; }
 }
 
+// ── Canvas pane drag-resize ───────────────────────────────────────────────────
+
+function _initCanvasResize() {
+  const handle    = document.getElementById('fix-canvas-resize-handle');
+  const canvasPane = document.querySelector('.fix-canvas-pane');
+  if (!handle || !canvasPane) return;
+
+  let startX = 0, startW = 0;
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startX = e.clientX;
+    startW = canvasPane.getBoundingClientRect().width;
+
+    const onMove = ev => {
+      const delta = startX - ev.clientX;   // drag left → wider canvas
+      const newW  = Math.max(220, Math.min(900, startW + delta));
+      canvasPane.style.flex  = 'none';
+      canvasPane.style.width = newW + 'px';
+      _resizeCanvas();
+      _drawCanvas();
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   _bindStageFields();
+  _initCanvasResize();
   // Init snap button state
   const btn = document.getElementById('fix-btn-snap');
   if (btn) btn.classList.toggle('btn-view-active', _snapEnabled);

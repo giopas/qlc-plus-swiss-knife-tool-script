@@ -818,10 +818,8 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 
 /* ── Function Pool Panel ──────────────────────────────────────────────────── */
 .fn-pool-pane {
-  width: 320px;
-  min-width: 200px;
-  max-width: 600px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
   background: var(--mantle);
@@ -850,7 +848,7 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 /* Pool column header */
 .pool-col-header {
   display: grid;
-  grid-template-columns: 1fr 32px 28px 52px;
+  grid-template-columns: 3fr 36px 20px 2fr;
   gap: 4px;
   padding: 3px 8px;
   border-bottom: 1px solid var(--surface1);
@@ -904,7 +902,7 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 .fn-pool-item-active        { background: rgba(137,180,250,.18) !important; }
 .pool-item-row {
   display: grid;
-  grid-template-columns: 1fr 32px 28px 52px;
+  grid-template-columns: 3fr 36px 20px 2fr;
   gap: 4px;
   align-items: center;
   width: 100%;
@@ -1025,3 +1023,224 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   outline: none;
 }
 .input-sm:focus { border-color: var(--blue); }
+
+/* =============================================================================
+   SETLIST TAB — FileBot-style layout
+   ============================================================================= */
+
+.sl-fb-split {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* FileBot left: Song list pane */
+.fb-songs-pane {
+  flex: 0 0 300px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--surface0);
+  overflow: hidden;
+}
+
+.fb-song-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.fb-song-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--surface0);
+  transition: background 0.08s;
+  user-select: none;
+}
+.fb-song-item:hover    { background: var(--surface0); }
+.fb-song-active        { background: rgba(137,180,250,.14) !important; }
+.fb-song-num {
+  color: var(--overlay0);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  min-width: 20px;
+  text-align: right;
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+.fb-assign-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--overlay0);
+  flex-shrink: 0;
+  margin-top: 5px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.fb-assign-dot-ok {
+  background: var(--green);
+  border-color: var(--green);
+}
+.fb-song-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fb-song-name {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  padding: 1px 2px;
+  font-family: inherit;
+}
+.fb-song-name:hover,
+.fb-song-name:focus {
+  border-bottom-color: var(--surface1);
+  background: var(--surface0);
+}
+.fb-song-assign {
+  font-size: 10px;
+  color: var(--teal);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 2px;
+}
+
+/* Small btn variant */
+.btn-sm {
+  padding: 3px 7px !important;
+  font-size: 12px !important;
+}
+
+/* FileBot middle: Actions pane */
+.fb-actions-pane {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--surface0);
+  background: var(--mantle);
+  overflow: hidden;
+}
+.fb-actions-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fb-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fb-group-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--overlay0);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.fb-wide-btn {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  font-size: 12px !important;
+}
+.fb-sep {
+  height: 1px;
+  background: var(--surface0);
+  margin: 2px 0;
+  flex-shrink: 0;
+}
+/* Timing sub-panel */
+.fb-timing-song {
+  font-size: 11px;
+  color: var(--blue);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.fb-timing-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fb-timing-lbl {
+  font-size: 10px;
+  color: var(--subtext0);
+  width: 55px;
+  flex-shrink: 0;
+}
+.fb-timing-in {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  outline: none;
+}
+.fb-timing-in:focus  { border-color: var(--blue); }
+.fb-timing-in:disabled { opacity: 0.45; }
+
+/* Sticky footer at bottom of actions pane (Save Songs button) */
+.fb-actions-footer {
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid var(--surface0);
+  background: var(--mantle);
+}
+
+/* Chaser dropdown in actions pane */
+.fb-chaser-sel {
+  width: 100%;
+  font-size: 11px;
+  padding: 3px 5px;
+}
+
+/* ── Fixture canvas resize handle ─────────────────────────────────────────── */
+.fix-canvas-resize-handle {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--surface0);
+  cursor: col-resize;
+  transition: background 0.15s;
+  z-index: 2;
+}
+.fix-canvas-resize-handle:hover,
+.fix-canvas-resize-handle:active { background: var(--blue); }
+
+/* ── VC badge in dictionary ───────────────────────────────────────────────── */
+.vc-badge {
+  display: inline-block;
+  background: rgba(148,226,213,.18);
+  color: var(--teal);
+  border: 1px solid rgba(148,226,213,.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}

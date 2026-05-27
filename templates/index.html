@@ -85,12 +85,22 @@
         <!-- Pane header with slot title -->
         <div class="pane-header" id="song-pane-title">Select a slot →</div>
 
+        <!-- Hidden file input for per-slot TXT import -->
+        <input id="sl-import-file" type="file" accept=".txt" style="display:none"
+               onchange="slImportSongsTxt(this)">
+
         <!-- Song toolbar: add/remove row + generate/export -->
         <div class="tab-toolbar" id="song-toolbar" style="flex-wrap:wrap;gap:4px;padding:4px 8px;border-top:none">
           <button class="btn btn-surface" id="btn-add-song"    onclick="slAddRow()"    disabled>➕ Add Song</button>
           <button class="btn btn-surface" id="btn-remove-song" onclick="slRemoveRow()" disabled>🗑 Remove</button>
           <button class="btn btn-surface" id="btn-move-song-up"   onclick="slMoveRow(-1)" disabled>⬆</button>
           <button class="btn btn-surface" id="btn-move-song-dn"   onclick="slMoveRow(1)"  disabled>⬇</button>
+          <!-- Per-slot TXT import/export -->
+          <span class="toolbar-sep"></span>
+          <button class="btn btn-surface" id="btn-import-slot-txt" title="Import a song list TXT for this slot only"
+                  onclick="document.getElementById('sl-import-file').click()" disabled>📂 Import TXT</button>
+          <button class="btn btn-surface" id="btn-export-slot-txt" title="Export this slot's songs to a TXT file"
+                  onclick="slExportSongsTxt()" disabled>⬇ Export TXT</button>
           <span style="flex:1"></span>
           <!-- Target chaser selector -->
           <label class="field-label" style="margin:0 4px 0 0">Chaser:</label>

@@ -113,6 +113,7 @@ function _clearSongEditor() {
 
 function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
+   'btn-import-slot-txt','btn-export-slot-txt',
    'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
@@ -304,6 +305,70 @@ async function slGenerateQxw() {
   if (res.error) { setStatus(res.error, 'error'); return; }
   setStatus(`QXW saved → ${res.filename}`, 'ok');
   await _fetchChasers();  // refresh chaser list in case a new one was created
+}
+
+// ── Per-slot TXT import (browser file picker, one song per line) ─────────────
+
+function slImportSongsTxt(input) {
+  if (!input.files.length || !_selectedSlot) return;
+  const file   = input.files[0];
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const lines = e.target.result
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#'));
+
+    if (!lines.length) { setStatus('File is empty or has no song lines.', 'warn'); return; }
+
+    // Confirm overwrite if slot already has songs
+    if (_songRows.length > 0) {
+      const ok = confirm(
+        `Replace ${_songRows.length} existing song(s) in this slot with ${lines.length} song(s) from "${file.name}"?`
+      );
+      if (!ok) { input.value = ''; return; }
+    }
+
+    // Build detail rows from plain song names
+    _songRows = lines.map(name => ({
+      txt_name: name, qxw_id: '', qxw_name: '', in: '0', hold: '4294967294', out: '0',
+    }));
+    _renderSongTable();
+    _updateSongCount();
+
+    // Auto-save to server
+    await slSaveDetails();
+    setStatus(`Imported ${lines.length} song(s) from "${file.name}".`, 'ok');
+  };
+  reader.readAsText(file, 'utf-8');
+  input.value = '';   // reset so the same file can be re-imported
+}
+
+// ── Per-slot TXT export (download, one song per line) ─────────────────────────
+
+function slExportSongsTxt() {
+  if (!_selectedSlot || !_songRows.length) {
+    setStatus('No songs to export.', 'warn'); return;
+  }
+  const slot  = _slotData.find(s => s.id === _selectedSlot);
+  const label = (slot?.caption || `Slot_${_selectedSlot}`)
+    .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+
+  const lines = [
+    `# QLC+ Swiss Knife — Setlist: ${slot?.caption || _selectedSlot}`,
+    `# Slot ID: ${_selectedSlot}`,
+    `# ${_songRows.length} song(s)`,
+    '',
+    ..._songRows.map(r => r.txt_name || ''),
+  ];
+
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${label}_setlist.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus(`Exported ${_songRows.length} song(s) → ${label}_setlist.txt`);
 }
 
 // ── Export XML TXT (raw Chaser XML block, like original script) ───────────────

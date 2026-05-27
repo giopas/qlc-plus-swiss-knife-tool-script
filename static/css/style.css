@@ -424,6 +424,15 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   flex-shrink: 0;
 }
 
+/* Vertical separator for toolbar button groups */
+.toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--surface1);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
 /* ── Split pane (setlist / triggers) ─────────────────────────────────────────── */
 .tab-split {
   flex: 1;

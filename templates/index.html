@@ -56,23 +56,27 @@
 <main id="content">
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 1 — SETLIST MANAGER
+       TAB 1 — SETLIST MANAGER  (FileBot-style: Songs | Actions | Functions)
   ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-setlist" class="tab-panel active">
 
-    <!-- Row 1: All-slots backup (pipe-delimited multi-slot format) -->
+    <!-- Row 1: All-slots backup -->
     <div class="tab-toolbar" style="background:var(--mantle);padding:4px 12px;gap:6px">
       <span class="hint-text" style="white-space:nowrap">All-slots backup:</span>
       <input id="setlist-path" type="text" class="filter-input" style="flex:1"
-             placeholder="Path to multi-slot .txt backup (e.g. /Users/you/show.txt)…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadSetlistFile()" title="Load all slots from pipe-delimited TXT">📂 Load All</button>
-      <button class="btn btn-surface" onclick="saveSetlistFile()" title="Save all slots to pipe-delimited TXT">💾 Save All</button>
+             placeholder="Path to multi-slot .txt backup…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadSetlistFile()">📂 Load All</button>
+      <button class="btn btn-surface" onclick="saveSetlistFile()">💾 Save All</button>
       <button class="btn btn-surface" onclick="refreshSlots()">↺ Refresh</button>
     </div>
 
-    <div class="tab-split" style="height:calc(100vh - 208px)">
+    <!-- Hidden file input for per-slot TXT import -->
+    <input id="sl-import-file" type="file" accept=".txt" style="display:none"
+           onchange="slImportSongsTxt(this)">
 
-      <!-- Col 1: slot list -->
+    <div class="tab-split sl-fb-split">
+
+      <!-- ── Col 1: Slot list ──────────────────────────────────────────── -->
       <div class="slot-pane">
         <div class="pane-header">CueList Slots</div>
         <div id="slot-list">
@@ -80,93 +84,126 @@
         </div>
       </div>
 
-      <!-- Col 2: song detail editor -->
-      <div class="song-pane" style="display:flex;flex-direction:column;overflow:hidden">
-
-        <!-- Pane header with slot title -->
-        <div class="pane-header" id="song-pane-title">Select a slot →</div>
-
-        <!-- Hidden file input for per-slot TXT import -->
-        <input id="sl-import-file" type="file" accept=".txt" style="display:none"
-               onchange="slImportSongsTxt(this)">
-
-        <!-- Song toolbar: add/remove row + generate/export -->
-        <div class="tab-toolbar" id="song-toolbar" style="flex-wrap:wrap;gap:4px;padding:4px 8px;border-top:none">
-          <button class="btn btn-surface" id="btn-add-song"    onclick="slAddRow()"    disabled>➕ Add Song</button>
-          <button class="btn btn-surface" id="btn-remove-song" onclick="slRemoveRow()" disabled>🗑 Remove</button>
-          <button class="btn btn-surface" id="btn-move-song-up"   onclick="slMoveRow(-1)" disabled>⬆</button>
-          <button class="btn btn-surface" id="btn-move-song-dn"   onclick="slMoveRow(1)"  disabled>⬇</button>
-          <span class="toolbar-sep"></span>
-          <button class="btn btn-surface" id="btn-import-slot-txt" title="Import a song list TXT for this slot only"
-                  onclick="document.getElementById('sl-import-file').click()" disabled>📂 Import TXT</button>
-          <button class="btn btn-surface" id="btn-export-slot-txt" title="Export this slot's songs to a TXT file"
-                  onclick="slExportSongsTxt()" disabled>⬇ Export TXT</button>
-          <button class="btn btn-surface" id="btn-auto-match" title="Auto-match unassigned song names to QLC+ functions"
-                  onclick="slAutoMatch()" disabled>🎯 Auto-Match</button>
+      <!-- ── Col 2: Song list (FileBot Left) ──────────────────────────── -->
+      <div class="fb-songs-pane">
+        <div class="pane-header" id="song-pane-title">Songs</div>
+        <div id="fb-song-list" class="fb-song-list">
+          <div class="slot-empty">Select a slot to see songs</div>
+        </div>
+        <div class="pane-footer" style="gap:3px">
+          <button class="btn btn-surface btn-sm" id="btn-add-song"     onclick="slAddRow()"    disabled title="Add song">➕</button>
+          <button class="btn btn-surface btn-sm" id="btn-remove-song"  onclick="slRemoveRow()" disabled title="Remove selected">🗑</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-up" onclick="slMoveRow(-1)" disabled title="Move up">⬆</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-dn" onclick="slMoveRow(1)"  disabled title="Move down">⬇</button>
           <span style="flex:1"></span>
-          <label class="field-label" style="margin:0 4px 0 0">Chaser:</label>
-          <select id="sl-chaser-select" class="filter-input" style="width:160px" disabled>
-            <option value="__new__">— Create new chaser —</option>
-          </select>
-          <button class="btn btn-accent"  id="btn-generate-qxw"    onclick="slGenerateQxw()"   disabled>🚀 Generate QXW</button>
-          <button class="btn btn-surface" id="btn-export-sl-pdf"   onclick="slExportPdf()"    disabled>📄 PDF</button>
-          <button class="btn btn-surface" id="btn-export-sl-xml"   onclick="slExportXmlTxt()" disabled>📝 XML TXT</button>
-        </div>
-
-        <!-- Song detail table -->
-        <div id="song-detail-wrap" style="flex:1;overflow-y:auto;overflow-x:hidden">
-          <table id="song-detail-table" class="song-detail-table">
-            <thead>
-              <tr>
-                <th style="width:32px">#</th>
-                <th>Song Name</th>
-                <th style="width:36px"></th>
-                <th>Assigned QLC+ Function</th>
-                <th style="width:72px">Fade In</th>
-                <th style="width:72px">Hold</th>
-                <th style="width:72px">Fade Out</th>
-                <th style="width:28px"></th>
-              </tr>
-            </thead>
-            <tbody id="song-detail-body">
-              <tr id="song-placeholder-row">
-                <td colspan="8" style="text-align:center;color:var(--overlay0);padding:20px">
-                  Select a slot on the left to edit its songs.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Footer: count + save -->
-        <div class="pane-footer">
           <span id="song-count" class="hint-text"></span>
-          <span style="flex:1"></span>
-          <button class="btn btn-green" id="btn-save-songs"
-                  onclick="slSaveDetails()" disabled>💾 Save Songs</button>
         </div>
-
       </div>
 
-      <!-- Resize handle between song editor and pool -->
-      <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize panel"></div>
+      <!-- ── Col 3: Actions pane (FileBot Middle) ─────────────────────── -->
+      <div class="fb-actions-pane">
+        <div class="pane-header" style="font-size:10px;letter-spacing:.05em">ACTIONS</div>
 
-      <!-- Col 3: QLC+ Function Pool -->
+        <!-- Scrollable body -->
+        <div class="fb-actions-body">
+
+          <!-- Assignment -->
+          <div class="fb-group-label">Assign</div>
+          <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
+                  onclick="slAssignFromPool()" disabled
+                  title="Assign selected pool function to selected song">◀ Assign</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
+                  onclick="slClearAssignment()" disabled
+                  title="Remove assignment from selected song">✕ Clear Song</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-clear-all"
+                  onclick="slClearAllAssignments()" disabled
+                  title="Remove all assignments">✕ Clear All</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
+                  onclick="slAutoMatch()" disabled
+                  title="Re-run auto-match on unassigned songs">🎯 Re-Match</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Timing -->
+          <div class="fb-group-label">Timing</div>
+          <div class="fb-timing-song" id="timing-song-label">— select a song —</div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">In</label>
+            <input id="timing-in"   class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('in',this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">Hold</label>
+            <input id="timing-hold" class="fb-timing-in" type="text" placeholder="Inf" disabled oninput="slTimingChanged('hold',this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">Out</label>
+            <input id="timing-out"  class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('out',this)">
+          </div>
+
+          <div class="fb-sep"></div>
+
+          <!-- Import / Export -->
+          <div class="fb-group-label">Setlist TXT</div>
+          <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
+                  onclick="document.getElementById('sl-import-file').click()"
+                  disabled>📂 Import Setlist TXT</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
+                  onclick="slExportSongsTxt()" disabled>⬇ Export Setlist TXT</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Generate -->
+          <div class="fb-group-label">Generate QXW</div>
+          <span class="hint-text" style="font-size:9px;line-height:1.3">
+            Target chaser in workspace:
+          </span>
+          <select id="sl-chaser-select" class="filter-input fb-chaser-sel" disabled
+                  title="Choose an existing chaser to overwrite, or create a new one">
+            <option value="__new__">— Create new chaser —</option>
+          </select>
+          <button class="btn btn-accent fb-wide-btn" id="btn-generate-qxw"
+                  onclick="slGenerateQxw()" disabled>🚀 Generate QXW</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-pdf"
+                  onclick="slExportPdf()" disabled>📄 PDF</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-xml"
+                  onclick="slExportXmlTxt()" disabled>📝 XML TXT</button>
+
+        </div>
+
+        <!-- Save always visible at bottom -->
+        <div class="fb-actions-footer">
+          <button class="btn btn-green fb-wide-btn" id="btn-save-songs"
+                  onclick="slSaveDetails()" disabled>💾 Save Songs</button>
+        </div>
+      </div>
+
+      <!-- ── Resize handle ─────────────────────────────────────────────── -->
+      <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize"></div>
+
+      <!-- ── Col 4: QLC+ Function Pool (FileBot Right) ────────────────── -->
       <div class="fn-pool-pane">
-        <div class="pane-header">QLC+ Function Pool</div>
+        <div class="pane-header">QLC+ Functions</div>
         <div class="fn-pool-search">
           <input id="fn-pool-filter" type="text" class="filter-input"
-                 placeholder="Search functions…" oninput="filterFnPool(this.value)">
+                 placeholder="Search…" oninput="filterFnPool(this.value)">
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <select id="pool-type-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByType(this.value)">
+              <option value="">All types</option>
+            </select>
+            <select id="pool-vc-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByVc(this.value)">
+              <option value="">All VC</option>
+              <option value="has">Has VC ✓</option>
+              <option value="none">No VC</option>
+            </select>
+          </div>
         </div>
         <div id="fn-pool-list" class="fn-pool-list">
           <div class="slot-empty">Load a workspace to see functions</div>
         </div>
         <div class="fn-pool-footer">
           <span id="fn-pool-count" class="hint-text"></span>
-          <button class="btn btn-accent" id="btn-pool-assign"
-                  onclick="slAssignFromPool()" disabled title="Assign selected function to selected song row">
-            ◀ Assign
-          </button>
         </div>
       </div>
 
@@ -178,16 +215,29 @@
   ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-dictionary" class="tab-panel">
 
-    <div class="tab-toolbar">
-      <input id="dict-filter" class="filter-input" type="text"
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <input id="dict-filter" class="filter-input" type="text" style="width:160px"
              placeholder="Filter functions…" oninput="filterDictionary(this.value)">
-      <select id="dict-type-filter" class="filter-input" style="width:140px"
+      <select id="dict-type-filter" class="filter-input" style="width:120px"
               onchange="filterDictByType(this.value)">
         <option value="">All types</option>
       </select>
-      <input id="dict-path" type="text" class="filter-input" style="flex:1"
+      <select id="dict-vc-filter" class="filter-input" style="width:110px"
+              onchange="filterDictByVc(this.value)">
+        <option value="">All VC</option>
+        <option value="has">Has VC ✓</option>
+        <option value="none">No VC</option>
+      </select>
+      <span style="flex:1"></span>
+      <!-- File-browse import (client-side TXT parsing) -->
+      <label class="btn btn-surface" title="Browse and load a dictionary .txt file">
+        📂 Browse TXT
+        <input type="file" accept=".txt" style="display:none"
+               onchange="importDictTxtFile(this)">
+      </label>
+      <input id="dict-path" type="text" class="filter-input" style="width:220px"
              placeholder="Dictionary .txt path…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadDictFile()">📂 Load</button>
+      <button class="btn btn-surface" onclick="loadDictFile()">Load path</button>
       <button class="btn btn-surface" onclick="saveDictFile()">💾 Save</button>
       <button class="btn btn-surface" onclick="exportDictTxt()">⬇ Export TXT</button>
     </div>
@@ -215,6 +265,13 @@
              placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
       <span style="flex:1"></span>
       <button class="btn btn-surface" onclick="exportChecklistTxt()">⬇ Export TXT</button>
+      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
       <button class="btn btn-surface" onclick="exportChecklistPdf()">🖼 Blueprint PDF</button>
     </div>
 
@@ -321,7 +378,14 @@
         <input id="fix-grid-rows" class="filter-input" type="number" value="6" min="1" max="20" style="width:36px">
       </span>
 
-      <span style="margin-left:auto;display:flex;gap:4px">
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+        <select id="fix-pdf-paper" class="filter-input" style="width:160px">
+          <option value="A3 Landscape">A3 Landscape</option>
+          <option value="A4 Landscape">A4 Landscape</option>
+          <option value="A4 Portrait">A4 Portrait</option>
+          <option value="US Letter Landscape">US Letter Landscape</option>
+          <option value="US Letter Portrait">US Letter Portrait</option>
+        </select>
         <button class="btn-normal" onclick="fixExportPdf()">🖼 Blueprint PDF</button>
         <button class="btn-save"   onclick="fixGenerateQxw()">🚀 Generate QXW</button>
       </span>
@@ -338,6 +402,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Drag-resize handle -->
+      <div id="fix-canvas-resize-handle" class="fix-canvas-resize-handle" title="Drag to resize canvas"></div>
 
       <!-- Right: canvas -->
       <div class="fix-canvas-pane">

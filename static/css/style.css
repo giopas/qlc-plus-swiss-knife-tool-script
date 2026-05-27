@@ -30,7 +30,7 @@
   --pink:      #f5c2e7;
   --flamingo:  #f2cdcd;
 
-  --header-h:   52px;
+  --header-h:   82px;
   --tabbar-h:   38px;
   --statusbar-h:28px;
   --border-r:   6px;
@@ -71,11 +71,51 @@ body {
   background: var(--mantle);
   border-bottom: 1px solid var(--surface0);
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 4px 16px;
   user-select: none;
 }
+
+/* Row wrapper shared by both header rows */
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+}
+
+/* Second row — output directory picker */
+.header-row2 {
+  height: 26px;
+  gap: 6px;
+  border-top: 1px solid var(--surface0);
+  padding-top: 4px;
+}
+
+.header-row2-label {
+  font-size: 11px;
+  color: var(--overlay1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.outdir-input {
+  flex: 1;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: var(--border-r);
+  color: var(--subtext0);
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  transition: border-color .15s;
+  min-width: 0;
+}
+.outdir-input:focus         { border-color: var(--blue); color: var(--text); }
+.outdir-input::placeholder  { color: var(--overlay0); }
 
 #header-left {
   display: flex;
@@ -122,6 +162,9 @@ body {
 #header-right {
   flex-shrink: 0;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #ws-name {
@@ -1252,32 +1295,33 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
    Toggle by adding class "theme-grey" to <body>
    ============================================================================= */
 
+/* Catppuccin Frappé — noticeably lighter than Mocha, clearly distinct in a glance */
 body.theme-grey {
-  --bg:        #24273a;
-  --base:      #24273a;
-  --mantle:    #1e2030;
-  --crust:     #181926;
-  --surface0:  #363a4f;
-  --surface1:  #494d64;
-  --surface2:  #5b6078;
-  --overlay0:  #6e738d;
-  --overlay1:  #8087a2;
-  --text:      #cad3f5;
-  --subtext0:  #a5adcb;
-  --subtext1:  #b8c0e0;
-  --lavender:  #b7bdf8;
-  --blue:      #8aadf4;
-  --sapphire:  #7dc4e4;
-  --sky:       #91d7e3;
-  --teal:      #8bd5ca;
-  --green:     #a6da95;
-  --yellow:    #eed49f;
-  --peach:     #f5a97f;
-  --maroon:    #ee99a0;
-  --red:       #ed8796;
-  --mauve:     #c6a0f6;
-  --pink:      #f5bde6;
-  --flamingo:  #f0c6c6;
+  --bg:        #303446;
+  --base:      #303446;
+  --mantle:    #292c3c;
+  --crust:     #232634;
+  --surface0:  #414559;
+  --surface1:  #51576d;
+  --surface2:  #626880;
+  --overlay0:  #737994;
+  --overlay1:  #838ba7;
+  --text:      #c6d0f5;
+  --subtext0:  #a5adce;
+  --subtext1:  #b5bfe2;
+  --lavender:  #babbf1;
+  --blue:      #8caaee;
+  --sapphire:  #85c1dc;
+  --sky:       #99d1db;
+  --teal:      #81c8be;
+  --green:     #a6d189;
+  --yellow:    #e5c890;
+  --peach:     #ef9f76;
+  --maroon:    #ea999c;
+  --red:       #e78284;
+  --mauve:     #ca9ee6;
+  --pink:      #f4b8e4;
+  --flamingo:  #eebebe;
   --btn-label: var(--mantle);
 }
 
@@ -1340,3 +1384,71 @@ body.theme-light {
   text-overflow: ellipsis;
   vertical-align: middle;
 }
+
+/* ── Setlist pool: (Setlist) clone indicator ────────────────────────────── */
+/* Orange ✦ star shown when a function has already been used in a generate  */
+.pool-setlist-used {
+  color: var(--peach);
+  font-size: 11px;
+  cursor: default;
+}
+
+/* =============================================================================
+   HOVER TOOLTIPS  (CSS-only, using data-tooltip attribute)
+   ============================================================================= */
+
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface1);
+  color: var(--text);
+  border: 1px solid var(--surface2);
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 9999;
+  max-width: 220px;
+  width: max-content;
+  box-shadow: 0 3px 10px rgba(0,0,0,.35);
+}
+
+/* Small triangle pointer */
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--surface2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+  z-index: 9999;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+  opacity: 1;
+}
+
+/* Tooltips that would clip at the left edge — nudge right */
+[data-tooltip].tt-right::after { left: 0; transform: none; }
+[data-tooltip].tt-right::before { left: 12px; transform: none; }
+
+/* Tooltips that would clip at the right edge — nudge left */
+[data-tooltip].tt-left::after  { left: auto; right: 0; transform: none; }
+[data-tooltip].tt-left::before { left: auto; right: 12px; transform: none; }

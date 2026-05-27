@@ -64,7 +64,8 @@ def export_txt():
         lines.append(f"{r['id']}|{r['name']}|{r.get('type','')}|{desc}\n")
     import os
     state = ws.get_state()
-    bn = os.path.splitext(os.path.basename(state.get('path') or 'workspace'))[0]
+    _src = state.get('original_name') or state.get('path') or 'workspace'
+    bn   = os.path.splitext(os.path.basename(_src))[0]
     filename = f'{bn}_ID_dictionary.txt'
     return Response(
         ''.join(lines),

@@ -71,11 +71,12 @@ def load():
 
         state = ws.load_qxw(path)
 
-        # For upload mode: don't expose the temp path to the client.
-        # The real path is gone after this request; show the original name instead.
+        # For upload mode: record the original filename inside the workspace
+        # state so output filenames and error messages are derived from it
+        # (not from the temp path which is deleted after this request).
         if original_name:
-            state['path']          = None
-            state['original_name'] = original_name
+            ws.set_original_name(original_name)
+            state = ws.get_state()   # refresh to get the patched view
 
         return jsonify(state)
 
@@ -94,10 +95,19 @@ def load():
 
 @bp.route('/api/reload', methods=['POST'])
 def reload():
-    """Re-parse the currently loaded file from disk."""
+    """Re-parse the currently loaded file from disk (path mode only)."""
     state = ws.get_state()
-    if not state['loaded'] or not state['path']:
+    if not state['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
+    if state.get('original_name'):
+        return jsonify({
+            'error': (
+                'Reload is only available when the workspace was loaded by path. '
+                'Drag-and-drop or re-upload the file to refresh it.'
+            )
+        }), 400
+    if not state['path']:
+        return jsonify({'error': 'No workspace path available.'}), 400
     try:
         updated = ws.load_qxw(state['path'])
         return jsonify(updated)

@@ -35,7 +35,8 @@ _MAX_TXT_BYTES =  5 * 1024 * 1024   #  5 MB
 
 # ── Module-level singleton state ──────────────────────────────────────────────
 _state: dict = {
-    'path':               None,
+    'path':               None,   # real file path (path mode) or temp path (upload mode)
+    'original_name':      None,   # original filename (upload mode only, else None)
     'loaded':             False,
     # Raw XML (kept alive for trigger save-back and QXW generation)
     'xml_tree':           None,
@@ -66,8 +67,12 @@ _state: dict = {
 
 def get_state() -> dict:
     """Return a JSON-safe snapshot of the current state."""
+    # In upload mode, original_name is set and _state['path'] is a temp path.
+    # Expose the original filename to the client rather than the temp path.
+    upload_mode = bool(_state.get('original_name'))
     return {
-        'path':            _state['path'],
+        'path':            None if upload_mode else _state['path'],
+        'original_name':   _state.get('original_name'),
         'loaded':          _state['loaded'],
         'func_count':      len(_state['func_detailed']),
         'fixture_count':   len(_state['fixture_map']),
@@ -85,15 +90,25 @@ def load_qxw(path: str) -> dict:
     _reset()
     tree = _safe_parse_xml(path)
     root = tree.getroot()
-    _state['path']     = path
-    _state['loaded']   = True
-    _state['xml_tree'] = tree
-    _state['qxw_root'] = root
+    _state['path']          = path
+    _state['original_name'] = None   # caller sets this for upload mode
+    _state['loaded']        = True
+    _state['xml_tree']      = tree
+    _state['qxw_root']      = root
     _parse_shared_data(root)
     _parse_triggers(root)
     _parse_cuelist_slots(root)
     _state['error'] = None
     return get_state()
+
+
+def set_original_name(name: str):
+    """
+    Mark the current workspace as loaded from an uploaded file.
+    Stores the user-visible original filename so output filenames are
+    derived from it (not from the temp path used internally).
+    """
+    _state['original_name'] = name or None
 
 
 def get_functions() -> list:
@@ -234,8 +249,16 @@ def update_trigger(uid: str, key: str, universe: str, channel: str) -> bool:
 
 def save_triggers() -> str:
     """Write the modified XML tree back to the .qxw file. Returns path."""
-    if not _state['loaded'] or not _state['path']:
+    if not _state['loaded']:
         raise RuntimeError('No workspace loaded.')
+    if _state.get('original_name'):
+        raise RuntimeError(
+            'Triggers cannot be saved: the workspace was loaded via file upload. '
+            'Use "Load by path" to enable this feature (paste the full .qxw path '
+            'in the path field and click Load).'
+        )
+    if not _state['path']:
+        raise RuntimeError('No workspace path available.')
     _state['xml_tree'].write(
         _state['path'],
         encoding='utf-8',
@@ -471,8 +494,19 @@ def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
             engine.remove(func)
 
     # Determine output filename
-    src = _state['path'] or 'workspace.qxw'
-    odir = os.path.dirname(src)
+    # Upload mode: _state['path'] is a (possibly deleted) temp file; use
+    # original_name for the base and CWD as the output directory so the
+    # generated file lands next to the Flask process (i.e. the scripts folder).
+    # Path mode: use the directory and basename of the loaded .qxw file,
+    # matching the v0.7.3 behaviour (output lives next to the source file).
+    orig_name = _state.get('original_name')
+    if orig_name:
+        # Upload mode
+        odir = os.getcwd()
+        src  = orig_name
+    else:
+        src  = _state['path'] or 'workspace.qxw'
+        odir = os.path.dirname(os.path.abspath(src))
     obn  = os.path.splitext(os.path.basename(src))[0]
     m    = re.search(r'(\d+)$', obn)
     if m:
@@ -496,7 +530,10 @@ def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
     with open(nf, 'w', encoding='utf-8') as f:
         f.write(xml_content)
 
-    _state['path'] = nf
+    # Do NOT update _state['path'] here.  The source workspace stays the
+    # originally loaded file so that repeated generate calls keep producing
+    # correctly-numbered outputs (matching v0.7.3 behaviour where
+    # app.current_qxw_file never changes after a generate).
     return nf
 
 
@@ -506,6 +543,7 @@ def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
 
 def _reset():
     _state['path']               = None
+    _state['original_name']      = None
     _state['loaded']             = False
     _state['xml_tree']           = None
     _state['qxw_root']           = None

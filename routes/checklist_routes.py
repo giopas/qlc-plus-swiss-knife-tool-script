@@ -82,8 +82,10 @@ def export_pdf():
 
     filename = 'blueprint.pdf'
     state = ws.get_state()
-    if state.get('path'):
-        filename = os.path.splitext(os.path.basename(state['path']))[0] + '_Blueprint.pdf'
+    # Use original_name (upload mode) or path (path mode) to derive filename
+    _src = state.get('original_name') or state.get('path')
+    if _src:
+        filename = os.path.splitext(os.path.basename(_src))[0] + '_Blueprint.pdf'
 
     return Response(
         pdf_bytes,

@@ -6,7 +6,7 @@
 
 // ── Module state ──────────────────────────────────────────────────────────────
 let _rig         = [];          // [{idx, name, manufacturer, model, mode, ch_count, role,
-                                //   universe, address, x_mm, z_mm, y_mm, color, grid_cell}]
+                                //   universe, address, x_mm, z_mm, y_mm, color, grid, h_role}]
 let _qxfDefs     = [];          // [{key, manufacturer, model, type, modes:[{name,channels}]}]
 let _stage       = { w_mm: 8000, d_mm: 6000, h_mm: 4000, cols: 8, rows: 6 };
 let _viewMode    = 'top';       // 'top' | 'front' | 'side'
@@ -216,7 +216,7 @@ function _renderRigTable() {
     const dot  = `<span class="fix-color-dot" style="background:${_te(f.color||'#888')}"></span>`;
     const univ = f.universe != null ? f.universe : '—';
     const addr = f.address  != null ? f.address  : '—';
-    const grid = f.grid_cell || '—';
+    const grid = f.grid || '—';
     return `<tr class="fix-rig-row${sel}" data-idx="${i}" onclick="fixSelectRow(${i})">
       <td>${dot}</td>
       <td>${_te(f.name||'')}</td>
@@ -580,10 +580,10 @@ function _drawTopView(W, H) {
     ctx.font = '9px monospace';
     const lbl = (f.name || '').substring(0, 10);
     ctx.fillText(lbl, px - lbl.length * 2.8, py + 14);
-    if (f.grid_cell) {
+    if (f.grid) {
       ctx.fillStyle = cSubtext0;
       ctx.font = '8px monospace';
-      ctx.fillText(f.grid_cell, px - 6, py - 12);
+      ctx.fillText(f.grid, px - 6, py - 12);
     }
   }
 }
@@ -721,16 +721,22 @@ async function _onCanvasMouseUp(e) {
   const idx = _dragIdx;
   _dragIdx = -1;
   const f = _rig[idx];
-  // Snap if enabled
-  let x_mm = f.x_mm, z_mm = f.z_mm;
+
+  // Always PATCH the dragged position to the server first so snap and
+  // grid-cell computation use the new coordinates, not the original ones.
+  const patchRes = await _apiPatch(`/api/fixture/configurator/${idx}`,
+    { x_mm: Math.round(f.x_mm), z_mm: Math.round(f.z_mm) });
+
   if (_snapEnabled) {
+    // Snap to nearest grid intersection (server re-reads the patched pos)
     const res = await _apiPost(`/api/fixture/configurator/snap`, { idx });
-    if (res.ok) { x_mm = res.x_mm; z_mm = res.z_mm; f.x_mm = x_mm; f.z_mm = z_mm; }
+    if (res.rig) { _rig = res.rig; _assignColors(); }
+    else if (res.ok) { f.x_mm = res.x_mm; f.z_mm = res.z_mm; }
   } else {
-    await _apiPatch(`/api/fixture/configurator/${idx}`, { x_mm: Math.round(x_mm), z_mm: Math.round(z_mm) });
+    // Re-fetch full rig so grid column gets recomputed from new position
+    const updRes = await _apiJson('/api/fixture/configurator/rig');
+    if (Array.isArray(updRes)) { _rig = updRes; _assignColors(); }
   }
-  const updRes = await _apiJson('/api/fixture/configurator/rig');
-  if (Array.isArray(updRes)) { _rig = updRes; _assignColors(); }
   _renderRigTable();
   _drawCanvas();
 }

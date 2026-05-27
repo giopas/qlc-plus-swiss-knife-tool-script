@@ -293,10 +293,12 @@ body {
 .filter-input:focus { border-color: var(--blue); }
 .filter-input::placeholder { color: var(--overlay0); }
 
-/* Table wrapper */
+/* Table wrapper — must NOT scroll itself; Grid.js fixedHeader scrolls the body.
+   Pagination footer stays pinned at the bottom, always visible. */
 #fn-table-wrap, #vc-table-wrap {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
+  min-height: 0;
   padding: 0;
 }
 

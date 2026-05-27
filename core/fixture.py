@@ -68,7 +68,7 @@ _template_root: "ET.Element | None" = None
 
 def get_stage_dims() -> dict:
     return {"w_mm": _stage_w_mm, "d_mm": _stage_d_mm, "h_mm": _stage_h_mm,
-            "grid_cols": _grid_cols, "grid_rows": _grid_rows}
+            "cols": _grid_cols, "rows": _grid_rows}
 
 
 def set_stage_dims(w_mm: int, d_mm: int, h_mm: int,
@@ -131,6 +131,31 @@ def mm_to_height_role(y_mm: float) -> str:
             min_d = d
             best  = HEIGHT_ROLE_NAMES[i]
     return best
+
+
+# ── Role helpers ─────────────────────────────────────────────────────────────
+
+_ROLE_KEYS = [
+    "Front Left", "Front Center", "Front Right",
+    "Back Left",  "Back Center",  "Back Right",
+    "Side Left",  "Side Right",   "Center",
+    "Wing Left",  "Wing Right",
+    "Ceiling",    "Floor",
+    "Wash",       "Spot",         "Strobe",
+    "Fill",       "Key",          "Backlight",
+]
+
+
+def _extract_role_from_name(name: str) -> str:
+    """
+    Try to derive a meaningful role string from the fixture name.
+    Returns the matched role keyword or 'Custom' if none found.
+    """
+    nu = name.upper()
+    for rk in _ROLE_KEYS:
+        if rk.upper() in nu:
+            return rk
+    return "Custom"
 
 
 # ── Color assignment ──────────────────────────────────────────────────────────
@@ -339,7 +364,7 @@ def import_from_qxw(qxw_root: "ET.Element"):
             "mode":         mode,
             "ch_count":     ch_count,
             "name":         name,
-            "role":         "Custom",
+            "role":         _extract_role_from_name(name),
             "universe":     universe,
             "address":      address,
             "x_mm":         int(pos["x"]),
@@ -388,17 +413,6 @@ def _build_default_assignments(template_root: "ET.Element") -> dict:
         if fid in tmpl_info:
             tmpl_info[fid]['x'] = float(fxi.get('XPos', 0))
             tmpl_info[fid]['z'] = float(fxi.get('ZPos', 0))
-
-    _ROLE_KEYS = ["Front Left", "Front Center", "Front Right",
-                  "Back Left", "Back Center", "Back Right",
-                  "Side Left", "Side Right", "Center"]
-
-    def _extract_role(name):
-        nu = name.upper()
-        for rk in _ROLE_KEYS:
-            if rk.upper() in nu:
-                return rk
-        return None
 
     rig_by_name = {e['name']: i for i, e in enumerate(_rig)}
     rig_by_role: dict = {}
@@ -461,7 +475,7 @@ def _build_default_assignments(template_root: "ET.Element") -> dict:
                     ri = c
 
             if ri == -1:
-                role = _extract_role(t_name)
+                role = _extract_role_from_name(t_name)
                 if role:
                     for c in rig_by_role.get(role, []):
                         if c not in used:

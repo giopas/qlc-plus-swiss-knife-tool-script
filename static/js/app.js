@@ -187,9 +187,20 @@ async function _loadFunctions() {
   _renderFnTable(_fnData);
 }
 
+// ── Dynamic page-limit helper ─────────────────────────────────────────────────
+// Compute how many rows fit in the wrapper without overflow.
+// Grid.js row ≈ 36 px · header ≈ 36 px · pagination footer ≈ 44 px.
+function _pageLimit(wrapId) {
+  const el = document.getElementById(wrapId);
+  const h  = el ? el.clientHeight : 600;
+  return Math.max(10, Math.floor((h - 36 - 44) / 36));
+}
+
 function _renderFnTable(data) {
-  const rows = _buildFnRows(data);
-  const wrap = document.getElementById('fn-table-wrap');
+  const rows  = _buildFnRows(data);
+  const wrap  = document.getElementById('fn-table-wrap');
+  const limit = _pageLimit('fn-table-wrap');
+  const h     = wrap ? Math.max(200, wrap.clientHeight - 44) : 500;
 
   if (_fnGrid) { _fnGrid.destroy(); _fnGrid = null; }
 
@@ -205,10 +216,10 @@ function _renderFnTable(data) {
     })),
     data:        rows,
     sort:        true,
-    pagination:  { limit: 200, summary: true },
-    style: {
-      table: { 'width': '100%' },
-    },
+    fixedHeader: true,
+    height:      h + 'px',
+    pagination:  { limit, summary: true },
+    style:       { table: { 'width': '100%' } },
   }).render(wrap);
 }
 
@@ -263,8 +274,10 @@ async function _loadVcWidgets() {
 }
 
 function _renderVcTable(data) {
-  const rows = _buildVcRows(data);
-  const wrap = document.getElementById('vc-table-wrap');
+  const rows  = _buildVcRows(data);
+  const wrap  = document.getElementById('vc-table-wrap');
+  const limit = _pageLimit('vc-table-wrap');
+  const h     = wrap ? Math.max(200, wrap.clientHeight - 44) : 500;
 
   if (_vcGrid) { _vcGrid.destroy(); _vcGrid = null; }
 
@@ -278,9 +291,11 @@ function _renderVcTable(data) {
         ? (cell) => gridjs.html(cell)
         : undefined,
     })),
-    data:       rows,
-    sort:       true,
-    pagination: { limit: 200, summary: true },
+    data:        rows,
+    sort:        true,
+    fixedHeader: true,
+    height:      h + 'px',
+    pagination:  { limit, summary: true },
   }).render(wrap);
 }
 
@@ -305,6 +320,25 @@ async function _ensureIdBrowserLoaded() {
   if (!state.loaded) return;
   _idBrowserLoaded = true;
   await Promise.all([_loadFunctions(), _loadVcWidgets()]);
+  _attachIdBrowserResizeObserver();
+}
+
+// Re-render tables when the wrapper changes size (window resize, panel resize).
+// Debounced so it doesn't hammer on every pixel of a resize drag.
+function _attachIdBrowserResizeObserver() {
+  let _roTimer = null;
+  const rerender = () => {
+    clearTimeout(_roTimer);
+    _roTimer = setTimeout(() => {
+      if (_fnData.length)  _renderFnTable(_fnData);
+      if (_vcData.length)  _renderVcTable(_vcData);
+    }, 120);
+  };
+  const ro = new ResizeObserver(rerender);
+  ['fn-table-wrap', 'vc-table-wrap'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) ro.observe(el);
+  });
 }
 
 // =============================================================================

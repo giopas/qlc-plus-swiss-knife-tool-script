@@ -101,6 +101,8 @@
                   onclick="document.getElementById('sl-import-file').click()" disabled>📂 Import TXT</button>
           <button class="btn btn-surface" id="btn-export-slot-txt" title="Export this slot's songs to a TXT file"
                   onclick="slExportSongsTxt()" disabled>⬇ Export TXT</button>
+          <button class="btn btn-surface" id="btn-auto-match" title="Auto-match unassigned song names to QLC+ functions"
+                  onclick="slAutoMatch()" disabled>🎯 Auto-Match</button>
           <span style="flex:1"></span>
           <label class="field-label" style="margin:0 4px 0 0">Chaser:</label>
           <select id="sl-chaser-select" class="filter-input" style="width:160px" disabled>
@@ -145,6 +147,9 @@
         </div>
 
       </div>
+
+      <!-- Resize handle between song editor and pool -->
+      <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize panel"></div>
 
       <!-- Col 3: QLC+ Function Pool -->
       <div class="fn-pool-pane">

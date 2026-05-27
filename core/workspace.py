@@ -16,8 +16,10 @@ is identical.
 """
 
 import copy
+import difflib
 import os
 import re
+import string
 import xml.etree.ElementTree as ET  # nosec B405
 
 # ── QLC+ XML namespace ────────────────────────────────────────────────────────
@@ -95,17 +97,69 @@ def load_qxw(path: str) -> dict:
 
 
 def get_functions() -> list:
-    """Return func_detailed as a sorted list of dicts (by int ID)."""
+    """Return func_detailed as a sorted list of dicts (by int ID), enriched with VC button and description."""
     rows = []
     for fid, info in _state['func_detailed'].items():
+        vc    = _state['vc_buttons'].get(fid, {})
+        capts = vc.get('captions', [])
+        desc  = _state['shared_descriptions'].get(fid, '')
         rows.append({
-            'id':       fid,
-            'name':     info['name'],
-            'type':     info['type'],
-            'contains': info['contains'],
+            'id':        fid,
+            'name':      info['name'],
+            'type':      info['type'],
+            'contains':  info['contains'],
+            'vc_button': ', '.join(capts) if capts else '',
+            'desc':      desc,
         })
     rows.sort(key=lambda r: _int(r['id']))
     return rows
+
+
+def find_best_match(query: str):
+    """
+    Find the best-matching QLC+ function for a given query string.
+    Uses a 4-stage algorithm: exact → single substring → token overlap → difflib fuzzy.
+    Returns (matched_name, matched_id) tuple, or ('', '') if no match found.
+    Ported verbatim from qlc_swiss_knife_0.7.3.py find_best_match().
+    """
+    fbn = _state['func_by_name']   # name -> fid
+    if not fbn:
+        return '', ''
+
+    # Stage 1: exact match
+    if query in fbn:
+        return query, fbn[query]
+
+    # Stage 2: single substring match (case-insensitive)
+    q_lower = query.lower()
+    matches = [(n, i) for n, i in fbn.items() if q_lower in n.lower()]
+    if len(matches) == 1:
+        return matches[0]
+
+    # Stage 3: token overlap scoring
+    _trans   = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
+    q_tokens = set(query.translate(_trans).lower().split())
+    best, best_id, max_ov = '', '', 0
+    for name, fid in fbn.items():
+        n_tokens = set(name.translate(_trans).lower().split())
+        ov = len(q_tokens & n_tokens)
+        if ov > max_ov:
+            max_ov, best, best_id = ov, name, fid
+    min_ov = min(2, len(q_tokens)) if q_tokens else 1
+    if max_ov >= min_ov:
+        return best, best_id
+    if matches:
+        return matches[0]
+
+    # Stage 4: difflib fuzzy match
+    all_names = list(fbn.keys())
+    close = difflib.get_close_matches(q_lower, [n.lower() for n in all_names], n=1, cutoff=0.6)
+    if close:
+        for name, fid in fbn.items():
+            if name.lower() == close[0]:
+                return name, fid
+
+    return '', ''
 
 
 def get_vc_widgets() -> list:

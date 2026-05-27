@@ -60,18 +60,19 @@
   ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-setlist" class="tab-panel active">
 
-    <!-- Row 1: file I/O -->
-    <div class="tab-toolbar">
+    <!-- Row 1: All-slots backup (pipe-delimited multi-slot format) -->
+    <div class="tab-toolbar" style="background:var(--mantle);padding:4px 12px;gap:6px">
+      <span class="hint-text" style="white-space:nowrap">All-slots backup:</span>
       <input id="setlist-path" type="text" class="filter-input" style="flex:1"
-             placeholder="Setlist .txt path (e.g. /Users/you/show.txt)…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadSetlistFile()">📂 Load TXT</button>
-      <button class="btn btn-surface" onclick="saveSetlistFile()">💾 Save TXT</button>
+             placeholder="Path to multi-slot .txt backup (e.g. /Users/you/show.txt)…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadSetlistFile()" title="Load all slots from pipe-delimited TXT">📂 Load All</button>
+      <button class="btn btn-surface" onclick="saveSetlistFile()" title="Save all slots to pipe-delimited TXT">💾 Save All</button>
       <button class="btn btn-surface" onclick="refreshSlots()">↺ Refresh</button>
     </div>
 
-    <div class="tab-split" style="height:calc(100vh - 200px)">
+    <div class="tab-split" style="height:calc(100vh - 208px)">
 
-      <!-- Left: slot list -->
+      <!-- Col 1: slot list -->
       <div class="slot-pane">
         <div class="pane-header">CueList Slots</div>
         <div id="slot-list">
@@ -79,7 +80,7 @@
         </div>
       </div>
 
-      <!-- Right: song detail editor -->
+      <!-- Col 2: song detail editor -->
       <div class="song-pane" style="display:flex;flex-direction:column;overflow:hidden">
 
         <!-- Pane header with slot title -->
@@ -95,16 +96,14 @@
           <button class="btn btn-surface" id="btn-remove-song" onclick="slRemoveRow()" disabled>🗑 Remove</button>
           <button class="btn btn-surface" id="btn-move-song-up"   onclick="slMoveRow(-1)" disabled>⬆</button>
           <button class="btn btn-surface" id="btn-move-song-dn"   onclick="slMoveRow(1)"  disabled>⬇</button>
-          <!-- Per-slot TXT import/export -->
           <span class="toolbar-sep"></span>
           <button class="btn btn-surface" id="btn-import-slot-txt" title="Import a song list TXT for this slot only"
                   onclick="document.getElementById('sl-import-file').click()" disabled>📂 Import TXT</button>
           <button class="btn btn-surface" id="btn-export-slot-txt" title="Export this slot's songs to a TXT file"
                   onclick="slExportSongsTxt()" disabled>⬇ Export TXT</button>
           <span style="flex:1"></span>
-          <!-- Target chaser selector -->
           <label class="field-label" style="margin:0 4px 0 0">Chaser:</label>
-          <select id="sl-chaser-select" class="filter-input" style="width:180px" disabled>
+          <select id="sl-chaser-select" class="filter-input" style="width:160px" disabled>
             <option value="__new__">— Create new chaser —</option>
           </select>
           <button class="btn btn-accent"  id="btn-generate-qxw"    onclick="slGenerateQxw()"   disabled>🚀 Generate QXW</button>
@@ -118,17 +117,18 @@
             <thead>
               <tr>
                 <th style="width:32px">#</th>
-                <th style="min-width:160px">Song Name</th>
-                <th style="min-width:200px">QLC+ Function</th>
-                <th style="width:80px">Fade In</th>
-                <th style="width:80px">Hold</th>
-                <th style="width:80px">Fade Out</th>
+                <th>Song Name</th>
+                <th style="width:36px"></th>
+                <th>Assigned QLC+ Function</th>
+                <th style="width:72px">Fade In</th>
+                <th style="width:72px">Hold</th>
+                <th style="width:72px">Fade Out</th>
                 <th style="width:28px"></th>
               </tr>
             </thead>
             <tbody id="song-detail-body">
               <tr id="song-placeholder-row">
-                <td colspan="7" style="text-align:center;color:var(--overlay0);padding:20px">
+                <td colspan="8" style="text-align:center;color:var(--overlay0);padding:20px">
                   Select a slot on the left to edit its songs.
                 </td>
               </tr>
@@ -145,6 +145,26 @@
         </div>
 
       </div>
+
+      <!-- Col 3: QLC+ Function Pool -->
+      <div class="fn-pool-pane">
+        <div class="pane-header">QLC+ Function Pool</div>
+        <div class="fn-pool-search">
+          <input id="fn-pool-filter" type="text" class="filter-input"
+                 placeholder="Search functions…" oninput="filterFnPool(this.value)">
+        </div>
+        <div id="fn-pool-list" class="fn-pool-list">
+          <div class="slot-empty">Load a workspace to see functions</div>
+        </div>
+        <div class="fn-pool-footer">
+          <span id="fn-pool-count" class="hint-text"></span>
+          <button class="btn btn-accent" id="btn-pool-assign"
+                  onclick="slAssignFromPool()" disabled title="Assign selected function to selected song row">
+            ◀ Assign
+          </button>
+        </div>
+      </div>
+
     </div>
   </section>
 

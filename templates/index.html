@@ -16,26 +16,49 @@
      HEADER
 ══════════════════════════════════════════════════════════════════════════ -->
 <header id="app-header">
-  <div id="header-left">
-    <span id="logo">⚡ QLC+ SWISS KNIFE</span>
-    <span id="version-badge">v{{ version }}</span>
+  <!-- Row 1: logo, workspace load controls, theme + workspace name -->
+  <div class="header-row">
+    <div id="header-left">
+      <span id="logo">⚡ QLC+ SWISS KNIFE</span>
+      <span id="version-badge">v{{ version }}</span>
+    </div>
+
+    <div id="header-center">
+      <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false"
+             data-tooltip="Paste the full path to a .qxw workspace file and click Load">
+      <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()"
+              data-tooltip="Load workspace from the path above">Load</button>
+      <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window"
+             data-tooltip="Browse and open a .qxw file from your computer">
+        📂 Browse…
+        <input id="file-input" type="file" accept=".qxw" style="display:none"
+               onchange="loadFromInput(this)">
+      </label>
+      <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
+              title="Reload file from disk" disabled
+              data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
+    </div>
+
+    <div id="header-right">
+      <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()"
+              title="Toggle dark / grey / light theme"
+              data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
+      <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+    </div>
   </div>
 
-  <div id="header-center">
-    <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false">
-    <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()">Load</button>
-    <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window">
-      📂 Browse…
-      <input id="file-input" type="file" accept=".qxw" style="display:none"
-             onchange="loadFromInput(this)">
-    </label>
-    <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
-            title="Reload file from disk" disabled>↺ Reload</button>
-  </div>
-
-  <div id="header-right" style="display:flex;align-items:center;gap:8px">
-    <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()" title="Toggle light / dark theme">🌙</button>
-    <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+  <!-- Row 2: output directory selector -->
+  <div class="header-row header-row2" id="header-row2">
+    <span class="header-row2-label">📁 Output dir:</span>
+    <input id="outdir-input" type="text" class="outdir-input"
+           placeholder="Default — same folder as .qxw (or script dir for uploads)"
+           spellcheck="false"
+           data-tooltip="Generated QXW and PDF files will be saved to this directory">
+    <button class="btn btn-surface btn-sm" onclick="applyOutputDir()"
+            data-tooltip="Apply this directory as the output for generated files">✓ Set</button>
+    <button class="btn btn-surface btn-sm" onclick="clearOutputDir()"
+            data-tooltip="Reset to default (same folder as the loaded .qxw file)">✕ Reset</button>
+    <span id="outdir-status" class="hint-text" style="font-size:10px;margin-left:4px"></span>
   </div>
 </header>
 
@@ -66,9 +89,12 @@
       <span class="hint-text" style="white-space:nowrap">All-slots backup:</span>
       <input id="setlist-path" type="text" class="filter-input" style="flex:1"
              placeholder="Path to multi-slot .txt backup…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadSetlistFile()">📂 Load All</button>
-      <button class="btn btn-surface" onclick="saveSetlistFile()">💾 Save All</button>
-      <button class="btn btn-surface" onclick="refreshSlots()">↺ Refresh</button>
+      <button class="btn btn-surface" onclick="loadSetlistFile()"
+              data-tooltip="Load songs for all slots from a .txt backup file">📂 Load All</button>
+      <button class="btn btn-surface" onclick="saveSetlistFile()"
+              data-tooltip="Save all slot song lists to a .txt backup file">💾 Save All</button>
+      <button class="btn btn-surface" onclick="refreshSlots()"
+              data-tooltip="Refresh the CueList slot list from the workspace">↺ Refresh</button>
     </div>
 
     <!-- Hidden file input for per-slot TXT import -->
@@ -92,10 +118,14 @@
           <div class="slot-empty">Select a slot to see songs</div>
         </div>
         <div class="pane-footer" style="gap:3px">
-          <button class="btn btn-surface btn-sm" id="btn-add-song"     onclick="slAddRow()"    disabled title="Add song">➕</button>
-          <button class="btn btn-surface btn-sm" id="btn-remove-song"  onclick="slRemoveRow()" disabled title="Remove selected">🗑</button>
-          <button class="btn btn-surface btn-sm" id="btn-move-song-up" onclick="slMoveRow(-1)" disabled title="Move up">⬆</button>
-          <button class="btn btn-surface btn-sm" id="btn-move-song-dn" onclick="slMoveRow(1)"  disabled title="Move down">⬇</button>
+          <button class="btn btn-surface btn-sm" id="btn-add-song"     onclick="slAddRow()"    disabled
+                  data-tooltip="Add a new empty song row">➕</button>
+          <button class="btn btn-surface btn-sm" id="btn-remove-song"  onclick="slRemoveRow()" disabled
+                  data-tooltip="Remove the selected song">🗑</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-up" onclick="slMoveRow(-1)" disabled
+                  data-tooltip="Move selected song up">⬆</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-dn" onclick="slMoveRow(1)"  disabled
+                  data-tooltip="Move selected song down">⬇</button>
           <span style="flex:1"></span>
           <span id="song-count" class="hint-text"></span>
         </div>
@@ -112,16 +142,16 @@
           <div class="fb-group-label">Assign</div>
           <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
                   onclick="slAssignFromPool()" disabled
-                  title="Assign selected pool function to selected song">◀ Assign</button>
+                  data-tooltip="Assign the selected function from the pool to the selected song (or double-click a function)">◀ Assign</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
                   onclick="slClearAssignment()" disabled
-                  title="Remove assignment from selected song">✕ Clear Song</button>
+                  data-tooltip="Remove the QLC+ function assignment from the selected song">✕ Clear Song</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-clear-all"
                   onclick="slClearAllAssignments()" disabled
-                  title="Remove all assignments">✕ Clear All</button>
+                  data-tooltip="Remove all function assignments from this slot">✕ Clear All</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
                   onclick="slAutoMatch()" disabled
-                  title="Re-run auto-match on unassigned songs">🎯 Re-Match</button>
+                  data-tooltip="Auto-match unassigned songs to QLC+ functions by name similarity">🎯 Re-Match</button>
 
           <div class="fb-sep"></div>
 
@@ -147,9 +177,11 @@
           <div class="fb-group-label">Setlist TXT</div>
           <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
                   onclick="document.getElementById('sl-import-file').click()"
-                  disabled>📂 Import Setlist TXT</button>
+                  disabled
+                  data-tooltip="Import songs for this slot from a plain-text file (one song per line)">📂 Import Setlist TXT</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
-                  onclick="slExportSongsTxt()" disabled>⬇ Export Setlist TXT</button>
+                  onclick="slExportSongsTxt()" disabled
+                  data-tooltip="Export the song list for this slot to a .txt file">⬇ Export Setlist TXT</button>
 
           <div class="fb-sep"></div>
 
@@ -159,22 +191,27 @@
             Target chaser in workspace:
           </span>
           <select id="sl-chaser-select" class="filter-input fb-chaser-sel" disabled
-                  title="Choose an existing chaser to overwrite, or create a new one">
+                  title="Choose an existing chaser to overwrite, or create a new one"
+                  data-tooltip="Pick a chaser to update, or create a brand-new one">
             <option value="__new__">— Create new chaser —</option>
           </select>
           <button class="btn btn-accent fb-wide-btn" id="btn-generate-qxw"
-                  onclick="slGenerateQxw()" disabled>🚀 Generate QXW</button>
+                  onclick="slGenerateQxw()" disabled
+                  data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">🚀 Generate QXW</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-pdf"
-                  onclick="slExportPdf()" disabled>📄 PDF</button>
+                  onclick="slExportPdf()" disabled
+                  data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-xml"
-                  onclick="slExportXmlTxt()" disabled>📝 XML TXT</button>
+                  onclick="slExportXmlTxt()" disabled
+                  data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
 
         </div>
 
         <!-- Save always visible at bottom -->
         <div class="fb-actions-footer">
           <button class="btn btn-green fb-wide-btn" id="btn-save-songs"
-                  onclick="slSaveDetails()" disabled>💾 Save Songs</button>
+                  onclick="slSaveDetails()" disabled
+                  data-tooltip="Save song assignments and timing to the server (required before Generate)">💾 Save Songs</button>
         </div>
       </div>
 
@@ -197,6 +234,15 @@
               <option value="">All VC</option>
               <option value="has">Has VC ✓</option>
               <option value="none">No VC</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <select id="pool-used-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByUsed(this.value)"
+                    title="Filter by usage: ★ = used in slot, ✦ = has (Setlist) clone">
+              <option value="">All (used + unused)</option>
+              <option value="used">Used ★ / ✦</option>
+              <option value="unused">Not used</option>
             </select>
           </div>
         </div>
@@ -238,9 +284,12 @@
       </label>
       <input id="dict-path" type="text" class="filter-input" style="width:220px"
              placeholder="Dictionary .txt path…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadDictFile()">Load path</button>
-      <button class="btn btn-surface" onclick="saveDictFile()">💾 Save</button>
-      <button class="btn btn-surface" onclick="exportDictTxt()">⬇ Export TXT</button>
+      <button class="btn btn-surface" onclick="loadDictFile()"
+              data-tooltip="Load descriptions from the dictionary .txt path">Load path</button>
+      <button class="btn btn-surface" onclick="saveDictFile()"
+              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save</button>
+      <button class="btn btn-surface" onclick="exportDictTxt()"
+              data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
     </div>
 
     <div id="dict-table-wrap" class="table-wrap"></div>
@@ -265,7 +314,8 @@
       <input id="chk-filter" class="filter-input" type="text"
              placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
       <span style="flex:1"></span>
-      <button class="btn btn-surface" onclick="exportChecklistTxt()">⬇ Export TXT</button>
+      <button class="btn btn-surface" onclick="exportChecklistTxt()"
+              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
       <select id="chk-pdf-paper" class="filter-input" style="width:160px">
         <option value="A3 Landscape">A3 Landscape</option>
         <option value="A4 Landscape">A4 Landscape</option>
@@ -273,7 +323,8 @@
         <option value="US Letter Landscape">US Letter Landscape</option>
         <option value="US Letter Portrait">US Letter Portrait</option>
       </select>
-      <button class="btn btn-surface" onclick="exportChecklistPdf()">🖼 Blueprint PDF</button>
+      <button class="btn btn-surface" onclick="exportChecklistPdf()"
+              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
     </div>
 
     <div id="chk-table-wrap"></div>
@@ -294,8 +345,10 @@
                onchange="filterTriggers(document.getElementById('trg-filter').value)">
         Assigned only
       </label>
-      <button class="btn btn-surface" onclick="checkDuplicates()">🔍 Duplicates</button>
-      <button class="btn btn-green"   onclick="saveTriggers()">💾 Save to QXW</button>
+      <button class="btn btn-surface" onclick="checkDuplicates()"
+              data-tooltip="Highlight triggers that share the same key or MIDI assignment">🔍 Duplicates</button>
+      <button class="btn btn-green"   onclick="saveTriggers()"
+              data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to QXW</button>
     </div>
 
     <div class="tab-split">
@@ -343,19 +396,29 @@
 
     <!-- Toolbar row 1: fixture operations -->
     <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
-      <button class="btn btn-success" onclick="fixAddDialog()">➕ Add Fixture</button>
-      <button class="btn btn-danger"  onclick="fixRemoveSelected()">🗑 Remove</button>
-      <button class="btn btn-surface" onclick="fixMoveRow(-1)">⬆</button>
-      <button class="btn btn-surface" onclick="fixMoveRow(1)">⬇</button>
-      <button class="btn btn-surface" onclick="fixAutoDmx()">⚙ Auto-DMX</button>
-      <button class="btn btn-surface" onclick="fixImportWorkspace()">📥 Import from Workspace</button>
+      <button class="btn btn-success" onclick="fixAddDialog()"
+              data-tooltip="Add a new fixture to the rig configurator">➕ Add Fixture</button>
+      <button class="btn btn-danger"  onclick="fixRemoveSelected()"
+              data-tooltip="Remove the selected fixture from the rig">🗑 Remove</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(-1)"
+              data-tooltip="Move selected fixture up in the list">⬆</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(1)"
+              data-tooltip="Move selected fixture down in the list">⬇</button>
+      <button class="btn btn-surface" onclick="fixAutoDmx()"
+              data-tooltip="Auto-assign DMX addresses sequentially based on rig order">⚙ Auto-DMX</button>
+      <button class="btn btn-surface" onclick="fixImportWorkspace()"
+              data-tooltip="Import fixtures from the loaded workspace into the rig">📥 Import from Workspace</button>
 
       <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
         <label class="field-label" style="margin:0">View:</label>
-        <button id="fix-btn-view-top"   class="btn btn-surface btn-view-active" onclick="fixSetView('top')">⬛ Top</button>
-        <button id="fix-btn-view-front" class="btn btn-surface" onclick="fixSetView('front')">⬛ Front</button>
-        <button id="fix-btn-view-side"  class="btn btn-surface" onclick="fixSetView('side')">⬛ Side</button>
-        <button id="fix-btn-snap" class="btn btn-surface btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()">🔲 Snap</button>
+        <button id="fix-btn-view-top"   class="btn btn-surface btn-view-active" onclick="fixSetView('top')"
+                data-tooltip="Show top-down view of stage">⬛ Top</button>
+        <button id="fix-btn-view-front" class="btn btn-surface" onclick="fixSetView('front')"
+                data-tooltip="Show front view of stage">⬛ Front</button>
+        <button id="fix-btn-view-side"  class="btn btn-surface" onclick="fixSetView('side')"
+                data-tooltip="Show side view of stage">⬛ Side</button>
+        <button id="fix-btn-snap" class="btn btn-surface btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()"
+                data-tooltip="Toggle snap-to-grid: fixtures snap to grid cells when dropped">🔲 Snap</button>
       </span>
     </div>
 
@@ -364,31 +427,35 @@
       <label class="field-label">QXF:</label>
       <input id="fix-qxf-path" class="filter-input" type="text"
              placeholder="Path to .qxf file…" style="width:260px">
-      <button class="btn btn-surface" onclick="fixLoadQxf()">📂 Load QXF</button>
+      <button class="btn btn-surface" onclick="fixLoadQxf()"
+              data-tooltip="Load a QLC+ fixture definition file (.qxf) as the fixture template">📂 Load QXF</button>
 
       <span style="margin-left:12px;display:flex;gap:6px;align-items:center">
-        <label class="field-label">W(mm):</label>
+        <label class="field-label" data-tooltip="Stage width in millimetres">W(mm):</label>
         <input id="fix-stage-w" class="filter-input" type="number" value="8000" min="1000" max="50000" style="width:64px">
-        <label class="field-label">D(mm):</label>
+        <label class="field-label" data-tooltip="Stage depth in millimetres">D(mm):</label>
         <input id="fix-stage-d" class="filter-input" type="number" value="6000" min="1000" max="50000" style="width:64px">
-        <label class="field-label">H(mm):</label>
+        <label class="field-label" data-tooltip="Stage height (rigging height) in millimetres">H(mm):</label>
         <input id="fix-stage-h" class="filter-input" type="number" value="4000" min="500"  max="20000" style="width:64px">
-        <label class="field-label" style="margin-left:8px">Grid:</label>
+        <label class="field-label" style="margin-left:8px" data-tooltip="Grid columns × rows — divides the stage into positioning cells">Grid:</label>
         <input id="fix-grid-cols" class="filter-input" type="number" value="8" min="1" max="26" style="width:36px">
         <span class="hint-text">×</span>
         <input id="fix-grid-rows" class="filter-input" type="number" value="6" min="1" max="20" style="width:36px">
       </span>
 
       <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
-        <select id="fix-pdf-paper" class="filter-input" style="width:160px">
+        <select id="fix-pdf-paper" class="filter-input" style="width:160px"
+                data-tooltip="Paper size for the exported blueprint PDF">
           <option value="A3 Landscape">A3 Landscape</option>
           <option value="A4 Landscape">A4 Landscape</option>
           <option value="A4 Portrait">A4 Portrait</option>
           <option value="US Letter Landscape">US Letter Landscape</option>
           <option value="US Letter Portrait">US Letter Portrait</option>
         </select>
-        <button class="btn btn-surface" onclick="fixExportPdf()">🖼 Blueprint PDF</button>
-        <button class="btn btn-primary" onclick="fixGenerateQxw()">🚀 Generate QXW</button>
+        <button class="btn btn-surface" onclick="fixExportPdf()"
+                data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+        <button class="btn btn-primary" onclick="fixGenerateQxw()"
+                data-tooltip="Generate a QXW workspace with the current rig configuration">🚀 Generate QXW</button>
       </span>
     </div>
 

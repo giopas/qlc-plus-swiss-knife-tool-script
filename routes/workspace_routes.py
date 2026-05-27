@@ -93,6 +93,26 @@ def load():
                     pass
 
 
+@bp.route('/api/output-dir', methods=['GET'])
+def get_output_dir():
+    """Return the current output directory setting."""
+    return jsonify({'output_dir': ws.get_output_dir()})
+
+
+@bp.route('/api/output-dir', methods=['POST'])
+def set_output_dir():
+    """Set (or clear) the output directory for generated files."""
+    data = request.get_json(force=True) or {}
+    path = (data.get('path') or '').strip()
+    try:
+        ws.set_output_dir(path)
+        return jsonify({'ok': True, 'output_dir': ws.get_output_dir()})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/reload', methods=['POST'])
 def reload():
     """Re-parse the currently loaded file from disk (path mode only)."""

@@ -37,6 +37,7 @@ _MAX_TXT_BYTES =  5 * 1024 * 1024   #  5 MB
 _state: dict = {
     'path':               None,   # real file path (path mode) or temp path (upload mode)
     'original_name':      None,   # original filename (upload mode only, else None)
+    'output_dir':         None,   # user-selected output directory (persists across loads)
     'loaded':             False,
     # Raw XML (kept alive for trigger save-back and QXW generation)
     'xml_tree':           None,
@@ -73,6 +74,7 @@ def get_state() -> dict:
     return {
         'path':            None if upload_mode else _state['path'],
         'original_name':   _state.get('original_name'),
+        'output_dir':      _state.get('output_dir') or '',
         'loaded':          _state['loaded'],
         'func_count':      len(_state['func_detailed']),
         'fixture_count':   len(_state['fixture_map']),
@@ -80,6 +82,23 @@ def get_state() -> dict:
         'vc_button_count': len(_state['vc_buttons']),
         'error':           _state['error'],
     }
+
+
+def get_output_dir() -> str:
+    """Return the user-configured output directory, or empty string (= default)."""
+    return _state.get('output_dir') or ''
+
+
+def set_output_dir(path: str):
+    """
+    Set a custom output directory for generated QXW/PDF files.
+    Pass an empty string to reset to the default (file's own directory).
+    Raises ValueError if the path is non-empty and is not an existing directory.
+    """
+    p = (path or '').strip()
+    if p and not os.path.isdir(p):
+        raise ValueError(f'Not a directory: {p}')
+    _state['output_dir'] = p or None
 
 
 def load_qxw(path: str) -> dict:
@@ -494,14 +513,16 @@ def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
             engine.remove(func)
 
     # Determine output filename
-    # Upload mode: _state['path'] is a (possibly deleted) temp file; use
-    # original_name for the base and CWD as the output directory so the
-    # generated file lands next to the Flask process (i.e. the scripts folder).
-    # Path mode: use the directory and basename of the loaded .qxw file,
-    # matching the v0.7.3 behaviour (output lives next to the source file).
-    orig_name = _state.get('original_name')
-    if orig_name:
-        # Upload mode
+    # Priority:
+    #   1. user-set output_dir override (persists across loads)
+    #   2. upload mode → CWD (same as script directory)
+    #   3. path mode → directory of the loaded .qxw file (v0.7.3 parity)
+    orig_name       = _state.get('original_name')
+    output_dir_override = _state.get('output_dir')
+    if output_dir_override:
+        odir = output_dir_override
+        src  = orig_name or _state['path'] or 'workspace.qxw'
+    elif orig_name:
         odir = os.getcwd()
         src  = orig_name
     else:

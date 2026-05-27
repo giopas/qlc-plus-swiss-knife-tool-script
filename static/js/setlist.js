@@ -16,8 +16,9 @@ let _poolFiltered  = [];
 let _selectedPoolIdx = -1;
 
 // Pool filters
-let _poolTypeFilter = '';
-let _poolVcFilter   = '';   // '' | 'has' | 'none'
+let _poolTypeFilter  = '';
+let _poolVcFilter    = '';   // '' | 'has' | 'none'
+let _poolUsedFilter  = '';   // '' | 'used' | 'unused'
 
 // Collapsed type groups in pool
 const _poolGroupCollapsed = new Set();
@@ -294,6 +295,17 @@ function _populatePoolTypeFilter() {
   sel.value = _poolTypeFilter;
 }
 
+/** Build a Set of base function names that have a matching "(Setlist)" clone. */
+function _buildSetlistCloneSet() {
+  const cloneSet = new Set();
+  for (const f of _functions) {
+    if (f.name.endsWith(' (Setlist)')) {
+      cloneSet.add(f.name.slice(0, -10));   // strip ' (Setlist)' suffix
+    }
+  }
+  return cloneSet;
+}
+
 function _applyPoolFilters() {
   const q   = (document.getElementById('fn-pool-filter')?.value || '').toLowerCase().trim();
   let result = _functions;
@@ -303,6 +315,15 @@ function _applyPoolFilters() {
     result = result.filter(f => f.vc_button);
   else if (_poolVcFilter === 'none')
     result = result.filter(f => !f.vc_button);
+  if (_poolUsedFilter) {
+    const setlistClones = _buildSetlistCloneSet();
+    const usageCounts   = _computeUsageCounts();
+    if (_poolUsedFilter === 'used') {
+      result = result.filter(f => (usageCounts[f.id] || 0) > 0 || setlistClones.has(f.name));
+    } else if (_poolUsedFilter === 'unused') {
+      result = result.filter(f => !(usageCounts[f.id] || 0) && !setlistClones.has(f.name));
+    }
+  }
   if (q)
     result = result.filter(f =>
       f.id.includes(q) ||
@@ -317,8 +338,9 @@ function _applyPoolFilters() {
 }
 
 function filterFnPool(q)            { _applyPoolFilters(); }
-function filterFnPoolByType(type)   { _poolTypeFilter = type || ''; _applyPoolFilters(); }
-function filterFnPoolByVc(val)      { _poolVcFilter   = val  || ''; _applyPoolFilters(); }
+function filterFnPoolByType(type)   { _poolTypeFilter  = type || ''; _applyPoolFilters(); }
+function filterFnPoolByVc(val)      { _poolVcFilter    = val  || ''; _applyPoolFilters(); }
+function filterFnPoolByUsed(val)    { _poolUsedFilter  = val  || ''; _applyPoolFilters(); }
 
 function togglePoolGroup(type) {
   if (_poolGroupCollapsed.has(type)) _poolGroupCollapsed.delete(type);
@@ -341,7 +363,8 @@ function _renderFnPool(list) {
     return;
   }
 
-  const usageCounts = _computeUsageCounts();
+  const usageCounts   = _computeUsageCounts();
+  const setlistClones = _buildSetlistCloneSet();   // names that have a (Setlist) clone
 
   // Group by type
   const groups = {};
@@ -361,7 +384,7 @@ function _renderFnPool(list) {
     <div class="pool-col-header">
       <span class="pool-col-name">Function</span>
       <span class="pool-col-id">ID</span>
-      <span class="pool-col-uses" title="Times used in current slot">★</span>
+      <span class="pool-col-uses" title="★ = used in slot  ✦ = has (Setlist) clone">★✦</span>
       <span class="pool-col-vc" title="VC Button">VC</span>
     </div>`;
 
@@ -378,13 +401,23 @@ function _renderFnPool(list) {
       <div class="pool-type-group${collapsed ? ' pool-grp-collapsed' : ''}">`;
 
     for (const f of fns) {
-      const pIdx  = _poolFiltered.indexOf(f);
-      const sel   = pIdx === _selectedPoolIdx ? ' fn-pool-item-active' : '';
-      const uses  = usageCounts[f.id] || 0;
-      const cntList = f.contains ? f.contains.split(',').filter(Boolean) : [];
-      const usesHtml = uses > 0
-        ? `<span class="pool-col-uses pool-used" title="Used by ${uses} song(s)">★${uses}</span>`
-        : `<span class="pool-col-uses"></span>`;
+      const pIdx          = _poolFiltered.indexOf(f);
+      const sel           = pIdx === _selectedPoolIdx ? ' fn-pool-item-active' : '';
+      const uses          = usageCounts[f.id] || 0;
+      const isSetlistUsed = setlistClones.has(f.name);
+      const cntList       = f.contains ? f.contains.split(',').filter(Boolean) : [];
+
+      let usesHtml;
+      if (uses > 0 && isSetlistUsed) {
+        usesHtml = `<span class="pool-col-uses pool-used" title="Used ${uses}× in this slot">★${uses}</span>`
+                 + `<span class="pool-setlist-used" title="Has a (Setlist) clone in workspace — previously generated">✦</span>`;
+      } else if (uses > 0) {
+        usesHtml = `<span class="pool-col-uses pool-used" title="Used by ${uses} song(s)">★${uses}</span>`;
+      } else if (isSetlistUsed) {
+        usesHtml = `<span class="pool-setlist-used" title="Has a (Setlist) clone in workspace — previously generated">✦</span>`;
+      } else {
+        usesHtml = `<span class="pool-col-uses"></span>`;
+      }
       const vcTxt   = f.vc_button || '';
       const vcHtml  = vcTxt
         ? `<div class="pool-item-vc">🎛 ${_esc(vcTxt)}</div>`

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ QLC+ Swiss Knife</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- Grid.js — zero-config sortable/filterable tables -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════════════════════ -->
+<header id="app-header">
+  <div id="header-left">
+    <span id="logo">⚡ QLC+ SWISS KNIFE</span>
+    <span id="version-badge">v{{ version }}</span>
+  </div>
+
+  <div id="header-center">
+    <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false"
+           data-tooltip="Paste the full path to a .qxw workspace file and click Load">
+    <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()"
+            data-tooltip="Load workspace from the path above">Load</button>
+    <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window"
+           data-tooltip="Browse and open a .qxw file from your computer">
+      📂 Browse…
+      <input id="file-input" type="file" accept=".qxw" style="display:none"
+             onchange="loadFromInput(this)">
+    </label>
+    <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
+            title="Reload file from disk" disabled
+            data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
+  </div>
+
+  <div id="header-right">
+    <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()"
+            title="Toggle dark / grey / light theme"
+            data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
+    <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB BAR
+══════════════════════════════════════════════════════════════════════════ -->
+<nav id="tab-bar">
+  <button class="tab-btn active" data-tab="setlist"    onclick="showTab('setlist')">🎵 Setlist</button>
+  <button class="tab-btn"        data-tab="dictionary" onclick="showTab('dictionary')">📖 Dictionary</button>
+  <button class="tab-btn"        data-tab="checklist"  onclick="showTab('checklist')">📋 Checklist</button>
+  <button class="tab-btn"        data-tab="triggers"   onclick="showTab('triggers')">🎛 Triggers</button>
+  <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixtures</button>
+  <button class="tab-btn"        data-tab="id-browser" onclick="showTab('id-browser')">🔍 ID Browser</button>
+  <button class="tab-btn"        data-tab="merger"     onclick="showTab('merger')">🔀 QXW Merger</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB PANELS
+══════════════════════════════════════════════════════════════════════════ -->
+<main id="content">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 1 — SETLIST MANAGER  (FileBot-style: Songs | Actions | Functions)
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-setlist" class="tab-panel active">
+
+    <!-- Row 1: All-slots backup -->
+    <div class="tab-toolbar" style="background:var(--mantle);padding:4px 12px;gap:6px">
+      <span class="hint-text" style="white-space:nowrap">All-slots backup:</span>
+      <input id="setlist-path" type="text" class="filter-input" style="flex:1"
+             placeholder="Path to multi-slot .txt backup…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadSetlistFile()"
+              data-tooltip="Load songs for all slots from a .txt backup file">📂 Load All</button>
+      <button class="btn btn-surface" onclick="saveSetlistFile()"
+              data-tooltip="Save all slot song lists to a .txt backup file">💾 Save All</button>
+      <button class="btn btn-surface" onclick="refreshSlots()"
+              data-tooltip="Refresh the CueList slot list from the workspace">↺ Refresh</button>
+    </div>
+
+    <!-- Hidden file input for per-slot TXT import -->
+    <input id="sl-import-file" type="file" accept=".txt" style="display:none"
+           onchange="slImportSongsTxt(this)">
+
+    <div class="tab-split sl-fb-split">
+
+      <!-- ── Col 1: Slot list ──────────────────────────────────────────── -->
+      <div class="slot-pane">
+        <div class="pane-header">CueList Slots</div>
+        <div id="slot-list">
+          <div class="slot-empty">Load a workspace to see slots</div>
+        </div>
+      </div>
+
+      <!-- ── Col 2: Song list (FileBot Left) ──────────────────────────── -->
+      <div class="fb-songs-pane">
+        <div class="pane-header" id="song-pane-title">Songs</div>
+        <div id="fb-song-list" class="fb-song-list">
+          <div class="slot-empty">Select a slot to see songs</div>
+        </div>
+        <div class="pane-footer" style="gap:3px">
+          <button class="btn btn-surface btn-sm" id="btn-add-song"     onclick="slAddRow()"    disabled
+                  data-tooltip="Add a new empty song row">➕</button>
+          <button class="btn btn-surface btn-sm" id="btn-remove-song"  onclick="slRemoveRow()" disabled
+                  data-tooltip="Remove the selected song">🗑</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-up" onclick="slMoveRow(-1)" disabled
+                  data-tooltip="Move selected song up">⬆</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-dn" onclick="slMoveRow(1)"  disabled
+                  data-tooltip="Move selected song down">⬇</button>
+          <span style="flex:1"></span>
+          <span id="song-count" class="hint-text"></span>
+        </div>
+      </div>
+
+      <!-- ── Col 3: Actions pane (FileBot Middle) ─────────────────────── -->
+      <div class="fb-actions-pane">
+        <div class="pane-header" style="font-size:10px;letter-spacing:.05em">ACTIONS</div>
+
+        <!-- Scrollable body -->
+        <div class="fb-actions-body">
+
+          <!-- Assignment -->
+          <div class="fb-group-label">Assign</div>
+          <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
+                  onclick="slAssignFromPool()" disabled
+                  data-tooltip="Assign the selected function from the pool to the selected song (or double-click a function)">◀ Assign</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
+                  onclick="slClearAssignment()" disabled
+                  data-tooltip="Remove the QLC+ function assignment from the selected song">✕ Clear Song</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-clear-all"
+                  onclick="slClearAllAssignments()" disabled
+                  data-tooltip="Remove all function assignments from this slot">✕ Clear All</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
+                  onclick="slAutoMatch()" disabled
+                  data-tooltip="Auto-match unassigned songs to QLC+ functions by name similarity">🎯 Re-Match</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Timing -->
+          <div class="fb-group-label">Timing</div>
+          <div class="fb-timing-song" id="timing-song-label">— select a song —</div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">In</label>
+            <input id="timing-in"   class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('in',this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">Hold</label>
+            <input id="timing-hold" class="fb-timing-in" type="text" placeholder="Inf" disabled oninput="slTimingChanged('hold',this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">Out</label>
+            <input id="timing-out"  class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('out',this)">
+          </div>
+
+          <div class="fb-sep"></div>
+
+          <!-- Import / Export -->
+          <div class="fb-group-label">Setlist TXT</div>
+          <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
+                  onclick="document.getElementById('sl-import-file').click()"
+                  disabled
+                  data-tooltip="Import songs for this slot from a plain-text file (one song per line)">📂 Import Setlist TXT</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
+                  onclick="slExportSongsTxt()" disabled
+                  data-tooltip="Export the song list for this slot to a .txt file">⬇ Export Setlist TXT</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Generate -->
+          <div class="fb-group-label">Generate QXW</div>
+          <span class="hint-text" style="font-size:9px;line-height:1.3">
+            Target chaser in workspace:
+          </span>
+          <select id="sl-chaser-select" class="filter-input fb-chaser-sel" disabled
+                  title="Choose an existing chaser to overwrite, or create a new one"
+                  data-tooltip="Pick a chaser to update, or create a brand-new one">
+            <option value="__new__">— Create new chaser —</option>
+          </select>
+          <button class="btn btn-accent fb-wide-btn" id="btn-generate-qxw"
+                  onclick="slGenerateQxw()" disabled
+                  data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">🚀 Generate QXW</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-pdf"
+                  onclick="slExportPdf()" disabled
+                  data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-xml"
+                  onclick="slExportXmlTxt()" disabled
+                  data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
+
+        </div>
+
+        <!-- Save always visible at bottom -->
+        <div class="fb-actions-footer">
+          <button class="btn btn-green fb-wide-btn" id="btn-save-songs"
+                  onclick="slSaveDetails()" disabled
+                  data-tooltip="Save song assignments and timing to the server (required before Generate)">💾 Save Songs</button>
+        </div>
+      </div>
+
+      <!-- ── Resize handle ─────────────────────────────────────────────── -->
+      <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize"></div>
+
+      <!-- ── Col 4: QLC+ Function Pool (FileBot Right) ────────────────── -->
+      <div class="fn-pool-pane">
+        <div class="pane-header">QLC+ Functions</div>
+        <div class="fn-pool-search">
+          <input id="fn-pool-filter" type="text" class="filter-input"
+                 placeholder="Search…" oninput="filterFnPool(this.value)">
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <select id="pool-type-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByType(this.value)">
+              <option value="">All types</option>
+            </select>
+            <select id="pool-vc-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByVc(this.value)">
+              <option value="">All VC</option>
+              <option value="has">Has VC ✓</option>
+              <option value="none">No VC</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <select id="pool-used-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByUsed(this.value)"
+                    title="Filter by usage: ★ = used in slot, ✦ = has (Setlist) clone">
+              <option value="">All (used + unused)</option>
+              <option value="used">Used ★ / ✦</option>
+              <option value="unused">Not used</option>
+            </select>
+          </div>
+        </div>
+        <div id="fn-pool-list" class="fn-pool-list">
+          <div class="slot-empty">Load a workspace to see functions</div>
+        </div>
+        <div class="fn-pool-footer">
+          <span id="fn-pool-count" class="hint-text"></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 2 — DICTIONARY MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-dictionary" class="tab-panel">
+
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <input id="dict-filter" class="filter-input" type="text" style="width:160px"
+             placeholder="Filter functions…" oninput="filterDictionary(this.value)">
+      <select id="dict-type-filter" class="filter-input" style="width:120px"
+              onchange="filterDictByType(this.value)">
+        <option value="">All types</option>
+      </select>
+      <select id="dict-vc-filter" class="filter-input" style="width:110px"
+              onchange="filterDictByVc(this.value)">
+        <option value="">All VC</option>
+        <option value="has">Has VC ✓</option>
+        <option value="none">No VC</option>
+      </select>
+      <span style="flex:1"></span>
+      <!-- File-browse import (client-side TXT parsing) -->
+      <label class="btn btn-surface" title="Browse and load a dictionary .txt file">
+        📂 Browse TXT
+        <input type="file" accept=".txt" style="display:none"
+               onchange="importDictTxtFile(this)">
+      </label>
+      <input id="dict-path" type="text" class="filter-input" style="width:220px"
+             placeholder="Dictionary .txt path…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadDictFile()"
+              data-tooltip="Load descriptions from the dictionary .txt path">Load path</button>
+      <button class="btn btn-surface" onclick="saveDictFile()"
+              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save</button>
+      <button class="btn btn-surface" onclick="exportDictTxt()"
+              data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
+    </div>
+
+    <div id="dict-table-wrap" class="table-wrap"></div>
+
+    <!-- Inline edit panel (bottom) -->
+    <div id="dict-edit-panel">
+      <span id="dict-edit-label">Select a row to edit its description</span>
+      <textarea id="dict-desc-input" rows="2"
+                placeholder="Description…" disabled></textarea>
+      <button class="btn btn-green" id="btn-save-dict-entry"
+              onclick="saveDictEntry()" disabled>Save</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 3 — SETUP CHECKLIST
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-checklist" class="tab-panel">
+
+    <div class="tab-toolbar">
+      <input id="chk-filter" class="filter-input" type="text"
+             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
+      <span style="flex:1"></span>
+      <button class="btn btn-surface" onclick="exportChecklistTxt()"
+              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
+      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="exportChecklistPdf()"
+              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+    </div>
+
+    <div id="chk-table-wrap"></div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 4 — TRIGGER MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-triggers" class="tab-panel">
+
+    <div class="tab-toolbar">
+      <input id="trg-filter" class="filter-input" type="text"
+             placeholder="Filter triggers…"
+             oninput="filterTriggers(this.value)">
+      <label class="toggle-label">
+        <input type="checkbox" id="trg-assigned-only"
+               onchange="filterTriggers(document.getElementById('trg-filter').value)">
+        Assigned only
+      </label>
+      <button class="btn btn-surface" onclick="checkDuplicates()"
+              data-tooltip="Highlight triggers that share the same key or MIDI assignment">🔍 Duplicates</button>
+      <button class="btn btn-green"   onclick="saveTriggers()"
+              data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to QXW</button>
+    </div>
+
+    <div class="tab-split">
+
+      <!-- Trigger table -->
+      <div id="trg-table-wrap" class="table-wrap"></div>
+
+      <!-- Side edit panel -->
+      <div id="trg-edit-panel">
+        <div class="pane-header">Edit Trigger</div>
+        <div id="trg-edit-info" class="hint-text field-group">Select a row to edit</div>
+        <div id="trg-edit-form" class="field-group" style="display:none">
+          <div>
+            <label class="field-label">Caption</label>
+            <div id="trg-caption-display" style="font-size:11px;color:var(--text);
+                 font-family:var(--font-mono);padding:2px 0;word-break:break-word"></div>
+          </div>
+          <div>
+            <label class="field-label">Key Sequence</label>
+            <input id="trg-key-input" class="field-input" type="text"
+                   placeholder="e.g. F1">
+          </div>
+          <div>
+            <label class="field-label">MIDI Universe</label>
+            <input id="trg-uni-input" class="field-input" type="text"
+                   placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">MIDI Channel</label>
+            <input id="trg-ch-input" class="field-input" type="text"
+                   placeholder="0">
+          </div>
+          <button class="btn btn-accent" onclick="applyTriggerEdit()">✓ Apply</button>
+          <button class="btn btn-red"    onclick="clearTriggerEdit()">✕ Clear</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 5 — FIXTURE CONFIGURATOR
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-fixture" class="tab-panel">
+
+    <!-- Toolbar row 1: fixture operations -->
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <button class="btn btn-success" onclick="fixAddDialog()"
+              data-tooltip="Add a new fixture to the rig configurator">➕ Add Fixture</button>
+      <button class="btn btn-danger"  onclick="fixRemoveSelected()"
+              data-tooltip="Remove the selected fixture from the rig">🗑 Remove</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(-1)"
+              data-tooltip="Move selected fixture up in the list">⬆</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(1)"
+              data-tooltip="Move selected fixture down in the list">⬇</button>
+      <button class="btn btn-surface" onclick="fixAutoDmx()"
+              data-tooltip="Auto-assign DMX addresses sequentially based on rig order">⚙ Auto-DMX</button>
+      <button class="btn btn-surface" onclick="fixImportWorkspace()"
+              data-tooltip="Import fixtures from the loaded workspace into the rig">📥 Import from Workspace</button>
+
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+        <label class="field-label" style="margin:0">View:</label>
+        <button id="fix-btn-view-top"   class="btn btn-surface btn-view-active" onclick="fixSetView('top')"
+                data-tooltip="Show top-down view of stage">⬛ Top</button>
+        <button id="fix-btn-view-front" class="btn btn-surface" onclick="fixSetView('front')"
+                data-tooltip="Show front view of stage">⬛ Front</button>
+        <button id="fix-btn-view-side"  class="btn btn-surface" onclick="fixSetView('side')"
+                data-tooltip="Show side view of stage">⬛ Side</button>
+        <button id="fix-btn-snap" class="btn btn-surface btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()"
+                data-tooltip="Toggle snap-to-grid: fixtures snap to grid cells when dropped">🔲 Snap</button>
+      </span>
+    </div>
+
+    <!-- Toolbar row 2: stage dims + QXF + actions -->
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px;background:var(--surface);border-top:1px solid var(--overlay0)">
+      <label class="field-label">QXF:</label>
+      <input id="fix-qxf-path" class="filter-input" type="text"
+             placeholder="Path to .qxf file…" style="width:260px">
+      <button class="btn btn-surface" onclick="fixLoadQxf()"
+              data-tooltip="Load a QLC+ fixture definition file (.qxf) as the fixture template">📂 Load QXF</button>
+
+      <span style="margin-left:12px;display:flex;gap:6px;align-items:center">
+        <label class="field-label" data-tooltip="Stage width in millimetres">W(mm):</label>
+        <input id="fix-stage-w" class="filter-input" type="number" value="8000" min="1000" max="50000" style="width:64px">
+        <label class="field-label" data-tooltip="Stage depth in millimetres">D(mm):</label>
+        <input id="fix-stage-d" class="filter-input" type="number" value="6000" min="1000" max="50000" style="width:64px">
+        <label class="field-label" data-tooltip="Stage height (rigging height) in millimetres">H(mm):</label>
+        <input id="fix-stage-h" class="filter-input" type="number" value="4000" min="500"  max="20000" style="width:64px">
+        <label class="field-label" style="margin-left:8px" data-tooltip="Grid columns × rows — divides the stage into positioning cells">Grid:</label>
+        <input id="fix-grid-cols" class="filter-input" type="number" value="8" min="1" max="26" style="width:36px">
+        <span class="hint-text">×</span>
+        <input id="fix-grid-rows" class="filter-input" type="number" value="6" min="1" max="20" style="width:36px">
+      </span>
+
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+        <select id="fix-pdf-paper" class="filter-input" style="width:160px"
+                data-tooltip="Paper size for the exported blueprint PDF">
+          <option value="A3 Landscape">A3 Landscape</option>
+          <option value="A4 Landscape">A4 Landscape</option>
+          <option value="A4 Portrait">A4 Portrait</option>
+          <option value="US Letter Landscape">US Letter Landscape</option>
+          <option value="US Letter Portrait">US Letter Portrait</option>
+        </select>
+        <button class="btn btn-surface" onclick="fixExportPdf()"
+                data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+        <button class="btn btn-primary" onclick="fixGenerateQxw()"
+                data-tooltip="Generate a QXW workspace with the current rig configuration">🚀 Generate QXW</button>
+      </span>
+    </div>
+
+    <!-- Main split: rig table left, canvas right -->
+    <div class="tab-split" style="height:calc(100vh - 260px)">
+
+      <!-- Left: rig table -->
+      <div class="fix-rig-pane">
+        <div id="fix-rig-table-wrap">
+          <div style="padding:20px;color:var(--overlay0);font-size:12px">
+            Load a workspace or add fixtures with ➕ to build your rig.
+          </div>
+        </div>
+      </div>
+
+      <!-- Drag-resize handle -->
+      <div id="fix-canvas-resize-handle" class="fix-canvas-resize-handle" title="Drag to resize canvas"></div>
+
+      <!-- Right: canvas -->
+      <div class="fix-canvas-pane">
+        <canvas id="fix-canvas"></canvas>
+      </div>
+
+    </div>
+
+    <!-- Add fixture modal -->
+    <div id="fix-add-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box">
+        <h3 style="margin:0 0 12px">Add Fixture to Rig</h3>
+
+        <div class="field-group">
+          <label class="field-label">Fixture Type</label>
+          <select id="fix-add-type" class="field-input" onchange="fixAddTypeChanged()">
+            <option value="__custom__">Custom (enter manually)</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Mode</label>
+          <div id="fix-add-mode-wrap">
+            <select id="fix-add-mode" class="field-input input-sm" onchange="fixAddModeChanged()">
+              <option value="">— Select mode —</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Name</label>
+          <input id="fix-add-name" class="field-input" type="text" placeholder="My Fixture 1">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Manufacturer</label>
+            <input id="fix-add-mfg" class="field-input" type="text" placeholder="Generic">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Model</label>
+            <input id="fix-add-model" class="field-input" type="text" placeholder="Par LED">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Universe (1-indexed)</label>
+            <input id="fix-add-universe" class="field-input" type="number" value="1" min="1" max="256">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Address (1-indexed)</label>
+            <input id="fix-add-address" class="field-input" type="number" value="1" min="1" max="512">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Channels</label>
+            <input id="fix-add-channels" class="field-input" type="number" value="7" min="1" max="512">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Count</label>
+            <input id="fix-add-count" class="field-input" type="number" value="1" min="1" max="64">
+          </div>
+          <div class="field-group" style="flex:2">
+            <label class="field-label">Stage Role</label>
+            <select id="fix-add-role" class="field-input">
+              <option>Custom</option>
+              <option>Front Left</option><option>Front Center</option><option>Front Right</option>
+              <option>Back Left</option><option>Back Center</option><option>Back Right</option>
+              <option>Side Left</option><option>Side Right</option><option>Center</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+          <button class="btn btn-surface" onclick="fixAddModalClose()">Cancel</button>
+          <button class="btn btn-success" onclick="fixAddConfirm()">Add to Rig</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 6 — ID BROWSER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-id-browser" class="tab-panel">
+
+    <div id="id-browser-subtabs">
+      <button class="subtab-btn active" data-subtab="functions"
+              onclick="showSubtab('functions')">⚙ Functions</button>
+      <button class="subtab-btn" data-subtab="vc-widgets"
+              onclick="showSubtab('vc-widgets')">🖥 VC Widgets</button>
+    </div>
+
+    <div id="subtab-functions" class="subtab-panel active">
+      <div class="subtab-toolbar">
+        <input id="fn-filter" class="filter-input" type="text"
+               placeholder="Filter functions…" oninput="filterFunctions(this.value)">
+        <button class="btn btn-surface" onclick="exportCsv('functions')">⬇ Export CSV</button>
+      </div>
+      <div id="fn-table-wrap"></div>
+    </div>
+
+    <div id="subtab-vc-widgets" class="subtab-panel">
+      <div class="subtab-toolbar">
+        <input id="vc-filter" class="filter-input" type="text"
+               placeholder="Filter widgets…" oninput="filterVcWidgets(this.value)">
+        <button class="btn btn-surface" onclick="exportCsv('vc-widgets')">⬇ Export CSV</button>
+      </div>
+      <div id="vc-table-wrap"></div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 7 — QXW MERGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-merger" class="tab-panel">
+
+    <!-- Top load bar -->
+    <div class="merger-load-bar">
+
+      <!-- Source -->
+      <div class="merger-load-col">
+        <label class="merger-load-label">📂 Source QXW</label>
+        <div class="merger-load-row">
+          <input id="merger-src-path" type="text" class="filter-input"
+                 placeholder="/path/to/source.qxw" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements FROM">
+          <button class="btn btn-accent" onclick="mergerLoadSrc()"
+                  data-tooltip="Parse the source workspace">Load</button>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="merger-arrow">→</div>
+
+      <!-- Destination -->
+      <div class="merger-load-col">
+        <label class="merger-load-label">📥 Destination QXW</label>
+        <div class="merger-load-row">
+          <input id="merger-dst-path" type="text" class="filter-input"
+                 placeholder="/path/to/destination.qxw" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements INTO">
+          <button class="btn btn-accent" onclick="mergerLoadDst()"
+                  data-tooltip="Parse the destination workspace">Load</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Category + search toolbar -->
+    <div class="tab-toolbar merger-toolbar">
+      <div class="merger-cat-tabs">
+        <button id="merger-cat-functions" class="btn btn-surface active"
+                onclick="mergerSetCategory('functions')">⚙ Functions</button>
+        <button id="merger-cat-fixtures"  class="btn btn-surface"
+                onclick="mergerSetCategory('fixtures')">💡 Fixtures</button>
+        <button id="merger-cat-groups"    class="btn btn-surface"
+                onclick="mergerSetCategory('groups')">📦 Groups</button>
+      </div>
+      <input type="text" class="filter-input" placeholder="Search source…" style="flex:1"
+             oninput="mergerSrcSearch(this.value)">
+      <select class="filter-input" style="flex:0 0 140px" onchange="mergerFnTypeFilter(this.value)">
+        <option value="">All types</option>
+        <option value="Scene">Scene</option>
+        <option value="Chaser">Chaser</option>
+        <option value="Sequence">Sequence</option>
+        <option value="EFX">EFX</option>
+        <option value="Collection">Collection</option>
+        <option value="Show">Show</option>
+        <option value="Audio">Audio</option>
+        <option value="Script">Script</option>
+        <option value="RGBMatrix">RGBMatrix</option>
+      </select>
+      <button class="btn btn-surface" onclick="mergerSelectAll()"
+              data-tooltip="Select all visible items">✓ All</button>
+      <button class="btn btn-surface" onclick="mergerSelectNone()"
+              data-tooltip="Deselect all">✗ None</button>
+    </div>
+
+    <!-- Two-column browser -->
+    <div class="merger-split">
+
+      <!-- Source list -->
+      <div class="merger-panel">
+        <div class="pane-header">
+          Source: <span id="merger-src-name" class="merger-ws-name">— not loaded —</span>
+        </div>
+        <div id="merger-src-list" class="merger-list">
+          <div class="merger-placeholder">Load a source .qxw file above</div>
+        </div>
+      </div>
+
+      <!-- Middle action column -->
+      <div class="merger-actions">
+        <button id="merger-copy-btn" class="btn btn-accent merger-copy-btn"
+                onclick="mergerCopy()" disabled
+                data-tooltip="Copy selected items into the destination (in memory)">
+          Copy →
+        </button>
+        <button id="merger-export-btn" class="btn btn-surface"
+                onclick="mergerExport()" disabled
+                data-tooltip="Save the merged destination as a new .qxw file">
+          ⬇ Export
+        </button>
+      </div>
+
+      <!-- Destination list -->
+      <div class="merger-panel">
+        <div class="pane-header">
+          Destination: <span id="merger-dst-name" class="merger-ws-name">— not loaded —</span>
+        </div>
+        <div id="merger-dst-list" class="merger-list">
+          <div class="merger-placeholder">Load a destination .qxw file above</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status bar for this tab -->
+    <div id="merger-status" class="status-bar status-info">Load two .qxw files to begin.</div>
+
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STATUS BAR
+══════════════════════════════════════════════════════════════════════════ -->
+<footer id="status-bar">
+  <span id="status-counts">Functions: —  |  Fixtures: —  |  VC Widgets: —</span>
+  <span id="status-msg"></span>
+</footer>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DROP OVERLAY
+══════════════════════════════════════════════════════════════════════════ -->
+<div id="drop-overlay">
+  <div id="drop-hint">
+    <div style="font-size:4rem; margin-bottom:0.5rem;">📂</div>
+    <div>Drop your .qxw workspace here</div>
+  </div>
+</div>
+
+<!-- ── JS modules ──────────────────────────────────────────────────────────── -->
+<script src="/static/js/app.js"></script>
+<script src="/static/js/setlist.js"></script>
+<script src="/static/js/dictionary.js"></script>
+<script src="/static/js/checklist.js"></script>
+<script src="/static/js/triggers.js"></script>
+<script src="/static/js/fixture.js"></script>
+<script src="/static/js/merger.js"></script>
+</body>
+</html>

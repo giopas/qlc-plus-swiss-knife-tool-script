@@ -5,6 +5,61 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.0] — 2026-05-28
+
+### Full rewrite: Tkinter → Flask web application
+
+v1.0.0 is a ground-up rewrite of the application stack. The seven original tabs are fully ported to a browser-based single-page application (SPA) backed by a local Flask server. The user experience, feature set, and file formats are fully preserved; the delivery mechanism and architecture are new.
+
+### Added — Flask / SPA architecture
+- `app.py` — self-bootstrapping Flask entry point: auto-detects `.venv`, installs Flask guidance on first run, opens `http://localhost:5731` automatically.
+- `templates/index.html` — single HTML shell with a tab bar, header, and status footer.
+- `static/css/style.css` — full Catppuccin theme system: **Dark** (Mocha), **Grey** (Frappé), **Light** (Latte), toggled live with no page reload.
+- `static/js/app.js` — tab switching, workspace loading (path mode + upload mode + drag-and-drop), ID Browser (Grid.js tables), CSV export.
+- Per-tab JS modules: `setlist.js`, `dictionary.js`, `checklist.js`, `triggers.js`, `fixture.js`, `merger.js`.
+- Blueprint-per-tab Flask routes: `workspace_routes.py`, `setlist_routes.py`, `dictionary_routes.py`, `checklist_routes.py`, `triggers_routes.py`, `fixture_routes.py`, `id_browser_routes.py`, `merger_routes.py`.
+- `core/workspace.py` — QXW parser, function pool (with `find_best_match` four-stage fuzzy matching), setlist slot engine, slot-details CRUD, `generate_slot_qxw_content()` (returns bytes, not a file path).
+- `core/pdf.py` — pure-Python PDF builder (no reportlab): blueprint PDF, setlist PDF, generic table PDF.
+- `core/fixture.py` — rig state, QXF definition parsing, DMX auto-assign, canvas-to-workspace QXW generation.
+
+### Added — QXW Merger tab (🔀)
+- Load any two `.qxw` files independently of the main workspace via `core/merger.py`.
+- Browse Fixtures, Fixture Groups, and Functions from the source file; filter by name or function type.
+- Tick elements to copy; the merger assigns new IDs above the destination's highest existing ID and rewrites all internal cross-references (scene fixture vals, chaser step targets, etc.).
+- Name-clash warnings displayed inline (⚠) — elements are still copied; user decides.
+- Export the merged destination as a new `.qxw` via the native OS Save dialog (`showSaveFilePicker`) with `<a download>` fallback.
+
+### Added — Setlist tab improvements
+- FileBot-style three-column layout: Slot list | Song table | Function pool.
+- Function pool: usage count (★N), setlist-clone indicator (✦ orange star), Used/Unused filter.
+- Auto-match: maps all songs to QLC+ functions in one click using the four-stage fuzzy matcher.
+- Per-song timing fields: Fade In, Hold, Fade Out (QLC+ ms values).
+- QXW generation: no file written server-side — bytes streamed to browser, saved via `showSaveFilePicker`.
+- PDF export: per-slot setlist PDF (paper size selector).
+
+### Added — Header & UI
+- Hover tooltips on all major buttons (`[data-tooltip]` CSS pseudo-element system).
+- Theme toggle button cycles Dark → Grey → Light.
+- Drag-and-drop `.qxw` anywhere on the window.
+
+### Changed — Security hardening
+- Upload handler: `.qxw` extension enforced; other extensions rejected with a clear error.
+- CSRF protection: all `POST/PATCH/PUT/DELETE` requests validate `Origin` / `Host` against `localhost:5731`.
+- Response headers: `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`.
+- Exception messages: filesystem paths stripped via regex before being returned to the browser.
+- Server binds to `127.0.0.1` only (localhost; never reachable from the network).
+
+### Removed
+- Tkinter desktop UI (`qlc_swiss_knife_0.7.3.py`) — superseded by the web UI. The file is kept in the repository for reference but is no longer the primary entry point.
+- Output-directory input box in the header — replaced by the native OS Save dialog.
+
+### Dependencies
+- **Added:** `flask` (install once with `pip install flask` or via the provided `.venv` bootstrap).
+- **Removed:** `tkinter` (no longer needed).
+- Everything else (PDF generation, XML parsing, fuzzy matching) uses Python's standard library only.
+
+---
+
 ## [0.7.3] — 2026-05-26
 
 ### New Tab: ID Browser — Functions & VC Widgets inspector

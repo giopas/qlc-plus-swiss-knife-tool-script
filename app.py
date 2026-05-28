@@ -121,28 +121,32 @@ def create_app():
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request
     def _csrf_origin_check():
-        """Reject state-changing requests from unexpected origins."""
-        if request.method in ('POST', 'PATCH', 'PUT', 'DELETE'):
-            origin = request.headers.get('Origin', '')
-            host   = request.headers.get('Host', '')
-            # Strip scheme from Origin for comparison
-            origin_host = origin.replace('http://', '').replace('https://', '')
-            # Allow requests with no Origin header (curl, Python scripts, etc.)
-            # but reject those whose Origin doesn't match localhost
-            if origin_host and origin_host not in _ALLOWED_HOSTS:
-                return jsonify({'error': 'Forbidden'}), 403
-            if host and host not in _ALLOWED_HOSTS:
-                return jsonify({'error': 'Forbidden'}), 403
+        """
+        Reject state-changing requests whose Origin header explicitly names a
+        non-localhost origin.  Requests with no Origin header (curl, Python
+        scripts, same-origin browser fetches that omit Origin) are allowed
+        because the server only listens on 127.0.0.1 — no remote host can
+        reach it without Origin spoofing, which is browser-enforced.
+        """
+        if request.method not in ('POST', 'PATCH', 'PUT', 'DELETE'):
+            return
+        origin = request.headers.get('Origin', '')
+        if not origin:
+            return   # no Origin = same-origin or non-browser client → allow
+        # Strip scheme and compare
+        origin_host = origin.replace('http://', '').replace('https://', '').rstrip('/')
+        if origin_host not in _ALLOWED_HOSTS:
+            return jsonify({'error': 'Forbidden'}), 403
 
     # ── Security: response headers ────────────────────────────────────────────
     @app.after_request
     def _security_headers(response):
         """Add security headers to every response."""
-        # Content-Security-Policy: allow same-origin only; no inline JS eval
+        # CSP: allow same-origin resources + the jsdelivr CDN used for Grid.js
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "   # inline needed for SPA event handlers
-            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "img-src 'self' data:; "
             "connect-src 'self'; "
             "object-src 'none'; "

@@ -395,10 +395,13 @@ def get_available_chasers() -> list:
     return rows
 
 
-def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
+def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tuple:
     """
     Clone each song's base function, build/update a Chaser with the cloned steps,
-    then write a new QXW file (incrementing the filename).
+    and return (suggested_filename, xml_bytes) WITHOUT writing to disk.
+
+    The caller (Flask route) streams the bytes back to the browser so the user
+    can choose where to save via the OS native dialog (showSaveFilePicker).
 
     Parameters
     ----------
@@ -408,7 +411,7 @@ def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
 
     Returns
     -------
-    str  — path of the newly written .qxw file
+    tuple  — (suggested_filename: str, xml_bytes: bytes)
     """
     if not _state['loaded'] or not _state['qxw_root']:
         raise RuntimeError('No workspace loaded.')
@@ -512,50 +515,23 @@ def generate_slot_qxw(slot_id: str, target_chaser_id: str = None) -> str:
         if ('(Setlist)' in fn) and (fid not in active_ids) and (fid not in used_by_others):
             engine.remove(func)
 
-    # Determine output filename
-    # Priority:
-    #   1. user-set output_dir override (persists across loads)
-    #   2. upload mode → CWD (same as script directory)
-    #   3. path mode → directory of the loaded .qxw file (v0.7.3 parity)
-    orig_name       = _state.get('original_name')
-    output_dir_override = _state.get('output_dir')
-    if output_dir_override:
-        odir = output_dir_override
-        src  = orig_name or _state['path'] or 'workspace.qxw'
-    elif orig_name:
-        odir = os.getcwd()
-        src  = orig_name
-    else:
-        src  = _state['path'] or 'workspace.qxw'
-        odir = os.path.dirname(os.path.abspath(src))
-    obn  = os.path.splitext(os.path.basename(src))[0]
-    m    = re.search(r'(\d+)$', obn)
+    # Derive a suggested filename from the source workspace name.
+    # We don't write to disk here — the browser will prompt the user.
+    orig_name = _state.get('original_name')
+    src       = orig_name or _state['path'] or 'workspace.qxw'
+    obn       = os.path.splitext(os.path.basename(src))[0]
+    m         = re.search(r'(\d+)$', obn)
     if m:
         bn = obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
     else:
         bn = f'{obn}_GIG_READY'
+    suggested_filename = bn + '.qxw'
 
-    nf = os.path.join(odir, bn + '.qxw')
-    counter = 0
-    while os.path.exists(nf):
-        counter += 1
-        m2 = re.search(r'(\d+)$', bn)
-        if m2:
-            bn = bn[:m2.start()] + str(int(m2.group(1)) + 1).zfill(len(m2.group(1)))
-        else:
-            bn = f'{bn}_{counter}'
-        nf = os.path.join(odir, bn + '.qxw')
-
-    xb = ET.tostring(root, encoding='utf-8').decode('utf-8')
+    xb          = ET.tostring(root, encoding='utf-8').decode('utf-8')
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb
-    with open(nf, 'w', encoding='utf-8') as f:
-        f.write(xml_content)
+    xml_bytes   = xml_content.encode('utf-8')
 
-    # Do NOT update _state['path'] here.  The source workspace stays the
-    # originally loaded file so that repeated generate calls keep producing
-    # correctly-numbered outputs (matching v0.7.3 behaviour where
-    # app.current_qxw_file never changes after a generate).
-    return nf
+    return suggested_filename, xml_bytes
 
 
 # =============================================================================

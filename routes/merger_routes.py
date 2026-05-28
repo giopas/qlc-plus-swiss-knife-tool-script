@@ -1,6 +1,8 @@
 """routes/merger_routes.py — QXW Merger API."""
 
+import os
 import re
+import tempfile
 from flask import Blueprint, jsonify, request, Response
 from core import merger as mg
 
@@ -20,30 +22,54 @@ def state():
 
 # ── Load source / destination ─────────────────────────────────────────────────
 
-@bp.route('/src/load', methods=['POST'])
-def load_src():
-    data = request.get_json(force=True) or {}
-    path = (data.get('path') or '').strip()
-    if not path:
-        return jsonify({'error': 'No path provided.'}), 400
+def _load_side(load_fn, state_key):
+    """
+    Shared loader for src/dst — supports both path (JSON) and file upload (multipart).
+    Returns a Flask response tuple.
+    """
+    tmp = None
     try:
-        summary = mg.load_src(path)
-        return jsonify({'ok': True, 'summary': summary, 'name': mg.get_state()['src_name']})
+        if request.is_json:
+            data = request.get_json(force=True) or {}
+            path = (data.get('path') or '').strip()
+            if not path:
+                return jsonify({'error': 'No path provided.'}), 400
+            if not os.path.isfile(path):
+                return jsonify({'error': 'File not found.'}), 404
+        else:
+            f = request.files.get('file')
+            if not f:
+                return jsonify({'error': 'No file uploaded.'}), 400
+            suffix = os.path.splitext(f.filename or '')[-1].lower()
+            if suffix != '.qxw':
+                return jsonify({'error': f'Only .qxw files are accepted (got: {suffix or "no extension"}).'}), 400
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.qxw')
+            f.save(tmp.name)
+            tmp.close()
+            path = tmp.name
+
+        summary = load_fn(path)
+        return jsonify({'ok': True, 'summary': summary, 'name': mg.get_state()[state_key]})
+
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
+
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass
+
+
+@bp.route('/src/load', methods=['POST'])
+def load_src():
+    return _load_side(mg.load_src, 'src_name')
 
 
 @bp.route('/dst/load', methods=['POST'])
 def load_dst():
-    data = request.get_json(force=True) or {}
-    path = (data.get('path') or '').strip()
-    if not path:
-        return jsonify({'error': 'No path provided.'}), 400
-    try:
-        summary = mg.load_dst(path)
-        return jsonify({'ok': True, 'summary': summary, 'name': mg.get_state()['dst_name']})
-    except Exception as e:
-        return jsonify({'error': _safe_err(e)}), 500
+    return _load_side(mg.load_dst, 'dst_name')
 
 
 @bp.route('/src/clear', methods=['POST'])

@@ -1,4 +1,11 @@
-# ⚡ QLC+ Swiss Knife
+# ⚡ QLC+ Swiss Knife — v0.7.3 (Legacy Tkinter Edition)
+
+> 🗄️ **This branch is the legacy desktop application (Tkinter / pure Python).**
+> It is preserved for historical reference and may receive independent fixes or forks in the future.
+> **Active development has moved to the [`main` branch](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/tree/main),
+> which hosts the v1.0+ Flask web UI.**
+
+---
 
 **A unified, ergonomic toolkit for QLC+ 5.x — pure Python, zero external dependencies.**
 
@@ -46,10 +53,10 @@ Parse fixture patches, 3D stage positions, groups, and universe assignments dire
 Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Correctly resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace.
 
 ### 🔧 Fixture Configurator
-Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas** to set positions. Configure stage dimensions, auto-assign DMX addresses, then load a `.qxw` template and **generate a ready-to-use workspace** with all fixture blocks and 3D monitor positions populated from your canvas layout. An intelligent **Function Assignment Panel** auto-maps template functions to rig fixtures using name-role matching and spatial proximity.
+Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas** to set positions. Configure stage dimensions, auto-assign DMX addresses, then load a `.qxw` template and **generate a ready-to-use workspace** with all fixture blocks and 3D monitor positions populated from your canvas layout.
 
 ### 🔍 ID Browser
-Inspect every function and Virtual Console widget in your workspace at a glance. The **Functions sub-tab** lists all Engine functions with their ID, type, and step/content count. The **VC Widgets sub-tab** covers every widget type — Buttons, Frames, Sliders, Knobs, XYPads, CueLists, and more — showing each widget's ID, type, caption, linked function, frame ancestry path, and geometry. Both views support **live filtering** across all columns, **click-to-sort** column headers with ascending/descending toggle, **Export CSV** (current filter + sort applied), and **Export PDF** with a configurable paper/font-size dialog.
+Inspect every function and Virtual Console widget in your workspace at a glance. Both sub-tabs support **live filtering**, **click-to-sort** column headers, **Export CSV**, and **Export PDF**.
 
 ---
 
@@ -68,19 +75,15 @@ No `pip install` needed. No virtual environment required.
 ## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
+# Clone this branch
+git clone --branch legacy-tkinter https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
 cd qlc-plus-swiss-knife-tool-script
 
-# Run the app
+# Run the app — no setup needed
 python3 qlc_swiss_knife_0.7.3.py
 ```
 
-On **Windows** you can also double-click the `.py` file if Python is associated with `.py` files in your system.
-
-1. Click **📂 Load QXW Workspace** and open your `.qxw` file.
-2. Switch between tabs to access each tool.
-3. Changes can be saved back to the workspace directly from each tab.
+On **Windows** you can also double-click the `.py` file if Python is associated with `.py` files.
 
 ---
 
@@ -100,26 +103,12 @@ See [CHANGELOG.md](CHANGELOG.md) for a full history of changes across all versio
 
 ---
 
-## Contributing
-
-Bug reports, feature suggestions, and pull requests are warmly welcome!
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or submitting code.
-
----
-
-## Roadmap
-
-See [ROADMAP.md](ROADMAP.md) for planned features and future directions.
-
----
-
 ## License
 
 This project is released under the **MIT License** — see [LICENSE](LICENSE) for the full text.
-In short: free to use, modify, and distribute. Attribution appreciated. No warranties provided.
 
 ---
 
 ## Acknowledgements
 
-All credit for **QLC+** — the lighting control software this tool is built around — belongs to the [QLC+ development team](https://github.com/mcallegari/qlcplus). This script is an independent community contribution and is not part of the official QLC+ project.
+All credit for **QLC+** belongs to the [QLC+ development team](https://github.com/mcallegari/qlcplus). This is an independent community contribution.

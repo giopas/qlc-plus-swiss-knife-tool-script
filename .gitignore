@@ -17,3 +17,6 @@ __pycache__/
 # Local environment
 *.env
 .venv/
+
+# Raw macOS screenshots (renamed webapp_*.png are tracked)
+screenshots/Screenshot*.png

@@ -582,10 +582,15 @@
         <label class="merger-load-label">📂 Source QXW</label>
         <div class="merger-load-row">
           <input id="merger-src-path" type="text" class="filter-input"
-                 placeholder="/path/to/source.qxw" spellcheck="false"
-                 data-tooltip="Path to the QXW file you want to copy elements FROM">
+                 placeholder="Paste path or click Browse…" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements FROM"
+                 onkeydown="if(event.key==='Enter') mergerLoadSrc()">
+          <button class="btn btn-surface" onclick="mergerBrowseSrc()"
+                  data-tooltip="Browse for source .qxw file">Browse…</button>
           <button class="btn btn-accent" onclick="mergerLoadSrc()"
                   data-tooltip="Parse the source workspace">Load</button>
+          <input id="merger-src-file" type="file" accept=".qxw" style="display:none"
+                 onchange="mergerSrcFileChosen()">
         </div>
       </div>
 
@@ -597,10 +602,15 @@
         <label class="merger-load-label">📥 Destination QXW</label>
         <div class="merger-load-row">
           <input id="merger-dst-path" type="text" class="filter-input"
-                 placeholder="/path/to/destination.qxw" spellcheck="false"
-                 data-tooltip="Path to the QXW file you want to copy elements INTO">
+                 placeholder="Paste path or click Browse…" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements INTO"
+                 onkeydown="if(event.key==='Enter') mergerLoadDst()">
+          <button class="btn btn-surface" onclick="mergerBrowseDst()"
+                  data-tooltip="Browse for destination .qxw file">Browse…</button>
           <button class="btn btn-accent" onclick="mergerLoadDst()"
                   data-tooltip="Parse the destination workspace">Load</button>
+          <input id="merger-dst-file" type="file" accept=".qxw" style="display:none"
+                 onchange="mergerDstFileChosen()">
         </div>
       </div>
 

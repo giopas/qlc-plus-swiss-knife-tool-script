@@ -79,22 +79,46 @@ function _updatePanelHeaders() {
 
 // ── Load src / dst ────────────────────────────────────────────────────────────
 
-async function mergerLoadSrc() {
-  const inp = document.getElementById('merger-src-path');
-  const path = (inp?.value || '').trim();
-  if (!path) { _setMergerStatus('Enter the source .qxw file path.', 'error'); return; }
-  _setMergerStatus('Loading source…', 'info');
+// ── Generic side loader (path or file upload) ─────────────────────────────────
+
+async function _loadSide(side, pathInputId, fileInputId) {
+  const endpoint = `/api/merger/${side}/load`;
+  const label    = side === 'src' ? 'Source' : 'Destination';
+  const pathVal  = (document.getElementById(pathInputId)?.value || '').trim();
+  const fileEl   = document.getElementById(fileInputId);
+  const file     = fileEl?.files?.[0];
+
+  _setMergerStatus(`Loading ${label.toLowerCase()}…`, 'info');
+  let r, d;
   try {
-    const r = await fetch('/api/merger/src/load', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path }),
-    });
-    const d = await r.json();
-    if (!r.ok) { _setMergerStatus('Source load error: ' + d.error, 'error'); return; }
-    _srcLoaded = true;
-    _srcName   = d.name;
-    _setMergerStatus(`Source loaded: ${d.name}  (${_summaryText(d.summary)})`, 'ok');
-    await _fetchSrcElements();
+    if (file) {
+      const fd = new FormData();
+      fd.append('file', file);
+      r = await fetch(endpoint, { method: 'POST', body: fd });
+    } else if (pathVal) {
+      r = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: pathVal }),
+      });
+    } else {
+      _setMergerStatus(`Enter a path or click Browse to pick the ${label.toLowerCase()} .qxw file.`, 'error');
+      return;
+    }
+
+    d = await r.json();
+    if (!r.ok) { _setMergerStatus(`${label} load error: ` + d.error, 'error'); return; }
+
+    if (side === 'src') {
+      _srcLoaded = true; _srcName = d.name;
+      if (file) document.getElementById(pathInputId).value = file.name;
+      await _fetchSrcElements();
+    } else {
+      _dstLoaded = true; _dstName = d.name;
+      if (file) document.getElementById(pathInputId).value = file.name;
+      await _fetchDstElements();
+    }
+    _setMergerStatus(`${label} loaded: ${d.name}  (${_summaryText(d.summary)})`, 'ok');
     _updatePanelHeaders();
     _renderAll();
   } catch (e) {
@@ -102,27 +126,18 @@ async function mergerLoadSrc() {
   }
 }
 
-async function mergerLoadDst() {
-  const inp = document.getElementById('merger-dst-path');
-  const path = (inp?.value || '').trim();
-  if (!path) { _setMergerStatus('Enter the destination .qxw file path.', 'error'); return; }
-  _setMergerStatus('Loading destination…', 'info');
-  try {
-    const r = await fetch('/api/merger/dst/load', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path }),
-    });
-    const d = await r.json();
-    if (!r.ok) { _setMergerStatus('Destination load error: ' + d.error, 'error'); return; }
-    _dstLoaded = true;
-    _dstName   = d.name;
-    _setMergerStatus(`Destination loaded: ${d.name}  (${_summaryText(d.summary)})`, 'ok');
-    await _fetchDstElements();
-    _updatePanelHeaders();
-    _renderAll();
-  } catch (e) {
-    _setMergerStatus('Network error: ' + e.message, 'error');
-  }
+async function mergerLoadSrc() { await _loadSide('src', 'merger-src-path', 'merger-src-file'); }
+async function mergerLoadDst() { await _loadSide('dst', 'merger-dst-path', 'merger-dst-file'); }
+
+function mergerBrowseSrc() { document.getElementById('merger-src-file')?.click(); }
+function mergerBrowseDst() { document.getElementById('merger-dst-file')?.click(); }
+function mergerSrcFileChosen() {
+  const f = document.getElementById('merger-src-file')?.files?.[0];
+  if (f) { document.getElementById('merger-src-path').value = ''; mergerLoadSrc(); }
+}
+function mergerDstFileChosen() {
+  const f = document.getElementById('merger-dst-file')?.files?.[0];
+  if (f) { document.getElementById('merger-dst-path').value = ''; mergerLoadDst(); }
 }
 
 function _summaryText(s) {

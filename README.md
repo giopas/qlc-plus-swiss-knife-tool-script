@@ -19,15 +19,41 @@ v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web applicati
 
 ## Screenshots
 
-| Setlist Manager | Dictionary |
+### v1.0 — Web UI *(actively developed)*
+
+| 🎵 Setlist Manager | 📖 Dictionary |
+|:---:|:---:|
+| ![Setlist Manager](screenshots/webapp_setlist.png) | ![Dictionary](screenshots/webapp_dictionary.png) |
+
+| 📋 Setup Checklist | 🎛 Triggers |
+|:---:|:---:|
+| ![Setup Checklist](screenshots/webapp_checklist.png) | ![Triggers](screenshots/webapp_triggers.png) |
+
+| 🔧 Fixture Configurator | 🔍 ID Browser |
+|:---:|:---:|
+| ![Fixture Configurator](screenshots/webapp_fixtures.png) | ![ID Browser](screenshots/webapp_id_browser.png) |
+
+| 🔀 QXW Merger *(new in v1.0)* | |
+|:---:|:---:|
+| ![QXW Merger](screenshots/webapp_merger.png) | |
+
+---
+
+### v0.7.3 — Desktop UI (Tkinter) *(no longer developed)*
+
+> The original desktop application required no external dependencies beyond Python + tkinter.
+> It is preserved in the repository for reference but will not receive further updates.
+> All future development continues on the v1.0 web UI above.
+
+| 🎵 Setlist Manager | 📖 Dictionary |
 |:---:|:---:|
 | ![Setlist Manager](screenshots/tab1_setlist_manager.png) | ![Dictionary](screenshots/tab2_dictionary.png) |
 
-| Setup Checklist | Triggers |
+| 📋 Setup Checklist | 🎛 Triggers |
 |:---:|:---:|
 | ![Setup Checklist](screenshots/tab3_setup_checklist.png) | ![Triggers](screenshots/tab4_triggers.png) |
 
-| Fixture Configurator | ID Browser |
+| 🔧 Fixture Configurator | 🔍 ID Browser |
 |:---:|:---:|
 | ![Fixture Configurator](screenshots/tab5_fixture_configurator.png) | ![ID Browser](screenshots/tab6_id_browser.png) |
 

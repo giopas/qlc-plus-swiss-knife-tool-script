@@ -97,30 +97,54 @@ Load any two `.qxw` files independently of the main workspace. Browse **Fixtures
 
 ## Quick Start
 
+### macOS / Linux — first time only
+
 ```bash
-# 1. Clone the repository
 git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
 cd qlc-plus-swiss-knife-tool-script
-
-# 2. Create a virtual environment and install Flask (one-time setup)
 python3 -m venv .venv
-source .venv/bin/activate        # macOS / Linux
-# .venv\Scripts\activate.bat     # Windows (Command Prompt)
-# .venv\Scripts\Activate.ps1     # Windows (PowerShell)
+source .venv/bin/activate
 pip install flask
-
-# 3. Start the app
 python3 app.py
 ```
 
-The app auto-opens `http://localhost:5731` in your default browser. Press **Ctrl+C** in the terminal to quit.
+### macOS / Linux — every subsequent run
 
-> **Shortcut:** The launcher auto-detects an existing `.venv` — after the first setup you can just run `python3 app.py` without activating the virtual environment manually.
+```bash
+cd qlc-plus-swiss-knife-tool-script
+python3 app.py
+```
+
+> The launcher detects the `.venv` automatically — no need to activate it manually after the first setup.
+
+---
+
+### Windows (Command Prompt) — first time only
+
+```bat
+git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
+cd qlc-plus-swiss-knife-tool-script
+python -m venv .venv
+.venv\Scripts\activate.bat
+pip install flask
+python app.py
+```
+
+### Windows (Command Prompt) — every subsequent run
+
+```bat
+cd qlc-plus-swiss-knife-tool-script
+python app.py
+```
+
+---
+
+The app opens `http://localhost:5731` automatically. Press **Ctrl+C** to quit.
 
 ### Loading a workspace
 
-- **Path mode** — paste the full path to your `.qxw` file in the header bar and click **Load**. Use the **↺ Reload** button to re-parse the file from disk at any time.
-- **Upload mode** — click **📂 Browse…** or drag a `.qxw` file anywhere on the window.
+- **Path mode** — paste the full path to your `.qxw` file in the header bar and click **Load**. Use **↺ Reload** to re-parse from disk at any time.
+- **Upload mode** — click **📂 Browse…** or drag a `.qxw` file anywhere onto the window.
 
 ---
 

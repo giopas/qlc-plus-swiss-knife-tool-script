@@ -47,6 +47,7 @@ function showTab(tabId) {
     case 'checklist':  ensureChecklistLoaded();   break;
     case 'triggers':   ensureTriggersLoaded();    break;
     case 'fixture':    ensureFixturesLoaded();    break;
+    case 'merger':     mergerInit();              break;
   }
 }
 
@@ -157,53 +158,6 @@ function _updateHeader(state) {
     `Fixtures: ${state.fixture_count ?? '—'}  |  ` +
     `VC Widgets: ${state.vc_widget_count ?? '—'}`;
 
-  // Sync output directory field from server state
-  const outdirInput  = document.getElementById('outdir-input');
-  const outdirStatus = document.getElementById('outdir-status');
-  if (outdirInput && state.output_dir !== undefined) {
-    outdirInput.value = state.output_dir || '';
-    if (outdirStatus) outdirStatus.textContent = state.output_dir ? '✓ custom' : '';
-  }
-}
-
-// =============================================================================
-// OUTPUT DIRECTORY SELECTOR
-// =============================================================================
-
-async function applyOutputDir() {
-  const input = document.getElementById('outdir-input');
-  if (!input) return;
-  const path = input.value.trim();
-  const res = await _apiJson('/api/output-dir', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path }),
-  });
-  const statusEl = document.getElementById('outdir-status');
-  if (res.error) {
-    setStatus('Output dir error: ' + res.error, 'error');
-    if (statusEl) statusEl.textContent = '✗ error';
-    return;
-  }
-  if (statusEl) statusEl.textContent = path ? '✓ custom' : '';
-  setStatus(path ? `Output dir set → ${path}` : 'Output dir reset to default.', 'ok');
-}
-
-async function clearOutputDir() {
-  const input = document.getElementById('outdir-input');
-  if (input) input.value = '';
-  const res = await _apiJson('/api/output-dir', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: '' }),
-  });
-  const statusEl = document.getElementById('outdir-status');
-  if (res.error) {
-    setStatus('Reset error: ' + res.error, 'error');
-    return;
-  }
-  if (statusEl) statusEl.textContent = '';
-  setStatus('Output dir reset to default.', 'ok');
 }
 
 // =============================================================================
@@ -527,12 +481,4 @@ function _applyTheme(theme) {
   const state = await _apiJson('/api/status');
   _updateHeader(state);
 
-  // Pre-fill output dir from server state (persists across page reloads)
-  const outdirRes = await _apiJson('/api/output-dir');
-  const outdirInput  = document.getElementById('outdir-input');
-  const outdirStatus = document.getElementById('outdir-status');
-  if (outdirInput && outdirRes.output_dir) {
-    outdirInput.value = outdirRes.output_dir;
-    if (outdirStatus) outdirStatus.textContent = '✓ custom';
-  }
 })();

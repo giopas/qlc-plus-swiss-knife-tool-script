@@ -1,10 +1,15 @@
 """routes/fixture_routes.py — Fixture Configurator API (full implementation)."""
 
 import os
+import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
 from core import fixture as fx
 from core import pdf as pdf_mod
+
+
+def _safe_err(exc: Exception) -> str:
+    return re.sub(r'(/[\w/.\- ]+|[A-Za-z]:\\[\w\\.\- ]+)', '<path>', str(exc))
 
 bp = Blueprint('fixture', __name__, url_prefix='/api/fixture')
 
@@ -170,7 +175,7 @@ def import_from_workspace():
         return jsonify({'ok': True, 'rig': fx.rig_to_api(),
                         'stage': fx.get_stage_dims()})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 # ── Auto-DMX ─────────────────────────────────────────────────────────────────
@@ -216,7 +221,7 @@ def generate_qxw():
     try:
         qxw_bytes = fx.build_qxw(template_root=template_root)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
     import datetime
     filename = 'rig_' + datetime.date.today().strftime('%Y%m%d') + '.qxw'

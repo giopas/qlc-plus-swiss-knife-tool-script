@@ -89,7 +89,7 @@ except ModuleNotFoundError:
 # ── Normal imports (Flask is now guaranteed to be importable) ─────────────────
 import threading
 import webbrowser
-from flask import Flask
+from flask import Flask, request, jsonify
 
 from routes.workspace_routes  import bp as workspace_bp
 from routes.id_browser_routes import bp as id_browser_bp
@@ -98,8 +98,12 @@ from routes.dictionary_routes import bp as dictionary_bp
 from routes.checklist_routes  import bp as checklist_bp
 from routes.triggers_routes   import bp as triggers_bp
 from routes.fixture_routes    import bp as fixture_bp
+from routes.merger_routes     import bp as merger_bp
 
 PORT = 5731
+
+# Allowed Origin / Host values for CSRF protection (localhost only)
+_ALLOWED_HOSTS = {f'localhost:{PORT}', f'127.0.0.1:{PORT}'}
 
 
 def create_app():
@@ -112,6 +116,42 @@ def create_app():
     app.register_blueprint(checklist_bp)
     app.register_blueprint(triggers_bp)
     app.register_blueprint(fixture_bp)
+    app.register_blueprint(merger_bp)
+
+    # ── Security: CSRF origin check ───────────────────────────────────────────
+    @app.before_request
+    def _csrf_origin_check():
+        """Reject state-changing requests from unexpected origins."""
+        if request.method in ('POST', 'PATCH', 'PUT', 'DELETE'):
+            origin = request.headers.get('Origin', '')
+            host   = request.headers.get('Host', '')
+            # Strip scheme from Origin for comparison
+            origin_host = origin.replace('http://', '').replace('https://', '')
+            # Allow requests with no Origin header (curl, Python scripts, etc.)
+            # but reject those whose Origin doesn't match localhost
+            if origin_host and origin_host not in _ALLOWED_HOSTS:
+                return jsonify({'error': 'Forbidden'}), 403
+            if host and host not in _ALLOWED_HOSTS:
+                return jsonify({'error': 'Forbidden'}), 403
+
+    # ── Security: response headers ────────────────────────────────────────────
+    @app.after_request
+    def _security_headers(response):
+        """Add security headers to every response."""
+        # Content-Security-Policy: allow same-origin only; no inline JS eval
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "   # inline needed for SPA event handlers
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'self';"
+        )
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options']        = 'DENY'
+        response.headers['Referrer-Policy']        = 'no-referrer'
+        return response
 
     return app
 

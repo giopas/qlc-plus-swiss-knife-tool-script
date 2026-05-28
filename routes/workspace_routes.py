@@ -9,10 +9,16 @@ routes/workspace_routes.py
 """
 
 import os
+import re
 import tempfile
 from flask import Blueprint, jsonify, render_template, request
 
 from core import workspace as ws
+
+
+def _safe_err(exc: Exception) -> str:
+    """Strip filesystem paths from exception messages before sending to client."""
+    return re.sub(r'(/[\w/.\- ]+|[A-Za-z]:\\[\w\\.\- ]+)', '<path>', str(exc))
 
 bp = Blueprint('workspace', __name__)
 
@@ -63,8 +69,13 @@ def load():
             if not f:
                 return jsonify({'error': 'No file uploaded.'}), 400
             original_name = f.filename or 'workspace.qxw'
-            suffix = os.path.splitext(original_name)[-1] or '.qxw'
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            # Whitelist: only .qxw files accepted
+            suffix = os.path.splitext(original_name)[-1].lower()
+            if suffix != '.qxw':
+                return jsonify({
+                    'error': f'Only .qxw files are accepted (got: {suffix or "no extension"}).'
+                }), 400
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.qxw')
             f.save(tmp.name)
             tmp.close()
             path = tmp.name
@@ -81,7 +92,7 @@ def load():
         return jsonify(state)
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
     finally:
         if tmp and os.path.exists(tmp.name):
@@ -132,4 +143,4 @@ def reload():
         updated = ws.load_qxw(state['path'])
         return jsonify(updated)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500

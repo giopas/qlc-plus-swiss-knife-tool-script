@@ -16,49 +16,32 @@
      HEADER
 ══════════════════════════════════════════════════════════════════════════ -->
 <header id="app-header">
-  <!-- Row 1: logo, workspace load controls, theme + workspace name -->
-  <div class="header-row">
-    <div id="header-left">
-      <span id="logo">⚡ QLC+ SWISS KNIFE</span>
-      <span id="version-badge">v{{ version }}</span>
-    </div>
-
-    <div id="header-center">
-      <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false"
-             data-tooltip="Paste the full path to a .qxw workspace file and click Load">
-      <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()"
-              data-tooltip="Load workspace from the path above">Load</button>
-      <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window"
-             data-tooltip="Browse and open a .qxw file from your computer">
-        📂 Browse…
-        <input id="file-input" type="file" accept=".qxw" style="display:none"
-               onchange="loadFromInput(this)">
-      </label>
-      <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
-              title="Reload file from disk" disabled
-              data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
-    </div>
-
-    <div id="header-right">
-      <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()"
-              title="Toggle dark / grey / light theme"
-              data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
-      <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
-    </div>
+  <div id="header-left">
+    <span id="logo">⚡ QLC+ SWISS KNIFE</span>
+    <span id="version-badge">v{{ version }}</span>
   </div>
 
-  <!-- Row 2: output directory selector -->
-  <div class="header-row header-row2" id="header-row2">
-    <span class="header-row2-label">📁 Output dir:</span>
-    <input id="outdir-input" type="text" class="outdir-input"
-           placeholder="Default — same folder as .qxw (or script dir for uploads)"
-           spellcheck="false"
-           data-tooltip="Generated QXW and PDF files will be saved to this directory">
-    <button class="btn btn-surface btn-sm" onclick="applyOutputDir()"
-            data-tooltip="Apply this directory as the output for generated files">✓ Set</button>
-    <button class="btn btn-surface btn-sm" onclick="clearOutputDir()"
-            data-tooltip="Reset to default (same folder as the loaded .qxw file)">✕ Reset</button>
-    <span id="outdir-status" class="hint-text" style="font-size:10px;margin-left:4px"></span>
+  <div id="header-center">
+    <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false"
+           data-tooltip="Paste the full path to a .qxw workspace file and click Load">
+    <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()"
+            data-tooltip="Load workspace from the path above">Load</button>
+    <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window"
+           data-tooltip="Browse and open a .qxw file from your computer">
+      📂 Browse…
+      <input id="file-input" type="file" accept=".qxw" style="display:none"
+             onchange="loadFromInput(this)">
+    </label>
+    <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
+            title="Reload file from disk" disabled
+            data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
+  </div>
+
+  <div id="header-right">
+    <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()"
+            title="Toggle dark / grey / light theme"
+            data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
+    <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
   </div>
 </header>
 
@@ -72,6 +55,7 @@
   <button class="tab-btn"        data-tab="triggers"   onclick="showTab('triggers')">🎛 Triggers</button>
   <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixtures</button>
   <button class="tab-btn"        data-tab="id-browser" onclick="showTab('id-browser')">🔍 ID Browser</button>
+  <button class="tab-btn"        data-tab="merger"     onclick="showTab('merger')">🔀 QXW Merger</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
@@ -585,6 +569,117 @@
 
   </section>
 
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB 7 — QXW MERGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-merger" class="tab-panel">
+
+    <!-- Top load bar -->
+    <div class="merger-load-bar">
+
+      <!-- Source -->
+      <div class="merger-load-col">
+        <label class="merger-load-label">📂 Source QXW</label>
+        <div class="merger-load-row">
+          <input id="merger-src-path" type="text" class="filter-input"
+                 placeholder="/path/to/source.qxw" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements FROM">
+          <button class="btn btn-accent" onclick="mergerLoadSrc()"
+                  data-tooltip="Parse the source workspace">Load</button>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="merger-arrow">→</div>
+
+      <!-- Destination -->
+      <div class="merger-load-col">
+        <label class="merger-load-label">📥 Destination QXW</label>
+        <div class="merger-load-row">
+          <input id="merger-dst-path" type="text" class="filter-input"
+                 placeholder="/path/to/destination.qxw" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements INTO">
+          <button class="btn btn-accent" onclick="mergerLoadDst()"
+                  data-tooltip="Parse the destination workspace">Load</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Category + search toolbar -->
+    <div class="tab-toolbar merger-toolbar">
+      <div class="merger-cat-tabs">
+        <button id="merger-cat-functions" class="btn btn-surface active"
+                onclick="mergerSetCategory('functions')">⚙ Functions</button>
+        <button id="merger-cat-fixtures"  class="btn btn-surface"
+                onclick="mergerSetCategory('fixtures')">💡 Fixtures</button>
+        <button id="merger-cat-groups"    class="btn btn-surface"
+                onclick="mergerSetCategory('groups')">📦 Groups</button>
+      </div>
+      <input type="text" class="filter-input" placeholder="Search source…" style="flex:1"
+             oninput="mergerSrcSearch(this.value)">
+      <select class="filter-input" style="flex:0 0 140px" onchange="mergerFnTypeFilter(this.value)">
+        <option value="">All types</option>
+        <option value="Scene">Scene</option>
+        <option value="Chaser">Chaser</option>
+        <option value="Sequence">Sequence</option>
+        <option value="EFX">EFX</option>
+        <option value="Collection">Collection</option>
+        <option value="Show">Show</option>
+        <option value="Audio">Audio</option>
+        <option value="Script">Script</option>
+        <option value="RGBMatrix">RGBMatrix</option>
+      </select>
+      <button class="btn btn-surface" onclick="mergerSelectAll()"
+              data-tooltip="Select all visible items">✓ All</button>
+      <button class="btn btn-surface" onclick="mergerSelectNone()"
+              data-tooltip="Deselect all">✗ None</button>
+    </div>
+
+    <!-- Two-column browser -->
+    <div class="merger-split">
+
+      <!-- Source list -->
+      <div class="merger-panel">
+        <div class="pane-header">
+          Source: <span id="merger-src-name" class="merger-ws-name">— not loaded —</span>
+        </div>
+        <div id="merger-src-list" class="merger-list">
+          <div class="merger-placeholder">Load a source .qxw file above</div>
+        </div>
+      </div>
+
+      <!-- Middle action column -->
+      <div class="merger-actions">
+        <button id="merger-copy-btn" class="btn btn-accent merger-copy-btn"
+                onclick="mergerCopy()" disabled
+                data-tooltip="Copy selected items into the destination (in memory)">
+          Copy →
+        </button>
+        <button id="merger-export-btn" class="btn btn-surface"
+                onclick="mergerExport()" disabled
+                data-tooltip="Save the merged destination as a new .qxw file">
+          ⬇ Export
+        </button>
+      </div>
+
+      <!-- Destination list -->
+      <div class="merger-panel">
+        <div class="pane-header">
+          Destination: <span id="merger-dst-name" class="merger-ws-name">— not loaded —</span>
+        </div>
+        <div id="merger-dst-list" class="merger-list">
+          <div class="merger-placeholder">Load a destination .qxw file above</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status bar for this tab -->
+    <div id="merger-status" class="status-bar status-info">Load two .qxw files to begin.</div>
+
+  </section>
+
 </main>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
@@ -612,5 +707,6 @@
 <script src="/static/js/checklist.js"></script>
 <script src="/static/js/triggers.js"></script>
 <script src="/static/js/fixture.js"></script>
+<script src="/static/js/merger.js"></script>
 </body>
 </html>

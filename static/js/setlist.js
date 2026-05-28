@@ -651,13 +651,69 @@ function slExportSongsTxt() {
 
 async function slGenerateQxw() {
   if (!_selectedSlot) return;
+
+  // Save current rows first so the server has fresh data
   await slSaveDetails();
+
   const sel      = document.getElementById('sl-chaser-select');
   const targetId = sel?.value || '__new__';
-  const res      = await _apiPost(`/api/setlist/${_selectedSlot}/generate-qxw`,
-                                  { target_chaser_id: targetId });
-  if (res.error) { setStatus(res.error, 'error'); return; }
-  setStatus(`QXW saved → ${res.filename}`, 'ok');
+
+  // Fetch the generated QXW as a raw blob from the server
+  let resp;
+  try {
+    resp = await fetch(`/api/setlist/${_selectedSlot}/generate-qxw`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ target_chaser_id: targetId }),
+    });
+  } catch (e) {
+    setStatus('Network error: ' + e.message, 'error'); return;
+  }
+
+  if (!resp.ok) {
+    try {
+      const err = await resp.json();
+      setStatus(err.error || 'Generate failed.', 'error');
+    } catch { setStatus('Generate failed.', 'error'); }
+    return;
+  }
+
+  const blob          = await resp.blob();
+  const suggestedName = resp.headers.get('X-Suggested-Filename') || 'workspace_GIG_READY.qxw';
+
+  // ── Try native OS Save dialog (Chrome / Edge) ─────────────────────────────
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        startIn: 'documents',
+        types: [{
+          description: 'QLC+ Workspace',
+          accept: { 'application/xml': ['.qxw'] },
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      setStatus(`✓ Saved: ${handle.name}`, 'ok');
+      await _fetchChasers();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;  // user cancelled the dialog
+      // showSaveFilePicker threw for another reason → fall through to <a> download
+    }
+  }
+
+  // ── Fallback: standard browser download ──────────────────────────────────
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  setStatus(`✓ Downloaded: ${suggestedName}`, 'ok');
   await _fetchChasers();
 }
 

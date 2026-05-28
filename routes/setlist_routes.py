@@ -1,9 +1,15 @@
 """routes/setlist_routes.py — Setlist Manager API."""
 
 import os
+import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
 from core import pdf as pdf_mod
+
+
+def _safe_err(exc: Exception) -> str:
+    """Strip filesystem paths from exception messages before sending to client."""
+    return re.sub(r'(/[\w/.\- ]+|[A-Za-z]:\\[\w\\.\- ]+)', '<path>', str(exc))
 
 bp = Blueprint('setlist', __name__, url_prefix='/api/setlist')
 
@@ -103,7 +109,7 @@ def load_setlist():
                     count += 1
         return jsonify({'ok': True, 'count': count})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 @bp.route('/save', methods=['POST'])
@@ -130,7 +136,7 @@ def save_setlist():
             f.writelines(lines)
         return jsonify({'ok': True, 'path': path})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 # ── Auto-match song names to QLC+ functions ──────────────────────────────────
@@ -165,19 +171,28 @@ def auto_match():
 @bp.route('/<slot_id>/generate-qxw', methods=['POST'])
 def generate_qxw(slot_id):
     """
-    Clone base functions → build/update a Chaser → write a new .qxw file.
+    Clone base functions → build/update a Chaser → stream QXW bytes to browser.
+    The browser's showSaveFilePicker (or <a> fallback) lets the user choose
+    where to save without any server-side path configuration.
     Body: {target_chaser_id: str|"__new__"}
     """
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
-    data              = request.get_json(force=True) or {}
-    target_chaser_id  = (data.get('target_chaser_id') or '').strip() or None
+    data             = request.get_json(force=True) or {}
+    target_chaser_id = (data.get('target_chaser_id') or '').strip() or None
     try:
-        new_path = ws.generate_slot_qxw(slot_id, target_chaser_id)
-        return jsonify({'ok': True, 'path': new_path,
-                        'filename': os.path.basename(new_path)})
+        fname, xml_bytes = ws.generate_slot_qxw_content(slot_id, target_chaser_id)
+        return Response(
+            xml_bytes,
+            mimetype='application/octet-stream',
+            headers={
+                'Content-Disposition':           f'attachment; filename="{fname}"',
+                'X-Suggested-Filename':          fname,
+                'Access-Control-Expose-Headers': 'X-Suggested-Filename',
+            },
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 # ── PDF export ────────────────────────────────────────────────────────────────

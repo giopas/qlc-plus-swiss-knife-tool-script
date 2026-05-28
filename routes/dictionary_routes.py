@@ -1,7 +1,12 @@
 """routes/dictionary_routes.py — Dictionary Manager API (fully implemented)."""
 
+import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
+
+
+def _safe_err(exc: Exception) -> str:
+    return re.sub(r'(/[\w/.\- ]+|[A-Za-z]:\\[\w\\.\- ]+)', '<path>', str(exc))
 
 bp = Blueprint('dictionary', __name__, url_prefix='/api/dictionary')
 
@@ -34,7 +39,7 @@ def load_dict():
         count = ws.load_dictionary(path)
         return jsonify({'ok': True, 'count': count})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 @bp.route('/save', methods=['POST'])
@@ -49,7 +54,7 @@ def save_dict():
         ws.save_dictionary(path)
         return jsonify({'ok': True, 'path': path})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 @bp.route('/export-txt', methods=['POST'])

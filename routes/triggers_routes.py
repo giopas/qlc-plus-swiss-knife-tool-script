@@ -1,7 +1,12 @@
 """routes/triggers_routes.py — Trigger Manager API (fully implemented)."""
 
+import re
 from flask import Blueprint, jsonify, request
 from core import workspace as ws
+
+
+def _safe_err(exc: Exception) -> str:
+    return re.sub(r'(/[\w/.\- ]+|[A-Za-z]:\\[\w\\.\- ]+)', '<path>', str(exc))
 
 bp = Blueprint('triggers', __name__, url_prefix='/api/triggers')
 
@@ -45,4 +50,4 @@ def save():
         path = ws.save_triggers()
         return jsonify({'ok': True, 'path': path})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_err(e)}), 500

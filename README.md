@@ -7,6 +7,15 @@
 
 ---
 
+## ⚗️ Early release — bugs expected
+
+This tool is in active development. Some features may be incomplete, behave unexpectedly, or not yet work at all. **Please test it and report any issues on the [Issues page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/issues)** — every bug report helps.
+
+**Your show files are safe to experiment with:**
+All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* via a Save dialog — your original `.qxw` is never overwritten. The one intentional exception is the **Trigger Manager "Save"** button, which writes keyboard/MIDI bindings back to the file you loaded by path — exactly as described on that tab.
+
+---
+
 ## What's new in v1.0
 
 v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web application** that runs locally and opens in your browser. All seven tabs are fully ported, and two major new features are added:

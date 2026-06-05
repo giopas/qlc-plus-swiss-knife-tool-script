@@ -5,6 +5,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.1] — 2026-06-05
+
+### Fixed
+
+- **Blueprint PDF — top-view Z orientation**: downstage/audience was rendered at the top of the plot and upstage/backstage at the bottom, the opposite of both the Swiss Knife canvas and the QLC+ 3D monitor. The Z axis mapping in `core/pdf.py` is now consistent with the canvas (`z = 0` → upstage/top, `z = max` → downstage/audience/bottom).
+- **QXW Merger — source and destination loading**: path-only input made it impossible to load files on most systems. Both panels now have a **Browse…** button that opens a native file picker; selecting a file loads it immediately. Path entry still works as before.
+
+---
+
 ## [1.0.0] — 2026-05-28
 
 ### Full rewrite: Tkinter → Flask web application

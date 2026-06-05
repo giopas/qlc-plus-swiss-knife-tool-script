@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.0
+# ⚡ QLC+ Swiss Knife — v1.x.x
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 

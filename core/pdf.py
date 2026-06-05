@@ -238,7 +238,9 @@ def build_blueprint_pdf(fixture_data, show_name="Untitled", doc_date=None,
             fc_col = _hex_to_01(f.get("color", "#888888"))
             nx = pad + ((f["x"] - mn_x) / rx) * pw
             val = f[v_axis]
-            frac_v = (mx_v - val) / rv if rv else 0.5
+            # Top-view (Z): high-Z = downstage = bottom, matching canvas convention.
+            # Front-view (Y): high-Y = top of rig = top of plot, so invert.
+            frac_v = (val - mn_v) / rv if (rv and v_axis == 'z') else (mx_v - val) / rv if rv else 0.5
             ny = y_off + pad_tb + frac_v * ph
             circ(nx, fy(ny), r_dot, fc_col, fgc)
             txt_c(nx, fy(ny) - r_dot - 9,  f["name"],          sz=5)

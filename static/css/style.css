@@ -1231,6 +1231,7 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 /* Chaser dropdown in actions pane — compact */
 .fb-chaser-sel {
   width: 100%;
+  flex: 0 0 auto;   /* override filter-input's flex: 0 0 280px (column = height!) */
   font-size: 10px;
   padding: 2px 4px;
   height: 22px;

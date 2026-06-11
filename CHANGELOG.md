@@ -5,6 +5,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.2] — 2026-06-11
+
+### Added — Trigger Manager enhancements
+
+- **Conflict detector — inline highlighting**: clicking 🔍 Duplicates now highlights conflicting rows directly in the table with a red left border, in addition to reporting the summary in the status bar. Hovering a highlighted row shows a tooltip. Conflict state clears automatically after a Bulk MIDI Shift or when data is reloaded.
+- **Bulk MIDI Shift modal**: new ⇄ MIDI Shift button opens a dialog where you can enter a source universe + channel and a target universe + channel. All triggers bound to the source address are reassigned in one operation; the table reloads automatically and reports how many triggers were updated.
+- **Assignment Matrix panel**: new ⊞ Matrix button toggles an inline grid panel showing every assigned widget (rows) against every unique key name (columns). Duplicate keys are flagged in red with a ⚠ marker in the column header. Clicking a ✓ cell or a widget row selects that trigger for editing in the side panel.
+
+---
+
 ## [1.0.1] — 2026-06-05
 
 ### Fixed

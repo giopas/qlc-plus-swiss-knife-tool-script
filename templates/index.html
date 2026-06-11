@@ -330,9 +330,50 @@
         Assigned only
       </label>
       <button class="btn btn-surface" onclick="checkDuplicates()"
-              data-tooltip="Highlight triggers that share the same key or MIDI assignment">🔍 Duplicates</button>
+              data-tooltip="Highlight in red any triggers that share the same key binding">🔍 Duplicates</button>
+      <button class="btn btn-surface" onclick="openMidiShiftModal()"
+              data-tooltip="Bulk re-assign all triggers from one MIDI universe/channel to another">⇄ MIDI Shift</button>
+      <button id="trg-matrix-btn" class="btn btn-surface" onclick="toggleMatrix()"
+              data-tooltip="Show a grid of all widget key assignments">⊞ Matrix</button>
       <button class="btn btn-green"   onclick="saveTriggers()"
               data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to QXW</button>
+    </div>
+
+    <!-- Matrix panel (toggled by ⊞ Matrix button) -->
+    <div id="trg-matrix-panel" style="display:none;padding:8px 12px;border-bottom:1px solid var(--surface1);background:var(--mantle)">
+      <div id="trg-matrix-wrap"></div>
+    </div>
+
+    <!-- Bulk MIDI Shift modal -->
+    <div id="trg-shift-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="width:340px">
+        <div class="pane-header" style="margin-bottom:14px">⇄ Bulk MIDI Shift</div>
+        <div class="field-group">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <label class="field-label">From Universe</label>
+              <input id="trg-shift-from-uni" class="field-input" type="text" placeholder="0">
+            </div>
+            <div>
+              <label class="field-label">From Channel</label>
+              <input id="trg-shift-from-ch" class="field-input" type="text" placeholder="1">
+            </div>
+            <div>
+              <label class="field-label">To Universe</label>
+              <input id="trg-shift-to-uni" class="field-input" type="text" placeholder="0">
+            </div>
+            <div>
+              <label class="field-label">To Channel</label>
+              <input id="trg-shift-to-ch" class="field-input" type="text" placeholder="2">
+            </div>
+          </div>
+          <div id="trg-shift-status" style="font-size:11px;color:var(--overlay0);min-height:18px;margin-top:8px"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-accent" onclick="submitMidiShift()">⇄ Shift All</button>
+            <button class="btn btn-surface" onclick="closeMidiShiftModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="tab-split">

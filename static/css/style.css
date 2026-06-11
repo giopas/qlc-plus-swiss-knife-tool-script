@@ -591,6 +591,8 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
 .custom-table tbody tr { cursor: pointer; transition: background .08s; }
 .custom-table tbody tr:hover td { background: var(--surface0); }
 .custom-table tbody tr.row-active td { background: var(--surface1); color: var(--blue); }
+.custom-table tbody tr.row-conflict td { border-left: 3px solid var(--red); background: rgba(243,139,168,.07); }
+.custom-table tbody tr.row-conflict:hover td { background: rgba(243,139,168,.13); }
 .custom-table .no-val { color: var(--overlay0); }
 .custom-table .sort-asc::after  { content: ' ↑'; color: var(--blue); }
 .custom-table .sort-desc::after { content: ' ↓'; color: var(--blue); }

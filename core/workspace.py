@@ -27,7 +27,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -264,6 +264,47 @@ def update_trigger(uid: str, key: str, universe: str, channel: str) -> bool:
     d['uni'] = universe
     d['ch']  = channel
     return True
+
+
+def bulk_shift_midi(from_uni: str, from_ch: str, to_uni: str, to_ch: str) -> int:
+    """
+    Re-assign MIDI universe/channel for every trigger whose current
+    universe == from_uni AND channel == from_ch.
+    Returns the number of triggers updated.
+    """
+    count = 0
+    for uid, d in _state['trigger_items'].items():
+        if d['uni'] == from_uni and d['ch'] == from_ch:
+            update_trigger(uid, key=d['key'], universe=to_uni, channel=to_ch)
+            count += 1
+    return count
+
+
+def get_key_matrix() -> dict:
+    """
+    Return a dict suitable for rendering the assignment matrix.
+    {
+      'keys':    [sorted list of unique key names],
+      'widgets': [{'uid', 'caption', 'type', 'key', 'uni', 'ch'}],
+      'map':     { key_name: [uid, ...] }   # which widget UIDs use each key
+    }
+    """
+    key_map: dict[str, list[str]] = {}
+    widgets = []
+    for uid, d in _state['trigger_items'].items():
+        widgets.append({
+            'uid':     uid,
+            'caption': d['caption'],
+            'type':    d['type'],
+            'key':     d['key'],
+            'uni':     d['uni'],
+            'ch':      d['ch'],
+        })
+        if d['key']:
+            key_map.setdefault(d['key'], []).append(uid)
+
+    keys = sorted(key_map.keys(), key=lambda k: k.lower())
+    return {'keys': keys, 'widgets': widgets, 'map': key_map}
 
 
 def save_triggers() -> str:

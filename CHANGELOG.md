@@ -19,6 +19,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Inline description**: if a description exists for the assigned function, it is shown below the VC button line in italic grey — matching the display style already used in the function pool panel on the right.
 - Both lines are only shown when the corresponding data is available; unassigned songs and functions without VC buttons or descriptions are unaffected.
 
+### Fixed — Setlist tab: function pool descriptions always up-to-date
+
+- The function pool (right panel) now re-fetches functions every time the Setlist tab is visited, instead of only on the first load. This ensures that descriptions entered or loaded in the Dictionary tab are immediately visible in the pool — which is the primary place descriptions help: identifying the right function to assign to each song.
+
 ---
 
 ## [1.0.2] — 2026-06-11

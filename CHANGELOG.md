@@ -22,6 +22,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ### Fixed — Setlist tab: function pool descriptions always up-to-date
 
 - The function pool (right panel) now re-fetches functions every time the Setlist tab is visited, instead of only on the first load. This ensures that descriptions entered or loaded in the Dictionary tab are immediately visible in the pool — which is the primary place descriptions help: identifying the right function to assign to each song.
+- Added **↺ refresh button** to the QLC+ Functions panel header to manually re-fetch functions with the latest descriptions without switching tabs.
+- **Browse TXT** in the Dictionary tab now syncs all imported descriptions to the server immediately (via new `/api/dictionary/bulk-update` endpoint), so the Setlist pool reflects them as soon as you hit ↺. Previously, Browse TXT was client-side only and descriptions never reached the server's shared state.
 
 ---
 

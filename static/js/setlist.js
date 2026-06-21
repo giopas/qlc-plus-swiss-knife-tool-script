@@ -71,6 +71,12 @@ async function _fetchFunctions() {
   _renderFnPool(_poolFiltered);
 }
 
+async function refreshFnPool() {
+  await _fetchFunctions();
+  _applyPoolFilters();
+  setStatus('Function pool refreshed.', 'ok');
+}
+
 // ── Slot list ──────────────────────────────────────────────────────────────────
 
 function _renderSlots(slots) {

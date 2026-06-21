@@ -40,9 +40,12 @@ function invalidateSetlist() {
 async function ensureSetlistLoaded() {
   const state = await _apiJson('/api/status');
   if (!state.loaded) return;
+  // Always re-fetch functions so descriptions loaded in the Dictionary tab
+  // are reflected immediately in the pool (descriptions live in shared state).
+  await _fetchFunctions();
   if (_setlistLoaded) return;
   _setlistLoaded = true;
-  await Promise.all([refreshSlots(), _fetchChasers(), _fetchFunctions()]);
+  await Promise.all([refreshSlots(), _fetchChasers()]);
 }
 
 // ── Data fetching ─────────────────────────────────────────────────────────────

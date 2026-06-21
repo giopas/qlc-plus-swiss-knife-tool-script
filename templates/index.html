@@ -204,7 +204,11 @@
 
       <!-- ── Col 4: QLC+ Function Pool (FileBot Right) ────────────────── -->
       <div class="fn-pool-pane">
-        <div class="pane-header">QLC+ Functions</div>
+        <div class="pane-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>QLC+ Functions</span>
+          <button class="btn btn-surface btn-sm" onclick="refreshFnPool()"
+                  data-tooltip="Re-fetch functions with latest descriptions from Dictionary">↺</button>
+        </div>
         <div class="fn-pool-search">
           <input id="fn-pool-filter" type="text" class="filter-input"
                  placeholder="Search…" oninput="filterFnPool(this.value)">

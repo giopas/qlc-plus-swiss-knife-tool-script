@@ -10,8 +10,10 @@ let _dictFiltered   = [];
 let _dictSort       = { col: 'id', dir: 1 };
 let _dictSelFid     = null;
 let _dictLoaded     = false;
-let _dictTypeFilter = '';
-let _dictVcFilter   = '';   // '' | 'has' | 'none'
+let _dictTypeFilter   = '';
+let _dictVcFilter     = '';   // '' | 'has' | 'none'
+let _dictVcNameFilter = '';   // free-text search within VC button name
+let _dictFrameFilter  = '';   // exact frame name match
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,7 @@ async function _loadDictionary() {
   _dictData     = Array.isArray(data) ? data : [];
   _dictFiltered = _dictData;
   _populateTypeFilter();
+  _populateFrameFilter();
   _applyDictFilters();
 }
 
@@ -56,6 +59,16 @@ function filterDictByVc(val) {
   _applyDictFilters();
 }
 
+function filterDictByVcName(val) {
+  _dictVcNameFilter = (val || '').trim();
+  _applyDictFilters();
+}
+
+function filterDictByFrame(val) {
+  _dictFrameFilter = val || '';
+  _applyDictFilters();
+}
+
 function _applyDictFilters(q) {
   if (q === undefined) q = (document.getElementById('dict-filter')?.value || '').trim();
   q = q.toLowerCase().trim();
@@ -66,13 +79,20 @@ function _applyDictFilters(q) {
     result = result.filter(r => r.vc_button);
   else if (_dictVcFilter === 'none')
     result = result.filter(r => !r.vc_button);
+  if (_dictVcNameFilter) {
+    const vcq = _dictVcNameFilter.toLowerCase();
+    result = result.filter(r => (r.vc_button || '').toLowerCase().includes(vcq));
+  }
+  if (_dictFrameFilter)
+    result = result.filter(r => (r.vc_frames || []).includes(_dictFrameFilter));
   if (q)
     result = result.filter(r =>
       r.id.includes(q) ||
       r.name.toLowerCase().includes(q) ||
       (r.type        || '').toLowerCase().includes(q) ||
       (r.desc        || '').toLowerCase().includes(q) ||
-      (r.vc_button   || '').toLowerCase().includes(q));
+      (r.vc_button   || '').toLowerCase().includes(q) ||
+      (r.vc_frames   || []).some(f => f.toLowerCase().includes(q)));
   _dictFiltered = result;
   _renderDictTable(_sortDict(_dictFiltered));
 }
@@ -84,6 +104,15 @@ function _populateTypeFilter() {
   sel.innerHTML = '<option value="">All types</option>'
     + types.map(t => `<option value="${_de(t)}">${_de(t)}</option>`).join('');
   sel.value = _dictTypeFilter;
+}
+
+function _populateFrameFilter() {
+  const sel = document.getElementById('dict-frame-filter');
+  if (!sel) return;
+  const frames = [...new Set(_dictData.flatMap(r => r.vc_frames || []))].sort();
+  sel.innerHTML = '<option value="">All frames</option>'
+    + frames.map(f => `<option value="${_de(f)}">${_de(f)}</option>`).join('');
+  sel.value = _dictFrameFilter;
 }
 
 // ── Sort ──────────────────────────────────────────────────────────────────────

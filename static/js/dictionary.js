@@ -237,7 +237,7 @@ function importDictTxtFile(input) {
   if (!input.files.length) return;
   const file   = input.files[0];
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     const lines  = e.target.result.split(/\r?\n/);
     let   count  = 0;
     for (const line of lines) {
@@ -254,7 +254,18 @@ function importDictTxtFile(input) {
       if (row && desc) { row.desc = desc; count++; }
     }
     _applyDictFilters();
-    setStatus(`Imported ${count} description(s) from "${file.name}". Click Save on each row or use Save TXT.`, 'ok');
+    setStatus(`Imported ${count} description(s) from "${file.name}" — syncing to server…`);
+    // Sync to server so the Setlist pool and other tabs get descriptions too
+    const toSync = _dictData.filter(r => r.desc).map(r => ({ id: r.id, desc: r.desc }));
+    if (toSync.length) {
+      const res = await _apiJson('/api/dictionary/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: toSync }),
+      });
+      if (res.error) { setStatus(res.error, 'error'); return; }
+    }
+    setStatus(`Imported ${count} description(s) from "${file.name}" — synced to server ✓`, 'ok');
   };
   reader.readAsText(file, 'utf-8');
   input.value = '';

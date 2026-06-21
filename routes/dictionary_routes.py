@@ -27,6 +27,23 @@ def update_entry(fid):
     return jsonify({'ok': True})
 
 
+@bp.route('/bulk-update', methods=['POST'])
+def bulk_update():
+    """Sync a batch of {id, desc} entries to shared_descriptions (used after Browse TXT import)."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    entries = data.get('entries', [])
+    count = 0
+    for e in entries:
+        fid = str(e.get('id', '')).strip()
+        desc = e.get('desc', '')
+        if fid:
+            ws.update_description(fid, desc)
+            count += 1
+    return jsonify({'ok': True, 'count': count})
+
+
 @bp.route('/load', methods=['POST'])
 def load_dict():
     if not ws.get_state()['loaded']:

@@ -5,6 +5,22 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.3] — 2026-06-21
+
+### Added — Dictionary tab: VC button name & frame filters
+
+- **VC Button name filter**: a dedicated text input next to the existing filters lets you search within the VC button caption column specifically (independent of the general search box). Useful for quickly isolating all functions assigned to a button whose caption contains a known keyword.
+- **Frame filter dropdown**: a new dropdown is auto-populated from every VC frame (container) found in the loaded workspace. Selecting a frame shows only the functions whose VC buttons live inside that frame. Nested ancestry is supported — a button inside a sub-frame matches its entire ancestor chain.
+- **Backend — `vc_frames` field**: `/api/dictionary/` now includes a `vc_frames` array for each entry, listing the deduplicated ancestry of VC frames for that function's button(s). The general search box also searches within frame names.
+
+### Added — Setlist tab: VC button & description in song list
+
+- **Inline VC button name**: each assigned song in the song list now shows the 🎛 VC button caption (in blue monospace) below the function name, pulled live from the function pool.
+- **Inline description**: if a description exists for the assigned function, it is shown below the VC button line in italic grey — matching the display style already used in the function pool panel on the right.
+- Both lines are only shown when the corresponding data is available; unassigned songs and functions without VC buttons or descriptions are unaffected.
+
+---
+
 ## [1.0.2] — 2026-06-11
 
 ### Added — Trigger Manager enhancements

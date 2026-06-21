@@ -147,8 +147,12 @@ function _renderSongList() {
     const hasAssign = !!row.qxw_id;
     const dotClass  = hasAssign ? 'fb-assign-dot fb-assign-dot-ok' : 'fb-assign-dot';
     const dotTitle  = hasAssign ? `Assigned: ${row.qxw_name || row.qxw_id}` : 'Not assigned';
+    // Look up extra details (VC button, description) from the function pool
+    const fn = hasAssign ? _functions.find(f => f.id === row.qxw_id) : null;
     const assignHtml = hasAssign
       ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
+        + (fn?.vc_button ? `<div class="fb-song-vc">🎛 ${_esc(fn.vc_button)}</div>` : '')
+        + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
       : '';
     return `
       <div class="fb-song-item${sel}" data-idx="${i}" onclick="slSelectRow(${i})">

@@ -259,6 +259,14 @@
         <option value="has">Has VC ✓</option>
         <option value="none">No VC</option>
       </select>
+      <input id="dict-vcname-filter" class="filter-input" type="text" style="width:140px"
+             placeholder="VC Button name…" oninput="filterDictByVcName(this.value)"
+             data-tooltip="Filter by VC button name text">
+      <select id="dict-frame-filter" class="filter-input" style="width:130px"
+              onchange="filterDictByFrame(this.value)"
+              data-tooltip="Filter by VC frame (container)">
+        <option value="">All frames</option>
+      </select>
       <span style="flex:1"></span>
       <!-- File-browse import (client-side TXT parsing) -->
       <label class="btn btn-surface" title="Browse and load a dictionary .txt file">

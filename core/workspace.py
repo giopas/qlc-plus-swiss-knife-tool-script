@@ -149,12 +149,20 @@ def get_functions() -> list:
     return rows
 
 
+def _is_generated_clone(name: str) -> bool:
+    """Return True for auto-generated clones that should be deprioritised in matching."""
+    return name.endswith(' (Setlist)') or name.endswith(' (Auto-Clone)')
+
+
 def find_best_match(query: str):
     """
     Find the best-matching QLC+ function for a given query string.
     Uses a 4-stage algorithm: exact → single substring → token overlap → difflib fuzzy.
     Returns (matched_name, matched_id) tuple, or ('', '') if no match found.
-    Ported verbatim from qlc_swiss_knife_0.7.3.py find_best_match().
+
+    At every stage, base functions are preferred over (Setlist)/(Auto-Clone) clones
+    when both would produce an equal-quality match. Clones are still returned when
+    they are the only candidate (e.g. gig-ready file with no originals present).
     """
     fbn = _state['func_by_name']   # name -> fid
     if not fbn:
@@ -169,26 +177,40 @@ def find_best_match(query: str):
     matches = [(n, i) for n, i in fbn.items() if q_lower in n.lower()]
     if len(matches) == 1:
         return matches[0]
+    if len(matches) > 1:
+        # Prefer non-clone matches; fall back to clone-only list if nothing else fits
+        base_matches = [(n, i) for n, i in matches if not _is_generated_clone(n)]
+        if len(base_matches) == 1:
+            return base_matches[0]
+        if len(base_matches) > 1:
+            matches = base_matches  # narrow to base-only for downstream stages
 
-    # Stage 3: token overlap scoring
+    # Stage 3: token overlap scoring — prefer non-clone at equal score
     _trans   = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
     q_tokens = set(query.translate(_trans).lower().split())
-    best, best_id, max_ov = '', '', 0
+    best, best_id, max_ov, best_is_clone = '', '', 0, True
     for name, fid in fbn.items():
         n_tokens = set(name.translate(_trans).lower().split())
         ov = len(q_tokens & n_tokens)
-        if ov > max_ov:
-            max_ov, best, best_id = ov, name, fid
+        # Accept if strictly better, or equal score but current best is clone and this isn't
+        if ov > max_ov or (ov == max_ov and best_is_clone and not _is_generated_clone(name)):
+            max_ov, best, best_id, best_is_clone = ov, name, fid, _is_generated_clone(name)
     min_ov = min(2, len(q_tokens)) if q_tokens else 1
     if max_ov >= min_ov:
         return best, best_id
     if matches:
         return matches[0]
 
-    # Stage 4: difflib fuzzy match
+    # Stage 4: difflib fuzzy match — prefer non-clone among close matches
     all_names = list(fbn.keys())
-    close = difflib.get_close_matches(q_lower, [n.lower() for n in all_names], n=1, cutoff=0.6)
+    close = difflib.get_close_matches(q_lower, [n.lower() for n in all_names], n=3, cutoff=0.6)
     if close:
+        # Try non-clone candidates first
+        for candidate in close:
+            for name, fid in fbn.items():
+                if name.lower() == candidate and not _is_generated_clone(name):
+                    return name, fid
+        # Fall back to any close match (including clones)
         for name, fid in fbn.items():
             if name.lower() == close[0]:
                 return name, fid

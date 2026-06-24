@@ -169,6 +169,9 @@ function _renderSongList() {
       const parent   = _functions.find(f => f.name === baseName);
       if (parent) {
         parentHtml = `<div class="fb-song-parent">↑ [${_esc(parent.id)}] ${_esc(parent.name)}</div>`;
+      } else {
+        // Parent was removed from workspace (e.g. gig-ready file) — still show the derived name
+        parentHtml = `<div class="fb-song-parent fb-song-parent-missing">↑ ${_esc(baseName)}</div>`;
       }
     }
     const assignHtml = hasAssign

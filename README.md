@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.0.4
+# ⚡ QLC+ Swiss Knife — v1.0.5
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 
@@ -17,6 +17,9 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 ---
 
 ## What's new
+
+### v1.0.5
+- **Setlist — auto-save on slot switch**: assignments are now saved automatically when navigating between CueList slots, so work is never lost.
 
 ### v1.0.4
 - **Setlist — multi-select songs**: Ctrl+click / Shift+click to select multiple songs; clicking a pool function assigns it to all selected rows at once.

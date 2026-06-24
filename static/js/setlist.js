@@ -98,6 +98,10 @@ function _renderSlots(slots) {
 }
 
 async function selectSlot(slotId) {
+  // Auto-save current slot silently before switching away so assignments aren't lost
+  if (_selectedSlot && _selectedSlot !== slotId && _songRows.length) {
+    await slSaveDetails(true);
+  }
   _selectedSlot  = slotId;
   _selectedSong  = -1;
   _selectedSongs = new Set();
@@ -689,7 +693,7 @@ function _populateChaserDropdown() {
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 
-async function slSaveDetails() {
+async function slSaveDetails(silent = false) {
   if (!_selectedSlot) return;
   const rows = _songRows.map(r => ({
     txt_name: r.txt_name || '',
@@ -701,7 +705,7 @@ async function slSaveDetails() {
   }));
   const res = await _apiPost(`/api/setlist/${_selectedSlot}/details`, { rows });
   if (res.error) { setStatus(res.error, 'error'); return; }
-  setStatus(`Saved ${rows.length} songs.`, 'ok');
+  if (!silent) setStatus(`Saved ${rows.length} songs.`, 'ok');
 }
 
 async function saveSongs() { await slSaveDetails(); }

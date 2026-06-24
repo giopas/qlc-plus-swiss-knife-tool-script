@@ -12,6 +12,7 @@ let _chasers       = [];
 let _functions     = [];   // [{id, name, type, contains, vc_button, desc}]
 let _songRows      = [];   // [{txt_name, qxw_id, qxw_name, in, hold, out}]
 let _selectedSong  = -1;
+let _selectedSongs = new Set();   // indices of all selected song rows (multi-select)
 let _poolFiltered  = [];
 let _selectedPoolIdx = -1;
 
@@ -33,6 +34,7 @@ function invalidateSetlist() {
   _functions     = [];
   _songRows      = [];
   _selectedSong  = -1;
+  _selectedSongs = new Set();
   _renderSlots([]);
   _clearSongEditor();
 }
@@ -96,8 +98,9 @@ function _renderSlots(slots) {
 }
 
 async function selectSlot(slotId) {
-  _selectedSlot = slotId;
-  _selectedSong = -1;
+  _selectedSlot  = slotId;
+  _selectedSong  = -1;
+  _selectedSongs = new Set();
   _renderSlots(_slotData);
 
   const slot = _slotData.find(s => s.id === slotId);
@@ -135,6 +138,7 @@ function _clearSongEditor() {
 function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
    'btn-import-slot-txt','btn-export-slot-txt','btn-auto-match','btn-clear-assign','btn-clear-all',
+   'btn-purge-clones',
    'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
@@ -152,7 +156,7 @@ function _renderSongList() {
     return;
   }
   list.innerHTML = _songRows.map((row, i) => {
-    const sel       = i === _selectedSong ? ' fb-song-active' : '';
+    const sel       = _selectedSongs.has(i) ? ' fb-song-active' : '';
     const hasAssign = !!row.qxw_id;
     const dotClass  = hasAssign ? 'fb-assign-dot fb-assign-dot-ok' : 'fb-assign-dot';
     const dotTitle  = hasAssign ? `Assigned: ${row.qxw_name || row.qxw_id}` : 'Not assigned';
@@ -174,7 +178,7 @@ function _renderSongList() {
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
       : '';
     return `
-      <div class="fb-song-item${sel}" data-idx="${i}" onclick="slSelectRow(${i})">
+      <div class="fb-song-item${sel}" data-idx="${i}" onclick="slSelectRow(${i}, event)">
         <span class="fb-song-num">${i + 1}</span>
         <span class="${dotClass}" title="${_esc(dotTitle)}"></span>
         <div class="fb-song-content">
@@ -190,14 +194,39 @@ function _renderSongList() {
 
 // ── Row selection + timing panel ──────────────────────────────────────────────
 
-function slSelectRow(idx) {
-  _selectedSong = idx;
-  // Highlight in song list
+function slSelectRow(idx, event) {
+  if (event && (event.ctrlKey || event.metaKey)) {
+    // Ctrl/Cmd+Click: toggle this row in multi-select
+    if (_selectedSongs.has(idx)) {
+      _selectedSongs.delete(idx);
+      _selectedSong = _selectedSongs.size > 0 ? Math.max(..._selectedSongs) : -1;
+    } else {
+      _selectedSongs.add(idx);
+      _selectedSong = idx;
+    }
+  } else if (event && event.shiftKey && _selectedSong >= 0) {
+    // Shift+Click: range select from last anchor to here
+    const lo = Math.min(_selectedSong, idx);
+    const hi = Math.max(_selectedSong, idx);
+    for (let i = lo; i <= hi; i++) _selectedSongs.add(i);
+    _selectedSong = idx;
+  } else {
+    // Normal click: single select
+    _selectedSongs = new Set([idx]);
+    _selectedSong  = idx;
+  }
   document.querySelectorAll('.fb-song-item').forEach((el, i) => {
-    el.classList.toggle('fb-song-active', i === idx);
+    el.classList.toggle('fb-song-active', _selectedSongs.has(i));
   });
   _updatePoolAssignBtn();
-  _updateTimingPanel();
+  if (_selectedSongs.size === 1) {
+    _updateTimingPanel();
+  } else {
+    _clearTimingPanel();
+    const lbl = document.getElementById('timing-song-label');
+    if (lbl && _selectedSongs.size > 1)
+      lbl.textContent = `— ${_selectedSongs.size} songs selected —`;
+  }
 }
 
 function _clearTimingPanel() {
@@ -271,6 +300,7 @@ function slRemoveRowAt(idx) {
   _songRows.splice(idx, 1);
   _selectedSong = Math.min(_selectedSong, _songRows.length - 1);
   if (_selectedSong < 0 && _songRows.length > 0) _selectedSong = 0;
+  _selectedSongs = _selectedSong >= 0 ? new Set([_selectedSong]) : new Set();
   _renderSongList();
   _updateSongCount();
   _updateTimingPanel();
@@ -282,7 +312,8 @@ function slMoveRow(dir) {
   const j = i + dir;
   if (i < 0 || j < 0 || j >= _songRows.length) return;
   [_songRows[i], _songRows[j]] = [_songRows[j], _songRows[i]];
-  _selectedSong = j;
+  _selectedSong  = j;
+  _selectedSongs = new Set([j]);
   _renderSongList();
 }
 
@@ -475,10 +506,11 @@ function slPoolSelect(idx) {
 
 function _updatePoolAssignBtn() {
   const btn = document.getElementById('btn-pool-assign');
-  if (btn) btn.disabled = _selectedPoolIdx < 0 || _selectedSong < 0 || !_selectedSlot;
+  if (btn) btn.disabled = _selectedPoolIdx < 0 || _selectedSongs.size === 0 || !_selectedSlot;
   const clrBtn = document.getElementById('btn-clear-assign');
   if (clrBtn) {
-    const hasAssign = _selectedSong >= 0 && !!_songRows[_selectedSong]?.qxw_id;
+    const hasAssign = _selectedSongs.size > 0
+      && [..._selectedSongs].some(i => !!_songRows[i]?.qxw_id);
     clrBtn.disabled = !hasAssign || !_selectedSlot;
   }
 }
@@ -486,49 +518,76 @@ function _updatePoolAssignBtn() {
 // ── Assignment actions ────────────────────────────────────────────────────────
 
 function slAssignFromPool() {
-  if (_selectedPoolIdx < 0 || _selectedSong < 0) return;
-  const fn  = _poolFiltered[_selectedPoolIdx];
+  if (_selectedPoolIdx < 0 || _selectedSongs.size === 0) return;
+  const fn = _poolFiltered[_selectedPoolIdx];
   if (!fn) return;
-  const row = _songRows[_selectedSong];
-  if (!row) return;
 
-  row.qxw_id   = fn.id;
-  row.qxw_name = fn.name;
+  const targets = [..._selectedSongs].sort((a, b) => a - b);
+  for (const songIdx of targets) {
+    const row = _songRows[songIdx];
+    if (row) { row.qxw_id = fn.id; row.qxw_name = fn.name; }
+  }
 
-  // Update song list row in-place
-  const listEl = document.querySelector(`#fb-song-list .fb-song-item[data-idx="${_selectedSong}"]`);
-  if (listEl) {
-    const dot = listEl.querySelector('.fb-assign-dot');
-    if (dot) { dot.classList.add('fb-assign-dot-ok'); dot.title = `Assigned: ${fn.name}`; }
-    let assignDiv = listEl.querySelector('.fb-song-assign');
-    if (!assignDiv) {
-      assignDiv = document.createElement('div');
-      assignDiv.className = 'fb-song-assign';
-      listEl.querySelector('.fb-song-content')?.appendChild(assignDiv);
+  if (targets.length === 1) {
+    // Single: in-place DOM update + flash + auto-advance
+    const songIdx = targets[0];
+    const listEl = document.querySelector(`#fb-song-list .fb-song-item[data-idx="${songIdx}"]`);
+    if (listEl) {
+      const dot = listEl.querySelector('.fb-assign-dot');
+      if (dot) { dot.classList.add('fb-assign-dot-ok'); dot.title = `Assigned: ${fn.name}`; }
+      let assignDiv = listEl.querySelector('.fb-song-assign');
+      if (!assignDiv) {
+        assignDiv = document.createElement('div');
+        assignDiv.className = 'fb-song-assign';
+        listEl.querySelector('.fb-song-content')?.appendChild(assignDiv);
+      }
+      assignDiv.textContent = fn.name;
+      listEl.classList.add('row-flash');
+      setTimeout(() => listEl.classList.remove('row-flash'), 600);
     }
-    assignDiv.textContent = fn.name;
-    // Flash feedback
-    listEl.classList.add('row-flash');
-    setTimeout(() => listEl.classList.remove('row-flash'), 600);
+    if (songIdx < _songRows.length - 1) slSelectRow(songIdx + 1);
+  } else {
+    _renderSongList();
+    setStatus(`Assigned "${fn.name}" to ${targets.length} songs.`, 'ok');
   }
-
   _renderFnPool(_poolFiltered);
-
-  // Auto-advance to next song
-  if (_selectedSong < _songRows.length - 1) {
-    slSelectRow(_selectedSong + 1);
-  }
 }
 
 function slClearAssignment() {
-  const row = _songRows[_selectedSong];
-  if (!row) return;
-  row.qxw_id   = '';
-  row.qxw_name = '';
-  // Re-render just that row (or full list for simplicity)
+  if (_selectedSongs.size === 0) return;
+  for (const idx of _selectedSongs) {
+    const row = _songRows[idx];
+    if (row) { row.qxw_id = ''; row.qxw_name = ''; }
+  }
   _renderSongList();
   _renderFnPool(_poolFiltered);
   _updatePoolAssignBtn();
+}
+
+function slPurgeClones() {
+  if (!_selectedSlot || !_songRows.length) return;
+  const cloned = _songRows.filter(r => r.qxw_name && r.qxw_name.endsWith(' (Setlist)'));
+  if (!cloned.length) {
+    setStatus('No (Setlist) clone assignments found in this slot.', 'warn'); return;
+  }
+  if (!confirm(
+    `Unassign ${cloned.length} song(s) linked to (Setlist) clones?\n\n` +
+    `The clone functions remain in the workspace — only the song assignments are cleared. ` +
+    `Use Re-Match or assign manually afterwards.`
+  )) return;
+  let count = 0;
+  for (const row of _songRows) {
+    if (row.qxw_name && row.qxw_name.endsWith(' (Setlist)')) {
+      row.qxw_id = ''; row.qxw_name = ''; count++;
+    }
+  }
+  _selectedSong  = -1;
+  _selectedSongs = new Set();
+  _renderSongList();
+  _renderFnPool(_poolFiltered);
+  _updatePoolAssignBtn();
+  _clearTimingPanel();
+  setStatus(`Cleared ${count} (Setlist) clone assignment(s). Songs are unassigned — Re-Match or assign manually.`, 'ok');
 }
 
 function slClearAllAssignments() {

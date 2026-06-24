@@ -126,13 +126,16 @@
           <div class="fb-group-label">Assign</div>
           <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
                   onclick="slAssignFromPool()" disabled
-                  data-tooltip="Assign the selected function from the pool to the selected song (or double-click a function)">◀ Assign</button>
+                  data-tooltip="Assign the selected function to the selected song(s) — Ctrl+click or Shift+click songs to select multiple (double-click a function also works)">◀ Assign</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
                   onclick="slClearAssignment()" disabled
                   data-tooltip="Remove the QLC+ function assignment from the selected song">✕ Clear Song</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-clear-all"
                   onclick="slClearAllAssignments()" disabled
                   data-tooltip="Remove all function assignments from this slot">✕ Clear All</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-purge-clones"
+                  onclick="slPurgeClones()" disabled
+                  data-tooltip="Unassign all songs currently linked to (Setlist) clones, so you can re-match from scratch. Clone functions remain in the workspace.">🧹 Purge Clones</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
                   onclick="slAutoMatch()" disabled
                   data-tooltip="Auto-match unassigned songs to QLC+ functions by name similarity">🎯 Re-Match</button>

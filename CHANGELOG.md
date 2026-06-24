@@ -5,6 +5,33 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.4] — 2026-06-25
+
+### Added — Setlist tab: multi-select songs for bulk assignment
+
+- **Ctrl+click** (or ⌘+click on macOS) toggles individual song rows in the selection; **Shift+click** range-selects from the last anchor.
+- All selected rows are highlighted. Clicking a pool function (or pressing ◀ Assign) assigns it to **all selected songs at once**.
+- ✕ Clear Song also clears all selected songs in one operation.
+- The timing panel shows "— N songs selected —" and disables when multiple rows are active.
+
+### Added — Setlist tab: 🧹 Purge Clones button
+
+- New button in the Assign section unassigns all songs currently linked to `(Setlist)` clones, clearing the slate for fresh matching. Clone function definitions remain in the workspace.
+
+### Added — Setlist tab: 🗑 Delete Clones from WS button
+
+- New **Workspace** section in the Actions pane with a "Delete Clones from WS" button. Unlike Purge Clones (which only unassigns songs), this **removes the `(Setlist)` clone function definitions entirely** from the in-memory XML tree and all state maps. Any songs still assigned to those clones are also unassigned. Use Generate QXW afterwards to save a clean output file without old clones — ideal for starting fresh with a different set of functions without bloating the workspace.
+
+### Fixed — Setlist tab: auto-match prefers base functions over clones
+
+- When both a base function (e.g. `"Stage Patter"`) and its clone (`"Stage Patter (Setlist)"`) exist in the pool, the four-stage auto-matcher now always picks the base function. Clones are still returned when they are the only candidate (e.g. in a gig-ready file where the originals have been removed).
+
+### Fixed — Setlist tab: parent name always shown for (Setlist) clones
+
+- Previously, the `↑ [ID] Parent Name` line below a clone assignment was silently omitted when the base function had been removed from the workspace (e.g. in a gig-ready file). It now always shows the derived base name in dimmed italic so the clone's origin is always traceable regardless of which file is loaded.
+
+---
+
 ## [1.0.3] — 2026-06-21
 
 ### Added — Dictionary tab: VC button name & frame filters

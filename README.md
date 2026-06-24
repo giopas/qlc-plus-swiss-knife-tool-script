@@ -46,7 +46,7 @@ v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web applicati
 
 ## Screenshots
 
-### v1.0.3 — Web UI *(actively developed)*
+### v1.0 — Web UI *(actively developed)*
 
 | 🎵 Setlist Manager | 📖 Dictionary |
 |:---:|:---:|

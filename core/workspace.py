@@ -431,6 +431,57 @@ def set_slot_songs(slot_id: str, songs: list):
     _slot_songs[slot_id] = [s for s in songs if s.strip()]
 
 
+def purge_workspace_clones() -> dict:
+    """
+    Delete every (Setlist) clone Function element from the in-memory XML tree
+    and from all shared state maps.  Also unassigns those functions from every
+    slot's detail list so the song list reflects the change immediately.
+
+    Does NOT write to disk; call generate_slot_qxw_content() (or any other
+    XML-generating route) afterwards to produce a clean output file.
+
+    Returns {'removed': int, 'unassigned': int}.
+    """
+    engine = _state['qxw_root'].find('q:Engine', NS)
+    if engine is None:
+        return {'removed': 0, 'unassigned': 0}
+
+    # Collect every (Setlist) clone fid
+    clone_fids = {
+        fid for fid, info in _state['func_detailed'].items()
+        if info['name'].endswith(' (Setlist)')
+    }
+    if not clone_fids:
+        return {'removed': 0, 'unassigned': 0}
+
+    # Remove from XML tree
+    removed = 0
+    for fn_el in list(engine.findall('q:Function', NS)):
+        if fn_el.get('ID') in clone_fids:
+            engine.remove(fn_el)
+            removed += 1
+
+    # Purge from all in-memory state maps
+    for fid in clone_fids:
+        info = _state['func_detailed'].pop(fid, {})
+        _state['func_by_name'].pop(info.get('name', ''), None)
+        _state['func_by_id'].pop(fid, None)
+        _state['chasers'].pop(info.get('name', ''), None)
+        _state['vc_buttons'].pop(fid, None)
+        _state['shared_descriptions'].pop(fid, None)
+
+    # Unassign from every slot's detail list
+    unassigned = 0
+    for rows in _slot_details.values():
+        for row in rows:
+            if row.get('qxw_id') in clone_fids:
+                row['qxw_id'] = ''
+                row['qxw_name'] = ''
+                unassigned += 1
+
+    return {'removed': removed, 'unassigned': unassigned}
+
+
 def get_slot_details(slot_id: str) -> list:
     """Return the detailed song list for a slot."""
     return list(_slot_details.get(slot_id, []))

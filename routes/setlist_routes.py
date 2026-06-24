@@ -139,6 +139,24 @@ def save_setlist():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+# ── Purge (Setlist) clones from workspace ─────────────────────────────────────
+
+@bp.route('/purge-workspace-clones', methods=['POST'])
+def purge_workspace_clones():
+    """
+    Delete all (Setlist) clone functions from the in-memory workspace XML and
+    state maps, and unassign them from every slot's song list.
+    Returns {ok, removed, unassigned}.
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    try:
+        result = ws.purge_workspace_clones()
+        return jsonify({'ok': True, **result})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 # ── Auto-match song names to QLC+ functions ──────────────────────────────────
 
 @bp.route('/auto-match', methods=['POST'])

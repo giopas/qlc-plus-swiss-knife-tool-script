@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.0.3
+# ⚡ QLC+ Swiss Knife — v1.0.4
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 
@@ -17,6 +17,13 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 ---
 
 ## What's new
+
+### v1.0.4
+- **Setlist — multi-select songs**: Ctrl+click / Shift+click to select multiple songs; clicking a pool function assigns it to all selected rows at once.
+- **Setlist — 🧹 Purge Clones**: unassigns all songs linked to `(Setlist)` clones so you can re-match from scratch.
+- **Setlist — 🗑 Delete Clones from WS**: removes `(Setlist)` clone function definitions entirely from the loaded workspace; use Generate QXW afterwards for a clean file.
+- **Setlist — auto-match clone preference**: Re-Match now always prefers base functions over their `(Setlist)` clones when both exist in the pool.
+- **Setlist — parent always shown**: the `↑ Parent Name` line is now shown even when the base function has been removed from the workspace (displayed in dimmed italic).
 
 ### v1.0.3
 - **Dictionary — VC button name filter**: dedicated text input to search within VC button captions independently of the general search box.

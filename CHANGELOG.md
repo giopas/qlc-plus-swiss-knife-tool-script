@@ -5,6 +5,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.5] — 2026-06-25
+
+### Fixed — Setlist tab: assignments lost when switching slots
+
+- Song function assignments were silently discarded whenever you clicked a different CueList slot. The slot data was re-fetched from the server on every slot switch, overwriting any in-memory changes that hadn't been explicitly saved with 💾 Save Songs. The current slot is now saved automatically (and silently) before switching, so assignments are never lost on navigation. The explicit Save Songs button still works as before.
+
+---
+
 ## [1.0.4] — 2026-06-25
 
 ### Added — Setlist tab: multi-select songs for bulk assignment

@@ -1135,6 +1135,15 @@ tr:hover td.gridjs-td { background: var(--surface0) !important; }
   text-overflow: ellipsis;
   padding-left: 2px;
 }
+.fb-song-parent {
+  font-size: 9.5px;
+  color: var(--overlay0);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 2px;
+}
 .fb-song-vc {
   font-size: 9.5px;
   color: var(--sapphire, #74c7ec);

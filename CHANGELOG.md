@@ -19,6 +19,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Inline description**: if a description exists for the assigned function, it is shown below the VC button line in italic grey — matching the display style already used in the function pool panel on the right.
 - Both lines are only shown when the corresponding data is available; unassigned songs and functions without VC buttons or descriptions are unaffected.
 
+### Added — Setlist tab: show parent function for (Setlist) clones
+
+- Assigned songs that map to a `(Setlist)` clone now show a **↑ [ID] Parent Name** line below the clone name, making it immediately clear which base function the clone was generated from. This helps when re-matching a setlist that was already used once, since auto-match correctly finds the existing clone but the original function wasn't obvious.
+
 ### Fixed — Setlist tab: function pool descriptions always up-to-date
 
 - The function pool (right panel) now re-fetches functions every time the Setlist tab is visited, instead of only on the first load. This ensures that descriptions entered or loaded in the Dictionary tab are immediately visible in the pool — which is the primary place descriptions help: identifying the right function to assign to each song.

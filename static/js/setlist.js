@@ -158,8 +158,18 @@ function _renderSongList() {
     const dotTitle  = hasAssign ? `Assigned: ${row.qxw_name || row.qxw_id}` : 'Not assigned';
     // Look up extra details (VC button, description) from the function pool
     const fn = hasAssign ? _functions.find(f => f.id === row.qxw_id) : null;
+    // If assigned function is a (Setlist) clone, find its parent base function
+    let parentHtml = '';
+    if (fn && fn.name.endsWith(' (Setlist)')) {
+      const baseName = fn.name.slice(0, -10);  // strip ' (Setlist)'
+      const parent   = _functions.find(f => f.name === baseName);
+      if (parent) {
+        parentHtml = `<div class="fb-song-parent">↑ [${_esc(parent.id)}] ${_esc(parent.name)}</div>`;
+      }
+    }
     const assignHtml = hasAssign
       ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
+        + parentHtml
         + (fn?.vc_button ? `<div class="fb-song-vc">🎛 ${_esc(fn.vc_button)}</div>` : '')
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
       : '';

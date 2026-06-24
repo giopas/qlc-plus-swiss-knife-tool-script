@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.x.x
+# ⚡ QLC+ Swiss Knife — v1.0.3
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 
@@ -16,8 +16,26 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
-## What's new in v1.0
+## What's new
 
+### v1.0.3
+- **Dictionary — VC button name filter**: dedicated text input to search within VC button captions independently of the general search box.
+- **Dictionary — Frame filter dropdown**: auto-populated from all VC frames in the workspace; filters to functions whose buttons live inside a given frame (nested ancestry supported).
+- **Setlist — descriptions & VC button in song list**: assigned songs now show the 🎛 VC button caption and description inline, below the function name.
+- **Setlist — parent function for (Setlist) clones**: songs matched to a `(Setlist)` clone show a ↑ [ID] Parent Name line so you always know which base function was cloned.
+- **Setlist — ↺ refresh button**: re-fetches the function pool with the latest descriptions without switching tabs. The pool also auto-refreshes on every tab visit.
+- **Dictionary — Browse TXT now syncs to server**: importing a `.txt` description file immediately pushes all descriptions to the server's shared state, so the Setlist pool reflects them right away.
+
+### v1.0.2
+- **Trigger Manager — conflict highlighting**: 🔍 Duplicates now highlights conflicting rows in the table with a red border (in addition to the status bar summary).
+- **Trigger Manager — Bulk MIDI Shift modal**: reassign all triggers from one MIDI universe/channel to another in a single operation.
+- **Trigger Manager — Assignment Matrix panel**: toggle an inline grid showing every widget vs. every key; duplicate keys flagged in red.
+
+### v1.0.1
+- Fixed Blueprint PDF Z-axis orientation (downstage/audience now rendered at the bottom, consistent with QLC+ 3D monitor).
+- QXW Merger: both panels now have a Browse… button for native file picking.
+
+### v1.0.0
 v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web application** that runs locally and opens in your browser. All seven tabs are fully ported, and two major new features are added:
 
 - **🔀 QXW Merger** — load two `.qxw` files side by side and copy fixtures, groups, and functions from one into the other with automatic ID remapping, then export the merged workspace.
@@ -28,7 +46,7 @@ v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web applicati
 
 ## Screenshots
 
-### v1.0 — Web UI *(actively developed)*
+### v1.0.3 — Web UI *(actively developed)*
 
 | 🎵 Setlist Manager | 📖 Dictionary |
 |:---:|:---:|
@@ -71,16 +89,20 @@ v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web applicati
 ## Features
 
 ### 🎵 Setlist Manager
-Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand. A **function pool panel** shows usage counts, ✦ marks for already-generated clones, and Used/Unused filtering.
+Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand.
+
+The **function pool panel** shows usage counts, ✦ marks for already-generated clones, Used/Unused filtering, inline descriptions, and a **↺ refresh button** to pull the latest descriptions from the Dictionary without switching tabs.
+
+Assigned songs display the matched function name, its 🎛 VC button caption, and its description inline. Songs matched to `(Setlist)` clones also show a **↑ [ID] Parent Name** line so you always know which base function was cloned — essential when re-matching a setlist that has already been used once.
 
 ### 📖 Dictionary Manager
-Create and maintain `ID → description` mapping files that annotate your QLC+ function pool with human-readable labels. Load/save `.txt` dictionaries, edit descriptions inline, and browse Virtual Console widgets alongside functions.
+Create and maintain `ID → description` mapping files that annotate your QLC+ function pool with human-readable labels. Load/save `.txt` dictionaries, edit descriptions inline, and filter by function type, VC button presence, **VC button name** (free-text search within captions), and **VC frame** (dropdown auto-populated from all frames in the workspace, with nested ancestry support). Importing a `.txt` file via Browse immediately syncs descriptions to the server so the Setlist pool reflects them right away.
 
 ### 📋 Setup Checklist
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.
 
 ### 🎛 Trigger Manager
-Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace.
+Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace. Additional tools: **🔍 Duplicates** highlights conflicting rows inline with a red border; **⇄ MIDI Shift** bulk-reassigns all triggers from one MIDI address to another in one operation; **⊞ Matrix** toggles an assignment grid showing every widget vs. every key, with duplicate keys flagged in red.
 
 ### 🔧 Fixture Configurator
 Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas**. Configure stage dimensions, auto-assign DMX addresses, then generate a ready-to-use workspace with all fixture blocks and 3D monitor positions populated from your canvas layout.

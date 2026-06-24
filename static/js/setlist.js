@@ -138,7 +138,7 @@ function _clearSongEditor() {
 function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
    'btn-import-slot-txt','btn-export-slot-txt','btn-auto-match','btn-clear-assign','btn-clear-all',
-   'btn-purge-clones',
+   'btn-purge-clones', 'btn-delete-ws-clones',
    'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
@@ -565,6 +565,47 @@ function slClearAssignment() {
   _renderSongList();
   _renderFnPool(_poolFiltered);
   _updatePoolAssignBtn();
+}
+
+async function slDeleteWorkspaceClones() {
+  const clones = _functions.filter(f => f.name.endsWith(' (Setlist)'));
+  if (!clones.length) {
+    setStatus('No (Setlist) clone functions found in the loaded workspace.', 'warn'); return;
+  }
+  if (!confirm(
+    `Permanently delete ${clones.length} (Setlist) clone function(s) from the workspace?\n\n` +
+    `This removes the function definitions entirely — not just their song assignments. ` +
+    `Any songs currently assigned to these clones will be unassigned.\n\n` +
+    `After this, Generate QXW will produce a clean file without the old clones.`
+  )) return;
+
+  const res = await _apiPost('/api/setlist/purge-workspace-clones', {});
+  if (res.error) { setStatus(res.error, 'error'); return; }
+
+  // Unassign affected songs in the current client-side song list
+  const removedIds = new Set(clones.map(f => f.id));
+  let unassigned = 0;
+  for (const row of _songRows) {
+    if (removedIds.has(row.qxw_id)) {
+      row.qxw_id = ''; row.qxw_name = ''; unassigned++;
+    }
+  }
+
+  // Reset selection state
+  _selectedSong  = -1;
+  _selectedSongs = new Set();
+
+  // Refresh pool (clones are now absent) and re-render
+  await _fetchFunctions();
+  _applyPoolFilters();
+  _renderSongList();
+  _updatePoolAssignBtn();
+  _clearTimingPanel();
+
+  const parts = [`Deleted ${res.removed} (Setlist) clone(s) from workspace`];
+  if (unassigned) parts.push(`${unassigned} song(s) unassigned`);
+  parts.push('Generate QXW to save the clean file.');
+  setStatus(parts.join(' — '), 'ok');
 }
 
 function slPurgeClones() {

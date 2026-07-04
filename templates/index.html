@@ -110,10 +110,10 @@
       <span class="hint-text" style="white-space:nowrap">All-slots backup:</span>
       <input id="setlist-path" type="text" class="filter-input" style="flex:1"
              placeholder="Path to multi-slot .txt backup…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadSetlistFile()"
-              data-tooltip="Load songs for all slots from a .txt backup file">📂 Load All</button>
-      <button class="btn btn-surface" onclick="saveSetlistFile()"
-              data-tooltip="Save all slot song lists to a .txt backup file">💾 Save All</button>
+      <button class="btn btn-surface" onclick="browseAndLoadSetlist()"
+              data-tooltip="Browse for a .txt backup file and load all slots (path remembered for session)">📂 Load All</button>
+      <button class="btn btn-surface" onclick="browseAndSaveSetlist()"
+              data-tooltip="Save all slot songs to a .txt backup file (uses path above, or opens picker if empty)">💾 Save All</button>
       <button class="btn btn-surface" onclick="refreshSlots()"
               data-tooltip="Refresh the CueList slot list from the workspace">↺ Refresh</button>
     </div>
@@ -320,12 +320,11 @@
         <option value="">All frames</option>
       </select>
       <span style="flex:1"></span>
-      <!-- File-browse import (client-side TXT parsing) -->
-      <label class="btn btn-surface" title="Browse and load a dictionary .txt file">
+      <!-- Browse TXT: native picker → server-side load → path tracked in session -->
+      <button class="btn btn-surface" onclick="browseDictTxt()"
+              data-tooltip="Browse and load a dictionary .txt file (path remembered for session)">
         📂 Browse TXT
-        <input type="file" accept=".txt" style="display:none"
-               onchange="importDictTxtFile(this)">
-      </label>
+      </button>
       <input id="dict-path" type="text" class="filter-input" style="width:220px"
              placeholder="Dictionary .txt path…" spellcheck="false">
       <button class="btn btn-surface" onclick="loadDictFile()"

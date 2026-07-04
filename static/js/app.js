@@ -62,6 +62,44 @@ function showSubtab(subtabId) {
 }
 
 // =============================================================================
+// NATIVE FILE PICKER  (calls /api/picker/pick — gets real OS path)
+// =============================================================================
+
+/** Cached availability flag (null = not yet checked) */
+let _pickerAvailable = null;
+
+/**
+ * Open the native OS file picker via the Flask backend.
+ * Returns the selected absolute path, or null if cancelled / unavailable.
+ *
+ * @param {string} title   - Dialog prompt text
+ * @param {Array}  types   - [{label, exts:['.txt']}]
+ * @param {string} initDir - Optional starting directory
+ */
+async function nativePick(title, types = [], initDir = '') {
+  // Check availability once
+  if (_pickerAvailable === null) {
+    try {
+      const r = await fetch('/api/picker/available');
+      _pickerAvailable = (await r.json()).available;
+    } catch { _pickerAvailable = false; }
+  }
+  if (!_pickerAvailable) return null;
+
+  try {
+    const r = await fetch('/api/picker/pick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, types, initial_dir: initDir }),
+    });
+    const d = await r.json();
+    return d.cancelled ? null : (d.path || null);
+  } catch {
+    return null;
+  }
+}
+
+// =============================================================================
 // WORKSPACE LOADING
 // =============================================================================
 
@@ -70,6 +108,28 @@ async function loadFromPath() {
   if (!path) { setStatus('Paste a .qxw file path first.', 'warn'); return; }
   await _doLoad({ method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ path }) });
+}
+
+/** Browse button in header — tries native picker first (gives us the real path),
+ *  falls back to the hidden file input (upload mode, path not tracked). */
+async function browseWorkspace() {
+  const path = await nativePick(
+    'Select QLC+ workspace (.qxw)',
+    [{ label: 'QLC+ Workspace', exts: ['.qxw'] }]
+  );
+  if (path) {
+    // Path mode — load directly from disk; session will track it
+    const inp = document.getElementById('path-input');
+    if (inp) inp.value = path;
+    await _doLoad({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+  } else {
+    // Native picker unavailable or cancelled — fall back to file upload
+    document.getElementById('file-input').click();
+  }
 }
 
 function loadFromInput(input) {

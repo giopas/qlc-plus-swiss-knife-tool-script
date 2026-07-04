@@ -356,12 +356,17 @@ function _populatePoolTypeFilter() {
   sel.value = _poolTypeFilter;
 }
 
-/** Build a Set of base function names that have a matching "(Setlist)" clone. */
+/** Build a Set of base function names that have a SwissKnife-generated clone. */
 function _buildSetlistCloneSet() {
   const cloneSet = new Set();
   for (const f of _functions) {
+    // New-style: has_clone flag from backend
+    if (f.has_clone) {
+      cloneSet.add(f.name);
+    }
+    // Legacy backward-compat: old files still use (Setlist) suffix
     if (f.name.endsWith(' (Setlist)')) {
-      cloneSet.add(f.name.slice(0, -10));   // strip ' (Setlist)' suffix
+      cloneSet.add(f.name.slice(0, -10));
     }
   }
   return cloneSet;
@@ -471,11 +476,11 @@ function _renderFnPool(list) {
       let usesHtml;
       if (uses > 0 && isSetlistUsed) {
         usesHtml = `<span class="pool-col-uses pool-used" title="Used ${uses}× in this slot">★${uses}</span>`
-                 + `<span class="pool-setlist-used" title="Has a (Setlist) clone in workspace — previously generated">✦</span>`;
+                 + `<span class="pool-setlist-used" title="Has a generated clone in workspace — previously generated">✦</span>`;
       } else if (uses > 0) {
         usesHtml = `<span class="pool-col-uses pool-used" title="Used by ${uses} song(s)">★${uses}</span>`;
       } else if (isSetlistUsed) {
-        usesHtml = `<span class="pool-setlist-used" title="Has a (Setlist) clone in workspace — previously generated">✦</span>`;
+        usesHtml = `<span class="pool-setlist-used" title="Has a generated clone in workspace — previously generated">✦</span>`;
       } else {
         usesHtml = `<span class="pool-col-uses"></span>`;
       }
@@ -572,12 +577,12 @@ function slClearAssignment() {
 }
 
 async function slDeleteWorkspaceClones() {
-  const clones = _functions.filter(f => f.name.endsWith(' (Setlist)'));
+  const clones = _functions.filter(f => f.is_clone || f.name.endsWith(' (Setlist)'));
   if (!clones.length) {
-    setStatus('No (Setlist) clone functions found in the loaded workspace.', 'warn'); return;
+    setStatus('No generated clone functions found in the loaded workspace.', 'warn'); return;
   }
   if (!confirm(
-    `Permanently delete ${clones.length} (Setlist) clone function(s) from the workspace?\n\n` +
+    `Permanently delete ${clones.length} generated clone function(s) from the workspace?\n\n` +
     `This removes the function definitions entirely — not just their song assignments. ` +
     `Any songs currently assigned to these clones will be unassigned.\n\n` +
     `After this, Generate QXW will produce a clean file without the old clones.`
@@ -782,19 +787,15 @@ function slExportSongsTxt() {
 async function slGenerateQxw() {
   if (!_selectedSlot) return;
 
-  // Save current rows first so the server has fresh data
+  // Save current slot first so the server has fresh data
   await slSaveDetails();
 
-  const sel      = document.getElementById('sl-chaser-select');
-  const targetId = sel?.value || '__new__';
-
-  // Fetch the generated QXW as a raw blob from the server
+  // Use the generate-all endpoint so ALL cuelists are baked into the output QXW
   let resp;
   try {
-    resp = await fetch(`/api/setlist/${_selectedSlot}/generate-qxw`, {
+    resp = await fetch('/api/setlist/generate-all-qxw', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ target_chaser_id: targetId }),
     });
   } catch (e) {
     setStatus('Network error: ' + e.message, 'error'); return;

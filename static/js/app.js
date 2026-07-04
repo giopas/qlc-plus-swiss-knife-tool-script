@@ -48,6 +48,7 @@ function showTab(tabId) {
     case 'triggers':   ensureTriggersLoaded();    break;
     case 'fixture':    ensureFixturesLoaded();    break;
     case 'merger':     mergerInit();              break;
+    case 'brightness': ensureBrightnessLoaded(); break;
   }
 }
 
@@ -122,6 +123,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateChecklist  === 'function') invalidateChecklist();
   if (typeof invalidateTriggers   === 'function') invalidateTriggers();
   if (typeof invalidateFixtures   === 'function') invalidateFixtures();
+  if (typeof invalidateBrightness === 'function') invalidateBrightness();
   // Re-load whichever tab is currently visible
   const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
   if (activeTab) showTab(activeTab);

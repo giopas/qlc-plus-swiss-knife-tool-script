@@ -55,7 +55,8 @@
   <button class="tab-btn"        data-tab="triggers"   onclick="showTab('triggers')">🎛 Triggers</button>
   <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixtures</button>
   <button class="tab-btn"        data-tab="id-browser" onclick="showTab('id-browser')">🔍 ID Browser</button>
-  <button class="tab-btn"        data-tab="merger"     onclick="showTab('merger')">🔀 QXW Merger</button>
+  <button class="tab-btn"        data-tab="merger"     onclick="showTab('merger')">🔀 QXW Merger<sup class="tab-alpha">α</sup></button>
+  <button class="tab-btn"        data-tab="brightness" onclick="showTab('brightness')">💡 Brightness<sup class="tab-alpha">α</sup></button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
@@ -754,6 +755,48 @@
 
   </section>
 
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       BRIGHTNESS TAB
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-brightness" class="tab-panel">
+
+    <div class="tab-toolbar brt-toolbar">
+      <span class="brt-toolbar-title">Fixture Brightness Scaling</span>
+      <span id="brt-preview" class="brt-preview-count">—</span>
+      <button class="btn btn-surface" onclick="brtResetAll()"
+              data-tooltip="Reset all fixtures to 100%">↺ Reset All</button>
+
+      <!-- QXF upload for unknown fixtures -->
+      <label class="btn btn-surface"
+             title="Upload a .qxf fixture definition to auto-detect dimmer channel">
+        📂 Load QXF
+        <input id="brt-qxf-input" type="file" accept=".qxf" style="display:none"
+               onchange="brtUploadQxf()">
+      </label>
+
+      <button class="btn btn-accent" onclick="brtGenerateQxw()"
+              data-tooltip="Apply brightness scaling to all scenes and download a new .qxw">
+        🚀 Generate QXW
+      </button>
+    </div>
+
+    <!-- Help banner -->
+    <div class="brt-help">
+      <strong>How it works:</strong>
+      Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
+      across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
+      untouched.  Use <strong>Link group</strong> to move all fixtures of the same
+      model together.  If a fixture's QXF file isn't auto-detected, upload it or
+      enter the dimmer channel offset manually.
+    </div>
+
+    <!-- Fixture groups -->
+    <div id="brt-fixture-wrap" class="brt-fixture-wrap">
+      <div class="brt-placeholder">Load a workspace to adjust brightness.</div>
+    </div>
+
+  </section>
+
 </main>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
@@ -782,5 +825,6 @@
 <script src="/static/js/triggers.js"></script>
 <script src="/static/js/fixture.js"></script>
 <script src="/static/js/merger.js"></script>
+<script src="/static/js/brightness.js"></script>
 </body>
 </html>

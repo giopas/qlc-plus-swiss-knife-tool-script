@@ -23,27 +23,27 @@
 
   <div id="header-center">
     <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false"
-           data-tooltip="Paste the full path to a .qxw workspace file and click Load">
-    <button id="btn-load-path" class="btn btn-accent" onclick="loadFromPath()"
+           class="tt-below" data-tooltip="Paste the full path to a .qxw workspace file and click Load">
+    <button id="btn-load-path" class="btn btn-accent tt-below" onclick="loadFromPath()"
             data-tooltip="Load workspace from the path above">Load</button>
-    <label class="btn btn-surface" title="Or drag a .qxw file anywhere on the window"
+    <label class="btn btn-surface tt-below" title="Or drag a .qxw file anywhere on the window"
            data-tooltip="Browse and open a .qxw file from your computer">
       📂 Browse…
       <input id="file-input" type="file" accept=".qxw" style="display:none"
              onchange="loadFromInput(this)">
     </label>
-    <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()"
+    <button id="btn-reload" class="btn btn-surface tt-below" onclick="reloadWorkspace()"
             title="Reload file from disk" disabled
             data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
   </div>
 
   <div id="header-right">
-    <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()"
+    <button id="btn-theme" class="btn btn-surface tt-below" onclick="toggleTheme()"
             title="Toggle dark / grey / light theme"
             data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
     <!-- Session controls -->
     <span id="session-badge" class="session-badge" title=""></span>
-    <button class="btn btn-surface" onclick="sessionOpenModal()"
+    <button class="btn btn-surface tt-below" onclick="sessionOpenModal()"
             title="Open / save session file (.qsk) — remembers workspace, dictionary, setlist and fixture paths"
             data-tooltip="Session file — save and reload all your file paths at once">📋 Session</button>
     <span id="ws-name" class="ws-unloaded">No workspace loaded</span>

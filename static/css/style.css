@@ -1458,6 +1458,18 @@ body.theme-light {
 [data-tooltip].tt-left::after  { left: auto; right: 0; transform: none; }
 [data-tooltip].tt-left::before { left: auto; right: 12px; transform: none; }
 
+/* Tooltips that would clip at the TOP (e.g. header buttons) — show below */
+[data-tooltip].tt-below::after {
+  bottom: auto;
+  top: calc(100% + 7px);
+}
+[data-tooltip].tt-below::before {
+  bottom: auto;
+  top: calc(100% + 2px);
+  border-top-color: transparent;
+  border-bottom-color: var(--surface2);
+}
+
 /* =============================================================================
    QXW MERGER TAB
    ============================================================================= */

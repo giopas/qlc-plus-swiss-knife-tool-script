@@ -1813,3 +1813,52 @@ body.theme-light {
   transition: color 0.2s;
 }
 .brt-preview-active { color: var(--blue); font-weight: 600; }
+
+/* ── Brightness: QXF-found badge ─────────────────────────────────────────── */
+.brt-badge-ok {
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+/* ── Brightness: GitHub fetch button ─────────────────────────────────────── */
+.brt-gh-btn {
+  border-color: color-mix(in srgb, var(--blue) 40%, transparent);
+}
+.brt-gh-btn:not(:disabled) {
+  color: var(--blue);
+}
+.brt-gh-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Brightness: help banner internet label ───────────────────────────────── */
+.brt-internet-label {
+  color: var(--blue);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* ── Brightness: per-group QXF assign button ──────────────────────────────── */
+.brt-assign-qxf-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  color: var(--subtext0);
+  border: 1px dashed var(--surface1);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.brt-assign-qxf-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── Brightness: auto-detected channel input (muted, still editable) ─────── */
+.brt-ch-override {
+  border-color: var(--peach) !important;
+  color: var(--peach) !important;
+}
+/* When QXF is found and no manual override: dimmer channel input muted */
+.brt-manual-ch:not(.brt-ch-override) {
+  color: var(--subtext0);
+  border-color: var(--surface1);
+}

@@ -78,3 +78,61 @@ Two-part fix:
 | `core/workspace.py` | Generate-all skips unassigned slots; guard in per-slot generator; `SwissKnifeClone` attribute for clone identification; `clone_ids` / `clone_base_map` state tracking |
 | `routes/setlist_routes.py` | `/api/setlist/generate-all-qxw` endpoint |
 | `README.md` | Updated to v1.0.6; new Brightness feature docs; updated project structure and security sections |
+
+---
+
+## 💡 Brightness tab — QXF Detection & Fixture Lookup (follow-up patch)
+
+### Root cause: QXF files were not detected even after upload
+
+The initial implementation matched QXF files by normalising filenames (collapsing spaces, hyphens, and other punctuation into a single separator). This works when the QXF filename mirrors the internal `<Model>` declaration exactly, but fails when the two diverge — for example when the filename omits a word present in the model name, or when a token like `7Ch` in the filename is written `7-Ch` inside the file.
+
+### Fix: two-phase QXF search
+
+**Phase 1** — fast filename normalisation (unchanged): normalise manufacturer+model and the filename stem identically, compare. Zero overhead for correct files.
+
+**Phase 2** — content-based fallback: when Phase 1 finds nothing, read the first 3 KB of each QXF file (just enough to find `<Manufacturer>` and `<Model>` tags), build a per-directory index, and match by exact or normalised internal declaration. The index is cached per session and invalidated when QXF files are uploaded or new workspaces are loaded.
+
+### New: Scan Local button
+
+`📁 Scan Local` — scans all standard QLC+ installation directories for the current OS (macOS app bundle, Linux system install, Windows Program Files, user fixture directories, workspace directory) and reports:
+- How many QXF files were found and in which directories
+- How many workspace fixtures are now matched vs. still unmatched
+
+The scan result reloads the fixture list immediately.
+
+### New: multi-file QXF upload
+
+The `📂 Upload QXF` button now accepts multiple files at once (HTML `multiple` attribute). All files are uploaded in a single request and saved next to the workspace.
+
+### New: Fetch from GitHub (internet)
+
+`🌐 Fetch from GitHub` — for fixtures that still have no QXF after local scanning, downloads definitions from `github.com/mcallegari/qlcplus/resources/fixtures`. A confirmation dialog always appears before any connection is made, listing:
+- Exactly which external hostnames will be contacted (`api.github.com`, `raw.githubusercontent.com`)
+- Which fixture types will be looked up
+- Where the downloaded files will be saved
+
+The button is disabled when all fixtures are already matched. Status messages clearly prefix internet-sourced activity with 🌐 and local activity with 📁. The backend route also stamps `source_type: "internet"` in its JSON response.
+
+### Security
+
+- QXF content index reads only the first 3 KB of each file — no full parse during indexing.
+- `urllib.request` with a 12 s API timeout and 20 s download timeout; GitHub API rate-limit errors surface as user-visible error messages.
+- `secure_filename` applied to all uploaded filenames; multi-file upload validates each file individually.
+
+### New: per-group QXF override and always-editable dimmer channel
+
+When auto-detection is uncertain or wrong, users can now take full manual control at the fixture-group level:
+
+- **📂 Assign QXF** button in each group header — opens a file picker scoped to that specific fixture group. The selected QXF is uploaded and immediately forced as the definition for that manufacturer/model combination, bypassing all name-matching logic. This is the escape hatch for any fixture whose filename and internal model declaration diverge.
+- **Dimmer ch** field is now always visible for every fixture row, regardless of whether a QXF was found. When a QXF is detected the field is pre-filled with the auto-detected offset and shown in a muted style; it can still be edited to override. When no QXF is found it is shown highlighted, prompting manual entry. The value in the field is always what gets used during generation.
+
+### Files changed (this patch)
+
+| File | Change |
+|---|---|
+| `core/brightness.py` | Two-phase `_find_qxf`; `_read_qxf_identity`; `_build_content_index`; `scan_local_fixtures`; `fetch_fixtures_from_github`; `force_qxf_for_fixture`; `_forced_qxf` map; Windows fixture paths |
+| `routes/brightness_routes.py` | Multi-file `upload_qxf`; new `scan_local`; new `fetch_github`; new `assign_qxf` endpoints |
+| `static/js/brightness.js` | `brtScanLocal`; `brtFetchGithub` with internet warning; `brtAssignQxf`; `_brtMissingFixtures`; `_brtUpdateFetchBtn`; always-visible channel override; ✓/⚠ QXF badges; multi-file upload |
+| `templates/index.html` | `📁 Scan Local`; `🌐 Fetch from GitHub`; `multiple` on QXF input; updated help text |
+| `static/css/style.css` | `.brt-badge-ok`; `.brt-gh-btn`; `.brt-internet-label`; `.brt-ch-override`; `.brt-assign-qxf-btn` |

@@ -723,6 +723,8 @@ async function loadSetlistFile() {
   const result = await _apiPost('/api/setlist/load', { path });
   if (result.error) { setStatus(result.error, 'error'); return; }
   setStatus(`Loaded ${result.count} slot(s) from file.`, 'ok');
+  // Track path in session
+  if (typeof sessionOnSetlistBackupChanged === 'function') sessionOnSetlistBackupChanged(path);
   if (_selectedSlot) await selectSlot(_selectedSlot);
 }
 
@@ -732,6 +734,57 @@ async function saveSetlistFile() {
   const result = await _apiPost('/api/setlist/save', { path });
   if (result.error) { setStatus(result.error, 'error'); return; }
   setStatus(`Saved → ${result.path.split(/[\\/]/).pop()}`, 'ok');
+  // Track path in session
+  if (typeof sessionOnSetlistBackupChanged === 'function') sessionOnSetlistBackupChanged(path);
+}
+
+/** Load All with native picker — tries OS dialog first so the path is remembered. */
+async function browseAndLoadSetlist() {
+  const inp     = document.getElementById('setlist-path');
+  const current = inp.value.trim();
+  const initDir = current ? current.replace(/[^/\\]+$/, '').replace(/[/\\]$/, '') : '';
+
+  // Try native picker to get real path
+  const picked = typeof nativePick === 'function'
+    ? await nativePick('Select setlist backup (.txt)', [{ label: 'Text files', exts: ['.txt'] }], initDir)
+    : null;
+
+  if (picked) {
+    inp.value = picked;
+  } else if (!current) {
+    setStatus('Paste a .txt path first, or the native picker was cancelled.', 'warn');
+    return;
+  }
+
+  await loadSetlistFile();
+}
+
+/** Save All with native picker — opens OS Save dialog when path is empty. */
+async function browseAndSaveSetlist() {
+  const inp  = document.getElementById('setlist-path');
+  let   path = inp.value.trim();
+
+  if (!path && typeof nativePick === 'function') {
+    // No path yet — use osascript's choose file name (save dialog)
+    try {
+      const r = await fetch('/api/picker/save-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:        'Save setlist backup as…',
+          default_name: 'setlist_backup.txt',
+          initial_dir:  '',
+        }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        if (d.path) { path = d.path; inp.value = path; }
+      }
+    } catch { /* fall through */ }
+  }
+
+  if (!path) { setStatus('Paste a save path first.', 'warn'); return; }
+  await saveSetlistFile();
 }
 
 // ── Per-slot TXT import ───────────────────────────────────────────────────────

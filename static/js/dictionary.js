@@ -231,7 +231,39 @@ async function saveDictEntry() {
   setStatus(`Description saved for ID ${_dictSelFid}`);
 }
 
-// ── Browse TXT file (client-side import) ──────────────────────────────────────
+// ── Browse TXT — native picker → server-side load → path tracked in session ───
+
+async function browseDictTxt() {
+  const currentPath = document.getElementById('dict-path').value.trim();
+  const initDir     = currentPath ? currentPath.replace(/[^/\\]+$/, '').replace(/[/\\]$/, '') : '';
+
+  // Try native OS picker first — returns the real filesystem path
+  const path = typeof nativePick === 'function'
+    ? await nativePick(
+        'Select dictionary description file',
+        [{ label: 'Text files', exts: ['.txt'] }],
+        initDir
+      )
+    : null;
+
+  if (path) {
+    // Path mode: fill the path field and load server-side (session tracks it)
+    document.getElementById('dict-path').value = path;
+    await loadDictFile();
+    return;
+  }
+
+  // Native picker not available — fall back to client-side file input
+  const inp = document.createElement('input');
+  inp.type   = 'file';
+  inp.accept = '.txt';
+  inp.style.display = 'none';
+  inp.onchange = () => { importDictTxtFile(inp); document.body.removeChild(inp); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+// ── Browse TXT file (client-side import fallback) ─────────────────────────────
 
 function importDictTxtFile(input) {
   if (!input.files.length) return;

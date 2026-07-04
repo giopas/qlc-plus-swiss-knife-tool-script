@@ -143,6 +143,77 @@ def _pick_tkinter(title: str, types: list, initial_dir: str) -> str | None:
     return result_box[0]
 
 
+# ── save-name picker (choose where to save a new file) ───────────────────────
+
+@bp.route('/save-name', methods=['POST'])
+def save_name():
+    """Open a native 'save as' dialog and return the chosen file path."""
+    data         = request.get_json(force=True) or {}
+    title        = data.get('title', 'Save file as')
+    default_name = data.get('default_name', 'file.txt')
+    initial_dir  = (data.get('initial_dir') or '').strip()
+
+    if initial_dir and not os.path.isdir(initial_dir):
+        initial_dir = ''
+
+    path = _open_save_picker(title, default_name, initial_dir)
+    return jsonify({'path': path, 'cancelled': path is None})
+
+
+def _open_save_picker(title: str, default_name: str, initial_dir: str) -> str | None:
+    system = platform.system()
+    if system == 'Darwin':
+        return _save_macos(title, default_name, initial_dir)
+    return _save_tkinter(title, default_name, initial_dir)
+
+
+def _save_macos(title: str, default_name: str, initial_dir: str) -> str | None:
+    script = (
+        f'POSIX path of (choose file name '
+        f'with prompt {_as_str(title)} '
+        f'default name {_as_str(default_name)})'
+    )
+    try:
+        result = subprocess.run(
+            ['osascript', '-e', script],
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode == 0:
+            path = result.stdout.strip()
+            if path:
+                return path
+    except Exception:
+        pass
+    return None
+
+
+def _save_tkinter(title: str, default_name: str, initial_dir: str) -> str | None:
+    result_box: list = [None]
+
+    def _run():
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                root.attributes('-topmost', True)
+            except Exception:
+                pass
+            kwargs: dict = {'title': title, 'initialfile': default_name,
+                            'defaultextension': os.path.splitext(default_name)[-1]}
+            if initial_dir:
+                kwargs['initialdir'] = initial_dir
+            path = filedialog.asksaveasfilename(**kwargs)
+            root.destroy()
+            result_box[0] = path or None
+        except Exception:
+            pass
+
+    _run()
+    return result_box[0]
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _as_str(s: str) -> str:

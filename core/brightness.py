@@ -199,6 +199,31 @@ def force_qxf_for_fixture(manufacturer: str, model: str, qxf_path: str) -> None:
     invalidate_cache()
 
 
+def get_forced_assignments() -> dict:
+    """Return forced QXF assignments as a plain dict for session export.
+
+    Keys are "norm_mfr||norm_model" strings; values are absolute file paths.
+    """
+    return {'||'.join(k): v for k, v in _forced_qxf.items()}
+
+
+def restore_forced_assignments(data: dict) -> None:
+    """Restore forced QXF assignments from a session file dict.
+
+    Expects {\"norm_mfr||norm_model\": \"/abs/path.qxf\"} — the same format
+    produced by get_forced_assignments().  Only entries whose QXF file still
+    exists on disk are restored.
+    """
+    _forced_qxf.clear()
+    for key, path in (data or {}).items():
+        if '||' not in key:
+            continue
+        norm_mfr, norm_model = key.split('||', 1)
+        if os.path.isfile(path):
+            _forced_qxf[(norm_mfr, norm_model)] = path
+    invalidate_cache(reset_forced=False)
+
+
 def _find_qxf(manufacturer: str, model: str) -> str | None:
     """Search for a QXF file matching the given fixture.
 

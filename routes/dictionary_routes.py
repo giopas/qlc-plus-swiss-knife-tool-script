@@ -3,6 +3,7 @@
 import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
+import core.session as sess
 
 
 def _safe_err(exc: Exception) -> str:
@@ -54,6 +55,7 @@ def load_dict():
         return jsonify({'error': 'No path provided.'}), 400
     try:
         count = ws.load_dictionary(path)
+        sess.set_dictionary(path)
         return jsonify({'ok': True, 'count': count})
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

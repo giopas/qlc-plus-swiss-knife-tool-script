@@ -41,9 +41,47 @@
     <button id="btn-theme" class="btn btn-surface" onclick="toggleTheme()"
             title="Toggle dark / grey / light theme"
             data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
+    <!-- Session controls -->
+    <span id="session-badge" class="session-badge" title=""></span>
+    <button class="btn btn-surface" onclick="sessionOpenModal()"
+            title="Open / save session file (.qsk) — remembers workspace, dictionary, setlist and fixture paths"
+            data-tooltip="Session file — save and reload all your file paths at once">📋 Session</button>
     <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
   </div>
 </header>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SESSION MODAL
+══════════════════════════════════════════════════════════════════════════ -->
+<div id="session-overlay" class="sess-overlay" onclick="sessionCloseModal()"></div>
+
+<div id="session-modal" class="sess-modal" role="dialog" aria-modal="true"
+     aria-label="Session file">
+  <div class="sess-modal-header">
+    <span>📋 Session</span>
+    <button class="sess-close-btn" onclick="sessionCloseModal()" title="Close">✕</button>
+  </div>
+
+  <div id="session-modal-body" class="sess-modal-body">
+    <!-- Rendered by session.js _renderModal() -->
+  </div>
+
+  <div class="sess-modal-footer">
+    <label class="btn btn-accent" title="Load a .qsk session file"
+           data-tooltip="Open a .qsk session file to restore all file paths">
+      📂 Open Session…
+      <input type="file" accept=".qsk" style="display:none"
+             onchange="sessionLoad(this)">
+    </label>
+    <button class="btn btn-surface" onclick="sessionSave()"
+            title="Save current paths to a .qsk session file"
+            data-tooltip="Save workspace, dictionary and setlist paths to a reusable .qsk file">
+      💾 Save Session
+    </button>
+    <span style="flex:1"></span>
+    <button class="btn btn-surface" onclick="sessionCloseModal()">Close</button>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      TAB BAR
@@ -764,18 +802,31 @@
       <span class="brt-toolbar-title">Fixture Brightness Scaling</span>
       <span id="brt-preview" class="brt-preview-count">—</span>
       <button class="btn btn-surface" onclick="brtResetAll()"
-              data-tooltip="Reset all fixtures to 100%">↺ Reset All</button>
+              title="Reset all fixtures to 100%">↺ Reset All</button>
 
-      <!-- QXF upload for unknown fixtures -->
+      <!-- Scan local QLC+ fixture directories -->
+      <button class="btn btn-surface" onclick="brtScanLocal()"
+              title="Scan standard QLC+ installation folders on this machine for .qxf fixture definitions (local — no internet)">
+        📁 Scan Local
+      </button>
+
+      <!-- QXF upload for unknown fixtures (supports multiple) -->
       <label class="btn btn-surface"
-             title="Upload a .qxf fixture definition to auto-detect dimmer channel">
-        📂 Load QXF
-        <input id="brt-qxf-input" type="file" accept=".qxf" style="display:none"
+             title="Upload one or more .qxf fixture definition files to auto-detect dimmer channels">
+        📂 Upload QXF
+        <input id="brt-qxf-input" type="file" accept=".qxf" multiple style="display:none"
                onchange="brtUploadQxf()">
       </label>
 
+      <!-- Fetch from GitHub — always flags internet access -->
+      <button id="brt-fetch-gh-btn" class="btn btn-surface brt-gh-btn"
+              onclick="brtFetchGithub()" disabled
+              title="Download missing QXF definitions from the official QLC+ GitHub repository (requires internet connection)">
+        🌐 Fetch from GitHub
+      </button>
+
       <button class="btn btn-accent" onclick="brtGenerateQxw()"
-              data-tooltip="Apply brightness scaling to all scenes and download a new .qxw">
+              title="Apply brightness scaling to all scenes and download a new .qxw">
         🚀 Generate QXW
       </button>
     </div>
@@ -785,9 +836,12 @@
       <strong>How it works:</strong>
       Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
       across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
-      untouched.  Use <strong>Link group</strong> to move all fixtures of the same
-      model together.  If a fixture's QXF file isn't auto-detected, upload it or
-      enter the dimmer channel offset manually.
+      untouched.  Use <strong>Link group</strong> to move all fixtures of the same model together.
+      QXF definitions are auto-detected from your QLC+ installation (<strong>📁 Scan Local</strong>).
+      If a fixture's QXF is still missing, <strong>📂 Upload QXF</strong> it manually (multiple files supported)
+      or use <strong class="brt-internet-label">🌐 Fetch from GitHub</strong>
+      to download it from the official QLC+ repository
+      <em>(requires internet — you will be asked to confirm before any connection is made)</em>.
     </div>
 
     <!-- Fixture groups -->
@@ -826,5 +880,6 @@
 <script src="/static/js/fixture.js"></script>
 <script src="/static/js/merger.js"></script>
 <script src="/static/js/brightness.js"></script>
+<script src="/static/js/session.js"></script>
 </body>
 </html>

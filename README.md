@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.0.6
+# ⚡ QLC+ Swiss Knife — v1.0.7
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 
@@ -17,6 +17,11 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 ---
 
 ## What's new
+
+### v1.0.7
+
+#### 📋 Session / Project File (.qsk)
+Save all the file paths used in a session — workspace, dictionary, setlist backup and fixture QXF overrides — to a `.qsk` file. On next launch, open the session file via **📋 Session → Open Session…** and the app re-loads everything automatically. A dirty-state indicator (●) appears if paths change since the last save, and closing the tab while there are unsaved changes shows a browser confirmation prompt. The **Change…** button next to each path pre-fills the header input so you can quickly swap to a different version of the same file without re-navigating to the folder.
 
 ### v1.0.6
 

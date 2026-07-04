@@ -1862,3 +1862,131 @@ body.theme-light {
   color: var(--subtext0);
   border-color: var(--surface1);
 }
+
+
+/* ============================================================================
+   SESSION MODAL
+   ============================================================================ */
+
+/* Session badge in header (shows filename + dirty indicator) */
+.session-badge {
+  font-size: 11px;
+  color: var(--peach);
+  font-weight: 600;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* Overlay (dimmed background) */
+.sess-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 900;
+}
+.sess-overlay.open { display: block; }
+
+/* Modal panel */
+.sess-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 901;
+  width: min(640px, 92vw);
+  background: var(--mantle);
+  border: 1px solid var(--surface1);
+  border-radius: var(--border-r);
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+  flex-direction: column;
+  overflow: hidden;
+}
+.sess-modal.open { display: flex; }
+
+/* Header */
+.sess-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface0);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.sess-close-btn {
+  background: none;
+  border: none;
+  color: var(--subtext0);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+.sess-close-btn:hover { color: var(--red); }
+
+/* Body */
+.sess-modal-body {
+  padding: 14px 16px 8px;
+  overflow-y: auto;
+}
+
+/* Table of paths */
+.sess-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.sess-table tr {
+  border-bottom: 1px solid var(--surface0);
+}
+.sess-table tr:last-child { border-bottom: none; }
+.sess-label {
+  white-space: nowrap;
+  color: var(--subtext0);
+  padding: 8px 10px 8px 0;
+  font-weight: 600;
+  width: 130px;
+}
+.sess-path {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
+  padding: 8px 10px;
+}
+.sess-empty {
+  color: var(--surface2);
+  font-style: italic;
+  font-family: var(--font-ui);
+}
+.sess-actions {
+  white-space: nowrap;
+  padding: 8px 0;
+}
+
+/* Footer note */
+.sess-file-note {
+  font-size: 11px;
+  color: var(--subtext0);
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--surface0);
+}
+.sess-file-note strong { color: var(--blue); }
+
+/* Footer */
+.sess-modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface0);
+  border-top: 1px solid var(--surface1);
+}

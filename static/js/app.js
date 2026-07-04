@@ -99,6 +99,10 @@ async function _doLoad(fetchOpts) {
     _updateHeader(data);
     _invalidateAllTabs();
     setStatus(`Loaded: ${data.path ? data.path.split(/[\\/]/).pop() : 'workspace'}`);
+    // Track in session (path-mode only — upload mode has no persistent path)
+    if (data.path && typeof sessionOnWorkspaceLoaded === 'function') {
+      sessionOnWorkspaceLoaded(data.path);
+    }
 
     // If ID Browser tab is already open, refresh it
     if (document.querySelector('.tab-btn.active')?.dataset.tab === 'id-browser') {
@@ -482,5 +486,8 @@ function _applyTheme(theme) {
   // Restore state if a workspace was already loaded in a previous request
   const state = await _apiJson('/api/status');
   _updateHeader(state);
+
+  // Initialise session module
+  if (typeof initSession === 'function') initSession();
 
 })();

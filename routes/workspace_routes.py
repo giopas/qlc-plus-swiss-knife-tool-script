@@ -14,6 +14,7 @@ import tempfile
 from flask import Blueprint, jsonify, render_template, request
 
 from core import workspace as ws
+import core.session as sess
 
 
 def _safe_err(exc: Exception) -> str:
@@ -88,6 +89,9 @@ def load():
         if original_name:
             ws.set_original_name(original_name)
             state = ws.get_state()   # refresh to get the patched view
+        else:
+            # Path mode: record the workspace path in session state
+            sess.set_workspace(path)
 
         return jsonify(state)
 

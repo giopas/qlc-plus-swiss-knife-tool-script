@@ -213,6 +213,29 @@ def generate_qxw(slot_id):
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/generate-all-qxw', methods=['POST'])
+def generate_all_qxw():
+    """
+    Clone base functions for ALL cuelist slots, build/update their Chasers,
+    and stream the combined QXW bytes to the browser.
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    try:
+        fname, xml_bytes = ws.generate_all_slots_qxw_content()
+        return Response(
+            xml_bytes,
+            mimetype='application/octet-stream',
+            headers={
+                'Content-Disposition':           f'attachment; filename="{fname}"',
+                'X-Suggested-Filename':          fname,
+                'Access-Control-Expose-Headers': 'X-Suggested-Filename',
+            },
+        )
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 # ── PDF export ────────────────────────────────────────────────────────────────
 
 @bp.route('/<slot_id>/export-pdf', methods=['POST'])

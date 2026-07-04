@@ -56,6 +56,8 @@ _state: dict = {
     'chasers':            {},   # chaser_name -> fid
     'cuelist_slots':      [],   # [{id, caption, chaser_id, chaser_name}]
     'highest_func_id':    0,
+    'clone_ids':          set(),  # IDs of SwissKnife-generated clone functions
+    'clone_base_map':     {},     # clone_id -> base_id
     'shared_descriptions': {},  # fid -> description string (Dictionary Manager)
     'dict_file':          None, # path to loaded dictionary .txt
     'error':              None,
@@ -132,11 +134,17 @@ def set_original_name(name: str):
 
 def get_functions() -> list:
     """Return func_detailed as a sorted list of dicts (by int ID), enriched with VC button and description."""
+    # Pre-build set of base IDs that have at least one clone
+    cloned_base_ids = set(_state['clone_base_map'].values())
+
     rows = []
     for fid, info in _state['func_detailed'].items():
-        vc    = _state['vc_buttons'].get(fid, {})
-        capts = vc.get('captions', [])
-        desc  = _state['shared_descriptions'].get(fid, '')
+        vc       = _state['vc_buttons'].get(fid, {})
+        capts    = vc.get('captions', [])
+        desc     = _state['shared_descriptions'].get(fid, '')
+        is_clone = fid in _state['clone_ids']
+        base_id  = _state['clone_base_map'].get(fid, '') if is_clone else ''
+        has_clone = (not is_clone) and (fid in cloned_base_ids)
         rows.append({
             'id':        fid,
             'name':      info['name'],
@@ -144,13 +152,19 @@ def get_functions() -> list:
             'contains':  info['contains'],
             'vc_button': ', '.join(capts) if capts else '',
             'desc':      desc,
+            'is_clone':  is_clone,
+            'base_id':   base_id,
+            'has_clone': has_clone,
         })
     rows.sort(key=lambda r: _int(r['id']))
     return rows
 
 
-def _is_generated_clone(name: str) -> bool:
-    """Return True for auto-generated clones that should be deprioritised in matching."""
+def _is_generated_clone(name: str, fid: str = None) -> bool:
+    """Return True for auto-generated clones that should be deprioritised in matching.
+    Checks the clone_ids set (new attribute-based scheme) and legacy name suffixes."""
+    if fid and fid in _state['clone_ids']:
+        return True
     return name.endswith(' (Setlist)') or name.endswith(' (Auto-Clone)')
 
 
@@ -160,7 +174,8 @@ def find_best_match(query: str):
     Uses a 4-stage algorithm: exact → single substring → token overlap → difflib fuzzy.
     Returns (matched_name, matched_id) tuple, or ('', '') if no match found.
 
-    At every stage, base functions are preferred over (Setlist)/(Auto-Clone) clones
+    At every stage, base functions are preferred over SwissKnife-generated clones
+    (detected via clone_ids set or legacy (Setlist)/(Auto-Clone) name suffixes)
     when both would produce an equal-quality match. Clones are still returned when
     they are the only candidate (e.g. gig-ready file with no originals present).
     """
@@ -179,7 +194,7 @@ def find_best_match(query: str):
         return matches[0]
     if len(matches) > 1:
         # Prefer non-clone matches; fall back to clone-only list if nothing else fits
-        base_matches = [(n, i) for n, i in matches if not _is_generated_clone(n)]
+        base_matches = [(n, i) for n, i in matches if not _is_generated_clone(n, i)]
         if len(base_matches) == 1:
             return base_matches[0]
         if len(base_matches) > 1:
@@ -193,8 +208,8 @@ def find_best_match(query: str):
         n_tokens = set(name.translate(_trans).lower().split())
         ov = len(q_tokens & n_tokens)
         # Accept if strictly better, or equal score but current best is clone and this isn't
-        if ov > max_ov or (ov == max_ov and best_is_clone and not _is_generated_clone(name)):
-            max_ov, best, best_id, best_is_clone = ov, name, fid, _is_generated_clone(name)
+        if ov > max_ov or (ov == max_ov and best_is_clone and not _is_generated_clone(name, fid)):
+            max_ov, best, best_id, best_is_clone = ov, name, fid, _is_generated_clone(name, fid)
     min_ov = min(2, len(q_tokens)) if q_tokens else 1
     if max_ov >= min_ov:
         return best, best_id
@@ -208,7 +223,7 @@ def find_best_match(query: str):
         # Try non-clone candidates first
         for candidate in close:
             for name, fid in fbn.items():
-                if name.lower() == candidate and not _is_generated_clone(name):
+                if name.lower() == candidate and not _is_generated_clone(name, fid):
                     return name, fid
         # Fall back to any close match (including clones)
         for name, fid in fbn.items():
@@ -355,7 +370,7 @@ def get_dictionary() -> list:
     """Return shared_descriptions merged with func_detailed as a list (includes vc_button and vc_frames)."""
     rows = []
     for fid, info in _state['func_detailed'].items():
-        if '(Auto-Clone)' in info['name'] or '(Setlist)' in info['name']:
+        if _is_generated_clone(info['name'], fid):
             continue
         vc    = _state['vc_buttons'].get(fid, {})
         capts = vc.get('captions', [])
@@ -433,9 +448,10 @@ def set_slot_songs(slot_id: str, songs: list):
 
 def purge_workspace_clones() -> dict:
     """
-    Delete every (Setlist) clone Function element from the in-memory XML tree
-    and from all shared state maps.  Also unassigns those functions from every
-    slot's detail list so the song list reflects the change immediately.
+    Delete every SwissKnife-generated clone Function element from the in-memory
+    XML tree and from all shared state maps.  Detects clones via the clone_ids set
+    (SwissKnifeClone attribute, new-style) and legacy (Setlist) name suffixes.
+    Also unassigns those functions from every slot's detail list.
 
     Does NOT write to disk; call generate_slot_qxw_content() (or any other
     XML-generating route) afterwards to produce a clean output file.
@@ -446,10 +462,10 @@ def purge_workspace_clones() -> dict:
     if engine is None:
         return {'removed': 0, 'unassigned': 0}
 
-    # Collect every (Setlist) clone fid
+    # Collect every clone fid — via clone_ids set (new) or legacy (Setlist) name suffix
     clone_fids = {
         fid for fid, info in _state['func_detailed'].items()
-        if info['name'].endswith(' (Setlist)')
+        if _is_generated_clone(info['name'], fid)
     }
     if not clone_fids:
         return {'removed': 0, 'unassigned': 0}
@@ -469,6 +485,8 @@ def purge_workspace_clones() -> dict:
         _state['chasers'].pop(info.get('name', ''), None)
         _state['vc_buttons'].pop(fid, None)
         _state['shared_descriptions'].pop(fid, None)
+        _state['clone_ids'].discard(fid)
+        _state['clone_base_map'].pop(fid, None)
 
     # Unassign from every slot's detail list
     unassigned = 0
@@ -539,6 +557,12 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     songs = _slot_details.get(slot_id, [])
     if not songs:
         raise ValueError('No song details loaded for this slot.')
+    # Guard: if no song has an assigned function, refuse to wipe the existing chaser
+    if not any(d.get('qxw_id') for d in songs):
+        raise ValueError(
+            f'No function assignments found for slot {slot_id}. '
+            'Assign functions to songs before generating.'
+        )
 
     root   = _state['qxw_root']
     engine = root.find('q:Engine', NS)
@@ -609,8 +633,20 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
         active_ids.add(cid)
         clone = copy.deepcopy(base)
         clone.set('ID', cid)
-        clone.set('Name', f'{txt_n} (Setlist)')
+        clone.set('Name', txt_n)
+        clone.set('SwissKnifeClone', bid)   # marks this as a generated clone; value = base ID
         engine.append(clone)
+        # Update in-memory state so the clone is trackable within this session
+        _state['clone_ids'].add(cid)
+        _state['clone_base_map'][cid] = bid
+        _state['func_by_name'][txt_n] = cid
+        _state['func_by_id'][cid]     = txt_n
+        contains_ids = [s.text for s in clone.findall('q:Step', NS) if s.text]
+        _state['func_detailed'][cid]  = {
+            'name':     txt_n,
+            'type':     clone.get('Type', ''),
+            'contains': ', '.join(contains_ids),
+        }
         sa = {
             'Number':  str(step_count),
             'FadeIn':  str(d.get('in', '0')),
@@ -632,8 +668,13 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     for func in engine.findall('q:Function', NS):
         fn  = func.get('Name', '')
         fid = func.get('ID')
-        if ('(Setlist)' in fn) and (fid not in active_ids) and (fid not in used_by_others):
+        if _is_generated_clone(fn, fid) and (fid not in active_ids) and (fid not in used_by_others):
             engine.remove(func)
+            _state['clone_ids'].discard(fid)
+            _state['clone_base_map'].pop(fid, None)
+            _state['func_by_name'].pop(fn, None)
+            _state['func_by_id'].pop(fid, None)
+            _state['func_detailed'].pop(fid, None)
 
     # Derive a suggested filename from the source workspace name.
     # We don't write to disk here — the browser will prompt the user.
@@ -641,6 +682,54 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     src       = orig_name or _state['path'] or 'workspace.qxw'
     obn       = os.path.splitext(os.path.basename(src))[0]
     m         = re.search(r'(\d+)$', obn)
+    if m:
+        bn = obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
+    else:
+        bn = f'{obn}_GIG_READY'
+    suggested_filename = bn + '.qxw'
+
+    xb          = ET.tostring(root, encoding='utf-8').decode('utf-8')
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb
+    xml_bytes   = xml_content.encode('utf-8')
+
+    return suggested_filename, xml_bytes
+
+
+def generate_all_slots_qxw_content() -> tuple:
+    """
+    Generate QXW for ALL cuelist slots that have song details loaded.
+    For each slot uses the slot's existing linked chaser (if any) or creates a new one.
+    Returns (suggested_filename, xml_bytes).
+    """
+    if not _state['loaded'] or not _state['qxw_root']:
+        raise RuntimeError('No workspace loaded.')
+
+    # Only process slots that have at least one song with a function assignment.
+    # Slots with songs-but-no-assignments are skipped so their existing chaser
+    # content is never accidentally wiped.
+    slots_with_details = [
+        slot for slot in _state['cuelist_slots']
+        if any(d.get('qxw_id') for d in _slot_details.get(slot['id'], []))
+    ]
+    if not slots_with_details:
+        raise ValueError(
+            'No function assignments found for any slot. '
+            'Assign functions to songs before generating.'
+        )
+
+    for slot in slots_with_details:
+        slot_id   = slot['id']
+        chaser_id = slot.get('chaser_id') or None
+        if chaser_id in ('4294967295', '-1', ''):
+            chaser_id = None
+        generate_slot_qxw_content(slot_id, chaser_id)
+
+    # Serialize the combined result once
+    root       = _state['qxw_root']
+    orig_name  = _state.get('original_name')
+    src        = orig_name or _state['path'] or 'workspace.qxw'
+    obn        = os.path.splitext(os.path.basename(src))[0]
+    m          = re.search(r'(\d+)$', obn)
     if m:
         bn = obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
     else:
@@ -677,6 +766,8 @@ def _reset():
     _state['chasers']            = {}
     _state['cuelist_slots']      = []
     _state['highest_func_id']    = 0
+    _state['clone_ids']          = set()
+    _state['clone_base_map']     = {}
     _state['error']              = None
     _slot_songs.clear()
     _slot_details.clear()
@@ -840,6 +931,14 @@ def _parse_shared_data(qxw_root: ET.Element):
                 'type':     f_type or '',
                 'contains': ", ".join(contains),
             }
+
+            # Detect clone functions: new-style (SwissKnifeClone attribute) or legacy suffix
+            swiss_clone_base = func.get('SwissKnifeClone')
+            if swiss_clone_base:
+                _state['clone_ids'].add(f_id)
+                _state['clone_base_map'][f_id] = swiss_clone_base
+            elif f_name.endswith(' (Setlist)') or f_name.endswith(' (Auto-Clone)'):
+                _state['clone_ids'].add(f_id)
 
     # ── Virtual Console ───────────────────────────────────────────────────────
     vc_root = qxw_root.find('q:VirtualConsole', NS)

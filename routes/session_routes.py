@@ -1,0 +1,190 @@
+"""
+routes/session_routes.py
+========================
+API for the .qsk session / project file feature.
+
+  GET  /api/session/current        — current session state + dirty flag
+  GET  /api/session/export         — session as JSON (download as .qsk)
+  POST /api/session/update-field   — update one field (workspace, dictionary,
+                                     setlist_backup, brightness_forced)
+  POST /api/session/apply          — apply a full imported session dict:
+                                     loads workspace, dictionary, QXF overrides
+  POST /api/session/mark-saved     — mark current state as saved (clear dirty)
+"""
+
+import os
+
+from flask import Blueprint, jsonify, request
+
+import core.brightness as br
+import core.session    as sess
+import core.workspace  as ws
+
+bp = Blueprint('session', __name__, url_prefix='/api/session')
+
+
+def _safe_err(exc: Exception) -> str:
+    return str(exc)[:300]
+
+
+# ── Current state ─────────────────────────────────────────────────────────────
+
+@bp.route('/current')
+def current():
+    """Return in-memory session state (safe for direct JSON render)."""
+    state = sess.get_session()
+    # Always reflect the current workspace path from workspace state
+    ws_path = ws.get_state().get('path')
+    if ws_path and not ws_path.startswith('/tmp') and not ws_path.startswith(
+        os.path.join(os.sep, 'var', 'folders')
+    ):
+        state['workspace'] = ws_path
+    return jsonify(state)
+
+
+# ── Export ────────────────────────────────────────────────────────────────────
+
+@bp.route('/export')
+def export():
+    """Return the session as a JSON object (client downloads this as .qsk)."""
+    # Sync forced assignments from brightness module before export
+    sess.set_brightness_forced(br.get_forced_assignments())
+    # Sync workspace path
+    ws_state = ws.get_state()
+    ws_path = ws_state.get('path') or ''
+    if ws_path and not _is_temp(ws_path):
+        sess.set_workspace(ws_path)
+    return jsonify(sess.to_export())
+
+
+# ── Update one field ──────────────────────────────────────────────────────────
+
+@bp.route('/update-field', methods=['POST'])
+def update_field():
+    """
+    Update a single session field.  Body: {"field": "...", "value": ...}
+
+    Accepted fields: workspace, dictionary, setlist_backup, brightness_forced
+    """
+    data  = request.get_json(force=True) or {}
+    field = (data.get('field') or '').strip()
+    value = data.get('value')
+
+    if field == 'workspace':
+        sess.set_workspace(value)
+    elif field == 'dictionary':
+        sess.set_dictionary(value)
+    elif field == 'setlist_backup':
+        sess.set_setlist_backup(value)
+    elif field == 'brightness_forced':
+        sess.set_brightness_forced(value or {})
+    else:
+        return jsonify({'error': f'Unknown field: {field!r}'}), 400
+
+    return jsonify({'ok': True, 'dirty': sess.get_session()['dirty']})
+
+
+# ── Apply a full imported session ─────────────────────────────────────────────
+
+@bp.route('/apply', methods=['POST'])
+def apply_session():
+    """
+    Apply a complete session dict — typically the parsed content of a .qsk file.
+
+    Body: { "session": { ... session dict ... } }
+
+    Steps (best-effort; errors are reported but do not abort):
+      1. Load workspace from path
+      2. Load dictionary from path
+      3. Restore brightness forced QXF assignments
+      4. Record setlist_backup path (client is responsible for loading it)
+
+    Returns:
+      {
+        "ok": bool,
+        "results": { field: "ok" | "skipped" | "error: …" },
+        "session": { updated session state }
+      }
+    """
+    data         = request.get_json(force=True) or {}
+    session_data = data.get('session') or {}
+    results      = {}
+
+    # ── 1. Workspace ──────────────────────────────────────────────────────────
+    ws_path = (session_data.get('workspace') or '').strip()
+    if ws_path:
+        if not os.path.isfile(ws_path):
+            results['workspace'] = f'error: file not found — {ws_path}'
+        else:
+            try:
+                ws.load_qxw(ws_path)
+                sess.set_workspace(ws_path)
+                results['workspace'] = 'ok'
+            except Exception as e:
+                results['workspace'] = f'error: {_safe_err(e)}'
+    else:
+        results['workspace'] = 'skipped'
+
+    # ── 2. Dictionary ─────────────────────────────────────────────────────────
+    dict_path = (session_data.get('dictionary') or '').strip()
+    if dict_path:
+        if not os.path.isfile(dict_path):
+            results['dictionary'] = f'error: file not found — {dict_path}'
+        elif not ws.get_state()['loaded']:
+            results['dictionary'] = 'skipped (no workspace loaded)'
+        else:
+            try:
+                count = ws.load_dictionary(dict_path)
+                sess.set_dictionary(dict_path)
+                results['dictionary'] = f'ok ({count} entries)'
+            except Exception as e:
+                results['dictionary'] = f'error: {_safe_err(e)}'
+    else:
+        results['dictionary'] = 'skipped'
+
+    # ── 3. Brightness forced QXF assignments ──────────────────────────────────
+    forced = session_data.get('brightness_forced') or {}
+    if forced:
+        try:
+            br.restore_forced_assignments(forced)
+            restored = br.get_forced_assignments()
+            sess.set_brightness_forced(restored)
+            results['brightness_forced'] = f'ok ({len(restored)} assignments)'
+        except Exception as e:
+            results['brightness_forced'] = f'error: {_safe_err(e)}'
+    else:
+        results['brightness_forced'] = 'skipped'
+
+    # ── 4. Setlist backup (path only; client loads it) ────────────────────────
+    sl_path = (session_data.get('setlist_backup') or '').strip()
+    if sl_path:
+        sess.set_setlist_backup(sl_path)
+        results['setlist_backup'] = 'ok (path restored — use \'Load All\' to reload)'
+    else:
+        results['setlist_backup'] = 'skipped'
+
+    # Stamp the session as clean after a full apply
+    sess.clear_dirty()
+
+    ok = all('error' not in v for v in results.values())
+    return jsonify({'ok': ok, 'results': results, 'session': sess.get_session()})
+
+
+# ── Mark saved ────────────────────────────────────────────────────────────────
+
+@bp.route('/mark-saved', methods=['POST'])
+def mark_saved():
+    """Called by the client after successfully downloading the .qsk export."""
+    data = request.get_json(force=True) or {}
+    path = (data.get('session_file') or '').strip() or None
+    sess.set_session_file(path)
+    return jsonify({'ok': True})
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _is_temp(path: str) -> bool:
+    """Return True if path looks like a temporary file (upload mode)."""
+    import tempfile
+    tmp = tempfile.gettempdir()
+    return path.startswith(tmp) or path.startswith('/var/folders')

@@ -46,15 +46,33 @@ def current():
 
 @bp.route('/export')
 def export():
-    """Return the session as a JSON object (client downloads this as .qsk)."""
+    """Return the session as a JSON object (client downloads this as .qsk).
+
+    Also includes extra display fields (not saved to .qsk):
+      ws_loaded        — bool, whether a workspace is currently loaded
+      ws_original_name — filename as uploaded (upload mode only)
+      ws_upload_mode   — True when workspace came from a file upload, not a path
+      brightness_count — number of forced QXF assignments
+    """
     # Sync forced assignments from brightness module before export
-    sess.set_brightness_forced(br.get_forced_assignments())
-    # Sync workspace path
+    forced = br.get_forced_assignments()
+    sess.set_brightness_forced(forced)
+
+    # Sync workspace path (path mode only; upload mode has no usable path)
     ws_state = ws.get_state()
-    ws_path = ws_state.get('path') or ''
-    if ws_path and not _is_temp(ws_path):
+    ws_path  = ws_state.get('path') or ''
+    upload_mode = bool(ws_state.get('original_name'))
+    if ws_path and not _is_temp(ws_path) and not upload_mode:
         sess.set_workspace(ws_path)
-    return jsonify(sess.to_export())
+
+    data = sess.to_export()
+
+    # Attach display-only metadata for the modal
+    data['ws_loaded']        = ws_state.get('loaded', False)
+    data['ws_original_name'] = ws_state.get('original_name')   # non-None in upload mode
+    data['ws_upload_mode']   = upload_mode
+    data['brightness_count'] = len(forced)
+    return jsonify(data)
 
 
 # ── Update one field ──────────────────────────────────────────────────────────

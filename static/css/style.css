@@ -2002,3 +2002,88 @@ body.theme-light {
   background: var(--surface0);
   border-top: 1px solid var(--surface1);
 }
+
+
+/* ── Session modal — editable row layout ─────────────────────────────────── */
+.sess-hint {
+  font-size: 11px;
+  color: var(--subtext0);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.sess-row {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--surface0);
+  align-items: flex-start;
+}
+.sess-row:last-child { border-bottom: none; }
+
+.sess-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--subtext0);
+  white-space: nowrap;
+  padding-top: 6px;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.sess-row-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sess-path-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.sess-path-input {
+  flex: 1;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+  min-width: 0;
+}
+.sess-path-input:focus {
+  border-color: var(--blue);
+  background: var(--mantle);
+}
+.sess-path-input::placeholder { color: var(--overlay0); }
+
+.sess-upload-note {
+  font-size: 11px;
+  color: var(--yellow);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.sess-muted {
+  font-size: 11px;
+  color: var(--subtext0);
+}
+
+.sess-field-hint {
+  line-height: 1.4;
+}
+
+.sess-ok {
+  font-size: 11px;
+  color: var(--green);
+}
+
+.sess-readonly {
+  padding-top: 6px;
+}

@@ -63,17 +63,36 @@ lose the updated state.
 
 ---
 
+### Native OS file picker — paths always remembered
+
+Browse buttons throughout the app now open the **real macOS file dialog** (via `osascript`) rather than the browser's sandboxed file input. Because the native dialog runs server-side, the full filesystem path is returned to the app and saved into the session automatically — no manual path pasting required.
+
+- Clicking **📂 Browse…** in the header now loads the workspace in path-mode (path tracked) with the native dialog as the primary path; the hidden browser file input is retained as a fallback if the native picker is not available.
+- The **📂** buttons in the Session modal (Dictionary, Setlist backup) open the native picker and write the full path directly into the editable fields.
+- On non-macOS platforms (Linux, Windows) the same mechanism uses `tkinter.filedialog` if tkinter is available; otherwise the browser file input is used as a fallback.
+
+### Session modal — editable path fields
+
+The session modal now shows an **editable text input** for each path so the user can paste or correct a path without re-loading the file. Useful for upload-mode workspaces where the native picker is not available: the warning shows the uploaded filename and a field to paste the full path.
+
+### Header tooltip fix
+
+Tooltips on header buttons were appearing above the element and clipping off the top of the viewport. Added a `.tt-below` CSS modifier that renders them below the element with the arrow pointing up, and applied it to all header elements.
+
+---
+
 ## Files changed
 
 | File | Change |
 |---|---|
 | `core/session.py` | **New** — in-memory session state, dirty tracking, `to_export()`, `apply_import()` |
-| `routes/session_routes.py` | **New** — `/api/session/{current,export,update-field,apply,mark-saved}` |
+| `routes/session_routes.py` | **New** — `/api/session/{current,export,update-field,apply,mark-saved}`; richer `/export` with upload-mode metadata |
+| `routes/native_picker_routes.py` | **New** — `/api/picker/{available,pick}`; opens macOS `osascript` / tkinter native file dialog |
 | `core/brightness.py` | Added `get_forced_assignments()` and `restore_forced_assignments()` for session round-trip |
 | `routes/workspace_routes.py` | Updates session state after successful path-mode workspace load |
 | `routes/dictionary_routes.py` | Updates session state after successful dictionary load |
-| `static/js/session.js` | **New** — session modal UI, save/load flow, dirty tracking, `beforeunload` guard |
-| `templates/index.html` | Added `📋 Session` button in header, session modal overlay + panel |
-| `static/css/style.css` | Added `.session-badge`, `.sess-overlay`, `.sess-modal`, `.sess-table` and related styles |
-| `app.py` | Registered `session_bp` blueprint |
-| `static/js/app.js` | Calls `initSession()` on startup; calls `sessionOnWorkspaceLoaded()` after workspace load |
+| `static/js/session.js` | **New** — session modal with editable path inputs; native picker for Browse buttons; dirty tracking; `beforeunload` guard |
+| `static/js/app.js` | `nativePick()` helper; `browseWorkspace()` tries native picker first; calls `initSession()` on startup |
+| `templates/index.html` | `📋 Session` button; session modal; header Browse → `browseWorkspace()`; `tt-below` on all header tooltips |
+| `static/css/style.css` | Session modal styles; `.tt-below` tooltip modifier |
+| `app.py` | Registered `session_bp` and `picker_bp` blueprints |

@@ -34,12 +34,24 @@ function initSession() {
   _renderSessionBadge();
   window.addEventListener('beforeunload', _onBeforeUnload);
 
-  // Track setlist backup path changes (user types or pastes into the field)
+  // Track setlist backup path changes
   const slInp = document.getElementById('setlist-path');
   if (slInp) {
     slInp.addEventListener('change', () => {
       const v = slInp.value.trim();
       if (v) sessionOnSetlistBackupChanged(v);
+    });
+  }
+
+  // Track dictionary path changes
+  const dictInp = document.getElementById('dict-path');
+  if (dictInp) {
+    dictInp.addEventListener('change', () => {
+      const v = dictInp.value.trim();
+      if (v && v !== _sess.dictionary) {
+        _sess.dictionary = v;
+        _markDirty();
+      }
     });
   }
 }
@@ -85,11 +97,22 @@ async function _syncFromServer() {
     const r = await fetch('/api/session/export');
     if (!r.ok) return;
     const data = await r.json();
+    _sess._serverData = data;   // keep full response for modal rendering
     if (data.workspace)          _sess.workspace         = data.workspace;
     if (data.dictionary)         _sess.dictionary        = data.dictionary;
     if (data.setlist_backup)     _sess.setlist_backup    = data.setlist_backup;
     if (data.brightness_forced)  _sess.brightness_forced = data.brightness_forced;
   } catch (e) { /* silent */ }
+
+  // Pull current values from other tabs' DOM inputs — they may have been
+  // populated before the session module was tracking them
+  const dictInp = document.getElementById('dict-path');
+  if (dictInp?.value?.trim() && !_sess.dictionary)
+    _sess.dictionary = dictInp.value.trim();
+
+  const slInp = document.getElementById('setlist-path');
+  if (slInp?.value?.trim() && !_sess.setlist_backup)
+    _sess.setlist_backup = slInp.value.trim();
 }
 
 
@@ -99,54 +122,102 @@ function _renderModal() {
   const body = document.getElementById('session-modal-body');
   if (!body) return;
 
-  const ws   = _sess.workspace      || '';
-  const dict = _sess.dictionary     || '';
-  const sl   = _sess.setlist_backup || '';
-  const forced = _sess.brightness_forced || {};
-  const forcedCount = Object.keys(forced).length;
+  const data         = _sess._serverData || {};
+  const wsPath       = _sess.workspace      || '';
+  const dictPath     = _sess.dictionary     || _getDomDictPath();
+  const slPath       = _sess.setlist_backup || _getDomSetlistPath();
+  const forced       = _sess.brightness_forced || {};
+  const forcedCount  = data.brightness_count ?? Object.keys(forced).length;
+  const uploadMode   = data.ws_upload_mode;
+  const origName     = data.ws_original_name || '';
+  const wsLoaded     = data.ws_loaded;
+
+  // Workspace row note
+  let wsNote = '';
+  let wsPlaceholder = 'Paste full path to .qxw file…';
+  let wsValue = wsPath;
+  if (uploadMode && !wsPath) {
+    wsNote = `<span class="sess-upload-note">⚠ Loaded via upload (<em>${_esc(origName)}</em>) — paste the full file path below to remember it for next time</span>`;
+    wsPlaceholder = origName ? `Full path to ${origName}` : 'Full path to workspace .qxw…';
+  } else if (!wsLoaded) {
+    wsNote = `<span class="sess-upload-note sess-muted">No workspace loaded</span>`;
+  }
 
   body.innerHTML = `
-    <table class="sess-table">
-      <tbody>
-        <tr>
-          <td class="sess-label">🎬 Workspace</td>
-          <td class="sess-path" title="${_esc(ws)}">${_truncPath(ws)}</td>
-          <td class="sess-actions">
-            ${ws ? `<button class="btn btn-surface btn-sm" onclick="sessionChangeWorkspace()">📂 Change…</button>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="sess-label">📖 Dictionary</td>
-          <td class="sess-path" title="${_esc(dict)}">${_truncPath(dict)}</td>
-          <td class="sess-actions">
-            <label class="btn btn-surface btn-sm" title="Browse for a descriptions .txt file">
-              📂 ${dict ? 'Change…' : 'Browse…'}
-              <input type="file" accept=".txt" style="display:none"
-                     onchange="sessionPickDictionary(this)">
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td class="sess-label">🎵 Setlist backup</td>
-          <td class="sess-path" title="${_esc(sl)}">${_truncPath(sl)}</td>
-          <td class="sess-actions">
-            <label class="btn btn-surface btn-sm" title="Browse for a setlist backup .txt file">
-              📂 ${sl ? 'Change…' : 'Browse…'}
-              <input type="file" accept=".txt" style="display:none"
-                     onchange="sessionPickSetlist(this)">
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td class="sess-label">💡 QXF overrides</td>
-          <td class="sess-path">${forcedCount ? `${forcedCount} fixture${forcedCount !== 1 ? 's' : ''} with forced QXF` : '—'}</td>
-          <td class="sess-actions"></td>
-        </tr>
-      </tbody>
-    </table>
+    <p class="sess-hint">All fields are optional — fill in only the paths you want remembered. You can paste paths directly without re-loading the files.</p>
+
+    <div class="sess-row">
+      <div class="sess-row-label">🎬 Workspace</div>
+      <div class="sess-row-body">
+        ${wsNote}
+        <div class="sess-path-row">
+          <input id="sess-inp-workspace" class="sess-path-input" type="text"
+                 value="${_esc(wsValue)}" placeholder="${_esc(wsPlaceholder)}"
+                 spellcheck="false" oninput="_sessInputChanged()">
+          ${wsValue ? `<button class="btn btn-surface btn-sm" onclick="sessionChangeWorkspace()" title="Pre-fill the header path input with this path">📂 Use</button>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="sess-row">
+      <div class="sess-row-label">📖 Dictionary</div>
+      <div class="sess-row-body">
+        <div class="sess-path-row">
+          <input id="sess-inp-dictionary" class="sess-path-input" type="text"
+                 value="${_esc(dictPath)}" placeholder="Paste full path to descriptions .txt…"
+                 spellcheck="false" oninput="_sessInputChanged()">
+          <button class="btn btn-surface btn-sm" onclick="sessionPickDictionary(null)"
+                  title="Browse for a descriptions .txt file">📂</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sess-row">
+      <div class="sess-row-label">🎵 Setlist backup</div>
+      <div class="sess-row-body">
+        <div class="sess-path-row">
+          <input id="sess-inp-setlist" class="sess-path-input" type="text"
+                 value="${_esc(slPath)}" placeholder="Paste full path to all-slots backup .txt…"
+                 spellcheck="false" oninput="_sessInputChanged()">
+          <button class="btn btn-surface btn-sm" onclick="sessionPickSetlist(null)"
+                  title="Browse for a setlist backup .txt file">📂</button>
+        </div>
+        <span class="sess-muted sess-field-hint">Use "Save All" in the Setlist tab first to create the backup file, then paste its path here.</span>
+      </div>
+    </div>
+
+    <div class="sess-row">
+      <div class="sess-row-label">💡 QXF overrides</div>
+      <div class="sess-row-body sess-readonly">
+        ${forcedCount
+          ? `<span class="sess-ok">✓ ${forcedCount} fixture${forcedCount !== 1 ? 's' : ''} with forced QXF — will be saved automatically</span>`
+          : `<span class="sess-muted">None</span>`}
+      </div>
+    </div>
 
     ${_sess.filename ? `<p class="sess-file-note">Session file: <strong>${_esc(_sess.filename)}</strong></p>` : ''}
   `;
+}
+
+function _sessInputChanged() {
+  _markDirty();
+}
+
+// Pull current path values out of the modal inputs (used at save time)
+function _collectModalPaths() {
+  return {
+    workspace:      (document.getElementById('sess-inp-workspace')  || {}).value?.trim() || null,
+    dictionary:     (document.getElementById('sess-inp-dictionary') || {}).value?.trim() || null,
+    setlist_backup: (document.getElementById('sess-inp-setlist')    || {}).value?.trim() || null,
+  };
+}
+
+function _getDomSetlistPath() {
+  return (document.getElementById('setlist-path') || {}).value?.trim() || '';
+}
+
+function _getDomDictPath() {
+  return (document.getElementById('dict-path') || {}).value?.trim() || '';
 }
 
 
@@ -166,42 +237,65 @@ function sessionChangeWorkspace() {
 
 // ── Browse for dictionary ─────────────────────────────────────────────────────
 
-async function sessionPickDictionary(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  // We need the path — if the browser exposes webkitRelativePath or
-  // a real path isn't available, we fall back to the name only.
-  // Most modern desktop browsers expose the full path via input.value,
-  // but that's typically something like C:\fakepath\name.txt.
-  // The safest approach: send the file content and use the existing
-  // /api/dictionary/load endpoint if a path is available, otherwise
-  // just record the filename as a label.
-  const path = _extractPath(input) || file.name;
-  _sess.dictionary = path;
-  _markDirty();
-  _renderModal();
-
-  // Tell the server to track the path in session state
-  await _postUpdateField('dictionary', path);
+async function sessionPickDictionary(fallbackInput) {
+  // Try native OS picker — returns the real filesystem path
+  const current = (document.getElementById('sess-inp-dictionary') || {}).value?.trim() || '';
+  const initDir = _parentDir(current);
+  const path = await nativePick(
+    'Select descriptions dictionary (.txt)',
+    [{ label: 'Text files', exts: ['.txt'] }],
+    initDir
+  );
+  if (path) {
+    const field = document.getElementById('sess-inp-dictionary');
+    if (field) field.value = path;
+    _markDirty();
+    return;
+  }
+  // Native picker not available or cancelled — show filename from file input as hint
+  if (fallbackInput) {
+    const file = fallbackInput.files && fallbackInput.files[0];
+    if (file) {
+      const field = document.getElementById('sess-inp-dictionary');
+      if (field && !field.value.trim()) {
+        field.value = file.name;
+        field.placeholder = 'Path unknown — paste the full path here';
+      }
+      _markDirty();
+    }
+  }
 }
 
 
 // ── Browse for setlist backup ─────────────────────────────────────────────────
 
-async function sessionPickSetlist(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const path = _extractPath(input) || file.name;
-  _sess.setlist_backup = path;
-  _markDirty();
-  _renderModal();
-
-  // Populate the setlist path input in the Setlist tab
-  const slInp = document.getElementById('setlist-path');
-  if (slInp) {
-    slInp.value = path;
-    // Update server session
-    await _postUpdateField('setlist_backup', path);
+async function sessionPickSetlist(fallbackInput) {
+  const current = (document.getElementById('sess-inp-setlist') || {}).value?.trim() || '';
+  const initDir = _parentDir(current);
+  const path = await nativePick(
+    'Select setlist backup (.txt)',
+    [{ label: 'Text files', exts: ['.txt'] }],
+    initDir
+  );
+  if (path) {
+    const field = document.getElementById('sess-inp-setlist');
+    if (field) field.value = path;
+    _markDirty();
+    // Also sync to the Setlist tab input
+    const slInp = document.getElementById('setlist-path');
+    if (slInp && !slInp.value.trim()) slInp.value = path;
+    return;
+  }
+  if (fallbackInput) {
+    const file = fallbackInput.files && fallbackInput.files[0];
+    if (file) {
+      const field = document.getElementById('sess-inp-setlist');
+      if (field && !field.value.trim()) {
+        field.value = file.name;
+        field.placeholder = 'Path unknown — paste the full path here';
+      }
+      _markDirty();
+    }
   }
 }
 
@@ -210,6 +304,20 @@ async function sessionPickSetlist(input) {
 
 async function sessionSave() {
   await _syncFromServer();
+
+  // Collect paths from modal inputs (if modal is open) — user may have typed
+  // paths directly without re-loading files
+  const modal = document.getElementById('session-modal');
+  if (modal && modal.classList.contains('open')) {
+    const inp = _collectModalPaths();
+    if (inp.workspace)      _sess.workspace      = inp.workspace;
+    if (inp.dictionary)     _sess.dictionary     = inp.dictionary;
+    if (inp.setlist_backup) _sess.setlist_backup = inp.setlist_backup;
+  }
+  // Also pick up setlist path from the DOM if not yet tracked
+  if (!_sess.setlist_backup) {
+    _sess.setlist_backup = _getDomSetlistPath() || null;
+  }
 
   const data = {
     version:           1,
@@ -448,6 +556,14 @@ async function _postUpdateField(field, value) {
       body: JSON.stringify({ field, value }),
     });
   } catch (e) { /* silent */ }
+}
+
+function _parentDir(filePath) {
+  if (!filePath) return '';
+  const sep = filePath.includes('/') ? '/' : '\\';
+  const parts = filePath.split(sep);
+  parts.pop();
+  return parts.join(sep) || '';
 }
 
 function _showStatus(msg) {

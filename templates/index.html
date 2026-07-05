@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>⚡ QLC+ Swiss Knife</title>
+  <link rel="stylesheet" href="/static/css/tokens.css">
   <link rel="stylesheet" href="/static/css/style.css">
 
   <!-- Grid.js — zero-config sortable/filterable tables -->
@@ -11,42 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
 </head>
 <body>
-
-<!-- ══════════════════════════════════════════════════════════════════════════
-     HEADER
-══════════════════════════════════════════════════════════════════════════ -->
-<header id="app-header">
-  <div id="header-left">
-    <span id="logo">⚡ QLC+ SWISS KNIFE</span>
-    <span id="version-badge">v{{ version }}</span>
-  </div>
-
-  <div id="header-center">
-    <input id="path-input" type="text" placeholder="Paste .qxw file path here…" spellcheck="false"
-           class="tt-below" data-tooltip="Paste the full path to a .qxw workspace file and click Load">
-    <button id="btn-load-path" class="btn btn-accent tt-below" onclick="loadFromPath()"
-            data-tooltip="Load workspace from the path above">Load</button>
-    <button class="btn btn-surface tt-below" onclick="browseWorkspace()"
-            data-tooltip="Browse and open a .qxw file from your computer — or drag a .qxw anywhere on the window">
-      📂 Browse…
-    </button>
-    <!-- Fallback file input used when native picker is unavailable -->
-    <input id="file-input" type="file" accept=".qxw" style="display:none"
-           onchange="loadFromInput(this)">
-    <button id="btn-reload" class="btn btn-surface tt-below" onclick="reloadWorkspace()" disabled
-            data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
-  </div>
-
-  <div id="header-right">
-    <button id="btn-theme" class="btn btn-surface tt-below" onclick="toggleTheme()"
-            data-tooltip="Cycle theme: Dark → Grey → Light">🌙</button>
-    <!-- Session controls -->
-    <span id="session-badge" class="session-badge"></span>
-    <button class="btn btn-surface tt-below" onclick="sessionOpenModal()"
-            data-tooltip="Session file — save and reload all your file paths at once">📋 Session</button>
-    <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
-  </div>
-</header>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      SESSION MODAL
@@ -81,30 +46,191 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     TAB BAR
-══════════════════════════════════════════════════════════════════════════ -->
-<nav id="tab-bar">
-  <button class="tab-btn active" data-tab="setlist"    onclick="showTab('setlist')">🎵 Setlist</button>
-  <button class="tab-btn"        data-tab="dictionary" onclick="showTab('dictionary')">📖 Dictionary</button>
-  <button class="tab-btn"        data-tab="checklist"  onclick="showTab('checklist')">📋 Checklist</button>
-  <button class="tab-btn"        data-tab="triggers"   onclick="showTab('triggers')">🎛 Triggers</button>
-  <button class="tab-btn"        data-tab="fixture"    onclick="showTab('fixture')">🔧 Fixtures</button>
-  <button class="tab-btn"        data-tab="id-browser" onclick="showTab('id-browser')">🔍 ID Browser</button>
-  <button class="tab-btn"        data-tab="merger"          onclick="showTab('merger')">🔀 QXW Merger<sup class="tab-alpha">α</sup></button>
-  <button class="tab-btn"        data-tab="vc-visual-editor" onclick="showTab('vc-visual-editor');vcEditorOnTabShow()">🎨 VC Visual Editor<sup class="tab-alpha">β</sup></button>
-  <button class="tab-btn"        data-tab="brightness"      onclick="showTab('brightness')">💡 Brightness<sup class="tab-alpha">α</sup></button>
-</nav>
+<!-- Fallback file input used when native picker is unavailable -->
+<input id="file-input" type="file" accept=".qxw" style="display:none"
+       onchange="loadFromInput(this)">
 
 <!-- ══════════════════════════════════════════════════════════════════════════
-     TAB PANELS
+     SIDEBAR
+══════════════════════════════════════════════════════════════════════════ -->
+<aside>
+  <div class="logo">
+    <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
+    SWISS KNIFE
+    <span class="ver">v{{ version }}</span>
+  </div>
+
+  <div class="side-nav">
+
+    <!-- Start -->
+    <button class="sn-item active" id="sn-start" data-tip="Start" data-desc="Home screen" onclick="go('start')">
+      <svg class="ic"><use href="/static/icons.svg#home"/></svg>
+      <span>Start</span>
+    </button>
+
+    <!-- Run the show -->
+    <div class="sn-group-label">Run the show</div>
+    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Match songs to functions, set fade timings, generate a cuelist chaser." onclick="go('setlist')">
+      <svg class="ic"><use href="/static/icons.svg#music"/></svg>
+      <span>Setlist</span>
+    </button>
+    <button class="sn-item" id="sn-triggers" data-tip="Triggers" data-desc="Audit and edit every keyboard &amp; MIDI binding in the Virtual Console." onclick="go('triggers')">
+      <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
+      <span>Triggers</span>
+    </button>
+    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does." onclick="go('dictionary')">
+      <svg class="ic"><use href="/static/icons.svg#book"/></svg>
+      <span>Dictionary</span>
+    </button>
+
+    <!-- Build the rig -->
+    <div class="sn-group-label">Build the rig</div>
+    <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace." onclick="go('fixtures')">
+      <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
+      <span>Fixtures</span>
+    </button>
+    <button class="sn-item" id="sn-checklist" data-tip="Checklist" data-desc="Every fixture with universe, address, mode and channels." onclick="go('checklist')">
+      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
+      <span>Checklist</span>
+    </button>
+    <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
+      <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
+      <span>Brightness</span>
+    </button>
+
+    <!-- Workspace tools -->
+    <div class="sn-group-label">Workspace tools</div>
+    <button class="sn-item" id="sn-idbrowser" data-tip="ID Browser" data-desc="Sortable, filterable tables of every function and VC widget." onclick="go('idbrowser')">
+      <svg class="ic"><use href="/static/icons.svg#search"/></svg>
+      <span>ID Browser</span>
+    </button>
+    <button class="sn-item" id="sn-vceditor" data-tip="VC Visual Editor" data-desc="See your Virtual Console as a canvas." onclick="go('vceditor')">
+      <svg class="ic"><use href="/static/icons.svg#layout"/></svg>
+      <span>VC Visual Editor</span>
+      <span class="b beta">&beta;</span>
+    </button>
+    <button class="sn-item" id="sn-merger" data-tip="QXW Merger" data-desc="Copy functions, fixtures and groups from one workspace into another." onclick="go('merger')">
+      <svg class="ic"><use href="/static/icons.svg#merge"/></svg>
+      <span>QXW Merger</span>
+      <span class="b alpha">&alpha;</span>
+    </button>
+
+  </div>
+
+  <!-- Files panel -->
+  <div class="files-panel">
+    <div class="fp-title">Files</div>
+    <div class="fp-item" id="fp-workspace">
+      <span class="fp-label">Workspace</span>
+      <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+    </div>
+    <div class="fp-item" id="fp-dictionary">
+      <span class="fp-label">Dictionary</span>
+      <span id="fp-dict-name">—</span>
+    </div>
+    <div class="fp-item" id="fp-qxf">
+      <span class="fp-label">QXF</span>
+      <span id="fp-qxf-name">—</span>
+    </div>
+    <div class="fp-session">
+      <span id="session-badge" class="session-badge"></span>
+      <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file">📋 Session</button>
+    </div>
+  </div>
+
+  <!-- Collapse -->
+  <button class="sn-collapse" id="sn-collapse" onclick="toggleSidebar()" title="Collapse sidebar">
+    <svg class="ic"><use href="/static/icons.svg#chevron-left"/></svg>
+  </button>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     MAIN CONTENT AREA
 ══════════════════════════════════════════════════════════════════════════ -->
 <main id="content">
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 1 — SETLIST MANAGER  (FileBot-style: Songs | Actions | Functions)
+       START SCREEN
   ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-setlist" class="tab-panel active">
+  <section class="screen active" id="scr-start">
+
+    <div class="start-body">
+
+      <h1 id="greeting">Welcome 👋</h1>
+
+      <div class="start-drop-zone" id="start-drop-zone">
+        <div class="start-drop-icon">
+          <svg class="ic" style="width:48px;height:48px"><use href="/static/icons.svg#upload"/></svg>
+        </div>
+        <p>Drag a <b>.qxw</b> workspace here, or</p>
+        <div class="start-drop-btns">
+          <button class="btn btn-accent" onclick="browseWorkspace()">📂 Open Workspace</button>
+          <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session</button>
+          <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()" disabled
+                  data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
+        </div>
+      </div>
+
+      <!-- Advanced path input -->
+      <div class="adv-row" id="adv-path-row">
+        Advanced: <a onclick="document.getElementById('adv-path-input-wrap').style.display='flex'">paste a file path…</a>
+        <span id="adv-path-input-wrap" style="display:none;gap:6px;align-items:center;margin-left:8px">
+          <input id="path-input" type="text" class="search" placeholder="Paste .qxw file path…" spellcheck="false" style="width:300px">
+          <button class="btn btn-primary btn-sm" onclick="loadFromPath()">Load</button>
+        </span>
+      </div>
+
+      <!-- Recents -->
+      <div id="recent-list" class="recents"></div>
+
+      <!-- About -->
+      <div class="start-about">
+        <h3>What is QLC+ Swiss Knife?</h3>
+        <p>A companion web app that reads and writes QLC+ workspace files (<code>.qxw</code>).
+           Build setlists, manage triggers, configure fixtures, browse IDs — all without opening QLC+ itself.</p>
+      </div>
+
+      <!-- Workflow cards -->
+      <div class="start-workflow">
+        <div class="wf-card" onclick="go('fixtures')">
+          <div class="wf-num">1</div>
+          <div class="wf-title">Build the rig</div>
+          <div class="wf-desc">Place fixtures, assign DMX addresses, export a workspace.</div>
+        </div>
+        <div class="wf-card" onclick="go('setlist')">
+          <div class="wf-num">2</div>
+          <div class="wf-title">Match the music</div>
+          <div class="wf-desc">Map songs to QLC+ functions, set fade timings, generate a cuelist.</div>
+        </div>
+        <div class="wf-card" onclick="go('triggers')">
+          <div class="wf-num">3</div>
+          <div class="wf-title">Wire the controls</div>
+          <div class="wf-desc">Audit keyboard and MIDI bindings across the Virtual Console.</div>
+        </div>
+      </div>
+
+      <!-- Footer links -->
+      <div class="start-footer">
+        <a href="https://github.com/giopas/qlc-plus-swiss-knife-tool-script" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/giopas/qlc-plus-swiss-knife-tool-script/issues/new/choose" target="_blank" rel="noopener">Report a bug</a>
+        <a href="https://www.qlcplus.org/" target="_blank" rel="noopener">QLC+</a>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       SETLIST MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-setlist">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
+      <div><h2>Setlist</h2><div class="p-desc">Match songs to functions, set fade timings, generate a cuelist chaser.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
 
     <!-- Hidden file input fallback for per-slot TXT import (when native picker unavailable) -->
     <input id="sl-import-file" type="file" accept=".txt" style="display:none"
@@ -112,7 +238,7 @@
 
     <div class="tab-split sl-fb-split">
 
-      <!-- ── Col 1: Slot list ──────────────────────────────────────────── -->
+      <!-- Col 1: Slot list -->
       <div class="slot-pane">
         <div class="pane-header">CueList Slots</div>
         <div id="slot-list">
@@ -120,7 +246,7 @@
         </div>
       </div>
 
-      <!-- ── Col 2: Song list (FileBot Left) ──────────────────────────── -->
+      <!-- Col 2: Song list (FileBot Left) -->
       <div class="fb-songs-pane">
         <div class="pane-header" id="song-pane-title">Songs</div>
         <div id="fb-song-list" class="fb-song-list">
@@ -140,7 +266,7 @@
         </div>
       </div>
 
-      <!-- ── Col 3: Actions pane (FileBot Middle) ─────────────────────── -->
+      <!-- Col 3: Actions pane (FileBot Middle) -->
       <div class="fb-actions-pane">
         <div class="pane-header" style="font-size:10px;letter-spacing:.05em">ACTIONS</div>
 
@@ -215,15 +341,6 @@
                   data-tooltip="Pick a chaser to update, or create a brand-new one">
             <option value="__new__">— Create new —</option>
           </select>
-          <button class="btn btn-accent fb-wide-btn" id="btn-generate-qxw"
-                  onclick="slGenerateQxw()" disabled
-                  data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">🚀 Generate QXW</button>
-          <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-pdf"
-                  onclick="slExportPdf()" disabled
-                  data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
-          <button class="btn btn-surface fb-wide-btn" id="btn-export-sl-xml"
-                  onclick="slExportXmlTxt()" disabled
-                  data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
 
         </div>
 
@@ -235,10 +352,10 @@
         </div>
       </div>
 
-      <!-- ── Resize handle ─────────────────────────────────────────────── -->
+      <!-- Resize handle -->
       <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize"></div>
 
-      <!-- ── Col 4: QLC+ Function Pool (FileBot Right) ────────────────── -->
+      <!-- Col 4: QLC+ Function Pool (FileBot Right) -->
       <div class="fn-pool-pane">
         <div class="pane-header" style="display:flex;align-items:center;justify-content:space-between">
           <span>QLC+ Functions</span>
@@ -279,93 +396,37 @@
       </div>
 
     </div>
-  </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 2 — DICTIONARY MANAGER
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-dictionary" class="tab-panel">
-
-    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
-      <input id="dict-filter" class="filter-input" type="text" style="width:160px"
-             placeholder="Filter functions…" oninput="filterDictionary(this.value)">
-      <select id="dict-type-filter" class="filter-input" style="width:120px"
-              onchange="filterDictByType(this.value)">
-        <option value="">All types</option>
-      </select>
-      <select id="dict-vc-filter" class="filter-input" style="width:110px"
-              onchange="filterDictByVc(this.value)">
-        <option value="">All VC</option>
-        <option value="has">Has VC ✓</option>
-        <option value="none">No VC</option>
-      </select>
-      <input id="dict-vcname-filter" class="filter-input" type="text" style="width:140px"
-             placeholder="VC Button name…" oninput="filterDictByVcName(this.value)"
-             data-tooltip="Filter by VC button name text">
-      <select id="dict-frame-filter" class="filter-input" style="width:130px"
-              onchange="filterDictByFrame(this.value)"
-              data-tooltip="Filter by VC frame (container)">
-        <option value="">All frames</option>
-      </select>
-      <span style="flex:1"></span>
-      <!-- Browse TXT: native picker → server-side load → path tracked in session -->
-      <button class="btn btn-surface" onclick="browseDictTxt()"
-              data-tooltip="Browse and load a dictionary .txt file (path remembered for session)">
-        📂 Browse TXT
-      </button>
-      <input id="dict-path" type="text" class="filter-input" style="width:220px"
-             placeholder="Dictionary .txt path…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadDictFile()"
-              data-tooltip="Load descriptions from the dictionary .txt path">Load path</button>
-      <button class="btn btn-surface" onclick="saveDictFile()"
-              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save</button>
-      <button class="btn btn-surface" onclick="exportDictTxt()"
-              data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
-    </div>
-
-    <div id="dict-table-wrap" class="table-wrap"></div>
-
-    <!-- Inline edit panel (bottom) -->
-    <div id="dict-edit-panel">
-      <span id="dict-edit-label">Select a row to edit its description</span>
-      <textarea id="dict-desc-input" rows="2"
-                placeholder="Description…" disabled></textarea>
-      <button class="btn btn-green" id="btn-save-dict-entry"
-              onclick="saveDictEntry()" disabled>Save</button>
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-accent" id="btn-generate-qxw"
+              onclick="slGenerateQxw()" disabled
+              data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">🚀 Generate QXW</button>
+      <button class="btn btn-surface" id="btn-export-sl-pdf"
+              onclick="slExportPdf()" disabled
+              data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
+      <button class="btn btn-surface" id="btn-export-sl-xml"
+              onclick="slExportXmlTxt()" disabled
+              data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
     </div>
 
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 3 — SETUP CHECKLIST
+       TRIGGERS
   ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-checklist" class="tab-panel">
+  <section class="screen" id="scr-triggers">
 
-    <div class="tab-toolbar">
-      <input id="chk-filter" class="filter-input" type="text"
-             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
-      <span style="flex:1"></span>
-      <button class="btn btn-surface" onclick="exportChecklistTxt()"
-              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
-      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
-        <option value="A3 Landscape">A3 Landscape</option>
-        <option value="A4 Landscape">A4 Landscape</option>
-        <option value="A4 Portrait">A4 Portrait</option>
-        <option value="US Letter Landscape">US Letter Landscape</option>
-        <option value="US Letter Portrait">US Letter Portrait</option>
-      </select>
-      <button class="btn btn-surface" onclick="exportChecklistPdf()"
-              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
+      <div><h2>Triggers</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
-
-    <div id="chk-table-wrap"></div>
-
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 4 — TRIGGER MANAGER
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-triggers" class="tab-panel">
 
     <div class="tab-toolbar">
       <input id="trg-filter" class="filter-input" type="text"
@@ -382,11 +443,9 @@
               data-tooltip="Bulk re-assign all triggers from one MIDI universe/channel to another">⇄ MIDI Shift</button>
       <button id="trg-matrix-btn" class="btn btn-surface" onclick="toggleMatrix()"
               data-tooltip="Show a grid of all widget key assignments">⊞ Matrix</button>
-      <button class="btn btn-green"   onclick="saveTriggers()"
-              data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to QXW</button>
     </div>
 
-    <!-- Matrix panel (toggled by ⊞ Matrix button) -->
+    <!-- Matrix panel (toggled by Matrix button) -->
     <div id="trg-matrix-panel" style="display:none;padding:8px 12px;border-bottom:1px solid var(--surface1);background:var(--mantle)">
       <div id="trg-matrix-wrap"></div>
     </div>
@@ -459,12 +518,104 @@
       </div>
 
     </div>
+
+    <div class="out-footer">
+      <span class="out-note ow">
+        <svg class="ic"><use href="/static/icons.svg#alert-triangle"/></svg>
+        Save <b>&nbsp;overwrites the loaded .qxw&nbsp;</b> — the only tool that does
+      </span>
+      <button class="btn btn-surface btn-ghost" onclick="saveTriggers()" data-tooltip="Save triggers to a new file instead">Save as new file…</button>
+      <div class="spacer"></div>
+      <button class="btn btn-overwrite" onclick="saveTriggers()"
+              data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to loaded QXW</button>
+    </div>
+
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 5 — FIXTURE CONFIGURATOR
+       DICTIONARY
   ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-fixture" class="tab-panel">
+  <section class="screen" id="scr-dictionary">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
+      <div><h2>Dictionary</h2><div class="p-desc">Describe what every function does — descriptions show up in Setlist and everywhere else.</div></div>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="browseDictTxt()"
+              data-tooltip="Browse and load a dictionary .txt file (path remembered for session)">
+        📂 Browse TXT
+      </button>
+      <input id="dict-path" type="text" class="filter-input" style="width:220px"
+             placeholder="Dictionary .txt path…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadDictFile()"
+              data-tooltip="Load descriptions from the dictionary .txt path">Load path</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <input id="dict-filter" class="filter-input" type="text" style="width:160px"
+             placeholder="Filter functions…" oninput="filterDictionary(this.value)">
+      <select id="dict-type-filter" class="filter-input" style="width:120px"
+              onchange="filterDictByType(this.value)">
+        <option value="">All types</option>
+      </select>
+      <select id="dict-vc-filter" class="filter-input" style="width:110px"
+              onchange="filterDictByVc(this.value)">
+        <option value="">All VC</option>
+        <option value="has">Has VC ✓</option>
+        <option value="none">No VC</option>
+      </select>
+      <input id="dict-vcname-filter" class="filter-input" type="text" style="width:140px"
+             placeholder="VC Button name…" oninput="filterDictByVcName(this.value)"
+             data-tooltip="Filter by VC button name text">
+      <select id="dict-frame-filter" class="filter-input" style="width:130px"
+              onchange="filterDictByFrame(this.value)"
+              data-tooltip="Filter by VC frame (container)">
+        <option value="">All frames</option>
+      </select>
+    </div>
+
+    <div id="dict-table-wrap" class="table-wrap"></div>
+
+    <!-- Inline edit panel (bottom) -->
+    <div id="dict-edit-panel">
+      <span id="dict-edit-label">Select a row to edit its description</span>
+      <textarea id="dict-desc-input" rows="2"
+                placeholder="Description…" disabled></textarea>
+      <button class="btn btn-green" id="btn-save-dict-entry"
+              onclick="saveDictEntry()" disabled>Save</button>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="saveDictFile()"
+              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save</button>
+      <button class="btn btn-surface" onclick="exportDictTxt()"
+              data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       FIXTURES
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-fixtures">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
+      <div><h2>Fixtures</h2><div class="p-desc">Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace.</div></div>
+      <div class="spacer"></div>
+      <label class="field-label">QXF:</label>
+      <input id="fix-qxf-path" class="filter-input" type="text"
+             placeholder="Path to .qxf file…" style="width:260px">
+      <button class="btn btn-surface" onclick="fixLoadQxf()"
+              data-tooltip="Load a QLC+ fixture definition file (.qxf) as the fixture template">📂 Load QXF</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
 
     <!-- Toolbar row 1: fixture operations -->
     <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
@@ -494,40 +645,19 @@
       </span>
     </div>
 
-    <!-- Toolbar row 2: stage dims + QXF + actions -->
+    <!-- Toolbar row 2: stage dims -->
     <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px;background:var(--surface);border-top:1px solid var(--overlay0)">
-      <label class="field-label">QXF:</label>
-      <input id="fix-qxf-path" class="filter-input" type="text"
-             placeholder="Path to .qxf file…" style="width:260px">
-      <button class="btn btn-surface" onclick="fixLoadQxf()"
-              data-tooltip="Load a QLC+ fixture definition file (.qxf) as the fixture template">📂 Load QXF</button>
-
-      <span style="margin-left:12px;display:flex;gap:6px;align-items:center">
+      <span style="display:flex;gap:6px;align-items:center">
         <label class="field-label" data-tooltip="Stage width in millimetres">W(mm):</label>
         <input id="fix-stage-w" class="filter-input" type="number" value="8000" min="1000" max="50000" style="width:64px">
         <label class="field-label" data-tooltip="Stage depth in millimetres">D(mm):</label>
         <input id="fix-stage-d" class="filter-input" type="number" value="6000" min="1000" max="50000" style="width:64px">
         <label class="field-label" data-tooltip="Stage height (rigging height) in millimetres">H(mm):</label>
         <input id="fix-stage-h" class="filter-input" type="number" value="4000" min="500"  max="20000" style="width:64px">
-        <label class="field-label" style="margin-left:8px" data-tooltip="Grid columns × rows — divides the stage into positioning cells">Grid:</label>
+        <label class="field-label" style="margin-left:8px" data-tooltip="Grid columns x rows — divides the stage into positioning cells">Grid:</label>
         <input id="fix-grid-cols" class="filter-input" type="number" value="8" min="1" max="26" style="width:36px">
-        <span class="hint-text">×</span>
+        <span class="hint-text">x</span>
         <input id="fix-grid-rows" class="filter-input" type="number" value="6" min="1" max="20" style="width:36px">
-      </span>
-
-      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
-        <select id="fix-pdf-paper" class="filter-input" style="width:160px"
-                data-tooltip="Paper size for the exported blueprint PDF">
-          <option value="A3 Landscape">A3 Landscape</option>
-          <option value="A4 Landscape">A4 Landscape</option>
-          <option value="A4 Portrait">A4 Portrait</option>
-          <option value="US Letter Landscape">US Letter Landscape</option>
-          <option value="US Letter Portrait">US Letter Portrait</option>
-        </select>
-        <button class="btn btn-surface" onclick="fixExportPdf()"
-                data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
-        <button class="btn btn-primary" onclick="fixGenerateQxw()"
-                data-tooltip="Generate a QXW workspace with the current rig configuration">🚀 Generate QXW</button>
       </span>
     </div>
 
@@ -623,12 +753,150 @@
       </div>
     </div>
 
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <select id="fix-pdf-paper" class="filter-input" style="width:160px"
+              data-tooltip="Paper size for the exported blueprint PDF">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="fixExportPdf()"
+              data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+      <button class="btn btn-primary" onclick="fixGenerateQxw()"
+              data-tooltip="Generate a QXW workspace with the current rig configuration">🚀 Generate QXW</button>
+    </div>
+
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 6 — ID BROWSER
+       CHECKLIST
   ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-id-browser" class="tab-panel">
+  <section class="screen" id="scr-checklist">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
+      <div><h2>Checklist</h2><div class="p-desc">Every fixture with universe, address, mode and channels — ready to print for load-in.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar">
+      <input id="chk-filter" class="filter-input" type="text"
+             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
+    </div>
+
+    <div id="chk-table-wrap"></div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="exportChecklistTxt()"
+              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
+      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="exportChecklistPdf()"
+              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BRIGHTNESS
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-brightness">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sun"/></svg></div>
+      <div><h2>Brightness</h2><div class="p-desc">Scale the master dimmer of each fixture group across every scene. Colour ratios untouched.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar brt-toolbar">
+      <span id="brt-preview" class="brt-preview-count">—</span>
+      <button class="btn btn-surface" onclick="brtResetAll()"
+              title="Reset all fixtures to 100%">↺ Reset All</button>
+
+      <!-- Scan local QLC+ fixture directories -->
+      <button class="btn btn-surface" onclick="brtScanLocal()"
+              title="Scan standard QLC+ installation folders on this machine for .qxf fixture definitions (local — no internet)">
+        📁 Scan Local
+      </button>
+
+      <!-- QXF upload for unknown fixtures (supports multiple) -->
+      <label class="btn btn-surface"
+             title="Upload one or more .qxf fixture definition files to auto-detect dimmer channels">
+        📂 Upload QXF
+        <input id="brt-qxf-input" type="file" accept=".qxf" multiple style="display:none"
+               onchange="brtUploadQxf()">
+      </label>
+
+      <!-- Fetch from GitHub -->
+      <button id="brt-fetch-gh-btn" class="btn btn-surface brt-gh-btn"
+              onclick="brtFetchGithub()" disabled
+              title="Download missing QXF definitions from the official QLC+ GitHub repository (requires internet connection)">
+        🌐 Fetch from GitHub
+      </button>
+    </div>
+
+    <!-- Help banner -->
+    <div class="brt-help">
+      <strong>How it works:</strong>
+      Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
+      across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
+      untouched.  Use <strong>Link group</strong> to move all fixtures of the same model together.
+      QXF definitions are auto-detected from your QLC+ installation (<strong>📁 Scan Local</strong>).
+      If a fixture's QXF is still missing, <strong>📂 Upload QXF</strong> it manually (multiple files supported)
+      or use <strong class="brt-internet-label">🌐 Fetch from GitHub</strong>
+      to download it from the official QLC+ repository
+      <em>(requires internet — you will be asked to confirm before any connection is made)</em>.
+    </div>
+
+    <!-- Fixture groups -->
+    <div id="brt-fixture-wrap" class="brt-fixture-wrap">
+      <div class="brt-placeholder">Load a workspace to adjust brightness.</div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-accent" onclick="brtGenerateQxw()"
+              title="Apply brightness scaling to all scenes and download a new .qxw">
+        🚀 Generate QXW
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       ID BROWSER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-idbrowser">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#search"/></svg></div>
+      <div><h2>ID Browser</h2><div class="p-desc">Sortable, filterable tables of every function and VC widget in the workspace.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
 
     <div id="id-browser-subtabs">
       <button class="subtab-btn active" data-subtab="functions"
@@ -655,12 +923,228 @@
       <div id="vc-table-wrap"></div>
     </div>
 
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+    </div>
+
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       TAB 7 — QXW MERGER
+       VC VISUAL EDITOR
   ══════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-merger" class="tab-panel">
+  <section class="screen" id="scr-vceditor">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
+      <div><h2>VC Visual Editor <span class="b beta">BETA</span></h2><div class="p-desc">See your Virtual Console as a canvas — select, align, distribute, resize and sort widgets.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <style>
+      /* VC Visual Editor scoped styles */
+      #vce-wrap { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+      #vce-toolbar { display:flex; gap:4px; padding:6px 8px; background:var(--surface-1);
+                     border-bottom:0.5px solid var(--border); align-items:center; flex-wrap:wrap; }
+      .vce-xb { font-size:11px; padding:3px 7px; background:transparent;
+                border:0.5px solid var(--border-strong); border-radius:var(--radius);
+                color:var(--text-primary); cursor:pointer; font-family:var(--font-mono); }
+      .vce-xb:hover { background:var(--surface-0); }
+      .vce-xb.on { background:var(--bg-accent); color:var(--text-accent); border-color:var(--border-accent); }
+      #vce-body { display:flex; flex:1; overflow:hidden; min-height:0; }
+      #vce-canvas-wrap { flex:1; overflow:auto; background:#11111b; padding:6px; }
+      #vce-canvas { display:block; }
+      #vce-right { display:flex; flex-direction:column; width:0; min-width:0;
+                   border-left:0.5px solid var(--border); overflow:hidden; transition:width .2s; }
+      #vce-right.open { width:400px; min-width:400px; }
+      #vce-props-panel { flex:1; overflow-y:auto; background:var(--surface-1); padding:8px;
+                         font-size:11px; font-family:var(--font-mono); }
+      #vce-actions-panel { border-top:0.5px solid var(--border); background:var(--surface-0);
+                           padding:8px; overflow-y:auto; max-height:260px; }
+      .vce-pl { color:var(--text-muted); font-size:9px; margin:8px 0 4px;
+                text-transform:uppercase; letter-spacing:.07em; }
+      .vce-pi { width:100%; box-sizing:border-box; padding:3px 5px; font-size:11px;
+                font-family:var(--font-mono); border:0.5px solid var(--border);
+                border-radius:4px; background:var(--surface-0); color:var(--text-primary); }
+      .vce-pr4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4px; }
+      .vce-pr2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+      .vce-ab { padding:3px 5px; font-size:10px; font-family:var(--font-mono);
+                background:var(--surface-0); border:0.5px solid var(--border);
+                border-radius:4px; cursor:pointer; color:var(--text-primary); white-space:nowrap; }
+      .vce-ab:hover { background:var(--surface-1); border-color:var(--border-strong); }
+      .vce-sep { width:0.5px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
+      #vce-statusbar { padding:3px 10px; border-top:0.5px solid var(--border);
+                       background:var(--surface-0); font-size:10px; font-family:var(--font-mono);
+                       display:flex; justify-content:space-between; align-items:center; }
+    </style>
+
+    <div id="vce-wrap">
+
+      <!-- Toolbar -->
+      <div id="vce-toolbar">
+        <!-- Page selector -->
+        <select id="vce-page-sel" class="vce-xb" style="max-width:160px"></select>
+        <div class="vce-sep"></div>
+
+        <!-- View mode -->
+        <button class="vce-xb on" id="vce-btn-normal" onclick="vceSetMode('normal')">Normal</button>
+        <button class="vce-xb"    id="vce-btn-mask"   onclick="vceSetMode('mask')">Mask</button>
+        <div class="vce-sep"></div>
+
+        <!-- Mask thresholds -->
+        <span style="font-size:10px;color:var(--text-muted)">±</span>
+        <input id="vce-thresh0" type="number" min="1" max="20" value="2" title="Minor threshold (px)"
+               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
+                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
+               onchange="vceUpdateThresholds()">
+        <span style="font-size:10px;color:var(--text-muted)">/</span>
+        <input id="vce-thresh1" type="number" min="1" max="50" value="5" title="Major threshold (px)"
+               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
+                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
+               onchange="vceUpdateThresholds()">
+        <span style="font-size:10px;color:var(--text-muted)">px</span>
+        <div class="vce-sep"></div>
+
+        <!-- Zoom -->
+        <button class="vce-xb" onclick="vceZoom(-0.1)">−</button>
+        <span id="vce-zoom-lbl" style="font-size:10px;color:var(--text-muted);min-width:34px;text-align:center;font-family:var(--font-mono)">—</span>
+        <button class="vce-xb" onclick="vceZoom(+0.1)">+</button>
+        <button class="vce-xb" onclick="vceFit()">fit</button>
+        <div class="vce-sep"></div>
+
+        <!-- Toggle panel -->
+        <button class="vce-xb" id="vce-btn-panel"
+                onclick="document.getElementById('vce-right').classList.toggle('open');
+                         document.getElementById('vce-btn-panel').classList.toggle('on')">
+          ⚙ Panel
+        </button>
+        <div style="flex:1"></div>
+
+        <!-- Reload -->
+        <button class="vce-xb" onclick="_vceTree=null;_vceLoad()">↺ Reload</button>
+      </div>
+
+      <!-- Main body -->
+      <div id="vce-body">
+
+        <!-- Canvas -->
+        <div id="vce-canvas-wrap">
+          <canvas id="vce-canvas"></canvas>
+        </div>
+
+        <!-- Right panel (props + actions) -->
+        <div id="vce-right open" style="width:400px;min-width:400px">
+          <!-- Properties -->
+          <div id="vce-props">
+            <div style="color:var(--text-muted);padding:20px 0;text-align:center">
+              Click a widget to select
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div id="vce-actions-panel">
+            <div class="vce-pl" style="margin-top:0">Align</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
+              <button class="vce-ab" onclick="vceAlign('left')" title="Align left edges">← left</button>
+              <button class="vce-ab" onclick="vceAlign('centerH')" title="Centre horizontally">— H ctr</button>
+              <button class="vce-ab" onclick="vceAlign('right')" title="Align right edges">→ right</button>
+              <button class="vce-ab" onclick="vceAlign('top')" title="Align top edges">↑ top</button>
+              <button class="vce-ab" onclick="vceAlign('centerV')" title="Centre vertically">| V ctr</button>
+              <button class="vce-ab" onclick="vceAlign('bottom')" title="Align bottom edges">↓ bottom</button>
+            </div>
+
+            <div class="vce-pl">Distribute &amp; size</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
+              <button class="vce-ab" onclick="vceDistribute('h')" title="Equal horizontal spacing">↔ distr H</button>
+              <button class="vce-ab" onclick="vceDistribute('v')" title="Equal vertical spacing">↕ distr V</button>
+              <button class="vce-ab" onclick="vceSameSize('w')" title="Match width to first selected">= W</button>
+              <button class="vce-ab" onclick="vceSameSize('h')" title="Match height to first selected">= H</button>
+              <button class="vce-ab" onclick="vceFitText()" title="Fit width to caption text">fit text</button>
+            </div>
+
+            <div class="vce-pl">Grid arrange</div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <label style="font-size:10px;color:var(--text-muted)">Cols</label>
+              <input id="vce-grid-cols" type="number" min="1" max="20" value="6"
+                     class="vce-pi" style="width:44px">
+              <label style="font-size:10px;color:var(--text-muted)">Gap X</label>
+              <input id="vce-grid-gapx" type="number" min="0" max="100" value="5"
+                     class="vce-pi" style="width:44px">
+              <label style="font-size:10px;color:var(--text-muted)">Gap Y</label>
+              <input id="vce-grid-gapy" type="number" min="0" max="100" value="5"
+                     class="vce-pi" style="width:44px">
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <label style="font-size:10px;color:var(--text-muted)">Order by</label>
+              <select id="vce-grid-sort" class="vce-pi" style="width:100px">
+                <option value="pos">Position</option>
+                <option value="alpha">A–Z</option>
+                <option value="num">Natural #</option>
+                <option value="color">Colour hue</option>
+                <option value="id">Widget ID</option>
+              </select>
+              <button class="vce-ab" onclick="vceArrangeGrid()">▦ Arrange</button>
+            </div>
+
+            <div class="vce-pl">Sort in place (same parent)</div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <select id="vce-sort-by" class="vce-pi" style="width:100px">
+                <option value="alpha">A–Z</option>
+                <option value="num">Natural #</option>
+                <option value="color">Colour hue</option>
+                <option value="id">Widget ID</option>
+              </select>
+              <button class="vce-ab" onclick="vceSortSiblings()">↕ Sort</button>
+            </div>
+
+            <div class="vce-pl">Snap to grid</div>
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:2px">
+              <input id="vce-snap-grid" type="number" min="1" max="50" value="5"
+                     class="vce-pi" style="width:50px">
+              <label style="font-size:10px;color:var(--text-muted)">px</label>
+              <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end #vce-body -->
+
+      <!-- Status bar -->
+      <div id="vce-statusbar">
+        <span id="vce-status" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
+          Load a workspace and open this tab to start
+        </span>
+        <span style="font-size:9px;opacity:.4">VC VISUAL EDITOR  v1.1.0</span>
+      </div>
+
+    </div><!-- end #vce-wrap -->
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="vce-xb on" onclick="vceApplyAndExport()">💾 Apply &amp; Save QXW…</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       QXW MERGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-merger">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
+      <div><h2>QXW Merger <span class="b alpha">ALPHA</span></h2><div class="p-desc">Copy functions, fixtures and groups from one workspace into another.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
 
     <!-- Top load bar -->
     <div class="merger-load-bar">
@@ -754,11 +1238,6 @@
                 data-tooltip="Copy selected items into the destination (in memory)">
           Copy →
         </button>
-        <button id="merger-export-btn" class="btn btn-surface"
-                onclick="mergerExport()" disabled
-                data-tooltip="Save the merged destination as a new .qxw file">
-          ⬇ Export
-        </button>
       </div>
 
       <!-- Destination list -->
@@ -776,261 +1255,22 @@
     <!-- Status bar for this tab -->
     <div id="merger-status" class="status-bar status-info">Load two .qxw files to begin.</div>
 
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════════════════════
-       VC VISUAL EDITOR TAB
-  ══════════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-vc-visual-editor" class="tab-panel">
-    <style>
-      /* VC Visual Editor scoped styles */
-      #vce-wrap { display:flex; flex-direction:column; height:100%; overflow:hidden; }
-      #vce-toolbar { display:flex; gap:4px; padding:6px 8px; background:var(--surface-1);
-                     border-bottom:0.5px solid var(--border); align-items:center; flex-wrap:wrap; }
-      .vce-xb { font-size:11px; padding:3px 7px; background:transparent;
-                border:0.5px solid var(--border-strong); border-radius:var(--radius);
-                color:var(--text-primary); cursor:pointer; font-family:var(--font-mono); }
-      .vce-xb:hover { background:var(--surface-0); }
-      .vce-xb.on { background:var(--bg-accent); color:var(--text-accent); border-color:var(--border-accent); }
-      #vce-body { display:flex; flex:1; overflow:hidden; min-height:0; }
-      #vce-canvas-wrap { flex:1; overflow:auto; background:#11111b; padding:6px; }
-      #vce-canvas { display:block; }
-      #vce-right { display:flex; flex-direction:column; width:0; min-width:0;
-                   border-left:0.5px solid var(--border); overflow:hidden; transition:width .2s; }
-      #vce-right.open { width:400px; min-width:400px; }
-      #vce-props-panel { flex:1; overflow-y:auto; background:var(--surface-1); padding:8px;
-                         font-size:11px; font-family:var(--font-mono); }
-      #vce-actions-panel { border-top:0.5px solid var(--border); background:var(--surface-0);
-                           padding:8px; overflow-y:auto; max-height:260px; }
-      .vce-pl { color:var(--text-muted); font-size:9px; margin:8px 0 4px;
-                text-transform:uppercase; letter-spacing:.07em; }
-      .vce-pi { width:100%; box-sizing:border-box; padding:3px 5px; font-size:11px;
-                font-family:var(--font-mono); border:0.5px solid var(--border);
-                border-radius:4px; background:var(--surface-0); color:var(--text-primary); }
-      .vce-pr4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4px; }
-      .vce-pr2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-      .vce-ab { padding:3px 5px; font-size:10px; font-family:var(--font-mono);
-                background:var(--surface-0); border:0.5px solid var(--border);
-                border-radius:4px; cursor:pointer; color:var(--text-primary); white-space:nowrap; }
-      .vce-ab:hover { background:var(--surface-1); border-color:var(--border-strong); }
-      .vce-sep { width:0.5px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
-      #vce-statusbar { padding:3px 10px; border-top:0.5px solid var(--border);
-                       background:var(--surface-0); font-size:10px; font-family:var(--font-mono);
-                       display:flex; justify-content:space-between; align-items:center; }
-    </style>
-
-    <div id="vce-wrap">
-
-      <!-- Toolbar -->
-      <div id="vce-toolbar">
-        <!-- Page selector -->
-        <select id="vce-page-sel" class="vce-xb" style="max-width:160px"></select>
-        <div class="vce-sep"></div>
-
-        <!-- View mode -->
-        <button class="vce-xb on" id="vce-btn-normal" onclick="vceSetMode('normal')">Normal</button>
-        <button class="vce-xb"    id="vce-btn-mask"   onclick="vceSetMode('mask')">Mask</button>
-        <div class="vce-sep"></div>
-
-        <!-- Mask thresholds -->
-        <span style="font-size:10px;color:var(--text-muted)">±</span>
-        <input id="vce-thresh0" type="number" min="1" max="20" value="2" title="Minor threshold (px)"
-               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
-                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
-               onchange="vceUpdateThresholds()">
-        <span style="font-size:10px;color:var(--text-muted)">/</span>
-        <input id="vce-thresh1" type="number" min="1" max="50" value="5" title="Major threshold (px)"
-               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
-                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
-               onchange="vceUpdateThresholds()">
-        <span style="font-size:10px;color:var(--text-muted)">px</span>
-        <div class="vce-sep"></div>
-
-        <!-- Zoom -->
-        <button class="vce-xb" onclick="vceZoom(-0.1)">−</button>
-        <span id="vce-zoom-lbl" style="font-size:10px;color:var(--text-muted);min-width:34px;text-align:center;font-family:var(--font-mono)">—</span>
-        <button class="vce-xb" onclick="vceZoom(+0.1)">+</button>
-        <button class="vce-xb" onclick="vceFit()">fit</button>
-        <div class="vce-sep"></div>
-
-        <!-- Toggle panel -->
-        <button class="vce-xb" id="vce-btn-panel"
-                onclick="document.getElementById('vce-right').classList.toggle('open');
-                         document.getElementById('vce-btn-panel').classList.toggle('on')">
-          ⚙ Panel
-        </button>
-        <div style="flex:1"></div>
-
-        <!-- Reload -->
-        <button class="vce-xb" onclick="_vceTree=null;_vceLoad()">↺ Reload</button>
-        <!-- Apply + Export -->
-        <button class="vce-xb on" onclick="vceApplyAndExport()">💾 Apply &amp; Save QXW…</button>
-      </div>
-
-      <!-- Main body -->
-      <div id="vce-body">
-
-        <!-- Canvas -->
-        <div id="vce-canvas-wrap">
-          <canvas id="vce-canvas"></canvas>
-        </div>
-
-        <!-- Right panel (props + actions) -->
-        <div id="vce-right open" style="width:400px;min-width:400px">
-          <!-- Properties -->
-          <div id="vce-props">
-            <div style="color:var(--text-muted);padding:20px 0;text-align:center">
-              Click a widget to select
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div id="vce-actions-panel">
-            <div class="vce-pl" style="margin-top:0">Align</div>
-            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
-              <button class="vce-ab" onclick="vceAlign('left')" title="Align left edges">← left</button>
-              <button class="vce-ab" onclick="vceAlign('centerH')" title="Centre horizontally">— H ctr</button>
-              <button class="vce-ab" onclick="vceAlign('right')" title="Align right edges">→ right</button>
-              <button class="vce-ab" onclick="vceAlign('top')" title="Align top edges">↑ top</button>
-              <button class="vce-ab" onclick="vceAlign('centerV')" title="Centre vertically">| V ctr</button>
-              <button class="vce-ab" onclick="vceAlign('bottom')" title="Align bottom edges">↓ bottom</button>
-            </div>
-
-            <div class="vce-pl">Distribute &amp; size</div>
-            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
-              <button class="vce-ab" onclick="vceDistribute('h')" title="Equal horizontal spacing">↔ distr H</button>
-              <button class="vce-ab" onclick="vceDistribute('v')" title="Equal vertical spacing">↕ distr V</button>
-              <button class="vce-ab" onclick="vceSameSize('w')" title="Match width to first selected">= W</button>
-              <button class="vce-ab" onclick="vceSameSize('h')" title="Match height to first selected">= H</button>
-              <button class="vce-ab" onclick="vceFitText()" title="Fit width to caption text">fit text</button>
-            </div>
-
-            <div class="vce-pl">Grid arrange</div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <label style="font-size:10px;color:var(--text-muted)">Cols</label>
-              <input id="vce-grid-cols" type="number" min="1" max="20" value="6"
-                     class="vce-pi" style="width:44px">
-              <label style="font-size:10px;color:var(--text-muted)">Gap X</label>
-              <input id="vce-grid-gapx" type="number" min="0" max="100" value="5"
-                     class="vce-pi" style="width:44px">
-              <label style="font-size:10px;color:var(--text-muted)">Gap Y</label>
-              <input id="vce-grid-gapy" type="number" min="0" max="100" value="5"
-                     class="vce-pi" style="width:44px">
-            </div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <label style="font-size:10px;color:var(--text-muted)">Order by</label>
-              <select id="vce-grid-sort" class="vce-pi" style="width:100px">
-                <option value="pos">Position</option>
-                <option value="alpha">A–Z</option>
-                <option value="num">Natural #</option>
-                <option value="color">Colour hue</option>
-                <option value="id">Widget ID</option>
-              </select>
-              <button class="vce-ab" onclick="vceArrangeGrid()">▦ Arrange</button>
-            </div>
-
-            <div class="vce-pl">Sort in place (same parent)</div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <select id="vce-sort-by" class="vce-pi" style="width:100px">
-                <option value="alpha">A–Z</option>
-                <option value="num">Natural #</option>
-                <option value="color">Colour hue</option>
-                <option value="id">Widget ID</option>
-              </select>
-              <button class="vce-ab" onclick="vceSortSiblings()">↕ Sort</button>
-            </div>
-
-            <div class="vce-pl">Snap to grid</div>
-            <div style="display:flex;gap:4px;align-items:center;margin-bottom:2px">
-              <input id="vce-snap-grid" type="number" min="1" max="50" value="5"
-                     class="vce-pi" style="width:50px">
-              <label style="font-size:10px;color:var(--text-muted)">px</label>
-              <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap</button>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- end #vce-body -->
-
-      <!-- Status bar -->
-      <div id="vce-statusbar">
-        <span id="vce-status" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
-          Load a workspace and open this tab to start
-        </span>
-        <span style="font-size:9px;opacity:.4">VC VISUAL EDITOR  v1.0.10</span>
-      </div>
-
-    </div><!-- end #vce-wrap -->
-
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════════════════════
-       BRIGHTNESS TAB
-  ══════════════════════════════════════════════════════════════════════════ -->
-  <section id="tab-brightness" class="tab-panel">
-
-    <div class="tab-toolbar brt-toolbar">
-      <span class="brt-toolbar-title">Fixture Brightness Scaling</span>
-      <span id="brt-preview" class="brt-preview-count">—</span>
-      <button class="btn btn-surface" onclick="brtResetAll()"
-              title="Reset all fixtures to 100%">↺ Reset All</button>
-
-      <!-- Scan local QLC+ fixture directories -->
-      <button class="btn btn-surface" onclick="brtScanLocal()"
-              title="Scan standard QLC+ installation folders on this machine for .qxf fixture definitions (local — no internet)">
-        📁 Scan Local
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button id="merger-export-btn" class="btn btn-surface"
+              onclick="mergerExport()" disabled
+              data-tooltip="Save the merged destination as a new .qxw file">
+        ⬇ Export
       </button>
-
-      <!-- QXF upload for unknown fixtures (supports multiple) -->
-      <label class="btn btn-surface"
-             title="Upload one or more .qxf fixture definition files to auto-detect dimmer channels">
-        📂 Upload QXF
-        <input id="brt-qxf-input" type="file" accept=".qxf" multiple style="display:none"
-               onchange="brtUploadQxf()">
-      </label>
-
-      <!-- Fetch from GitHub — always flags internet access -->
-      <button id="brt-fetch-gh-btn" class="btn btn-surface brt-gh-btn"
-              onclick="brtFetchGithub()" disabled
-              title="Download missing QXF definitions from the official QLC+ GitHub repository (requires internet connection)">
-        🌐 Fetch from GitHub
-      </button>
-
-      <button class="btn btn-accent" onclick="brtGenerateQxw()"
-              title="Apply brightness scaling to all scenes and download a new .qxw">
-        🚀 Generate QXW
-      </button>
-    </div>
-
-    <!-- Help banner -->
-    <div class="brt-help">
-      <strong>How it works:</strong>
-      Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
-      across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
-      untouched.  Use <strong>Link group</strong> to move all fixtures of the same model together.
-      QXF definitions are auto-detected from your QLC+ installation (<strong>📁 Scan Local</strong>).
-      If a fixture's QXF is still missing, <strong>📂 Upload QXF</strong> it manually (multiple files supported)
-      or use <strong class="brt-internet-label">🌐 Fetch from GitHub</strong>
-      to download it from the official QLC+ repository
-      <em>(requires internet — you will be asked to confirm before any connection is made)</em>.
-    </div>
-
-    <!-- Fixture groups -->
-    <div id="brt-fixture-wrap" class="brt-fixture-wrap">
-      <div class="brt-placeholder">Load a workspace to adjust brightness.</div>
     </div>
 
   </section>
 
 </main>
-
-<!-- ══════════════════════════════════════════════════════════════════════════
-     STATUS BAR
-══════════════════════════════════════════════════════════════════════════ -->
-<footer id="status-bar">
-  <span id="status-counts">Functions: —  |  Fixtures: —  |  VC Widgets: —</span>
-  <span id="status-msg"></span>
-</footer>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      DROP OVERLAY
@@ -1041,6 +1281,9 @@
     <div>Drop your .qxw workspace here</div>
   </div>
 </div>
+
+<!-- Nav tooltip -->
+<div id="nav-tip"></div>
 
 <!-- ── JS modules ──────────────────────────────────────────────────────────── -->
 <script src="/static/js/app.js"></script>

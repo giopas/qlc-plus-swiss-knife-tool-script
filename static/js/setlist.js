@@ -166,17 +166,21 @@ function _renderSongList() {
     const dotTitle  = hasAssign ? `Assigned: ${row.qxw_name || row.qxw_id}` : 'Not assigned';
     // Look up extra details (VC button, description) from the function pool
     const fn = hasAssign ? _functions.find(f => f.id === row.qxw_id) : null;
-    // If assigned function is a (Setlist) clone, find its parent base function
+    // If assigned function is a generated clone, find its parent base function
     let parentHtml = '';
     let parent = null;
-    if (fn && fn.name.endsWith(' (Setlist)')) {
-      const baseName = fn.name.slice(0, -10);  // strip ' (Setlist)'
-      parent = _functions.find(f => f.name === baseName);
+    if (fn) {
+      // New-style: backend provides is_clone + base_id via SwissKnifeClone attribute
+      if (fn.is_clone && fn.base_id) {
+        parent = _functions.find(f => f.id === fn.base_id);
+      // Legacy: name ends with ' (Setlist)' — match parent by name
+      } else if (fn.name.endsWith(' (Setlist)')) {
+        parent = _functions.find(f => f.name === fn.name.slice(0, -10));
+      }
       if (parent) {
         parentHtml = `<div class="fb-song-parent">↑ [${_esc(parent.id)}] ${_esc(parent.name)}</div>`;
-      } else {
-        // Parent was removed from workspace (e.g. gig-ready file) — still show the derived name
-        parentHtml = `<div class="fb-song-parent fb-song-parent-missing">↑ ${_esc(baseName)}</div>`;
+      } else if (fn.is_clone) {
+        parentHtml = `<div class="fb-song-parent fb-song-parent-missing">↑ base ${_esc(fn.base_id)}</div>`;
       }
     }
     // VC button: prefer the function's own, fall back to parent's for clones

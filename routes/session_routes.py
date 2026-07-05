@@ -177,7 +177,6 @@ def apply_session():
     # ── 4. Per-slot file paths — restore slot details from saved paths ───────────
     slot_paths = session_data.get('slot_paths') or {}
     if slot_paths:
-        import core.workspace as _ws
         loaded_slots, failed_slots = 0, 0
         for slot_id, path in slot_paths.items():
             path = (path or '').strip()
@@ -208,8 +207,8 @@ def apply_session():
                                     'txt_name': name, 'qxw_id': '', 'qxw_name': '',
                                     'in': '0', 'hold': '4294967294', 'out': '0',
                                 })
-                if _ws.get_state()['loaded']:
-                    _ws.set_slot_details(slot_id, rows)
+                if ws.get_state()['loaded']:
+                    ws.set_slot_details(slot_id, rows)
                     sess.set_slot_path(slot_id, path)
                     loaded_slots += 1
             except Exception:
@@ -220,6 +219,34 @@ def apply_session():
         results['slot_paths'] = 'ok (' + ', '.join(parts) + ')'
     else:
         results['slot_paths'] = 'skipped'
+
+    # ── 5. Auto-match unassigned songs across all restored slots ─────────────────
+    # Runs after both workspace and slot files are loaded so find_best_match()
+    # can resolve against the live function table.
+    if slot_paths and ws.get_state()['loaded']:
+        total_matched = 0
+        for slot_id in slot_paths:
+            rows = ws.get_slot_details(slot_id)
+            if not rows:
+                continue
+            changed = False
+            for row in rows:
+                if row.get('qxw_id'):        # already assigned — keep it
+                    continue
+                name = (row.get('txt_name') or '').strip()
+                if not name:
+                    continue
+                matched_name, matched_id = ws.find_best_match(name)
+                if matched_id:
+                    row['qxw_id']   = matched_id
+                    row['qxw_name'] = matched_name
+                    total_matched  += 1
+                    changed         = True
+            if changed:
+                ws.set_slot_details(slot_id, rows)
+        results['auto_match'] = f'ok ({total_matched} song(s) matched)'
+    else:
+        results['auto_match'] = 'skipped'
 
     # Stamp the session as clean after a full apply
     sess.clear_dirty()

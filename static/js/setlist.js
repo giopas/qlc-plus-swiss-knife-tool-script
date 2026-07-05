@@ -181,10 +181,17 @@ function _renderSongList() {
     }
     // VC button: prefer the function's own, fall back to parent's for clones
     const vcButton = fn?.vc_button || parent?.vc_button || '';
+    // Origin line: child ID + VC button on a dedicated line
+    let originHtml = '';
+    if (hasAssign) {
+      const parts = [`[${_esc(row.qxw_id)}]`];
+      if (vcButton) parts.push(`🎛 ${_esc(vcButton)}`);
+      originHtml = `<div class="fb-song-origin">→ ${parts.join(' ')}</div>`;
+    }
     const assignHtml = hasAssign
-      ? `<div class="fb-song-assign"><span class="fb-song-id">[${_esc(row.qxw_id)}]</span> ${_esc(row.qxw_name || row.qxw_id)}</div>`
+      ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
         + parentHtml
-        + (vcButton ? `<div class="fb-song-vc">🎛 ${_esc(vcButton)}</div>` : '')
+        + originHtml
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
       : '';
     return `
@@ -556,19 +563,17 @@ function slAssignFromPool() {
         assignDiv.className = 'fb-song-assign';
         listEl.querySelector('.fb-song-content')?.appendChild(assignDiv);
       }
-      assignDiv.innerHTML = `<span class="fb-song-id">[${_esc(fn.id)}]</span> ${_esc(fn.name)}`;
-      // Add/update VC button line
-      let vcDiv = listEl.querySelector('.fb-song-vc');
-      if (fn.vc_button) {
-        if (!vcDiv) {
-          vcDiv = document.createElement('div');
-          vcDiv.className = 'fb-song-vc';
-          assignDiv.after(vcDiv);
-        }
-        vcDiv.textContent = `🎛 ${fn.vc_button}`;
-      } else if (vcDiv) {
-        vcDiv.remove();
+      assignDiv.textContent = fn.name;
+      // Add/update origin line (child ID + VC button)
+      let originDiv = listEl.querySelector('.fb-song-origin');
+      const originParts = [`[${_esc(fn.id)}]`];
+      if (fn.vc_button) originParts.push(`🎛 ${fn.vc_button}`);
+      if (!originDiv) {
+        originDiv = document.createElement('div');
+        originDiv.className = 'fb-song-origin';
+        assignDiv.after(originDiv);
       }
+      originDiv.textContent = `→ ${originParts.join(' ')}`;
       listEl.classList.add('row-flash');
       setTimeout(() => listEl.classList.remove('row-flash'), 600);
     }

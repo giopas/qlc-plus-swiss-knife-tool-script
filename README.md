@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.0.9
+# ⚡ QLC+ Swiss Knife — v1.0.10
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 
@@ -17,6 +17,14 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 ---
 
 ## What's new
+
+### v1.0.10
+
+#### 💡 Brightness: baseline dimmer indicator
+Each fixture group in the Brightness tab now shows a coloured **⟂ X%** pill that reflects the actual peak dimmer value stored in the loaded workspace's scenes. Green = full power, red = heavily dimmed. When multiple groups are present, a **−X%** offset shows which groups are already dimmed relative to the brightest one — so you can immediately see if a previous brightness-scaling session left groups at different levels, even though all sliders start at 100%.
+
+#### 🎨 VC Visual Editor — now a top-level tab (β)
+The VC Visual Editor has been promoted from a sub-tab inside ID Browser to its own tab in the main navigation bar, between QXW Merger and Brightness. Renamed from *VC Editor* to **VC Visual Editor** with a β badge. No functionality changes.
 
 ### v1.0.9
 

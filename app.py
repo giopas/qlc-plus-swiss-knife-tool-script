@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-  QLC+ Swiss Knife — Flask / SPA Edition  (v1.0-dev)
+  QLC+ Swiss Knife — Flask / SPA Edition  (v1.1.0)
 ================================================================================
   Quickest start (no venv needed after first run):
       python3 app.py          ← auto-detects venv, bootstraps if needed
@@ -154,7 +154,7 @@ def create_app():
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "img-src 'self' data:; "
-            "connect-src 'self'; "
+            "connect-src 'self' https://api.github.com; "
             "object-src 'none'; "
             "base-uri 'self';"
         )
@@ -162,6 +162,33 @@ def create_app():
         response.headers['X-Frame-Options']        = 'DENY'
         response.headers['Referrer-Policy']        = 'no-referrer'
         return response
+
+    # ── Settings endpoint ──────────────────────────────────────────────────────
+    @app.route('/api/settings')
+    def api_settings():
+        import json as _json, getpass as _getpass
+        here = os.path.dirname(os.path.abspath(__file__))
+        settings_file = os.path.join(here, 'settings.json')
+        name = None
+        try:
+            with open(settings_file) as f:
+                data = _json.load(f)
+                name = data.get('user_name')
+        except Exception:
+            pass
+        if not name:
+            try:
+                u = _getpass.getuser()
+                if u.lower() not in ('root', 'user', 'admin', 'administrator', 'default'):
+                    name = u
+            except Exception:
+                pass
+        return jsonify({'user_name': name})
+
+    # ── Template context: inject version ─────────────────────────────────────
+    @app.context_processor
+    def inject_version():
+        return {'version': '1.1.0'}
 
     return app
 

@@ -311,14 +311,10 @@ const VC_COLS = [
   { id: 'widget_id',  name: 'Widget ID',  width: '80px' },
   { id: 'type_icon',  name: '',           width: '28px', sort: false },
   { id: 'type',       name: 'Type',       width: '100px' },
-  { id: 'caption',    name: 'Caption',    width: '18%' },
+  { id: 'caption',    name: 'Caption',    width: '22%' },
   { id: 'func_id',    name: 'Func ID',    width: '70px' },
-  { id: 'func_name',  name: 'Func Name',  width: '20%' },
-  { id: 'frame_path', name: 'Frame Path', width: '22%' },
-  { id: 'x',  name: 'X',  width: '52px' },
-  { id: 'y',  name: 'Y',  width: '52px' },
-  { id: 'w',  name: 'W',  width: '52px' },
-  { id: 'h',  name: 'H',  width: '52px' },
+  { id: 'func_name',  name: 'Func Name',  width: '22%' },
+  { id: 'frame_path', name: 'Frame Path', width: '28%' },
 ];
 
 function _buildVcRows(data) {
@@ -326,11 +322,10 @@ function _buildVcRows(data) {
     w.widget_id,
     icon(w.type),
     _badge(w.type),
-    w.caption  || '—',
-    w.func_id  || '—',
-    w.func_name|| '—',
+    w.caption   || '—',
+    w.func_id   || '—',
+    w.func_name || '—',
     w.frame_path,
-    w.x || '—', w.y || '—', w.w || '—', w.h || '—',
   ]);
 }
 

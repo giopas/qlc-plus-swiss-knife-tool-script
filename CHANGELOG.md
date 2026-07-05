@@ -33,6 +33,86 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.0.10] — 2026-07-03
+
+### Added — Brightness: baseline dimmer indicator
+
+- Each fixture group now shows a coloured **⟂ X%** pill reflecting the actual peak dimmer value stored in the loaded workspace's scenes. Green = full power, red = heavily dimmed. When multiple groups are present, a **−X%** offset shows which groups are already dimmed relative to the brightest one — so you can immediately see if a previous brightness-scaling session left groups at different levels, even though all sliders start at 100%.
+
+### Changed — VC Visual Editor promoted to top-level tab
+
+- The VC Visual Editor has been moved from a sub-tab inside ID Browser to its own tab in the main navigation bar, between QXW Merger and Brightness. Renamed from *VC Editor* to **VC Visual Editor** with a β badge. No functionality changes.
+
+---
+
+## [1.0.9] — 2026-07-01
+
+### Added — VC Layout Editor (β)
+
+- New **VC Editor** sub-tab inside ID Browser (later promoted in v1.0.10). A canvas renders the entire Virtual Console at the correct position, size, and colour of every widget.
+- **Selection**: click to select, shift-click for multi-select, drag a rubber-band rectangle.
+- **Properties panel**: editable X/Y/W/H, font size, bold, background and font colour swatches.
+- **Alignment**: left/centre/right, top/middle/bottom alignment of selected widgets.
+- **Distribution & sizing**: equal horizontal/vertical distribution, match width/height to first selected, fit-to-text.
+- **Grid arrange**: configurable columns, gap X/Y, sort order (position, A–Z, natural #, colour hue, widget ID).
+- **Sort in place**: sort siblings by alpha, natural, colour, or ID within the same parent frame.
+- **Snap to grid**: configurable pixel grid.
+- **Alignment mask mode**: colour-codes every widget by how far it deviates from its row/column neighbours (configurable minor/major thresholds).
+- **Apply & Save QXW…**: patches the in-memory XML and opens a native Save dialog — source file never overwritten.
+
+### Fixed — ID Browser: VC Widget X/Y/W/H columns
+
+- X, Y, W, and H were always blank in the VC Widgets table. They are now correctly read from the `<WindowState>` child element of each widget in the QXW.
+
+---
+
+## [1.0.8] — 2026-06-29
+
+### Changed — Setlist: per-slot file paths replace global backup
+
+- Each setlist slot now tracks its own `.txt` file path (mirroring how Brightness tracks QXF paths per fixture). Load a slot file with **Load Slot File** and save it with **Save Slot File**.
+- The per-slot file format includes full song→function assignments (`txt_name|qxw_id|qxw_name|in|hold|out`), so Re-Match and all timing data survive a server restart.
+- The all-slots global backup input has been removed.
+- Session files (`.qsk`) store the per-slot paths and restore everything on load.
+
+---
+
+## [1.0.7] — 2026-06-27
+
+### Added — Session / Project File (.qsk)
+
+- Save all the file paths used in a session — workspace, dictionary, setlist backup and fixture QXF overrides — to a `.qsk` file.
+- On next launch, open the session file via **Session → Open Session…** and the app re-loads everything automatically.
+- A dirty-state indicator (●) appears if paths change since the last save, and closing the tab while there are unsaved changes shows a browser confirmation prompt.
+- The **Change…** button next to each path pre-fills the header input so you can quickly swap to a different version of the same file without re-navigating to the folder.
+
+---
+
+## [1.0.6] — 2026-06-26
+
+### Added — Brightness tab (Alpha)
+
+- New tab for programmatic per-fixture brightness adjustment across an entire show file. Load a workspace, see every fixture type grouped by model and mode, then drag a slider to scale the Master Dimmer channel across all Scenes.
+- Dimmer channel detected automatically by parsing QXF fixture-definition files from standard QLC+ install paths (macOS app bundle, Linux system install, user fixture directories). If a QXF is not found, type the dimmer offset manually or upload the QXF directly.
+- **Linked-group mode**: moves all fixtures of the same model/mode together. Toggle per-fixture control with the "Link group" checkbox.
+- Scale range: 0–200% (0 = channel always off, 100% = unchanged, 200% = maximum brightness, clamped to 255).
+- Preview counter shows how many scenes and channel values will change before you commit.
+- Output is a new file — original workspace never modified.
+
+### Fixed — Setlist: Generate QXW saves all cuelists at once
+
+- Clicking "Generate QXW" previously regenerated only the currently-selected cuelist slot. It now processes every slot that has at least one song with a function assignment, and outputs a single ready-to-use QXW file in one click.
+
+### Fixed — Setlist: clone names no longer show (Setlist) suffix in QLC+
+
+- Generated clones are now marked with a custom XML attribute (`SwissKnifeClone="<base_id>"`) rather than a name suffix, so QLC+'s Show Manager displays clean song names. The attribute is a QLC+-unknown extension that QLC+ ignores, so it has no effect on playback. Files generated by earlier versions (with the `(Setlist)` suffix) continue to be recognised for backward compatibility.
+
+### Fixed — Setlist: cuelists with songs but no assignments no longer wiped
+
+- When "Generate all" was introduced, a slot that contained songs but had no function assignments yet would silently clear its chaser. The generator now skips any slot without at least one assigned function, so existing cuelist content is always preserved.
+
+---
+
 ## [1.0.5] — 2026-06-25
 
 ### Fixed — Setlist tab: assignments lost when switching slots

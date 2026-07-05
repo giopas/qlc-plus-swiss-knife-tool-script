@@ -168,9 +168,10 @@ function _renderSongList() {
     const fn = hasAssign ? _functions.find(f => f.id === row.qxw_id) : null;
     // If assigned function is a (Setlist) clone, find its parent base function
     let parentHtml = '';
+    let parent = null;
     if (fn && fn.name.endsWith(' (Setlist)')) {
       const baseName = fn.name.slice(0, -10);  // strip ' (Setlist)'
-      const parent   = _functions.find(f => f.name === baseName);
+      parent = _functions.find(f => f.name === baseName);
       if (parent) {
         parentHtml = `<div class="fb-song-parent">↑ [${_esc(parent.id)}] ${_esc(parent.name)}</div>`;
       } else {
@@ -178,10 +179,12 @@ function _renderSongList() {
         parentHtml = `<div class="fb-song-parent fb-song-parent-missing">↑ ${_esc(baseName)}</div>`;
       }
     }
+    // VC button: prefer the function's own, fall back to parent's for clones
+    const vcButton = fn?.vc_button || parent?.vc_button || '';
     const assignHtml = hasAssign
-      ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
+      ? `<div class="fb-song-assign"><span class="fb-song-id">[${_esc(row.qxw_id)}]</span> ${_esc(row.qxw_name || row.qxw_id)}</div>`
         + parentHtml
-        + (fn?.vc_button ? `<div class="fb-song-vc">🎛 ${_esc(fn.vc_button)}</div>` : '')
+        + (vcButton ? `<div class="fb-song-vc">🎛 ${_esc(vcButton)}</div>` : '')
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
       : '';
     return `
@@ -553,7 +556,19 @@ function slAssignFromPool() {
         assignDiv.className = 'fb-song-assign';
         listEl.querySelector('.fb-song-content')?.appendChild(assignDiv);
       }
-      assignDiv.textContent = fn.name;
+      assignDiv.innerHTML = `<span class="fb-song-id">[${_esc(fn.id)}]</span> ${_esc(fn.name)}`;
+      // Add/update VC button line
+      let vcDiv = listEl.querySelector('.fb-song-vc');
+      if (fn.vc_button) {
+        if (!vcDiv) {
+          vcDiv = document.createElement('div');
+          vcDiv.className = 'fb-song-vc';
+          assignDiv.after(vcDiv);
+        }
+        vcDiv.textContent = `🎛 ${fn.vc_button}`;
+      } else if (vcDiv) {
+        vcDiv.remove();
+      }
       listEl.classList.add('row-flash');
       setTimeout(() => listEl.classList.remove('row-flash'), 600);
     }

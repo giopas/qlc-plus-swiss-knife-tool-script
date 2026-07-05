@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.0.7
+# ⚡ QLC+ Swiss Knife — v1.0.9
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
 
@@ -17,6 +17,18 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 ---
 
 ## What's new
+
+### v1.0.9
+
+#### 🎨 VC Layout Editor
+New **🎨 VC Editor** sub-tab inside the ID Browser. A canvas renders your entire Virtual Console at the correct position, size and colour of every widget. Click to select, shift-click for multi-select, or drag a rubber-band rectangle. The right panel shows editable X/Y/W/H, font size, bold, background and font colour swatches. Quick-action buttons handle alignment (L/C/R, T/M/B), equal distribution, same-width/height, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its row/column neighbours (configurable thresholds). When done, **Apply & Save QXW…** patches the in-memory XML and opens a native Save dialog — your source file is never overwritten.
+
+This release also fixes the long-standing issue where X/Y/W/H were always blank in the VC Widgets table: they are now correctly read from the `<WindowState>` child element of each widget in the QXW.
+
+### v1.0.8
+
+#### 📋 Setlist — per-slot file paths replace global backup
+Each setlist slot now tracks its own `.txt` file path (mirroring how the Brightness tab tracks QXF paths per fixture). Load a slot file with **📂 Load Slot File** and save it with **💾 Save Slot File**. The per-slot file format includes full song→function assignments (`txt_name|qxw_id|qxw_name|in|hold|out`), so Re-Match and all timing data survive a server restart. The all-slots global backup input has been removed. Session files (`.qsk`) store the per-slot paths and restore everything on load.
 
 ### v1.0.7
 

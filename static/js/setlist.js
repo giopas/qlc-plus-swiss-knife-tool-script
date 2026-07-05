@@ -715,76 +715,89 @@ async function slSaveDetails(silent = false) {
 
 async function saveSongs() { await slSaveDetails(); }
 
-// ── TXT load/save (global backup) ────────────────────────────────────────────
+// ── Per-slot file load / save (native picker, full details) ──────────────────
 
-async function loadSetlistFile() {
-  const path = document.getElementById('setlist-path').value.trim();
-  if (!path) { setStatus('Paste a .txt path first.', 'warn'); return; }
-  const result = await _apiPost('/api/setlist/load', { path });
-  if (result.error) { setStatus(result.error, 'error'); return; }
-  setStatus(`Loaded ${result.count} slot(s) from file.`, 'ok');
-  // Track path in session
-  if (typeof sessionOnSetlistBackupChanged === 'function') sessionOnSetlistBackupChanged(path);
-  if (_selectedSlot) await selectSlot(_selectedSlot);
-}
+/**
+ * Load this slot's songs from a file using the native OS picker.
+ * Supports two formats:
+ *   - New (6 pipe-separated fields): restores songs AND assignments + timing
+ *   - Old (one name per line): restores song names only
+ * Path is remembered per slot in the session.
+ * Falls back to browser file input if native picker unavailable.
+ */
+async function slImportSlotFile() {
+  if (!_selectedSlot) { setStatus('Select a slot first.', 'warn'); return; }
 
-async function saveSetlistFile() {
-  const path = document.getElementById('setlist-path').value.trim();
-  if (!path) { setStatus('Paste a .txt path first.', 'warn'); return; }
-  const result = await _apiPost('/api/setlist/save', { path });
-  if (result.error) { setStatus(result.error, 'error'); return; }
-  setStatus(`Saved → ${result.path.split(/[\\/]/).pop()}`, 'ok');
-  // Track path in session
-  if (typeof sessionOnSetlistBackupChanged === 'function') sessionOnSetlistBackupChanged(path);
-}
-
-/** Load All with native picker — tries OS dialog first so the path is remembered. */
-async function browseAndLoadSetlist() {
-  const inp     = document.getElementById('setlist-path');
-  const current = inp.value.trim();
-  const initDir = current ? current.replace(/[^/\\]+$/, '').replace(/[/\\]$/, '') : '';
-
-  // Try native picker to get real path
-  const picked = typeof nativePick === 'function'
-    ? await nativePick('Select setlist backup (.txt)', [{ label: 'Text files', exts: ['.txt'] }], initDir)
+  const path = typeof nativePick === 'function'
+    ? await nativePick(
+        'Select setlist file (.txt)',
+        [{ label: 'Text files', exts: ['.txt'] }],
+        ''
+      )
     : null;
 
-  if (picked) {
-    inp.value = picked;
-  } else if (!current) {
-    setStatus('Paste a .txt path first, or the native picker was cancelled.', 'warn');
+  if (path) {
+    const res = await _apiPost(`/api/setlist/${_selectedSlot}/load-file`, { path });
+    if (res.error) { setStatus(res.error, 'error'); return; }
+    _songRows = Array.isArray(res.rows) ? res.rows : [];
+    _selectedSong  = -1;
+    _selectedSongs = new Set();
+    _renderSongList();
+    _updateSongCount();
+    _clearTimingPanel();
+    _renderFnPool(_poolFiltered);
+    const note = res.has_assignments ? ' with assignments ✓' : ' (names only — assign manually or Re-Match)';
+    setStatus(`Loaded ${res.count} song(s)${note}`, 'ok');
     return;
   }
 
-  await loadSetlistFile();
+  // Native picker unavailable — fall back to browser file input (names only, no path tracking)
+  document.getElementById('sl-import-file').click();
 }
 
-/** Save All with native picker — opens OS Save dialog when path is empty. */
-async function browseAndSaveSetlist() {
-  const inp  = document.getElementById('setlist-path');
-  let   path = inp.value.trim();
+/**
+ * Save this slot's full details (songs + assignments + timing) to a file
+ * using the native OS save dialog. Path remembered in session.
+ * Falls back to browser download (old behavior, no path tracking) if native picker unavailable.
+ */
+async function slSaveSlotFile() {
+  if (!_selectedSlot) { setStatus('Select a slot first.', 'warn'); return; }
+  if (!_songRows.length) { setStatus('No songs to save.', 'warn'); return; }
 
-  if (!path && typeof nativePick === 'function') {
-    // No path yet — use osascript's choose file name (save dialog)
-    try {
-      const r = await fetch('/api/picker/save-name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title:        'Save setlist backup as…',
-          default_name: 'setlist_backup.txt',
-          initial_dir:  '',
-        }),
-      });
-      if (r.ok) {
-        const d = await r.json();
-        if (d.path) { path = d.path; inp.value = path; }
-      }
-    } catch { /* fall through */ }
+  // Flush latest state to server before saving
+  await slSaveDetails(true);
+
+  const slot    = _slotData.find(s => s.id === _selectedSlot);
+  const defName = (slot?.caption || `Slot_${_selectedSlot}`)
+    .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_') + '_setlist.txt';
+
+  // Try native save dialog
+  let savePath = null;
+  try {
+    const r = await fetch('/api/picker/save-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:        'Save setlist slot as…',
+        default_name: defName,
+        initial_dir:  '',
+      }),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      if (!d.cancelled && d.path) savePath = d.path;
+    }
+  } catch { /* fall through to download fallback */ }
+
+  if (savePath) {
+    const res = await _apiPost(`/api/setlist/${_selectedSlot}/save-file`, { path: savePath });
+    if (res.error) { setStatus(res.error, 'error'); return; }
+    setStatus(`Saved ${res.count} song(s) → ${savePath.split(/[\\/]/).pop()} ✓`, 'ok');
+    return;
   }
 
-  if (!path) { setStatus('Paste a save path first.', 'warn'); return; }
-  await saveSetlistFile();
+  // Fallback: browser download of song names only (no path tracking)
+  slExportSongsTxt();
 }
 
 // ── Per-slot TXT import ───────────────────────────────────────────────────────

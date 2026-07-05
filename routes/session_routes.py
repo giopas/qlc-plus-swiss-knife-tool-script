@@ -72,6 +72,7 @@ def export():
     data['ws_original_name'] = ws_state.get('original_name')   # non-None in upload mode
     data['ws_upload_mode']   = upload_mode
     data['brightness_count'] = len(forced)
+    data['slot_paths_count'] = len(data.get('slot_paths') or {})
     return jsonify(data)
 
 
@@ -173,13 +174,52 @@ def apply_session():
     else:
         results['brightness_forced'] = 'skipped'
 
-    # ── 4. Setlist backup (path only; client loads it) ────────────────────────
-    sl_path = (session_data.get('setlist_backup') or '').strip()
-    if sl_path:
-        sess.set_setlist_backup(sl_path)
-        results['setlist_backup'] = 'ok (path restored — use \'Load All\' to reload)'
+    # ── 4. Per-slot file paths — restore slot details from saved paths ───────────
+    slot_paths = session_data.get('slot_paths') or {}
+    if slot_paths:
+        import core.workspace as _ws
+        loaded_slots, failed_slots = 0, 0
+        for slot_id, path in slot_paths.items():
+            path = (path or '').strip()
+            if not path or not os.path.isfile(path):
+                failed_slots += 1
+                continue
+            try:
+                rows = []
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        parts = line.split('|')
+                        if len(parts) >= 6:
+                            rows.append({
+                                'txt_name': parts[0].strip(),
+                                'qxw_id':   parts[1].strip(),
+                                'qxw_name': parts[2].strip(),
+                                'in':       parts[3].strip() or '0',
+                                'hold':     parts[4].strip() or '4294967294',
+                                'out':      parts[5].strip() or '0',
+                            })
+                        else:
+                            name = parts[0].strip()
+                            if name:
+                                rows.append({
+                                    'txt_name': name, 'qxw_id': '', 'qxw_name': '',
+                                    'in': '0', 'hold': '4294967294', 'out': '0',
+                                })
+                if _ws.get_state()['loaded']:
+                    _ws.set_slot_details(slot_id, rows)
+                    sess.set_slot_path(slot_id, path)
+                    loaded_slots += 1
+            except Exception:
+                failed_slots += 1
+        parts = [f'{loaded_slots} slot(s) restored']
+        if failed_slots:
+            parts.append(f'{failed_slots} missing/failed')
+        results['slot_paths'] = 'ok (' + ', '.join(parts) + ')'
     else:
-        results['setlist_backup'] = 'skipped'
+        results['slot_paths'] = 'skipped'
 
     # Stamp the session as clean after a full apply
     sess.clear_dirty()

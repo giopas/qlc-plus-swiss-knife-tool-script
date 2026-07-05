@@ -377,19 +377,24 @@ async function sessionLoad(input) {
       // Refresh all tab data
       if (typeof invalidateBrightness === 'function') invalidateBrightness();
       if (typeof refreshSlots         === 'function') refreshSlots();
+      // If a slot is currently open in the setlist, re-select it so the
+      // auto-matched song rows are visible without requiring a manual click.
+      if (typeof selectSlot === 'function' && typeof _selectedSlot !== 'undefined' && _selectedSlot) {
+        selectSlot(_selectedSlot);
+      }
       // Enable reload button
       const rl = document.getElementById('btn-reload');
       if (rl) rl.disabled = false;
     }
 
-    // Build status summary
-    const lines = Object.entries(result.results || {}).map(
-      ([k, v]) => `  ${k}: ${v}`
-    );
+    // Build status summary — include auto-match count if any songs were matched
+    const res        = result.results || {};
+    const matchInfo  = res.auto_match && res.auto_match.startsWith('ok')
+      ? ` · ${res.auto_match.replace(/^ok\s*/, '')}` : '';
     const ok = result.ok;
     _showStatus(
       (ok ? '✅ Session loaded' : '⚠ Session loaded (with errors)') +
-      ` — ${file.name}`
+      ` — ${file.name}${matchInfo}`
     );
     _renderSessionBadge();
 

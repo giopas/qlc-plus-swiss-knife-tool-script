@@ -1,6 +1,6 @@
-# ⚡ QLC+ Swiss Knife — v1.0.10
+# ⚡ QLC+ Swiss Knife — v1.1.0
 
-**A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, tabbed interface.**
+**A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, sidebar-driven interface.**
 
 > ⚠️ **Independent Project Notice**
 > This project is **not affiliated with, endorsed by, or officially connected to the QLC+ project or its development team** in any way. All credit for QLC+ itself goes to the [QLC+ team](https://www.qlcplus.org/). This is an independent community utility that works *on top of* QLC+ workspace files (`.qxw`).
@@ -12,163 +12,72 @@
 This tool is in active development. Some features may be incomplete, behave unexpectedly, or not yet work at all. **Please test it and report any issues on the [Issues page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/issues)** — every bug report helps.
 
 **Your show files are safe to experiment with:**
-All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* via a Save dialog — your original `.qxw` is never overwritten. The one intentional exception is the **Trigger Manager "Save"** button, which writes keyboard/MIDI bindings back to the file you loaded by path — exactly as described on that tab.
+All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* via a Save dialog — your original `.qxw` is never overwritten. The one intentional exception is the **Trigger Manager "Save to loaded QXW"** button, which writes keyboard/MIDI bindings back to the file you loaded by path — exactly as described on that page. A "Save as new file…" option is also available for Triggers.
 
 ---
 
-## What's new
+## What's new in v1.1.0
 
-### v1.0.10
+### 🎨 Complete GUI Redesign — Sidebar Navigation
 
-#### 💡 Brightness: baseline dimmer indicator
-Each fixture group in the Brightness tab now shows a coloured **⟂ X%** pill that reflects the actual peak dimmer value stored in the loaded workspace's scenes. Green = full power, red = heavily dimmed. When multiple groups are present, a **−X%** offset shows which groups are already dimmed relative to the brightest one — so you can immediately see if a previous brightness-scaling session left groups at different levels, even though all sliders start at 100%.
+The flat 9-tab bar has been replaced with a **collapsible left sidebar** that groups tools by workflow stage. The sidebar remembers its collapsed/expanded state across sessions.
 
-#### 🎨 VC Visual Editor — now a top-level tab (β)
-The VC Visual Editor has been promoted from a sub-tab inside ID Browser to its own tab in the main navigation bar, between QXW Merger and Brightness. Renamed from *VC Editor* to **VC Visual Editor** with a β badge. No functionality changes.
+### 🏠 Start Screen
+A welcoming home page with a personalised greeting, drag-and-drop zone for workspace files, recent-files list, an "About" section, and workflow cards that guide you through the typical build-prepare-export cycle.
 
-### v1.0.9
+### 🎨 Three Themes with Design Tokens
+The colour system is now powered by CSS custom properties (`data-theme="dark|grey|light"`) with a unified token vocabulary. The theme button cycles through all three and remembers your choice.
 
-#### 🎨 VC Layout Editor
-New **🎨 VC Editor** sub-tab inside the ID Browser. A canvas renders your entire Virtual Console at the correct position, size and colour of every widget. Click to select, shift-click for multi-select, or drag a rubber-band rectangle. The right panel shows editable X/Y/W/H, font size, bold, background and font colour swatches. Quick-action buttons handle alignment (L/C/R, T/M/B), equal distribution, same-width/height, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its row/column neighbours (configurable thresholds). When done, **Apply & Save QXW…** patches the in-memory XML and opens a native Save dialog — your source file is never overwritten.
+### 📁 Files Panel
+The sidebar footer shows which files are loaded (workspace, dictionary, QXF) and the session state — replacing the old header bar and status bar.
 
-This release also fixes the long-standing issue where X/Y/W/H were always blank in the VC Widgets table: they are now correctly read from the `<WindowState>` child element of each widget in the QXW.
+### 🔒 Output Footers
+Every tool page now has a colour-coded footer: **green** for tools that write a new file (Setlist, Fixtures, Brightness, etc.) and **orange** for Triggers — the only tool that overwrites the loaded workspace. Triggers also gains a "Save as new file…" button.
 
-### v1.0.8
+### 🖼️ SVG Icons
+All UI chrome emoji have been replaced with a crisp SVG icon sprite.
 
-#### 📋 Setlist — per-slot file paths replace global backup
-Each setlist slot now tracks its own `.txt` file path (mirroring how the Brightness tab tracks QXF paths per fixture). Load a slot file with **📂 Load Slot File** and save it with **💾 Save Slot File**. The per-slot file format includes full song→function assignments (`txt_name|qxw_id|qxw_name|in|hold|out`), so Re-Match and all timing data survive a server restart. The all-slots global backup input has been removed. Session files (`.qsk`) store the per-slot paths and restore everything on load.
-
-### v1.0.7
-
-#### 📋 Session / Project File (.qsk)
-Save all the file paths used in a session — workspace, dictionary, setlist backup and fixture QXF overrides — to a `.qsk` file. On next launch, open the session file via **📋 Session → Open Session…** and the app re-loads everything automatically. A dirty-state indicator (●) appears if paths change since the last save, and closing the tab while there are unsaved changes shows a browser confirmation prompt. The **Change…** button next to each path pre-fills the header input so you can quickly swap to a different version of the same file without re-navigating to the folder.
-
-### v1.0.6
-
-#### 💡 Brightness tab *(Alpha)*
-New tab for programmatic per-fixture brightness adjustment across an entire show file — useful when you realise one fixture type is significantly more powerful than another right before a show. Load a workspace, see every fixture type grouped by model and mode, then drag a slider to scale the Master Dimmer channel across all Scenes. The preview counter shows how many scenes and channel values will change before you commit. Download the adjusted file via the native OS Save dialog.
-
-Key details:
-- Dimmer channel is identified automatically by parsing QXF fixture-definition files from the standard QLC+ install paths (macOS app bundle, Linux system install, and user fixture directories). If a QXF file is not found, you can type the dimmer offset manually or upload the QXF directly from the UI.
-- Linked-group mode moves all fixtures of the same model/mode together. Toggle per-fixture control with the "Link group" checkbox.
-- Scale range: 0–200% (0 = channel always off, 100% = unchanged, 200% = maximum brightness, clamped to 255).
-- The original workspace file is never modified; the output is written to a new file.
-
-#### 🐛 Bug fixes
-
-**Setlist — Generate QXW now saves all cuelists at once.** Clicking "Generate QXW" previously regenerated only the currently-selected cuelist slot. It now processes every slot that has at least one song with a function assignment, and outputs a single ready-to-use QXW file in one click.
-
-**Setlist — Clone names no longer appear with `(Setlist)` suffix in QLC+.** Generated clones are now marked with a custom XML attribute (`SwissKnifeClone="<base_id>"`) rather than a name suffix, so QLC+'s Show Manager displays clean song names. The attribute is a QLC+-unknown extension that QLC+ ignores, so it has no effect on playback. Files generated by earlier versions (with the `(Setlist)` suffix) continue to be recognised for backward compatibility.
-
-**Setlist — Regression fix: cuelists with songs but no assignments are no longer wiped.** When "Generate all" was introduced, a slot that contained songs but had no function assignments yet would silently clear its chaser. The generator now skips any slot without at least one assigned function, so existing cuelist content is always preserved.
-
-### v1.0.5
-- **Setlist — auto-save on slot switch**: assignments are now saved automatically when navigating between CueList slots, so work is never lost.
-
-### v1.0.4
-- **Setlist — multi-select songs**: Ctrl+click / Shift+click to select multiple songs; clicking a pool function assigns it to all selected rows at once.
-- **Setlist — 🧹 Purge Clones**: unassigns all songs linked to `(Setlist)` clones so you can re-match from scratch.
-- **Setlist — 🗑 Delete Clones from WS**: removes `(Setlist)` clone function definitions entirely from the loaded workspace; use Generate QXW afterwards for a clean file.
-- **Setlist — auto-match clone preference**: Re-Match now always prefers base functions over their `(Setlist)` clones when both exist in the pool.
-- **Setlist — parent always shown**: the `↑ Parent Name` line is now shown even when the base function has been removed from the workspace (displayed in dimmed italic).
-
-### v1.0.3
-- **Dictionary — VC button name filter**: dedicated text input to search within VC button captions independently of the general search box.
-- **Dictionary — Frame filter dropdown**: auto-populated from all VC frames in the workspace; filters to functions whose buttons live inside a given frame (nested ancestry supported).
-- **Setlist — descriptions & VC button in song list**: assigned songs now show the 🎛 VC button caption and description inline, below the function name.
-- **Setlist — parent function for (Setlist) clones**: songs matched to a `(Setlist)` clone show a ↑ [ID] Parent Name line so you always know which base function was cloned.
-- **Setlist — ↺ refresh button**: re-fetches the function pool with the latest descriptions without switching tabs. The pool also auto-refreshes on every tab visit.
-- **Dictionary — Browse TXT now syncs to server**: importing a `.txt` description file immediately pushes all descriptions to the server's shared state, so the Setlist pool reflects them right away.
-
-### v1.0.2
-- **Trigger Manager — conflict highlighting**: 🔍 Duplicates now highlights conflicting rows in the table with a red border (in addition to the status bar summary).
-- **Trigger Manager — Bulk MIDI Shift modal**: reassign all triggers from one MIDI universe/channel to another in a single operation.
-- **Trigger Manager — Assignment Matrix panel**: toggle an inline grid showing every widget vs. every key; duplicate keys flagged in red.
-
-### v1.0.1
-- Fixed Blueprint PDF Z-axis orientation (downstage/audience now rendered at the bottom, consistent with QLC+ 3D monitor).
-- QXW Merger: both panels now have a Browse… button for native file picking.
-
-### v1.0.0
-v1.0 is a **full rewrite** from a Tkinter desktop app to a **Flask web application** that runs locally and opens in your browser. All seven tabs are fully ported, and two major new features are added:
-
-- **🔀 QXW Merger** — load two `.qxw` files side by side and copy fixtures, groups, and functions from one into the other with automatic ID remapping, then export the merged workspace.
-- **Security hardening** — CSRF origin check, Content-Security-Policy header, file-extension whitelist on upload, sanitised error messages.
-- **Native OS Save dialog** (`showSaveFilePicker`) for QXW generation — no more output-directory input box.
+### 📋 Session File Support for Drag-and-Drop
+You can now drag `.qsk` session files onto the window, in addition to `.qxw` workspaces.
 
 ---
 
-## Screenshots
+## Live Demo
 
-### v1.0 — Web UI *(actively developed)*
-
-| 🎵 Setlist Manager | 📖 Dictionary |
-|:---:|:---:|
-| ![Setlist Manager](screenshots/webapp_setlist.png) | ![Dictionary](screenshots/webapp_dictionary.png) |
-
-| 📋 Setup Checklist | 🎛 Triggers |
-|:---:|:---:|
-| ![Setup Checklist](screenshots/webapp_checklist.png) | ![Triggers](screenshots/webapp_triggers.png) |
-
-| 🔧 Fixture Configurator | 🔍 ID Browser |
-|:---:|:---:|
-| ![Fixture Configurator](screenshots/webapp_fixtures.png) | ![ID Browser](screenshots/webapp_id_browser.png) |
-
-| 🔀 QXW Merger *(new in v1.0)* | |
-|:---:|:---:|
-| ![QXW Merger](screenshots/webapp_merger.png) | |
-
----
-
-### v0.7.3 — Desktop UI (Tkinter) *(no longer developed)*
-
-> The original desktop application required no external dependencies beyond Python + tkinter.
-> It is preserved in the repository for reference but will not receive further updates.
-> All future development continues on the v1.0 web UI above.
-
-| 🎵 Setlist Manager | 📖 Dictionary |
-|:---:|:---:|
-| ![Setlist Manager](screenshots/tab1_setlist_manager.png) | ![Dictionary](screenshots/tab2_dictionary.png) |
-
-| 📋 Setup Checklist | 🎛 Triggers |
-|:---:|:---:|
-| ![Setup Checklist](screenshots/tab3_setup_checklist.png) | ![Triggers](screenshots/tab4_triggers.png) |
-
-| 🔧 Fixture Configurator | 🔍 ID Browser |
-|:---:|:---:|
-| ![Fixture Configurator](screenshots/tab5_fixture_configurator.png) | ![ID Browser](screenshots/tab6_id_browser.png) |
+Open `mockups/mockup_B_sidebar.html` in your browser to explore the full UI design — all 10 screens, all 3 themes, and the collapsible sidebar are fully interactive.
 
 ---
 
 ## Features
 
-### 🎵 Setlist Manager
+### Setlist Manager
 Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand.
 
-The **function pool panel** shows usage counts, ✦ marks for already-generated clones, Used/Unused filtering, inline descriptions, and a **↺ refresh button** to pull the latest descriptions from the Dictionary without switching tabs.
+The **function pool panel** shows usage counts, ✦ marks for already-generated clones, Used/Unused filtering, inline descriptions, and a refresh button to pull the latest descriptions from the Dictionary. Assigned songs display the matched function name, its VC button caption, and its description inline.
 
-Assigned songs display the matched function name, its 🎛 VC button caption, and its description inline. Songs matched to `(Setlist)` clones also show a **↑ [ID] Parent Name** line so you always know which base function was cloned — essential when re-matching a setlist that has already been used once.
+### Triggers
+Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace. Additional tools: **Duplicates** highlights conflicting rows inline; **MIDI Shift** bulk-reassigns all triggers from one MIDI address to another; **Matrix** toggles an assignment grid showing every widget vs. every key, with duplicate keys flagged.
 
-### 📖 Dictionary Manager
-Create and maintain `ID → description` mapping files that annotate your QLC+ function pool with human-readable labels. Load/save `.txt` dictionaries, edit descriptions inline, and filter by function type, VC button presence, **VC button name** (free-text search within captions), and **VC frame** (dropdown auto-populated from all frames in the workspace, with nested ancestry support). Importing a `.txt` file via Browse immediately syncs descriptions to the server so the Setlist pool reflects them right away.
+### Dictionary
+Create and maintain `ID → description` mapping files that annotate your QLC+ function pool with human-readable labels. Load/save `.txt` dictionaries, edit descriptions inline, and filter by function type, VC button presence, **VC button name**, and **VC frame** (dropdown auto-populated from all frames in the workspace, with nested ancestry support).
 
-### 📋 Setup Checklist
+### Fixtures
+Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas**. Configure stage dimensions, auto-assign DMX addresses, then generate a ready-to-use workspace with all fixture blocks and 3D monitor positions populated from your canvas layout. Export **blueprint PDFs** in multiple paper sizes.
+
+### Checklist
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.
 
-### 🎛 Trigger Manager
-Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace. Additional tools: **🔍 Duplicates** highlights conflicting rows inline with a red border; **⇄ MIDI Shift** bulk-reassigns all triggers from one MIDI address to another in one operation; **⊞ Matrix** toggles an assignment grid showing every widget vs. every key, with duplicate keys flagged in red.
+### Brightness
+Adjust the relative brightness of any fixture type across an entire show file without rebuilding anything. Select a workspace, use the per-model sliders to set a scale factor (0–200%), and export a new adjusted QXW. The Master Dimmer channel is detected automatically from QXF fixture definitions; if a QXF is not found, you can type the offset manually, upload the file, or fetch it from the QLC+ GitHub repository. Colour channel values are never touched — only the dimmer.
 
-### 🔧 Fixture Configurator
-Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas**. Configure stage dimensions, auto-assign DMX addresses, then generate a ready-to-use workspace with all fixture blocks and 3D monitor positions populated from your canvas layout.
+### ID Browser
+Inspect every function and Virtual Console widget in sortable, filterable Grid.js tables. Live filtering, click-to-sort column headers, and **Export CSV** for both the Functions and VC Widgets sub-tabs.
 
-### 🔍 ID Browser
-Inspect every function and Virtual Console widget. Live filtering, click-to-sort column headers, **Export CSV**, and **Export PDF** with configurable paper/font-size — for both the Functions and VC Widgets sub-tabs.
+### VC Visual Editor *(Beta)*
+See your Virtual Console as a canvas — select, align, distribute, resize, and sort widgets visually. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
 
-### 🔀 QXW Merger *(Alpha — new in v1.0)*
-Load any two `.qxw` files independently of the main workspace. Browse **Fixtures**, **Fixture Groups**, and **Functions** (filterable by type and name) from the source. Tick what you want, click **Copy →**, and the selected elements are inserted into the destination with IDs remapped above the destination's highest existing ID. Name-clash warnings appear inline. Export the merged result via the native OS Save dialog.
-
-### 💡 Brightness *(Alpha — new in v1.0.6)*
-Adjust the relative brightness of any fixture type across an entire show file without rebuilding anything. Select a workspace, use the per-model sliders to set a scale factor (0–200%), and export a new adjusted QXW. The Master Dimmer channel is detected automatically from QXF fixture definitions; if a QXF is not found, you can type the offset manually or upload the file. Colour channel values are never touched — only the dimmer. Ideal for last-minute power balancing before a show.
+### QXW Merger *(Alpha)*
+Load any two `.qxw` files independently. Browse **Fixtures**, **Fixture Groups**, and **Functions** (filterable by type and name) from the source. Tick what you want, click **Copy →**, and the selected elements are inserted into the destination with IDs remapped above the highest existing ID. Export the merged result via the native OS Save dialog.
 
 ---
 
@@ -231,8 +140,9 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** to quit.
 
 ### Loading a workspace
 
-- **Path mode** — paste the full path to your `.qxw` file in the header bar and click **Load**. Use **↺ Reload** to re-parse from disk at any time.
-- **Upload mode** — click **📂 Browse…** or drag a `.qxw` file anywhere onto the window.
+- **Start screen** — drag a `.qxw` file anywhere onto the window, or use the **Open Workspace** / **Open Session** buttons.
+- **Path mode** — expand "Advanced: paste a file path…" on the Start screen, paste the full path to your `.qxw` file, and click **Load**.
+- **Recent files** — previously opened workspaces appear in the Start screen's recents panel.
 
 ---
 
@@ -263,24 +173,29 @@ The app binds **only to `127.0.0.1`** (localhost) and is not accessible from oth
 app.py                   ← Flask entry point (auto-bootstraps venv)
 core/
   workspace.py           ← QXW parser, function pool, setlist engine
-  merger.py              ← Independent two-file merger (new in v1.0)
-  brightness.py          ← Per-fixture dimmer scaling (new in v1.0.6)
+  merger.py              ← Independent two-file merger
+  brightness.py          ← Per-fixture dimmer scaling
   fixture.py             ← Rig state, QXF parsing, DMX auto-assign
   pdf.py                 ← Pure-Python PDF builder (no reportlab)
 routes/
   workspace_routes.py    ← /api/load, /api/status, /api/reload
   setlist_routes.py      ← /api/setlist/*
-  merger_routes.py       ← /api/merger/*  (new in v1.0)
-  brightness_routes.py   ← /api/brightness/*  (new in v1.0.6)
+  merger_routes.py       ← /api/merger/*
+  brightness_routes.py   ← /api/brightness/*
   dictionary_routes.py   ← /api/dictionary/*
   checklist_routes.py    ← /api/checklist/*
   triggers_routes.py     ← /api/triggers/*
   fixture_routes.py      ← /api/fixture/*
   id_browser_routes.py   ← /api/functions, /api/vc-widgets
+  session_routes.py      ← /api/session/*
+  picker_routes.py       ← /api/picker/* (native OS file picker)
 static/
-  js/                    ← Per-tab JavaScript modules
-  css/style.css          ← Catppuccin theme (Dark / Grey / Light)
+  css/tokens.css         ← Design tokens (3 themes via data-theme)
+  css/style.css          ← Sidebar layout and component styles
+  icons.svg              ← SVG symbol sprite (Lucide-style)
+  js/                    ← Per-tool JavaScript modules
 templates/index.html     ← Single-page application shell
+mockups/                 ← Interactive HTML mockup of the UI design
 ```
 
 ---

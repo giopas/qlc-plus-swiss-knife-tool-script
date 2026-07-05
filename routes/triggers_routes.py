@@ -1,7 +1,9 @@
 """routes/triggers_routes.py — Trigger Manager API (fully implemented)."""
 
 import re
-from flask import Blueprint, jsonify, request
+import io
+import os
+from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
 
 
@@ -76,5 +78,40 @@ def save():
     try:
         path = ws.save_triggers()
         return jsonify({'ok': True, 'path': path})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/save-as-new', methods=['POST'])
+def save_as_new():
+    """Write the modified XML to a new downloadable .qxw file."""
+    try:
+        state = ws._state
+        if not state['loaded']:
+            return jsonify({'error': 'No workspace loaded.'}), 400
+
+        tree = state['xml_tree']
+        buf = io.BytesIO()
+        tree.write(buf, encoding='utf-8', xml_declaration=True)
+        buf.seek(0)
+
+        # Build a filename from the original workspace name
+        orig = state.get('original_name') or ''
+        if not orig and state.get('path'):
+            orig = os.path.basename(state['path'])
+        if not orig:
+            orig = 'workspace.qxw'
+        base, ext = os.path.splitext(orig)
+        if not ext:
+            ext = '.qxw'
+        filename = f"{base}_modified{ext}"
+
+        return Response(
+            buf.getvalue(),
+            mimetype='application/xml',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+            },
+        )
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

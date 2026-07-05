@@ -1,0 +1,122 @@
+/* ── Design Tokens ─────────────────────────────────────────── */
+
+:root {
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* ── Dark (default) ───────────────────────────────────────── */
+
+:root, [data-theme="dark"] {
+  --bg: #0d1117;
+  --surface-0: #131822;
+  --surface-1: #1a2130;
+  --surface-2: #232c3f;
+  --border: #273043;
+  --border-strong: #36415c;
+  --text: #e8ecf5;
+  --text-dim: #98a2b8;
+  --text-faint: #5b647a;
+  --accent: #2dd4bf;
+  --accent-contrast: #062622;
+  --accent-soft: rgba(45, 212, 191, .12);
+  --violet: #8b8cf5;
+  --violet-soft: rgba(139, 140, 245, .13);
+  --orange: #f0a04b;
+  --orange-soft: rgba(240, 160, 75, .14);
+  --orange-contrast: #241300;
+  --green: #3ecf8e;
+  --green-soft: rgba(62, 207, 142, .13);
+  --red: #e05c6a;
+  --knob: #fff;
+  --canvas: #0a0e15;
+}
+
+/* ── Grey ─────────────────────────────────────────────────── */
+
+[data-theme="grey"] {
+  --bg: #22252c;
+  --surface-0: #292d36;
+  --surface-1: #31363f;
+  --surface-2: #3b414d;
+  --border: #3d434f;
+  --border-strong: #4d5566;
+  --text: #eceef2;
+  --text-dim: #a5abb8;
+  --text-faint: #6e7585;
+  --accent: #3ad6c2;
+  --accent-contrast: #062622;
+  --accent-soft: rgba(58, 214, 194, .14);
+  --violet: #9a9bf7;
+  --violet-soft: rgba(154, 155, 247, .15);
+  --orange: #f2a955;
+  --orange-soft: rgba(242, 169, 85, .16);
+  --orange-contrast: #241300;
+  --green: #46d698;
+  --green-soft: rgba(70, 214, 152, .15);
+  --red: #e2687a;
+  --knob: #fff;
+  --canvas: #1b1e24;
+}
+
+/* ── Light ────────────────────────────────────────────────── */
+
+[data-theme="light"] {
+  --bg: #f2f4f8;
+  --surface-0: #ffffff;
+  --surface-1: #f6f8fb;
+  --surface-2: #e9edf4;
+  --border: #dde2ec;
+  --border-strong: #c3cbdb;
+  --text: #1c2130;
+  --text-dim: #5a6275;
+  --text-faint: #98a0b3;
+  --accent: #0d9488;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(13, 148, 136, .10);
+  --violet: #6467d8;
+  --violet-soft: rgba(100, 103, 216, .12);
+  --orange: #d97a1e;
+  --orange-soft: rgba(217, 122, 30, .12);
+  --orange-contrast: #ffffff;
+  --green: #14966a;
+  --green-soft: rgba(20, 150, 106, .12);
+  --red: #cc3d4e;
+  --knob: #fff;
+  --canvas: #eef1f6;
+}
+
+/* ── Backward-compat aliases for old Catppuccin variable names ── */
+
+:root {
+  --base: var(--bg);
+  --mantle: var(--surface-0);
+  --crust: var(--canvas);
+  --surface0: var(--surface-1);
+  --surface1: var(--surface-2);
+  --surface2: var(--border);
+  --overlay0: var(--text-faint);
+  --overlay1: var(--text-dim);
+  --subtext0: var(--text-dim);
+  --subtext1: var(--text-dim);
+  --blue: var(--accent);
+  --yellow: var(--orange);
+  --peach: var(--orange);
+  --teal: var(--accent);
+  --sapphire: var(--accent);
+  --mauve: var(--violet);
+  --lavender: var(--violet);
+  --pink: var(--violet);
+  --maroon: var(--red);
+  --sky: var(--accent);
+  --flamingo: var(--orange);
+  --font-ui: var(--font);
+  --font-mono: var(--mono);
+  --border-r: var(--radius-sm);
+  --btn-label: var(--accent-contrast);
+  --header-h: 0px;
+  --tabbar-h: 0px;
+  --statusbar-h: 0px;
+}

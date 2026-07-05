@@ -1,11 +1,14 @@
 /* =============================================================================
-   QLC+ Swiss Knife — Web UI  app.js
+   QLC+ Swiss Knife — Web UI  app.js   v1.1.0
    =============================================================================
    Single-page application logic:
-     - Tab / sub-tab switching
-     - Workspace loading (path or file upload, drag-and-drop)
+     - Sidebar navigation with go() / showSubtab()
+     - Workspace loading (path, file upload, drag-and-drop .qxw / .qsk)
      - ID Browser: Functions + VC Widgets tables (Grid.js)
      - Client-side CSV export
+     - Theme cycling (dark / grey / light) via data-theme
+     - Collapsible sidebar with localStorage persistence
+     - Nav tooltips, greeting, recents
    ============================================================================= */
 
 'use strict';
@@ -16,7 +19,7 @@ let _vcData  = [];   // raw vc-widgets array from /api/vc-widgets
 let _fnGrid  = null; // Grid.js instance for Functions table
 let _vcGrid  = null; // Grid.js instance for VC Widgets table
 
-// ── Type → emoji map ──────────────────────────────────────────────────────────
+// ── Type → emoji map (kept for Grid.js cell rendering) ──────────────────────
 const TYPE_ICON = {
   Chaser: '🔄', Scene: '🎬', Sequence: '📋', EFX: '✨',
   Script: '📝', Show: '🎭', Audio: '🎵', Collection: '📦',
@@ -27,29 +30,50 @@ const TYPE_ICON = {
 };
 const icon = t => TYPE_ICON[t] || '◻';
 
+// ── Screen-ID → lazy-load function map ──────────────────────────────────────
+const _LAZY = {
+  idbrowser:  () => _ensureIdBrowserLoaded(),
+  setlist:    () => typeof ensureSetlistLoaded    === 'function' && ensureSetlistLoaded(),
+  dictionary: () => typeof ensureDictionaryLoaded === 'function' && ensureDictionaryLoaded(),
+  checklist:  () => typeof ensureChecklistLoaded  === 'function' && ensureChecklistLoaded(),
+  triggers:   () => typeof ensureTriggersLoaded   === 'function' && ensureTriggersLoaded(),
+  fixtures:   () => typeof ensureFixturesLoaded   === 'function' && ensureFixturesLoaded(),
+  merger:     () => typeof mergerInit             === 'function' && mergerInit(),
+  brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
+  vceditor:   () => typeof _vceLoad               === 'function' && _vceLoad(),
+};
+
 // =============================================================================
-// TAB NAVIGATION
+// NAVIGATION — go(screenId)
 // =============================================================================
 
+/** Navigate to a screen.  screenId matches the suffix of scr-{id} / sn-{id}. */
+function go(screenId) {
+  // Update sidebar
+  document.querySelectorAll('.sn-item').forEach(b => {
+    b.classList.toggle('active', b.id === `sn-${screenId}`);
+  });
+  // Update screens
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.toggle('active', s.id === `scr-${screenId}`);
+  });
+  // Lazy-load
+  const loader = _LAZY[screenId];
+  if (loader) loader();
+  // Hide nav tooltip
+  const tip = document.getElementById('nav-tip');
+  if (tip) tip.style.display = 'none';
+}
+
+/** Backward-compat alias: old code may call showTab('setlist') etc. */
 function showTab(tabId) {
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === tabId);
-  });
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    p.classList.toggle('active', p.id === `tab-${tabId}`);
-  });
-
-  // Lazy-load tab data on first visit (each module guards with its own flag)
-  switch (tabId) {
-    case 'id-browser': _ensureIdBrowserLoaded(); break;
-    case 'setlist':    ensureSetlistLoaded();     break;
-    case 'dictionary': ensureDictionaryLoaded();  break;
-    case 'checklist':  ensureChecklistLoaded();   break;
-    case 'triggers':   ensureTriggersLoaded();    break;
-    case 'fixture':    ensureFixturesLoaded();    break;
-    case 'merger':     mergerInit();              break;
-    case 'brightness': ensureBrightnessLoaded(); break;
-  }
+  // Map old tab IDs to new screen IDs
+  const map = {
+    'id-browser':       'idbrowser',
+    'vc-visual-editor': 'vceditor',
+    'fixture':          'fixtures',
+  };
+  go(map[tabId] || tabId);
 }
 
 function showSubtab(subtabId) {
@@ -62,22 +86,174 @@ function showSubtab(subtabId) {
 }
 
 // =============================================================================
+// SIDEBAR COLLAPSE / EXPAND
+// =============================================================================
+
+function toggleSidebar() {
+  document.body.classList.toggle('nav-min');
+  const collapsed = document.body.classList.contains('nav-min');
+  try { localStorage.setItem('sk-nav-min', collapsed ? '1' : ''); } catch {}
+}
+
+function _restoreSidebar() {
+  try {
+    if (localStorage.getItem('sk-nav-min') === '1') {
+      document.body.classList.add('nav-min');
+    }
+  } catch {}
+}
+
+// =============================================================================
+// NAV TOOLTIPS
+// =============================================================================
+
+function _initNavTooltips() {
+  const tip = document.getElementById('nav-tip');
+  if (!tip) return;
+
+  document.querySelectorAll('.sn-item').forEach(btn => {
+    btn.addEventListener('mouseenter', () => {
+      const rect = btn.getBoundingClientRect();
+      const name = btn.dataset.tip || '';
+      const desc = btn.dataset.desc || '';
+      const isMin = document.body.classList.contains('nav-min');
+
+      tip.innerHTML = isMin
+        ? `<b>${name}</b> — ${desc}`
+        : desc;
+
+      tip.style.display = 'block';
+      tip.style.left = rect.right + 10 + 'px';
+      tip.style.top  = rect.top + rect.height / 2 + 'px';
+    });
+
+    btn.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    btn.addEventListener('click',      () => { tip.style.display = 'none'; });
+  });
+}
+
+// =============================================================================
+// THEME CYCLING — data-theme on <html>
+// =============================================================================
+
+const _THEMES = ['dark', 'grey', 'light'];
+
+function cycleTheme() {
+  const html    = document.documentElement;
+  const current = html.getAttribute('data-theme') || 'dark';
+  const next    = _THEMES[(_THEMES.indexOf(current) + 1) % _THEMES.length];
+  _applyTheme(next);
+}
+
+/** Backward-compat alias */
+function toggleTheme() { cycleTheme(); }
+
+function _applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  // Also keep body classes for any legacy CSS
+  document.body.classList.remove('theme-light', 'theme-grey');
+  if (theme === 'light') document.body.classList.add('theme-light');
+  if (theme === 'grey')  document.body.classList.add('theme-grey');
+  try { localStorage.setItem('sk-theme', theme); } catch {}
+  // Redraw canvas if fixture module is loaded
+  if (typeof _drawCanvas === 'function') _drawCanvas();
+}
+
+function _restoreTheme() {
+  try {
+    const saved = localStorage.getItem('sk-theme');
+    if (saved && _THEMES.includes(saved)) _applyTheme(saved);
+  } catch {}
+}
+
+// =============================================================================
+// GREETING + SETTINGS
+// =============================================================================
+
+async function _initGreeting() {
+  const el = document.getElementById('greeting');
+  if (!el) return;
+
+  let name = null;
+  try {
+    const r = await fetch('/api/settings');
+    if (r.ok) {
+      const d = await r.json();
+      if (d.user_name) name = d.user_name;
+    }
+  } catch {}
+
+  const h = new Date().getHours();
+  const part = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
+  el.textContent = name
+    ? `Good ${part}, ${name} 👋`
+    : 'Welcome 👋';
+}
+
+// =============================================================================
+// RECENTS
+// =============================================================================
+
+function _addRecent(path, type) {
+  if (!path) return;
+  try {
+    let recents = JSON.parse(localStorage.getItem('sk-recents') || '[]');
+    recents = recents.filter(r => r.path !== path);
+    recents.unshift({ path, type: type || 'qxw', ts: Date.now() });
+    if (recents.length > 5) recents.length = 5;
+    localStorage.setItem('sk-recents', JSON.stringify(recents));
+    _renderRecents();
+  } catch {}
+}
+
+function _renderRecents() {
+  const wrap = document.getElementById('recent-list');
+  if (!wrap) return;
+  try {
+    const recents = JSON.parse(localStorage.getItem('sk-recents') || '[]');
+    if (!recents.length) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = '<div class="recents-title">Recent files</div>' +
+      recents.map(r => {
+        const name = r.path.split(/[\\/]/).pop();
+        const ago  = _timeAgo(r.ts);
+        return `<div class="recent-item" onclick="loadRecentFile('${r.path.replace(/'/g, "\\'")}', '${r.type}')">
+          <svg class="ic"><use href="/static/icons.svg#clock"/></svg>
+          <span class="recent-name">${name}</span>
+          <span class="recent-ago">${ago}</span>
+        </div>`;
+      }).join('');
+  } catch {}
+}
+
+function _timeAgo(ts) {
+  const diff = (Date.now() - ts) / 1000;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function loadRecentFile(path, type) {
+  if (type === 'qsk') {
+    if (typeof sessionLoadFromPath === 'function') sessionLoadFromPath(path);
+    return;
+  }
+  const inp = document.getElementById('path-input');
+  if (inp) inp.value = path;
+  _doLoad({
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  });
+}
+
+// =============================================================================
 // NATIVE FILE PICKER  (calls /api/picker/pick — gets real OS path)
 // =============================================================================
 
-/** Cached availability flag (null = not yet checked) */
 let _pickerAvailable = null;
 
-/**
- * Open the native OS file picker via the Flask backend.
- * Returns the selected absolute path, or null if cancelled / unavailable.
- *
- * @param {string} title   - Dialog prompt text
- * @param {Array}  types   - [{label, exts:['.txt']}]
- * @param {string} initDir - Optional starting directory
- */
 async function nativePick(title, types = [], initDir = '') {
-  // Check availability once
   if (_pickerAvailable === null) {
     try {
       const r = await fetch('/api/picker/available');
@@ -110,15 +286,12 @@ async function loadFromPath() {
                   body: JSON.stringify({ path }) });
 }
 
-/** Browse button in header — tries native picker first (gives us the real path),
- *  falls back to the hidden file input (upload mode, path not tracked). */
 async function browseWorkspace() {
   const path = await nativePick(
     'Select QLC+ workspace (.qxw)',
     [{ label: 'QLC+ Workspace', exts: ['.qxw'] }]
   );
   if (path) {
-    // Path mode — load directly from disk; session will track it
     const inp = document.getElementById('path-input');
     if (inp) inp.value = path;
     await _doLoad({
@@ -127,7 +300,6 @@ async function browseWorkspace() {
       body: JSON.stringify({ path }),
     });
   } else {
-    // Native picker unavailable or cancelled — fall back to file upload
     document.getElementById('file-input').click();
   }
 }
@@ -152,20 +324,21 @@ async function _doLoad(fetchOpts) {
     if (!res.ok || data.error) {
       const msg = data.error || 'Load failed.';
       setStatus(msg, 'error');
-      // Also log to console so the terminal/devtools shows what went wrong
       console.error('[QLC Swiss Knife] Load error:', msg);
       return;
     }
     _updateHeader(data);
     _invalidateAllTabs();
     setStatus(`Loaded: ${data.path ? data.path.split(/[\\/]/).pop() : 'workspace'}`);
-    // Track in session (path-mode only — upload mode has no persistent path)
+    // Track in session
     if (data.path && typeof sessionOnWorkspaceLoaded === 'function') {
       sessionOnWorkspaceLoaded(data.path);
     }
-
-    // If ID Browser tab is already open, refresh it
-    if (document.querySelector('.tab-btn.active')?.dataset.tab === 'id-browser') {
+    // Add to recents
+    if (data.path) _addRecent(data.path, 'qxw');
+    // Refresh current screen if it's ID browser
+    const activeScr = document.querySelector('.screen.active');
+    if (activeScr && activeScr.id === 'scr-idbrowser') {
       _ensureIdBrowserLoaded();
     }
   } catch (e) {
@@ -188,9 +361,13 @@ function _invalidateAllTabs() {
   if (typeof invalidateTriggers   === 'function') invalidateTriggers();
   if (typeof invalidateFixtures   === 'function') invalidateFixtures();
   if (typeof invalidateBrightness === 'function') invalidateBrightness();
-  // Re-load whichever tab is currently visible
-  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
-  if (activeTab) showTab(activeTab);
+  // Re-load whichever screen is currently visible
+  const activeScr = document.querySelector('.screen.active');
+  if (activeScr) {
+    const scrId = activeScr.id.replace('scr-', '');
+    const loader = _LAZY[scrId];
+    if (loader) loader();
+  }
 }
 
 function _updateHeader(state) {
@@ -199,31 +376,26 @@ function _updateHeader(state) {
   const pathInput = document.getElementById('path-input');
 
   if (state.loaded) {
-    // Path mode: show path in input and enable Reload
     if (state.path) {
       const name = state.path.split(/[\\/]/).pop();
-      nameEl.textContent  = name;
-      nameEl.className    = '';
-      pathInput.value     = state.path;
-      reloadBtn.disabled  = false;
-
-    // Upload mode: show original filename, leave path input alone, disable Reload
+      if (nameEl) { nameEl.textContent = name; nameEl.className = ''; }
+      if (pathInput) pathInput.value = state.path;
+      if (reloadBtn) reloadBtn.disabled = false;
     } else if (state.original_name) {
-      nameEl.textContent = state.original_name + '  (uploaded)';
-      nameEl.className   = '';
-      reloadBtn.disabled = true;
+      if (nameEl) { nameEl.textContent = state.original_name + '  (uploaded)'; nameEl.className = ''; }
+      if (reloadBtn) reloadBtn.disabled = true;
     }
   } else {
-    nameEl.textContent = 'No workspace loaded';
-    nameEl.className   = 'ws-unloaded';
-    reloadBtn.disabled = true;
+    if (nameEl) { nameEl.textContent = 'No workspace loaded'; nameEl.className = 'ws-unloaded'; }
+    if (reloadBtn) reloadBtn.disabled = true;
   }
 
-  document.getElementById('status-counts').textContent =
-    `Functions: ${state.func_count ?? '—'}  |  ` +
-    `Fixtures: ${state.fixture_count ?? '—'}  |  ` +
-    `VC Widgets: ${state.vc_widget_count ?? '—'}`;
-
+  // Update counts in files panel (if element exists)
+  const countsEl = document.getElementById('fp-counts');
+  if (countsEl) {
+    countsEl.textContent =
+      `Fn: ${state.func_count ?? '—'}  Fix: ${state.fixture_count ?? '—'}  VC: ${state.vc_widget_count ?? '—'}`;
+  }
 }
 
 // =============================================================================
@@ -255,9 +427,6 @@ async function _loadFunctions() {
   _renderFnTable(_fnData);
 }
 
-// ── Dynamic page-limit helper ─────────────────────────────────────────────────
-// Compute how many rows fit in the wrapper without overflow.
-// Grid.js row ≈ 36 px · header ≈ 36 px · pagination footer ≈ 44 px.
 function _pageLimit(wrapId) {
   const el = document.getElementById(wrapId);
   const h  = el ? el.clientHeight : 600;
@@ -386,8 +555,6 @@ async function _ensureIdBrowserLoaded() {
   _attachIdBrowserResizeObserver();
 }
 
-// Re-render tables when the wrapper changes size (window resize, panel resize).
-// Debounced so it doesn't hammer on every pixel of a resize drag.
 function _attachIdBrowserResizeObserver() {
   let _roTimer = null;
   const rerender = () => {
@@ -456,19 +623,32 @@ async function _apiJson(url, opts = {}) {
   } catch { return {}; }
 }
 
+/** Show a status message as a temporary toast notification. */
 function setStatus(msg, level = 'ok') {
-  const el = document.getElementById('status-msg');
+  // Try existing status-msg element first (backward compat)
+  let el = document.getElementById('status-msg');
+  if (!el) {
+    // Create a toast element
+    el = document.createElement('div');
+    el.id = 'status-msg';
+    el.style.cssText = 'position:fixed;bottom:16px;right:16px;padding:8px 16px;' +
+      'border-radius:var(--radius,6px);font-size:12px;z-index:9999;' +
+      'background:var(--surface-2,#232c3f);border:1px solid var(--border,#273043);' +
+      'color:var(--text,#e8ecf5);pointer-events:none;opacity:0;transition:opacity .3s;' +
+      'max-width:400px;font-family:var(--font);';
+    document.body.appendChild(el);
+  }
   el.textContent = msg;
-  el.style.color = level === 'error' ? 'var(--red)'
-                 : level === 'warn'  ? 'var(--yellow)'
-                 : 'var(--green)';
-  // Auto-clear after 5 s
+  el.style.color = level === 'error' ? 'var(--danger, #f38ba8)'
+                 : level === 'warn'  ? 'var(--warn, #f9e2af)'
+                 : 'var(--ok, #a6e3a1)';
+  el.style.opacity = '1';
   clearTimeout(el._timer);
-  el._timer = setTimeout(() => { el.textContent = ''; }, 5000);
+  el._timer = setTimeout(() => { el.style.opacity = '0'; }, 5000);
 }
 
 // =============================================================================
-// DRAG-AND-DROP (whole-window)
+// DRAG-AND-DROP (whole-window — .qxw and .qsk)
 // =============================================================================
 
 const overlay = document.getElementById('drop-overlay');
@@ -490,59 +670,64 @@ document.addEventListener('drop', e => {
   overlay.classList.remove('visible');
   const f = e.dataTransfer.files[0];
   if (!f) return;
+
+  const name = f.name.toLowerCase();
+  // Handle .qsk session files
+  if (name.endsWith('.qsk')) {
+    if (typeof sessionLoadDroppedFile === 'function') {
+      sessionLoadDroppedFile(f);
+    } else {
+      // Fallback: read JSON and try to load
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (data.workspace) {
+            const inp = document.getElementById('path-input');
+            if (inp) inp.value = data.workspace;
+            _doLoad({
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: data.workspace }),
+            });
+          }
+        } catch (err) { setStatus('Invalid .qsk file', 'error'); }
+      };
+      reader.readAsText(f);
+    }
+    return;
+  }
+
+  // Default: treat as .qxw
   const form = new FormData();
   form.append('file', f);
   _doLoad({ method: 'POST', body: form });
 });
 
 // =============================================================================
-// THEME TOGGLE  (dark = Catppuccin Mocha / light = Catppuccin Latte)
-// =============================================================================
-
-// Themes cycle: dark (Mocha) → grey (Macchiato) → light (Latte) → dark…
-const _THEMES = ['dark', 'grey', 'light'];
-const _THEME_ICONS = { dark: '🌙', grey: '🌤', light: '☀️' };
-const _THEME_TITLES = { dark: 'Dark (Mocha)', grey: 'Grey (Macchiato)', light: 'Light (Latte)' };
-
-function toggleTheme() {
-  const current = _getCurrentTheme();
-  const next    = _THEMES[(_THEMES.indexOf(current) + 1) % _THEMES.length];
-  _applyTheme(next);
-}
-
-function _getCurrentTheme() {
-  if (document.body.classList.contains('theme-light')) return 'light';
-  if (document.body.classList.contains('theme-grey'))  return 'grey';
-  return 'dark';
-}
-
-function _applyTheme(theme) {
-  document.body.classList.remove('theme-light', 'theme-grey');
-  if (theme === 'light') document.body.classList.add('theme-light');
-  if (theme === 'grey')  document.body.classList.add('theme-grey');
-  const btn = document.getElementById('btn-theme');
-  if (btn) { btn.textContent = _THEME_ICONS[theme]; btn.title = _THEME_TITLES[theme]; }
-  try { localStorage.setItem('qlc-theme', theme); } catch {}
-  // Redraw canvas if fixture module is loaded
-  if (typeof _drawCanvas === 'function') _drawCanvas();
-}
-
-// =============================================================================
 // INIT
 // =============================================================================
 
 (async function init() {
-  // Restore theme preference
-  try {
-    const saved = localStorage.getItem('qlc-theme');
-    if (saved && _THEMES.includes(saved) && saved !== 'dark') _applyTheme(saved);
-  } catch {}
+  // Restore theme
+  _restoreTheme();
 
-  // Restore state if a workspace was already loaded in a previous request
+  // Restore sidebar state
+  _restoreSidebar();
+
+  // Init nav tooltips
+  _initNavTooltips();
+
+  // Greeting
+  _initGreeting();
+
+  // Render recents
+  _renderRecents();
+
+  // Restore state if a workspace was already loaded
   const state = await _apiJson('/api/status');
   _updateHeader(state);
 
   // Initialise session module
   if (typeof initSession === 'function') initSession();
-
 })();

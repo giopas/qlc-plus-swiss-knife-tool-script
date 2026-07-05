@@ -5,6 +5,34 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.1.0] — 2026-07-05
+
+### Changed — Complete GUI redesign
+
+- **Sidebar navigation**: replaced the flat 9-tab bar with a collapsible left sidebar grouping tools into three workflow categories (Run the show, Build the rig, Workspace tools). Collapse/expand state persists in localStorage.
+- **Start screen**: new landing page with personalised greeting, drag-and-drop open zone for `.qxw`/`.qsk` files, recent-files list (last 5, persisted in localStorage), about section, and workflow guide cards.
+- **Design tokens**: three-theme system (dark / grey / light) now driven by CSS custom properties via `data-theme` attribute on `<html>` instead of body class swaps. All hard-coded colours replaced with token references.
+- **SVG icon sprite**: all UI chrome emoji replaced with a consistent Lucide-style SVG symbol sprite (`static/icons.svg`).
+- **Page headers**: every tool page gets a uniform `.page-h` header with icon tile, title, one-line description, and theme toggle.
+- **Output footers**: colour-coded footer on every tool page — green for tools that write a new file (original untouched), orange for Triggers (the only tool that overwrites the loaded workspace).
+- **Files panel**: sidebar footer shows loaded workspace, dictionary, and QXF file state plus session controls, replacing the old header bar and status bar.
+- **Nav tooltips**: hovering any sidebar item shows a floating tooltip with the tool name and description, positioned via JS to avoid sidebar overflow clipping.
+
+### Added
+
+- **Triggers — Save as new file**: ghost button in the Triggers output footer to save trigger edits to a new `.qxw` file instead of overwriting the loaded one. New `POST /api/triggers/save-as-new` route.
+- **Settings endpoint**: `GET /api/settings` returns `user_name` (from `settings.json` or `getpass.getuser()`) for the Start screen greeting.
+- **Session drag-and-drop**: `.qsk` session files can now be dropped onto the window alongside `.qxw` workspaces.
+- **Recent files**: Start screen tracks the last 5 opened files with relative timestamps.
+
+### Removed
+
+- Old `<header id="app-header">`, `<nav id="tab-bar">`, and `<footer id="status-bar">` replaced by sidebar and page headers.
+- Emoji-based UI icons replaced by SVG sprite throughout.
+- Body class theme switching (`theme-grey`, `theme-light`) replaced by `data-theme` attribute (backward-compat aliases kept).
+
+---
+
 ## [1.0.5] — 2026-06-25
 
 ### Fixed — Setlist tab: assignments lost when switching slots

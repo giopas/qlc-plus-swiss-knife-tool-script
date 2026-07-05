@@ -15,11 +15,17 @@ Format (version 1):
   "version": 1,
   "workspace": "/abs/path/to/showfile.qxw",
   "dictionary": "/abs/path/to/descriptions.txt",
-  "setlist_backup": "/abs/path/to/setlist_backup.txt",
+  "slot_paths": {
+    "4001": "/abs/path/to/slot_20minutes_setlist.txt",
+    "4101": "/abs/path/to/slot_unread_setlist.txt"
+  },
   "brightness_forced": {
     "eurolite||led-4c-12-silent-slim-spot": "/abs/path/to/fixture.qxf"
   }
 }
+
+Note: "setlist_backup" key is kept for backward compat when reading old .qsk files.
+
 """
 
 import json
@@ -31,7 +37,7 @@ _SESSION_VERSION = 1
 _sess: dict = {
     'workspace':          None,   # absolute path to the .qxw file
     'dictionary':         None,   # absolute path to descriptions .txt
-    'setlist_backup':     None,   # absolute path to the setlist backup .txt
+    'slot_paths':         {},     # slot_id (str) → absolute path to per-slot .txt file
     'brightness_forced':  {},     # "norm_mfr||norm_model" → absolute path
     'dirty':              False,  # True if state differs from last save/load
     'session_file':       None,   # path of the .qsk file last loaded / saved
@@ -63,8 +69,21 @@ def set_dictionary(path: str | None) -> None:
     _set_if_changed('dictionary', path)
 
 
-def set_setlist_backup(path: str | None) -> None:
-    _set_if_changed('setlist_backup', path)
+def set_slot_path(slot_id: str, path: str | None) -> None:
+    """Remember the file path associated with a specific setlist slot."""
+    sid = str(slot_id)
+    old = _sess['slot_paths'].get(sid)
+    new = path or None
+    if old != new:
+        if new is None:
+            _sess['slot_paths'].pop(sid, None)
+        else:
+            _sess['slot_paths'][sid] = new
+        mark_dirty()
+
+
+def get_slot_path(slot_id: str) -> str | None:
+    return _sess['slot_paths'].get(str(slot_id))
 
 
 def set_brightness_forced(forced: dict) -> None:
@@ -82,7 +101,7 @@ def to_export() -> dict:
         'version':           _SESSION_VERSION,
         'workspace':         _sess['workspace'],
         'dictionary':        _sess['dictionary'],
-        'setlist_backup':    _sess['setlist_backup'],
+        'slot_paths':        _sess['slot_paths'],
         'brightness_forced': _sess['brightness_forced'],
     }
 
@@ -94,7 +113,7 @@ def apply_import(data: dict, session_file_path: str | None = None) -> None:
     """
     _sess['workspace']         = data.get('workspace')
     _sess['dictionary']        = data.get('dictionary')
-    _sess['setlist_backup']    = data.get('setlist_backup')
+    _sess['slot_paths']        = data.get('slot_paths') or {}
     _sess['brightness_forced'] = data.get('brightness_forced') or {}
     _sess['session_file']      = session_file_path
     _sess['dirty']             = False

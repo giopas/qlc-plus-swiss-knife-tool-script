@@ -105,20 +105,7 @@
   ══════════════════════════════════════════════════════════════════════ -->
   <section id="tab-setlist" class="tab-panel active">
 
-    <!-- Row 1: All-slots backup -->
-    <div class="tab-toolbar" style="background:var(--mantle);padding:4px 12px;gap:6px">
-      <span class="hint-text" style="white-space:nowrap">All-slots backup:</span>
-      <input id="setlist-path" type="text" class="filter-input" style="flex:1"
-             placeholder="Path to multi-slot .txt backup…" spellcheck="false">
-      <button class="btn btn-surface" onclick="browseAndLoadSetlist()"
-              data-tooltip="Browse for a .txt backup file and load all slots (path remembered for session)">📂 Load All</button>
-      <button class="btn btn-surface" onclick="browseAndSaveSetlist()"
-              data-tooltip="Save all slot songs to a .txt backup file (uses path above, or opens picker if empty)">💾 Save All</button>
-      <button class="btn btn-surface" onclick="refreshSlots()"
-              data-tooltip="Refresh the CueList slot list from the workspace">↺ Refresh</button>
-    </div>
-
-    <!-- Hidden file input for per-slot TXT import -->
+    <!-- Hidden file input fallback for per-slot TXT import (when native picker unavailable) -->
     <input id="sl-import-file" type="file" accept=".txt" style="display:none"
            onchange="slImportSongsTxt(this)">
 
@@ -200,12 +187,12 @@
           <!-- Import / Export -->
           <div class="fb-group-label">Setlist TXT</div>
           <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
-                  onclick="document.getElementById('sl-import-file').click()"
+                  onclick="slImportSlotFile()"
                   disabled
-                  data-tooltip="Import songs for this slot from a plain-text file (one song per line)">📂 Import Setlist TXT</button>
+                  data-tooltip="Load this slot from a .txt file — restores songs AND assignments if saved with this tool. Path remembered in session.">📂 Load Slot File</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
-                  onclick="slExportSongsTxt()" disabled
-                  data-tooltip="Export the song list for this slot to a .txt file">⬇ Export Setlist TXT</button>
+                  onclick="slSaveSlotFile()" disabled
+                  data-tooltip="Save this slot's songs and function assignments to a .txt file. Path remembered in session.">💾 Save Slot File</button>
 
           <div class="fb-sep"></div>
 

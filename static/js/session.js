@@ -6,7 +6,7 @@
  * A .qsk file is a small JSON that remembers:
  *   - workspace path
  *   - dictionary path
- *   - setlist backup path
+ *   - per-slot setlist file paths (with assignments + timing)
  *   - brightness QXF forced assignments
  *
  * The file is saved to / loaded from the user's computer entirely client-side
@@ -20,11 +20,11 @@
 // ── Module-level state ────────────────────────────────────────────────────────
 
 const _sess = {
-  filename:        null,   // name of the .qsk file (for display only)
-  dirty:           false,  // true when session has changed since last save
-  workspace:       null,
-  dictionary:      null,
-  setlist_backup:  null,
+  filename:         null,   // name of the .qsk file (for display only)
+  dirty:            false,  // true when session has changed since last save
+  workspace:        null,
+  dictionary:       null,
+  slot_paths:       {},     // slot_id -> path (synced from server)
   brightness_forced: {},
 };
 
@@ -33,15 +33,6 @@ const _sess = {
 function initSession() {
   _renderSessionBadge();
   window.addEventListener('beforeunload', _onBeforeUnload);
-
-  // Track setlist backup path changes
-  const slInp = document.getElementById('setlist-path');
-  if (slInp) {
-    slInp.addEventListener('change', () => {
-      const v = slInp.value.trim();
-      if (v) sessionOnSetlistBackupChanged(v);
-    });
-  }
 
   // Track dictionary path changes
   const dictInp = document.getElementById('dict-path');
@@ -100,19 +91,14 @@ async function _syncFromServer() {
     _sess._serverData = data;   // keep full response for modal rendering
     if (data.workspace)          _sess.workspace         = data.workspace;
     if (data.dictionary)         _sess.dictionary        = data.dictionary;
-    if (data.setlist_backup)     _sess.setlist_backup    = data.setlist_backup;
+    if (data.slot_paths)         _sess.slot_paths        = data.slot_paths;
     if (data.brightness_forced)  _sess.brightness_forced = data.brightness_forced;
   } catch (e) { /* silent */ }
 
-  // Pull current values from other tabs' DOM inputs — they may have been
-  // populated before the session module was tracking them
+  // Pull current dict value from DOM if not yet tracked
   const dictInp = document.getElementById('dict-path');
   if (dictInp?.value?.trim() && !_sess.dictionary)
     _sess.dictionary = dictInp.value.trim();
-
-  const slInp = document.getElementById('setlist-path');
-  if (slInp?.value?.trim() && !_sess.setlist_backup)
-    _sess.setlist_backup = slInp.value.trim();
 }
 
 
@@ -125,9 +111,10 @@ function _renderModal() {
   const data         = _sess._serverData || {};
   const wsPath       = _sess.workspace      || '';
   const dictPath     = _sess.dictionary     || _getDomDictPath();
-  const slPath       = _sess.setlist_backup || _getDomSetlistPath();
   const forced       = _sess.brightness_forced || {};
   const forcedCount  = data.brightness_count ?? Object.keys(forced).length;
+  const slotPaths    = _sess.slot_paths || {};
+  const slotCount    = Object.keys(slotPaths).length;
   const uploadMode   = data.ws_upload_mode;
   const origName     = data.ws_original_name || '';
   const wsLoaded     = data.ws_loaded;
@@ -173,16 +160,14 @@ function _renderModal() {
     </div>
 
     <div class="sess-row">
-      <div class="sess-row-label">🎵 Setlist backup</div>
-      <div class="sess-row-body">
-        <div class="sess-path-row">
-          <input id="sess-inp-setlist" class="sess-path-input" type="text"
-                 value="${_esc(slPath)}" placeholder="Paste full path to all-slots backup .txt…"
-                 spellcheck="false" oninput="_sessInputChanged()">
-          <button class="btn btn-surface btn-sm" onclick="sessionPickSetlist(null)"
-                  title="Browse for a setlist backup .txt file">📂</button>
-        </div>
-        <span class="sess-muted sess-field-hint">Use "Save All" in the Setlist tab first to create the backup file, then paste its path here.</span>
+      <div class="sess-row-label">🎵 Setlist slots</div>
+      <div class="sess-row-body sess-readonly">
+        ${slotCount
+          ? `<span class="sess-ok">✓ ${slotCount} slot file path${slotCount !== 1 ? 's' : ''} remembered — restored automatically when session is loaded</span>`
+            + Object.entries(slotPaths).map(([sid, p]) =>
+                `<div class="sess-field-hint sess-muted" style="margin-top:3px">Slot ${_esc(sid)}: ${_truncPath(p)}</div>`
+              ).join('')
+          : `<span class="sess-muted">No slot files saved yet — use "Save Slot File" in the Setlist tab</span>`}
       </div>
     </div>
 
@@ -206,14 +191,9 @@ function _sessInputChanged() {
 // Pull current path values out of the modal inputs (used at save time)
 function _collectModalPaths() {
   return {
-    workspace:      (document.getElementById('sess-inp-workspace')  || {}).value?.trim() || null,
-    dictionary:     (document.getElementById('sess-inp-dictionary') || {}).value?.trim() || null,
-    setlist_backup: (document.getElementById('sess-inp-setlist')    || {}).value?.trim() || null,
+    workspace:  (document.getElementById('sess-inp-workspace')  || {}).value?.trim() || null,
+    dictionary: (document.getElementById('sess-inp-dictionary') || {}).value?.trim() || null,
   };
-}
-
-function _getDomSetlistPath() {
-  return (document.getElementById('setlist-path') || {}).value?.trim() || '';
 }
 
 function _getDomDictPath() {
@@ -269,35 +249,8 @@ async function sessionPickDictionary(fallbackInput) {
 
 // ── Browse for setlist backup ─────────────────────────────────────────────────
 
-async function sessionPickSetlist(fallbackInput) {
-  const current = (document.getElementById('sess-inp-setlist') || {}).value?.trim() || '';
-  const initDir = _parentDir(current);
-  const path = await nativePick(
-    'Select setlist backup (.txt)',
-    [{ label: 'Text files', exts: ['.txt'] }],
-    initDir
-  );
-  if (path) {
-    const field = document.getElementById('sess-inp-setlist');
-    if (field) field.value = path;
-    _markDirty();
-    // Also sync to the Setlist tab input
-    const slInp = document.getElementById('setlist-path');
-    if (slInp && !slInp.value.trim()) slInp.value = path;
-    return;
-  }
-  if (fallbackInput) {
-    const file = fallbackInput.files && fallbackInput.files[0];
-    if (file) {
-      const field = document.getElementById('sess-inp-setlist');
-      if (field && !field.value.trim()) {
-        field.value = file.name;
-        field.placeholder = 'Path unknown — paste the full path here';
-      }
-      _markDirty();
-    }
-  }
-}
+// sessionPickSetlist removed — slot paths are now tracked per slot via
+// "Save Slot File" / "Load Slot File" buttons in the Setlist tab.
 
 
 // ── Save session (download .qsk) ──────────────────────────────────────────────
@@ -310,20 +263,15 @@ async function sessionSave() {
   const modal = document.getElementById('session-modal');
   if (modal && modal.classList.contains('open')) {
     const inp = _collectModalPaths();
-    if (inp.workspace)      _sess.workspace      = inp.workspace;
-    if (inp.dictionary)     _sess.dictionary     = inp.dictionary;
-    if (inp.setlist_backup) _sess.setlist_backup = inp.setlist_backup;
-  }
-  // Also pick up setlist path from the DOM if not yet tracked
-  if (!_sess.setlist_backup) {
-    _sess.setlist_backup = _getDomSetlistPath() || null;
+    if (inp.workspace)  _sess.workspace  = inp.workspace;
+    if (inp.dictionary) _sess.dictionary = inp.dictionary;
   }
 
   const data = {
     version:           1,
-    workspace:         _sess.workspace      || null,
-    dictionary:        _sess.dictionary     || null,
-    setlist_backup:    _sess.setlist_backup || null,
+    workspace:         _sess.workspace || null,
+    dictionary:        _sess.dictionary || null,
+    slot_paths:        _sess.slot_paths || {},
     brightness_forced: _sess.brightness_forced || {},
   };
 
@@ -409,10 +357,10 @@ async function sessionLoad(input) {
     const result = await r.json();
 
     // Update client state
-    _sess.filename         = file.name;
-    _sess.workspace        = data.workspace        || null;
-    _sess.dictionary       = data.dictionary       || null;
-    _sess.setlist_backup   = data.setlist_backup   || null;
+    _sess.filename          = file.name;
+    _sess.workspace         = data.workspace         || null;
+    _sess.dictionary        = data.dictionary        || null;
+    _sess.slot_paths        = data.slot_paths        || {};
     _sess.brightness_forced = data.brightness_forced || {};
     _clearDirty();
 
@@ -432,12 +380,6 @@ async function sessionLoad(input) {
       // Enable reload button
       const rl = document.getElementById('btn-reload');
       if (rl) rl.disabled = false;
-    }
-
-    // Reflect setlist path in setlist tab
-    if (data.setlist_backup) {
-      const slInp = document.getElementById('setlist-path');
-      if (slInp) slInp.value = data.setlist_backup;
     }
 
     // Build status summary
@@ -477,14 +419,8 @@ function sessionOnDictionaryLoaded(path) {
   }
 }
 
-/** Call this whenever the setlist backup path changes. */
-function sessionOnSetlistBackupChanged(path) {
-  if (path && path !== _sess.setlist_backup) {
-    _sess.setlist_backup = path;
-    _markDirty();
-    _postUpdateField('setlist_backup', path);
-  }
-}
+/** No-op kept for backward compat — slot paths are now tracked server-side per slot. */
+function sessionOnSetlistBackupChanged(path) { /* deprecated */ }
 
 /** Call this whenever brightness forced assignments change. */
 function sessionOnForcedAssignmentsChanged() {

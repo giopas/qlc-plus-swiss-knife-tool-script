@@ -5,6 +5,7 @@ import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
 from core import pdf as pdf_mod
+import core.session as sess
 
 
 def _safe_err(exc: Exception) -> str:
@@ -153,6 +154,104 @@ def purge_workspace_clones():
     try:
         result = ws.purge_workspace_clones()
         return jsonify({'ok': True, **result})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+# ── Per-slot file load / save (full details: names + assignments + timing) ────
+
+@bp.route('/<slot_id>/load-file', methods=['POST'])
+def load_slot_file(slot_id):
+    """
+    Load a slot's full details from a file.
+
+    Supports two formats:
+      New (6 pipe-separated fields): txt_name|qxw_id|qxw_name|in|hold|out
+      Old (plain text):              one song name per line (no assignments)
+
+    Body: {"path": "/abs/path/to/file.txt"}
+    Returns: {"ok": true, "count": N, "rows": [...], "has_assignments": bool}
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    path = (data.get('path') or '').strip()
+    if not path:
+        return jsonify({'error': 'No path provided.'}), 400
+    if not os.path.isfile(path):
+        return jsonify({'error': f'File not found: {path}'}), 404
+    try:
+        rows = []
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split('|')
+                if len(parts) >= 6:
+                    # New detailed format
+                    rows.append({
+                        'txt_name': parts[0].strip(),
+                        'qxw_id':   parts[1].strip(),
+                        'qxw_name': parts[2].strip(),
+                        'in':       parts[3].strip() or '0',
+                        'hold':     parts[4].strip() or '4294967294',
+                        'out':      parts[5].strip() or '0',
+                    })
+                else:
+                    # Old format: plain song names (may have been saved by old Export)
+                    name = parts[0].strip()
+                    if name:
+                        rows.append({
+                            'txt_name': name, 'qxw_id': '', 'qxw_name': '',
+                            'in': '0', 'hold': '4294967294', 'out': '0',
+                        })
+        ws.set_slot_details(slot_id, rows)
+        sess.set_slot_path(slot_id, path)
+        has_assign = any(r.get('qxw_id') for r in rows)
+        return jsonify({'ok': True, 'count': len(rows), 'rows': rows,
+                        'has_assignments': has_assign})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/<slot_id>/save-file', methods=['POST'])
+def save_slot_file(slot_id):
+    """
+    Save a slot's full details (names + assignments + timing) to a file.
+
+    Format written: txt_name|qxw_id|qxw_name|in|hold|out
+    Body: {"path": "/abs/path/to/file.txt"}
+    Returns: {"ok": true, "count": N, "path": "..."}
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    path = (data.get('path') or '').strip()
+    if not path:
+        return jsonify({'error': 'No path provided.'}), 400
+    try:
+        slot  = next((s for s in ws.get_cuelist_slots() if s['id'] == slot_id), {})
+        rows  = ws.get_slot_details(slot_id)
+        lines = [
+            f'# QLC+ Swiss Knife — Setlist slot: {slot.get("caption", slot_id)}\n',
+            f'# Slot ID: {slot_id}\n',
+            '# Format: txt_name|qxw_id|qxw_name|in|hold|out\n',
+        ]
+        for r in rows:
+            parts = [
+                r.get('txt_name', ''),
+                r.get('qxw_id',   ''),
+                r.get('qxw_name', ''),
+                str(r.get('in',   '0')),
+                str(r.get('hold', '4294967294')),
+                str(r.get('out',  '0')),
+            ]
+            lines.append('|'.join(parts) + '\n')
+        with open(path, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+        sess.set_slot_path(slot_id, path)
+        return jsonify({'ok': True, 'count': len(rows), 'path': path})
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
 

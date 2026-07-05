@@ -27,7 +27,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -51,6 +51,7 @@ _state: dict = {
     'func_detailed':      {},   # fid -> {name, type, contains}
     'vc_buttons':         {},   # fid -> {captions, frames}
     'vc_widgets':         [],   # list of widget dicts (ID Browser)
+    'vc_nodes_by_id':     {},   # widget_id (str) -> ET.Element (for patch-back)
     'trigger_items':      {},   # uid -> {type, caption, func, key, uni, ch, _node}
     'available_frames':   set(),
     'chasers':            {},   # chaser_name -> fid
@@ -761,6 +762,7 @@ def _reset():
     _state['func_detailed']      = {}
     _state['vc_buttons']         = {}
     _state['vc_widgets']         = []
+    _state['vc_nodes_by_id']     = {}
     _state['trigger_items']      = {}
     _state['available_frames']   = set()
     _state['chasers']            = {}
@@ -969,8 +971,27 @@ def _parse_vc_node(node: ET.Element, frame_ancestry: list):
     if tag_name in _WIDGET_TYPES:
         wid     = node.get('ID', '')
         caption = node.get('Caption', '').replace('\n', ' ').strip()
-        wx, wy  = node.get('X', ''), node.get('Y', '')
-        ww, wh  = node.get('Width', ''), node.get('Height', '')
+
+        # Position from <WindowState> child element
+        ws_node = node.find('q:WindowState', NS)
+        if ws_node is not None:
+            wx = ws_node.get('X', '')
+            wy = ws_node.get('Y', '')
+            ww = ws_node.get('Width', '')
+            wh = ws_node.get('Height', '')
+        else:
+            wx = wy = ww = wh = ''
+
+        # Colors / font from <Appearance> child element
+        app_node = node.find('q:Appearance', NS)
+        bg_color = fg_color = font_str = ''
+        if app_node is not None:
+            bg_el   = app_node.find('q:BackgroundColor', NS)
+            fg_el   = app_node.find('q:ForegroundColor', NS)
+            font_el = app_node.find('q:Font', NS)
+            if bg_el   is not None and bg_el.text:   bg_color = bg_el.text
+            if fg_el   is not None and fg_el.text:   fg_color = fg_el.text
+            if font_el is not None and font_el.text: font_str = font_el.text
 
         func_node = node.find('q:Function', NS)
         if func_node is not None:
@@ -987,6 +1008,7 @@ def _parse_vc_node(node: ET.Element, frame_ancestry: list):
         frame_path = " › ".join(frame_ancestry) if frame_ancestry else "[Root]"
 
         if wid:
+            _state['vc_nodes_by_id'][wid] = node
             _state['vc_widgets'].append({
                 'widget_id':   wid,
                 'type':        tag_name,
@@ -995,6 +1017,9 @@ def _parse_vc_node(node: ET.Element, frame_ancestry: list):
                 'func_name':   fname,
                 'frame_path':  frame_path,
                 'x': wx, 'y': wy, 'w': ww, 'h': wh,
+                'bg_color': bg_color,
+                'fg_color': fg_color,
+                'font':     font_str,
             })
 
         # Legacy vc_buttons (keeps other tabs working)
@@ -1121,3 +1146,256 @@ def _collect_cuelist_slots(node: ET.Element):
         })
     for child in node:
         _collect_cuelist_slots(child)
+
+
+# =============================================================================
+# VC LAYOUT EDITOR — PUBLIC API
+# =============================================================================
+
+# ── Color helpers ─────────────────────────────────────────────────────────────
+
+def _qlc_color_to_hex(c: str | int) -> str:
+    """Convert a QLC+ color integer (QRgb: 0xAARRGGBB) to CSS #rrggbb string."""
+    try:
+        n = int(c)
+    except (TypeError, ValueError):
+        return ''
+    r = (n >> 16) & 0xFF
+    g = (n >> 8)  & 0xFF
+    b =  n        & 0xFF
+    return f'#{r:02x}{g:02x}{b:02x}'
+
+
+def _hex_to_qlc_color(h: str) -> int:
+    """Convert a CSS #rrggbb string to a QLC+ color integer (0xFFRRGGBB)."""
+    h = (h or '').lstrip('#')
+    if len(h) == 6:
+        try:
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return (0xFF << 24) | (r << 16) | (g << 8) | b
+        except ValueError:
+            pass
+    return 0xFF000000  # fallback: opaque black
+
+
+def _parse_font_string(s: str) -> tuple:
+    """
+    Parse a Qt font descriptor string → (family: str, size: int, bold: bool).
+    Format: family,pointSize,pixelSize,styleHint,weight,italic,...
+    """
+    parts = s.split(',') if s else []
+    family = parts[0].strip() if parts else 'Roboto'
+    try:
+        size = int(parts[1]) if len(parts) > 1 else 9
+    except (ValueError, TypeError):
+        size = 9
+    try:
+        weight = int(parts[4]) if len(parts) > 4 else 400
+    except (ValueError, TypeError):
+        weight = 400
+    return family, size, weight >= 600
+
+
+def _build_font_string(family: str, size: int, bold: bool) -> str:
+    """Build a minimal Qt font descriptor string from components."""
+    weight = 700 if bold else 400
+    return f'{family},{size},-1,5,{weight},0,0,0,0,0,0,0,0,0,0,1'
+
+
+# ── VC tree builder ────────────────────────────────────────────────────────────
+
+def _build_vc_node(node: ET.Element, parent_id: str | None = None) -> dict | None:
+    """
+    Recursively build a widget dict from a VC XML element.
+    Returns None for non-widget elements (e.g. <Properties>, <WindowState>, etc.)
+    """
+    tag = node.tag.replace(f'{{{QLC_NS_URI}}}', '')
+    if tag not in _WIDGET_TYPES:
+        return None
+
+    wid     = node.get('ID', '')
+    caption = node.get('Caption', '').replace('\n', ' ').strip()
+
+    # Position from <WindowState>
+    ws = node.find('q:WindowState', NS)
+    x = int(ws.get('X',      0) or 0) if ws is not None else 0
+    y = int(ws.get('Y',      0) or 0) if ws is not None else 0
+    w = int(ws.get('Width',  0) or 0) if ws is not None else 0
+    h = int(ws.get('Height', 0) or 0) if ws is not None else 0
+
+    # Appearance
+    app  = node.find('q:Appearance', NS)
+    bg_hex = fg_hex = ''
+    font_family, font_size, font_bold = 'Roboto', 9, True
+    if app is not None:
+        bg_el   = app.find('q:BackgroundColor', NS)
+        fg_el   = app.find('q:ForegroundColor', NS)
+        font_el = app.find('q:Font', NS)
+        if bg_el   is not None and bg_el.text:   bg_hex = _qlc_color_to_hex(bg_el.text)
+        if fg_el   is not None and fg_el.text:   fg_hex = _qlc_color_to_hex(fg_el.text)
+        if font_el is not None and font_el.text:
+            font_family, font_size, font_bold = _parse_font_string(font_el.text)
+
+    # Linked function
+    func_node = node.find('q:Function', NS)
+    fid = ''
+    if func_node is not None:
+        fid = func_node.get('ID', '')
+        if fid in ('4294967295', '-1'):
+            fid = ''
+    else:
+        chaser_node = node.find('q:Chaser', NS)
+        if chaser_node is not None:
+            fid = (chaser_node.text or '').strip()
+            if fid in ('4294967295', '-1'):
+                fid = ''
+
+    # Children
+    children = []
+    for child in node:
+        child_dict = _build_vc_node(child, wid)
+        if child_dict is not None:
+            children.append(child_dict)
+
+    return {
+        'id':          wid,
+        'type':        tag,
+        'caption':     caption,
+        'parent_id':   parent_id,
+        'x': x, 'y': y, 'w': w, 'h': h,
+        'bg_color':    bg_hex,
+        'fg_color':    fg_hex,
+        'font_family': font_family,
+        'font_size':   font_size,
+        'font_bold':   font_bold,
+        'func_id':     fid,
+        'func_name':   _state['func_by_id'].get(fid, '') if fid else '',
+        'children':    children,
+    }
+
+
+def get_vc_tree() -> dict | None:
+    """
+    Return the complete VC widget tree as nested dicts with positions and colours.
+    Each top-level Frame under <VirtualConsole> is one 'page'.
+    Returns None if no workspace is loaded.
+    """
+    if not _state['loaded'] or not _state['qxw_root']:
+        return None
+    vc_root = _state['qxw_root'].find('q:VirtualConsole', NS)
+    if vc_root is None:
+        return None
+    pages = []
+    for child in vc_root:
+        tag = child.tag.replace(f'{{{QLC_NS_URI}}}', '')
+        if tag in ('Frame', 'SoloFrame'):
+            node_dict = _build_vc_node(child, None)
+            if node_dict:
+                pages.append(node_dict)
+    return {'pages': pages, 'vc_width': 1920, 'vc_height': 1080}
+
+
+# ── VC patch (in-memory XML mutation) ─────────────────────────────────────────
+
+def _set_app_color(app_node: ET.Element, tag: str, hex_color: str) -> None:
+    """Set or create a <BackgroundColor>/<ForegroundColor> element."""
+    ns_tag = f'{{{QLC_NS_URI}}}{tag}'
+    el = app_node.find(f'q:{tag}', NS)
+    if el is None:
+        el = ET.SubElement(app_node, ns_tag)
+    el.text = str(_hex_to_qlc_color(hex_color))
+
+
+def patch_vc_widgets(changes: list) -> dict:
+    """
+    Apply position/appearance changes to VC widgets in the in-memory XML.
+
+    Each change dict may contain any subset of:
+      id (str, required), x, y, w, h (int), bg_color, fg_color (#rrggbb str),
+      font_size (int), font_bold (bool)
+
+    Returns {'patched': int, 'errors': [str]}.
+    """
+    if not _state['loaded'] or not _state['qxw_root']:
+        raise RuntimeError('No workspace loaded')
+
+    patched, errors = 0, []
+    ns_ws  = f'{{{QLC_NS_URI}}}WindowState'
+    ns_app = f'{{{QLC_NS_URI}}}Appearance'
+
+    for ch in changes:
+        wid = str(ch.get('id', '')).strip()
+        if not wid:
+            continue
+
+        node = _state['vc_nodes_by_id'].get(wid)
+        if node is None:
+            errors.append(f'widget ID {wid} not found')
+            continue
+
+        # ── WindowState ───────────────────────────────────────────────────────
+        if any(k in ch for k in ('x', 'y', 'w', 'h')):
+            ws = node.find('q:WindowState', NS)
+            if ws is None:
+                ws = ET.SubElement(node, ns_ws)
+                ws.set('Visible', 'True')
+            if 'x' in ch: ws.set('X',      str(int(ch['x'])))
+            if 'y' in ch: ws.set('Y',      str(int(ch['y'])))
+            if 'w' in ch: ws.set('Width',  str(int(ch['w'])))
+            if 'h' in ch: ws.set('Height', str(int(ch['h'])))
+
+        # ── Appearance ────────────────────────────────────────────────────────
+        if any(k in ch for k in ('bg_color', 'fg_color', 'font_size', 'font_bold')):
+            app = node.find('q:Appearance', NS)
+            if app is None:
+                app = ET.SubElement(node, ns_app)
+
+            if ch.get('bg_color'): _set_app_color(app, 'BackgroundColor', ch['bg_color'])
+            if ch.get('fg_color'): _set_app_color(app, 'ForegroundColor', ch['fg_color'])
+
+            if 'font_size' in ch or 'font_bold' in ch:
+                font_el = app.find('q:Font', NS)
+                ns_font = f'{{{QLC_NS_URI}}}Font'
+                if font_el is None:
+                    font_el = ET.SubElement(app, ns_font)
+                cur_str  = font_el.text or ''
+                fam, fsz, fbd = _parse_font_string(cur_str) if cur_str else ('Roboto', 9, True)
+                if 'font_size' in ch: fsz = int(ch['font_size'])
+                if 'font_bold' in ch: fbd = bool(ch['font_bold'])
+                font_el.text = _build_font_string(fam, fsz, fbd)
+
+        # ── Sync flat vc_widgets list ─────────────────────────────────────────
+        for wd in _state['vc_widgets']:
+            if wd.get('widget_id') == wid:
+                if 'x' in ch: wd['x'] = str(ch['x'])
+                if 'y' in ch: wd['y'] = str(ch['y'])
+                if 'w' in ch: wd['w'] = str(ch['w'])
+                if 'h' in ch: wd['h'] = str(ch['h'])
+                break
+
+        patched += 1
+
+    return {'patched': patched, 'errors': errors}
+
+
+# ── Export modified QXW ────────────────────────────────────────────────────────
+
+def export_qxw(path: str) -> None:
+    """
+    Write the current in-memory workspace XML (with any applied patches)
+    to a new file.  Never overwrites the source file.
+    """
+    if not _state['loaded'] or not _state['qxw_root']:
+        raise RuntimeError('No workspace loaded')
+
+    src = _state.get('path') or ''
+    if os.path.abspath(path) == os.path.abspath(src):
+        raise ValueError('Cannot overwrite the source file — choose a different name')
+
+    # ET.register_namespace('', QLC_NS_URI) is called at module level (line 28).
+    xml_body = ET.tostring(_state['qxw_root'], encoding='unicode')
+
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<!DOCTYPE Workspace>\n')
+        f.write(xml_body)

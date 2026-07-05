@@ -14,6 +14,7 @@ let _brtScales     = {};   // fixture_id → scale (0.0–2.0, default 1.0)
 let _brtManual     = {};   // fixture_id → dimmer_offset (for QXF-not-found fixtures)
 let _brtLinked     = {};   // model_key  → bool (true = sliders move together)
 let _brtPreviewTm  = null; // debounce timer for preview
+let _brtBaseline   = {};   // fixture_id → {peak, mean, scene_count} (from current scene values)
 
 // ── Public API (called from app.js) ──────────────────────────────────────────
 
@@ -23,6 +24,7 @@ function invalidateBrightness() {
   _brtScales   = {};
   _brtManual   = {};
   _brtLinked   = {};
+  _brtBaseline = {};
   const wrap = document.getElementById('brt-fixture-wrap');
   if (wrap) wrap.innerHTML = '<div class="brt-placeholder">Load a workspace to adjust brightness.</div>';
   _brtSetPreview(null);
@@ -39,9 +41,18 @@ async function ensureBrightnessLoaded() {
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 async function _brtLoadFixtures() {
-  const data = await _apiJson('/api/brightness/fixtures');
+  const [data, baselineData] = await Promise.all([
+    _apiJson('/api/brightness/fixtures'),
+    _apiJson('/api/brightness/baseline'),
+  ]);
   if (data.error) { setStatus(data.error, 'error'); return; }
   _brtFixtures = Array.isArray(data) ? data : [];
+
+  // Store baseline stats keyed by fixture ID
+  _brtBaseline = {};
+  if (Array.isArray(baselineData)) {
+    for (const b of baselineData) _brtBaseline[b.id] = b;
+  }
 
   // Initialise scales to 1.0 and link state per model group
   const seen = {};
@@ -66,6 +77,41 @@ function _brtMissingFixtures() {
   }));
 }
 
+// ── Baseline indicator helpers ────────────────────────────────────────────────
+
+/** Compute peak dimmer % (0-100) for a group, averaged across all its fixtures. */
+function _brtGroupPeakPct(fixtures) {
+  let sum = 0, n = 0;
+  for (const fx of fixtures) {
+    const b = _brtBaseline[fx.id];
+    if (b && b.scene_count > 0) { sum += b.peak; n++; }
+  }
+  return n > 0 ? sum / n / 255 * 100 : null;
+}
+
+/**
+ * Build the baseline indicator HTML for a group header.
+ * @param {number|null} pct   - this group's peak %
+ * @param {number|null} maxPct - highest peak % across all groups (null = only one group)
+ */
+function _brtBaselineBadge(pct, maxPct) {
+  if (pct === null) return ''; // no scene data
+  const rounded = Math.round(pct);
+  // Relative diff vs the brightest group (skip if this IS the brightest)
+  let diffHtml = '';
+  if (maxPct !== null && maxPct > 0 && Math.round(pct) < Math.round(maxPct)) {
+    const diff = Math.round(pct - maxPct);
+    diffHtml = `<span class="brt-baseline-diff" title="vs brightest group">${diff}%</span>`;
+  }
+  // Colour: green ≥ 95%, yellow 70-94%, orange 40-69%, red < 40%
+  const cls = rounded >= 95 ? 'brt-bl-full'
+            : rounded >= 70 ? 'brt-bl-ok'
+            : rounded >= 40 ? 'brt-bl-low'
+            :                  'brt-bl-dim';
+  return `<span class="brt-baseline ${cls}" title="Peak dimmer value in scenes: ${rounded}% of full (${Math.round(pct/100*255)}/255). Reflects the actual current scene values — a value below 100% means this group was already scaled down in the loaded file.">` +
+         `⟂ ${rounded}%${diffHtml}</span>`;
+}
+
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 function _brtRender() {
@@ -86,6 +132,18 @@ function _brtRender() {
     groups[mk].fixtures.push(fx);
   }
 
+  // Pre-compute baseline peaks per group to find the global max
+  const groupPeaks = {};
+  let globalMaxPct = null;
+  for (const mk of groupOrder) {
+    const p = _brtGroupPeakPct(groups[mk].fixtures);
+    groupPeaks[mk] = p;
+    if (p !== null && (globalMaxPct === null || p > globalMaxPct)) globalMaxPct = p;
+  }
+  // Only show relative diff if there are at least 2 groups with scene data
+  const validGroups = groupOrder.filter(mk => groupPeaks[mk] !== null);
+  const showRelative = validGroups.length >= 2;
+
   let html = '';
   for (const mk of groupOrder) {
     const grp    = groups[mk];
@@ -103,6 +161,11 @@ function _brtRender() {
       ? `<span class="brt-badge brt-badge-warn" title="QXF not found — enter dimmer channel manually, upload/fetch the QXF, or assign one below">⚠ No QXF</span>`
       : `<span class="brt-badge brt-badge-ok"   title="QXF loaded from: ${_esc(fx0.qxf_path || 'local filesystem')}">✓ QXF</span>`;
 
+    // Baseline indicator badge
+    const blPct    = groupPeaks[mk];
+    const blMaxPct = showRelative ? globalMaxPct : null;
+    const blBadge  = _brtBaselineBadge(blPct, blMaxPct);
+
     // Per-group QXF assign button — always visible, lets user force any .qxf to this group
     const mfrSafe   = _esc(fx0.manufacturer);
     const modelSafe = _esc(fx0.model);
@@ -115,6 +178,7 @@ function _brtRender() {
           <strong>${mfrSafe} ${modelSafe}</strong>
           <span class="brt-group-mode">${_esc(fx0.mode)}</span>
           ${qxfBadge}
+          ${blBadge}
         </span>
         <label class="brt-link-label" title="Move all fixtures in this group together">
           <input type="checkbox" class="brt-link-cb"

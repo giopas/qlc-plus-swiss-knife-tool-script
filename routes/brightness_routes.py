@@ -36,6 +36,14 @@ def fixtures():
     return jsonify(br.get_fixture_info())
 
 
+@bp.route('/baseline')
+def baseline():
+    """Return per-fixture dimmer baseline stats read from scene values."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    return jsonify(br.get_fixture_baseline_stats())
+
+
 # ── Preview ───────────────────────────────────────────────────────────────────
 
 @bp.route('/preview', methods=['POST'])

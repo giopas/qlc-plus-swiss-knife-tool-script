@@ -557,6 +557,91 @@ def fetch_fixtures_from_github(missing_fixtures: list, save_dir: str) -> dict:
 
 
 # =============================================================================
+# BASELINE STATS
+# =============================================================================
+
+def get_fixture_baseline_stats() -> list:
+    """
+    Scan all Scene functions and return per-fixture dimmer channel statistics,
+    reflecting the *current* (possibly pre-scaled) values stored in the QXW.
+
+    Useful for showing the user the relative dimmer levels already baked into
+    the workspace when they reopen a previously-scaled file.
+
+    Returns a list of dicts::
+
+        {
+            'id':           str,
+            'name':         str,
+            'manufacturer': str,
+            'model':        str,
+            'mode':         str,
+            'peak':         int,    # max dimmer value across all scenes (0-255)
+            'mean':         float,  # mean of non-zero dimmer values
+            'scene_count':  int,    # scenes where this fixture has an explicit dimmer value
+        }
+    """
+    if not _state.get('loaded'):
+        return []
+
+    root   = _state['qxw_root']
+    engine = root.find('q:Engine', NS)
+    fi_map = {fi['id']: fi for fi in get_fixture_info()}
+
+    # Build per-fixture bucket keyed by fixture ID
+    buckets = {}
+    for fid, fi in fi_map.items():
+        buckets[fid] = {
+            'id':           fid,
+            'name':         fi['name'],
+            'manufacturer': fi['manufacturer'],
+            'model':        fi['model'],
+            'mode':         fi['mode'],
+            'values':       [],
+        }
+
+    for func in engine.findall('q:Function', NS):
+        if func.get('Type') != 'Scene':
+            continue
+        for fv in func.findall('q:FixtureVal', NS):
+            fid = fv.get('ID', '')
+            if fid not in buckets:
+                continue
+            fi   = fi_map.get(fid, {})
+            doff = fi.get('dimmer_offset')
+            if doff is None:
+                continue
+            raw = (fv.text or '').strip()
+            if not raw:
+                continue
+            try:
+                pairs = raw.split(',')
+                for i in range(0, len(pairs) - 1, 2):
+                    if int(pairs[i]) == doff:
+                        buckets[fid]['values'].append(int(pairs[i + 1]))
+                        break
+            except (ValueError, IndexError):
+                continue
+
+    result = []
+    for fid, b in buckets.items():
+        vals   = b['values']
+        active = [v for v in vals if v > 0]
+        result.append({
+            'id':           fid,
+            'name':         b['name'],
+            'manufacturer': b['manufacturer'],
+            'model':        b['model'],
+            'mode':         b['mode'],
+            'peak':         max(vals) if vals else 0,
+            'mean':         round(sum(active) / len(active), 1) if active else 0.0,
+            'scene_count':  len(vals),
+        })
+
+    return result
+
+
+# =============================================================================
 # PREVIEW / APPLY
 # =============================================================================
 

@@ -1971,6 +1971,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   text-overflow: ellipsis;
   padding-left: 2px;
 }
+.fb-song-id {
+  color: var(--text-faint);
+  margin-right: 3px;
+}
 .fb-song-parent {
   font-size: 9.5px;
   color: var(--text-faint);

@@ -1875,6 +1875,45 @@ body.theme-light {
   border-color: var(--surface1);
 }
 
+/* ── Brightness: baseline dimmer indicator ───────────────────────────────── */
+.brt-baseline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid;
+  cursor: default;
+}
+.brt-bl-full {
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--green);
+  border-color: var(--green);
+}
+.brt-bl-ok {
+  background: color-mix(in srgb, var(--teal) 15%, transparent);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+.brt-bl-low {
+  background: color-mix(in srgb, var(--yellow) 15%, transparent);
+  color: var(--yellow);
+  border-color: var(--yellow);
+}
+.brt-bl-dim {
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+  border-color: var(--red);
+}
+/* Relative diff vs brightest group */
+.brt-baseline-diff {
+  font-size: 10px;
+  opacity: 0.75;
+  font-weight: 500;
+}
+
 
 /* ============================================================================
    SESSION MODAL

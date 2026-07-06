@@ -20,3 +20,15 @@ __pycache__/
 
 # Raw macOS screenshots (renamed webapp_*.png are tracked)
 screenshots/Screenshot*.png
+
+# Generated macOS .app bundle
+*.app/
+
+# SSH keys (should never be committed)
+ssh_github_key
+ssh_github_key.pub
+github-giopas-ssh-hey.txt
+github-giopas-ssh-hey.txt.pub
+
+# Settings
+settings.json

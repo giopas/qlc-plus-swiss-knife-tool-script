@@ -138,6 +138,12 @@
     </div>
   </div>
 
+  <!-- Quit -->
+  <button class="sn-quit" id="sn-quit" onclick="quitApp()" title="Quit QLC+ Swiss Knife">
+    <svg class="ic"><use href="/static/icons.svg#power"/></svg>
+    <span>Quit</span>
+  </button>
+
   <!-- Collapse -->
   <button class="sn-collapse" id="sn-collapse" onclick="toggleSidebar()" title="Collapse sidebar">
     <svg class="ic"><use href="/static/icons.svg#chevron-left"/></svg>
@@ -1118,7 +1124,7 @@
         <span id="vce-status" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
           Load a workspace and open this tab to start
         </span>
-        <span style="font-size:9px;opacity:.4">VC VISUAL EDITOR  v1.1.0</span>
+        <span style="font-size:9px;opacity:.4">VC VISUAL EDITOR  v{{ version }}</span>
       </div>
 
     </div><!-- end #vce-wrap -->

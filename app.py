@@ -185,22 +185,86 @@ def create_app():
                 pass
         return jsonify({'user_name': name})
 
+    # ── Quit endpoint ────────────────────────────────────────────────────────
+    app._webview_window = None  # set by __main__ when running in webview mode
+
+    @app.route('/api/quit', methods=['POST'])
+    def api_quit():
+        """Shut down the server (and native window if applicable)."""
+        import signal
+
+        def _shutdown():
+            if app._webview_window is not None:
+                # pywebview mode — destroy the window; webview.start()
+                # will return and os._exit(0) handles the rest
+                try:
+                    app._webview_window.destroy()
+                except Exception:
+                    os._exit(0)
+            else:
+                # Browser mode — send SIGINT to stop Flask
+                os.kill(os.getpid(), signal.SIGINT)
+
+        threading.Timer(0.5, _shutdown).start()
+        return jsonify({'ok': True, 'message': 'Shutting down…'})
+
     # ── Template context: inject version ─────────────────────────────────────
     @app.context_processor
     def inject_version():
-        return {'version': '1.1.0'}
+        return {'version': '1.1.1'}
 
     return app
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='QLC+ Swiss Knife')
+    parser.add_argument('--browser', action='store_true',
+                        help='Force browser mode (skip pywebview even if installed)')
+    args = parser.parse_args()
+
     app = create_app()
     url = f'http://localhost:{PORT}'
 
-    # Open the browser one second after the server starts
-    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+    use_webview = False
+    if not args.browser:
+        try:
+            import webview                      # pywebview
+            use_webview = True
+        except ImportError:
+            pass
 
-    print(f"\n⚡  QLC+ Swiss Knife  →  {url}")
-    print("   Press Ctrl+C to quit.\n")
+    if use_webview:
+        # ── Native window mode (pywebview) ────────────────────────────────
+        def _start_flask():
+            import logging
+            log = logging.getLogger('werkzeug')
+            log.setLevel(logging.WARNING)
+            app.run(host='127.0.0.1', port=PORT, debug=False,
+                    use_reloader=False)
 
-    app.run(host='127.0.0.1', port=PORT, debug=False, use_reloader=False)
+        flask_thread = threading.Thread(target=_start_flask, daemon=True)
+        flask_thread.start()
+
+        print(f"\n⚡  QLC+ Swiss Knife  →  {url}  (native window)")
+        print("   Close the window to quit.\n")
+
+        window = webview.create_window(
+            'QLC+ Swiss Knife',
+            url,
+            width=1280,
+            height=820,
+            min_size=(900, 600),
+        )
+        app._webview_window = window   # let /api/quit destroy it
+        webview.start()  # blocks until window is closed
+        print("\n⚡  Window closed — bye!\n")
+        os._exit(0)
+    else:
+        # ── Browser mode ──────────────────────────────────────────────────
+        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+
+        print(f"\n⚡  QLC+ Swiss Knife  →  {url}")
+        print("   Press Ctrl+C to quit.\n")
+
+        app.run(host='127.0.0.1', port=PORT, debug=False, use_reloader=False)

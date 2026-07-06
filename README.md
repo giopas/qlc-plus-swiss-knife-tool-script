@@ -1,6 +1,6 @@
-# ⚡ QLC+ Swiss Knife — v1.1.0
+# ⚡ QLC+ Swiss Knife — v1.1.1
 
-**A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser and manage every aspect of your show from a clean, sidebar-driven interface.**
+**A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser (or a native window) and manage every aspect of your show from a clean, sidebar-driven interface.**
 
 > ⚠️ **Independent Project Notice**
 > This project is **not affiliated with, endorsed by, or officially connected to the QLC+ project or its development team** in any way. All credit for QLC+ itself goes to the [QLC+ team](https://www.qlcplus.org/). This is an independent community utility that works *on top of* QLC+ workspace files (`.qxw`).
@@ -16,29 +16,22 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
-## What's new in v1.1.0
+## What's new in v1.1.1
 
-### 🎨 Complete GUI Redesign — Sidebar Navigation
+### 🖥️ Standalone App Experience
 
-The flat 9-tab bar has been replaced with a **collapsible left sidebar** that groups tools by workflow stage. The sidebar remembers its collapsed/expanded state across sessions.
+The app now feels like a proper standalone application:
 
-### 🏠 Start Screen
-A welcoming home page with a personalised greeting, drag-and-drop zone for workspace files, recent-files list, an "About" section, and workflow cards that guide you through the typical build-prepare-export cycle.
+- **Quit button** — a red power icon at the bottom of the sidebar cleanly shuts down the server. Prompts for unsaved session changes.
+- **Native window mode** — install `pywebview` (optional) and the app opens in a native OS window instead of a browser tab. No URL bar, real close button. Use `--browser` to force browser mode.
+- **Platform launchers** — ready-to-use launch scripts in `launchers/`:
+  - macOS: `create-macos-app.sh` builds a `.app` bundle for Launchpad/Dock
+  - Windows: `QLC_Swiss_Knife.bat` hides the console window
+  - Linux: `qlc-swiss-knife.desktop` for the app menu
 
-### 🎨 Three Themes with Design Tokens
-The colour system is now powered by CSS custom properties (`data-theme="dark|grey|light"`) with a unified token vocabulary. The theme button cycles through all three and remembers your choice.
+### 💾 Session Save on Workspace Switch
 
-### 📁 Files Panel
-The sidebar footer shows which files are loaded (workspace, dictionary, QXF) and the session state — replacing the old header bar and status bar.
-
-### 🔒 Output Footers
-Every tool page now has a colour-coded footer: **green** for tools that write a new file (Setlist, Fixtures, Brightness, etc.) and **orange** for Triggers — the only tool that overwrites the loaded workspace. Triggers also gains a "Save as new file…" button.
-
-### 🖼️ SVG Icons
-All UI chrome emoji have been replaced with a crisp SVG icon sprite.
-
-### 📋 Session File Support for Drag-and-Drop
-You can now drag `.qsk` session files onto the window, in addition to `.qxw` workspaces.
+When you load a new workspace while the current session has unsaved changes, the app prompts to save with a name matching the previous showfile (e.g. `MyShow.qsk`).
 
 ---
 
@@ -86,7 +79,8 @@ Load any two `.qxw` files independently. Browse **Fixtures**, **Fixture Groups**
 | Requirement | Details |
 |---|---|
 | Python | 3.8 or newer |
-| Flask | `pip install flask` — the only external dependency |
+| Flask | `pip install flask` — the only required dependency |
+| pywebview | `pip install pywebview` — *optional*, enables native window mode |
 | Browser | Chrome or Edge recommended (for native Save dialog); Firefox/Safari also work |
 | QLC+ workspace | `.qxw` format (QLC+ 5.x) |
 
@@ -102,6 +96,7 @@ cd qlc-plus-swiss-knife-tool-script
 python3 -m venv .venv
 source .venv/bin/activate
 pip install flask
+pip install pywebview   # optional — opens in a native window instead of a browser tab
 python3 app.py
 ```
 
@@ -109,10 +104,17 @@ python3 app.py
 
 ```bash
 cd qlc-plus-swiss-knife-tool-script
-python3 app.py
+python3 app.py              # native window (if pywebview is installed)
+python3 app.py --browser    # force browser mode
 ```
 
 > The launcher detects the `.venv` automatically — no need to activate it manually after the first setup.
+>
+> **Tip:** if `pip` is not found, use `pip3` instead — or skip the `source .venv/bin/activate` step and call the venv pip directly:
+> ```bash
+> .venv/bin/pip install flask
+> .venv/bin/pip install pywebview
+> ```
 
 ---
 
@@ -124,19 +126,34 @@ cd qlc-plus-swiss-knife-tool-script
 python -m venv .venv
 .venv\Scripts\activate.bat
 pip install flask
+pip install pywebview
 python app.py
 ```
+
+> `pywebview` is optional — it opens the app in a native window instead of a browser tab. Skip it if you prefer browser mode.
 
 ### Windows (Command Prompt) — every subsequent run
 
 ```bat
 cd qlc-plus-swiss-knife-tool-script
 python app.py
+python app.py --browser
 ```
+
+> The first command opens a native window (if pywebview is installed). Use `--browser` to force browser mode instead.
 
 ---
 
-The app opens `http://localhost:5731` automatically. Press **Ctrl+C** to quit.
+The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the **Quit** button in the sidebar to quit.
+
+> **Native window mode:** install `pywebview` for a standalone-app experience:
+> ```bash
+> .venv/bin/pip install pywebview    # macOS / Linux
+> .venv\Scripts\pip install pywebview  # Windows
+> ```
+> Use `python3 app.py --browser` to force browser mode.
+>
+> **Platform launchers:** see the `launchers/` directory for macOS `.app`, Windows `.bat`, and Linux `.desktop` files.
 
 ### Loading a workspace
 
@@ -195,6 +212,7 @@ static/
   icons.svg              ← SVG symbol sprite (Lucide-style)
   js/                    ← Per-tool JavaScript modules
 templates/index.html     ← Single-page application shell
+launchers/               ← Platform-specific launchers (macOS .app, Windows .bat, Linux .desktop)
 mockups/                 ← Interactive HTML mockup of the UI design
 ```
 

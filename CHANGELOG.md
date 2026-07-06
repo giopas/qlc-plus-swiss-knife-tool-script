@@ -5,6 +5,30 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.1.1] — 2026-07-06
+
+### Added — Standalone app experience
+
+- **Quit button**: red power-icon button at the bottom of the sidebar shuts down the Flask server cleanly via `POST /api/quit`. Prompts for unsaved session changes before quitting.
+- **Native window mode (pywebview)**: if `pywebview` is installed, the app opens in a native OS window (WebKit/EdgeChromium/GTK) instead of a browser tab. Closing the window stops the server. Falls back to browser mode automatically. Use `--browser` flag to force browser mode.
+- **Platform launchers** (`launchers/` directory):
+  - macOS: `create-macos-app.sh` generates a `.app` bundle for Launchpad / Dock.
+  - Windows: `QLC_Swiss_Knife.bat` double-click launcher (hides console via `pythonw`).
+  - Linux: `qlc-swiss-knife.desktop` for the application menu.
+- **Session save on workspace switch**: when loading a new workspace while the current session has unsaved changes, a prompt offers to save the session named after the previous showfile (e.g. `MyShow.qsk`).
+
+### Changed
+
+- `run.sh` now passes CLI arguments to `app.py` (supports `--browser`), prints a hint when pywebview is not installed.
+- VC Visual Editor statusbar version is now injected via template variable instead of hardcoded.
+- Updated `.gitignore` to exclude generated `.app` bundles and sensitive files.
+
+### Dependencies
+
+- `pywebview>=5.0` added to `requirements.txt` as an optional dependency.
+
+---
+
 ## [1.1.0] — 2026-07-05
 
 ### Changed — Complete GUI redesign

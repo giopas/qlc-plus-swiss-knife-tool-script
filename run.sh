@@ -3,6 +3,9 @@
 #  QLC+ Swiss Knife — launcher
 #  Double-click this file (or run: bash run.sh) to start the app.
 #  No need to activate the venv manually.
+#
+#  Options:
+#    --browser    Force browser mode (skip native window even if pywebview installed)
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -e
@@ -31,7 +34,16 @@ if ! "$VENV_PY" -c "import flask" 2>/dev/null; then
     echo "✓  Flask installed."
 fi
 
+# ── Optional: install pywebview for native window mode ────────────────────────
+if ! "$VENV_PY" -c "import webview" 2>/dev/null; then
+    echo ""
+    echo "ℹ  pywebview is not installed — the app will open in your browser."
+    echo "   For a native window experience, run:"
+    echo "     $SCRIPT_DIR/.venv/bin/pip install pywebview"
+    echo ""
+fi
+
 # ── Launch ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "⚡  Starting QLC+ Swiss Knife..."
-exec "$VENV_PY" "$SCRIPT_DIR/app.py"
+exec "$VENV_PY" "$SCRIPT_DIR/app.py" "$@"

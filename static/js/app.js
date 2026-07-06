@@ -1,5 +1,5 @@
 /* =============================================================================
-   QLC+ Swiss Knife — Web UI  app.js   v1.1.0
+   QLC+ Swiss Knife — Web UI  app.js   v1.1.1
    =============================================================================
    Single-page application logic:
      - Sidebar navigation with go() / showSubtab()
@@ -164,6 +164,29 @@ function _restoreTheme() {
     const saved = localStorage.getItem('sk-theme');
     if (saved && _THEMES.includes(saved)) _applyTheme(saved);
   } catch {}
+}
+
+// =============================================================================
+// QUIT APP
+// =============================================================================
+
+async function quitApp() {
+  // Check for unsaved session changes
+  if (typeof _sess !== 'undefined' && _sess.dirty) {
+    if (!confirm('You have unsaved session changes.\n\nQuit anyway?')) return;
+  }
+  try {
+    await fetch('/api/quit', { method: 'POST' });
+  } catch { /* server is shutting down */ }
+  // Give the server a moment, then close the window/tab
+  setTimeout(() => {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;' +
+      'height:100vh;font-family:system-ui;color:#cdd6f4;background:#1e1e2e;flex-direction:column;gap:12px">' +
+      '<div style="font-size:2rem">⚡</div>' +
+      '<div>QLC+ Swiss Knife has been shut down.</div>' +
+      '<div style="font-size:12px;opacity:.5">You can close this tab.</div></div>';
+    try { window.close(); } catch {}
+  }, 600);
 }
 
 // =============================================================================

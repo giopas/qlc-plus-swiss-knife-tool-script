@@ -286,6 +286,27 @@ body.nav-min .sn-collapse { justify-content: center; padding: 10px 0; }
 body.nav-min .sn-collapse svg { transform: rotate(180deg); }
 body.nav-min .sn-group-label { display: none; }
 
+/* ── Quit button ──────────────────────────────────────────────────────────── */
+.sn-quit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--danger, #f38ba8);
+  font-size: 11.5px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background .12s;
+}
+.sn-quit:hover { background: color-mix(in srgb, var(--danger, #f38ba8) 12%, transparent); }
+.sn-quit svg { width: 15px; height: 15px; }
+.sn-quit span { white-space: nowrap; }
+body.nav-min .sn-quit { justify-content: center; padding: 10px 0; }
+body.nav-min .sn-quit span { display: none; }
+
 /* =============================================================================
    BUTTONS
    ============================================================================= */

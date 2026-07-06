@@ -189,6 +189,19 @@
       <!-- Recents -->
       <div id="recent-list" class="recents"></div>
 
+      <!-- Sessions -->
+      <div class="session-panel" id="session-panel">
+        <div class="session-panel-header">
+          <h3>Sessions</h3>
+          <div class="session-panel-actions">
+            <button class="btn btn-accent btn-sm" onclick="sessionNew()" title="Start a blank session">+ New Session</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Open the session modal">📋 Manage</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionBrowseFile()" title="Open a .qsk file from disk">📂 Open .qsk</button>
+          </div>
+        </div>
+        <div id="session-list" class="session-list"></div>
+      </div>
+
       <!-- About -->
       <div class="start-about">
         <h3>What is QLC+ Swiss Knife?</h3>

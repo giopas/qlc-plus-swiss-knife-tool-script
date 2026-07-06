@@ -915,6 +915,8 @@ async function slGenerateQxw() {
   );
   if (!savedName) return;  // user cancelled
   setStatus(`✓ Saved: ${savedName}`, 'ok');
+  // Mark session dirty so Quit prompts to save (the generated QXW is a new showfile)
+  if (typeof _markDirty === 'function') _markDirty();
   await _fetchChasers();
 }
 

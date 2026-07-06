@@ -774,6 +774,54 @@ table.mock td b { color: var(--text); font-weight: 600; }
 .recent-item svg { width: 15px; height: 15px; color: var(--accent); }
 .recent-item .w { margin-left: auto; color: var(--text-faint); font-size: 10.5px; }
 
+/* ── Session panel (Start page) ────────────────────────────────────────────── */
+.session-panel {
+  max-width: 980px;
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px 17px;
+  margin-top: 16px;
+}
+.session-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.session-panel-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.session-panel-actions {
+  display: flex;
+  gap: 6px;
+}
+.session-list-empty {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  padding: 8px 0;
+}
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+}
+.session-item:hover { background: var(--surface-1); }
+.session-item svg { width: 15px; height: 15px; color: var(--accent); }
+.session-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.session-item-ago { color: var(--text-faint); font-size: 10.5px; margin-left: auto; }
+.session-item-active {
+  background: var(--surface-1);
+  border-left: 3px solid var(--accent);
+}
+
 /* ── About box ─────────────────────────────────────────────────────────────── */
 .about {
   max-width: 980px;

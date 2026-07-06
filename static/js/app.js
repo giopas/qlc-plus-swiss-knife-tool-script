@@ -183,8 +183,11 @@ function _restoreTheme() {
  * @param {Array}  [fsTypes]      Types array for showSaveFilePicker.
  * @param {string} [dialogTitle]  Title for native save dialog.
  * @returns {Promise<string|null>} Saved filename, or null if cancelled.
+ *          After a successful save, saveFileWithPicker.lastPath contains the
+ *          full path (when available from native picker), or null otherwise.
  */
 async function saveFileWithPicker(blob, suggestedName, fsTypes, dialogTitle) {
+  saveFileWithPicker.lastPath = null;
 
   // ── 1. showSaveFilePicker (Chrome / Edge) ─────────────────────────────
   if (typeof window.showSaveFilePicker === 'function') {
@@ -221,7 +224,10 @@ async function saveFileWithPicker(blob, suggestedName, fsTypes, dialogTitle) {
     if (resp.ok) {
       const result = await resp.json();
       if (result.cancelled) return null;
-      if (result.path) return result.path.split(/[\\/]/).pop();
+      if (result.path) {
+        saveFileWithPicker.lastPath = result.path;
+        return result.path.split(/[\\/]/).pop();
+      }
     }
   } catch { /* fall through */ }
 

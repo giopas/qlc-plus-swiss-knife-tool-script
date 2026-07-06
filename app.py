@@ -255,6 +255,7 @@ if __name__ == '__main__':
             width=1280,
             height=820,
             min_size=(900, 600),
+            confirm_close=True,
         )
         app._webview_window = window   # let /api/quit destroy it
         webview.start()  # blocks until window is closed

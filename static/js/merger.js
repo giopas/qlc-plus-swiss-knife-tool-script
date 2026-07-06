@@ -356,29 +356,13 @@ async function mergerExport() {
     const blob          = await resp.blob();
     const suggestedName = resp.headers.get('X-Suggested-Filename') || 'merged.qxw';
 
-    if (typeof window.showSaveFilePicker === 'function') {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName,
-          startIn: 'documents',
-          types: [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        _setMergerStatus(`✓ Saved: ${handle.name}`, 'ok');
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-      }
-    }
-    // Fallback
-    const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
-    a.href = url; a.download = suggestedName;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-    _setMergerStatus(`✓ Downloaded: ${suggestedName}`, 'ok');
+    const savedName = await saveFileWithPicker(
+      blob, suggestedName,
+      [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
+      'Save merged workspace as'
+    );
+    if (!savedName) return;  // user cancelled
+    _setMergerStatus(`✓ Saved: ${savedName}`, 'ok');
   } catch (e) {
     _setMergerStatus('Network error: ' + e.message, 'error');
   }

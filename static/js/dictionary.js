@@ -342,12 +342,9 @@ async function exportDictTxt() {
     const cd   = res.headers.get('Content-Disposition') || '';
     const m    = cd.match(/filename=([^\s;]+)/);
     const name = m ? m[1] : 'dictionary.txt';
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = name;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    setStatus(`Exported ${_dictData.length} entries → ${name}`);
+    const savedName = await saveFileWithPicker(blob, name, null, 'Save dictionary as');
+    if (!savedName) return;
+    setStatus(`Exported ${_dictData.length} entries → ${savedName}`);
   } catch (e) {
     setStatus('Export error: ' + e.message, 'error');
   }

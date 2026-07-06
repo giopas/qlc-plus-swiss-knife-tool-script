@@ -32,6 +32,7 @@ const _sess = {
 
 function initSession() {
   _renderSessionBadge();
+  _renderSessionList();
   window.addEventListener('beforeunload', _onBeforeUnload);
 
   // Track dictionary path changes
@@ -65,6 +66,33 @@ function _renderSessionBadge() {
 }
 
 
+// ── Session list on Start page ────────────────────────────────────────────────
+
+function _renderSessionList() {
+  const wrap = document.getElementById('session-list');
+  if (!wrap) return;
+  try {
+    const recents = JSON.parse(localStorage.getItem('sk-recents') || '[]');
+    const sessions = recents.filter(r => r.type === 'qsk');
+    if (!sessions.length) {
+      wrap.innerHTML = '<div class="session-list-empty">No saved sessions yet. ' +
+        'Load a workspace, then save a session to see it here.</div>';
+      return;
+    }
+    wrap.innerHTML = sessions.map(r => {
+      const name = r.path.split(/[\\/]/).pop();
+      const ago  = typeof _timeAgo === 'function' ? _timeAgo(r.ts) : '';
+      const active = _sess.filename === name ? ' session-item-active' : '';
+      return `<div class="session-item${active}" onclick="sessionLoadFromPath('${r.path.replace(/'/g, "\\'")}')">
+        <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
+        <span class="session-item-name">${name}</span>
+        <span class="session-item-ago">${ago}</span>
+      </div>`;
+    }).join('');
+  } catch {}
+}
+
+
 // ── Modal open / close ────────────────────────────────────────────────────────
 
 function sessionOpenModal() {
@@ -78,6 +106,23 @@ function sessionOpenModal() {
 function sessionCloseModal() {
   document.getElementById('session-modal').classList.remove('open');
   document.getElementById('session-overlay').classList.remove('open');
+}
+
+
+// ── Browse for a .qsk file via native picker ─────────────────────────────────
+
+async function sessionBrowseFile() {
+  if (typeof nativePick !== 'function') {
+    _showStatus('Native file picker not available', 'warn');
+    return;
+  }
+  const path = await nativePick(
+    'Open session file',
+    [{ label: 'QLC+ Swiss Knife Session', exts: ['.qsk'] }]
+  );
+  if (path) {
+    sessionLoadFromPath(path);
+  }
 }
 
 
@@ -293,6 +338,12 @@ async function sessionSave() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_file: savedName }),
   });
+  // Track in recents if we have the full path
+  const fullPath = saveFileWithPicker.lastPath;
+  if (fullPath && typeof _addRecent === 'function') {
+    _addRecent(fullPath, 'qsk');
+  }
+  _renderSessionList();
   sessionCloseModal();
   _showStatus(`💾 Session saved: ${savedName}`);
 }
@@ -375,6 +426,129 @@ async function sessionLoad(input) {
   } catch (e) {
     _showStatus('⚠ Failed to apply session: ' + e.message);
   }
+}
+
+
+// ── Load session from a .qsk file path (recents / session list) ──────────────
+
+async function sessionLoadFromPath(path) {
+  if (!path) return;
+
+  // Prompt to save current session if dirty
+  if (_sess.dirty) {
+    const oldName = (_sess.filename || 'current session').replace(/\.qsk$/i, '');
+    const save = confirm(
+      `You have unsaved session changes for "${oldName}".\n\n` +
+      `Save before switching?`
+    );
+    if (save) {
+      await sessionSave();
+    }
+  }
+
+  _showStatus('⏳ Loading session…');
+
+  try {
+    const r = await fetch('/api/session/load-from-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      _showStatus('⚠ ' + (err.error || 'Failed to load session'));
+      return;
+    }
+    const result = await r.json();
+
+    // Update client state
+    _sess.filename          = result.session_file || path.split(/[\\/]/).pop();
+    _sess.workspace         = result.session?.workspace  || null;
+    _sess.dictionary        = result.session?.dictionary || null;
+    _sess.slot_paths        = result.session?.slot_paths || {};
+    _sess.brightness_forced = result.session?.brightness_forced || {};
+    _clearDirty();
+
+    // Reflect workspace in header
+    if (_sess.workspace && result.results?.workspace === 'ok') {
+      const inp = document.getElementById('path-input');
+      if (inp) inp.value = _sess.workspace;
+      const wsName = document.getElementById('ws-name');
+      if (wsName) {
+        const name = _sess.workspace.split(/[\\/]/).pop();
+        wsName.textContent = name;
+        wsName.className = 'ws-loaded';
+      }
+      if (typeof invalidateBrightness === 'function') invalidateBrightness();
+      if (typeof refreshSlots         === 'function') refreshSlots();
+      if (typeof selectSlot === 'function' && typeof _selectedSlot !== 'undefined' && _selectedSlot) {
+        selectSlot(_selectedSlot);
+      }
+      const rl = document.getElementById('btn-reload');
+      if (rl) rl.disabled = false;
+    }
+
+    // Add to recents
+    if (typeof _addRecent === 'function') _addRecent(path, 'qsk');
+
+    const res       = result.results || {};
+    const matchInfo = res.auto_match && res.auto_match.startsWith('ok')
+      ? ` · ${res.auto_match.replace(/^ok\s*/, '')}` : '';
+    _showStatus(
+      (result.ok ? '✅ Session loaded' : '⚠ Session loaded (with errors)') +
+      ` — ${_sess.filename}${matchInfo}`
+    );
+    _renderSessionBadge();
+    _renderSessionList();
+
+  } catch (e) {
+    _showStatus('⚠ Failed to load session: ' + e.message);
+  }
+}
+
+
+// ── New session (clear current) ──────────────────────────────────────────────
+
+async function sessionNew() {
+  // Prompt to save if dirty
+  if (_sess.dirty) {
+    const oldName = (_sess.filename || 'current session').replace(/\.qsk$/i, '');
+    const save = confirm(
+      `You have unsaved session changes for "${oldName}".\n\n` +
+      `Save before starting a new session?`
+    );
+    if (save) {
+      await sessionSave();
+    }
+  }
+
+  try {
+    await fetch('/api/session/new', { method: 'POST' });
+  } catch { /* ignore */ }
+
+  // Clear client state
+  _sess.filename          = null;
+  _sess.workspace         = null;
+  _sess.dictionary        = null;
+  _sess.slot_paths        = {};
+  _sess.brightness_forced = {};
+  _clearDirty();
+
+  // Clear header
+  const wsName = document.getElementById('ws-name');
+  if (wsName) {
+    wsName.textContent = 'No workspace loaded';
+    wsName.className   = 'ws-empty';
+  }
+  const inp = document.getElementById('path-input');
+  if (inp) inp.value = '';
+
+  _renderSessionBadge();
+  _renderSessionList();
+  _showStatus('New session started');
+
+  // Navigate to start screen
+  if (typeof go === 'function') go('start');
 }
 
 

@@ -125,6 +125,16 @@ def set_session_file(path: str | None) -> None:
     clear_dirty()
 
 
+def clear_session() -> None:
+    """Reset session state to blank (New Session)."""
+    _sess['workspace']         = None
+    _sess['dictionary']        = None
+    _sess['slot_paths']        = {}
+    _sess['brightness_forced'] = {}
+    _sess['dirty']             = False
+    _sess['session_file']      = None
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _set_if_changed(key: str, value) -> None:

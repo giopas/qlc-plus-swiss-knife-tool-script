@@ -257,6 +257,141 @@ def apply_session():
 
 # ── Mark saved ────────────────────────────────────────────────────────────────
 
+@bp.route('/load-from-path', methods=['POST'])
+def load_from_path():
+    """
+    Read a .qsk file from disk and apply it (load workspace, dictionary, etc.).
+    Body: { "path": "/abs/path/to/session.qsk" }
+    """
+    import json as _json
+
+    data = request.get_json(force=True) or {}
+    path = (data.get('path') or '').strip()
+    if not path:
+        return jsonify({'error': 'No path provided'}), 400
+    if not os.path.isfile(path):
+        return jsonify({'error': f'File not found: {path}'}), 404
+
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            session_data = _json.load(f)
+    except Exception as e:
+        return jsonify({'error': f'Could not parse .qsk: {_safe_err(e)}'}), 400
+
+    # Apply session (reuse apply logic inline)
+    results = {}
+
+    # 1. Workspace
+    ws_path = (session_data.get('workspace') or '').strip()
+    if ws_path:
+        if not os.path.isfile(ws_path):
+            results['workspace'] = f'error: file not found'
+        else:
+            try:
+                ws.load_qxw(ws_path)
+                sess.set_workspace(ws_path)
+                results['workspace'] = 'ok'
+            except Exception as e:
+                results['workspace'] = f'error: {_safe_err(e)}'
+    else:
+        results['workspace'] = 'skipped'
+
+    # 2. Dictionary
+    dict_path = (session_data.get('dictionary') or '').strip()
+    if dict_path and os.path.isfile(dict_path) and ws.get_state()['loaded']:
+        try:
+            count = ws.load_dictionary(dict_path)
+            sess.set_dictionary(dict_path)
+            results['dictionary'] = f'ok ({count} entries)'
+        except Exception as e:
+            results['dictionary'] = f'error: {_safe_err(e)}'
+    else:
+        results['dictionary'] = 'skipped'
+
+    # 3. Brightness forced QXF assignments
+    forced = session_data.get('brightness_forced') or {}
+    if forced:
+        try:
+            br.restore_forced_assignments(forced)
+            sess.set_brightness_forced(br.get_forced_assignments())
+            results['brightness_forced'] = 'ok'
+        except Exception as e:
+            results['brightness_forced'] = f'error: {_safe_err(e)}'
+
+    # 4. Per-slot file paths
+    slot_paths = session_data.get('slot_paths') or {}
+    if slot_paths and ws.get_state()['loaded']:
+        loaded_slots = 0
+        for slot_id, sp in slot_paths.items():
+            sp = (sp or '').strip()
+            if not sp or not os.path.isfile(sp):
+                continue
+            try:
+                rows = []
+                with open(sp, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        parts = line.split('|')
+                        if len(parts) >= 6:
+                            rows.append({
+                                'txt_name': parts[0].strip(),
+                                'qxw_id':   parts[1].strip(),
+                                'qxw_name': parts[2].strip(),
+                                'in':       parts[3].strip() or '0',
+                                'hold':     parts[4].strip() or '4294967294',
+                                'out':      parts[5].strip() or '0',
+                            })
+                        else:
+                            name = parts[0].strip()
+                            if name:
+                                rows.append({'txt_name': name, 'qxw_id': '', 'qxw_name': '',
+                                             'in': '0', 'hold': '4294967294', 'out': '0'})
+                ws.set_slot_details(slot_id, rows)
+                sess.set_slot_path(slot_id, sp)
+                loaded_slots += 1
+            except Exception:
+                pass
+        results['slot_paths'] = f'ok ({loaded_slots} slot(s))'
+
+    # 5. Auto-match unassigned songs
+    if slot_paths and ws.get_state()['loaded']:
+        for slot_id in slot_paths:
+            rows = ws.get_slot_details(slot_id)
+            if not rows:
+                continue
+            changed = False
+            for row in rows:
+                if row.get('qxw_id'):
+                    continue
+                name = (row.get('txt_name') or '').strip()
+                if not name:
+                    continue
+                matched_name, matched_id = ws.find_best_match(name)
+                if matched_id:
+                    row['qxw_id']   = matched_id
+                    row['qxw_name'] = matched_name
+                    changed = True
+            if changed:
+                ws.set_slot_details(slot_id, rows)
+
+    filename = os.path.basename(path)
+    sess.set_session_file(filename)
+    sess.clear_dirty()
+
+    ok = all('error' not in v for v in results.values())
+    return jsonify({'ok': ok, 'results': results, 'session_file': filename,
+                    'session_path': path, 'session': sess.get_session()})
+
+
+@bp.route('/new', methods=['POST'])
+def new_session():
+    """Clear the current session state to start fresh."""
+    sess.clear_session()
+    return jsonify({'ok': True, 'session': sess.get_session()})
+
+
 @bp.route('/mark-saved', methods=['POST'])
 def mark_saved():
     """Called by the client after successfully downloading the .qsk export."""

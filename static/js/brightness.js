@@ -380,23 +380,13 @@ async function brtGenerateQxw() {
   const fname = resp.headers.get('X-Suggested-Filename') || 'workspace_BRIGHTNESS.qxw';
   const scenes = resp.headers.get('X-Scenes-Modified') || '?';
   const vals   = resp.headers.get('X-Values-Changed')  || '?';
-  if (typeof window.showSaveFilePicker === 'function') {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: fname, startIn: 'documents',
-        types: [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
-      });
-      const w = await handle.createWritable();
-      await w.write(blob); await w.close();
-      setStatus(`✓ Saved ${handle.name} — ${scenes} scenes, ${vals} channel values adjusted`, 'ok');
-      return;
-    } catch (e) { if (e.name === 'AbortError') return; }
-  }
-  const url = URL.createObjectURL(blob);
-  const a   = Object.assign(document.createElement('a'), { href: url, download: fname });
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-  setStatus(`✓ Downloaded ${fname} — ${scenes} scenes, ${vals} channel values adjusted`, 'ok');
+  const savedName = await saveFileWithPicker(
+    blob, fname,
+    [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
+    'Save brightness-adjusted workspace as'
+  );
+  if (!savedName) return;  // user cancelled
+  setStatus(`✓ Saved ${savedName} — ${scenes} scenes, ${vals} channel values adjusted`, 'ok');
 }
 
 // ── Upload QXF (one or many) ──────────────────────────────────────────────────

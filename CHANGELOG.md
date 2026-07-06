@@ -17,6 +17,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
   - Linux: `qlc-swiss-knife.desktop` for the application menu.
 - **Session save on workspace switch**: when loading a new workspace while the current session has unsaved changes, a prompt offers to save the session named after the previous showfile (e.g. `MyShow.qsk`).
 
+### Fixed
+
+- **File saves in pywebview mode**: all file-save operations (QXW generate, session save, merged workspace export, brightness export, dictionary/checklist/setlist exports, CSV exports, PDF exports) now work correctly in the native window. A new `saveFileWithPicker()` helper tries: (1) `showSaveFilePicker` (Chrome/Edge), (2) native OS dialog via `/api/picker/save-blob`, (3) `<a>` download fallback. Previously, saves silently failed or showed raw file content in pywebview because browser download APIs are unavailable in the embedded WebKit view.
+
 ### Changed
 
 - `run.sh` now passes CLI arguments to `app.py` (supports `--browser`), prints a hint when pywebview is not installed.

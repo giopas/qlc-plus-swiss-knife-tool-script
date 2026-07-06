@@ -860,7 +860,7 @@ function slImportSongsTxt(input) {
   input.value = '';
 }
 
-function slExportSongsTxt() {
+async function slExportSongsTxt() {
   if (!_selectedSlot || !_songRows.length) {
     setStatus('No songs to export.', 'warn'); return;
   }
@@ -873,10 +873,9 @@ function slExportSongsTxt() {
     ..._songRows.map(r => r.txt_name || ''),
   ];
   const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
-  const a    = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `${label}_setlist.txt`; a.click();
-  URL.revokeObjectURL(a.href);
-  setStatus(`Exported ${_songRows.length} song(s) → ${label}_setlist.txt`);
+  const savedName = await saveFileWithPicker(blob, `${label}_setlist.txt`, null, 'Save setlist as');
+  if (!savedName) return;
+  setStatus(`Exported ${_songRows.length} song(s) → ${savedName}`);
 }
 
 // ── Generate QXW ──────────────────────────────────────────────────────────────
@@ -909,45 +908,19 @@ async function slGenerateQxw() {
   const blob          = await resp.blob();
   const suggestedName = resp.headers.get('X-Suggested-Filename') || 'workspace_GIG_READY.qxw';
 
-  // ── Try native OS Save dialog (Chrome / Edge) ─────────────────────────────
-  if (typeof window.showSaveFilePicker === 'function') {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName,
-        startIn: 'documents',
-        types: [{
-          description: 'QLC+ Workspace',
-          accept: { 'application/xml': ['.qxw'] },
-        }],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      setStatus(`✓ Saved: ${handle.name}`, 'ok');
-      await _fetchChasers();
-      return;
-    } catch (e) {
-      if (e.name === 'AbortError') return;  // user cancelled the dialog
-      // showSaveFilePicker threw for another reason → fall through to <a> download
-    }
-  }
-
-  // ── Fallback: standard browser download ──────────────────────────────────
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href     = url;
-  a.download = suggestedName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-  setStatus(`✓ Downloaded: ${suggestedName}`, 'ok');
+  const savedName = await saveFileWithPicker(
+    blob, suggestedName,
+    [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
+    'Save workspace as'
+  );
+  if (!savedName) return;  // user cancelled
+  setStatus(`✓ Saved: ${savedName}`, 'ok');
   await _fetchChasers();
 }
 
 // ── Export XML TXT ────────────────────────────────────────────────────────────
 
-function slExportXmlTxt() {
+async function slExportXmlTxt() {
   if (!_selectedSlot || !_songRows.length) {
     setStatus('Select a slot with songs first.', 'warn'); return;
   }
@@ -967,9 +940,8 @@ function slExportXmlTxt() {
   }
   lines.push('</Function>', '');
   const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-  const a    = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `Slot${_selectedSlot}_Code_Export.txt`; a.click();
-  URL.revokeObjectURL(a.href);
+  const savedName = await saveFileWithPicker(blob, `Slot${_selectedSlot}_Code_Export.txt`, null, 'Save XML export as');
+  if (!savedName) return;
   setStatus(`XML TXT exported (${sc} steps).`);
 }
 
@@ -989,12 +961,9 @@ async function slExportPdf() {
     const cd   = resp.headers.get('Content-Disposition') || '';
     const m    = cd.match(/filename=([^\s;]+)/);
     const name = m ? m[1] : `setlist_${_selectedSlot}.pdf`;
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    setStatus('PDF downloaded.', 'ok');
+    const savedName = await saveFileWithPicker(blob, name, null, 'Save setlist PDF as');
+    if (!savedName) return;
+    setStatus('PDF saved.', 'ok');
   } catch (err) { setStatus(String(err), 'error'); }
 }
 

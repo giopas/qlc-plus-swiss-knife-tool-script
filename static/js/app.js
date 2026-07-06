@@ -167,6 +167,77 @@ function _restoreTheme() {
 }
 
 // =============================================================================
+// SAVE FILE HELPER — works in browser AND pywebview
+// =============================================================================
+
+/**
+ * Save a Blob to the user's filesystem.
+ *
+ * Strategy (tried in order):
+ *   1. showSaveFilePicker (Chrome / Edge only)
+ *   2. Native OS picker via /api/picker/save-blob  (pywebview / all platforms)
+ *   3. <a download> fallback (plain browser without File System Access API)
+ *
+ * @param {Blob}   blob           Data to save.
+ * @param {string} suggestedName  Default filename (e.g. "workspace.qxw").
+ * @param {Array}  [fsTypes]      Types array for showSaveFilePicker.
+ * @param {string} [dialogTitle]  Title for native save dialog.
+ * @returns {Promise<string|null>} Saved filename, or null if cancelled.
+ */
+async function saveFileWithPicker(blob, suggestedName, fsTypes, dialogTitle) {
+
+  // ── 1. showSaveFilePicker (Chrome / Edge) ─────────────────────────────
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const opts = { suggestedName };
+      if (fsTypes) opts.types = fsTypes;
+      const handle   = await window.showSaveFilePicker(opts);
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return handle.name;
+    } catch (e) {
+      if (e.name === 'AbortError') return null;   // user cancelled
+      // fall through to native picker
+    }
+  }
+
+  // ── 2. Native OS picker + server-side write ───────────────────────────
+  try {
+    const buf    = await blob.arrayBuffer();
+    const bytes  = new Uint8Array(buf);
+    let binary   = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const b64    = btoa(binary);
+    const resp   = await fetch('/api/picker/save-blob', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:        dialogTitle || 'Save file as',
+        default_name: suggestedName,
+        data_b64:     b64,
+      }),
+    });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.cancelled) return null;
+      if (result.path) return result.path.split(/[\\/]/).pop();
+    }
+  } catch { /* fall through */ }
+
+  // ── 3. Fallback: <a> download (won't work in pywebview, but last resort)
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  return suggestedName;
+}
+
+// =============================================================================
 // QUIT APP
 // =============================================================================
 
@@ -598,7 +669,7 @@ function _attachIdBrowserResizeObserver() {
 // CSV EXPORT  (client-side — no server round-trip)
 // =============================================================================
 
-function exportCsv(which) {
+async function exportCsv(which) {
   let headers, rows, filename;
 
   if (which === 'functions') {
@@ -622,12 +693,9 @@ function exportCsv(which) {
                ...rows.map(r => r.map(esc).join(','))].join('\r\n');
 
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  setStatus(`Exported ${rows.length} rows → ${filename}`);
+  const savedName = await saveFileWithPicker(blob, filename, null, 'Save CSV as');
+  if (!savedName) return;
+  setStatus(`Exported ${rows.length} rows → ${savedName}`);
 }
 
 // =============================================================================

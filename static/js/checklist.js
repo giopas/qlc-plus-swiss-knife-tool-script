@@ -160,12 +160,9 @@ async function exportChecklistPdf() {
     const cd   = res.headers.get('Content-Disposition') || '';
     const m    = cd.match(/filename=([^\s;]+)/);
     const name = m ? m[1] : 'blueprint.pdf';
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = name;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    setStatus(`Blueprint PDF downloaded → ${name}`);
+    const savedName = await saveFileWithPicker(blob, name, null, 'Save blueprint PDF as');
+    if (!savedName) return;
+    setStatus(`Blueprint PDF downloaded → ${savedName}`);
   } catch (e) {
     setStatus('Export error: ' + e.message, 'error');
   }
@@ -180,12 +177,9 @@ async function exportChecklistTxt() {
     const res  = await fetch('/api/checklist/export-txt', { method: 'POST' });
     if (!res.ok) { setStatus('Export failed.', 'error'); return; }
     const blob = await res.blob();
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = 'checklist.txt';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    setStatus(`Exported ${_chkData.length} fixtures → checklist.txt`);
+    const savedName = await saveFileWithPicker(blob, 'checklist.txt', null, 'Save checklist as');
+    if (!savedName) return;
+    setStatus(`Exported ${_chkData.length} fixtures → ${savedName}`);
   } catch (e) {
     setStatus('Export error: ' + e.message, 'error');
   }

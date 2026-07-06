@@ -279,48 +279,22 @@ async function sessionSave() {
   const json     = JSON.stringify(data, null, 2);
   const blob     = new Blob([json], { type: 'application/json' });
 
-  // Try showSaveFilePicker first (Chrome/Edge — lets the user choose the path)
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: filename,
-        types: [{ description: 'QLC+ Swiss Knife session', accept: { 'application/json': ['.qsk'] } }],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      _sess.filename = handle.name;
-      _clearDirty();
-      await fetch('/api/session/mark-saved', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_file: handle.name }),
-      });
-      sessionCloseModal();
-      _showStatus(`💾 Session saved: ${handle.name}`);
-      return;
-    } catch (e) {
-      if (e.name === 'AbortError') return;  // user cancelled
-      // fall through to fallback
-    }
-  }
+  const savedName = await saveFileWithPicker(
+    blob, filename,
+    [{ description: 'QLC+ Swiss Knife session', accept: { 'application/json': ['.qsk'] } }],
+    'Save session as'
+  );
+  if (!savedName) return;  // user cancelled
 
-  // Fallback: auto-download
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-
-  _sess.filename = filename;
+  _sess.filename = savedName;
   _clearDirty();
   await fetch('/api/session/mark-saved', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_file: filename }),
+    body: JSON.stringify({ session_file: savedName }),
   });
   sessionCloseModal();
-  _showStatus(`💾 Session saved: ${filename}`);
+  _showStatus(`💾 Session saved: ${savedName}`);
 }
 
 

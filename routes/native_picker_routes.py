@@ -214,7 +214,56 @@ def _save_tkinter(title: str, default_name: str, initial_dir: str) -> str | None
     return result_box[0]
 
 
-# ── helpers ───────────────────────────────────────────────────────────────────
+# ── save-blob (native dialog + write) ────────────────────────────────────
+
+@bp.route('/save-blob', methods=['POST'])
+def save_blob():
+    """
+    Open a native "Save As" dialog, then write base64-encoded data to the
+    chosen path.  Used by the JS saveFileWithPicker() helper when
+    showSaveFilePicker is not available (e.g. in pywebview).
+
+    Body (JSON):
+      {
+        "title":        "Save workspace as...",
+        "default_name": "workspace_GIG_READY.qxw",
+        "initial_dir":  "",
+        "data_b64":     "<base64>"
+      }
+
+    Response:
+      { "path": "/abs/path/to/saved.qxw", "cancelled": false }
+      { "path": null, "cancelled": true }
+    """
+    import base64
+
+    data         = request.get_json(force=True) or {}
+    title        = data.get('title', 'Save file as')
+    default_name = data.get('default_name', 'file')
+    initial_dir  = (data.get('initial_dir') or '').strip()
+    data_b64     = data.get('data_b64', '')
+
+    if not data_b64:
+        return jsonify({'error': 'No data_b64 provided'}), 400
+
+    if initial_dir and not os.path.isdir(initial_dir):
+        initial_dir = ''
+
+    path = _open_save_picker(title, default_name, initial_dir)
+    if not path:
+        return jsonify({'path': None, 'cancelled': True})
+
+    try:
+        raw = base64.b64decode(data_b64)
+        with open(path, 'wb') as f:
+            f.write(raw)
+    except Exception as e:
+        return jsonify({'error': f'Write failed: {str(e)[:200]}'}), 500
+
+    return jsonify({'path': path, 'cancelled': False})
+
+
+#── helpers ───────────────────────────────────────────────────────────────────
 
 def _as_str(s: str) -> str:
     """Wrap a Python string as an AppleScript string literal."""

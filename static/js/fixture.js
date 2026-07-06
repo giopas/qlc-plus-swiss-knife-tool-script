@@ -439,13 +439,8 @@ async function fixExportPdf() {
   } catch (err) { setStatus(String(err), 'error'); }
 }
 
-function _downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+async function _downloadBlob(blob, filename) {
+  await saveFileWithPicker(blob, filename, null, 'Save file as');
 }
 
 // ── Canvas resize ─────────────────────────────────────────────────────────────

@@ -635,7 +635,20 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
         clone = copy.deepcopy(base)
         clone.set('ID', cid)
         clone.set('Name', txt_n)
-        clone.set('SwissKnifeClone', bid)   # marks this as a generated clone; value = base ID
+        # Trace back to the ultimate original to avoid clone-of-clone chains.
+        # If the base is itself a clone, follow SwissKnifeClone pointers to the root.
+        origin_id = bid
+        seen = {origin_id}
+        while True:
+            origin_func = _find_by_id(engine, 'Function', origin_id)
+            if origin_func is None:
+                break
+            parent_id = origin_func.get('SwissKnifeClone')
+            if not parent_id or parent_id in seen:
+                break
+            seen.add(parent_id)
+            origin_id = parent_id
+        clone.set('SwissKnifeClone', origin_id)   # marks this as a generated clone; value = ultimate original ID
         engine.append(clone)
         # Update in-memory state so the clone is trackable within this session
         _state['clone_ids'].add(cid)

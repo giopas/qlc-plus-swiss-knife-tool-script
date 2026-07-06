@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=QLC+ Swiss Knife
+Comment=Web-based toolkit for QLC+ 5.x workspace files
+Exec=bash -c 'cd "$(dirname "$(readlink -f "%k")")/.." && bash run.sh'
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupNotify=true

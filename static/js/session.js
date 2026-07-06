@@ -409,10 +409,37 @@ async function sessionLoad(input) {
 /** Call this whenever the workspace is loaded via path input or file picker. */
 function sessionOnWorkspaceLoaded(path) {
   if (path && !_isTempPath(path)) {
+    const oldWs = _sess.workspace;
+    if (oldWs && oldWs !== path && _sess.dirty) {
+      // Workspace changed and session has unsaved changes — offer to save
+      const oldName = oldWs.split(/[\\/]/).pop().replace(/\.qxw$/i, '');
+      _promptSaveBeforeSwitch(oldName);
+    }
     if (_sess.workspace !== path) {
       _sess.workspace = path;
       _markDirty();
     }
+  }
+}
+
+/**
+ * Show a dialog offering to save the current session named after the showfile
+ * before switching to a new workspace.
+ */
+function _promptSaveBeforeSwitch(showfileName) {
+  const suggestedName = showfileName + '.qsk';
+  const save = confirm(
+    `You have unsaved session changes for "${showfileName}".\n\n` +
+    `Save session as "${suggestedName}" before switching?`
+  );
+  if (save) {
+    // Force the suggested filename to match the showfile
+    const prevFilename = _sess.filename;
+    _sess.filename = suggestedName;
+    sessionSave().catch(() => {}).finally(() => {
+      // After save, clear so the new workspace starts fresh
+      _sess.filename = null;
+    });
   }
 }
 

@@ -211,7 +211,7 @@ def create_app():
     # ── Template context: inject version ─────────────────────────────────────
     @app.context_processor
     def inject_version():
-        return {'version': '1.1.1'}
+        return {'version': '1.1.2'}
 
     return app
 

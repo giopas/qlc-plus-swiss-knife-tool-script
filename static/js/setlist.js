@@ -190,8 +190,10 @@ function _renderSongList() {
     } else if (fn?.is_clone) {
       parentHtml = `<div class="fb-song-parent fb-song-parent-missing">↑ base ${_esc(fn.base_id)}</div>`;
     }
-    // VC button: prefer the function's own, fall back to parent's
-    const vcButton = fn?.vc_button || parent?.vc_button || '';
+    // VC button: prefer the function's own, fall back to parent's, then to
+    // buttons inherited from child functions (looks inside the collection)
+    const vcButton = fn?.vc_button || parent?.vc_button
+                  || fn?.vc_inherited || parent?.vc_inherited || '';
     // Origin line: child ID + VC button on a dedicated line
     let originHtml = '';
     if (hasAssign) {
@@ -399,9 +401,9 @@ function _applyPoolFilters() {
   if (_poolTypeFilter)
     result = result.filter(f => (f.type || '') === _poolTypeFilter);
   if (_poolVcFilter === 'has')
-    result = result.filter(f => f.vc_button);
+    result = result.filter(f => f.vc_button || f.vc_inherited);
   else if (_poolVcFilter === 'none')
-    result = result.filter(f => !f.vc_button);
+    result = result.filter(f => !f.vc_button && !f.vc_inherited);
   if (_poolUsedFilter) {
     const setlistClones = _buildSetlistCloneSet();
     const usageCounts   = _computeUsageCounts();
@@ -416,7 +418,8 @@ function _applyPoolFilters() {
       f.id.includes(q) ||
       f.name.toLowerCase().includes(q) ||
       (f.type      || '').toLowerCase().includes(q) ||
-      (f.vc_button || '').toLowerCase().includes(q) ||
+      (f.vc_button    || '').toLowerCase().includes(q) ||
+      (f.vc_inherited || '').toLowerCase().includes(q) ||
       (f.desc      || '').toLowerCase().includes(q));
   _poolFiltered    = result;
   _selectedPoolIdx = -1;
@@ -505,7 +508,7 @@ function _renderFnPool(list) {
       } else {
         usesHtml = `<span class="pool-col-uses"></span>`;
       }
-      const vcTxt   = f.vc_button || '';
+      const vcTxt   = f.vc_button || f.vc_inherited || '';
       const vcHtml  = vcTxt
         ? `<div class="pool-item-vc">🎛 ${_esc(vcTxt)}</div>`
         : '';
@@ -578,7 +581,8 @@ function slAssignFromPool() {
       // Add/update origin line (child ID + VC button)
       let originDiv = listEl.querySelector('.fb-song-origin');
       const originParts = [`[${_esc(fn.id)}]`];
-      if (fn.vc_button) originParts.push(`🎛 ${fn.vc_button}`);
+      const vcCap = fn.vc_button || fn.vc_inherited;
+      if (vcCap) originParts.push(`🎛 ${vcCap}`);
       if (!originDiv) {
         originDiv = document.createElement('div');
         originDiv.className = 'fb-song-origin';
@@ -608,26 +612,25 @@ function slClearAssignment() {
 }
 
 async function slDeleteWorkspaceClones() {
-  const clones = _functions.filter(f => f.is_clone || f.name.endsWith(' (Setlist)'));
-  if (!clones.length) {
-    setStatus('No generated clone functions found in the loaded workspace.', 'warn'); return;
-  }
   if (!confirm(
-    `Permanently delete ${clones.length} generated clone function(s) from the workspace?\n\n` +
-    `This removes the function definitions entirely — not just their song assignments. ` +
-    `Any songs currently assigned to these clones will be unassigned.\n\n` +
+    `Permanently delete all generated clone functions from the workspace?\n\n` +
+    `This removes marked SwissKnife clones AND legacy unreferenced duplicates ` +
+    `left by older versions. Songs assigned to a removed clone are re-pointed ` +
+    `to the surviving original whenever possible; otherwise they are unassigned.\n\n` +
     `After this, Generate QXW will produce a clean file without the old clones.`
   )) return;
 
   const res = await _apiPost('/api/setlist/purge-workspace-clones', {});
   if (res.error) { setStatus(res.error, 'error'); return; }
+  if (!res.removed) {
+    setStatus('No generated clone functions found in the loaded workspace.', 'warn'); return;
+  }
 
-  // Unassign affected songs in the current client-side song list
-  const removedIds = new Set(clones.map(f => f.id));
-  let unassigned = 0;
+  // Mirror the server-side re-pointing in the current client-side song list
+  const redirects = res.redirects || {};
   for (const row of _songRows) {
-    if (removedIds.has(row.qxw_id)) {
-      row.qxw_id = ''; row.qxw_name = ''; unassigned++;
+    if (row.qxw_id && redirects[row.qxw_id]) {
+      row.qxw_id = redirects[row.qxw_id];
     }
   }
 
@@ -637,13 +640,20 @@ async function slDeleteWorkspaceClones() {
 
   // Refresh pool (clones are now absent) and re-render
   await _fetchFunctions();
+  // Unassign rows whose function no longer exists (clone removed, no original)
+  for (const row of _songRows) {
+    if (row.qxw_id && !_functions.some(f => f.id === row.qxw_id)) {
+      row.qxw_id = ''; row.qxw_name = '';
+    }
+  }
   _applyPoolFilters();
   _renderSongList();
   _updatePoolAssignBtn();
   _clearTimingPanel();
 
-  const parts = [`Deleted ${res.removed} (Setlist) clone(s) from workspace`];
-  if (unassigned) parts.push(`${unassigned} song(s) unassigned`);
+  const parts = [`Deleted ${res.removed} clone(s) from workspace`];
+  if (res.redirected) parts.push(`${res.redirected} song(s) re-pointed to their original function`);
+  if (res.unassigned) parts.push(`${res.unassigned} song(s) unassigned`);
   parts.push('Generate QXW to save the clean file.');
   setStatus(parts.join(' — '), 'ok');
 }

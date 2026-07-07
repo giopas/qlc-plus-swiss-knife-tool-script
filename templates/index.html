@@ -305,7 +305,7 @@
                   data-tooltip="Remove all function assignments from this slot">✕ Clear All</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-purge-clones"
                   onclick="slPurgeClones()" disabled
-                  data-tooltip="Unassign all songs currently linked to (Setlist) clones, so you can re-match from scratch. Clone functions remain in the workspace.">🧹 Purge Clones</button>
+                  data-tooltip="THIS SLOT only: unassign songs currently linked to generated clones, so you can re-match from scratch. Clone functions remain in the workspace — nothing is deleted.">🧹 Purge Clones</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
                   onclick="slAutoMatch()" disabled
                   data-tooltip="Auto-match unassigned songs to QLC+ functions by name similarity">🎯 Re-Match</button>
@@ -346,7 +346,7 @@
           <div class="fb-group-label">Workspace</div>
           <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
                   onclick="slDeleteWorkspaceClones()" disabled
-                  data-tooltip="Delete all (Setlist) clone functions from the loaded workspace (function definitions removed, not just unassigned). Use Generate QXW afterwards to save a clean file without old clones.">🗑 Delete Clones from WS</button>
+                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Use Generate QXW afterwards to save the clean file.">🗑 Delete Clones from WS</button>
 
           <div class="fb-sep"></div>
 

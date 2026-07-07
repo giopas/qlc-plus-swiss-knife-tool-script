@@ -658,20 +658,30 @@ async function slDeleteWorkspaceClones() {
   setStatus(parts.join(' — '), 'ok');
 }
 
+function _rowPointsAtClone(row) {
+  if (!row.qxw_id) return false;
+  // New-style: backend flags clones via the SwissKnifeClone attribute
+  const fn = _functions.find(f => f.id === row.qxw_id);
+  if (fn?.is_clone) return true;
+  // Legacy backward-compat: old files still use the (Setlist) name suffix
+  return !!(row.qxw_name && row.qxw_name.endsWith(' (Setlist)'));
+}
+
 function slPurgeClones() {
   if (!_selectedSlot || !_songRows.length) return;
-  const cloned = _songRows.filter(r => r.qxw_name && r.qxw_name.endsWith(' (Setlist)'));
+  const cloned = _songRows.filter(_rowPointsAtClone);
   if (!cloned.length) {
-    setStatus('No (Setlist) clone assignments found in this slot.', 'warn'); return;
+    setStatus('No clone assignments found in this slot.', 'warn'); return;
   }
   if (!confirm(
-    `Unassign ${cloned.length} song(s) linked to (Setlist) clones?\n\n` +
-    `The clone functions remain in the workspace — only the song assignments are cleared. ` +
-    `Use Re-Match or assign manually afterwards.`
+    `Unassign ${cloned.length} song(s) in THIS SLOT currently linked to generated clones?\n\n` +
+    `Only the song assignments are cleared — the clone functions remain in the ` +
+    `workspace. Use Re-Match or assign manually afterwards.\n\n` +
+    `(To remove the clone functions themselves, use "Delete Clones from WS".)`
   )) return;
   let count = 0;
   for (const row of _songRows) {
-    if (row.qxw_name && row.qxw_name.endsWith(' (Setlist)')) {
+    if (_rowPointsAtClone(row)) {
       row.qxw_id = ''; row.qxw_name = ''; count++;
     }
   }
@@ -681,7 +691,7 @@ function slPurgeClones() {
   _renderFnPool(_poolFiltered);
   _updatePoolAssignBtn();
   _clearTimingPanel();
-  setStatus(`Cleared ${count} (Setlist) clone assignment(s). Songs are unassigned — Re-Match or assign manually.`, 'ok');
+  setStatus(`Cleared ${count} clone assignment(s) in this slot. Songs are unassigned — Re-Match or assign manually.`, 'ok');
 }
 
 function slClearAllAssignments() {

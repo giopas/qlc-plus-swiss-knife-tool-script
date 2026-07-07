@@ -32,3 +32,6 @@ github-giopas-ssh-hey.txt.pub
 
 # Settings
 settings.json
+
+# Local wiki clone (published separately to the GitHub wiki)
+wiki/

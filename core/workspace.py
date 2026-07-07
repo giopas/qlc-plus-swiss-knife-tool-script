@@ -133,6 +133,38 @@ def set_original_name(name: str):
     _state['original_name'] = name or None
 
 
+def _resolve_inherited_vc(fid: str) -> str:
+    """
+    Collect VC button captions attached to *descendant* functions of fid.
+
+    Song functions are often Collections/Chasers whose children (the actual
+    looks, e.g. a Scene or Chaser) carry the VC button — not the wrapper
+    itself. Walking the 'contains' tree lets the UI show the original button
+    name even when the assigned function has no direct button.
+    Breadth-first, cycle-safe, depth-limited.
+    """
+    seen   = {fid}
+    queue  = [c.strip() for c in
+              _state['func_detailed'].get(fid, {}).get('contains', '').split(',')
+              if c.strip()]
+    capts: list = []
+    depth = 0
+    while queue and depth < 6:
+        nxt = []
+        for cid in queue:
+            if cid in seen:
+                continue
+            seen.add(cid)
+            for cap in _state['vc_buttons'].get(cid, {}).get('captions', []):
+                if cap and cap not in capts:
+                    capts.append(cap)
+            child_contains = _state['func_detailed'].get(cid, {}).get('contains', '')
+            nxt.extend(c.strip() for c in child_contains.split(',') if c.strip())
+        queue = nxt
+        depth += 1
+    return ', '.join(capts)
+
+
 def get_functions() -> list:
     """Return func_detailed as a sorted list of dicts (by int ID), enriched with VC button and description."""
     # Pre-build set of base IDs that have at least one clone
@@ -152,6 +184,9 @@ def get_functions() -> list:
             'type':      info['type'],
             'contains':  info['contains'],
             'vc_button': ', '.join(capts) if capts else '',
+            # VC buttons found on child functions (looks inside a song
+            # Collection/Chaser) when the function itself has none.
+            'vc_inherited': '' if capts else _resolve_inherited_vc(fid),
             'desc':      desc,
             'is_clone':  is_clone,
             'base_id':   base_id,
@@ -447,58 +482,225 @@ def set_slot_songs(slot_id: str, songs: list):
     _slot_songs[slot_id] = [s for s in songs if s.strip()]
 
 
+# Sentinel IDs used by QLC+ for "no function" (e.g. Blackout buttons)
+_SENTINEL_IDS = {'4294967295', '-1'}
+
+
+def _collect_referenced_ids(root: ET.Element) -> set:
+    """
+    Return the set of function IDs referenced anywhere in the workspace:
+    Chaser/Collection <Step> children, VC widget <Function ID=…> refs
+    (Buttons, Sliders, SpeedDials, …) and CueList <Chaser> links.
+    """
+    refs: set = set()
+    engine = root.find('q:Engine', NS)
+    if engine is not None:
+        for f in engine.findall('q:Function', NS):
+            for s in f.findall('q:Step', NS):
+                if s.text and s.text.strip():
+                    refs.add(s.text.strip())
+    vc_root = root.find('q:VirtualConsole', NS)
+    if vc_root is not None:
+        for el in vc_root.iter():
+            tag = el.tag.split('}')[-1]
+            if tag == 'Function' and el.get('ID'):
+                refs.add(el.get('ID'))
+            elif tag == 'Chaser' and el.text and el.text.strip():
+                refs.add(el.text.strip())
+    return refs
+
+
+def _drop_func_from_state(fid: str, name: str):
+    """Remove one function from every in-memory state map."""
+    _state['func_detailed'].pop(fid, None)
+    _state['func_by_id'].pop(fid, None)
+    _state['shared_descriptions'].pop(fid, None)
+    _state['vc_buttons'].pop(fid, None)
+    _state['clone_ids'].discard(fid)
+    _state['clone_base_map'].pop(fid, None)
+    if _state['func_by_name'].get(name) == fid:
+        _state['func_by_name'].pop(name, None)
+    if _state['chasers'].get(name) == fid:
+        _state['chasers'].pop(name, None)
+
+
+def _sanitize_engine(root: ET.Element, protect: set = None) -> dict:
+    """
+    Post-generation integrity check — guarantees the output has no
+    "empty children" left over from previous iterations:
+
+      1. <Step> elements with empty text are removed;
+      2. <Step> elements pointing at non-existent function IDs are removed
+         (QLC+ sentinel IDs like 4294967295 are kept);
+      3. app-generated 'Setlist Chaser SlotXXXX (Auto)' chasers that ended up
+         with zero steps and are referenced by nothing are removed;
+      4. steps are renumbered after any removal.
+
+    Runs until stable (max 5 passes). Functions in `protect` are never
+    removed. Returns {'steps_removed': int, 'functions_removed': int}.
+    """
+    protect = protect or set()
+    engine  = root.find('q:Engine', NS)
+    removed_steps = removed_funcs = 0
+    if engine is None:
+        return {'steps_removed': 0, 'functions_removed': 0}
+
+    auto_re = re.compile(r'^Setlist Chaser Slot\d+ \(Auto\)$')
+    for _ in range(5):
+        changed = False
+        ids  = {f.get('ID') for f in engine.findall('q:Function', NS)}
+        refs = _collect_referenced_ids(root)
+        for func in list(engine.findall('q:Function', NS)):
+            f_changed = False
+            for s in list(func.findall('q:Step', NS)):
+                txt = (s.text or '').strip()
+                if not txt or (txt not in ids and txt not in _SENTINEL_IDS):
+                    func.remove(s)
+                    removed_steps += 1
+                    changed = f_changed = True
+            if f_changed:
+                for i, s in enumerate(func.findall('q:Step', NS)):
+                    s.set('Number', str(i))
+            fid  = func.get('ID')
+            name = func.get('Name', '')
+            if (fid not in protect
+                    and auto_re.match(name)
+                    and not func.findall('q:Step', NS)
+                    and fid not in refs):
+                engine.remove(func)
+                _drop_func_from_state(fid, name)
+                removed_funcs += 1
+                changed = True
+        if not changed:
+            break
+    return {'steps_removed': removed_steps, 'functions_removed': removed_funcs}
+
+
 def purge_workspace_clones() -> dict:
     """
     Delete every SwissKnife-generated clone Function element from the in-memory
-    XML tree and from all shared state maps.  Detects clones via the clone_ids set
-    (SwissKnifeClone attribute, new-style) and legacy (Setlist) name suffixes.
-    Also unassigns those functions from every slot's detail list.
+    XML tree and from all shared state maps.  Detects clones via:
+      • the clone_ids set (SwissKnifeClone attribute, new-style);
+      • legacy (Setlist)/(Auto-Clone) name suffixes;
+      • legacy *unmarked* clones from older app versions: functions that are
+        exact structural duplicates (same Name, Type and step list) of a
+        lower-ID function AND are referenced by nothing in the workspace
+        (no chaser step, no VC widget, no CueList link).
+
+    Song assignments pointing at a removed clone are re-pointed to the
+    surviving original whenever one is known (base via SwissKnifeClone, or
+    the lower-ID duplicate); otherwise they are unassigned.
 
     Does NOT write to disk; call generate_slot_qxw_content() (or any other
     XML-generating route) afterwards to produce a clean output file.
 
-    Returns {'removed': int, 'unassigned': int}.
+    Returns {'removed': int, 'unassigned': int, 'redirected': int,
+             'redirects': {old_fid: new_fid}}.
     """
+    empty = {'removed': 0, 'unassigned': 0, 'redirected': 0, 'redirects': {}}
     engine = _state['qxw_root'].find('q:Engine', NS)
     if engine is None:
-        return {'removed': 0, 'unassigned': 0}
+        return empty
 
-    # Collect every clone fid — via clone_ids set (new) or legacy (Setlist) name suffix
+    # Marked clones — via clone_ids set (new) or legacy (Setlist) name suffix
     clone_fids = {
         fid for fid, info in _state['func_detailed'].items()
         if _is_generated_clone(info['name'], fid)
     }
-    if not clone_fids:
-        return {'removed': 0, 'unassigned': 0}
+
+    # Legacy unmarked clones — structural duplicates left by older versions.
+    # Keep the lowest-ID occurrence (the original); flag later identical,
+    # completely unreferenced copies as clones of it. Two detection tiers:
+    #   a) exact duplicate: same Name + Type + full body (steps, scene values…);
+    #   b) renamed clone:   same Type + full body AND the name matches a song
+    #      txt_name in the loaded setlist (legacy clones were renamed to the
+    #      song label when generated). Covers Scenes too, which have no steps.
+    refs            = _collect_referenced_ids(_state['qxw_root'])
+    slot_chaser_ids = {s.get('chaser_id') for s in _state['cuelist_slots']}
+    song_names      = {r.get('txt_name', '').strip()
+                       for rows in _slot_details.values() for r in rows}
+    song_names.discard('')
+
+    def _body_sig(func: ET.Element) -> bytes:
+        """Canonical function body: full XML with identity attributes stripped."""
+        c = copy.deepcopy(func)
+        for attr in ('ID', 'Name', 'SwissKnifeClone'):
+            c.attrib.pop(attr, None)
+        return ET.tostring(c)
+
+    sig_named: dict  = {}   # (name, type, body) -> lowest original fid
+    sig_struct: dict = {}   # (type, body)       -> lowest original fid
+    dup_origin: dict = {}   # duplicate fid      -> original fid
+    for func in sorted(engine.findall('q:Function', NS),
+                       key=lambda f: _int(f.get('ID'))):
+        fid = func.get('ID')
+        if fid in clone_fids:
+            continue   # marked clones are removed anyway; never an "original"
+        name = func.get('Name', '')
+        typ  = func.get('Type', '')
+        body = _body_sig(func)
+        removable = (fid not in refs and fid not in slot_chaser_ids)
+        if removable and (name, typ, body) in sig_named:
+            dup_origin[fid] = sig_named[(name, typ, body)]
+        elif removable and (typ, body) in sig_struct and name in song_names:
+            dup_origin[fid] = sig_struct[(typ, body)]
+        else:
+            sig_named.setdefault((name, typ, body), fid)
+            sig_struct.setdefault((typ, body), fid)
+
+    all_fids = clone_fids | set(dup_origin)
+    if not all_fids:
+        return empty
+
+    # Where should assignments pointing at a removed fid go?
+    redirects: dict = {}
+    for fid in clone_fids:
+        base = _state['clone_base_map'].get(fid, '')
+        if base and base in _state['func_detailed']:
+            redirects[fid] = base
+    redirects.update(dup_origin)
+    # Resolve redirect chains so no target is itself removed
+    resolved: dict = {}
+    for fid, target in redirects.items():
+        seen = {fid}
+        while target in redirects and target not in seen:
+            seen.add(target)
+            target = redirects[target]
+        if target not in all_fids:
+            resolved[fid] = target
+    redirects = resolved
 
     # Remove from XML tree
     removed = 0
     for fn_el in list(engine.findall('q:Function', NS)):
-        if fn_el.get('ID') in clone_fids:
+        if fn_el.get('ID') in all_fids:
             engine.remove(fn_el)
             removed += 1
 
     # Purge from all in-memory state maps
-    for fid in clone_fids:
-        info = _state['func_detailed'].pop(fid, {})
-        _state['func_by_name'].pop(info.get('name', ''), None)
-        _state['func_by_id'].pop(fid, None)
-        _state['chasers'].pop(info.get('name', ''), None)
-        _state['vc_buttons'].pop(fid, None)
-        _state['shared_descriptions'].pop(fid, None)
-        _state['clone_ids'].discard(fid)
-        _state['clone_base_map'].pop(fid, None)
+    for fid in all_fids:
+        name = _state['func_detailed'].get(fid, {}).get('name', '')
+        _drop_func_from_state(fid, name)
 
-    # Unassign from every slot's detail list
-    unassigned = 0
+    # Re-point (or unassign) every slot's detail list
+    unassigned = redirected = 0
     for rows in _slot_details.values():
         for row in rows:
-            if row.get('qxw_id') in clone_fids:
-                row['qxw_id'] = ''
-                row['qxw_name'] = ''
-                unassigned += 1
+            fid = row.get('qxw_id')
+            if fid in all_fids:
+                new_fid = redirects.get(fid, '')
+                if new_fid:
+                    row['qxw_id']   = new_fid
+                    row['qxw_name'] = _state['func_by_id'].get(new_fid,
+                                                               row.get('qxw_name', ''))
+                    redirected += 1
+                else:
+                    row['qxw_id'] = ''
+                    row['qxw_name'] = ''
+                    unassigned += 1
 
-    return {'removed': removed, 'unassigned': unassigned}
+    return {'removed': removed, 'unassigned': unassigned,
+            'redirected': redirected, 'redirects': redirects}
 
 
 def get_slot_details(slot_id: str) -> list:
@@ -689,6 +891,10 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
             _state['func_by_name'].pop(fn, None)
             _state['func_by_id'].pop(fid, None)
             _state['func_detailed'].pop(fid, None)
+
+    # Integrity check: guarantee no empty/dangling children survive into the
+    # output (leftover steps or empty auto-chasers from previous iterations).
+    _sanitize_engine(root, protect={mc_id})
 
     # Derive a suggested filename from the source workspace name.
     # We don't write to disk here — the browser will prompt the user.

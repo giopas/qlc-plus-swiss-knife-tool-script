@@ -96,6 +96,7 @@ from routes.id_browser_routes import bp as id_browser_bp
 from routes.setlist_routes    import bp as setlist_bp
 from routes.dictionary_routes import bp as dictionary_bp
 from routes.checklist_routes  import bp as checklist_bp
+from routes.techrider_routes  import bp as techrider_bp
 from routes.triggers_routes   import bp as triggers_bp
 from routes.fixture_routes    import bp as fixture_bp
 from routes.merger_routes     import bp as merger_bp
@@ -117,6 +118,7 @@ def create_app():
     app.register_blueprint(setlist_bp)
     app.register_blueprint(dictionary_bp)
     app.register_blueprint(checklist_bp)
+    app.register_blueprint(techrider_bp)
     app.register_blueprint(triggers_bp)
     app.register_blueprint(fixture_bp)
     app.register_blueprint(merger_bp)

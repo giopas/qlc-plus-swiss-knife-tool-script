@@ -91,8 +91,13 @@ function _renderSlots(slots) {
   el.innerHTML = slots.map(s => `
     <div class="slot-item${_selectedSlot === s.id ? ' active' : ''}"
          onclick="selectSlot('${_esc(s.id)}')">
-      <div class="slot-caption">${_esc(s.caption)}</div>
-      <div class="slot-sub">${s.chaser_name ? '↪ ' + _esc(s.chaser_name) : 'No chaser linked'}</div>
+      <label class="sl-multi-label" onclick="event.stopPropagation()">
+        <input type="checkbox" class="sl-multi-check" value="${_esc(s.id)}">
+      </label>
+      <div style="flex:1;min-width:0">
+        <div class="slot-caption">${_esc(s.caption)}</div>
+        <div class="slot-sub">${s.chaser_name ? '↪ ' + _esc(s.chaser_name) : 'No chaser linked'}</div>
+      </div>
     </div>
   `).join('');
 }
@@ -971,21 +976,55 @@ async function slExportXmlTxt() {
 
 async function slExportPdf() {
   if (!_selectedSlot) return;
-  const showName = prompt('Show name:', 'My Show') || 'Untitled';
+  const showName  = typeof getShowName === 'function' ? getShowName() : 'Untitled';
+  const eventDate = typeof getEventDate === 'function' ? getEventDate() : '';
   try {
     const resp = await fetch(`/api/setlist/${_selectedSlot}/export-pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ show_name: showName, paper: 'A4 Landscape' }),
+      body: JSON.stringify({ show_name: showName, doc_date: eventDate, paper: 'A4 Landscape' }),
     });
     if (!resp.ok) { const e = await resp.json(); setStatus(e.error || 'Error', 'error'); return; }
     const blob = await resp.blob();
-    const cd   = resp.headers.get('Content-Disposition') || '';
-    const m    = cd.match(/filename=([^\s;]+)/);
-    const name = m ? m[1] : `setlist_${_selectedSlot}.pdf`;
+    const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'setlist';
+    const slot = _slotData.find(s => s.id === _selectedSlot);
+    const slotLabel = (slot?.caption || `Slot_${_selectedSlot}`)
+      .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+    const name = `${base}_Setlist_${slotLabel}.pdf`;
     const savedName = await saveFileWithPicker(blob, name, null, 'Save setlist PDF as');
     if (!savedName) return;
     setStatus('PDF saved.', 'ok');
+  } catch (err) { setStatus(String(err), 'error'); }
+}
+
+// ── Export multiple setlists as one PDF ──────────────────────────────────────
+
+async function slExportMultiPdf() {
+  if (!_slotData.length) { setStatus('No slots available.', 'warn'); return; }
+  const showName  = typeof getShowName === 'function' ? getShowName() : 'Untitled';
+  const eventDate = typeof getEventDate === 'function' ? getEventDate() : '';
+
+  // Collect selected slot IDs from checkboxes
+  const checks = document.querySelectorAll('.sl-multi-check:checked');
+  const slotIds = [...checks].map(c => c.value);
+  if (!slotIds.length) { setStatus('Select at least one setlist to export.', 'warn'); return; }
+
+  try {
+    const resp = await fetch('/api/setlist/export-multi-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slot_ids: slotIds, show_name: showName, doc_date: eventDate,
+        paper: 'A4 Landscape',
+      }),
+    });
+    if (!resp.ok) { const e = await resp.json(); setStatus(e.error || 'Error', 'error'); return; }
+    const blob = await resp.blob();
+    const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'setlists';
+    const name = `${base}_Setlists.pdf`;
+    const savedName = await saveFileWithPicker(blob, name, null, 'Save combined setlist PDF as');
+    if (!savedName) return;
+    setStatus(`Combined PDF saved (${slotIds.length} setlists).`, 'ok');
   } catch (err) { setStatus(String(err), 'error'); }
 }
 

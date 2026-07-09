@@ -14,6 +14,28 @@ def _safe_err(exc: Exception) -> str:
 
 bp = Blueprint('setlist', __name__, url_prefix='/api/setlist')
 
+
+def _resolve_cue_names(songs):
+    """Replace clone function names with their original (base) function names."""
+    state = ws._state  # direct access for clone lookups
+    clone_base_map = state.get('clone_base_map', {})
+    func_by_id     = state.get('func_by_id', {})
+
+    resolved = []
+    for s in songs:
+        s = dict(s)  # copy
+        qxw_id = s.get('qxw_id', '')
+        if qxw_id and qxw_id in clone_base_map:
+            base_id = clone_base_map[qxw_id]
+            base_name = func_by_id.get(base_id, '')
+            if base_name:
+                s['qxw_name'] = base_name
+        # Also strip legacy ' (Setlist)' suffix
+        if s.get('qxw_name', '').endswith(' (Setlist)'):
+            s['qxw_name'] = s['qxw_name'][:-10]
+        resolved.append(s)
+    return resolved
+
 # ── Slots ──────────────────────────────────────────────────────────────────────
 
 @bp.route('/slots')
@@ -345,6 +367,7 @@ def export_pdf(slot_id):
 
     data      = request.get_json(force=True) or {}
     show_name = (data.get('show_name') or 'Untitled').strip()
+    doc_date  = (data.get('doc_date')  or '').strip() or None
     paper     = data.get('paper', 'A4 Landscape')
     inc_notes = bool(data.get('include_notes', False))
 
@@ -364,6 +387,9 @@ def export_pdf(slot_id):
                   'in': '0', 'hold': '4294967294', 'out': '0'}
                  for s in plain]
 
+    # Resolve clone names → original function names
+    songs = _resolve_cue_names(songs)
+
     slot_info = next((s for s in ws.get_cuelist_slots() if s['id'] == slot_id), None)
     slot_label = slot_info['caption'] if slot_info else f'Slot {slot_id}'
 
@@ -375,18 +401,103 @@ def export_pdf(slot_id):
         ('hold',     'Hold'),
         ('fade_out', 'Fade Out'),
     ]
-    for col_key in (data.get('columns') or []):
-        pass  # future: allow caller to restrict columns
 
     pdf_bytes = pdf_mod.build_setlist_pdf(
         songs, slot_label=slot_label, show_name=show_name,
         selected_cols=selected_cols, include_notes=inc_notes,
-        W=W, H=H,
+        W=W, H=H, doc_date=doc_date,
     )
     if pdf_bytes is None:
         return jsonify({'error': 'No songs to export.'}), 400
 
+    # Derive filename from showfile
     filename = f'setlist_{slot_id}.pdf'
+    state = ws.get_state()
+    _src = state.get('original_name') or state.get('path')
+    if _src:
+        base = os.path.splitext(os.path.basename(_src))[0]
+        safe_label = re.sub(r'[^\w\s-]', '', slot_label).strip().replace(' ', '_')
+        filename = f'{base}_Setlist_{safe_label}.pdf'
+
+    return Response(
+        pdf_bytes,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename={filename}'},
+    )
+
+
+# ── Multi-setlist PDF export ─────────────────────────────────────────────────
+
+@bp.route('/export-multi-pdf', methods=['POST'])
+def export_multi_pdf():
+    """Export multiple setlists combined into a single PDF."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+
+    data      = request.get_json(force=True) or {}
+    slot_ids  = data.get('slot_ids', [])
+    show_name = (data.get('show_name') or 'Untitled').strip()
+    doc_date  = (data.get('doc_date')  or '').strip() or None
+    paper     = data.get('paper', 'A4 Landscape')
+    inc_notes = bool(data.get('include_notes', False))
+
+    if not slot_ids:
+        return jsonify({'error': 'No slot IDs provided.'}), 400
+
+    paper_sizes = {
+        'A4 Portrait':         (595.0,  842.0),
+        'A4 Landscape':        (842.0,  595.0),
+        'US Letter Portrait':  (612.0,  792.0),
+        'US Letter Landscape': (792.0,  612.0),
+    }
+    W, H = paper_sizes.get(paper, (842.0, 595.0))
+
+    import zlib
+    all_pages = []
+
+    for slot_id in slot_ids:
+        songs = ws.get_slot_details(slot_id)
+        if not songs:
+            plain = ws.get_slot_songs(slot_id)
+            songs = [{'txt_name': s, 'qxw_name': '', 'qxw_id': '',
+                      'in': '0', 'hold': '4294967294', 'out': '0'}
+                     for s in plain]
+        if not songs:
+            continue
+
+        songs = _resolve_cue_names(songs)
+
+        slot_info = next((s for s in ws.get_cuelist_slots() if s['id'] == slot_id), None)
+        slot_label = slot_info['caption'] if slot_info else f'Slot {slot_id}'
+
+        selected_cols = [
+            ('num',      '#'),
+            ('song',     'Song'),
+            ('cue',      'Cue'),
+            ('fade_in',  'Fade In'),
+            ('hold',     'Hold'),
+            ('fade_out', 'Fade Out'),
+        ]
+
+        slot_pages = pdf_mod.build_setlist_pdf_pages(
+            songs, slot_label=slot_label, show_name=show_name,
+            selected_cols=selected_cols, include_notes=inc_notes,
+            W=W, H=H, doc_date=doc_date,
+        )
+        if slot_pages:
+            all_pages.extend(slot_pages)
+
+    if not all_pages:
+        return jsonify({'error': 'No songs to export across selected setlists.'}), 400
+
+    pdf_bytes = pdf_mod.assemble_pdf(all_pages, W, H)
+
+    filename = 'setlists.pdf'
+    state = ws.get_state()
+    _src = state.get('original_name') or state.get('path')
+    if _src:
+        filename = os.path.splitext(os.path.basename(_src))[0] + '_Setlists.pdf'
+
     return Response(
         pdf_bytes,
         mimetype='application/pdf',

@@ -695,6 +695,13 @@ table.mock td b { color: var(--text); font-weight: 600; }
 .start-drop-zone:hover { border-color: var(--accent); }
 .start-drop-icon svg { color: var(--text-faint); }
 .start-drop-btns { display: flex; gap: 10px; margin-top: 2px; }
+.start-show-info {
+  display: flex; gap: 16px; align-items: flex-end; margin-top: 16px;
+  padding: 12px 16px; background: var(--surface-0); border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.show-info-row { display: flex; flex-direction: column; gap: 4px; }
+.show-info-row .field-label { font-size: 11px; letter-spacing: .04em; }
 .start-about {
   max-width: 980px;
   background: var(--surface-0);
@@ -1590,7 +1597,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   cursor: pointer;
   border-bottom: 1px solid var(--border);
   transition: background .1s;
+  display: flex; align-items: center; gap: 8px;
 }
+.sl-multi-label { display: flex; align-items: center; cursor: pointer; }
+.sl-multi-label input { width: 14px; height: 14px; cursor: pointer; }
 .slot-item:hover  { background: var(--surface-1); }
 .slot-item.active { background: var(--surface-2); }
 .slot-caption { font-size: 12px; font-weight: 600; color: var(--text); }

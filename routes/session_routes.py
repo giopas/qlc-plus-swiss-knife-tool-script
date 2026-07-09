@@ -73,6 +73,8 @@ def export():
     data['ws_upload_mode']   = upload_mode
     data['brightness_count'] = len(forced)
     data['slot_paths_count'] = len(data.get('slot_paths') or {})
+    data['show_name']        = sess.get_show_name()
+    data['event_date']       = sess.get_event_date()
     return jsonify(data)
 
 
@@ -97,6 +99,10 @@ def update_field():
         sess.set_setlist_backup(value)
     elif field == 'brightness_forced':
         sess.set_brightness_forced(value or {})
+    elif field == 'show_name':
+        sess.set_show_name(value or '')
+    elif field == 'event_date':
+        sess.set_event_date(value or '')
     else:
         return jsonify({'error': f'Unknown field: {field!r}'}), 400
 
@@ -383,6 +389,30 @@ def load_from_path():
     ok = all('error' not in v for v in results.values())
     return jsonify({'ok': ok, 'results': results, 'session_file': filename,
                     'session_path': path, 'session': sess.get_session()})
+
+
+@bp.route('/show-info', methods=['GET'])
+def show_info():
+    """Return the current show name and event date."""
+    return jsonify({
+        'show_name':  sess.get_show_name(),
+        'event_date': sess.get_event_date(),
+    })
+
+
+@bp.route('/show-info', methods=['POST'])
+def update_show_info():
+    """Update show name and/or event date."""
+    data = request.get_json(force=True) or {}
+    if 'show_name' in data:
+        sess.set_show_name(data['show_name'] or '')
+    if 'event_date' in data:
+        sess.set_event_date(data['event_date'] or '')
+    return jsonify({
+        'ok': True,
+        'show_name':  sess.get_show_name(),
+        'event_date': sess.get_event_date(),
+    })
 
 
 @bp.route('/new', methods=['POST'])

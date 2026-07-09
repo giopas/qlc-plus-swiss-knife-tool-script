@@ -93,6 +93,10 @@
       <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
       <span>Checklist</span>
     </button>
+    <button class="sn-item" id="sn-techrider" data-tip="Tech Rider" data-desc="Generate a tech rider from the fixture list." onclick="go('techrider')">
+      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
+      <span>Tech Rider</span>
+    </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
       <span>Brightness</span>
@@ -174,6 +178,21 @@
           <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session</button>
           <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()" disabled
                   data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
+        </div>
+      </div>
+
+      <!-- Show info -->
+      <div class="start-show-info">
+        <div class="show-info-row">
+          <label class="field-label" for="show-name-input">Show Name</label>
+          <input id="show-name-input" type="text" class="filter-input" style="width:260px"
+                 placeholder="e.g. Sang a Klang" spellcheck="false"
+                 onchange="updateShowInfo()">
+        </div>
+        <div class="show-info-row">
+          <label class="field-label" for="event-date-input">Event Date</label>
+          <input id="event-date-input" type="date" class="filter-input" style="width:180px"
+                 onchange="updateShowInfo()">
         </div>
       </div>
 
@@ -428,6 +447,9 @@
       <button class="btn btn-surface" id="btn-export-sl-pdf"
               onclick="slExportPdf()" disabled
               data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
+      <button class="btn btn-surface" id="btn-export-sl-multi"
+              onclick="slExportMultiPdf()"
+              data-tooltip="Export checked setlists as one combined PDF (tick checkboxes in slot list)">📄 Multi PDF</button>
       <button class="btn btn-surface" id="btn-export-sl-xml"
               onclick="slExportXmlTxt()" disabled
               data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
@@ -829,6 +851,8 @@
         <option value="US Letter Portrait">US Letter Portrait</option>
       </select>
       <button class="btn btn-surface" onclick="exportChecklistPdf()"
+              data-tooltip="Export the fixture checklist table as a formatted PDF">📄 Checklist PDF</button>
+      <button class="btn btn-surface" onclick="exportBlueprintPdf()"
               data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
     </div>
 
@@ -948,6 +972,35 @@
         Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
       </span>
       <div class="spacer"></div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TECH RIDER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-techrider">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
+      <div><h2>Tech Rider</h2><div class="p-desc">Fixture type summary grouped by manufacturer, model and mode — ready for production planning.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div id="tr-table-wrap"></div>
+
+    <div class="out-footer">
+      <div class="spacer"></div>
+      <select id="tr-pdf-paper" class="filter-input" style="width:160px">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="exportTechRiderPdf()"
+              data-tooltip="Export the tech rider as a formatted PDF">📄 Tech Rider PDF</button>
     </div>
 
   </section>
@@ -1309,6 +1362,7 @@
 <script src="/static/js/setlist.js"></script>
 <script src="/static/js/dictionary.js"></script>
 <script src="/static/js/checklist.js"></script>
+<script src="/static/js/techrider.js"></script>
 <script src="/static/js/triggers.js"></script>
 <script src="/static/js/fixture.js"></script>
 <script src="/static/js/merger.js"></script>

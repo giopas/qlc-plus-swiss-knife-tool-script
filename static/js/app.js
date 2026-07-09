@@ -36,6 +36,7 @@ const _LAZY = {
   setlist:    () => typeof ensureSetlistLoaded    === 'function' && ensureSetlistLoaded(),
   dictionary: () => typeof ensureDictionaryLoaded === 'function' && ensureDictionaryLoaded(),
   checklist:  () => typeof ensureChecklistLoaded  === 'function' && ensureChecklistLoaded(),
+  techrider:  () => typeof ensureTechRiderLoaded === 'function' && ensureTechRiderLoaded(),
   triggers:   () => typeof ensureTriggersLoaded   === 'function' && ensureTriggersLoaded(),
   fixtures:   () => typeof ensureFixturesLoaded   === 'function' && ensureFixturesLoaded(),
   merger:     () => typeof mergerInit             === 'function' && mergerInit(),
@@ -458,6 +459,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateSetlist    === 'function') invalidateSetlist();
   if (typeof invalidateDictionary === 'function') invalidateDictionary();
   if (typeof invalidateChecklist  === 'function') invalidateChecklist();
+  if (typeof invalidateTechRider === 'function') invalidateTechRider();
   if (typeof invalidateTriggers   === 'function') invalidateTriggers();
   if (typeof invalidateFixtures   === 'function') invalidateFixtures();
   if (typeof invalidateBrightness === 'function') invalidateBrightness();
@@ -802,6 +804,67 @@ document.addEventListener('drop', e => {
 });
 
 // =============================================================================
+// SHOW INFO (show name + event date on Start screen)
+// =============================================================================
+
+async function _loadShowInfo() {
+  try {
+    const r = await fetch('/api/session/show-info');
+    if (!r.ok) return;
+    const d = await r.json();
+    const nameEl = document.getElementById('show-name-input');
+    const dateEl = document.getElementById('event-date-input');
+    if (nameEl && d.show_name) nameEl.value = d.show_name;
+    if (dateEl && d.event_date) dateEl.value = d.event_date;
+  } catch {}
+}
+
+async function updateShowInfo() {
+  const nameEl = document.getElementById('show-name-input');
+  const dateEl = document.getElementById('event-date-input');
+  const body = {};
+  if (nameEl) body.show_name  = nameEl.value.trim();
+  if (dateEl) body.event_date = dateEl.value.trim();
+  try {
+    await fetch('/api/session/show-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (typeof _markDirty === 'function') _markDirty();
+  } catch {}
+}
+
+/** Return the current show name from the input, or derive from workspace filename. */
+function getShowName() {
+  const inp = document.getElementById('show-name-input');
+  if (inp && inp.value.trim()) return inp.value.trim();
+  // Fallback: derive from workspace filename
+  const wsEl = document.getElementById('ws-name');
+  if (wsEl && wsEl.textContent && !wsEl.classList.contains('ws-unloaded')) {
+    return wsEl.textContent.replace(/\.qxw$/i, '').replace(/\s*\(uploaded\)$/, '').trim();
+  }
+  return 'Untitled Show';
+}
+
+/** Return the current event date from the input, or today's date. */
+function getEventDate() {
+  const inp = document.getElementById('event-date-input');
+  if (inp && inp.value.trim()) return inp.value.trim();
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Return a filename-safe base derived from the workspace name. */
+function getShowfileBase() {
+  const wsEl = document.getElementById('ws-name');
+  if (wsEl && wsEl.textContent && !wsEl.classList.contains('ws-unloaded')) {
+    return wsEl.textContent.replace(/\.qxw$/i, '').replace(/\s*\(uploaded\)$/, '').trim()
+      .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+  }
+  return 'workspace';
+}
+
+// =============================================================================
 // INIT
 // =============================================================================
 
@@ -827,4 +890,7 @@ document.addEventListener('drop', e => {
 
   // Initialise session module
   if (typeof initSession === 'function') initSession();
+
+  // Load show info
+  _loadShowInfo();
 })();

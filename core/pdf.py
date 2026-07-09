@@ -272,28 +272,12 @@ def build_blueprint_pdf(fixture_data, show_name="Untitled", doc_date=None,
 # Setlist PDF
 # ──────────────────────────────────────────────────────────────────────────────
 
-def build_setlist_pdf(songs, slot_label="Setlist", show_name="Untitled",
-                      selected_cols=None, include_notes=False,
-                      W=842.0, H=595.0):
-    """
-    Build a multi-page setlist PDF with a formatted song table.
+def _build_setlist_pages(songs, slot_label="Setlist", show_name="Untitled",
+                         selected_cols=None, include_notes=False,
+                         W=842.0, H=595.0, doc_date=None):
+    """Build compressed page streams for a setlist table.
 
-    Parameters
-    ----------
-    songs : list[dict]
-        Each dict: {txt_name, qxw_name, qxw_id, in, hold, out}
-    slot_label : str
-    show_name  : str
-    selected_cols : list[tuple(key, label)] | None
-        Keys: "num", "song", "cue", "fade_in", "hold", "fade_out"
-        If None, defaults to [(num, #), (song, Song), (cue, Cue),
-                               (fade_in, Fade In), (hold, Hold), (fade_out, Fade Out)]
-    include_notes : bool
-    W, H : float
-
-    Returns
-    -------
-    bytes | None
+    Returns list[bytes] (zlib-compressed streams), or None if no songs.
     """
     if not songs:
         return None
@@ -308,7 +292,9 @@ def build_setlist_pdf(songs, slot_label="Setlist", show_name="Untitled",
             ("fade_out", "Fade Out"),
         ]
 
-    doc_date = datetime.date.today().strftime("%Y-%m-%d")
+    if not doc_date:
+        doc_date = datetime.date.today().strftime("%Y-%m-%d")
+
     header_col = (0.12, 0.12, 0.18)
     row_alt    = (0.95, 0.97, 1.00)
 
@@ -422,6 +408,34 @@ def build_setlist_pdf(songs, slot_label="Setlist", show_name="Untitled",
             txt(col_x[vi] + 5, cy + 7, v,
                 sz=NUM_SZ if is_num else BODY_SZ, bold=is_num)
     finish_page()
+    return pages
+
+
+def build_setlist_pdf_pages(songs, slot_label="Setlist", show_name="Untitled",
+                           selected_cols=None, include_notes=False,
+                           W=842.0, H=595.0, doc_date=None):
+    """Build compressed page streams for a setlist (without assembling the PDF).
+    Returns list[bytes] (zlib-compressed streams), or None if no songs."""
+    return _build_setlist_pages(
+        songs, slot_label=slot_label, show_name=show_name,
+        selected_cols=selected_cols, include_notes=include_notes,
+        W=W, H=H, doc_date=doc_date)
+
+
+def build_setlist_pdf(songs, slot_label="Setlist", show_name="Untitled",
+                      selected_cols=None, include_notes=False,
+                      W=842.0, H=595.0, doc_date=None):
+    """
+    Build a multi-page setlist PDF with a formatted song table.
+
+    Returns bytes | None.
+    """
+    pages = _build_setlist_pages(
+        songs, slot_label=slot_label, show_name=show_name,
+        selected_cols=selected_cols, include_notes=include_notes,
+        W=W, H=H, doc_date=doc_date)
+    if pages is None:
+        return None
     return assemble_pdf(pages, W, H)
 
 

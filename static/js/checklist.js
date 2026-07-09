@@ -138,19 +138,20 @@ function _renderChecklistTable(data) {
   </table>`;
 }
 
-// ── Export Blueprint PDF ──────────────────────────────────────────────────────
+// ── Export Checklist Table PDF ────────────────────────────────────────────────
 
 async function exportChecklistPdf() {
   const state = await _apiJson('/api/status');
   if (!state.loaded) { setStatus('No workspace loaded.', 'warn'); return; }
-  const showName = prompt('Show name for PDF:', 'My Show') || 'Untitled';
+  const showName = typeof getShowName === 'function' ? getShowName() : 'Untitled Show';
+  const eventDate = typeof getEventDate === 'function' ? getEventDate() : '';
   const paperSel = document.getElementById('chk-pdf-paper');
   const paper    = paperSel?.value || 'A3 Landscape';
   try {
     const res = await fetch('/api/checklist/export-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ show_name: showName, paper }),
+      body: JSON.stringify({ show_name: showName, doc_date: eventDate, paper }),
     });
     if (!res.ok) {
       const e = await res.json();
@@ -159,7 +160,40 @@ async function exportChecklistPdf() {
     const blob = await res.blob();
     const cd   = res.headers.get('Content-Disposition') || '';
     const m    = cd.match(/filename=([^\s;]+)/);
-    const name = m ? m[1] : 'blueprint.pdf';
+    const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'checklist';
+    const name = m ? m[1] : `${base}_Checklist.pdf`;
+    const savedName = await saveFileWithPicker(blob, name, null, 'Save checklist PDF as');
+    if (!savedName) return;
+    setStatus(`Checklist PDF downloaded → ${savedName}`);
+  } catch (e) {
+    setStatus('Export error: ' + e.message, 'error');
+  }
+}
+
+// ── Export Blueprint PDF ──────────────────────────────────────────────────────
+
+async function exportBlueprintPdf() {
+  const state = await _apiJson('/api/status');
+  if (!state.loaded) { setStatus('No workspace loaded.', 'warn'); return; }
+  const showName = typeof getShowName === 'function' ? getShowName() : 'Untitled Show';
+  const eventDate = typeof getEventDate === 'function' ? getEventDate() : '';
+  const paperSel = document.getElementById('chk-pdf-paper');
+  const paper    = paperSel?.value || 'A3 Landscape';
+  try {
+    const res = await fetch('/api/checklist/export-blueprint-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ show_name: showName, doc_date: eventDate, paper }),
+    });
+    if (!res.ok) {
+      const e = await res.json();
+      setStatus(e.error || 'Export failed.', 'error'); return;
+    }
+    const blob = await res.blob();
+    const cd   = res.headers.get('Content-Disposition') || '';
+    const m    = cd.match(/filename=([^\s;]+)/);
+    const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'blueprint';
+    const name = m ? m[1] : `${base}_Blueprint.pdf`;
     const savedName = await saveFileWithPicker(blob, name, null, 'Save blueprint PDF as');
     if (!savedName) return;
     setStatus(`Blueprint PDF downloaded → ${savedName}`);
@@ -173,11 +207,12 @@ async function exportChecklistPdf() {
 async function exportChecklistTxt() {
   const state = await _apiJson('/api/status');
   if (!state.loaded) { setStatus('No workspace loaded.', 'warn'); return; }
+  const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'checklist';
   try {
     const res  = await fetch('/api/checklist/export-txt', { method: 'POST' });
     if (!res.ok) { setStatus('Export failed.', 'error'); return; }
     const blob = await res.blob();
-    const savedName = await saveFileWithPicker(blob, 'checklist.txt', null, 'Save checklist as');
+    const savedName = await saveFileWithPicker(blob, `${base}_Checklist.txt`, null, 'Save checklist as');
     if (!savedName) return;
     setStatus(`Exported ${_chkData.length} fixtures → ${savedName}`);
   } catch (e) {

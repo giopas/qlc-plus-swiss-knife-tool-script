@@ -39,6 +39,8 @@ _sess: dict = {
     'dictionary':         None,   # absolute path to descriptions .txt
     'slot_paths':         {},     # slot_id (str) → absolute path to per-slot .txt file
     'brightness_forced':  {},     # "norm_mfr||norm_model" → absolute path
+    'show_name':          '',     # user-defined show name (displayed in exports)
+    'event_date':         '',     # user-defined event date (displayed in exports)
     'dirty':              False,  # True if state differs from last save/load
     'session_file':       None,   # path of the .qsk file last loaded / saved
 }
@@ -86,6 +88,22 @@ def get_slot_path(slot_id: str) -> str | None:
     return _sess['slot_paths'].get(str(slot_id))
 
 
+def set_show_name(name: str) -> None:
+    _set_if_changed('show_name', name or '')
+
+
+def set_event_date(date: str) -> None:
+    _set_if_changed('event_date', date or '')
+
+
+def get_show_name() -> str:
+    return _sess.get('show_name', '')
+
+
+def get_event_date() -> str:
+    return _sess.get('event_date', '')
+
+
 def set_brightness_forced(forced: dict) -> None:
     """Replace the forced-QXF map.  forced is {"norm_mfr||norm_model": path}."""
     if forced != _sess['brightness_forced']:
@@ -103,6 +121,8 @@ def to_export() -> dict:
         'dictionary':        _sess['dictionary'],
         'slot_paths':        _sess['slot_paths'],
         'brightness_forced': _sess['brightness_forced'],
+        'show_name':         _sess['show_name'],
+        'event_date':        _sess['event_date'],
     }
 
 
@@ -115,6 +135,8 @@ def apply_import(data: dict, session_file_path: str | None = None) -> None:
     _sess['dictionary']        = data.get('dictionary')
     _sess['slot_paths']        = data.get('slot_paths') or {}
     _sess['brightness_forced'] = data.get('brightness_forced') or {}
+    _sess['show_name']         = data.get('show_name', '')
+    _sess['event_date']        = data.get('event_date', '')
     _sess['session_file']      = session_file_path
     _sess['dirty']             = False
 
@@ -131,6 +153,8 @@ def clear_session() -> None:
     _sess['dictionary']        = None
     _sess['slot_paths']        = {}
     _sess['brightness_forced'] = {}
+    _sess['show_name']         = ''
+    _sess['event_date']        = ''
     _sess['dirty']             = False
     _sess['session_file']      = None
 

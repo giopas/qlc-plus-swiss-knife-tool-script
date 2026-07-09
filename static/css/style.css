@@ -696,12 +696,14 @@ table.mock td b { color: var(--text); font-weight: 600; }
 .start-drop-icon svg { color: var(--text-faint); }
 .start-drop-btns { display: flex; gap: 10px; margin-top: 2px; }
 .start-show-info {
-  display: flex; gap: 16px; align-items: flex-end; margin-top: 16px;
-  padding: 12px 16px; background: var(--surface-0); border-radius: var(--radius);
-  border: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: center; margin-top: 12px;
 }
-.show-info-row { display: flex; flex-direction: column; gap: 4px; }
-.show-info-row .field-label { font-size: 11px; letter-spacing: .04em; }
+.start-show-info .field-label {
+  font-size: 11px; letter-spacing: .04em; color: var(--text-dim);
+  white-space: nowrap;
+}
+.start-show-info input[type="text"] { width: 200px; }
+.start-show-info input[type="date"] { width: 150px; }
 .start-about {
   max-width: 980px;
   background: var(--surface-0);

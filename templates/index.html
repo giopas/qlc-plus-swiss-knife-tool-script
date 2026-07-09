@@ -181,19 +181,16 @@
         </div>
       </div>
 
-      <!-- Show info -->
-      <div class="start-show-info">
-        <div class="show-info-row">
-          <label class="field-label" for="show-name-input">Show Name</label>
-          <input id="show-name-input" type="text" class="filter-input" style="width:260px"
-                 placeholder="e.g. Sang a Klang" spellcheck="false"
-                 onchange="updateShowInfo()">
-        </div>
-        <div class="show-info-row">
-          <label class="field-label" for="event-date-input">Event Date</label>
-          <input id="event-date-input" type="date" class="filter-input" style="width:180px"
-                 onchange="updateShowInfo()">
-        </div>
+      <!-- Show info (used in PDF headers & export filenames) -->
+      <div class="start-show-info"
+           data-tooltip="Used in PDF headers, export filenames and session files. Leave blank to auto-derive from the workspace filename.">
+        <label class="field-label" for="show-name-input">Show Name</label>
+        <input id="show-name-input" type="text" class="filter-input"
+               placeholder="e.g. Sang a Klang" spellcheck="false"
+               onchange="updateShowInfo()">
+        <label class="field-label" for="event-date-input">Date</label>
+        <input id="event-date-input" type="date" class="filter-input"
+               onchange="updateShowInfo()">
       </div>
 
       <!-- Advanced path input -->

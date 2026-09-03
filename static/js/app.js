@@ -42,6 +42,7 @@ const _LAZY = {
   merger:     () => typeof mergerInit             === 'function' && mergerInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
   vceditor:   () => typeof _vceLoad               === 'function' && _vceLoad(),
+  quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
 };
 
 // =============================================================================

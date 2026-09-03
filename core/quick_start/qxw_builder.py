@@ -54,7 +54,6 @@ def build_qxw(rig: list,
     bytes   UTF-8 encoded QXW XML content.
     """
     root = ET.Element(_ns("Workspace"))
-    root.set("xmlns", QLC_NS_URI)
 
     _sub(root, "Creator")
     creator = root.find(_ns("Creator"))

@@ -5,6 +5,31 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.2.0] — 2026-09-03
+
+### Added — Quick Start QXW Generator
+
+- **Quick Start tab**: 5-step wizard that generates a ready-to-run QXW workspace from scratch in ~5 minutes
+  - Step 1: Load QXF fixture definitions (from path or upload) and build a rig
+  - Step 2: Stage placement with editable positions and auto DMX assignment
+  - Step 3: Automatic fixture capability analysis (RGB, strobe, pan/tilt, dimmer, gobo)
+  - Step 4: Intelligent VC layout preview — macros, fixture groups, scenes, and effects
+  - Step 5: Summary and one-click .qxw export
+- New modules: `core/quick_start/` (fixture_analyzer, vc_generator, qxw_builder, template_library)
+- New API blueprint: `/api/quickstart/` with endpoints for the full wizard workflow
+- New UI: sidebar entry with bolt icon, step-indicator navigation, card-based wizard layout
+- New test suite: `tests/test_quick_start.py` — 60+ unit and integration tests
+
+### Technical
+
+- `FixtureCapabilities`: regex-based channel name analysis for capability detection
+- `RigCapabilityAnalysis`: whole-rig grouping into moving_heads, color_fixtures, dimmers_only, other
+- `VCLayoutGenerator`: auto-generates Scenes (ALL ON/OFF, Warm/Cold White, Colors, Custom slots), Chasers (Dimmer Sweep, Color Fade, Strobe Low/High), and a 4-frame VC hierarchy
+- `build_qxw()`: standalone QXW XML builder — no template dependency
+- Separate Quick Start rig state to avoid interfering with existing Fixture Configurator
+
+---
+
 ## [1.1.2] — 2026-07-07
 
 ### Fixed — Setlist: original VC button now shown for song Collections

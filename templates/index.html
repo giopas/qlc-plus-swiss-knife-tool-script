@@ -84,6 +84,12 @@
     </button>
 
     <!-- Build the rig -->
+    <div class="sn-group-label">Quick Start</div>
+    <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes." onclick="go('quickstart')">
+      <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
+      <span>Quick Start</span>
+    </button>
+
     <div class="sn-group-label">Build the rig</div>
     <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace." onclick="go('fixtures')">
       <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
@@ -1339,6 +1345,137 @@
 
   </section>
 
+  <!-- ======================================================================
+       QUICK START QXW WIZARD
+  ====================================================================== -->
+  <section class="screen" id="scr-quickstart">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
+      <div><h2>Quick Start</h2><div class="p-desc">Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Step indicator dots -->
+    <div class="tab-toolbar" style="justify-content:center;gap:12px;padding:10px 0">
+      <span id="qs-step-indicator" style="font-weight:600;margin-right:12px">Step 1 of 5</span>
+      <span class="qs-dot qs-dot-active" id="qs-dot-1" onclick="qsGoStep(1)">1. Fixtures</span>
+      <span class="qs-dot" id="qs-dot-2" onclick="qsGoStep(2)">2. Placement</span>
+      <span class="qs-dot" id="qs-dot-3" onclick="qsGoStep(3)">3. Analysis</span>
+      <span class="qs-dot" id="qs-dot-4" onclick="qsGoStep(4)">4. VC Preview</span>
+      <span class="qs-dot" id="qs-dot-5" onclick="qsGoStep(5)">5. Export</span>
+    </div>
+
+    <!-- Step 1: Fixture Selection -->
+    <div class="qs-step" id="qs-step-1">
+      <div class="qs-card">
+        <h3>Load Fixture Definition</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="field-label">QXF Path:</label>
+          <input id="qs-qxf-path" class="filter-input" type="text" placeholder="Path to .qxf file..." style="width:300px">
+          <button class="btn btn-surface" onclick="qsLoadQxf()">Load QXF</button>
+          <span style="color:var(--overlay0);margin:0 6px">or</span>
+          <input id="qs-qxf-upload" type="file" accept=".qxf" style="display:none" onchange="qsUploadQxf()">
+          <button class="btn btn-surface" onclick="document.getElementById(\x27qs-qxf-upload\x27).click()">Upload QXF</button>
+        </div>
+        <div id="qs-qxf-info" style="margin-top:6px;font-size:12px;color:var(--overlay0)">No fixture loaded.</div>
+      </div>
+      <div class="qs-card">
+        <h3>Add Fixtures to Rig</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="field-label">Name:</label>
+          <input id="qs-fix-name" class="filter-input" type="text" placeholder="e.g. Moving Head" style="width:180px">
+          <label class="field-label">Qty:</label>
+          <input id="qs-fix-qty" class="filter-input" type="number" value="1" min="1" max="100" style="width:60px">
+          <button class="btn btn-success" onclick="qsAddFixture()">Add to Rig</button>
+          <button class="btn btn-danger" onclick="qsClearRig()">Clear All</button>
+        </div>
+      </div>
+      <div class="qs-card">
+        <h3>Current Rig</h3>
+        <div id="qs-rig-table">
+          <div class="qs-empty">No fixtures added yet. Load a QXF and add fixtures above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Stage Placement -->
+    <div class="qs-step" id="qs-step-2" style="display:none">
+      <div class="qs-card">
+        <h3>Stage Placement &amp; DMX Assignment</h3>
+        <p style="color:var(--overlay0);font-size:12px;margin:0 0 8px">Adjust fixture positions (mm) or use auto-assign for sequential DMX addressing.</p>
+        <div style="margin-bottom:8px">
+          <button class="btn btn-surface" onclick="qsAutoDmx()">Auto-Assign DMX</button>
+          <span id="qs-dmx-info" style="margin-left:8px;font-size:12px"></span>
+        </div>
+        <div id="qs-placement-table"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Capability Analysis -->
+    <div class="qs-step" id="qs-step-3" style="display:none">
+      <div class="qs-card">
+        <h3>Capability Analysis</h3>
+        <div id="qs-analysis-result">
+          <div class="qs-loading">Analyzing fixture capabilities...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: VC Layout Preview -->
+    <div class="qs-step" id="qs-step-4" style="display:none">
+      <div class="qs-card">
+        <h3>Virtual Console Layout Preview</h3>
+        <p style="color:var(--overlay0);font-size:12px;margin:0 0 8px">This is the VC widget tree that will be generated in your .qxw file.</p>
+        <div id="qs-vc-preview">
+          <div class="qs-loading">Generating VC layout preview...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Summary & Export -->
+    <div class="qs-step" id="qs-step-5" style="display:none">
+      <div class="qs-card">
+        <h3>Summary &amp; Export</h3>
+        <div id="qs-summary"></div>
+      </div>
+    </div>
+
+    <!-- Navigation footer -->
+    <div class="out-footer">
+      <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">Back</button>
+      <div class="spacer"></div>
+      <button id="qs-btn-next" class="btn btn-primary" onclick="qsNext()">Next</button>
+      <button id="qs-btn-export" class="btn btn-success" onclick="qsExport()" style="display:none">Export .qxw</button>
+    </div>
+
+    <style>
+      .qs-card { background:var(--surface); border:1px solid var(--overlay0); border-radius:8px; padding:16px; margin-bottom:12px; }
+      .qs-card h3 { margin:0 0 10px; font-size:14px; }
+      .qs-empty { padding:16px; color:var(--overlay0); font-size:12px; text-align:center; }
+      .qs-loading { padding:16px; color:var(--blue); font-size:13px; }
+      .qs-error { padding:12px; color:var(--red); background:var(--base); border-radius:6px; font-size:13px; }
+      .qs-dot { cursor:pointer; padding:4px 10px; border-radius:12px; font-size:12px; background:var(--surface); border:1px solid var(--overlay0); transition:all .15s; }
+      .qs-dot-active { background:var(--blue); color:#fff; border-color:var(--blue); font-weight:600; }
+      .qs-dot-done { background:var(--green); color:#fff; border-color:var(--green); }
+      .qs-analysis h4 { margin:12px 0 6px; font-size:13px; }
+      .qs-analysis ul { margin:4px 0 8px 18px; font-size:13px; }
+      .qs-group-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px solid var(--overlay0); }
+      .qs-group-label { font-weight:600; }
+      .qs-group-count { color:var(--overlay0); }
+      .qs-summary-box { padding:12px; background:var(--base); border-radius:8px; }
+      .qs-summary-box h4 { color:var(--green); margin:0 0 8px; }
+      .qs-preview { display:flex; flex-wrap:wrap; gap:12px; }
+      .qs-vc-frame { border:1px solid var(--overlay0); border-radius:6px; padding:8px; min-width:200px; flex:1; }
+      .qs-vc-frame-title { font-weight:600; font-size:12px; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid var(--overlay0); }
+      .qs-vc-btn { display:inline-block; padding:4px 10px; margin:2px; border-radius:4px; font-size:11px; cursor:default; }
+      .qs-vc-btn-scene { background:var(--blue); color:#fff; }
+      .qs-vc-btn-chaser { background:var(--mauve); color:#fff; }
+    </style>
+
+  </section>
+
 </main>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
@@ -1366,5 +1503,6 @@
 <script src="/static/js/brightness.js"></script>
 <script src="/static/js/session.js"></script>
 <script src="/static/js/vc_editor.js"></script>
+<script src="/static/js/quickstart.js"></script>
 </body>
 </html>

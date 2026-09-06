@@ -34,9 +34,18 @@ QXF file size cap, Content-Disposition filename quoting, and expanded security d
 
 ---
 
-## Live Demo
+## Screenshots
 
-Open `mockups/mockup_B_sidebar.html` in your browser to explore the full UI design — all 10 screens, all 3 themes, and the collapsible sidebar are fully interactive.
+| | | |
+|---|---|---|
+| ![Start Screen](screenshots/01-start-screen.png) | ![Setlist Manager](screenshots/02-setlist-manager.png) | ![Trigger Manager](screenshots/03-trigger-manager.png) |
+| Start Screen | Setlist Manager | Trigger Manager |
+| ![Dictionary](screenshots/04-dictionary.png) | ![Fixture Configurator](screenshots/05-fixture-configurator.png) | ![Quick Start](screenshots/06-quick-start.png) |
+| Dictionary | Fixture Configurator | Quick Start *(Alpha)* |
+| ![Setup Checklist](screenshots/07-setup-checklist.png) | ![Brightness](screenshots/08-brightness.png) | ![ID Browser](screenshots/09-id-browser.png) |
+| Setup Checklist | Brightness | ID Browser |
+| ![VC Visual Editor](screenshots/10-vc-visual-editor.png) | ![QXW Merger](screenshots/11-qxw-merger.png) | ![Tech Rider](screenshots/12-tech-rider.png) |
+| VC Visual Editor *(Beta)* | QXW Merger *(Alpha)* | Tech Rider |
 
 ---
 
@@ -222,7 +231,7 @@ static/
   js/                    ← Per-tool JavaScript modules
 templates/index.html     ← Single-page application shell
 launchers/               ← Platform-specific launchers (macOS .app, Windows .bat, Linux .desktop)
-mockups/                 ← Interactive HTML mockup of the UI design
+screenshots/             ← Screen captures of all 12 tools
 ```
 
 ---

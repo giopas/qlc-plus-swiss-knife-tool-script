@@ -88,6 +88,7 @@
     <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes." onclick="go('quickstart')">
       <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
       <span>Quick Start</span>
+      <span class="b alpha">&alpha;</span>
     </button>
 
     <div class="sn-group-label">Build the rig</div>
@@ -1349,6 +1350,10 @@
        QUICK START QXW WIZARD
   ====================================================================== -->
   <section class="screen" id="scr-quickstart">
+    <style>
+      /* Make QS step content scrollable within the fixed screen layout */
+      .qs-step { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding-bottom: 8px; }
+    </style>
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
@@ -1367,53 +1372,157 @@
       <span class="qs-dot" id="qs-dot-5" onclick="qsGoStep(5)">5. Export</span>
     </div>
 
-    <!-- Step 1: Fixture Selection -->
+    <!-- ── Step 1: Fixture Selection ──────────────────────────────────── -->
     <div class="qs-step" id="qs-step-1">
+
+      <!-- Source: Load / Upload / Browse GitHub -->
       <div class="qs-card">
-        <h3>Load Fixture Definition</h3>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="field-label">QXF Path:</label>
-          <input id="qs-qxf-path" class="filter-input" type="text" placeholder="Path to .qxf file..." style="width:300px">
-          <button class="btn btn-surface" onclick="qsLoadQxf()">Load QXF</button>
-          <span style="color:var(--overlay0);margin:0 6px">or</span>
+        <h3>Load Fixture Definitions</h3>
+        <p style="color:var(--overlay0);font-size:12px;margin:0 0 10px">Load one or more fixture types from local .qxf files or browse the QLC+ official fixture library.</p>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <input id="qs-qxf-path" class="filter-input" type="text" placeholder="Path to local .qxf file..." style="width:280px">
+          <button class="btn btn-surface" onclick="qsLoadQxf()">Load from path</button>
+          <span style="color:var(--overlay0);margin:0 4px">or</span>
           <input id="qs-qxf-upload" type="file" accept=".qxf" style="display:none" onchange="qsUploadQxf()">
-          <button class="btn btn-surface" onclick="document.getElementById(\x27qs-qxf-upload\x27).click()">Upload QXF</button>
+          <button class="btn btn-surface" onclick="document.getElementById('qs-qxf-upload').click()">Upload .qxf file</button>
+          <span style="color:var(--overlay0);margin:0 4px">or</span>
+          <button class="btn btn-primary" onclick="qsOpenGitHub()">Browse QLC+ Library</button>
         </div>
-        <div id="qs-qxf-info" style="margin-top:6px;font-size:12px;color:var(--overlay0)">No fixture loaded.</div>
+        <div id="qs-qxf-info" style="font-size:12px;color:var(--overlay0)">Load fixture definitions to get started.</div>
       </div>
+
+      <!-- Loaded definitions -->
+      <div class="qs-card">
+        <h3>Loaded Fixture Types</h3>
+        <div id="qs-loaded-defs">
+          <div class="qs-empty">No fixture definitions loaded yet.</div>
+        </div>
+      </div>
+
+      <!-- Add to rig -->
       <div class="qs-card">
         <h3>Add Fixtures to Rig</h3>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="field-label">Name:</label>
-          <input id="qs-fix-name" class="filter-input" type="text" placeholder="e.g. Moving Head" style="width:180px">
+          <label class="field-label">Type:</label>
+          <select id="qs-fix-type" class="filter-input" style="width:280px">
+            <option value="">— load a fixture first —</option>
+          </select>
           <label class="field-label">Qty:</label>
           <input id="qs-fix-qty" class="filter-input" type="number" value="1" min="1" max="100" style="width:60px">
+          <label class="field-label">Name:</label>
+          <input id="qs-fix-name" class="filter-input" type="text" placeholder="(optional)" style="width:140px">
           <button class="btn btn-success" onclick="qsAddFixture()">Add to Rig</button>
           <button class="btn btn-danger" onclick="qsClearRig()">Clear All</button>
         </div>
       </div>
+
+      <!-- Current rig -->
       <div class="qs-card">
         <h3>Current Rig</h3>
         <div id="qs-rig-table">
-          <div class="qs-empty">No fixtures added yet. Load a QXF and add fixtures above.</div>
+          <div class="qs-empty">No fixtures added yet. Load a fixture definition and add it above.</div>
         </div>
       </div>
     </div>
 
-    <!-- Step 2: Stage Placement -->
+    <!-- ── Step 2: Stage Placement (Canvas) ─────────────────────────── -->
     <div class="qs-step" id="qs-step-2" style="display:none">
-      <div class="qs-card">
-        <h3>Stage Placement &amp; DMX Assignment</h3>
-        <p style="color:var(--overlay0);font-size:12px;margin:0 0 8px">Adjust fixture positions (mm) or use auto-assign for sequential DMX addressing.</p>
-        <div style="margin-bottom:8px">
-          <button class="btn btn-surface" onclick="qsAutoDmx()">Auto-Assign DMX</button>
-          <span id="qs-dmx-info" style="margin-left:8px;font-size:12px"></span>
+
+      <!-- Toolbar: view mode + stage dims + auto DMX -->
+      <div class="qs-card" style="padding:8px 12px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto">
+          <span style="font-weight:600;font-size:11px;white-space:nowrap">View:</span>
+          <button id="qs-btn-view-top"   class="btn btn-surface btn-sm btn-view-active" onclick="qsSetView('top')">Top</button>
+          <button id="qs-btn-view-front" class="btn btn-surface btn-sm" onclick="qsSetView('front')">Front</button>
+          <button id="qs-btn-view-side"  class="btn btn-surface btn-sm" onclick="qsSetView('side')">Side</button>
+          <span style="width:1px;height:18px;background:var(--overlay0);margin:0 2px;flex-shrink:0"></span>
+          <label style="font-size:10px;white-space:nowrap">W</label>
+          <input id="qs-stage-w" class="filter-input" type="number" value="8000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <label style="font-size:10px;white-space:nowrap">D</label>
+          <input id="qs-stage-d" class="filter-input" type="number" value="6000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <label style="font-size:10px;white-space:nowrap">H</label>
+          <input id="qs-stage-h" class="filter-input" type="number" value="4000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <span style="font-size:9px;color:var(--overlay0);white-space:nowrap">mm</span>
+          <div class="spacer"></div>
+          <button class="btn btn-surface btn-sm" style="white-space:nowrap" onclick="qsAutoDmx()">Auto-DMX</button>
+          <span id="qs-dmx-info" style="font-size:11px;white-space:nowrap"></span>
         </div>
-        <div id="qs-placement-table"></div>
+      </div>
+
+      <!-- Main layout: sidebar + canvas -->
+      <div class="qs-stage-layout">
+
+        <!-- Left: fixture list + position presets -->
+        <div class="qs-stage-sidebar">
+          <div class="qs-card" style="margin-bottom:8px;padding:10px">
+            <h3 style="font-size:12px;margin:0 0 6px">Fixtures <span style="color:var(--overlay0);font-weight:400">(click to select)</span></h3>
+            <div id="qs-stage-fixture-list" style="max-height:180px;overflow-y:auto">
+              <div class="qs-empty">No fixtures.</div>
+            </div>
+          </div>
+
+          <!-- Position presets: Stage Position -->
+          <div class="qs-card" style="padding:10px">
+            <h3 style="font-size:12px;margin:0 0 8px">Quick Position <span style="color:var(--overlay0);font-weight:400">(selected or all)</span></h3>
+            <div style="font-size:10px;color:var(--overlay0);margin-bottom:6px">Stage Position (X &times; Z)</div>
+            <table class="qs-preset-grid">
+              <thead><tr><th></th><th>Left</th><th>Center</th><th>Right</th></tr></thead>
+              <tbody>
+                <tr><td class="qs-preset-label">Back</td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Left','Back')">BL</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Center','Back')">BC</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Back')">BR</button></td></tr>
+                <tr><td class="qs-preset-label">Mid</td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Left','Mid')">ML</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Center','Mid')">MC</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Mid')">MR</button></td></tr>
+                <tr><td class="qs-preset-label">Front</td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Left','Front')">FL</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Center','Front')">FC</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Front')">FR</button></td></tr>
+              </tbody>
+            </table>
+            <div style="font-size:10px;color:var(--overlay0);margin:8px 0 4px">Height (Y)</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Floor')">Floor</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Low-Mid')">Low-Mid</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Mid')">Mid</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top-Mid')">Top-Mid</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top')">Top</button>
+            </div>
+          </div>
+
+          <!-- Alignment tools -->
+          <div class="qs-card" style="padding:10px">
+            <h3 style="font-size:12px;margin:0 0 6px">Align &amp; Distribute <span id="qs-sel-info" style="color:var(--overlay0);font-weight:400">None selected</span></h3>
+            <p style="font-size:10px;color:var(--overlay0);margin:0 0 6px">Select 2+ fixtures (Shift/Cmd+click)</p>
+            <div id="qs-align-btns" style="display:flex;flex-wrap:wrap;gap:4px">
+              <button class="btn btn-surface btn-xs" onclick="qsAlignLeft()" disabled title="Align to leftmost X">&#x25C0; Left</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignRight()" disabled title="Align to rightmost X">Right &#x25B6;</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignTop()" disabled title="Align to back (min Z)">&#x25B2; Back</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignBottom()" disabled title="Align to front (max Z)">Front &#x25BC;</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignX()" disabled title="Average X position">&#x2194; Avg X</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignZ()" disabled title="Average Z position">&#x2195; Avg Z</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignY()" disabled title="Average Y (height)">Avg H</button>
+              <button class="btn btn-surface btn-xs" onclick="qsDistributeX()" disabled title="Distribute evenly along X (3+)">Dist X</button>
+              <button class="btn btn-surface btn-xs" onclick="qsDistributeZ()" disabled title="Distribute evenly along Z (3+)">Dist Z</button>
+            </div>
+            <div style="margin-top:6px;display:flex;gap:4px">
+              <button class="btn btn-surface btn-xs" onclick="qsSelectAll()">Select All</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSelectNone()">Deselect</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: canvas -->
+        <div class="qs-stage-canvas-pane">
+          <canvas id="qs-stage-canvas"></canvas>
+        </div>
       </div>
     </div>
 
-    <!-- Step 3: Capability Analysis -->
+    <!-- ── Step 3: Capability Analysis ────────────────────────────────── -->
     <div class="qs-step" id="qs-step-3" style="display:none">
       <div class="qs-card">
         <h3>Capability Analysis</h3>
@@ -1423,7 +1532,7 @@
       </div>
     </div>
 
-    <!-- Step 4: VC Layout Preview -->
+    <!-- ── Step 4: VC Layout Preview ──────────────────────────────────── -->
     <div class="qs-step" id="qs-step-4" style="display:none">
       <div class="qs-card">
         <h3>Virtual Console Layout Preview</h3>
@@ -1434,11 +1543,16 @@
       </div>
     </div>
 
-    <!-- Step 5: Summary & Export -->
+    <!-- ── Step 5: Summary & Export ────────────────────────────────────── -->
     <div class="qs-step" id="qs-step-5" style="display:none">
       <div class="qs-card">
         <h3>Summary &amp; Export</h3>
         <div id="qs-summary"></div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label style="font-weight:600;font-size:12px;white-space:nowrap">Project name:</label>
+          <input id="qs-project-name" class="filter-input" type="text" placeholder="My Show" style="flex:1;min-width:180px;font-size:12px">
+          <span style="font-size:10px;color:var(--overlay0);white-space:nowrap">Filename: <span id="qs-filename-preview" style="font-family:monospace">quick_start_YYYYMMDD_HHMM.qxw</span></span>
+        </div>
       </div>
     </div>
 
@@ -1450,7 +1564,43 @@
       <button id="qs-btn-export" class="btn btn-success" onclick="qsExport()" style="display:none">Export .qxw</button>
     </div>
 
+    <!-- GitHub Fixture Browser Modal -->
+    <div id="qs-gh-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5)">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:var(--base);border:1px solid var(--overlay0);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--overlay0);display:flex;align-items:center;gap:12px">
+          <h3 style="margin:0;flex:1">QLC+ Fixture Library (GitHub)</h3>
+          <input id="qs-gh-search" class="filter-input" type="text" placeholder="Search manufacturers..." style="width:200px" oninput="_qsGhFilterManufacturers()">
+          <span id="qs-gh-status" style="font-size:11px;color:var(--overlay0)"></span>
+          <button class="btn btn-surface" onclick="qsCloseGitHub()">Close</button>
+        </div>
+        <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+          <div style="width:45%;overflow-y:auto;border-right:1px solid var(--overlay0);padding:8px" id="qs-gh-mfg-list">
+            <div class="qs-empty">Loading...</div>
+          </div>
+          <div style="width:55%;overflow-y:auto;padding:8px" id="qs-gh-fixture-list">
+            <div class="qs-empty">Select a manufacturer to see fixtures.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <style>
+      /* Stage layout for Step 2 */
+      .qs-stage-layout { display:flex; gap:12px; min-height:400px; }
+      .qs-stage-sidebar { width:260px; flex:0 0 260px; display:flex; flex-direction:column; }
+      .qs-stage-canvas-pane { flex:1; min-width:0; background:var(--base); border:1px solid var(--overlay0); border-radius:8px; position:relative; }
+      .qs-stage-canvas-pane canvas { width:100%; height:100%; display:block; border-radius:8px; }
+      .qs-fix-row { display:flex; align-items:center; padding:4px 6px; border-radius:4px; cursor:pointer; font-size:11px; gap:4px; }
+      .qs-fix-row:hover { background:var(--surface0); }
+      .qs-fix-row-sel { background:var(--surface1) !important; outline:1px solid var(--blue); }
+      .qs-fix-row-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .qs-fix-row-pos { color:var(--overlay0); font-size:10px; font-family:monospace; }
+      .qs-preset-grid { width:100%; font-size:11px; border-collapse:collapse; }
+      .qs-preset-grid th { font-weight:600; font-size:10px; color:var(--overlay0); text-align:center; padding:2px; }
+      .qs-preset-grid td { text-align:center; padding:2px; }
+      .qs-preset-label { font-weight:600; font-size:10px; color:var(--overlay0); text-align:right !important; padding-right:6px !important; }
+      .btn-xs { font-size:10px !important; padding:2px 8px !important; min-width:28px; }
+      .btn-view-active { background:var(--blue) !important; color:#fff !important; border-color:var(--blue) !important; }
       .qs-card { background:var(--surface); border:1px solid var(--overlay0); border-radius:8px; padding:16px; margin-bottom:12px; }
       .qs-card h3 { margin:0 0 10px; font-size:14px; }
       .qs-empty { padding:16px; color:var(--overlay0); font-size:12px; text-align:center; }
@@ -1472,6 +1622,9 @@
       .qs-vc-btn { display:inline-block; padding:4px 10px; margin:2px; border-radius:4px; font-size:11px; cursor:default; }
       .qs-vc-btn-scene { background:var(--blue); color:#fff; }
       .qs-vc-btn-chaser { background:var(--mauve); color:#fff; }
+      .qs-gh-grid { display:flex; flex-wrap:wrap; gap:4px; }
+      .qs-gh-mfg-btn { font-size:11px !important; padding:3px 8px !important; }
+      #qs-gh-modal > div { box-shadow: 0 8px 32px rgba(0,0,0,.3); }
     </style>
 
   </section>

@@ -16,22 +16,21 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
-## What's new in v1.1.1
+## What's new in v1.2.0
 
-### 🖥️ Standalone App Experience
+### ⚡ Quick Start QXW Generator *(Alpha)*
 
-The app now feels like a proper standalone application:
+Create production-ready QLC+ workspaces in minutes, even with zero QLC+ experience. A 5-step wizard walks you through fixture selection, stage placement, automatic capability analysis, and intelligent VC layout generation — time to running show: ~5 minutes.
 
-- **Quit button** — a red power icon at the bottom of the sidebar cleanly shuts down the server. Prompts for unsaved session changes.
-- **Native window mode** — install `pywebview` (optional) and the app opens in a native OS window instead of a browser tab. No URL bar, real close button. Use `--browser` to force browser mode.
-- **Platform launchers** — ready-to-use launch scripts in `launchers/`:
-  - macOS: `create-macos-app.sh` builds a `.app` bundle for Launchpad/Dock
-  - Windows: `QLC_Swiss_Knife.bat` hides the console window
-  - Linux: `qlc-swiss-knife.desktop` for the app menu
+### 🎭 Show Info, Tech Rider & Setlist Enhancements
 
-### 💾 Session Save on Workspace Switch
+- **Show name & event date** on the Start screen, saved in sessions — used for PDF headers and export filenames
+- **Tech Rider Generator** tab with grouped fixture summary and PDF export
+- **Setlist multi-export** with combined PDF across slots and clone cue name resolution
 
-When you load a new workspace while the current session has unsaved changes, the app prompts to save with a name matching the previous showfile (e.g. `MyShow.qsk`).
+### 🛡️ Security Hardening
+
+QXF file size cap, Content-Disposition filename quoting, and expanded security documentation.
 
 ---
 

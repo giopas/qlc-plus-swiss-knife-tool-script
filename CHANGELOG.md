@@ -5,45 +5,65 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
-## [1.2.0] — 2026-09-03
+## [1.2.0] — 2026-09-06
 
-### Added — Quick Start QXW Generator
+### Added — Quick Start QXW Generator *(Alpha)*
 
-- **Quick Start tab**: 5-step wizard that generates a ready-to-run QXW workspace from scratch in ~5 minutes
-  - Step 1: Load QXF fixture definitions (from path or upload) and build a rig
-  - Step 2: Stage placement with editable positions and auto DMX assignment
+- **Quick Start tab**: 5-step wizard that generates a ready-to-run QXW workspace from scratch in ~5 minutes, even with zero QLC+ experience
+  - Step 1: Load QXF fixture definitions from local files, uploads, or the **Browse QLC+ Library** button (fetches from the [official QLC+ GitHub repository](https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures) — the only external network call in the app)
+  - Step 2: Interactive stage placement with a 2D top-down canvas — drag fixtures, multi-select, alignment tools (align left/right/top/bottom, distribute evenly), configurable stage dimensions, and auto DMX assignment
   - Step 3: Automatic fixture capability analysis (RGB, strobe, pan/tilt, dimmer, gobo)
-  - Step 4: Intelligent VC layout preview — macros, fixture groups, scenes, and effects
-  - Step 5: Summary and one-click .qxw export
+  - Step 4: Intelligent VC layout preview — auto-generated macros (ALL ON/OFF, BLACKOUT), fixture group selectors, pre-configured scenes (Warm White, Cold White, Colors), skeleton effect chasers (Dimmer Sweep, Color Fade, Strobe), and four custom slots
+  - Step 5: Summary and one-click `.qxw` export
 - New modules: `core/quick_start/` (fixture_analyzer, vc_generator, qxw_builder, template_library)
 - New API blueprint: `/api/quickstart/` with endpoints for the full wizard workflow
 - New UI: sidebar entry with bolt icon, step-indicator navigation, card-based wizard layout
 - New test suite: `tests/test_quick_start.py` — 60+ unit and integration tests
 
+### Added — Show Info, Tech Rider & Setlist Enhancements
+
+- **Show name & event date fields** on the Start screen, saved in session (`.qsk`). Used for PDF headers, export filenames, and session metadata.
+- **Tech Rider Generator tab**: fixture type summary grouped by manufacturer/model/mode with PDF export
+- **Setlist multi-export**: combined PDF export across multiple slots with checkboxes in the slot list UI
+- **Setlist cue name resolution**: clone cue names are resolved back to their originals in multi-export
+
+### Added — Session Management
+
+- **Session save/load on Start page**: save and restore full workspace sessions (`.qsk`)
+- **Close prompt after QXW generate**: prompts to save when switching workspaces with unsaved changes
+
+### Fixed
+
+- **Export in pywebview mode**: the Quick Start export button now works in native window mode (pywebview/WebKit). Switched from blob download (unsupported by WebKit) to a hidden-iframe GET request that triggers the browser's native file save. Previously the export silently failed or returned 403 Forbidden due to CSRF origin mismatch.
+- **Step scrolling in pywebview**: Steps 1 and 2 now scroll when content exceeds the viewport height, so the Next button is always reachable in the native window.
+- **Checklist PDF**: fixed blueprint being exported instead of the checklist table; split into two separate export buttons (blueprint PDF vs. checklist PDF)
+- **Export filenames**: all export filenames are now derived from the showfile name; removed the double-save prompt dialog
+- **Duplicate xmlns attribute** in `qxw_builder`: `ET.register_namespace` already adds the xmlns; the explicit `root.set("xmlns", ...)` duplicated it, causing XML parse errors
+- **Inherited VC buttons in Setlist**: song functions whose VC button sits on a child look (e.g. the Scene inside a Collection) now resolve through the `contains` tree (`vc_inherited` field, cycle-safe, depth-limited). The Setlist shows the original button name for these songs; the "Has VC" pool filter also considers inherited buttons.
+- **Generation integrity check**: every QXW generation now runs a sanitation pass — strips empty/dangling `<Step>` elements and unreferenced empty auto-generated setlist chasers from previous iterations, renumbers steps
+- **Purge Clones improvements**: detects attribute-based clones (`SwissKnifeClone` flag) with legacy suffix as fallback; also catches structural duplicates (Scenes included) from pre-tag versions; re-points song assignments to surviving originals instead of unassigning; clarified cleanup tooltips
+
+### Security
+
+- **QXF file size cap**: fixture definition uploads are now rejected above 5 MB before XML parsing, preventing oversized payloads
+- **Content-Disposition quoting**: the filename in download headers is now properly quoted, preventing issues with special characters in project names
+- **SSH keys untracked**: removed accidentally tracked SSH keys (already in `.gitignore`)
+
+### Documentation
+
+- **Internet access note**: README and Quick Start section now clearly state that the "Browse QLC+ Library" button fetches fixture data from the official QLC+ GitHub repository — the only external network call in the app. All other features work entirely offline.
+- **Expanded Security section**: added Network access subsection, XML size-cap mention, and Content-Disposition hardening note to README
+- **Show info layout**: compact inline row with tooltips explaining purpose (PDF headers, filenames, sessions)
+
 ### Technical
 
 - `FixtureCapabilities`: regex-based channel name analysis for capability detection
 - `RigCapabilityAnalysis`: whole-rig grouping into moving_heads, color_fixtures, dimmers_only, other
-- `VCLayoutGenerator`: auto-generates Scenes (ALL ON/OFF, Warm/Cold White, Colors, Custom slots), Chasers (Dimmer Sweep, Color Fade, Strobe Low/High), and a 4-frame VC hierarchy
+- `VCLayoutGenerator`: auto-generates Scenes, Chasers, and a 4-frame VC hierarchy
 - `build_qxw()`: standalone QXW XML builder — no template dependency
 - Separate Quick Start rig state to avoid interfering with existing Fixture Configurator
-
----
-
-## [1.1.2] — 2026-07-07
-
-### Fixed — Setlist: original VC button now shown for song Collections
-
-- **Inherited VC buttons**: song functions are usually Collections/Chasers whose VC button sits on a *child* look (e.g. the Scene or Chaser inside), not on the wrapper itself. The backend now resolves buttons through the `contains` tree (`vc_inherited` field, cycle-safe, depth-limited) and the Setlist shows 🎛 with the original button name for these songs. The "Has VC" pool filter and search also consider inherited buttons.
-
-### Added — Generation integrity check ("no empty child")
-
-- Every QXW generation now runs a sanitation pass before serialising: removes `<Step>` elements with empty text or pointing at non-existent function IDs, deletes empty unreferenced `Setlist Chaser SlotXXXX (Auto)` leftovers from previous iterations, and renumbers steps. Repeats until stable; the currently generated chaser and anything referenced by a CueList/VC widget is never touched.
-
-### Changed — Purge Clones catches legacy unmarked clones
-
-- **Purge Clones** now also detects clones generated by pre-`SwissKnifeClone` versions: functions that are exact structural duplicates (same Name/Type/body — Scenes included) of a lower-ID original, or renamed duplicates whose name matches a song in the loaded setlist, provided they are referenced by nothing in the workspace.
-- Song assignments pointing at a removed clone are **re-pointed to the surviving original** (following redirect chains) instead of being blanked, so the setlist stays intact and the original VC button becomes visible again. Response now returns `redirected` count and a `redirects` map.
+- Refactored `pdf.py`: extracted `_build_setlist_pages` for reuse, wired `doc_date` param
+- `build_table_pdf`: new generic table-to-PDF builder for Tech Rider and Checklist exports
 
 ---
 

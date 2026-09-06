@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.1.1
+# ⚡ QLC+ Swiss Knife — v1.2.0
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser (or a native window) and manage every aspect of your show from a clean, sidebar-driven interface.**
 
@@ -57,8 +57,10 @@ Create and maintain `ID → description` mapping files that annotate your QLC+ f
 ### Fixtures
 Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas**. Configure stage dimensions, auto-assign DMX addresses, then generate a ready-to-use workspace with all fixture blocks and 3D monitor positions populated from your canvas layout. Export **blueprint PDFs** in multiple paper sizes.
 
-### Quick Start QXW Generator
+### Quick Start QXW Generator *(Alpha)*
 Create production-ready QLC+ workspaces in minutes, even with zero QLC+ experience. A 5-step wizard walks you through fixture selection, stage placement, automatic capability analysis, and intelligent VC layout generation. The system detects RGB, strobe, pan/tilt, and dimmer channels, groups fixtures by type, and auto-generates macro buttons (ALL ON/OFF, BLACKOUT), fixture group selectors, pre-configured scenes (Warm White, Cold White, Colors), skeleton effect chasers (Dimmer Sweep, Color Fade, Strobe), and four custom slots ready for your own scenes. Export a complete, wired `.qxw` file and open it in QLC+ — time to running show: ~5 minutes.
+
+> **Internet access note:** The "Browse QLC+ Library" button in Step 1 fetches fixture definitions from the [official QLC+ fixture repository on GitHub](https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures). This is the **only feature** in the app that makes external network calls. All other operations — loading, editing, exporting — are fully local with no internet required. If you prefer to stay offline, load fixture definitions from local `.qxf` files instead.
 
 ### Checklist
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.
@@ -181,9 +183,14 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the
 The app binds **only to `127.0.0.1`** (localhost) and is not accessible from other machines on your network. Additional hardening:
 
 - All state-changing API requests are validated against a localhost Origin header (CSRF protection).
-- File uploads are restricted to `.qxw` extension for workspaces and `.qxf` for fixture definitions; filenames are sanitised with `werkzeug.utils.secure_filename` before saving.
+- File uploads are restricted to `.qxw` extension for workspaces and `.qxf` for fixture definitions; filenames are sanitised with `werkzeug.utils.secure_filename` before saving. XML payloads are size-capped before parsing.
 - `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, and `Referrer-Policy` headers are set on every response.
 - Exception messages sent to the browser have filesystem paths stripped.
+- The `Content-Disposition` filename value is sanitised (non-alphanumeric characters stripped) and properly quoted.
+
+### Network access
+
+The app is fully local **except** for the "Browse QLC+ Library" button in the Quick Start and Brightness tools, which fetches fixture data from `api.github.com` and `raw.githubusercontent.com` (the official QLC+ repository). No authentication tokens are sent and no user data leaves the machine. All other features work entirely offline.
 
 ---
 

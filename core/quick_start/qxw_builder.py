@@ -106,7 +106,7 @@ def build_qxw(rig: list,
     # ── Monitor ───────────────────────────────────────────────────────────
     monitor = _sub(root, "Monitor")
     monitor.set("DisplayMode", "1")  # 3D
-    monitor.set("ShowLabels", "0")
+    monitor.set("ShowLabels", "1")
 
     grid_el = _sub(monitor, "Grid")
     grid_el.set("Width",  str(int(stage_w_mm / 1000)))
@@ -114,11 +114,18 @@ def build_qxw(rig: list,
     grid_el.set("Depth",  str(int(stage_d_mm / 1000)))
     grid_el.set("Units",  "0")  # metres
 
+    # Default height: if fixture has no explicit height (y_mm == 0),
+    # place it at ~90% of stage height (simulates truss/ceiling mount).
+    default_y = int(stage_h_mm * 0.9)
+
     for i, e in enumerate(rig):
+        y = int(e.get("y_mm", 0))
+        if y == 0:
+            y = default_y
         fxi = _sub(monitor, "FxItem",
                    ID=str(i),
                    XPos=str(int(e.get("x_mm", 0))),
-                   YPos=str(int(e.get("y_mm", 0))),
+                   YPos=str(y),
                    ZPos=str(int(e.get("z_mm", 0))),
                    XRot="65", YRot="0", ZRot="0")
 

@@ -35,6 +35,28 @@ def _sub(parent: ET.Element, tag: str, text: str = None, **attribs) -> ET.Elemen
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# ARGB color constants  (Qt QColor 32-bit unsigned format)
+# ═════════════════════════════════════════════════════════════════════════════
+
+_CLR_RED        = 4294901760   # 0xFFFF0000
+_CLR_DARK_RED   = 4287299584   # 0xFF8B0000
+_CLR_GREEN      = 4278236672   # 0xFF00C000
+_CLR_DARK_GREEN = 4278218752   # 0xFF007000
+_CLR_BLUE       = 4278222079   # 0xFF2080FF
+_CLR_YELLOW     = 4294959360   # 0xFFFFD700  (gold)
+_CLR_ORANGE     = 4294937600   # 0xFFFF8C00
+_CLR_CYAN       = 4278255615   # 0xFF00FFFF
+_CLR_MAGENTA    = 4294902015   # 0xFFFF00FF
+_CLR_PURPLE     = 4287889619   # 0xFF9400D3
+_CLR_WHITE      = 4294967295   # 0xFFFFFFFF
+_CLR_BLACK      = 4278190080   # 0xFF000000
+_CLR_WARM       = 4294950656   # 0xFFBF8F00  (warm amber)
+_CLR_DARK_GRAY  = 4281611316   # 0xFF303034
+_CLR_MID_GRAY   = 4284572001   # 0xFF5A5A61
+_CLR_LIGHT_GRAY = 4290032820   # 0xFFB0B0B4
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # ID counter — keeps function / widget IDs unique within one generation
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -105,7 +127,8 @@ _WIDGET_ID = _IDCounter(0)   # reset per generation via generate()
 
 
 def _vc_frame(wid: int, name: str, x: int, y: int, w: int, h: int,
-              caption: str = None) -> ET.Element:
+              caption: str = None, header: bool = True,
+              bg_color: int = None) -> ET.Element:
     frame = ET.Element(_ns("Frame"))
     frame.set("Caption", caption or name)
     frame.set("ID", str(wid))
@@ -115,11 +138,16 @@ def _vc_frame(wid: int, name: str, x: int, y: int, w: int, h: int,
     ws.set("Width", str(w)); ws.set("Height", str(h))
     app = _sub(frame, "Appearance")
     _sub(app, "FrameStyle", "Sunken")
+    if bg_color is not None:
+        _sub(app, "BackgroundColor", str(bg_color))
+    if header:
+        _sub(frame, "ShowHeader", "True")
     return frame
 
 
 def _vc_button(wid: int, caption: str, func_id: int, func_type: str,
-               x: int, y: int, w: int = 120, h: int = 60) -> ET.Element:
+               x: int, y: int, w: int = 120, h: int = 60,
+               bg_color: int = None, fg_color: int = None) -> ET.Element:
     btn = ET.Element(_ns("Button"))
     btn.set("Caption", caption)
     btn.set("ID", str(wid))
@@ -130,6 +158,10 @@ def _vc_button(wid: int, caption: str, func_id: int, func_type: str,
     ws.set("Width", str(w)); ws.set("Height", str(h))
     app = _sub(btn, "Appearance")
     _sub(app, "FrameStyle", "None")
+    if bg_color is not None:
+        _sub(app, "BackgroundColor", str(bg_color))
+    if fg_color is not None:
+        _sub(app, "ForegroundColor", str(fg_color))
     _sub(btn, "Function", str(func_id), ID=str(func_id))
     if func_type == "Chaser":
         _sub(btn, "Action", "Toggle")
@@ -137,6 +169,26 @@ def _vc_button(wid: int, caption: str, func_id: int, func_type: str,
         _sub(btn, "Action", "Toggle")
     _sub(btn, "Intensity", Adjust="False")
     return btn
+
+
+def _vc_label(wid: int, caption: str, x: int, y: int,
+              w: int = 200, h: int = 30,
+              bg_color: int = None, fg_color: int = None) -> ET.Element:
+    """Build a VC Label widget (static text)."""
+    lbl = ET.Element(_ns("Label"))
+    lbl.set("Caption", caption)
+    lbl.set("ID", str(wid))
+    ws = _sub(lbl, "WindowState")
+    ws.set("Visible", "True")
+    ws.set("X", str(x)); ws.set("Y", str(y))
+    ws.set("Width", str(w)); ws.set("Height", str(h))
+    app = _sub(lbl, "Appearance")
+    _sub(app, "FrameStyle", "None")
+    if bg_color is not None:
+        _sub(app, "BackgroundColor", str(bg_color))
+    if fg_color is not None:
+        _sub(app, "ForegroundColor", str(fg_color))
+    return lbl
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -381,113 +433,153 @@ class VCLayoutGenerator:
         self.functions = []
         groups = self.analysis.group_by_type()
 
+        pad = 5
+        btn_h = 55
+        btn_w = 130
+
         # ── Macros ────────────────────────────────────────────────────────
+        macro_h = 40 + 2 * (btn_h + pad) + pad   # header + 2 rows
         macros_frame = _vc_frame(self._next_wid(), "Macros",
-                                 0, 0, 260, 240)
-        btn_y = 5
+                                 0, 0, 280, macro_h)
+        btn_y = 40   # below header
         fid_on  = self._create_all_on_scene()
         macros_frame.append(
             _vc_button(self._next_wid(), "ALL ON", fid_on, "Scene",
-                       5, btn_y, 120, 60))
+                       pad, btn_y, btn_w, btn_h,
+                       bg_color=_CLR_GREEN, fg_color=_CLR_WHITE))
         fid_off = self._create_all_off_scene()
         macros_frame.append(
             _vc_button(self._next_wid(), "ALL OFF", fid_off, "Scene",
-                       130, btn_y, 120, 60))
-        btn_y += 70
+                       pad + btn_w + pad, btn_y, btn_w, btn_h,
+                       bg_color=_CLR_DARK_GRAY, fg_color=_CLR_LIGHT_GRAY))
+        btn_y += btn_h + pad
         fid_bo = self._create_blackout_scene()
         macros_frame.append(
             _vc_button(self._next_wid(), "BLACKOUT", fid_bo, "Scene",
-                       5, btn_y, 245, 60))
+                       pad, btn_y, 2 * btn_w + pad, btn_h,
+                       bg_color=_CLR_DARK_RED, fg_color=_CLR_WHITE))
 
         # ── Fixture Groups ────────────────────────────────────────────────
+        active_groups = [(gn, gi) for gn, gi in groups.items() if gi]
+        grp_rows = max(len(active_groups), 1)
+        grp_h = 40 + grp_rows * (btn_h + pad) + pad
         groups_frame = _vc_frame(self._next_wid(), "Fixture Groups",
-                                 0, 250, 260, 300)
-        btn_y = 5
-        for gname, indices in groups.items():
-            if not indices:
-                continue
+                                 0, macro_h + pad, 280, grp_h)
+
+        _GROUP_COLORS = {
+            "moving_heads":   (_CLR_BLUE,       _CLR_WHITE),
+            "color_fixtures": (_CLR_CYAN,        _CLR_BLACK),
+            "dimmers_only":   (_CLR_YELLOW,      _CLR_BLACK),
+            "other":          (_CLR_MID_GRAY,    _CLR_WHITE),
+        }
+
+        btn_y = 40
+        for gname, indices in active_groups:
             display = {
                 "moving_heads":   "Moving Heads",
                 "color_fixtures": "Color Fixtures",
                 "dimmers_only":   "Dimmers",
                 "other":          "Other",
             }.get(gname, gname)
+            bg, fg = _GROUP_COLORS.get(gname, (_CLR_MID_GRAY, _CLR_WHITE))
             fid_g = self._create_group_scene(gname, indices)
             groups_frame.append(
                 _vc_button(self._next_wid(), display, fid_g, "Scene",
-                           5, btn_y, 245, 60))
-            btn_y += 70
+                           pad, btn_y, 2 * btn_w + pad, btn_h,
+                           bg_color=bg, fg_color=fg))
+            btn_y += btn_h + pad
 
         # ── Scenes ────────────────────────────────────────────────────────
-        scenes_frame = _vc_frame(self._next_wid(), "Scenes",
-                                 270, 0, 500, 240)
-        col, row = 0, 0
-        bw, bh = 120, 60
-        pad = 5
-
-        def _place_scene_btn(caption, fid, ftype="Scene"):
-            nonlocal col, row
-            x = pad + col * (bw + pad)
-            y = pad + row * (bh + pad)
-            scenes_frame.append(
-                _vc_button(self._next_wid(), caption, fid, ftype, x, y, bw, bh))
-            col += 1
-            if col >= 4:
-                col = 0
-                row += 1
+        # Collect scene entries first so we can size the frame
+        scene_entries = []   # (caption, fid, ftype, bg, fg)
 
         fid_ww = self._create_warm_white_scene()
-        _place_scene_btn("Warm White", fid_ww)
+        scene_entries.append(("Warm White", fid_ww, "Scene",
+                              _CLR_WARM, _CLR_BLACK))
 
         fid_cw = self._create_cold_white_scene()
-        _place_scene_btn("Cold White", fid_cw)
+        scene_entries.append(("Cold White", fid_cw, "Scene",
+                              _CLR_LIGHT_GRAY, _CLR_BLACK))
 
         if self.analysis.has_any_rgb():
             fid_colors = self._create_color_scene("Colors", 0, 128, 255)
-            _place_scene_btn("Colors", fid_colors)
+            scene_entries.append(("Colors", fid_colors, "Scene",
+                                  _CLR_CYAN, _CLR_BLACK))
 
         if self.analysis.has_any_strobe():
             fid_strobe = self._create_strobe_scene()
-            _place_scene_btn("Strobe", fid_strobe)
+            scene_entries.append(("Strobe", fid_strobe, "Scene",
+                                  _CLR_YELLOW, _CLR_BLACK))
 
-        # Custom empty slots (placeholder scenes with no values)
+        # Custom empty slots
         for i in range(1, 5):
             custom_fid = self._next_fid()
             self.functions.append(_build_scene(custom_fid, f"Custom {i}", []))
-            _place_scene_btn(f"Custom {i}", custom_fid)
+            scene_entries.append((f"Custom {i}", custom_fid, "Scene",
+                                  _CLR_MID_GRAY, _CLR_WHITE))
+
+        cols = 4
+        scene_rows = (len(scene_entries) + cols - 1) // cols
+        scene_h = 40 + scene_rows * (btn_h + pad) + pad
+        left_col_w = 280 + pad
+        right_col_w = cols * (btn_w + pad) + pad
+
+        scenes_frame = _vc_frame(self._next_wid(), "Scenes",
+                                 left_col_w, 0, right_col_w, scene_h)
+        for si, (caption, fid, ftype, bg, fg) in enumerate(scene_entries):
+            sc = si % cols
+            sr = si // cols
+            x = pad + sc * (btn_w + pad)
+            y = 40 + sr * (btn_h + pad)
+            scenes_frame.append(
+                _vc_button(self._next_wid(), caption, fid, ftype,
+                           x, y, btn_w, btn_h,
+                           bg_color=bg, fg_color=fg))
 
         # ── Effects ───────────────────────────────────────────────────────
-        effects_frame = _vc_frame(self._next_wid(), "Effects",
-                                  270, 250, 500, 300)
-        col, row = 0, 0
-
-        def _place_effect_btn(caption, fid):
-            nonlocal col, row
-            x = pad + col * (bw + pad)
-            y = pad + row * (bh + pad)
-            effects_frame.append(
-                _vc_button(self._next_wid(), caption, fid, "Chaser", x, y, bw, bh))
-            col += 1
-            if col >= 4:
-                col = 0
-                row += 1
+        effect_entries = []  # (caption, fid, bg, fg)
 
         fid_sweep = self._create_dimmer_sweep_chaser()
-        _place_effect_btn("Dimmer Sweep", fid_sweep)
+        effect_entries.append(("Dimmer Sweep", fid_sweep,
+                               _CLR_ORANGE, _CLR_BLACK))
 
         if self.analysis.has_any_rgb():
             fid_cfade = self._create_color_fade_chaser()
-            _place_effect_btn("Color Fade", fid_cfade)
+            effect_entries.append(("Color Fade", fid_cfade,
+                                   _CLR_PURPLE, _CLR_WHITE))
 
         if self.analysis.has_any_strobe():
             fid_slow = self._create_strobe_chaser("Strobe Low", 200, 200)
-            _place_effect_btn("Strobe Low", fid_slow)
+            effect_entries.append(("Strobe Low", fid_slow,
+                                   _CLR_YELLOW, _CLR_BLACK))
             fid_fast = self._create_strobe_chaser("Strobe High", 50, 50)
-            _place_effect_btn("Strobe High", fid_fast)
+            effect_entries.append(("Strobe High", fid_fast,
+                                   _CLR_RED, _CLR_WHITE))
+
+        eff_rows = max((len(effect_entries) + cols - 1) // cols, 1)
+        eff_h = 40 + eff_rows * (btn_h + pad) + pad
+
+        effects_frame = _vc_frame(self._next_wid(), "Effects",
+                                  left_col_w, scene_h + pad,
+                                  right_col_w, eff_h)
+        for ei, (caption, fid, bg, fg) in enumerate(effect_entries):
+            ec = ei % cols
+            er = ei // cols
+            x = pad + ec * (btn_w + pad)
+            y = 40 + er * (btn_h + pad)
+            effects_frame.append(
+                _vc_button(self._next_wid(), caption, fid, "Chaser",
+                           x, y, btn_w, btn_h,
+                           bg_color=bg, fg_color=fg))
 
         # ── Main frame ────────────────────────────────────────────────────
+        total_w = left_col_w + right_col_w + pad
+        left_h = macro_h + pad + grp_h
+        right_h = scene_h + pad + eff_h
+        total_h = max(left_h, right_h) + pad
         main_frame = _vc_frame(self._next_wid(), "Quick Start",
-                               0, 0, 780, 560, caption="Quick Start")
+                               0, 0, total_w, total_h,
+                               caption="Quick Start")
         main_frame.append(macros_frame)
         main_frame.append(groups_frame)
         main_frame.append(scenes_frame)

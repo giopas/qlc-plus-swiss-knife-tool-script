@@ -1127,15 +1127,13 @@ function _qsUpdateFilenamePreview() {
   if (el) el.textContent = _qsGenerateFilename();
 }
 
-function qsExport() {
+async function qsExport() {
   const btn = document.getElementById('qs-btn-export');
   if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
 
   const projectName = (document.getElementById('qs-project-name')?.value || '').trim();
+  const suggestedName = _qsGenerateFilename();
 
-  // Use a hidden iframe + GET request to trigger the download.
-  // We use GET to avoid the CSRF origin check that blocks POST from pywebview,
-  // and an iframe so the current page is not replaced by the response.
   const params = new URLSearchParams({
     project_name: projectName,
     stage_w: _qsStage.w_mm,
@@ -1144,14 +1142,33 @@ function qsExport() {
   });
   const url = '/api/quickstart/generate?' + params.toString();
 
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = url;
-  document.body.appendChild(iframe);
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(errText || 'Server error ' + resp.status);
+    }
+    const blob = await resp.blob();
 
-  // Clean up iframe and re-enable button after a delay
-  setTimeout(() => {
-    iframe.remove();
+    const saved = await saveFileWithPicker(
+      blob,
+      suggestedName,
+      [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
+      'Save QLC+ Workspace'
+    );
+
+    if (saved) {
+      const fullPath = saveFileWithPicker.lastPath;
+      const msg = fullPath
+        ? 'Workspace saved to: ' + fullPath
+        : 'Workspace saved as ' + saved;
+      setStatus(msg, 'ok');
+    }
+    // saved === null means user cancelled — no message needed
+  } catch (err) {
+    console.error('Quick Start export failed:', err);
+    setStatus('Export failed: ' + err.message, 'error');
+  } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Export .qxw'; }
-  }, 5000);
+  }
 }

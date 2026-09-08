@@ -37,11 +37,11 @@ def _compute_orientation(y_mm: int, stage_h_mm: int,
     else:
         ratio = y_mm / max(stage_h_mm, 1)
         if ratio < 0.15:
-            x_rot = 315   # point upward (floor fixture)
+            x_rot = 180   # point straight up (floor fixture)
         elif ratio > 0.65:
-            x_rot = 65    # point downward (top fixture)
+            x_rot = 0     # point straight down (top fixture)
         else:
-            x_rot = 0     # horizontal (mid-height)
+            x_rot = 90    # horizontal beam (mid-height)
     y_rot = int(custom_y_rot) if custom_y_rot is not None else 0
     z_rot = int(custom_z_rot) if custom_z_rot is not None else 0
     return x_rot, y_rot, z_rot
@@ -126,20 +126,8 @@ def build_qxw(rig: list,
     for func_el in functions:
         engine.append(func_el)
 
-    # ── Virtual Console ───────────────────────────────────────────────────
-    vc = _sub(root, "VirtualConsole")
-    vc.append(vc_frame)
-    props = _sub(vc, "Properties")
-    _sub(props, "Size", Width="1920", Height="1080")
-    _sub(props, "GrandMaster", ChannelMode="Intensity",
-         ValueMode="Reduce", SliderMode="Normal")
-
-    # ── Simple Desk (empty — user populates in QLC+) ─────────────────────
-    sd = _sub(root, "SimpleDesk")
-    _sub(sd, "Engine")
-
-    # ── Monitor ───────────────────────────────────────────────────────────
-    monitor = _sub(root, "Monitor")
+    # ── Monitor (MUST be inside Engine — QLC+ parses it here) ─────────────
+    monitor = _sub(engine, "Monitor")
     monitor.set("DisplayMode", "1")  # 3D
     monitor.set("ShowLabels", "1")
 
@@ -153,23 +141,20 @@ def build_qxw(rig: list,
     # StageItem — tells QLC+ to render the stage floor
     _sub(monitor, "StageItem", "1")
 
-    # Default height: if fixture has no explicit height (y_mm == 0),
+    # Default height: if fixture has no explicit height (y_mm is None),
     # place it at ~90% of stage height (simulates truss/ceiling mount).
     default_y = int(stage_h_mm * 0.9)
 
-    half_w = stage_w_mm / 2.0
-    half_d = stage_d_mm / 2.0
-
     for i, e in enumerate(rig):
-        y = int(e.get("y_mm", 0))
-        if y == 0:
+        raw_y = e.get("y_mm")
+        if raw_y is None:
             y = default_y
+        else:
+            y = int(raw_y)
 
-        # Center coordinates around stage origin
+        # Corner-origin coordinates (QLC+ uses all-positive values)
         raw_x = int(e.get("x_mm", 0))
         raw_z = int(e.get("z_mm", 0))
-        centered_x = int(raw_x - half_w)
-        centered_z = int(raw_z - half_d)
 
         # Orientation: custom overrides or height-based auto
         x_rot, y_rot, z_rot = _compute_orientation(
@@ -181,12 +166,24 @@ def build_qxw(rig: list,
 
         fxi = _sub(monitor, "FxItem",
                    ID=str(i),
-                   XPos=str(centered_x),
+                   XPos=str(raw_x),
                    YPos=str(y),
-                   ZPos=str(centered_z),
+                   ZPos=str(raw_z),
                    XRot=str(x_rot),
                    YRot=str(y_rot),
                    ZRot=str(z_rot))
+
+    # ── Virtual Console ───────────────────────────────────────────────────
+    vc = _sub(root, "VirtualConsole")
+    vc.append(vc_frame)
+    props = _sub(vc, "Properties")
+    _sub(props, "Size", Width="1920", Height="1080")
+    _sub(props, "GrandMaster", ChannelMode="Intensity",
+         ValueMode="Reduce", SliderMode="Normal")
+
+    # ── Simple Desk (empty — user populates in QLC+) ─────────────────────
+    sd = _sub(root, "SimpleDesk")
+    _sub(sd, "Engine")
 
     # ── Serialise ─────────────────────────────────────────────────────────
     xml_str = ET.tostring(root, encoding="unicode")

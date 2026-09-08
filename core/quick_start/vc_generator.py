@@ -238,6 +238,7 @@ def _vc_slider(wid: int, caption: str, x: int, y: int,
                w: int = 60, h: int = 200,
                slider_mode: str = "Level",
                level_low: int = 0, level_high: int = 255,
+               value: int = None,
                channels: List[Tuple[int, int]] = None) -> ET.Element:
     """Build a VC Slider widget (e.g. master dimmer)."""
     sl = ET.Element(_ns("Slider"))
@@ -252,9 +253,10 @@ def _vc_slider(wid: int, caption: str, x: int, y: int,
     _sub(sl, "SliderMode", slider_mode,
          ValueDisplayStyle="Exact", ClickAndGoType="None",
          Monitor="false")
+    init_val = value if value is not None else level_high
     level = _sub(sl, "Level",
                  LowLimit=str(level_low), HighLimit=str(level_high),
-                 Value=str(level_high))
+                 Value=str(init_val))
     if channels:
         for fix_id, ch_idx in channels:
             _sub(level, "Channel", str(ch_idx), Fixture=str(fix_id))
@@ -804,15 +806,15 @@ class VCLayoutGenerator:
         if red_channels:
             sl_r = _vc_slider(self._next_wid(), "RED", 0, 0,
                               rgb_slider_w, rgb_slider_h,
-                              slider_mode="Level", channels=red_channels)
+                              slider_mode="Level", value=0, channels=red_channels)
             rgb_sliders.append(sl_r)
             sl_g = _vc_slider(self._next_wid(), "GREEN", 0, 0,
                               rgb_slider_w, rgb_slider_h,
-                              slider_mode="Level", channels=green_channels)
+                              slider_mode="Level", value=0, channels=green_channels)
             rgb_sliders.append(sl_g)
             sl_b = _vc_slider(self._next_wid(), "BLUE", 0, 0,
                               rgb_slider_w, rgb_slider_h,
-                              slider_mode="Level", channels=blue_channels)
+                              slider_mode="Level", value=0, channels=blue_channels)
             rgb_sliders.append(sl_b)
 
         # ── PANIC button (StopAll) ───────────────────────────────────────

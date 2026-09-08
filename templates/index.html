@@ -1493,6 +1493,18 @@
             </div>
           </div>
 
+          <!-- Beam Direction -->
+          <div class="qs-card" style="padding:10px">
+            <h3 style="font-size:12px;margin:0 0 6px">Beam Direction <span style="color:var(--overlay0);font-weight:400">(selected or all)</span></h3>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('up')" title="Point beam upward (floor fixtures)">&#x2191; Up</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('down')" title="Point beam downward (top fixtures)">&#x2193; Down</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('horizontal')" title="Point beam horizontally">&#x2192; Horiz</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('auto')" title="Auto: based on height">&#x21BA; Auto</button>
+            </div>
+            <p style="font-size:9px;color:var(--overlay0);margin:4px 0 0">Auto = height-based default. Visible on Front/Side views.</p>
+          </div>
+
           <!-- Alignment tools -->
           <div class="qs-card" style="padding:10px">
             <h3 style="font-size:12px;margin:0 0 6px">Align &amp; Distribute <span id="qs-sel-info" style="color:var(--overlay0);font-weight:400">None selected</span></h3>

@@ -28,9 +28,29 @@ def _sub(parent: ET.Element, tag: str, text: str = None, **attribs) -> ET.Elemen
     return el
 
 
+def _compute_orientation(y_mm: int, stage_h_mm: int,
+                         custom_x_rot=None, custom_y_rot=None,
+                         custom_z_rot=None):
+    """Return (XRot, YRot, ZRot) for a fixture based on height or overrides."""
+    if custom_x_rot is not None:
+        x_rot = int(custom_x_rot)
+    else:
+        ratio = y_mm / max(stage_h_mm, 1)
+        if ratio < 0.15:
+            x_rot = 315   # point upward (floor fixture)
+        elif ratio > 0.65:
+            x_rot = 65    # point downward (top fixture)
+        else:
+            x_rot = 0     # horizontal (mid-height)
+    y_rot = int(custom_y_rot) if custom_y_rot is not None else 0
+    z_rot = int(custom_z_rot) if custom_z_rot is not None else 0
+    return x_rot, y_rot, z_rot
+
+
 def build_qxw(rig: list,
               functions: List[ET.Element],
               vc_frame: ET.Element,
+              fixture_groups: List[ET.Element] = None,
               stage_w_mm: int = 8000,
               stage_d_mm: int = 6000,
               stage_h_mm: int = 4000) -> bytes:
@@ -43,9 +63,12 @@ def build_qxw(rig: list,
         Fixture entries with: manufacturer, model, mode, ch_count, name,
         universe (0-indexed), address (0-indexed), x_mm, z_mm, y_mm
     functions : list[ET.Element]
-        <Function> XML elements (scenes, chasers, etc.)
+        <Function> XML elements (scenes, chasers, RGBMatrix, etc.)
     vc_frame : ET.Element
         Root <Frame> for the Virtual Console.
+    fixture_groups : list[ET.Element] | None
+        Additional <FixtureGroup> elements (for RGBMatrix, etc.).
+        Group ID=0 ("All Fixtures") is always created automatically.
     stage_w_mm, stage_d_mm, stage_h_mm : int
         Stage dimensions in millimetres.
 
@@ -86,13 +109,18 @@ def build_qxw(rig: list,
         _sub(fx, "Address",      str(e.get("address", 0)))
         _sub(fx, "Channels",     str(e.get("ch_count", 1)))
 
-    # Fixture group (flat grid)
+    # Fixture group — "All Fixtures" (flat grid, ID=0)
     fg = _sub(engine, "FixtureGroup", ID="0")
     _sub(fg, "Name", "All Fixtures")
-    size_el = _sub(fg, "Size", X=str(len(rig)), Y="1")
+    _sub(fg, "Size", X=str(len(rig)), Y="1")
     for i in range(len(rig)):
         head = _sub(fg, "Head", X=str(i), Y="0", Fixture=str(i))
         head.text = "0"
+
+    # Additional fixture groups (for RGBMatrix, etc.)
+    if fixture_groups:
+        for fg_el in fixture_groups:
+            engine.append(fg_el)
 
     # Functions
     for func_el in functions:
@@ -100,8 +128,15 @@ def build_qxw(rig: list,
 
     # ── Virtual Console ───────────────────────────────────────────────────
     vc = _sub(root, "VirtualConsole")
-    _sub(vc, "Properties")
     vc.append(vc_frame)
+    props = _sub(vc, "Properties")
+    _sub(props, "Size", Width="1920", Height="1080")
+    _sub(props, "GrandMaster", ChannelMode="Intensity",
+         ValueMode="Reduce", SliderMode="Normal")
+
+    # ── Simple Desk (empty — user populates in QLC+) ─────────────────────
+    sd = _sub(root, "SimpleDesk")
+    _sub(sd, "Engine")
 
     # ── Monitor ───────────────────────────────────────────────────────────
     monitor = _sub(root, "Monitor")
@@ -113,21 +148,45 @@ def build_qxw(rig: list,
     grid_el.set("Height", str(int(stage_h_mm / 1000)))
     grid_el.set("Depth",  str(int(stage_d_mm / 1000)))
     grid_el.set("Units",  "0")  # metres
+    grid_el.set("POV",    "1")  # perspective view — needed for QLC+ to use dims
+
+    # StageItem — tells QLC+ to render the stage floor
+    _sub(monitor, "StageItem", "1")
 
     # Default height: if fixture has no explicit height (y_mm == 0),
     # place it at ~90% of stage height (simulates truss/ceiling mount).
     default_y = int(stage_h_mm * 0.9)
 
+    half_w = stage_w_mm / 2.0
+    half_d = stage_d_mm / 2.0
+
     for i, e in enumerate(rig):
         y = int(e.get("y_mm", 0))
         if y == 0:
             y = default_y
+
+        # Center coordinates around stage origin
+        raw_x = int(e.get("x_mm", 0))
+        raw_z = int(e.get("z_mm", 0))
+        centered_x = int(raw_x - half_w)
+        centered_z = int(raw_z - half_d)
+
+        # Orientation: custom overrides or height-based auto
+        x_rot, y_rot, z_rot = _compute_orientation(
+            y, stage_h_mm,
+            custom_x_rot=e.get("x_rot"),
+            custom_y_rot=e.get("y_rot"),
+            custom_z_rot=e.get("z_rot"),
+        )
+
         fxi = _sub(monitor, "FxItem",
                    ID=str(i),
-                   XPos=str(int(e.get("x_mm", 0))),
+                   XPos=str(centered_x),
                    YPos=str(y),
-                   ZPos=str(int(e.get("z_mm", 0))),
-                   XRot="65", YRot="0", ZRot="0")
+                   ZPos=str(centered_z),
+                   XRot=str(x_rot),
+                   YRot=str(y_rot),
+                   ZRot=str(z_rot))
 
     # ── Serialise ─────────────────────────────────────────────────────────
     xml_str = ET.tostring(root, encoding="unicode")

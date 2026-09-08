@@ -174,6 +174,9 @@ def _rig_to_api() -> list:
             "x":            e.get("x_mm", 0),
             "z":            e.get("z_mm", 0),
             "y":            e.get("y_mm", 0),
+            "x_rot":        e.get("x_rot"),
+            "y_rot":        e.get("y_rot"),
+            "z_rot":        e.get("z_rot"),
         })
     return result
 
@@ -268,6 +271,9 @@ def add_fixture():
             "x_mm":         0,
             "z_mm":         0,
             "y_mm":         0,
+            "x_rot":        None,
+            "y_rot":        None,
+            "z_rot":        None,
         }
         _qs_rig.append(entry)
         _qs_next_id += 1
@@ -328,6 +334,11 @@ def update_placement():
             _qs_rig[idx][k_mm] = int(data[axis])
         elif k_mm in data:
             _qs_rig[idx][k_mm] = int(data[k_mm])
+    # Orientation overrides
+    for rot_axis in ('x_rot', 'y_rot', 'z_rot'):
+        if rot_axis in data:
+            val = data[rot_axis]
+            _qs_rig[idx][rot_axis] = int(val) if val is not None else None
     return jsonify({'ok': True, 'rig': _rig_to_api()})
 
 
@@ -368,7 +379,7 @@ def preview():
 
     analysis = RigCapabilityAnalysis(_qs_rig, _qs_qxf_defs)
     gen      = VCLayoutGenerator(_qs_rig, _qs_qxf_defs, analysis)
-    funcs, vc_frame = gen.generate()
+    funcs, vc_frame, _fg = gen.generate()
     stats    = gen.stats()
 
     def _vc_to_dict(el):
@@ -418,7 +429,7 @@ def generate():
     try:
         analysis = RigCapabilityAnalysis(_qs_rig, _qs_qxf_defs)
         gen      = VCLayoutGenerator(_qs_rig, _qs_qxf_defs, analysis)
-        funcs, vc_frame = gen.generate()
+        funcs, vc_frame, fixture_groups = gen.generate()
 
         # Use QS-specific stage dims if provided, else fall back to global
         # Support both nested JSON {stage: {w_mm, d_mm, h_mm}} and flat
@@ -442,6 +453,7 @@ def generate():
             rig=_qs_rig,
             functions=funcs,
             vc_frame=vc_frame,
+            fixture_groups=fixture_groups,
             stage_w_mm=stage_w,
             stage_d_mm=stage_d,
             stage_h_mm=stage_h,

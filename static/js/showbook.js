@@ -76,6 +76,11 @@ async function sbBrowseQxf() {
   if (path) {
     const inp = document.getElementById('sb-qxf-path');
     if (inp) inp.value = path;
+    // Track in session
+    if (typeof _sess !== 'undefined') {
+      _sess.showbook_qxf_dir = path;
+      if (typeof _markDirty === 'function') _markDirty();
+    }
   }
 }
 
@@ -159,8 +164,8 @@ function _sbRenderPreview(doc) {
   // Function Index
   if (secs.functions) {
     parts.push(_sbTable('📋 Function Index', secs.functions,
-      ['ID', 'Name', 'Type'],
-      f => [f.id, f.name, f.type]));
+      ['ID', 'Name', 'Type', 'Description'],
+      f => [f.id, f.name, f.type, f.description]));
   }
 
   // Scenes
@@ -232,7 +237,7 @@ function _sbScenes(scenes) {
   const shown = scenes.slice(0, maxScenes);
 
   for (const scene of shown) {
-    parts.push(`<div class="sb-sub-heading">Scene #${_esc(scene.id)}: ${_esc(scene.name)}</div>`);
+    parts.push(`<div class="sb-sub-heading">Scene #${_esc(scene.id)}: ${_esc(scene.name)}${scene.description ? `<span class="sb-meta">${_esc(scene.description)}</span>` : ''}</div>`);
     for (const fx of (scene.fixtures || [])) {
       parts.push(`<div class="sb-fixture-label">${_esc(fx.fixture_name)} (${_esc(fx.fixture_model)})</div>`);
       if (fx.channels && fx.channels.length) {
@@ -258,7 +263,7 @@ function _sbChasers(chasers) {
   const parts = ['<div class="sb-section"><h3>🔄 Chaser Details</h3>'];
   for (const ch of chasers) {
     parts.push(`<div class="sb-sub-heading">Chaser #${_esc(ch.id)}: ${_esc(ch.name)}
-      <span class="sb-meta">[${_esc(ch.direction)} / ${_esc(ch.run_order)}]</span></div>`);
+      <span class="sb-meta">[${_esc(ch.direction)} / ${_esc(ch.run_order)}]</span>${ch.description ? `<span class="sb-meta">— ${_esc(ch.description)}</span>` : ''}</div>`);
     if (ch.steps && ch.steps.length) {
       parts.push('<div class="sb-table-wrap"><table class="sb-table sb-table-sm">');
       parts.push('<thead><tr><th>Step</th><th>Function</th><th>Fade In</th><th>Hold</th><th>Fade Out</th><th>Duration</th></tr></thead><tbody>');
@@ -277,7 +282,7 @@ function _sbCollections(collections) {
 
   const parts = ['<div class="sb-section"><h3>📦 Collection Details</h3>'];
   for (const c of collections) {
-    parts.push(`<div class="sb-sub-heading">Collection #${_esc(c.id)}: ${_esc(c.name)}</div>`);
+    parts.push(`<div class="sb-sub-heading">Collection #${_esc(c.id)}: ${_esc(c.name)}${c.description ? `<span class="sb-meta">— ${_esc(c.description)}</span>` : ''}</div>`);
     if (c.members && c.members.length) {
       parts.push('<div class="sb-table-wrap"><table class="sb-table sb-table-sm">');
       parts.push('<thead><tr><th>#</th><th>Function ID</th><th>Function Name</th></tr></thead><tbody>');

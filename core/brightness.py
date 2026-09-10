@@ -16,6 +16,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 from core.workspace import _state, NS, QLC_NS_URI
+from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, norm_name, GH_API_BASE, GH_RAW_BASE
 
 # ── QXF fixture-definition namespace ─────────────────────────────────────────
 _QXF_NS = 'http://www.qlcplus.org/FixtureDefinition'
@@ -33,10 +34,9 @@ _COLOUR_PRESETS = frozenset({
     'IntensityYellow', 'IntensityUV', 'IntensityIndigo',
 })
 
-# GitHub repository for QLC+ fixture definitions
-_GITHUB_API  = 'https://api.github.com/repos/mcallegari/qlcplus/contents/resources/fixtures'
-_GITHUB_RAW  = 'https://raw.githubusercontent.com/mcallegari/qlcplus/master/resources/fixtures'
-_HTTP_HEADERS = {'User-Agent': 'qlc-swiss-knife/1.0'}
+# GitHub constants imported from core.gh_fetch
+_GITHUB_API  = GH_API_BASE
+_GITHUB_RAW  = GH_RAW_BASE
 
 
 # =============================================================================
@@ -44,13 +44,8 @@ _HTTP_HEADERS = {'User-Agent': 'qlc-swiss-knife/1.0'}
 # =============================================================================
 
 def _norm(s: str) -> str:
-    """Normalise a name for fuzzy filename matching.
-
-    Lowercases, then collapses any run of non-alphanumeric characters into a
-    single hyphen.  This makes 'LED 4C-12 Silent Slim Spot' and
-    'LED-4C-12-Silent-Slim-Spot' identical after normalisation.
-    """
-    return re.sub(r'[^a-z0-9]+', '-', s.lower()).strip('-')
+    """Normalise a name — delegates to core.gh_fetch.norm_name."""
+    return norm_name(s)
 
 
 # =============================================================================
@@ -423,10 +418,8 @@ def scan_local_fixtures() -> dict:
 # =============================================================================
 
 def _gh_get(url: str) -> list | dict:
-    """GET from GitHub API, return parsed JSON.  Raises on error."""
-    req = urllib.request.Request(url, headers=_HTTP_HEADERS)
-    with urllib.request.urlopen(req, timeout=12) as r:
-        return json.loads(r.read())
+    """GET from GitHub API — delegates to core.gh_fetch."""
+    return _gh_get_shared(url)
 
 
 def fetch_fixtures_from_github(missing_fixtures: list, save_dir: str) -> dict:

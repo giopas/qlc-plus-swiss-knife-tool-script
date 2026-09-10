@@ -236,13 +236,16 @@ def _build_patch(state: dict) -> list[dict]:
 
 
 def _build_function_index(state: dict) -> list[dict]:
-    """Function summary table, sorted by ID."""
+    """Function summary table, sorted by ID.  Includes dictionary description
+    when available (from shared_descriptions)."""
+    descs = state.get("shared_descriptions", {})
     rows = []
     for fid, info in state.get("func_detailed", {}).items():
         rows.append({
             "id": fid,
             "name": info.get("name", ""),
             "type": info.get("type", ""),
+            "description": descs.get(fid, ""),
         })
     rows.sort(key=lambda r: int(r["id"]) if r["id"].isdigit() else 0)
     return rows
@@ -251,6 +254,7 @@ def _build_function_index(state: dict) -> list[dict]:
 def _build_scenes(root: ET.Element, state: dict,
                   qxf_lookup: dict) -> list[dict]:
     """Detailed scene breakdown with decoded DMX values."""
+    descs = state.get("shared_descriptions", {})
     scenes = []
     fixture_map = state.get("fixture_map", {})
 
@@ -338,6 +342,7 @@ def _build_scenes(root: ET.Element, state: dict,
         scenes.append({
             "id": fid,
             "name": fname,
+            "description": descs.get(fid, ""),
             "fixtures": channels,
         })
 
@@ -347,6 +352,7 @@ def _build_scenes(root: ET.Element, state: dict,
 
 def _build_chasers(root: ET.Element, state: dict) -> list[dict]:
     """Chaser details with steps and timing."""
+    descs = state.get("shared_descriptions", {})
     func_by_id = state.get("func_by_id", {})
     chasers = []
 
@@ -390,6 +396,7 @@ def _build_chasers(root: ET.Element, state: dict) -> list[dict]:
         chasers.append({
             "id": fid,
             "name": fname,
+            "description": descs.get(fid, ""),
             "direction": direction,
             "run_order": run_order,
             "speed": {
@@ -406,6 +413,7 @@ def _build_chasers(root: ET.Element, state: dict) -> list[dict]:
 
 def _build_collections(root: ET.Element, state: dict) -> list[dict]:
     """Collection details with member functions."""
+    descs = state.get("shared_descriptions", {})
     func_by_id = state.get("func_by_id", {})
     collections = []
 
@@ -425,6 +433,7 @@ def _build_collections(root: ET.Element, state: dict) -> list[dict]:
         collections.append({
             "id": fid,
             "name": fname,
+            "description": descs.get(fid, ""),
             "members": members,
         })
 
@@ -632,8 +641,8 @@ def _csv_patch(patch: list[dict]) -> str:
 
 
 def _csv_functions(functions: list[dict]) -> str:
-    headers = ["ID", "Name", "Type"]
-    rows = [[f["id"], f["name"], f["type"]] for f in functions]
+    headers = ["ID", "Name", "Type", "Description"]
+    rows = [[f["id"], f["name"], f["type"], f.get("description", "")] for f in functions]
     return _csv_write(rows, headers)
 
 
@@ -979,14 +988,22 @@ def _pdf_patch(pdf: _PdfBuilder, patch: list[dict]):
 
 
 def _pdf_functions(pdf: _PdfBuilder, functions: list[dict]):
-    """Render the function index."""
+    """Render the function index (with dictionary description when available)."""
     pdf.section_heading("Function Index")
-    headers = ["ID", "Name", "Type"]
-    fixed = {"ID": 40, "Type": 90}
+    has_desc = any(f.get("description") for f in functions)
+    if has_desc:
+        headers = ["ID", "Name", "Type", "Description"]
+        fixed = {"ID": 40, "Type": 90}
+    else:
+        headers = ["ID", "Name", "Type"]
+        fixed = {"ID": 40, "Type": 90}
     col_w = _auto_col_widths(headers, fixed)
     pdf.table_header(headers, col_w)
     for i, f in enumerate(functions):
-        pdf.table_row([f["id"], f["name"], f["type"]], col_w, i)
+        row = [f["id"], f["name"], f["type"]]
+        if has_desc:
+            row.append(f.get("description", ""))
+        pdf.table_row(row, col_w, i)
 
 
 def _pdf_scenes(pdf: _PdfBuilder, scenes: list[dict]):
@@ -996,8 +1013,10 @@ def _pdf_scenes(pdf: _PdfBuilder, scenes: list[dict]):
     for scene in scenes:
         pdf.ensure_space(40)
         pdf.fc(*_COL_ACCENT)
-        pdf.txt(_PAD + 4, pdf.cy, f"Scene #{scene['id']}: {scene['name']}",
-                sz=9, bold=True)
+        label = f"Scene #{scene['id']}: {scene['name']}"
+        if scene.get("description"):
+            label += f"  — {scene['description']}"
+        pdf.txt(_PAD + 4, pdf.cy, label, sz=9, bold=True)
         pdf.cy -= 14
 
         for fx_group in scene.get("fixtures", []):

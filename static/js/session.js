@@ -26,6 +26,9 @@ const _sess = {
   dictionary:       null,
   slot_paths:       {},     // slot_id -> path (synced from server)
   brightness_forced: {},
+  showbook_qxf_dir: null,   // path to QXF folder for Show Book
+  showbook_sections: null,  // array of selected section IDs (null = all)
+  porter_source:    null,   // path to source .qxw for Function Porter
 };
 
 // ── Init (called from app.js after DOM ready) ─────────────────────────────────
@@ -312,12 +315,21 @@ async function sessionSave() {
     if (inp.dictionary) _sess.dictionary = inp.dictionary;
   }
 
+  // Collect Show Book state from UI
+  const sbQxf = document.getElementById('sb-qxf-path');
+  if (sbQxf && sbQxf.value.trim()) _sess.showbook_qxf_dir = sbQxf.value.trim();
+  const sbChecks = document.querySelectorAll('#sb-section-checks input[type=checkbox]:checked');
+  if (sbChecks.length) _sess.showbook_sections = Array.from(sbChecks).map(c => c.value);
+
   const data = {
     version:           1,
     workspace:         _sess.workspace || null,
     dictionary:        _sess.dictionary || null,
     slot_paths:        _sess.slot_paths || {},
     brightness_forced: _sess.brightness_forced || {},
+    showbook_qxf_dir:  _sess.showbook_qxf_dir || null,
+    showbook_sections: _sess.showbook_sections || null,
+    porter_source:     _sess.porter_source || null,
   };
 
   const filename = _sess.filename || _suggestFilename();
@@ -387,6 +399,9 @@ async function sessionLoad(input) {
     _sess.dictionary        = data.dictionary        || null;
     _sess.slot_paths        = data.slot_paths        || {};
     _sess.brightness_forced = data.brightness_forced || {};
+    _sess.showbook_qxf_dir  = data.showbook_qxf_dir || null;
+    _sess.showbook_sections = data.showbook_sections || null;
+    _sess.porter_source     = data.porter_source     || null;
     _clearDirty();
 
     // Reflect workspace in header
@@ -401,7 +416,24 @@ async function sessionLoad(input) {
       }
       // Refresh all tab data
       if (typeof invalidateBrightness === 'function') invalidateBrightness();
+      if (typeof invalidateShowbook   === 'function') invalidateShowbook();
       if (typeof refreshSlots         === 'function') refreshSlots();
+
+      // Restore Show Book QXF path and sections
+      if (_sess.showbook_qxf_dir) {
+        const sbInp = document.getElementById('sb-qxf-path');
+        if (sbInp) sbInp.value = _sess.showbook_qxf_dir;
+      }
+      if (_sess.showbook_sections && Array.isArray(_sess.showbook_sections)) {
+        document.querySelectorAll('#sb-section-checks input[type=checkbox]').forEach(c => {
+          c.checked = _sess.showbook_sections.includes(c.value);
+        });
+      }
+
+      // Restore Porter source path
+      if (_sess.porter_source && typeof porterSetSourcePath === 'function') {
+        porterSetSourcePath(_sess.porter_source);
+      }
       // If a slot is currently open in the setlist, re-select it so the
       // auto-matched song rows are visible without requiring a manual click.
       if (typeof selectSlot === 'function' && typeof _selectedSlot !== 'undefined' && _selectedSlot) {

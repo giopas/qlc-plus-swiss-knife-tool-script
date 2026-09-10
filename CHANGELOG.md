@@ -30,6 +30,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
   - **Live preview**: generate an in-app preview before exporting — tables with sortable columns, scene breakdowns by fixture, chaser step timing
   - **PDF export**: A4 landscape PDF with cover page, table of contents-style summary, and all selected sections — pure Python, no external PDF library
   - **CSV export**: ZIP archive with one `.csv` file per section for spreadsheet workflows
+  - **Collapsible sections**: click any section header or individual item (scene, chaser, etc.) to collapse/expand its detail view; Expand All / Collapse All buttons for quick toggling
+  - **Clickable Function Index**: rows for Scene, Chaser, Collection, EFX, Show, and Script types link directly to their detail entries — click to smooth-scroll, auto-expand, and highlight
   - Preview truncation: tables capped at 100 rows, scenes at 50, with a note when data is truncated
 - New module: `core/showbook.py` — document generator, PDF builder, CSV/ZIP exporter
 - New API blueprint: `/api/showbook/` with endpoints for preview, PDF export, CSV export, and section listing

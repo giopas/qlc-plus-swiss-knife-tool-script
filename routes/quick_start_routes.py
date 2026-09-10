@@ -32,23 +32,15 @@ from core.quick_start.fixture_analyzer import (
 from core.quick_start.vc_generator import VCLayoutGenerator
 from core.quick_start.qxw_builder import build_qxw
 from core.quick_start.template_library import list_templates
+from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, GH_API_BASE, GH_RAW_BASE
 
-try:
-    import requests as _requests
-except ImportError:
-    _requests = None
 
 
 QXF_NS_URI = "http://www.qlcplus.org/FixtureDefinition"
 
-_GH_FIXTURES_BASE = (
-    "https://api.github.com/repos/mcallegari/qlcplus/contents/"
-    "resources/fixtures"
-)
-_GH_RAW_BASE = (
-    "https://raw.githubusercontent.com/mcallegari/qlcplus/master/"
-    "resources/fixtures"
-)
+# GitHub base URLs now imported from core.gh_fetch
+_GH_FIXTURES_BASE = GH_API_BASE
+_GH_RAW_BASE = GH_RAW_BASE
 
 
 def _safe_err(exc: Exception) -> str:
@@ -173,7 +165,7 @@ def _rig_to_api() -> list:
             "address":      e.get("address", 0),
             "x":            e.get("x_mm", 0),
             "z":            e.get("z_mm", 0),
-            "y":            e.get("y_mm", 0),
+            "y":            e.get("y_mm") if e.get("y_mm") is not None else 0,
             "x_rot":        e.get("x_rot"),
             "y_rot":        e.get("y_rot"),
             "z_rot":        e.get("z_rot"),
@@ -270,7 +262,7 @@ def add_fixture():
             "address":      0,
             "x_mm":         0,
             "z_mm":         0,
-            "y_mm":         0,
+            "y_mm":         None,
             "x_rot":        None,
             "y_rot":        None,
             "z_rot":        None,
@@ -485,35 +477,13 @@ def generate():
 # ═════════════════════════════════════════════════════════════════════════════
 
 def _gh_get(url: str) -> list:
-    """Fetch JSON from the GitHub API. Uses requests if available, else urllib."""
-    headers = {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'SwissKnife-QLC-QuickStart',
-    }
-    if _requests:
-        resp = _requests.get(url, headers=headers, timeout=15)
-        resp.raise_for_status()
-        return resp.json()
-    else:
-        import urllib.request
-        import json
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read().decode())
+    """Fetch JSON from the GitHub API.  Delegates to core.gh_fetch."""
+    return _gh_get_shared(url)
 
 
 def _gh_get_raw(url: str) -> bytes:
-    """Fetch raw file content from GitHub."""
-    headers = {'User-Agent': 'SwissKnife-QLC-QuickStart'}
-    if _requests:
-        resp = _requests.get(url, headers=headers, timeout=15)
-        resp.raise_for_status()
-        return resp.content
-    else:
-        import urllib.request
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return resp.read()
+    """Fetch raw file content from GitHub.  Delegates to core.gh_fetch."""
+    return _gh_get_raw_shared(url)
 
 
 @bp.route('/gh/manufacturers')

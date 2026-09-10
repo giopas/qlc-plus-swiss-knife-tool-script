@@ -5,6 +5,44 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.3.0] — 2026-09-10
+
+### Added — Function Porter *(Alpha)*
+
+- **Function Porter tab**: import functions from any source `.qxw` workspace into your loaded workspace — the intelligent alternative to QXW Merger for function-level transfers
+  - **Dependency resolution**: automatically detects and includes nested dependencies (Scenes inside Chasers, Chasers inside Collections, etc.) so nothing breaks on import
+  - **Fixture remapping wizard**: when source fixtures don't exist in the destination, an interactive modal lets you remap each source fixture to an existing destination fixture — channels are re-mapped automatically based on QXF definitions
+  - **Conflict detection**: warns when function names or IDs already exist in the destination; IDs are remapped above the highest existing ID
+  - **Multi-select with filters**: browse source functions by type (Scene, Chaser, Collection, EFX, etc.) and name; tick individual items or use Select All
+  - **QXF-aware channel mapping**: when fixture definitions are loaded, the porter maps channels by capability (Pan → Pan, Dimmer → Dimmer) rather than by raw offset
+- New module: `core/porter.py` — dependency walker, fixture remapper, ID rewriter
+- New module: `core/qxf_parser.py` — deep QXF channel parser with `decode_value()` for human-readable DMX labels (shared by Porter and Show Book)
+- New API blueprint: `/api/porter/` with endpoints for loading source workspaces, analyzing dependencies, remapping fixtures, and executing the import
+- New UI: sidebar entry with package icon, source workspace loader, function browser, remap modal
+- New test suite: `tests/test_qxf_parser.py` — 52 unit tests for the QXF deep parser
+
+### Added — Show Book *(Alpha)*
+
+- **Show Book tab**: export your entire workspace as structured show paperwork — PDF or CSV — with decoded DMX values
+  - **10 configurable sections**: Summary, Patch List, Function Index, Scenes (with decoded DMX channels), Chasers (with step timing), Collections, EFX, Shows, Scripts, VC Layout
+  - **DMX value decoding**: when QXF fixture definitions are provided, raw DMX values (0–255) are translated to human-readable labels (e.g. "Red" → 255, "Gobo 3", "Strobe Slow→Fast @ 60%")
+  - **Section picker**: checkboxes to include/exclude any section, with Select All / None buttons
+  - **Live preview**: generate an in-app preview before exporting — tables with sortable columns, scene breakdowns by fixture, chaser step timing
+  - **PDF export**: A4 landscape PDF with cover page, table of contents-style summary, and all selected sections — pure Python, no external PDF library
+  - **CSV export**: ZIP archive with one `.csv` file per section for spreadsheet workflows
+  - Preview truncation: tables capped at 100 rows, scenes at 50, with a note when data is truncated
+- New module: `core/showbook.py` — document generator, PDF builder, CSV/ZIP exporter
+- New API blueprint: `/api/showbook/` with endpoints for preview, PDF export, CSV export, and section listing
+
+### Changed
+
+- `app.py`: registered `porter_bp` and `showbook_bp` blueprints
+- `app.js`: added lazy initializers and invalidation hooks for Porter and Show Book tabs
+- `index.html`: new sidebar entries (Function Porter, Show Book) and corresponding screen sections
+- `style.css`: new component styles for Porter (`.porter-*`) and Show Book (`.sb-*`)
+
+---
+
 ## [1.2.0] — 2026-09-06
 
 ### Added — Quick Start QXW Generator *(Alpha)*

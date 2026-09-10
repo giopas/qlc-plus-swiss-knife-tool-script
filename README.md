@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.2.0
+# ⚡ QLC+ Swiss Knife — v1.3.0
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser (or a native window) and manage every aspect of your show from a clean, sidebar-driven interface.**
 
@@ -16,21 +16,15 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
-## What's new in v1.2.0
+## What's new in v1.3.0
 
-### ⚡ Quick Start QXW Generator *(Alpha)*
+### 📦 Function Porter *(Alpha)*
 
-Create production-ready QLC+ workspaces in minutes, even with zero QLC+ experience. A 5-step wizard walks you through fixture selection, stage placement, automatic capability analysis, and intelligent VC layout generation — time to running show: ~5 minutes.
+Import functions from any source workspace into your loaded workspace with full dependency resolution — nested Scenes, Chasers, Collections, and EFX are pulled in automatically. An interactive fixture remapping wizard handles mismatched rigs, mapping channels by QXF capability (Pan → Pan, Dimmer → Dimmer) rather than raw offset.
 
-### 🎭 Show Info, Tech Rider & Setlist Enhancements
+### 📖 Show Book *(Alpha)*
 
-- **Show name & event date** on the Start screen, saved in sessions — used for PDF headers and export filenames
-- **Tech Rider Generator** tab with grouped fixture summary and PDF export
-- **Setlist multi-export** with combined PDF across slots and clone cue name resolution
-
-### 🛡️ Security Hardening
-
-QXF file size cap, Content-Disposition filename quoting, and expanded security documentation.
+Export your entire workspace as structured show paperwork — **PDF** or **CSV (ZIP)** — with decoded DMX values. Ten configurable sections cover everything from patch lists and function indexes to scene breakdowns with human-readable channel labels (e.g. "Gobo 3", "Strobe Slow→Fast @ 60%"). Generate a live preview in-app before exporting.
 
 ---
 
@@ -46,6 +40,8 @@ QXF file size cap, Content-Disposition filename quoting, and expanded security d
 | Setup Checklist | Brightness | ID Browser |
 | ![VC Visual Editor](screenshots/10-vc-visual-editor.png) | ![QXW Merger](screenshots/11-qxw-merger.png) | ![Tech Rider](screenshots/12-tech-rider.png) |
 | VC Visual Editor *(Beta)* | QXW Merger *(Alpha)* | Tech Rider |
+| ![Function Porter](screenshots/13-function-porter.png) | ![Show Book](screenshots/14-show-book.png) | |
+| Function Porter *(Alpha)* | Show Book *(Alpha)* | |
 
 ---
 
@@ -69,6 +65,12 @@ Design your stage rig from scratch. Load `.qxf` fixture definitions, add instanc
 Create production-ready QLC+ workspaces in minutes, even with zero QLC+ experience. A 5-step wizard walks you through fixture selection, stage placement, automatic capability analysis, and intelligent VC layout generation. The system detects RGB, strobe, pan/tilt, and dimmer channels, groups fixtures by type, and auto-generates macro buttons (ALL ON/OFF, BLACKOUT), fixture group selectors, pre-configured scenes (Warm White, Cold White, Colors), skeleton effect chasers (Dimmer Sweep, Color Fade, Strobe), and four custom slots ready for your own scenes. Export a complete, wired `.qxw` file and open it in QLC+ — time to running show: ~5 minutes.
 
 > **Internet access note:** The "Browse QLC+ Library" button in Step 1 fetches fixture definitions from the [official QLC+ fixture repository on GitHub](https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures). This is the **only feature** in the app that makes external network calls. All other operations — loading, editing, exporting — are fully local with no internet required. If you prefer to stay offline, load fixture definitions from local `.qxf` files instead.
+
+### Function Porter *(Alpha)*
+Import functions from any source `.qxw` workspace into your loaded workspace — the intelligent alternative to QXW Merger for function-level transfers. Full **dependency resolution** automatically includes nested functions (Scenes inside Chasers, Chasers inside Collections). When source fixtures don't exist in the destination, an interactive **fixture remapping wizard** lets you re-map each fixture with QXF-aware channel matching. IDs are remapped above the highest existing ID to avoid conflicts. Browse and filter source functions by type and name, then import with one click.
+
+### Show Book *(Alpha)*
+Export your entire workspace as structured show paperwork. Choose from **10 sections** — Summary, Patch List, Function Index, Scenes, Chasers, Collections, EFX, Shows, Scripts, VC Layout — and export as **PDF** (A4 landscape with cover page) or **CSV** (ZIP with one file per section). When QXF fixture definitions are provided, raw DMX values are decoded to human-readable labels. Generate a **live preview** in-app before exporting — tables are interactive and scenes show per-fixture channel breakdowns.
 
 ### Checklist
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.
@@ -212,6 +214,9 @@ core/
   brightness.py          ← Per-fixture dimmer scaling
   fixture.py             ← Rig state, QXF parsing, DMX auto-assign
   pdf.py                 ← Pure-Python PDF builder (no reportlab)
+  porter.py              ← Function Porter: dependency resolver, fixture remapper
+  showbook.py            ← Show Book: document generator, PDF/CSV exporter
+  qxf_parser.py          ← Deep QXF channel parser, DMX value decoder
 routes/
   workspace_routes.py    ← /api/load, /api/status, /api/reload
   setlist_routes.py      ← /api/setlist/*
@@ -221,6 +226,8 @@ routes/
   checklist_routes.py    ← /api/checklist/*
   triggers_routes.py     ← /api/triggers/*
   fixture_routes.py      ← /api/fixture/*
+  porter_routes.py       ← /api/porter/*
+  showbook_routes.py     ← /api/showbook/*
   id_browser_routes.py   ← /api/functions, /api/vc-widgets
   session_routes.py      ← /api/session/*
   picker_routes.py       ← /api/picker/* (native OS file picker)
@@ -231,7 +238,7 @@ static/
   js/                    ← Per-tool JavaScript modules
 templates/index.html     ← Single-page application shell
 launchers/               ← Platform-specific launchers (macOS .app, Windows .bat, Linux .desktop)
-screenshots/             ← Screen captures of all 12 tools
+screenshots/             ← Screen captures of all 14 tools
 ```
 
 ---

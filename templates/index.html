@@ -244,20 +244,35 @@
 
       <!-- Workflow cards -->
       <div class="start-workflow">
-        <div class="wf-card" onclick="go('fixtures')">
+        <div class="wf-card" onclick="go('quickstart')">
           <div class="wf-num">1</div>
+          <div class="wf-title">Quick Start</div>
+          <div class="wf-desc">Generate a ready-to-run workspace from your fixtures in minutes.</div>
+        </div>
+        <div class="wf-card" onclick="go('fixtures')">
+          <div class="wf-num">2</div>
           <div class="wf-title">Build the rig</div>
           <div class="wf-desc">Place fixtures, assign DMX addresses, export a workspace.</div>
         </div>
         <div class="wf-card" onclick="go('setlist')">
-          <div class="wf-num">2</div>
+          <div class="wf-num">3</div>
           <div class="wf-title">Match the music</div>
           <div class="wf-desc">Map songs to QLC+ functions, set fade timings, generate a cuelist.</div>
         </div>
         <div class="wf-card" onclick="go('triggers')">
-          <div class="wf-num">3</div>
+          <div class="wf-num">4</div>
           <div class="wf-title">Wire the controls</div>
           <div class="wf-desc">Audit keyboard and MIDI bindings across the Virtual Console.</div>
+        </div>
+        <div class="wf-card" onclick="go('porter')">
+          <div class="wf-num">5</div>
+          <div class="wf-title">Import functions</div>
+          <div class="wf-desc">Port functions between workspaces with dependency resolution.</div>
+        </div>
+        <div class="wf-card" onclick="go('showbook')">
+          <div class="wf-num">6</div>
+          <div class="wf-title">Export paperwork</div>
+          <div class="wf-desc">Generate Show Book PDF/CSV with decoded DMX values.</div>
         </div>
       </div>
 
@@ -1495,6 +1510,10 @@
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
         Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+    </div>
+
+  </section>
 
   <!-- ======================================================================
        SHOW BOOK

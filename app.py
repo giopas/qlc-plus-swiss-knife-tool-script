@@ -104,6 +104,8 @@ from routes.brightness_routes import bp as brightness_bp
 from routes.session_routes    import bp as session_bp
 from routes.native_picker_routes import bp as picker_bp
 from routes.quick_start_routes   import bp as quickstart_bp
+from routes.porter_routes    import bp as porter_bp
+from routes.showbook_routes import bp as showbook_bp
 
 PORT = 5731
 
@@ -127,6 +129,8 @@ def create_app():
     app.register_blueprint(session_bp)
     app.register_blueprint(picker_bp)
     app.register_blueprint(quickstart_bp)
+    app.register_blueprint(porter_bp)
+    app.register_blueprint(showbook_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request

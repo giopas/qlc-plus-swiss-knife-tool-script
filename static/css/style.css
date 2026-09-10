@@ -3245,6 +3245,78 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   color: var(--text-dim);
   margin-left: 8px;
 }
+/* Collapse / expand */
+.sb-collapse-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sb-collapse-toggle:hover { filter: brightness(1.15); }
+.sb-toggle-icon {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: 8px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.sb-section-body.sb-collapsed,
+.sb-item-body.sb-collapsed {
+  display: none;
+}
+.sb-item-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.sb-item-toggle:hover { filter: brightness(1.15); }
+.sb-item-body {
+  /* wrapper for collapsible item content */
+}
+
+/* Clickable function index rows */
+.sb-fn-link {
+  cursor: pointer;
+}
+.sb-fn-link:hover {
+  background: var(--accent-ghost, rgba(0,200,150,0.08)) !important;
+}
+.sb-fn-link td:first-child {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Scroll-to highlight flash */
+@keyframes sb-flash {
+  0%   { background: var(--accent-ghost, rgba(0,200,150,0.15)); }
+  100% { background: transparent; }
+}
+.sb-highlight {
+  animation: sb-flash 1.5s ease-out;
+}
+
+/* Expand/Collapse all bar */
+.sb-view-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sb-view-controls button {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.sb-view-controls button:hover {
+  background: var(--surface-0);
+  color: var(--text);
+}
 .sb-fixture-label {
   font-size: 12px;
   font-weight: 500;

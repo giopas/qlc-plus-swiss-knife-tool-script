@@ -125,6 +125,16 @@
       <span>QXW Merger</span>
       <span class="b alpha">&alpha;</span>
     </button>
+    <button class="sn-item" id="sn-porter" data-tip="Function Porter" data-desc="Import functions from one workspace into another with dependency resolution and fixture remapping." onclick="go('porter')">
+      <svg class="ic"><use href="/static/icons.svg#upload"/></svg>
+      <span>Function Porter</span>
+      <span class="b alpha">&alpha;</span>
+    </button>
+    <button class="sn-item" id="sn-showbook" data-tip="Show Book" data-desc="Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values." onclick="go('showbook')">
+      <svg class="ic"><use href="/static/icons.svg#book"/></svg>
+      <span>Show Book</span>
+      <span class="b alpha">&alpha;</span>
+    </button>
 
   </div>
 
@@ -1346,6 +1356,210 @@
 
   </section>
 
+
+  <!-- ======================================================================
+       FUNCTION PORTER
+  ====================================================================== -->
+  <section class="screen" id="scr-porter">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
+      <div><h2>Function Porter <span class="b alpha">ALPHA</span></h2><div class="p-desc">Import functions from one workspace into another with dependency resolution and fixture remapping.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Wizard step indicators -->
+    <div class="porter-steps">
+      <button id="porter-step-1" class="porter-step active" onclick="porterGoStep(1)">1. Load</button>
+      <button id="porter-step-2" class="porter-step" onclick="porterGoStep(2)">2. Select</button>
+      <button id="porter-step-3" class="porter-step" onclick="porterGoStep(3)">3. Map</button>
+      <button id="porter-step-4" class="porter-step" onclick="porterGoStep(4)">4. Validate</button>
+      <button id="porter-step-5" class="porter-step" onclick="porterGoStep(5)">5. Export</button>
+    </div>
+
+    <!-- Step 1: Load files -->
+    <div id="porter-panel-1" class="porter-panel">
+      <div class="merger-load-bar">
+        <div class="merger-load-col">
+          <label class="merger-load-label">📂 Source QXW (import FROM)</label>
+          <div class="merger-load-row">
+            <input id="porter-src-path" type="text" class="filter-input"
+                   placeholder="Paste path or click Browse..." spellcheck="false"
+                   onkeydown="if(event.key==='Enter') porterLoadSrc()">
+            <button class="btn btn-surface" onclick="porterBrowseSrc()">Browse...</button>
+            <button class="btn btn-accent" onclick="porterLoadSrc()">Load</button>
+            <input id="porter-src-file" type="file" accept=".qxw" style="display:none"
+                   onchange="porterSrcFileChosen()">
+          </div>
+          <div class="porter-side-info">Source: <span id="porter-src-info">-- not loaded --</span></div>
+        </div>
+
+        <div class="merger-arrow">→</div>
+
+        <div class="merger-load-col">
+          <label class="merger-load-label">📥 Target QXW (import INTO)</label>
+          <div class="merger-load-row">
+            <input id="porter-tgt-path" type="text" class="filter-input"
+                   placeholder="Paste path or click Browse..." spellcheck="false"
+                   onkeydown="if(event.key==='Enter') porterLoadTgt()">
+            <button class="btn btn-surface" onclick="porterBrowseTgt()">Browse...</button>
+            <button class="btn btn-accent" onclick="porterLoadTgt()">Load</button>
+            <input id="porter-tgt-file" type="file" accept=".qxw" style="display:none"
+                   onchange="porterTgtFileChosen()">
+          </div>
+          <div class="porter-side-info">Target: <span id="porter-tgt-info">-- not loaded --</span></div>
+        </div>
+      </div>
+
+      <div class="porter-nav-bar">
+        <div class="spacer"></div>
+        <button class="btn btn-accent" onclick="porterGoStep(2)">Next: Select Functions →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Select functions -->
+    <div id="porter-panel-2" class="porter-panel" hidden>
+      <div class="tab-toolbar porter-toolbar">
+        <input type="text" class="filter-input" placeholder="Search functions..." style="flex:1"
+               oninput="porterFnSearch(this.value)">
+        <select class="filter-input" style="flex:0 0 140px" onchange="porterFnTypeFilter(this.value)">
+          <option value="">All types</option>
+          <option value="Scene">Scene</option>
+          <option value="Chaser">Chaser</option>
+          <option value="Sequence">Sequence</option>
+          <option value="EFX">EFX</option>
+          <option value="Collection">Collection</option>
+          <option value="Show">Show</option>
+          <option value="Audio">Audio</option>
+          <option value="Script">Script</option>
+          <option value="RGBMatrix">RGBMatrix</option>
+        </select>
+        <button class="btn btn-surface" onclick="porterSelectAllFn()">✓ All</button>
+        <button class="btn btn-surface" onclick="porterSelectNoneFn()">✗ None</button>
+      </div>
+
+      <div id="porter-fn-list" class="porter-list">
+        <div class="porter-placeholder">Loading...</div>
+      </div>
+
+      <div id="porter-closure-summary"></div>
+
+      <div class="porter-nav-bar">
+        <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
+        <button class="btn btn-accent" onclick="porterResolve()">Resolve Dependencies</button>
+        <div class="spacer"></div>
+        <button class="btn btn-accent" onclick="if(_pClosure) porterGoStep(3); else _pStatus('Resolve dependencies first.','error')">Next: Map Fixtures →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Map fixtures -->
+    <div id="porter-panel-3" class="porter-panel" hidden>
+      <div id="porter-fixture-map" class="porter-fixture-map">
+        <div class="porter-placeholder">Loading fixture mapping...</div>
+      </div>
+
+      <div class="porter-nav-bar">
+        <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
+        <button class="btn btn-surface" onclick="porterAutoMap()">🔄 Auto-Map (Tier 1)</button>
+        <div class="spacer"></div>
+        <button class="btn btn-accent" onclick="porterGoStep(4)">Next: Validate →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Validate -->
+    <div id="porter-panel-4" class="porter-panel" hidden>
+      <div id="porter-validation-result" class="porter-validation-result">
+        <div class="porter-placeholder">Validating...</div>
+      </div>
+
+      <div class="porter-nav-bar">
+        <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
+        <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
+        <div class="spacer"></div>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterExecute()" disabled>⬇ Execute &amp; Export</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Done -->
+    <div id="porter-panel-5" class="porter-panel" hidden>
+      <div class="porter-done">
+        <p>Complete the previous steps first.</p>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="porter-status" class="status-bar status-info">Load both .qxw files to begin.</div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+
+  <!-- ======================================================================
+       SHOW BOOK
+  ====================================================================== -->
+  <section class="screen" id="scr-showbook">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
+      <div><h2>Show Book <span class="b alpha">ALPHA</span></h2><div class="p-desc">Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Controls bar -->
+    <div class="sb-controls">
+      <div class="sb-ctrl-row">
+        <div class="sb-ctrl-col">
+          <label class="sb-label">Sections to include:</label>
+          <div id="sb-section-checks" class="sb-checks"></div>
+          <div class="sb-check-btns">
+            <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">✓ All</button>
+            <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">✗ None</button>
+          </div>
+        </div>
+
+        <div class="sb-ctrl-col sb-qxf-col">
+          <label class="sb-label">QXF fixture definitions folder <span class="sb-optional">(optional — for DMX decoding)</span>:</label>
+          <div class="merger-load-row">
+            <input id="sb-qxf-path" type="text" class="filter-input"
+                   placeholder="Path to QXF folder…" spellcheck="false">
+            <button class="btn btn-surface" onclick="sbBrowseQxf()">Browse...</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sb-action-bar">
+        <button class="btn btn-accent" onclick="sbGenerate()">🔍 Generate Preview</button>
+        <div class="spacer"></div>
+        <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF</button>
+        <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)</button>
+      </div>
+    </div>
+
+    <!-- Preview area -->
+    <div id="sb-preview" class="sb-preview">
+      <div class="porter-placeholder">Generate a preview to see your Show Book here.</div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="sb-status" class="status-bar status-info">Load a workspace, then generate your Show Book.</div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Read-only — your workspace is <b>&nbsp;never modified</b>
+      </span>
+    </div>
+
+  </section>
+
+      </span>
+    </div>
+
+  </section>
+
   <!-- ======================================================================
        QUICK START QXW WIZARD
   ====================================================================== -->
@@ -1493,18 +1707,6 @@
             </div>
           </div>
 
-          <!-- Beam Direction -->
-          <div class="qs-card" style="padding:10px">
-            <h3 style="font-size:12px;margin:0 0 6px">Beam Direction <span style="color:var(--overlay0);font-weight:400">(selected or all)</span></h3>
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('up')" title="Point beam upward (floor fixtures)">&#x2191; Up</button>
-              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('down')" title="Point beam downward (top fixtures)">&#x2193; Down</button>
-              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('horizontal')" title="Point beam horizontally">&#x2192; Horiz</button>
-              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('auto')" title="Auto: based on height">&#x21BA; Auto</button>
-            </div>
-            <p style="font-size:9px;color:var(--overlay0);margin:4px 0 0">Auto = height-based default. Visible on Front/Side views.</p>
-          </div>
-
           <!-- Alignment tools -->
           <div class="qs-card" style="padding:10px">
             <h3 style="font-size:12px;margin:0 0 6px">Align &amp; Distribute <span id="qs-sel-info" style="color:var(--overlay0);font-weight:400">None selected</span></h3>
@@ -1628,12 +1830,10 @@
       .qs-group-count { color:var(--overlay0); }
       .qs-summary-box { padding:12px; background:var(--base); border-radius:8px; }
       .qs-summary-box h4 { color:var(--green); margin:0 0 8px; }
-      .qs-preview { display:flex; flex-wrap:wrap; gap:12px; }
-      .qs-vc-frame { border:1px solid var(--overlay0); border-radius:6px; padding:8px; min-width:200px; flex:1; }
-      .qs-vc-frame-title { font-weight:600; font-size:12px; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid var(--overlay0); }
-      .qs-vc-btn { display:inline-block; padding:4px 10px; margin:2px; border-radius:4px; font-size:11px; cursor:default; }
-      .qs-vc-btn-scene { background:var(--blue); color:#fff; }
-      .qs-vc-btn-chaser { background:var(--mauve); color:#fff; }
+      .qs-preview { position:relative; background:#1a1a1a; border:1px solid #444; border-radius:4px; min-height:200px; overflow:auto; }
+      .qs-vc-frame { box-sizing:border-box; }
+      .qs-vc-btn { box-sizing:border-box; cursor:default; }
+      .qs-vc-slider { box-sizing:border-box; }
       .qs-gh-grid { display:flex; flex-wrap:wrap; gap:4px; }
       .qs-gh-mfg-btn { font-size:11px !important; padding:3px 8px !important; }
       #qs-gh-modal > div { box-shadow: 0 8px 32px rgba(0,0,0,.3); }
@@ -1665,6 +1865,8 @@
 <script src="/static/js/triggers.js"></script>
 <script src="/static/js/fixture.js"></script>
 <script src="/static/js/merger.js"></script>
+<script src="/static/js/porter.js"></script>
+<script src="/static/js/showbook.js"></script>
 <script src="/static/js/brightness.js"></script>
 <script src="/static/js/session.js"></script>
 <script src="/static/js/vc_editor.js"></script>

@@ -40,6 +40,8 @@ const _LAZY = {
   triggers:   () => typeof ensureTriggersLoaded   === 'function' && ensureTriggersLoaded(),
   fixtures:   () => typeof ensureFixturesLoaded   === 'function' && ensureFixturesLoaded(),
   merger:     () => typeof mergerInit             === 'function' && mergerInit(),
+  porter:     () => typeof porterInit             === 'function' && porterInit(),
+  showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
   vceditor:   () => typeof _vceLoad               === 'function' && _vceLoad(),
   quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
@@ -464,6 +466,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateTriggers   === 'function') invalidateTriggers();
   if (typeof invalidateFixtures   === 'function') invalidateFixtures();
   if (typeof invalidateBrightness === 'function') invalidateBrightness();
+  if (typeof invalidateShowbook === 'function') invalidateShowbook();
   // Re-load whichever screen is currently visible
   const activeScr = document.querySelector('.screen.active');
   if (activeScr) {

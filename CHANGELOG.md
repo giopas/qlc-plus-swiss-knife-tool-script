@@ -5,6 +5,19 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [1.3.1] — 2026-09-22
+
+### Changed — UI density & shell pass
+
+- **Global metrics strip** (`#metrics-strip`): new persistent bar at the top of the content area showing the loaded workspace name and live Fixture / Function / VC Widget counts. Populated by extending `_updateHeader()` in `app.js` — reuses `get_state()`'s existing `fixture_count` / `func_count` / `vc_widget_count` fields, no new backend endpoints.
+- **Global status bar** (`#app-statusbar`): `setStatus()` now docks its messages into a persistent bar at the bottom of the content area instead of spawning a floating toast in the corner. Falls back to the previous floating-toast behavior if `#app-statusbar` isn't present.
+- **Denser tables**: reduced cell padding on `.gridjs-td` (6px → 4px) and `.custom-table td` (5px → 4px) for a tighter, more workstation-like feel across Triggers, ID Browser, and Dictionary.
+- `index.html`: new `.metrics-strip` and `.app-statusbar` elements as direct children of `<main id="content">`, above/below the `.screen` panes — persistent across every tool since `main` is a flex column and each `.screen` already fills remaining height.
+- `style.css`: new `.metrics-strip` / `.ms-*` / `.app-statusbar` component styles built from existing design tokens.
+- No breaking changes; no new dependencies.
+
+---
+
 ## [1.3.0] — 2026-09-10
 
 ### Added — Function Porter *(Alpha)*

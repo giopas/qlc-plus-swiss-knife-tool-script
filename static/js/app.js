@@ -502,6 +502,37 @@ function _updateHeader(state) {
     countsEl.textContent =
       `Fn: ${state.func_count ?? '—'}  Fix: ${state.fixture_count ?? '—'}  VC: ${state.vc_widget_count ?? '—'}`;
   }
+
+  // ── Global metrics strip (v1.3.1) — persistent across every tool ────────
+  _updateMetricsStrip(state);
+}
+
+/** Populate the persistent top metrics strip. Mirrors _updateHeader's logic
+ *  so the strip and the Start-screen file panel never disagree. */
+function _updateMetricsStrip(state) {
+  const fileEl  = document.getElementById('ms-file');
+  const nameEl  = document.getElementById('ms-file-name');
+  const fixEl   = document.getElementById('ms-fixtures');
+  const funcEl  = document.getElementById('ms-functions');
+  const vcEl    = document.getElementById('ms-vcwidgets');
+  if (!fileEl) return;   // strip not present (older cached template, etc.)
+
+  if (state.loaded) {
+    let label = 'Workspace loaded';
+    if (state.path) label = state.path.split(/[\\/]/).pop();
+    else if (state.original_name) label = state.original_name + '  (uploaded)';
+    if (nameEl) nameEl.textContent = label;
+    fileEl.className = 'ms-file ws-loaded';
+    fileEl.title = state.path || state.original_name || '';
+  } else {
+    if (nameEl) nameEl.textContent = 'No workspace loaded';
+    fileEl.className = 'ms-file ws-unloaded';
+    fileEl.title = '';
+  }
+
+  if (fixEl)  fixEl.textContent  = state.fixture_count   ?? '—';
+  if (funcEl) funcEl.textContent = state.func_count       ?? '—';
+  if (vcEl)   vcEl.textContent   = state.vc_widget_count  ?? '—';
 }
 
 // =============================================================================
@@ -728,8 +759,17 @@ async function _apiJson(url, opts = {}) {
 
 /** Show a status message as a temporary toast notification. */
 function setStatus(msg, level = 'ok') {
+  // v1.3.1: docked into the persistent global status bar. Falls back to the
+  // old floating toast if #app-statusbar isn't present (older cached template).
+  let el = document.getElementById('app-statusbar');
+  if (el) {
+    el.textContent = msg;
+    el.className = 'app-statusbar status-' + (level === 'error' || level === 'warn' ? level : 'ok');
+    return;
+  }
+
   // Try existing status-msg element first (backward compat)
-  let el = document.getElementById('status-msg');
+  el = document.getElementById('status-msg');
   if (!el) {
     // Create a toast element
     el = document.createElement('div');

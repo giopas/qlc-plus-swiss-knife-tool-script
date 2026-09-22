@@ -177,6 +177,20 @@
 <main id="content">
 
   <!-- ══════════════════════════════════════════════════════════════════════
+       GLOBAL METRICS STRIP — persistent across every tool (v1.3.1)
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="metrics-strip" id="metrics-strip">
+    <div class="ms-file ws-unloaded" id="ms-file">
+      <span class="ms-dot"></span>
+      <span id="ms-file-name">No workspace loaded</span>
+    </div>
+    <div class="ms-stat"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
+    <div class="ms-stat"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
+    <div class="ms-stat"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
        START SCREEN
   ══════════════════════════════════════════════════════════════════════ -->
   <section class="screen active" id="scr-start">
@@ -1865,6 +1879,13 @@
     </style>
 
   </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       GLOBAL STATUS BAR — persistent across every tool (v1.3.1)
+       Populated by setStatus() in app.js — replaces the old floating toast.
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div class="app-statusbar status-ok" id="app-statusbar">Ready.</div>
 
 </main>
 

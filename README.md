@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.3.0
+# ⚡ QLC+ Swiss Knife — v1.3.1
 
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser (or a native window) and manage every aspect of your show from a clean, sidebar-driven interface.**
 
@@ -13,6 +13,17 @@ This tool is in active development. Some features may be incomplete, behave unex
 
 **Your show files are safe to experiment with:**
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* via a Save dialog — your original `.qxw` is never overwritten. The one intentional exception is the **Trigger Manager "Save to loaded QXW"** button, which writes keyboard/MIDI bindings back to the file you loaded by path — exactly as described on that page. A "Save as new file…" option is also available for Triggers.
+
+---
+
+## What's new in v1.3.1
+
+### UI — persistent metrics strip & status bar
+
+- **Global metrics strip**: a persistent bar above every tool now shows the loaded workspace name and live Fixture / Function / VC Widget counts — no more switching to Start to check what's loaded.
+- **Docked status bar**: load/save/export feedback now lives in a persistent bar at the bottom of the window instead of a floating toast in the corner.
+- **Tighter table rows**: reduced vertical padding on the Grid.js tables (Triggers, ID Browser, Dictionary) and the custom fixture/rig tables, for a denser, more "pro tool" feel.
+- Pure UI/shell change — no new dependencies, no backend changes, no breaking changes to any existing tab.
 
 ---
 

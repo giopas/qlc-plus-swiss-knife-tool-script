@@ -388,6 +388,85 @@ main {
 }
 .tab-panel.active { display: flex; }
 
+/* ── Global metrics strip (persistent, all tools) ── v1.3.1 ──────────────── */
+.metrics-strip {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+  padding: 0 14px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ms-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  padding-right: 14px;
+  margin-right: 14px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42%;
+}
+.ms-file .ms-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+.ms-file.ws-loaded .ms-dot { background: var(--green); }
+.ms-file.ws-unloaded { color: var(--text-faint); font-weight: 500; }
+.ms-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0 12px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+.ms-stat:last-of-type { border-right: none; }
+.ms-stat .ms-n {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.ms-stat .ms-l {
+  font-size: 9.5px;
+  color: var(--text-faint);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ── Global status bar (persistent, all tools) ── v1.3.1 ──────────────────
+   Docked home for setStatus() — replaces the old bottom-right floating toast. */
+.app-statusbar {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  background: var(--surface-0);
+  border-top: 1px solid var(--border);
+  padding: 0 14px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .2s;
+}
+.app-statusbar.status-error { color: var(--red); }
+.app-statusbar.status-warn  { color: var(--orange); }
+.app-statusbar.status-ok    { color: var(--text-dim); }
+
+
 /* ── Page header ───────────────────────────────────────────────────────────── */
 .page-h {
   display: flex;
@@ -1210,7 +1289,7 @@ td.gridjs-td {
   border-bottom: 1px solid var(--border) !important;
   border-right: 1px solid var(--surface-2) !important;
   font-size: 12px !important;
-  padding: 6px 10px !important;
+  padding: 4px 10px !important;
   font-family: var(--mono);
 }
 tr:hover td.gridjs-td { background: var(--surface-1) !important; }
@@ -1377,7 +1456,7 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 }
 .custom-table th:hover { background: var(--surface-1); }
 .custom-table td {
-  padding: 5px 10px;
+  padding: 4px 10px;
   border-bottom: 1px solid var(--border);
   font-family: var(--mono);
   vertical-align: middle;

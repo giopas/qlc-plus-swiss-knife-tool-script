@@ -49,8 +49,8 @@ const _QS_HEIGHT_TIERS = [
 ];
 
 /* Position presets (fraction of stage dimension) */
-const _QS_POS_H = { 'Left': 0, 'Center': 0.5, 'Right': 1 };
-const _QS_POS_D = { 'Back': 0, 'Mid': 0.5, 'Front': 1 };
+const _QS_POS_H = { 'Left': 0.2, 'Center': 0.5, 'Right': 0.8 };
+const _QS_POS_D = { 'Back': 0.2, 'Mid': 0.5, 'Front': 0.8 };
 const _QS_POS_Y = { 'Floor': 0, 'Low-Mid': 1000, 'Mid': 2000, 'Top-Mid': 3000, 'Top': 3500 };
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
@@ -696,6 +696,42 @@ function qsPresetHeight(hKey) {
   });
 }
 
+/* ── Orientation presets ──────────────────────────────────────────────── */
+const _QS_ORIENT = {
+  'up':         { x_rot: 315 },   // point upward (~45° above horizontal)
+  'down':       { x_rot: 65  },   // point downward (~65° below horizontal)
+  'horizontal': { x_rot: 0   },   // horizontal
+  'auto':       { x_rot: null },  // height-based default
+};
+
+function qsSetOrientation(mode) {
+  const preset = _QS_ORIENT[mode];
+  if (!preset && mode !== 'auto') return;
+  const targets = _qsSelectedIdxs.size > 0 ? [..._qsSelectedIdxs] : _qsRigData.map((_, i) => i);
+  const xr = mode === 'auto' ? null : preset.x_rot;
+
+  const promises = targets.map(idx => {
+    _qsRigData[idx].x_rot = xr;
+    return _qsApi('POST', '/update-placement', { idx, x_rot: xr });
+  });
+  Promise.all(promises).then(() => {
+    _qsRenderStageFixtureList();
+    _qsDrawCanvas();
+  });
+}
+
+/**
+ * Compute the effective x_rot for display purposes.
+ * If x_rot is null (auto), derive from height like qxw_builder does.
+ */
+function _qsEffectiveXRot(f) {
+  if (f.x_rot != null) return f.x_rot;
+  const ratio = (f.y_mm || 0) / Math.max(_qsStage.h_mm, 1);
+  if (ratio < 0.15) return 315;   // floor → up
+  if (ratio > 0.65) return 65;    // top → down
+  return 0;                        // mid → horizontal
+}
+
 /* ── Auto DMX ─────────────────────────────────────────────────────────── */
 function qsAutoDmx() {
   _qsApi('POST', '/auto-dmx')
@@ -753,22 +789,6 @@ function _qsDrawTopView(W, H) {
   ctx.fillStyle = cText;
   ctx.font = 'bold 13px monospace';
   ctx.fillText('Top View  (X → / Z ↓)', 8, 18);
-
-  // Beam direction color legend
-  const legendX = 220;
-  ctx.font = '9px monospace';
-  const legends = [
-    { color: 'rgba(80, 220, 80, 0.9)',  label: 'Up' },
-    { color: 'rgba(220, 60, 60, 0.9)',  label: 'Down' },
-    { color: 'rgba(60, 140, 255, 0.9)', label: 'Horiz' },
-  ];
-  legends.forEach((leg, li) => {
-    const lx = legendX + li * 60;
-    ctx.fillStyle = leg.color;
-    ctx.beginPath(); ctx.arc(lx, 14, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = cSubtext0;
-    ctx.fillText(leg.label, lx + 7, 17);
-  });
 
   // Stage checkerboard
   const cellW = drawW / _qsStage.cols;
@@ -838,7 +858,6 @@ function _qsDrawTopView(W, H) {
     const clr = f._color || '#888';
     const fg = _qsContrastColor(clr);
     _qsDrawDot(ctx, px, py, clr, fg, _qsSelectedIdxs.has(i));
-    _qsDrawBeamRing(ctx, px, py, f);
     ctx.fillStyle = fg;
     ctx.font = '9px monospace';
     const lbl = (f.name || '').substring(0, 10);
@@ -851,83 +870,6 @@ function _qsTopPx(x_mm, z_mm, ox, oy, drawW, drawH) {
     ox + (x_mm / _qsStage.w_mm) * drawW,
     oy + (z_mm / _qsStage.d_mm) * drawH,
   ];
-}
-
-
-/* ── Orientation helpers ──────────────────────────────────────────────── */
-const _QS_ORI = { up: 315, down: 65, horizontal: 0 };
-
-function _qsEffectiveXRot(f) {
-  if (f.x_rot != null) return f.x_rot;
-  const ratio = (f.y_mm || 0) / Math.max(_qsStage.h_mm, 1);
-  if (ratio < 0.15) return 315;   // up
-  if (ratio > 0.65) return 65;    // down
-  return 0;                        // horizontal
-}
-
-function qsSetOrientation(mode) {
-  const idxs = _qsSelectedIdxs.size ? [..._qsSelectedIdxs] : _qsRigData.map((_, i) => i);
-  const val = mode === 'auto' ? null : (_QS_ORI[mode] ?? null);
-  const promises = idxs.map(idx => {
-    _qsRigData[idx].x_rot = val;
-    return _qsApi('POST', '/update-placement', { idx, x_rot: val });
-  });
-  Promise.all(promises).then(() => _qsDrawCanvas());
-}
-
-function _qsBeamColor(xr) {
-  // Color code: green=up, red=down, blue=horizontal
-  if (xr === 315 || xr === -45) return 'rgba(80, 220, 80, 0.9)';   // up → green
-  if (xr === 65)                return 'rgba(220, 60, 60, 0.9)';    // down → red
-  if (xr === 0)                 return 'rgba(60, 140, 255, 0.9)';   // horizontal → blue
-  // Custom angle — interpolate
-  if (xr > 180) return 'rgba(80, 220, 80, 0.9)';   // pointing up range
-  return 'rgba(220, 60, 60, 0.9)';                   // pointing down range
-}
-
-function _qsDrawBeamLine(ctx, px, py, fixture, drawH) {
-  const xr = _qsEffectiveXRot(fixture);
-  const len = Math.min(drawH * 0.12, 30);
-  let dx = 0, dy = 0;
-  if (xr === 315 || xr === -45) { dy = -len; }        // up
-  else if (xr === 65)           { dy = len; }           // down
-  else if (xr === 0)            { dx = len; }           // horizontal
-  else {
-    const rad = (xr * Math.PI) / 180;
-    dx = Math.sin(rad) * len;
-    dy = Math.cos(rad) * len;
-  }
-  const beamClr = _qsBeamColor(xr);
-  ctx.save();
-  ctx.strokeStyle = beamClr;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(px, py);
-  ctx.lineTo(px + dx, py + dy);
-  ctx.stroke();
-  // Arrowhead
-  const aLen = 5, aAng = 0.45;
-  const angle = Math.atan2(dy, dx);
-  ctx.beginPath();
-  ctx.moveTo(px + dx, py + dy);
-  ctx.lineTo(px + dx - aLen * Math.cos(angle - aAng), py + dy - aLen * Math.sin(angle - aAng));
-  ctx.moveTo(px + dx, py + dy);
-  ctx.lineTo(px + dx - aLen * Math.cos(angle + aAng), py + dy - aLen * Math.sin(angle + aAng));
-  ctx.stroke();
-  ctx.restore();
-}
-
-function _qsDrawBeamRing(ctx, px, py, fixture) {
-  // On top view: just a colored ring around the dot to indicate orientation
-  const xr = _qsEffectiveXRot(fixture);
-  const beamClr = _qsBeamColor(xr);
-  ctx.save();
-  ctx.strokeStyle = beamClr;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(px, py, 12, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
 }
 
 function _qsDrawElevationView(axis, W, H) {
@@ -990,7 +932,10 @@ function _qsDrawElevationView(axis, W, H) {
     const py = oy + drawH - ((f.y_mm || 0) / _qsStage.h_mm) * drawH;
     const clr = f._color || '#888';
     const fg = _qsContrastColor(clr);
+
+    // Draw beam direction indicator line
     _qsDrawBeamLine(ctx, px, py, f, drawH);
+
     _qsDrawDot(ctx, px, py, clr, fg, _qsSelectedIdxs.has(i));
     ctx.fillStyle = fg;
     ctx.font = '9px monospace';
@@ -1016,6 +961,54 @@ function _qsDrawDot(ctx, px, py, color, fg, selected) {
     ctx.lineWidth = 2.5;
     ctx.stroke();
   }
+}
+
+/**
+ * Draw a thin line from the fixture dot showing beam direction.
+ * Uses the effective x_rot to determine angle:
+ *   x_rot=0   → horizontal (line goes right/forward)
+ *   x_rot=65  → down (~65° below horizontal)
+ *   x_rot=315 → up (~45° above horizontal, i.e. -45°)
+ */
+function _qsDrawBeamLine(ctx, px, py, fixture, drawH) {
+  const xRot = _qsEffectiveXRot(fixture);
+  // Convert QLC+ x_rot to a canvas angle (radians)
+  // QLC+ rotation: 0=horizontal, positive=tilt down, 315=tilt up (=360-45)
+  let angleDeg = xRot;
+  if (angleDeg > 180) angleDeg -= 360;  // 315 → -45
+  const angleRad = angleDeg * Math.PI / 180;
+
+  // Beam line length proportional to draw height
+  const lineLen = Math.min(30, drawH * 0.08);
+
+  // In elevation view: positive angle = down, negative = up
+  const endX = px + lineLen * Math.cos(angleRad);
+  const endY = py + lineLen * Math.sin(angleRad);
+
+  ctx.save();
+  ctx.strokeStyle = _qsCv('--yellow');
+  ctx.lineWidth = 1.2;
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+  // Small arrowhead
+  const arrLen = 4;
+  const arrAngle = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(
+    endX - arrLen * Math.cos(angleRad - arrAngle),
+    endY - arrLen * Math.sin(angleRad - arrAngle)
+  );
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(
+    endX - arrLen * Math.cos(angleRad + arrAngle),
+    endY - arrLen * Math.sin(angleRad + arrAngle)
+  );
+  ctx.stroke();
+  ctx.restore();
 }
 
 /* ── Canvas mouse interaction (drag in top view) ─────────────────────── */
@@ -1160,59 +1153,30 @@ function qsLoadPreview() {
   _qsApi('GET', '/preview')
     .then(d => {
       if (d.error) { if (wrap) wrap.innerHTML = `<div class="qs-error">${_esc(d.error)}</div>`; return; }
-      const vc = d.vc_layout || d.vc_tree || d;
-      const scale = 0.35;
-      const previewW = Math.round((parseInt(vc.w) || 800) * scale) + 10;
-      const previewH = Math.round((parseInt(vc.h) || 400) * scale) + 10;
-      let html = `<div class="qs-preview" style="position:relative;background:#1a1a1a;border:1px solid #444;border-radius:4px;width:${previewW}px;height:${previewH}px;overflow:auto;">`;
-      html += _qsRenderVcTree(vc, scale);
+      let html = '<div class="qs-preview">';
+      html += _qsRenderVcTree(d.vc_layout || d.vc_tree || d);
       html += '</div>';
       if (wrap) wrap.innerHTML = html;
     })
     .catch(e => { if (wrap) wrap.innerHTML = `<div class="qs-error">Preview failed: ${_esc(String(e))}</div>`; });
 }
 
-function _qsRenderVcTree(node, scale) {
+function _qsRenderVcTree(node) {
   if (!node) return '';
-  if (!scale) scale = 0.35;  // scale down from QLC+ coords to preview pixels
   let html = '';
-  const x = Math.round((parseInt(node.x) || 0) * scale);
-  const y = Math.round((parseInt(node.y) || 0) * scale);
-  const w = Math.round((parseInt(node.w) || 100) * scale);
-  const h = Math.round((parseInt(node.h) || 40) * scale);
-  const cap = _esc(node.caption || node.name || '');
-
-  if (node.type === 'Frame' || node.type === 'frame' || node.type === 'SoloFrame') {
-    const isSolo = node.type === 'SoloFrame';
-    const borderClr = isSolo ? '#c59020' : '#555';
-    html += `<div class="qs-vc-frame" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1px solid ${borderClr};border-radius:3px;overflow:hidden;">`;
-    html += `<div class="qs-vc-frame-title" style="font-size:9px;padding:1px 4px;background:${isSolo ? '#3a2a08' : '#2a2a2a'};color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cap}</div>`;
-    if (node.children) node.children.forEach(c => { html += _qsRenderVcTree(c, scale); });
+  if (node.type === 'Frame' || node.type === 'frame') {
+    html += `<div class="qs-vc-frame"><div class="qs-vc-frame-title">${_esc(node.caption || node.name || 'Frame')}</div>`;
+    if (node.children) node.children.forEach(c => html += _qsRenderVcTree(c));
     html += '</div>';
-  } else if (node.type === 'Slider' || node.type === 'slider') {
-    const isRed = cap.toUpperCase().includes('RED');
-    const isGreen = cap.toUpperCase().includes('GREEN');
-    const isBlue = cap.toUpperCase().includes('BLUE');
-    const isMaster = cap.toUpperCase().includes('MASTER');
-    let trackClr = '#555';
-    if (isRed) trackClr = '#c44';
-    else if (isGreen) trackClr = '#4a4';
-    else if (isBlue) trackClr = '#44c';
-    else if (isMaster) trackClr = '#888';
-    html += `<div class="qs-vc-slider" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">`;
-    html += `<div style="font-size:7px;color:#aaa;text-align:center;white-space:nowrap;overflow:hidden;max-width:${w}px;margin-bottom:2px;">${cap}</div>`;
-    const trackH = Math.max(h - 20, 10);
-    html += `<div style="width:6px;height:${trackH}px;background:#222;border-radius:3px;position:relative;border:1px solid #444;">`;
-    html += `<div style="position:absolute;bottom:0;width:100%;height:40%;background:${trackClr};border-radius:0 0 3px 3px;"></div>`;
-    html += '</div></div>';
   } else if (node.type === 'Button' || node.type === 'button') {
-    html += `<div class="qs-vc-btn qs-vc-btn-scene" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;font-size:8px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:3px;background:#333;color:#ccc;border:1px solid #555;overflow:hidden;padding:1px;line-height:1.1;">${cap}</div>`;
+    const cls = (node.function_type === 'Chaser') ? 'qs-vc-btn-chaser' : 'qs-vc-btn-scene';
+    html += `<div class="qs-vc-btn ${cls}">${_esc(node.caption || node.name || 'Button')}</div>`;
   } else if (Array.isArray(node)) {
-    node.forEach(c => { html += _qsRenderVcTree(c, scale); });
+    node.forEach(c => html += _qsRenderVcTree(c));
   } else if (node.frames) {
-    node.frames.forEach(c => { html += _qsRenderVcTree(c, scale); });
+    node.frames.forEach(c => html += _qsRenderVcTree(c));
   } else if (node.children) {
-    node.children.forEach(c => { html += _qsRenderVcTree(c, scale); });
+    node.children.forEach(c => html += _qsRenderVcTree(c));
   }
   return html;
 }

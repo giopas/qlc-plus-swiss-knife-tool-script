@@ -37,6 +37,8 @@ import copy
 import datetime
 import xml.etree.ElementTree as ET
 
+from core.qxf_parser import parse_qxf as _deep_parse_qxf
+
 QLC_NS_URI = "http://www.qlcplus.org/Workspace"
 QXF_NS_URI = "http://www.qlcplus.org/FixtureDefinition"
 NS  = {"q": QLC_NS_URI}
@@ -189,40 +191,18 @@ def load_qxf(path: str) -> dict:
     """
     Parse a .qxf fixture definition file and store its definition.
 
-    Returns the parsed definition dict.
+    Returns the parsed definition dict — a superset of the original shape.
+    Existing consumers that only read ``channels``, ``modes``,
+    ``manufacturer``, ``model``, ``type``, ``path`` are unaffected.
+    New fields: ``channel_defs``, ``mode_channels``, ``physical``,
+    ``fine_pairs``.
+
     Raises ValueError if the file is not a valid QXF.
     """
-    ns = {"f": QXF_NS_URI}
-    tree = ET.parse(path)
-    root = tree.getroot()
+    parsed = _deep_parse_qxf(path)
 
-    if QXF_NS_URI not in (root.tag or ""):
-        raise ValueError(
-            f"Not a valid QXF file. Expected namespace '{QXF_NS_URI}', "
-            f"got: '{root.tag}'"
-        )
-
-    mfg   = root.findtext("f:Manufacturer", default="Unknown", namespaces=ns)
-    model = root.findtext("f:Model",        default="Unknown", namespaces=ns)
-    ftype = root.findtext("f:Type",         default="Color Changer", namespaces=ns)
-
-    modes = {}
-    for mode_el in root.findall("f:Mode", ns):
-        mname    = mode_el.get("Name", "Default")
-        ch_count = len(mode_el.findall("f:Channel", ns))
-        modes[mname] = ch_count
-
-    channels = [ch.get("Name", "?") for ch in root.findall("f:Channel", ns)]
-
-    key = f"{mfg}::{model}"
-    _qxf_defs[key] = {
-        "manufacturer": mfg,
-        "model":        model,
-        "type":         ftype,
-        "modes":        modes,
-        "channels":     channels,
-        "path":         path,
-    }
+    key = f"{parsed['manufacturer']}::{parsed['model']}"
+    _qxf_defs[key] = parsed
     _get_model_color(key)
     return _qxf_defs[key]
 

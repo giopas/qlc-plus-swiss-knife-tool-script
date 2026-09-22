@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ QLC+ Swiss Knife</title>
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- Grid.js — zero-config sortable/filterable tables -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SESSION MODAL
+══════════════════════════════════════════════════════════════════════════ -->
+<div id="session-overlay" class="sess-overlay" onclick="sessionCloseModal()"></div>
+
+<div id="session-modal" class="sess-modal" role="dialog" aria-modal="true"
+     aria-label="Session file">
+  <div class="sess-modal-header">
+    <span>📋 Session</span>
+    <button class="sess-close-btn" onclick="sessionCloseModal()" title="Close">✕</button>
+  </div>
+
+  <div id="session-modal-body" class="sess-modal-body">
+    <!-- Rendered by session.js _renderModal() -->
+  </div>
+
+  <div class="sess-modal-footer">
+    <label class="btn btn-accent" title="Load a .qsk session file"
+           data-tooltip="Open a .qsk session file to restore all file paths">
+      📂 Open Session…
+      <input type="file" accept=".qsk" style="display:none"
+             onchange="sessionLoad(this)">
+    </label>
+    <button class="btn btn-surface" onclick="sessionSave()"
+            title="Save current paths to a .qsk session file"
+            data-tooltip="Save workspace, dictionary and setlist paths to a reusable .qsk file">
+      💾 Save Session
+    </button>
+    <span style="flex:1"></span>
+    <button class="btn btn-surface" onclick="sessionCloseModal()">Close</button>
+  </div>
+</div>
+
+<!-- Fallback file input used when native picker is unavailable -->
+<input id="file-input" type="file" accept=".qxw" style="display:none"
+       onchange="loadFromInput(this)">
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════════════════════════════════ -->
+<aside>
+  <div class="logo">
+    <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
+    SWISS KNIFE
+    <span class="ver">v{{ version }}</span>
+  </div>
+
+  <div class="side-nav">
+
+    <!-- Start -->
+    <button class="sn-item active" id="sn-start" data-tip="Start" data-desc="Home screen" onclick="go('start')">
+      <svg class="ic"><use href="/static/icons.svg#home"/></svg>
+      <span>Start</span>
+    </button>
+
+    <!-- Run the show -->
+    <div class="sn-group-label">Run the show</div>
+    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Match songs to functions, set fade timings, generate a cuelist chaser." onclick="go('setlist')">
+      <svg class="ic"><use href="/static/icons.svg#music"/></svg>
+      <span>Setlist</span>
+    </button>
+    <button class="sn-item" id="sn-triggers" data-tip="Triggers" data-desc="Audit and edit every keyboard &amp; MIDI binding in the Virtual Console." onclick="go('triggers')">
+      <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
+      <span>Triggers</span>
+    </button>
+    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does." onclick="go('dictionary')">
+      <svg class="ic"><use href="/static/icons.svg#book"/></svg>
+      <span>Dictionary</span>
+    </button>
+
+    <!-- Build the rig -->
+    <div class="sn-group-label">Quick Start</div>
+    <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes." onclick="go('quickstart')">
+      <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
+      <span>Quick Start</span>
+      <span class="b alpha">&alpha;</span>
+    </button>
+
+    <div class="sn-group-label">Build the rig</div>
+    <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace." onclick="go('fixtures')">
+      <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
+      <span>Fixtures</span>
+    </button>
+    <button class="sn-item" id="sn-checklist" data-tip="Checklist" data-desc="Every fixture with universe, address, mode and channels." onclick="go('checklist')">
+      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
+      <span>Checklist</span>
+    </button>
+    <button class="sn-item" id="sn-techrider" data-tip="Tech Rider" data-desc="Generate a tech rider from the fixture list." onclick="go('techrider')">
+      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
+      <span>Tech Rider</span>
+    </button>
+    <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
+      <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
+      <span>Brightness</span>
+    </button>
+
+    <!-- Workspace tools -->
+    <div class="sn-group-label">Workspace tools</div>
+    <button class="sn-item" id="sn-idbrowser" data-tip="ID Browser" data-desc="Sortable, filterable tables of every function and VC widget." onclick="go('idbrowser')">
+      <svg class="ic"><use href="/static/icons.svg#search"/></svg>
+      <span>ID Browser</span>
+    </button>
+    <button class="sn-item" id="sn-vceditor" data-tip="VC Visual Editor" data-desc="See your Virtual Console as a canvas." onclick="go('vceditor')">
+      <svg class="ic"><use href="/static/icons.svg#layout"/></svg>
+      <span>VC Visual Editor</span>
+      <span class="b beta">&beta;</span>
+    </button>
+    <button class="sn-item" id="sn-merger" data-tip="QXW Merger" data-desc="Copy functions, fixtures and groups from one workspace into another." onclick="go('merger')">
+      <svg class="ic"><use href="/static/icons.svg#merge"/></svg>
+      <span>QXW Merger</span>
+      <span class="b alpha">&alpha;</span>
+    </button>
+
+  </div>
+
+  <!-- Files panel -->
+  <div class="files-panel">
+    <div class="fp-title">Files</div>
+    <div class="fp-item" id="fp-workspace">
+      <span class="fp-label">Workspace</span>
+      <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+    </div>
+    <div class="fp-item" id="fp-dictionary">
+      <span class="fp-label">Dictionary</span>
+      <span id="fp-dict-name">—</span>
+    </div>
+    <div class="fp-item" id="fp-qxf">
+      <span class="fp-label">QXF</span>
+      <span id="fp-qxf-name">—</span>
+    </div>
+    <div class="fp-session">
+      <span id="session-badge" class="session-badge"></span>
+      <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file">📋 Session</button>
+    </div>
+  </div>
+
+  <!-- Quit -->
+  <button class="sn-quit" id="sn-quit" onclick="quitApp()" title="Quit QLC+ Swiss Knife">
+    <svg class="ic"><use href="/static/icons.svg#power"/></svg>
+    <span>Quit</span>
+  </button>
+
+  <!-- Collapse -->
+  <button class="sn-collapse" id="sn-collapse" onclick="toggleSidebar()" title="Collapse sidebar">
+    <svg class="ic"><use href="/static/icons.svg#chevron-left"/></svg>
+  </button>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     MAIN CONTENT AREA
+══════════════════════════════════════════════════════════════════════════ -->
+<main id="content">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       START SCREEN
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen active" id="scr-start">
+
+    <div class="start-body">
+
+      <h1 id="greeting">Welcome 👋</h1>
+
+      <div class="start-drop-zone" id="start-drop-zone">
+        <div class="start-drop-icon">
+          <svg class="ic" style="width:48px;height:48px"><use href="/static/icons.svg#upload"/></svg>
+        </div>
+        <p>Drag a <b>.qxw</b> workspace here, or</p>
+        <div class="start-drop-btns">
+          <button class="btn btn-accent" onclick="browseWorkspace()">📂 Open Workspace</button>
+          <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session</button>
+          <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()" disabled
+                  data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
+        </div>
+      </div>
+
+      <!-- Show info (used in PDF headers & export filenames) -->
+      <div class="start-show-info"
+           data-tooltip="Used in PDF headers, export filenames and session files. Leave blank to auto-derive from the workspace filename.">
+        <label class="field-label" for="show-name-input">Show Name</label>
+        <input id="show-name-input" type="text" class="filter-input"
+               placeholder="e.g. Sang a Klang" spellcheck="false"
+               onchange="updateShowInfo()">
+        <label class="field-label" for="event-date-input">Date</label>
+        <input id="event-date-input" type="date" class="filter-input"
+               onchange="updateShowInfo()">
+      </div>
+
+      <!-- Advanced path input -->
+      <div class="adv-row" id="adv-path-row">
+        Advanced: <a onclick="document.getElementById('adv-path-input-wrap').style.display='flex'">paste a file path…</a>
+        <span id="adv-path-input-wrap" style="display:none;gap:6px;align-items:center;margin-left:8px">
+          <input id="path-input" type="text" class="search" placeholder="Paste .qxw file path…" spellcheck="false" style="width:300px">
+          <button class="btn btn-primary btn-sm" onclick="loadFromPath()">Load</button>
+        </span>
+      </div>
+
+      <!-- Recents -->
+      <div id="recent-list" class="recents"></div>
+
+      <!-- Sessions -->
+      <div class="session-panel" id="session-panel">
+        <div class="session-panel-header">
+          <h3>Sessions</h3>
+          <div class="session-panel-actions">
+            <button class="btn btn-accent btn-sm" onclick="sessionNew()" title="Start a blank session">+ New Session</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Open the session modal">📋 Manage</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionBrowseFile()" title="Open a .qsk file from disk">📂 Open .qsk</button>
+          </div>
+        </div>
+        <div id="session-list" class="session-list"></div>
+      </div>
+
+      <!-- About -->
+      <div class="start-about">
+        <h3>What is QLC+ Swiss Knife?</h3>
+        <p>A companion web app that reads and writes QLC+ workspace files (<code>.qxw</code>).
+           Build setlists, manage triggers, configure fixtures, browse IDs — all without opening QLC+ itself.</p>
+      </div>
+
+      <!-- Workflow cards -->
+      <div class="start-workflow">
+        <div class="wf-card" onclick="go('fixtures')">
+          <div class="wf-num">1</div>
+          <div class="wf-title">Build the rig</div>
+          <div class="wf-desc">Place fixtures, assign DMX addresses, export a workspace.</div>
+        </div>
+        <div class="wf-card" onclick="go('setlist')">
+          <div class="wf-num">2</div>
+          <div class="wf-title">Match the music</div>
+          <div class="wf-desc">Map songs to QLC+ functions, set fade timings, generate a cuelist.</div>
+        </div>
+        <div class="wf-card" onclick="go('triggers')">
+          <div class="wf-num">3</div>
+          <div class="wf-title">Wire the controls</div>
+          <div class="wf-desc">Audit keyboard and MIDI bindings across the Virtual Console.</div>
+        </div>
+      </div>
+
+      <!-- Footer links -->
+      <div class="start-footer">
+        <a href="https://github.com/giopas/qlc-plus-swiss-knife-tool-script" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/giopas/qlc-plus-swiss-knife-tool-script/issues/new/choose" target="_blank" rel="noopener">Report a bug</a>
+        <a href="https://www.qlcplus.org/" target="_blank" rel="noopener">QLC+</a>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       SETLIST MANAGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-setlist">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
+      <div><h2>Setlist</h2><div class="p-desc">Match songs to functions, set fade timings, generate a cuelist chaser.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Hidden file input fallback for per-slot TXT import (when native picker unavailable) -->
+    <input id="sl-import-file" type="file" accept=".txt" style="display:none"
+           onchange="slImportSongsTxt(this)">
+
+    <div class="tab-split sl-fb-split">
+
+      <!-- Col 1: Slot list -->
+      <div class="slot-pane">
+        <div class="pane-header">CueList Slots</div>
+        <div id="slot-list">
+          <div class="slot-empty">Load a workspace to see slots</div>
+        </div>
+      </div>
+
+      <!-- Col 2: Song list (FileBot Left) -->
+      <div class="fb-songs-pane">
+        <div class="pane-header" id="song-pane-title">Songs</div>
+        <div id="fb-song-list" class="fb-song-list">
+          <div class="slot-empty">Select a slot to see songs</div>
+        </div>
+        <div class="pane-footer" style="gap:3px">
+          <button class="btn btn-surface btn-sm" id="btn-add-song"     onclick="slAddRow()"    disabled
+                  data-tooltip="Add a new empty song row">➕</button>
+          <button class="btn btn-surface btn-sm" id="btn-remove-song"  onclick="slRemoveRow()" disabled
+                  data-tooltip="Remove the selected song">🗑</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-up" onclick="slMoveRow(-1)" disabled
+                  data-tooltip="Move selected song up">⬆</button>
+          <button class="btn btn-surface btn-sm" id="btn-move-song-dn" onclick="slMoveRow(1)"  disabled
+                  data-tooltip="Move selected song down">⬇</button>
+          <span style="flex:1"></span>
+          <span id="song-count" class="hint-text"></span>
+        </div>
+      </div>
+
+      <!-- Col 3: Actions pane (FileBot Middle) -->
+      <div class="fb-actions-pane">
+        <div class="pane-header" style="font-size:10px;letter-spacing:.05em">ACTIONS</div>
+
+        <!-- Scrollable body -->
+        <div class="fb-actions-body">
+
+          <!-- Assignment -->
+          <div class="fb-group-label">Assign</div>
+          <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
+                  onclick="slAssignFromPool()" disabled
+                  data-tooltip="Assign the selected function to the selected song(s) — Ctrl+click or Shift+click songs to select multiple (double-click a function also works)">◀ Assign</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
+                  onclick="slClearAssignment()" disabled
+                  data-tooltip="Remove the QLC+ function assignment from the selected song">✕ Clear Song</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-clear-all"
+                  onclick="slClearAllAssignments()" disabled
+                  data-tooltip="Remove all function assignments from this slot">✕ Clear All</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-purge-clones"
+                  onclick="slPurgeClones()" disabled
+                  data-tooltip="THIS SLOT only: unassign songs currently linked to generated clones, so you can re-match from scratch. Clone functions remain in the workspace — nothing is deleted.">🧹 Purge Clones</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
+                  onclick="slAutoMatch()" disabled
+                  data-tooltip="Auto-match unassigned songs to QLC+ functions by name similarity">🎯 Re-Match</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Timing -->
+          <div class="fb-group-label">Timing</div>
+          <div class="fb-timing-song" id="timing-song-label">— select a song —</div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">In</label>
+            <input id="timing-in"   class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('in',this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">Hold</label>
+            <input id="timing-hold" class="fb-timing-in" type="text" placeholder="Inf" disabled oninput="slTimingChanged('hold',this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl">Out</label>
+            <input id="timing-out"  class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('out',this)">
+          </div>
+
+          <div class="fb-sep"></div>
+
+          <!-- Import / Export -->
+          <div class="fb-group-label">Setlist TXT</div>
+          <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
+                  onclick="slImportSlotFile()"
+                  disabled
+                  data-tooltip="Load this slot from a .txt file — restores songs AND assignments if saved with this tool. Path remembered in session.">📂 Load Slot File</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
+                  onclick="slSaveSlotFile()" disabled
+                  data-tooltip="Save this slot's songs and function assignments to a .txt file. Path remembered in session.">💾 Save Slot File</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Workspace cleanup -->
+          <div class="fb-group-label">Workspace</div>
+          <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
+                  onclick="slDeleteWorkspaceClones()" disabled
+                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Use Generate QXW afterwards to save the clean file.">🗑 Delete Clones from WS</button>
+
+          <div class="fb-sep"></div>
+
+          <!-- Generate -->
+          <div class="fb-group-label">Generate QXW</div>
+          <span class="hint-text" style="font-size:9px;line-height:1.3">
+            Target chaser in workspace:
+          </span>
+          <select id="sl-chaser-select" class="filter-input fb-chaser-sel" disabled
+                  title="Choose an existing chaser to overwrite, or create a new one"
+                  data-tooltip="Pick a chaser to update, or create a brand-new one">
+            <option value="__new__">— Create new —</option>
+          </select>
+
+        </div>
+
+        <!-- Save always visible at bottom -->
+        <div class="fb-actions-footer">
+          <button class="btn btn-green fb-wide-btn" id="btn-save-songs"
+                  onclick="slSaveDetails()" disabled
+                  data-tooltip="Save song assignments and timing to the server (required before Generate)">💾 Save Songs</button>
+        </div>
+      </div>
+
+      <!-- Resize handle -->
+      <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize"></div>
+
+      <!-- Col 4: QLC+ Function Pool (FileBot Right) -->
+      <div class="fn-pool-pane">
+        <div class="pane-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>QLC+ Functions</span>
+          <button class="btn btn-surface btn-sm" onclick="refreshFnPool()"
+                  data-tooltip="Re-fetch functions with latest descriptions from Dictionary">↺</button>
+        </div>
+        <div class="fn-pool-search">
+          <input id="fn-pool-filter" type="text" class="filter-input"
+                 placeholder="Search…" oninput="filterFnPool(this.value)">
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <select id="pool-type-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByType(this.value)">
+              <option value="">All types</option>
+            </select>
+            <select id="pool-vc-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByVc(this.value)">
+              <option value="">All VC</option>
+              <option value="has">Has VC ✓</option>
+              <option value="none">No VC</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <select id="pool-used-filter" class="filter-input" style="flex:1"
+                    onchange="filterFnPoolByUsed(this.value)"
+                    title="Filter by usage: ★ = used in slot, ✦ = has (Setlist) clone">
+              <option value="">All (used + unused)</option>
+              <option value="used">Used ★ / ✦</option>
+              <option value="unused">Not used</option>
+            </select>
+          </div>
+        </div>
+        <div id="fn-pool-list" class="fn-pool-list">
+          <div class="slot-empty">Load a workspace to see functions</div>
+        </div>
+        <div class="fn-pool-footer">
+          <span id="fn-pool-count" class="hint-text"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-accent" id="btn-generate-qxw"
+              onclick="slGenerateQxw()" disabled
+              data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">🚀 Generate QXW</button>
+      <button class="btn btn-surface" id="btn-export-sl-pdf"
+              onclick="slExportPdf()" disabled
+              data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
+      <button class="btn btn-surface" id="btn-export-sl-multi"
+              onclick="slExportMultiPdf()"
+              data-tooltip="Export checked setlists as one combined PDF (tick checkboxes in slot list)">📄 Multi PDF</button>
+      <button class="btn btn-surface" id="btn-export-sl-xml"
+              onclick="slExportXmlTxt()" disabled
+              data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TRIGGERS
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-triggers">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
+      <div><h2>Triggers</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar">
+      <input id="trg-filter" class="filter-input" type="text"
+             placeholder="Filter triggers…"
+             oninput="filterTriggers(this.value)">
+      <label class="toggle-label">
+        <input type="checkbox" id="trg-assigned-only"
+               onchange="filterTriggers(document.getElementById('trg-filter').value)">
+        Assigned only
+      </label>
+      <button class="btn btn-surface" onclick="checkDuplicates()"
+              data-tooltip="Highlight in red any triggers that share the same key binding">🔍 Duplicates</button>
+      <button class="btn btn-surface" onclick="openMidiShiftModal()"
+              data-tooltip="Bulk re-assign all triggers from one MIDI universe/channel to another">⇄ MIDI Shift</button>
+      <button id="trg-matrix-btn" class="btn btn-surface" onclick="toggleMatrix()"
+              data-tooltip="Show a grid of all widget key assignments">⊞ Matrix</button>
+    </div>
+
+    <!-- Matrix panel (toggled by Matrix button) -->
+    <div id="trg-matrix-panel" style="display:none;padding:8px 12px;border-bottom:1px solid var(--surface1);background:var(--mantle)">
+      <div id="trg-matrix-wrap"></div>
+    </div>
+
+    <!-- Bulk MIDI Shift modal -->
+    <div id="trg-shift-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="width:340px">
+        <div class="pane-header" style="margin-bottom:14px">⇄ Bulk MIDI Shift</div>
+        <div class="field-group">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <label class="field-label">From Universe</label>
+              <input id="trg-shift-from-uni" class="field-input" type="text" placeholder="0">
+            </div>
+            <div>
+              <label class="field-label">From Channel</label>
+              <input id="trg-shift-from-ch" class="field-input" type="text" placeholder="1">
+            </div>
+            <div>
+              <label class="field-label">To Universe</label>
+              <input id="trg-shift-to-uni" class="field-input" type="text" placeholder="0">
+            </div>
+            <div>
+              <label class="field-label">To Channel</label>
+              <input id="trg-shift-to-ch" class="field-input" type="text" placeholder="2">
+            </div>
+          </div>
+          <div id="trg-shift-status" style="font-size:11px;color:var(--overlay0);min-height:18px;margin-top:8px"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-accent" onclick="submitMidiShift()">⇄ Shift All</button>
+            <button class="btn btn-surface" onclick="closeMidiShiftModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-split">
+
+      <!-- Trigger table -->
+      <div id="trg-table-wrap" class="table-wrap"></div>
+
+      <!-- Side edit panel -->
+      <div id="trg-edit-panel">
+        <div class="pane-header">Edit Trigger</div>
+        <div id="trg-edit-info" class="hint-text field-group">Select a row to edit</div>
+        <div id="trg-edit-form" class="field-group" style="display:none">
+          <div>
+            <label class="field-label">Caption</label>
+            <div id="trg-caption-display" style="font-size:11px;color:var(--text);
+                 font-family:var(--font-mono);padding:2px 0;word-break:break-word"></div>
+          </div>
+          <div>
+            <label class="field-label">Key Sequence</label>
+            <input id="trg-key-input" class="field-input" type="text"
+                   placeholder="e.g. F1">
+          </div>
+          <div>
+            <label class="field-label">MIDI Universe</label>
+            <input id="trg-uni-input" class="field-input" type="text"
+                   placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">MIDI Channel</label>
+            <input id="trg-ch-input" class="field-input" type="text"
+                   placeholder="0">
+          </div>
+          <button class="btn btn-accent" onclick="applyTriggerEdit()">✓ Apply</button>
+          <button class="btn btn-red"    onclick="clearTriggerEdit()">✕ Clear</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note ow">
+        <svg class="ic"><use href="/static/icons.svg#alert-triangle"/></svg>
+        Save <b>&nbsp;overwrites the loaded .qxw&nbsp;</b> — the only tool that does
+      </span>
+      <button class="btn btn-surface btn-ghost" onclick="saveTriggers()" data-tooltip="Save triggers to a new file instead">Save as new file…</button>
+      <div class="spacer"></div>
+      <button class="btn btn-overwrite" onclick="saveTriggers()"
+              data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to loaded QXW</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DICTIONARY
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-dictionary">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
+      <div><h2>Dictionary</h2><div class="p-desc">Describe what every function does — descriptions show up in Setlist and everywhere else.</div></div>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="browseDictTxt()"
+              data-tooltip="Browse and load a dictionary .txt file (path remembered for session)">
+        📂 Browse TXT
+      </button>
+      <input id="dict-path" type="text" class="filter-input" style="width:220px"
+             placeholder="Dictionary .txt path…" spellcheck="false">
+      <button class="btn btn-surface" onclick="loadDictFile()"
+              data-tooltip="Load descriptions from the dictionary .txt path">Load path</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <input id="dict-filter" class="filter-input" type="text" style="width:160px"
+             placeholder="Filter functions…" oninput="filterDictionary(this.value)">
+      <select id="dict-type-filter" class="filter-input" style="width:120px"
+              onchange="filterDictByType(this.value)">
+        <option value="">All types</option>
+      </select>
+      <select id="dict-vc-filter" class="filter-input" style="width:110px"
+              onchange="filterDictByVc(this.value)">
+        <option value="">All VC</option>
+        <option value="has">Has VC ✓</option>
+        <option value="none">No VC</option>
+      </select>
+      <input id="dict-vcname-filter" class="filter-input" type="text" style="width:140px"
+             placeholder="VC Button name…" oninput="filterDictByVcName(this.value)"
+             data-tooltip="Filter by VC button name text">
+      <select id="dict-frame-filter" class="filter-input" style="width:130px"
+              onchange="filterDictByFrame(this.value)"
+              data-tooltip="Filter by VC frame (container)">
+        <option value="">All frames</option>
+      </select>
+    </div>
+
+    <div id="dict-table-wrap" class="table-wrap"></div>
+
+    <!-- Inline edit panel (bottom) -->
+    <div id="dict-edit-panel">
+      <span id="dict-edit-label">Select a row to edit its description</span>
+      <textarea id="dict-desc-input" rows="2"
+                placeholder="Description…" disabled></textarea>
+      <button class="btn btn-green" id="btn-save-dict-entry"
+              onclick="saveDictEntry()" disabled>Save</button>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="saveDictFile()"
+              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save</button>
+      <button class="btn btn-surface" onclick="exportDictTxt()"
+              data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       FIXTURES
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-fixtures">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
+      <div><h2>Fixtures</h2><div class="p-desc">Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace.</div></div>
+      <div class="spacer"></div>
+      <label class="field-label">QXF:</label>
+      <input id="fix-qxf-path" class="filter-input" type="text"
+             placeholder="Path to .qxf file…" style="width:260px">
+      <button class="btn btn-surface" onclick="fixLoadQxf()"
+              data-tooltip="Load a QLC+ fixture definition file (.qxf) as the fixture template">📂 Load QXF</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Toolbar row 1: fixture operations -->
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
+      <button class="btn btn-success" onclick="fixAddDialog()"
+              data-tooltip="Add a new fixture to the rig configurator">➕ Add Fixture</button>
+      <button class="btn btn-danger"  onclick="fixRemoveSelected()"
+              data-tooltip="Remove the selected fixture from the rig">🗑 Remove</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(-1)"
+              data-tooltip="Move selected fixture up in the list">⬆</button>
+      <button class="btn btn-surface" onclick="fixMoveRow(1)"
+              data-tooltip="Move selected fixture down in the list">⬇</button>
+      <button class="btn btn-surface" onclick="fixAutoDmx()"
+              data-tooltip="Auto-assign DMX addresses sequentially based on rig order">⚙ Auto-DMX</button>
+      <button class="btn btn-surface" onclick="fixImportWorkspace()"
+              data-tooltip="Import fixtures from the loaded workspace into the rig">📥 Import from Workspace</button>
+
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+        <label class="field-label" style="margin:0">View:</label>
+        <button id="fix-btn-view-top"   class="btn btn-surface btn-view-active" onclick="fixSetView('top')"
+                data-tooltip="Show top-down view of stage">⬛ Top</button>
+        <button id="fix-btn-view-front" class="btn btn-surface" onclick="fixSetView('front')"
+                data-tooltip="Show front view of stage">⬛ Front</button>
+        <button id="fix-btn-view-side"  class="btn btn-surface" onclick="fixSetView('side')"
+                data-tooltip="Show side view of stage">⬛ Side</button>
+        <button id="fix-btn-snap" class="btn btn-surface btn-view-active" style="margin-left:8px" onclick="fixToggleSnap()"
+                data-tooltip="Toggle snap-to-grid: fixtures snap to grid cells when dropped">🔲 Snap</button>
+      </span>
+    </div>
+
+    <!-- Toolbar row 2: stage dims -->
+    <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px;background:var(--surface);border-top:1px solid var(--overlay0)">
+      <span style="display:flex;gap:6px;align-items:center">
+        <label class="field-label" data-tooltip="Stage width in millimetres">W(mm):</label>
+        <input id="fix-stage-w" class="filter-input" type="number" value="8000" min="1000" max="50000" style="width:64px">
+        <label class="field-label" data-tooltip="Stage depth in millimetres">D(mm):</label>
+        <input id="fix-stage-d" class="filter-input" type="number" value="6000" min="1000" max="50000" style="width:64px">
+        <label class="field-label" data-tooltip="Stage height (rigging height) in millimetres">H(mm):</label>
+        <input id="fix-stage-h" class="filter-input" type="number" value="4000" min="500"  max="20000" style="width:64px">
+        <label class="field-label" style="margin-left:8px" data-tooltip="Grid columns x rows — divides the stage into positioning cells">Grid:</label>
+        <input id="fix-grid-cols" class="filter-input" type="number" value="8" min="1" max="26" style="width:36px">
+        <span class="hint-text">x</span>
+        <input id="fix-grid-rows" class="filter-input" type="number" value="6" min="1" max="20" style="width:36px">
+      </span>
+    </div>
+
+    <!-- Main split: rig table left, canvas right -->
+    <div class="tab-split" style="height:calc(100vh - 260px)">
+
+      <!-- Left: rig table -->
+      <div class="fix-rig-pane">
+        <div id="fix-rig-table-wrap">
+          <div style="padding:20px;color:var(--overlay0);font-size:12px">
+            Load a workspace or add fixtures with ➕ to build your rig.
+          </div>
+        </div>
+      </div>
+
+      <!-- Drag-resize handle -->
+      <div id="fix-canvas-resize-handle" class="fix-canvas-resize-handle" title="Drag to resize canvas"></div>
+
+      <!-- Right: canvas -->
+      <div class="fix-canvas-pane">
+        <canvas id="fix-canvas"></canvas>
+      </div>
+
+    </div>
+
+    <!-- Add fixture modal -->
+    <div id="fix-add-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box">
+        <h3 style="margin:0 0 12px">Add Fixture to Rig</h3>
+
+        <div class="field-group">
+          <label class="field-label">Fixture Type</label>
+          <select id="fix-add-type" class="field-input" onchange="fixAddTypeChanged()">
+            <option value="__custom__">Custom (enter manually)</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Mode</label>
+          <div id="fix-add-mode-wrap">
+            <select id="fix-add-mode" class="field-input input-sm" onchange="fixAddModeChanged()">
+              <option value="">— Select mode —</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Name</label>
+          <input id="fix-add-name" class="field-input" type="text" placeholder="My Fixture 1">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Manufacturer</label>
+            <input id="fix-add-mfg" class="field-input" type="text" placeholder="Generic">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Model</label>
+            <input id="fix-add-model" class="field-input" type="text" placeholder="Par LED">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Universe (1-indexed)</label>
+            <input id="fix-add-universe" class="field-input" type="number" value="1" min="1" max="256">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Address (1-indexed)</label>
+            <input id="fix-add-address" class="field-input" type="number" value="1" min="1" max="512">
+          </div>
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Channels</label>
+            <input id="fix-add-channels" class="field-input" type="number" value="7" min="1" max="512">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="field-group" style="flex:1">
+            <label class="field-label">Count</label>
+            <input id="fix-add-count" class="field-input" type="number" value="1" min="1" max="64">
+          </div>
+          <div class="field-group" style="flex:2">
+            <label class="field-label">Stage Role</label>
+            <select id="fix-add-role" class="field-input">
+              <option>Custom</option>
+              <option>Front Left</option><option>Front Center</option><option>Front Right</option>
+              <option>Back Left</option><option>Back Center</option><option>Back Right</option>
+              <option>Side Left</option><option>Side Right</option><option>Center</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+          <button class="btn btn-surface" onclick="fixAddModalClose()">Cancel</button>
+          <button class="btn btn-success" onclick="fixAddConfirm()">Add to Rig</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <select id="fix-pdf-paper" class="filter-input" style="width:160px"
+              data-tooltip="Paper size for the exported blueprint PDF">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="fixExportPdf()"
+              data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+      <button class="btn btn-primary" onclick="fixGenerateQxw()"
+              data-tooltip="Generate a QXW workspace with the current rig configuration">🚀 Generate QXW</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       CHECKLIST
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-checklist">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
+      <div><h2>Checklist</h2><div class="p-desc">Every fixture with universe, address, mode and channels — ready to print for load-in.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar">
+      <input id="chk-filter" class="filter-input" type="text"
+             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
+    </div>
+
+    <div id="chk-table-wrap"></div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="exportChecklistTxt()"
+              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
+      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="exportChecklistPdf()"
+              data-tooltip="Export the fixture checklist table as a formatted PDF">📄 Checklist PDF</button>
+      <button class="btn btn-surface" onclick="exportBlueprintPdf()"
+              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BRIGHTNESS
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-brightness">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sun"/></svg></div>
+      <div><h2>Brightness</h2><div class="p-desc">Scale the master dimmer of each fixture group across every scene. Colour ratios untouched.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar brt-toolbar">
+      <span id="brt-preview" class="brt-preview-count">—</span>
+      <button class="btn btn-surface" onclick="brtResetAll()"
+              title="Reset all fixtures to 100%">↺ Reset All</button>
+
+      <!-- Scan local QLC+ fixture directories -->
+      <button class="btn btn-surface" onclick="brtScanLocal()"
+              title="Scan standard QLC+ installation folders on this machine for .qxf fixture definitions (local — no internet)">
+        📁 Scan Local
+      </button>
+
+      <!-- QXF upload for unknown fixtures (supports multiple) -->
+      <label class="btn btn-surface"
+             title="Upload one or more .qxf fixture definition files to auto-detect dimmer channels">
+        📂 Upload QXF
+        <input id="brt-qxf-input" type="file" accept=".qxf" multiple style="display:none"
+               onchange="brtUploadQxf()">
+      </label>
+
+      <!-- Fetch from GitHub -->
+      <button id="brt-fetch-gh-btn" class="btn btn-surface brt-gh-btn"
+              onclick="brtFetchGithub()" disabled
+              title="Download missing QXF definitions from the official QLC+ GitHub repository (requires internet connection)">
+        🌐 Fetch from GitHub
+      </button>
+    </div>
+
+    <!-- Help banner -->
+    <div class="brt-help">
+      <strong>How it works:</strong>
+      Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
+      across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
+      untouched.  Use <strong>Link group</strong> to move all fixtures of the same model together.
+      QXF definitions are auto-detected from your QLC+ installation (<strong>📁 Scan Local</strong>).
+      If a fixture's QXF is still missing, <strong>📂 Upload QXF</strong> it manually (multiple files supported)
+      or use <strong class="brt-internet-label">🌐 Fetch from GitHub</strong>
+      to download it from the official QLC+ repository
+      <em>(requires internet — you will be asked to confirm before any connection is made)</em>.
+    </div>
+
+    <!-- Fixture groups -->
+    <div id="brt-fixture-wrap" class="brt-fixture-wrap">
+      <div class="brt-placeholder">Load a workspace to adjust brightness.</div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-accent" onclick="brtGenerateQxw()"
+              title="Apply brightness scaling to all scenes and download a new .qxw">
+        🚀 Generate QXW
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       ID BROWSER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-idbrowser">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#search"/></svg></div>
+      <div><h2>ID Browser</h2><div class="p-desc">Sortable, filterable tables of every function and VC widget in the workspace.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div id="id-browser-subtabs">
+      <button class="subtab-btn active" data-subtab="functions"
+              onclick="showSubtab('functions')">⚙ Functions</button>
+      <button class="subtab-btn" data-subtab="vc-widgets"
+              onclick="showSubtab('vc-widgets')">🖥 VC Widgets</button>
+    </div>
+
+    <div id="subtab-functions" class="subtab-panel active">
+      <div class="subtab-toolbar">
+        <input id="fn-filter" class="filter-input" type="text"
+               placeholder="Filter functions…" oninput="filterFunctions(this.value)">
+        <button class="btn btn-surface" onclick="exportCsv('functions')">⬇ Export CSV</button>
+      </div>
+      <div id="fn-table-wrap"></div>
+    </div>
+
+    <div id="subtab-vc-widgets" class="subtab-panel">
+      <div class="subtab-toolbar">
+        <input id="vc-filter" class="filter-input" type="text"
+               placeholder="Filter widgets…" oninput="filterVcWidgets(this.value)">
+        <button class="btn btn-surface" onclick="exportCsv('vc-widgets')">⬇ Export CSV</button>
+      </div>
+      <div id="vc-table-wrap"></div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TECH RIDER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-techrider">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
+      <div><h2>Tech Rider</h2><div class="p-desc">Fixture type summary grouped by manufacturer, model and mode — ready for production planning.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div id="tr-table-wrap"></div>
+
+    <div class="out-footer">
+      <div class="spacer"></div>
+      <select id="tr-pdf-paper" class="filter-input" style="width:160px">
+        <option value="A3 Landscape">A3 Landscape</option>
+        <option value="A4 Landscape">A4 Landscape</option>
+        <option value="A4 Portrait">A4 Portrait</option>
+        <option value="US Letter Landscape">US Letter Landscape</option>
+        <option value="US Letter Portrait">US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="exportTechRiderPdf()"
+              data-tooltip="Export the tech rider as a formatted PDF">📄 Tech Rider PDF</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       VC VISUAL EDITOR
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-vceditor">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
+      <div><h2>VC Visual Editor <span class="b beta">BETA</span></h2><div class="p-desc">See your Virtual Console as a canvas — select, align, distribute, resize and sort widgets.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <style>
+      /* VC Visual Editor scoped styles */
+      #vce-wrap { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+      #vce-toolbar { display:flex; gap:4px; padding:6px 8px; background:var(--surface-1);
+                     border-bottom:0.5px solid var(--border); align-items:center; flex-wrap:wrap; }
+      .vce-xb { font-size:11px; padding:3px 7px; background:transparent;
+                border:0.5px solid var(--border-strong); border-radius:var(--radius);
+                color:var(--text-primary); cursor:pointer; font-family:var(--font-mono); }
+      .vce-xb:hover { background:var(--surface-0); }
+      .vce-xb.on { background:var(--bg-accent); color:var(--text-accent); border-color:var(--border-accent); }
+      #vce-body { display:flex; flex:1; overflow:hidden; min-height:0; }
+      #vce-canvas-wrap { flex:1; overflow:auto; background:#11111b; padding:6px; }
+      #vce-canvas { display:block; }
+      #vce-right { display:flex; flex-direction:column; width:0; min-width:0;
+                   border-left:0.5px solid var(--border); overflow:hidden; transition:width .2s; }
+      #vce-right.open { width:400px; min-width:400px; }
+      #vce-props-panel { flex:1; overflow-y:auto; background:var(--surface-1); padding:8px;
+                         font-size:11px; font-family:var(--font-mono); }
+      #vce-actions-panel { border-top:0.5px solid var(--border); background:var(--surface-0);
+                           padding:8px; overflow-y:auto; max-height:260px; }
+      .vce-pl { color:var(--text-muted); font-size:9px; margin:8px 0 4px;
+                text-transform:uppercase; letter-spacing:.07em; }
+      .vce-pi { width:100%; box-sizing:border-box; padding:3px 5px; font-size:11px;
+                font-family:var(--font-mono); border:0.5px solid var(--border);
+                border-radius:4px; background:var(--surface-0); color:var(--text-primary); }
+      .vce-pr4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4px; }
+      .vce-pr2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+      .vce-ab { padding:3px 5px; font-size:10px; font-family:var(--font-mono);
+                background:var(--surface-0); border:0.5px solid var(--border);
+                border-radius:4px; cursor:pointer; color:var(--text-primary); white-space:nowrap; }
+      .vce-ab:hover { background:var(--surface-1); border-color:var(--border-strong); }
+      .vce-sep { width:0.5px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
+      #vce-statusbar { padding:3px 10px; border-top:0.5px solid var(--border);
+                       background:var(--surface-0); font-size:10px; font-family:var(--font-mono);
+                       display:flex; justify-content:space-between; align-items:center; }
+    </style>
+
+    <div id="vce-wrap">
+
+      <!-- Toolbar -->
+      <div id="vce-toolbar">
+        <!-- Page selector -->
+        <select id="vce-page-sel" class="vce-xb" style="max-width:160px"></select>
+        <div class="vce-sep"></div>
+
+        <!-- View mode -->
+        <button class="vce-xb on" id="vce-btn-normal" onclick="vceSetMode('normal')">Normal</button>
+        <button class="vce-xb"    id="vce-btn-mask"   onclick="vceSetMode('mask')">Mask</button>
+        <div class="vce-sep"></div>
+
+        <!-- Mask thresholds -->
+        <span style="font-size:10px;color:var(--text-muted)">±</span>
+        <input id="vce-thresh0" type="number" min="1" max="20" value="2" title="Minor threshold (px)"
+               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
+                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
+               onchange="vceUpdateThresholds()">
+        <span style="font-size:10px;color:var(--text-muted)">/</span>
+        <input id="vce-thresh1" type="number" min="1" max="50" value="5" title="Major threshold (px)"
+               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
+                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
+               onchange="vceUpdateThresholds()">
+        <span style="font-size:10px;color:var(--text-muted)">px</span>
+        <div class="vce-sep"></div>
+
+        <!-- Zoom -->
+        <button class="vce-xb" onclick="vceZoom(-0.1)">−</button>
+        <span id="vce-zoom-lbl" style="font-size:10px;color:var(--text-muted);min-width:34px;text-align:center;font-family:var(--font-mono)">—</span>
+        <button class="vce-xb" onclick="vceZoom(+0.1)">+</button>
+        <button class="vce-xb" onclick="vceFit()">fit</button>
+        <div class="vce-sep"></div>
+
+        <!-- Toggle panel -->
+        <button class="vce-xb" id="vce-btn-panel"
+                onclick="document.getElementById('vce-right').classList.toggle('open');
+                         document.getElementById('vce-btn-panel').classList.toggle('on')">
+          ⚙ Panel
+        </button>
+        <div style="flex:1"></div>
+
+        <!-- Reload -->
+        <button class="vce-xb" onclick="_vceTree=null;_vceLoad()">↺ Reload</button>
+      </div>
+
+      <!-- Main body -->
+      <div id="vce-body">
+
+        <!-- Canvas -->
+        <div id="vce-canvas-wrap">
+          <canvas id="vce-canvas"></canvas>
+        </div>
+
+        <!-- Right panel (props + actions) -->
+        <div id="vce-right open" style="width:400px;min-width:400px">
+          <!-- Properties -->
+          <div id="vce-props">
+            <div style="color:var(--text-muted);padding:20px 0;text-align:center">
+              Click a widget to select
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div id="vce-actions-panel">
+            <div class="vce-pl" style="margin-top:0">Align</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
+              <button class="vce-ab" onclick="vceAlign('left')" title="Align left edges">← left</button>
+              <button class="vce-ab" onclick="vceAlign('centerH')" title="Centre horizontally">— H ctr</button>
+              <button class="vce-ab" onclick="vceAlign('right')" title="Align right edges">→ right</button>
+              <button class="vce-ab" onclick="vceAlign('top')" title="Align top edges">↑ top</button>
+              <button class="vce-ab" onclick="vceAlign('centerV')" title="Centre vertically">| V ctr</button>
+              <button class="vce-ab" onclick="vceAlign('bottom')" title="Align bottom edges">↓ bottom</button>
+            </div>
+
+            <div class="vce-pl">Distribute &amp; size</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
+              <button class="vce-ab" onclick="vceDistribute('h')" title="Equal horizontal spacing">↔ distr H</button>
+              <button class="vce-ab" onclick="vceDistribute('v')" title="Equal vertical spacing">↕ distr V</button>
+              <button class="vce-ab" onclick="vceSameSize('w')" title="Match width to first selected">= W</button>
+              <button class="vce-ab" onclick="vceSameSize('h')" title="Match height to first selected">= H</button>
+              <button class="vce-ab" onclick="vceFitText()" title="Fit width to caption text">fit text</button>
+            </div>
+
+            <div class="vce-pl">Grid arrange</div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <label style="font-size:10px;color:var(--text-muted)">Cols</label>
+              <input id="vce-grid-cols" type="number" min="1" max="20" value="6"
+                     class="vce-pi" style="width:44px">
+              <label style="font-size:10px;color:var(--text-muted)">Gap X</label>
+              <input id="vce-grid-gapx" type="number" min="0" max="100" value="5"
+                     class="vce-pi" style="width:44px">
+              <label style="font-size:10px;color:var(--text-muted)">Gap Y</label>
+              <input id="vce-grid-gapy" type="number" min="0" max="100" value="5"
+                     class="vce-pi" style="width:44px">
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <label style="font-size:10px;color:var(--text-muted)">Order by</label>
+              <select id="vce-grid-sort" class="vce-pi" style="width:100px">
+                <option value="pos">Position</option>
+                <option value="alpha">A–Z</option>
+                <option value="num">Natural #</option>
+                <option value="color">Colour hue</option>
+                <option value="id">Widget ID</option>
+              </select>
+              <button class="vce-ab" onclick="vceArrangeGrid()">▦ Arrange</button>
+            </div>
+
+            <div class="vce-pl">Sort in place (same parent)</div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <select id="vce-sort-by" class="vce-pi" style="width:100px">
+                <option value="alpha">A–Z</option>
+                <option value="num">Natural #</option>
+                <option value="color">Colour hue</option>
+                <option value="id">Widget ID</option>
+              </select>
+              <button class="vce-ab" onclick="vceSortSiblings()">↕ Sort</button>
+            </div>
+
+            <div class="vce-pl">Snap to grid</div>
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:2px">
+              <input id="vce-snap-grid" type="number" min="1" max="50" value="5"
+                     class="vce-pi" style="width:50px">
+              <label style="font-size:10px;color:var(--text-muted)">px</label>
+              <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end #vce-body -->
+
+      <!-- Status bar -->
+      <div id="vce-statusbar">
+        <span id="vce-status" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
+          Load a workspace and open this tab to start
+        </span>
+        <span style="font-size:9px;opacity:.4">VC VISUAL EDITOR  v{{ version }}</span>
+      </div>
+
+    </div><!-- end #vce-wrap -->
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="vce-xb on" onclick="vceApplyAndExport()">💾 Apply &amp; Save QXW…</button>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       QXW MERGER
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-merger">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
+      <div><h2>QXW Merger <span class="b alpha">ALPHA</span></h2><div class="p-desc">Copy functions, fixtures and groups from one workspace into another.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Top load bar -->
+    <div class="merger-load-bar">
+
+      <!-- Source -->
+      <div class="merger-load-col">
+        <label class="merger-load-label">📂 Source QXW</label>
+        <div class="merger-load-row">
+          <input id="merger-src-path" type="text" class="filter-input"
+                 placeholder="Paste path or click Browse…" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements FROM"
+                 onkeydown="if(event.key==='Enter') mergerLoadSrc()">
+          <button class="btn btn-surface" onclick="mergerBrowseSrc()"
+                  data-tooltip="Browse for source .qxw file">Browse…</button>
+          <button class="btn btn-accent" onclick="mergerLoadSrc()"
+                  data-tooltip="Parse the source workspace">Load</button>
+          <input id="merger-src-file" type="file" accept=".qxw" style="display:none"
+                 onchange="mergerSrcFileChosen()">
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="merger-arrow">→</div>
+
+      <!-- Destination -->
+      <div class="merger-load-col">
+        <label class="merger-load-label">📥 Destination QXW</label>
+        <div class="merger-load-row">
+          <input id="merger-dst-path" type="text" class="filter-input"
+                 placeholder="Paste path or click Browse…" spellcheck="false"
+                 data-tooltip="Path to the QXW file you want to copy elements INTO"
+                 onkeydown="if(event.key==='Enter') mergerLoadDst()">
+          <button class="btn btn-surface" onclick="mergerBrowseDst()"
+                  data-tooltip="Browse for destination .qxw file">Browse…</button>
+          <button class="btn btn-accent" onclick="mergerLoadDst()"
+                  data-tooltip="Parse the destination workspace">Load</button>
+          <input id="merger-dst-file" type="file" accept=".qxw" style="display:none"
+                 onchange="mergerDstFileChosen()">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Category + search toolbar -->
+    <div class="tab-toolbar merger-toolbar">
+      <div class="merger-cat-tabs">
+        <button id="merger-cat-functions" class="btn btn-surface active"
+                onclick="mergerSetCategory('functions')">⚙ Functions</button>
+        <button id="merger-cat-fixtures"  class="btn btn-surface"
+                onclick="mergerSetCategory('fixtures')">💡 Fixtures</button>
+        <button id="merger-cat-groups"    class="btn btn-surface"
+                onclick="mergerSetCategory('groups')">📦 Groups</button>
+      </div>
+      <input type="text" class="filter-input" placeholder="Search source…" style="flex:1"
+             oninput="mergerSrcSearch(this.value)">
+      <select class="filter-input" style="flex:0 0 140px" onchange="mergerFnTypeFilter(this.value)">
+        <option value="">All types</option>
+        <option value="Scene">Scene</option>
+        <option value="Chaser">Chaser</option>
+        <option value="Sequence">Sequence</option>
+        <option value="EFX">EFX</option>
+        <option value="Collection">Collection</option>
+        <option value="Show">Show</option>
+        <option value="Audio">Audio</option>
+        <option value="Script">Script</option>
+        <option value="RGBMatrix">RGBMatrix</option>
+      </select>
+      <button class="btn btn-surface" onclick="mergerSelectAll()"
+              data-tooltip="Select all visible items">✓ All</button>
+      <button class="btn btn-surface" onclick="mergerSelectNone()"
+              data-tooltip="Deselect all">✗ None</button>
+    </div>
+
+    <!-- Two-column browser -->
+    <div class="merger-split">
+
+      <!-- Source list -->
+      <div class="merger-panel">
+        <div class="pane-header">
+          Source: <span id="merger-src-name" class="merger-ws-name">— not loaded —</span>
+        </div>
+        <div id="merger-src-list" class="merger-list">
+          <div class="merger-placeholder">Load a source .qxw file above</div>
+        </div>
+      </div>
+
+      <!-- Middle action column -->
+      <div class="merger-actions">
+        <button id="merger-copy-btn" class="btn btn-accent merger-copy-btn"
+                onclick="mergerCopy()" disabled
+                data-tooltip="Copy selected items into the destination (in memory)">
+          Copy →
+        </button>
+      </div>
+
+      <!-- Destination list -->
+      <div class="merger-panel">
+        <div class="pane-header">
+          Destination: <span id="merger-dst-name" class="merger-ws-name">— not loaded —</span>
+        </div>
+        <div id="merger-dst-list" class="merger-list">
+          <div class="merger-placeholder">Load a destination .qxw file above</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status bar for this tab -->
+    <div id="merger-status" class="status-bar status-info">Load two .qxw files to begin.</div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button id="merger-export-btn" class="btn btn-surface"
+              onclick="mergerExport()" disabled
+              data-tooltip="Save the merged destination as a new .qxw file">
+        ⬇ Export
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
+       QUICK START QXW WIZARD
+  ====================================================================== -->
+  <section class="screen" id="scr-quickstart">
+    <style>
+      /* Make QS step content scrollable within the fixed screen layout */
+      .qs-step { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding-bottom: 8px; }
+    </style>
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
+      <div><h2>Quick Start</h2><div class="p-desc">Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <!-- Step indicator dots -->
+    <div class="tab-toolbar" style="justify-content:center;gap:12px;padding:10px 0">
+      <span id="qs-step-indicator" style="font-weight:600;margin-right:12px">Step 1 of 5</span>
+      <span class="qs-dot qs-dot-active" id="qs-dot-1" onclick="qsGoStep(1)">1. Fixtures</span>
+      <span class="qs-dot" id="qs-dot-2" onclick="qsGoStep(2)">2. Placement</span>
+      <span class="qs-dot" id="qs-dot-3" onclick="qsGoStep(3)">3. Analysis</span>
+      <span class="qs-dot" id="qs-dot-4" onclick="qsGoStep(4)">4. VC Preview</span>
+      <span class="qs-dot" id="qs-dot-5" onclick="qsGoStep(5)">5. Export</span>
+    </div>
+
+    <!-- ── Step 1: Fixture Selection ──────────────────────────────────── -->
+    <div class="qs-step" id="qs-step-1">
+
+      <!-- Source: Load / Upload / Browse GitHub -->
+      <div class="qs-card">
+        <h3>Load Fixture Definitions</h3>
+        <p style="color:var(--overlay0);font-size:12px;margin:0 0 10px">Load one or more fixture types from local .qxf files or browse the QLC+ official fixture library.</p>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <input id="qs-qxf-path" class="filter-input" type="text" placeholder="Path to local .qxf file..." style="width:280px">
+          <button class="btn btn-surface" onclick="qsLoadQxf()">Load from path</button>
+          <span style="color:var(--overlay0);margin:0 4px">or</span>
+          <input id="qs-qxf-upload" type="file" accept=".qxf" style="display:none" onchange="qsUploadQxf()">
+          <button class="btn btn-surface" onclick="document.getElementById('qs-qxf-upload').click()">Upload .qxf file</button>
+          <span style="color:var(--overlay0);margin:0 4px">or</span>
+          <button class="btn btn-primary" onclick="qsOpenGitHub()">Browse QLC+ Library</button>
+        </div>
+        <div id="qs-qxf-info" style="font-size:12px;color:var(--overlay0)">Load fixture definitions to get started.</div>
+      </div>
+
+      <!-- Loaded definitions -->
+      <div class="qs-card">
+        <h3>Loaded Fixture Types</h3>
+        <div id="qs-loaded-defs">
+          <div class="qs-empty">No fixture definitions loaded yet.</div>
+        </div>
+      </div>
+
+      <!-- Add to rig -->
+      <div class="qs-card">
+        <h3>Add Fixtures to Rig</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="field-label">Type:</label>
+          <select id="qs-fix-type" class="filter-input" style="width:280px">
+            <option value="">— load a fixture first —</option>
+          </select>
+          <label class="field-label">Qty:</label>
+          <input id="qs-fix-qty" class="filter-input" type="number" value="1" min="1" max="100" style="width:60px">
+          <label class="field-label">Name:</label>
+          <input id="qs-fix-name" class="filter-input" type="text" placeholder="(optional)" style="width:140px">
+          <button class="btn btn-success" onclick="qsAddFixture()">Add to Rig</button>
+          <button class="btn btn-danger" onclick="qsClearRig()">Clear All</button>
+        </div>
+      </div>
+
+      <!-- Current rig -->
+      <div class="qs-card">
+        <h3>Current Rig</h3>
+        <div id="qs-rig-table">
+          <div class="qs-empty">No fixtures added yet. Load a fixture definition and add it above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 2: Stage Placement (Canvas) ─────────────────────────── -->
+    <div class="qs-step" id="qs-step-2" style="display:none">
+
+      <!-- Toolbar: view mode + stage dims + auto DMX -->
+      <div class="qs-card" style="padding:8px 12px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto">
+          <span style="font-weight:600;font-size:11px;white-space:nowrap">View:</span>
+          <button id="qs-btn-view-top"   class="btn btn-surface btn-sm btn-view-active" onclick="qsSetView('top')">Top</button>
+          <button id="qs-btn-view-front" class="btn btn-surface btn-sm" onclick="qsSetView('front')">Front</button>
+          <button id="qs-btn-view-side"  class="btn btn-surface btn-sm" onclick="qsSetView('side')">Side</button>
+          <span style="width:1px;height:18px;background:var(--overlay0);margin:0 2px;flex-shrink:0"></span>
+          <label style="font-size:10px;white-space:nowrap">W</label>
+          <input id="qs-stage-w" class="filter-input" type="number" value="8000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <label style="font-size:10px;white-space:nowrap">D</label>
+          <input id="qs-stage-d" class="filter-input" type="number" value="6000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <label style="font-size:10px;white-space:nowrap">H</label>
+          <input id="qs-stage-h" class="filter-input" type="number" value="4000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <span style="font-size:9px;color:var(--overlay0);white-space:nowrap">mm</span>
+          <div class="spacer"></div>
+          <button class="btn btn-surface btn-sm" style="white-space:nowrap" onclick="qsAutoDmx()">Auto-DMX</button>
+          <span id="qs-dmx-info" style="font-size:11px;white-space:nowrap"></span>
+        </div>
+      </div>
+
+      <!-- Main layout: sidebar + canvas -->
+      <div class="qs-stage-layout">
+
+        <!-- Left: fixture list + position presets -->
+        <div class="qs-stage-sidebar">
+          <div class="qs-card" style="margin-bottom:8px;padding:10px">
+            <h3 style="font-size:12px;margin:0 0 6px">Fixtures <span style="color:var(--overlay0);font-weight:400">(click to select)</span></h3>
+            <div id="qs-stage-fixture-list" style="max-height:180px;overflow-y:auto">
+              <div class="qs-empty">No fixtures.</div>
+            </div>
+          </div>
+
+          <!-- Position presets: Stage Position -->
+          <div class="qs-card" style="padding:10px">
+            <h3 style="font-size:12px;margin:0 0 8px">Quick Position <span style="color:var(--overlay0);font-weight:400">(selected or all)</span></h3>
+            <div style="font-size:10px;color:var(--overlay0);margin-bottom:6px">Stage Position (X &times; Z)</div>
+            <table class="qs-preset-grid">
+              <thead><tr><th></th><th>Left</th><th>Center</th><th>Right</th></tr></thead>
+              <tbody>
+                <tr><td class="qs-preset-label">Back</td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Left','Back')">BL</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Center','Back')">BC</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Back')">BR</button></td></tr>
+                <tr><td class="qs-preset-label">Mid</td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Left','Mid')">ML</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Center','Mid')">MC</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Mid')">MR</button></td></tr>
+                <tr><td class="qs-preset-label">Front</td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Left','Front')">FL</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Center','Front')">FC</button></td>
+                  <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Front')">FR</button></td></tr>
+              </tbody>
+            </table>
+            <div style="font-size:10px;color:var(--overlay0);margin:8px 0 4px">Height (Y)</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Floor')">Floor</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Low-Mid')">Low-Mid</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Mid')">Mid</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top-Mid')">Top-Mid</button>
+              <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top')">Top</button>
+            </div>
+          </div>
+
+          <!-- Orientation presets -->
+          <div class="qs-card" style="padding:10px">
+            <h3 style="font-size:12px;margin:0 0 6px">Beam Direction <span style="color:var(--overlay0);font-weight:400">(selected or all)</span></h3>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('up')" title="Point beam upward (floor fixtures)">&#x2191; Up</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('down')" title="Point beam downward (top fixtures)">&#x2193; Down</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('horizontal')" title="Point beam horizontally">&#x2192; Horiz</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('auto')" title="Auto: based on height (floor&#x2F;up, top&#x2F;down, mid&#x2F;horizontal)">&#x21BA; Auto</button>
+            </div>
+            <p style="font-size:9px;color:var(--overlay0);margin:4px 0 0">Auto = height-based default. Visible on Front/Side views.</p>
+          </div>
+
+          <!-- Alignment tools -->
+          <div class="qs-card" style="padding:10px">
+            <h3 style="font-size:12px;margin:0 0 6px">Align &amp; Distribute <span id="qs-sel-info" style="color:var(--overlay0);font-weight:400">None selected</span></h3>
+            <p style="font-size:10px;color:var(--overlay0);margin:0 0 6px">Select 2+ fixtures (Shift/Cmd+click)</p>
+            <div id="qs-align-btns" style="display:flex;flex-wrap:wrap;gap:4px">
+              <button class="btn btn-surface btn-xs" onclick="qsAlignLeft()" disabled title="Align to leftmost X">&#x25C0; Left</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignRight()" disabled title="Align to rightmost X">Right &#x25B6;</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignTop()" disabled title="Align to back (min Z)">&#x25B2; Back</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignBottom()" disabled title="Align to front (max Z)">Front &#x25BC;</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignX()" disabled title="Average X position">&#x2194; Avg X</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignZ()" disabled title="Average Z position">&#x2195; Avg Z</button>
+              <button class="btn btn-surface btn-xs" onclick="qsAlignY()" disabled title="Average Y (height)">Avg H</button>
+              <button class="btn btn-surface btn-xs" onclick="qsDistributeX()" disabled title="Distribute evenly along X (3+)">Dist X</button>
+              <button class="btn btn-surface btn-xs" onclick="qsDistributeZ()" disabled title="Distribute evenly along Z (3+)">Dist Z</button>
+            </div>
+            <div style="margin-top:6px;display:flex;gap:4px">
+              <button class="btn btn-surface btn-xs" onclick="qsSelectAll()">Select All</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSelectNone()">Deselect</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: canvas -->
+        <div class="qs-stage-canvas-pane">
+          <canvas id="qs-stage-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Capability Analysis ────────────────────────────────── -->
+    <div class="qs-step" id="qs-step-3" style="display:none">
+      <div class="qs-card">
+        <h3>Capability Analysis</h3>
+        <div id="qs-analysis-result">
+          <div class="qs-loading">Analyzing fixture capabilities...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 4: VC Layout Preview ──────────────────────────────────── -->
+    <div class="qs-step" id="qs-step-4" style="display:none">
+      <div class="qs-card">
+        <h3>Virtual Console Layout Preview</h3>
+        <p style="color:var(--overlay0);font-size:12px;margin:0 0 8px">This is the VC widget tree that will be generated in your .qxw file.</p>
+        <div id="qs-vc-preview">
+          <div class="qs-loading">Generating VC layout preview...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 5: Summary & Export ────────────────────────────────────── -->
+    <div class="qs-step" id="qs-step-5" style="display:none">
+      <div class="qs-card">
+        <h3>Summary &amp; Export</h3>
+        <div id="qs-summary"></div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label style="font-weight:600;font-size:12px;white-space:nowrap">Project name:</label>
+          <input id="qs-project-name" class="filter-input" type="text" placeholder="My Show" style="flex:1;min-width:180px;font-size:12px">
+          <span style="font-size:10px;color:var(--overlay0);white-space:nowrap">Filename: <span id="qs-filename-preview" style="font-family:monospace">quick_start_YYYYMMDD_HHMM.qxw</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation footer -->
+    <div class="out-footer">
+      <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">Back</button>
+      <div class="spacer"></div>
+      <button id="qs-btn-next" class="btn btn-primary" onclick="qsNext()">Next</button>
+      <button id="qs-btn-export" class="btn btn-success" onclick="qsExport()" style="display:none">Export .qxw</button>
+    </div>
+
+    <!-- GitHub Fixture Browser Modal -->
+    <div id="qs-gh-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5)">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:800px;max-height:80vh;background:var(--base);border:1px solid var(--overlay0);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--overlay0);display:flex;align-items:center;gap:12px">
+          <h3 style="margin:0;flex:1">QLC+ Fixture Library (GitHub)</h3>
+          <input id="qs-gh-search" class="filter-input" type="text" placeholder="Search manufacturers..." style="width:200px" oninput="_qsGhFilterManufacturers()">
+          <span id="qs-gh-status" style="font-size:11px;color:var(--overlay0)"></span>
+          <button class="btn btn-surface" onclick="qsCloseGitHub()">Close</button>
+        </div>
+        <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+          <div style="width:45%;overflow-y:auto;border-right:1px solid var(--overlay0);padding:8px" id="qs-gh-mfg-list">
+            <div class="qs-empty">Loading...</div>
+          </div>
+          <div style="width:55%;overflow-y:auto;padding:8px" id="qs-gh-fixture-list">
+            <div class="qs-empty">Select a manufacturer to see fixtures.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* Stage layout for Step 2 */
+      .qs-stage-layout { display:flex; gap:12px; min-height:400px; }
+      .qs-stage-sidebar { width:260px; flex:0 0 260px; display:flex; flex-direction:column; }
+      .qs-stage-canvas-pane { flex:1; min-width:0; background:var(--base); border:1px solid var(--overlay0); border-radius:8px; position:relative; }
+      .qs-stage-canvas-pane canvas { width:100%; height:100%; display:block; border-radius:8px; }
+      .qs-fix-row { display:flex; align-items:center; padding:4px 6px; border-radius:4px; cursor:pointer; font-size:11px; gap:4px; }
+      .qs-fix-row:hover { background:var(--surface0); }
+      .qs-fix-row-sel { background:var(--surface1) !important; outline:1px solid var(--blue); }
+      .qs-fix-row-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .qs-fix-row-pos { color:var(--overlay0); font-size:10px; font-family:monospace; }
+      .qs-preset-grid { width:100%; font-size:11px; border-collapse:collapse; }
+      .qs-preset-grid th { font-weight:600; font-size:10px; color:var(--overlay0); text-align:center; padding:2px; }
+      .qs-preset-grid td { text-align:center; padding:2px; }
+      .qs-preset-label { font-weight:600; font-size:10px; color:var(--overlay0); text-align:right !important; padding-right:6px !important; }
+      .btn-xs { font-size:10px !important; padding:2px 8px !important; min-width:28px; }
+      .btn-view-active { background:var(--blue) !important; color:#fff !important; border-color:var(--blue) !important; }
+      .qs-card { background:var(--surface); border:1px solid var(--overlay0); border-radius:8px; padding:16px; margin-bottom:12px; }
+      .qs-card h3 { margin:0 0 10px; font-size:14px; }
+      .qs-empty { padding:16px; color:var(--overlay0); font-size:12px; text-align:center; }
+      .qs-loading { padding:16px; color:var(--blue); font-size:13px; }
+      .qs-error { padding:12px; color:var(--red); background:var(--base); border-radius:6px; font-size:13px; }
+      .qs-dot { cursor:pointer; padding:4px 10px; border-radius:12px; font-size:12px; background:var(--surface); border:1px solid var(--overlay0); transition:all .15s; }
+      .qs-dot-active { background:var(--blue); color:#fff; border-color:var(--blue); font-weight:600; }
+      .qs-dot-done { background:var(--green); color:#fff; border-color:var(--green); }
+      .qs-analysis h4 { margin:12px 0 6px; font-size:13px; }
+      .qs-analysis ul { margin:4px 0 8px 18px; font-size:13px; }
+      .qs-group-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px solid var(--overlay0); }
+      .qs-group-label { font-weight:600; }
+      .qs-group-count { color:var(--overlay0); }
+      .qs-summary-box { padding:12px; background:var(--base); border-radius:8px; }
+      .qs-summary-box h4 { color:var(--green); margin:0 0 8px; }
+      .qs-preview { display:flex; flex-wrap:wrap; gap:12px; }
+      .qs-vc-frame { border:1px solid var(--overlay0); border-radius:6px; padding:8px; min-width:200px; flex:1; }
+      .qs-vc-frame-title { font-weight:600; font-size:12px; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid var(--overlay0); }
+      .qs-vc-btn { display:inline-block; padding:4px 10px; margin:2px; border-radius:4px; font-size:11px; cursor:default; }
+      .qs-vc-btn-scene { background:var(--blue); color:#fff; }
+      .qs-vc-btn-chaser { background:var(--mauve); color:#fff; }
+      .qs-gh-grid { display:flex; flex-wrap:wrap; gap:4px; }
+      .qs-gh-mfg-btn { font-size:11px !important; padding:3px 8px !important; }
+      #qs-gh-modal > div { box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+    </style>
+
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DROP OVERLAY
+══════════════════════════════════════════════════════════════════════════ -->
+<div id="drop-overlay">
+  <div id="drop-hint">
+    <div style="font-size:4rem; margin-bottom:0.5rem;">📂</div>
+    <div>Drop your .qxw workspace here</div>
+  </div>
+</div>
+
+<!-- Nav tooltip -->
+<div id="nav-tip"></div>
+
+<!-- ── JS modules ──────────────────────────────────────────────────────────── -->
+<script src="/static/js/app.js"></script>
+<script src="/static/js/setlist.js"></script>
+<script src="/static/js/dictionary.js"></script>
+<script src="/static/js/checklist.js"></script>
+<script src="/static/js/techrider.js"></script>
+<script src="/static/js/triggers.js"></script>
+<script src="/static/js/fixture.js"></script>
+<script src="/static/js/merger.js"></script>
+<script src="/static/js/brightness.js"></script>
+<script src="/static/js/session.js"></script>
+<script src="/static/js/vc_editor.js"></script>
+<script src="/static/js/quickstart.js"></script>
+</body>
+</html>

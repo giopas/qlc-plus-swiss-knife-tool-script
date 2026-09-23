@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.3.1
+# ⚡ QLC+ Swiss Knife — v1.3.2
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -15,6 +15,18 @@ This tool is in active development. Some features may be incomplete, behave unex
 
 **Your show files are safe to experiment with:**
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* via a Save dialog — your original `.qxw` is never overwritten. The one intentional exception is the **Trigger Manager "Save to loaded QXW"** button, which writes keyboard/MIDI bindings back to the file you loaded by path — exactly as described on that page. A "Save as new file…" option is also available for Triggers.
+
+---
+
+## What's new in v1.3.2
+
+A "clean the bench" release — first step of the new [work plan](WORKPLAN.md) towards a deterministic show-file builder.
+
+- **Your original file is never overwritten.** Trigger Manager now saves `<name>_v<N+1>.qxw` next to the loaded file (it used to overwrite it and drop the `<!DOCTYPE Workspace>` line). Every tool now writes through one safe writer and suggests the same `_v<N+1>` names.
+- **QXW Merger and Function Porter work on real QLC+ files again** — they were seeing 0 fixtures / 0 functions in any workspace saved by QLC+.
+- **Quick Start aims fixtures at the stage**: truss 45° from vertical, floor 45° uplight, mid-height horizontal, tilted toward the centre of the stage.
+- **Brightness → Fetch missing QXFs from GitHub** works again.
+- Tests consolidated, all green, and run on GitHub Actions for every push.
 
 ---
 

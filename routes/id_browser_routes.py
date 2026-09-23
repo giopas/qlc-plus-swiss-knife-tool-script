@@ -77,7 +77,9 @@ def vc_pages():
         return jsonify({'error': 'No workspace loaded.'}), 400
     from core import vc_ops
     try:
-        return jsonify(vc_ops.list_pages(ws._state['qxw_root']))
+        root = ws._state['qxw_root']
+        return jsonify({'pages': vc_ops.list_pages(root),
+                        'duplicate_ids': vc_ops.duplicate_ids(root)})
     except vc_ops.VcOpError as e:
         return jsonify({'error': str(e)}), 400
 
@@ -106,6 +108,8 @@ def vc_op():
                 kw['keep_bindings'] = bool(d.get('keep_bindings'))
         elif op == 'new_page':
             kw = {'caption': d.get('caption', '')}
+        elif op == 'fix_ids':
+            kw = {}
         elif op == 'copy_page':
             kw = {'page_id': str(d.get('page_id', '')), 'caption': d.get('caption', ''),
                   'keep_bindings': bool(d.get('keep_bindings'))}

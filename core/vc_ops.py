@@ -97,7 +97,7 @@ def _get(by_id, wid: str, what: str = "widget") -> ET.Element:
     if len(els) > 1:
         raise VcOpError(
             f"{what.capitalize()} ID {wid} is used by {len(els)} widgets, so it cannot be "
-            f"moved or copied safely. Fix the duplicate first (Doctor check D002).")
+            f"moved or copied safely. Click 'Fix duplicate IDs' in the Pages section first.")
     return els[0]
 
 
@@ -271,6 +271,32 @@ def move_widgets(root: ET.Element, ids: Iterable[str], target_id: str, *,
         _insert_child(target, el)
         moved.append(el.get("ID"))
     return {"moved_ids": moved}
+
+
+def duplicate_ids(root: ET.Element) -> List[dict]:
+    """Widget IDs used more than once: [{id, captions:[...]}] (Doctor D002)."""
+    by_id, _ = _index(_vc(root))
+    return [{"id": k, "captions": [e.get("Caption", "") for e in v]}
+            for k, v in by_id.items() if len(v) > 1]
+
+
+def fix_duplicate_ids(root: ET.Element) -> dict:
+    """Renumber duplicated widget IDs. The first widget in document order keeps
+    its ID (so a page keeps its ID before a widget inside it); the others get
+    ``max + 1`` upwards. Widget IDs are not referenced elsewhere in the file."""
+    vc = _vc(root)
+    seen, nid, changed = set(), _next_id(vc), []
+    for w in _widgets(vc):
+        wid = w.get("ID")
+        if wid is None:
+            continue
+        if wid in seen:
+            w.set("ID", str(nid))
+            changed.append({"old": wid, "new": str(nid), "caption": w.get("Caption", "")})
+            nid += 1
+        else:
+            seen.add(wid)
+    return {"renumbered": changed}
 
 
 def _page_template(vc: ET.Element) -> ET.Element:

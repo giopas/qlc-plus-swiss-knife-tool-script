@@ -109,8 +109,18 @@ def test_move_errors(root):
 
 def test_duplicate_ids_refused(root):
     w(root, "3")[0].set("ID", "1")                            # two widgets with ID 1
-    with pytest.raises(vc_ops.VcOpError, match="D002"):
+    with pytest.raises(vc_ops.VcOpError, match="Fix duplicate IDs"):
         vc_ops.copy_widgets(root, ["1"], "201")
+
+
+def test_fix_duplicate_ids_keeps_first_in_document_order(root):
+    w(root, "3")[0].set("ID", "100")              # inner button reuses the page's ID
+    assert vc_ops.duplicate_ids(root) == [{"id": "100", "captions": ["PAGE A", "Inner"]}]
+    r = vc_ops.fix_duplicate_ids(root)
+    assert r["renumbered"] == [{"old": "100", "new": "202", "caption": "Inner"}]
+    assert vc_ops.duplicate_ids(root) == []
+    assert w(root, "100")[0].get("Caption") == "PAGE A"
+    vc_ops.copy_widgets(root, ["1"], "100")        # page is a valid target again
 
 
 def test_copy_page_and_new_page(root):

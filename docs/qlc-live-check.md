@@ -52,6 +52,6 @@ sed -i 's/^add_subdirectory(plugins)/#&/' CMakeLists.txt   # plugins not needed
 mkdir b && cd b && cmake .. -Dqmlui=ON && make -j2 qlcplus-qml   # drop -Dqmlui for QLC+ 4
 ```
 
-Run the binary with `LD_LIBRARY_PATH=b/engine/src:b/webaccess/src:b/engine/audio/src` and `--offscreen`. Fixture definitions come from an installed QLC+ (`apt-get install qlcplus` puts them in `/usr/share/qlcplus`). Checked so far: 4.12.7, 4.14.5, 5.2.1, 5.2.2, 5.3.0-git.
+Run the binary with `LD_LIBRARY_PATH=b/engine/src:b/webaccess/src:b/engine/audio/src` and `--offscreen`. Install **that version's** RGB scripts (`resources/rgbscripts/*.js` of the same tag) into the scripts folder — QLC+ 4 and 5 scripts differ (e.g. Plasma's default preset), and testing with the wrong set hid a dark Plasma button once. Fixture definitions come from an installed QLC+ (`apt-get install qlcplus` puts them in `/usr/share/qlcplus`). Checked so far: 4.12.7, 4.14.5, 5.2.1, 5.2.2, 5.3.0-git.
 
 **Notes:** in QLC+ 5 the web "press" toggles (like a click); QLC+ 4 reacts to the press only. The `getChannelsValues` reply has 3 fields per channel in 4.12 and 4 fields in 4.14 / 5.x — the tool handles both.

@@ -138,7 +138,7 @@ def test_no_other_qxw_output_paths():
             if p.endswith(os.path.join("core", "qxw_io.py")):
                 continue
             for n, line in enumerate(open(p, encoding="utf-8"), 1):
-                if pat.search(line) and "qxw-io: signature only" not in line:
+                if pat.search(line) and "qxw-io: not output" not in line:
                     bad.append(f"{os.path.relpath(p, REPO)}:{n}: {line.strip()}")
     assert not bad, "\n".join(bad)
 

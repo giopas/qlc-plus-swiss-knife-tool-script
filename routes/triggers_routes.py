@@ -1,9 +1,10 @@
 """routes/triggers_routes.py — Trigger Manager API (fully implemented)."""
 
 import re
-import io
+
 import os
 from flask import Blueprint, jsonify, request, Response
+from core import qxw_io
 from core import workspace as ws
 
 
@@ -90,10 +91,7 @@ def save_as_new():
         if not state['loaded']:
             return jsonify({'error': 'No workspace loaded.'}), 400
 
-        tree = state['xml_tree']
-        buf = io.BytesIO()
-        tree.write(buf, encoding='utf-8', xml_declaration=True)
-        buf.seek(0)
+        data = qxw_io.qxw_bytes(state['xml_tree'])
 
         # Build a filename from the original workspace name
         orig = state.get('original_name') or ''
@@ -101,13 +99,10 @@ def save_as_new():
             orig = os.path.basename(state['path'])
         if not orig:
             orig = 'workspace.qxw'
-        base, ext = os.path.splitext(orig)
-        if not ext:
-            ext = '.qxw'
-        filename = f"{base}_modified{ext}"
+        filename = os.path.basename(qxw_io.next_version_name(orig))
 
         return Response(
-            buf.getvalue(),
+            data,
             mimetype='application/xml',
             headers={
                 'Content-Disposition': f'attachment; filename="{filename}"',

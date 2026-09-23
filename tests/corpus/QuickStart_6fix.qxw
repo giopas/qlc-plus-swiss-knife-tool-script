@@ -441,6 +441,7 @@
    <Color Index="0">4294901760</Color>
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>1</FixtureGroup>
+   <Property Name="presetIndex" Value="Rainbow" />
   </Function>
   <Function ID="44" Type="Scene" Name="Plasma: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />

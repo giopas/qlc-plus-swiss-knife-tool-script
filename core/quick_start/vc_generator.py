@@ -654,7 +654,9 @@ class VCLayoutGenerator:
         ("Chase",     "One By One", [_CLR_RED],               300,  {}),
         ("Even/Odd",  "Even/Odd",   [_CLR_BLUE, _CLR_ORANGE], 600,  {}),
         ("Gradient",  "Gradient",   [_CLR_CYAN, _CLR_PURPLE], 1200, {}),
-        ("Plasma",    "Plasma",     [_CLR_RED],               500,  {}),
+        # QLC+ 5 Plasma defaults to "User Defined" colours: with one colour
+        # it is mostly black. "Rainbow" exists in QLC+ 4 and 5.
+        ("Plasma",    "Plasma",     [_CLR_RED],               500,  {"presetIndex": "Rainbow"}),
         ("Waves",     "Waves",      [_CLR_BLUE],              600,  {}),
         ("Stripes",   "Stripes",    [_CLR_RED, _CLR_BLUE],    800,  {"orientation": "Horizontal"}),
     ]

@@ -90,6 +90,7 @@ async function _vceLoad() {
   }
   _vceSelectPage(0);
   _vceStatus(`Loaded ${_vcePages.length} page(s) — ${Object.keys(_vceNodes).length} widgets`, 'ok');
+  _vceCheckDuplicates();
 }
 
 function _vceSelectPage(idx) {
@@ -978,6 +979,32 @@ async function _vceReloadAt(focusId, selIds) {
   _vceSelectPage(idx);
   (selIds || []).forEach(id => { if (_vceNodes[id]) _vceSel.add(String(id)); });
   _vceRender(); _vceRenderProps();
+  _vceCheckDuplicates();
+}
+
+/** Show a warning + fix button when widget IDs are duplicated (Doctor D002). */
+async function _vceCheckDuplicates() {
+  const box = document.getElementById('vce-dup-warn');
+  if (!box) return;
+  try {
+    const d = await (await fetch('/api/vc/pages')).json();
+    const dups = d.duplicate_ids || [];
+    if (!dups.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    const list = dups.map(x => `ID ${_esc(x.id)}: ${x.captions.map(c => '“' + _esc(c) + '”').join(' + ')}`).join('<br>');
+    box.innerHTML = `⚠ ${dups.length} widget ID(s) used twice — copy/move can't target them:<br>${list}<br>
+      <button class="vce-ab" style="margin-top:4px" onclick="vceFixDuplicateIds()">🩹 Fix duplicate IDs</button>`;
+    box.style.display = '';
+  } catch { /* non-fatal */ }
+}
+
+async function vceFixDuplicateIds() {
+  try {
+    if (!(await _vceFlush())) return;
+    const d = await _vceOp({ op: 'fix_ids' });
+    const pageId = _vcePage ? _vcePage.id : null;
+    await _vceReloadAt(pageId, []);
+    _vceStatus('✓ Renumbered ' + d.renumbered.map(r => `“${r.caption}” ${r.old}→${r.new}`).join(', ') + ' · not saved yet', 'ok');
+  } catch (e) { _vceStatus('Fix failed: ' + e.message, 'error'); }
 }
 
 function _vceNewPageName(inputId, fallback) {

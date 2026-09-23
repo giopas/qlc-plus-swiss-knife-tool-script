@@ -1603,7 +1603,8 @@ def vc_structural_edit(op: str, **kw) -> dict:
     if not _state['loaded'] or not _state['qxw_root']:
         raise RuntimeError('No workspace loaded')
     fn = {'copy': vc_ops.copy_widgets, 'move': vc_ops.move_widgets,
-          'new_page': vc_ops.new_page, 'copy_page': vc_ops.copy_page}.get(op)
+          'new_page': vc_ops.new_page, 'copy_page': vc_ops.copy_page,
+          'fix_ids': vc_ops.fix_duplicate_ids}.get(op)
     if fn is None:
         raise ValueError(f'Unknown VC operation: {op}')
     result = fn(_state['qxw_root'], **kw)

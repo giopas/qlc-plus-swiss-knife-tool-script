@@ -7,7 +7,7 @@
 **Status (23 Sep, end of session):**
 - **Phase 0 — done and released** as `v1.3.2` (main @ `2cc9dbc`, CI green).
 - **Phase 1.0 — core done** on branch `feat/doctor`: corpus, `core/doctor` engine + CLI. Still open: `20Minutes_FLOOR` corpus file.
-- **Phase 1.1 — code done** on branch `feat/quickstart-1.1` (local commits, not pushed): mode-aware channels, neutral values, PANIC RESET, naming profiles, VC style cloning, Doctor gate, 3 golden rigs. Waiting for Giovanni: QLC+ open-check (§6) of the three golden files, push.
+- **Phase 1.1 — done** on branch `feat/quickstart-1.1` (local commits; Giovanni pushes): mode-aware channels, neutral values, PANIC RESET (script, works in QLC+ 5.2.2), DIMMER slider, naming profiles, VC style cloning, Doctor gate, 3 golden rigs, live QLC+ check (`tools/qlc_check.py`). QLC+ open-check passed on Giovanni's Mac (QLC+ 5.2.2) and headless on 4.14.5 / 5.2.1 / 5.2.2 / 5.3.0-git.
 - Next: Phase 1.2 (Function Porter), see §8.
 
 ---
@@ -84,6 +84,8 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-23 | **20Minutes naming profile** taken from the legend on the LiquidBar_v14 EFFECTS page: format `{group}{effect} · {name}`; groups A F S B R D L X (all, front four, singer pair, band pair, rear two, drums floor, logo, split/spatial); effects S D P M \* (static, dynamic, pulse, movement, special FX). Quick Start only knows "all" (A); anything the profile can't map (utility functions, per-type group scenes) gets **no prefix** rather than a wrong one. Buttons carry the prefix too (`prefix_captions`). |
 | 2026-09-23 | **VC style cloning** copies geometry and fonts only (button size = most common ≥30 px tall, gap = median horizontal gap, header = smallest child Y in headed frames, page = most common top-level frame size). Colours stay semantic. |
 | 2026-09-23 | Doctor D006: a value of **0** on a capability with no preset and no "active" words (strobe, program, auto, macro, sound, pulse, chase …) is safe — it is the fixture's plain operating mode (SlimPAR 56 `Mode = 0 (RGB)`). Corpus baselines unchanged. |
+| 2026-09-23 | **PANIC RESET is a Script**, not a scene: `stoponexit:false`, stop every generated function, start *Reset: neutral state*, `wait:100ms`, stop itself. Reasons, all reproduced in real QLC+ builds: HTP channels can't be pulled down by a scene; QLC+ 5 scripts (to spring 2026) never end on their own; QLC+ 5.2.2 drops queued script commands if the code ends before the next tick (upstream fix `ca8ffd41`). The master slider is a Level **DIMMER** at 0 (a Level slider at 255 held dimmers full; a Submaster slider made 5.2.2 drop the VC). |
+| 2026-09-23 | **Behaviour is verified in real QLC+**, not only by reading XML: `tools/qlc_check.py` (web-socket API) is part of the §6 open-check. Target versions: QLC+ 5.2.2 (Giovanni's) and 4.14. |
 | 2026-09-23 | D006 intent keywords: *strob, flash, `*`, punk, macro, program, audio, fx* (own name or any containing function). A value is neutral if it falls in a *No function / No flash / Open / Off / DMX mode* capability. StopAll/Blackout buttons are not "caption-only". |
 
 ---
@@ -165,7 +167,8 @@ Found and fixed along the way (all in the CHANGELOG):
 
 **1.1 Quick Start**
 - [x] Golden-file tests: 3 reference rigs produce byte-identical `.qxw` output. *(`QuickStart_6fix`, `QuickStart_club` (Spot 110 6-ch + SlimPAR 56), `QuickStart_multiuni` (8 × Spot 375Z + 60 × SlimPAR 56, 2 universes); `tests/test_quickstart_golden.py`.)*
-- [ ] Output passes Doctor with zero errors, and the QLC+ open-check (§6) passes. *(Doctor: all three golden files 0 errors / 0 warnings, and the export is gated by Doctor. QLC+ open-check: Giovanni.)*
+- [x] Output passes Doctor with zero errors, and the QLC+ open-check (§6) passes. *(Doctor: all three golden files 0 errors / 0 warnings; export gated by Doctor. QLC+: `tools/qlc_check.py` PASS on club + multiuni in 5.2.2 and 4.14.5; manual check on the Mac, 23 Sep.)*
+- [x] **Live QLC+ check** (`tools/qlc_check.py`, `docs/qlc-live-check.md`, opt-in `tests/test_qlc_live.py`): VC loaded + PANIC RESET after every button, on the real DMX output.
 - [x] Safe defaults baked in: PANIC RESET, strobe and program channels at 0, full channel declaration. *(Plus mode-aware channel indices and capability-aware neutral values — `core/quick_start/channel_model.py`.)*
 - [x] **Clone VC style from a reference QXW**: button size, gaps, header, fonts, page size (`core/quick_start/vc_style.py`). Built-in `liquidbar` style extracted from `LiquidBar_v14`; *From a reference .qxw…* in step 4. *(Frame layout/page structure cloning → Phase 2.4 VC templates.)*
 - [x] Nomenclature profile (JSON): `plain` and `20minutes` in `core/quick_start/profiles/nomenclature/`. The 20Minutes profile:
@@ -274,7 +277,7 @@ Checks (★ = included in Phase 1.0):
 1. Open the output in QLC+ 5. No warnings in the log; all functions are listed; the VC renders on the expected default page.
 2. Fixture Manager: addresses match and there are no overlaps.
 3. 3D monitor: fixtures and meshes are positioned and tilted as expected.
-4. Run PANIC RESET, a scene, a chaser and the CueList with DMX output enabled.
+4. Run PANIC RESET, a scene, a chaser and the CueList with DMX output enabled. *Automated for PANIC RESET + VC loading: `python3 tools/qlc_check.py file.qxw` (see `docs/qlc-live-check.md`).*
 5. Save from QLC+, then run Doctor on the saved file. It must still be clean, which confirms QLC+ didn't have to "repair" anything.
 
 ---
@@ -311,13 +314,12 @@ Checks (★ = included in Phase 1.0):
 4. `git push -u origin feat/doctor` (it is stacked on Phase 0; rebase onto `main` after the merge if needed).
 
 **Giovanni, before the next session (Phase 1.1):**
-1. Test Quick Start in the app (step 4: *Names* and *VC style*, including *From a reference .qxw…*).
-2. QLC+ open-check (§6) on `tests/corpus/QuickStart_club.qxw` and `QuickStart_multiuni.qxw`: moving heads light up on ALL ON (shutter open), PANIC RESET works, the LiquidBar style looks right.
-3. `git push -u origin feat/quickstart-1.1`; CI green. It contains `feat/doctor` (linear history), so merging it into `main` brings both. Push the wiki (new *Quick Start* page).
+1. ✅ *Done 23 Sep* — QLC+ open-check on the club / multiuni files (PANIC RESET works in 5.2.2).
+2. `git push -u origin feat/quickstart-1.1`; CI green; merge into `main` (it contains `feat/doctor`). Push the wiki.
+3. Optional: `pip install websocket-client`, then `python3 tools/qlc_check.py tests/corpus/QuickStart_club.qxw` with QLC+ closed — should print `RESULT: PASS`.
 
 **Next Cowork session:**
 1. Phase 1.2 Porter: run the SangAKlang → 6-fixture fan-in case and check it with Doctor; VC porting.
 2. Add `20Minutes_FLOOR` to the corpus when available.
-3. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session.
-4. Add a headless **QLC+ behaviour check** to the tool chain: build QLC+ (4.14 and 5.x qmlui) in a container, open a generated `.qxw` with `-w`, press VC buttons over the web-socket API and read DMX values (`QLC+API|getChannelsValues`). Used on 23 Sep to find the PANIC RESET script bug; it could become an automated §6 open-check.
-5. Investigate why a *Submaster* slider (as saved in SangAKlang_v41) made QLC+ 5 drop every later widget in the Quick Start frame; if it's a QLC+ bug, report it and add a Doctor check.
+3. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session; run `tools/qlc_check.py` in CI (build QLC+ 5.2.2 in a cached Docker image).
+4. Submaster slider: `tools/qlc_check.py` reproduces QLC+ 5.2.2 dropping every VC widget after a Submaster slider in a Quick Start frame. Find the minimal case, report it upstream, add a Doctor check (does SangAKlang_v41 lose widgets too?). Also report the 5.2.2 script-command race if not already covered by `ca8ffd41`.

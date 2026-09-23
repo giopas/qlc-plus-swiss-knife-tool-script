@@ -17,6 +17,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Quick Start — VC style**: *Default*, the built-in *LiquidBar* style, or **From a reference .qxw…**: button size, gaps, header height, fonts and page size are measured from any workspace (`core/quick_start/vc_style.py`) and used for the generated Virtual Console. Colours stay meaningful (a red button is a red look).
 - **Quick Start — Doctor gate**: the export runs Workspace Doctor first; errors block it and are listed (warnings don't).
 - Quick Start golden files for **three reference rigs** (`tests/corpus/QuickStart_{6fix,club,multiuni}.qxw`): 6 Eurolite/PAR; a club rig with Chauvet Intimidator Spot 110 in 6-channel mode + SlimPAR 56 (20Minutes names, LiquidBar style); and 8 × Spot 375Z + 60 × SlimPAR 56 over two universes (style cloned from `LiquidBar_v14.qxw`). All three are Doctor-clean (0 errors, 0 warnings).
+- **Live QLC+ check** (`tools/qlc_check.py`, `docs/qlc-live-check.md`): opens a workspace in a real QLC+ with web access, checks every VC widget loaded, then presses every Toggle button followed by PANIC RESET (twice) and compares the DMX output with the neutral scene. Opt-in test `tests/test_qlc_live.py` (runs when `QLCPLUS_BIN` is set). Verified on QLC+ 4.14.5 and 5.2.2; it catches the Submaster and 5.2.2 script bugs found on 23 Sep.
 - API: `GET/POST /api/quickstart/options` (naming profile, VC style by id, reference path or upload).
 
 ### Fixed

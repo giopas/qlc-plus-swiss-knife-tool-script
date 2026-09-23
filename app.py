@@ -219,7 +219,8 @@ def create_app():
     # ── Template context: inject version ─────────────────────────────────────
     @app.context_processor
     def inject_version():
-        return {'version': '1.3.1'}
+        from core.workspace import VERSION
+        return {'version': VERSION}
 
     return app
 

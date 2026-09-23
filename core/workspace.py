@@ -29,7 +29,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "1.3.0"
+VERSION = "1.3.2"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB

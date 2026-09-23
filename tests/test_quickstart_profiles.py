@@ -188,8 +188,9 @@ def test_groups_route(client):
     assert client.post("/api/quickstart/groups", json={"auto": True}).get_json()["auto"] is True
 
 
-def test_save_qxf_next_to_workspace(client, tmp_path):
+def test_save_qxf_next_to_workspace(client, tmp_path, monkeypatch):
     """QLC+ loads unknown fixtures from '<Mfr>-<Model>.qxf' next to the .qxw."""
+    monkeypatch.setenv("QLCPLUS_FIXTURES", "")          # no QLC+ library found
     _load_pars(client, 2)
     qxw = tmp_path / "show.qxw"
     qxw.write_bytes(client.post("/api/quickstart/generate", json={}).data)
@@ -197,3 +198,47 @@ def test_save_qxf_next_to_workspace(client, tmp_path):
     assert d["files"] == ["Generic-7-Ch-RGB-LED-PAR.qxf"]
     assert (tmp_path / "Generic-7-Ch-RGB-LED-PAR.qxf").read_bytes() == \
         open(os.path.join(CORPUS, "Generic-7Ch-RGB-PAR.qxf"), "rb").read()
+
+
+def _library(tmp_path, with_par=True, mode="7 Channel"):
+    lib = tmp_path / "lib" / "Generic"
+    lib.mkdir(parents=True)
+    if with_par:
+        src = open(os.path.join(CORPUS, "Generic-7Ch-RGB-PAR.qxf"), encoding="utf-8").read()
+        (lib / "Generic-7Ch-RGB-PAR.qxf").write_text(src.replace('Mode Name="7 Channel"', f'Mode Name="{mode}"'))
+    return str(tmp_path / "lib")
+
+
+@pytest.mark.parametrize("with_par,mode,expect_file,expect_warn", [
+    (True, "7 Channel", False, False),     # stock definition installed → no file
+    (False, "7 Channel", True, False),     # QLC+ doesn't have it → file next to .qxw
+    (True, "Other mode", False, True),     # installed but without our mode → warn
+])
+def test_save_qxf_only_when_qlc_lacks_it(client, tmp_path, monkeypatch,
+                                         with_par, mode, expect_file, expect_warn):
+    from core.quick_start import qlc_library
+    qlc_library.clear_cache()
+    monkeypatch.setenv("QLCPLUS_FIXTURES", _library(tmp_path, with_par, mode))
+    _load_pars(client, 2)
+    out = tmp_path / "out"
+    out.mkdir()
+    qxw = out / "show.qxw"
+    qxw.write_bytes(client.post("/api/quickstart/generate", json={}).data)
+    d = client.post("/api/quickstart/save-qxf", json={"qxw_path": str(qxw)}).get_json()
+    assert (out / "Generic-7-Ch-RGB-LED-PAR.qxf").exists() is expect_file
+    assert bool(d["warnings"]) is expect_warn
+    if not expect_file and not expect_warn:
+        assert d["skipped"][0]["reason"] == "in the installed QLC+ library"
+    qlc_library.clear_cache()
+
+
+def test_save_qxf_skips_github_stock_when_no_qlc(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("QLCPLUS_FIXTURES", "")
+    _load_pars(client, 1)
+    import routes.quick_start_routes as qs
+    for d in qs._qs_qxf_defs.values():
+        d["origin"] = "qlcplus-github"
+    qxw = tmp_path / "show.qxw"
+    qxw.write_bytes(client.post("/api/quickstart/generate", json={}).data)
+    d = client.post("/api/quickstart/save-qxf", json={"qxw_path": str(qxw)}).get_json()
+    assert d["files"] == [] and "stock" in d["skipped"][0]["reason"]

@@ -181,6 +181,12 @@ function qsRefreshStatus() {
 }
 
 /* ── Load from file path ───────────────────────────────────────────────── */
+async function qsBrowseQxf() {
+  const p = await nativePick('Select fixture definition (.qxf)', [{ label: 'QLC+ Fixture', exts: ['.qxf'] }]);
+  if (p) { document.getElementById('qs-qxf-path').value = p; qsLoadQxf(); }
+  else if (nativePick.unavailable) document.getElementById('qs-qxf-upload').click();
+}
+
 function qsLoadQxf() {
   const path = document.getElementById('qs-qxf-path').value.trim();
   if (!path) return;

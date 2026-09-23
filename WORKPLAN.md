@@ -5,7 +5,7 @@
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
 **Status (23 Sep, end of session):**
-- **Phase 0 — done** on branch `chore/phase0-cleanup` (9 commits). Waiting for Giovanni: push, green CI, tilt check in QLC+, merge, tag `v1.3.2`.
+- **Phase 0 — done** on branch `chore/phase0-cleanup` (9 commits). Tilt check in QLC+ passed. Waiting for Giovanni: push, green CI, merge, tag `v1.3.2`.
 - **Phase 1.0 — core done** on branch `feat/doctor` (stacked on Phase 0): corpus committed, `core/doctor` engine + CLI, Quick Start golden sample. Still open: `20Minutes_FLOOR` corpus file.
 - Next: Phase 1.1 (Quick Start), see §8.
 
@@ -76,7 +76,7 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-23 | Doctor treats a scene as intentional FX if it **or any function containing it** is marked as FX (name or allow-list). Caption-only buttons are *info*, not errors. |
 | 2026-09-23 | AI integration (MCP server) is deferred until Doctor and the builders are done. See §7. |
 | 2026-09-23 | **One naming rule for every tool:** suggested/new files are `<name>_v<N+1>.qxw` (`<name>_v2.qxw` if there is no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported`, `_modified`. `next_version_path()` skips names already on disk. |
-| 2026-09-23 | Tilt sign convention (from the corpus): positive XRot swings a hanging beam toward +Z ("Front"). Defaults: truss 45/315, mid 90/270, floor 135/225 (upstage half / downstage half). **To confirm in QLC+ 3D (0.2).** |
+| 2026-09-23 | Tilt sign convention (from the corpus): positive XRot swings a hanging beam toward +Z ("Front"). Defaults: truss 45/315, mid 90/270, floor 135/225 (upstage half / downstage half). **Confirmed in QLC+ 5 3D view on 23 Sep (0.2): all three pairs cross toward centre stage.** |
 | 2026-09-23 | Doctor severities: D001–D003 errors; D004–D009, D012, D016 warnings; D015 and I-codes info. D005 is a warning (not an error) so porting from older shows is not blocked before auto-fix exists. |
 | 2026-09-23 | D006 intent keywords: *strob, flash, `*`, punk, macro, program, audio, fx* (own name or any containing function). A value is neutral if it falls in a *No function / No flash / Open / Off / DMX mode* capability. StopAll/Blackout buttons are not "caption-only". |
 
@@ -134,7 +134,7 @@ Findings this phase fixes (repo review, 23 Sep):
 | 0.7 | Documentation:<br>• Rewrite `ROADMAP.md` from this plan.<br>• Move the `RELEASE_NOTES_*.md` files to `docs/release-notes/`.<br>• Add these principles and the test command to `DEVELOPMENT.md`.<br>• Add `WORKPLAN.md` (this file).<br>• Decide whether `Claude outputs/` belongs in the repo (probably `.gitignore` it). | Docs reviewed. | `docs: new roadmap, work plan, dev principles` |
 | 0.8 | Fix the `VERSION` mismatch and release **v1.3.2**. | Tag and GitHub Release. | `chore(release): v1.3.2` |
 
-**Phase 0 status — ✅ done 23 Sep** (branch `chore/phase0-cleanup`, 0.1–0.8 each in its own commit; 216 tests green). Open items for Giovanni: 0.2 visual check with `tests/manual/tilt_check.qxw`; 0.6 first green CI run; 0.8 tag + GitHub Release after merge.
+**Phase 0 status — ✅ done 23 Sep** (branch `chore/phase0-cleanup`, 0.1–0.8 each in its own commit; 216 tests green). Open items for Giovanni: ~~0.2 visual check~~ (done 23 Sep, correct); 0.6 first green CI run; 0.8 tag + GitHub Release after merge.
 
 Found and fixed along the way (all in the CHANGELOG):
 - **Merger and Porter read 0 fixtures / 0 functions from every real QLC+ file** (namespace bug; their tests used namespace-free files). Fixed in `fix(merger,porter): read namespaced QLC+ workspaces`.
@@ -299,7 +299,7 @@ Checks (★ = included in Phase 1.0):
 ## 8. Next session checklist
 
 **Giovanni, before the next session (on the Mac):**
-1. Open `tests/manual/tilt_check.qxw` in QLC+ 5 → 3D view. Every beam should cross toward the middle of the stage (none straight down/up). If a direction is mirrored, note which zone — the fix is one sign in `_ZONE_XROT`.
+1. ✅ *Done 23 Sep — tilt correct.* Open `tests/manual/tilt_check.qxw` in QLC+ 5 → 3D view. Every beam should cross toward the middle of the stage (none straight down/up). If a direction is mirrored, note which zone — the fix is one sign in `_ZONE_XROT`.
 2. `git push -u origin chore/phase0-cleanup` and check the Actions run is green.
 3. Merge to `main`, then `git tag -a v1.3.2 -m "v1.3.2" && git push --tags`; create the GitHub Release from the CHANGELOG; forum post optional (patch release).
 4. `git push -u origin feat/doctor` (it is stacked on Phase 0; rebase onto `main` after the merge if needed).

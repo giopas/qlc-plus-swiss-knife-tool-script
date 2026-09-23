@@ -113,6 +113,20 @@ PORT = 5731
 _ALLOWED_HOSTS = {f'localhost:{PORT}', f'127.0.0.1:{PORT}'}
 
 
+def _asset_version() -> str:
+    """Short hash of static-file mtimes, appended as ?v= to CSS/JS URLs."""
+    import hashlib
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    h = hashlib.sha1()
+    for d, _dirs, files in sorted(os.walk(root)):
+        for f in sorted(files):
+            try:
+                h.update(f'{f}{os.path.getmtime(os.path.join(d, f))}'.encode())
+            except OSError:
+                pass
+    return h.hexdigest()[:10]
+
+
 def create_app():
     app = Flask(__name__)
 
@@ -217,10 +231,14 @@ def create_app():
         return jsonify({'ok': True, 'message': 'Shutting down…'})
 
     # ── Template context: inject version ─────────────────────────────────────
+    # Static files: always revalidate, and bust the embedded browser's cache
+    # (pywebview / WKWebView kept serving old JS after an update).
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
     @app.context_processor
     def inject_version():
         from core.workspace import VERSION
-        return {'version': VERSION}
+        return {'version': VERSION, 'asset_v': _asset_version()}
 
     return app
 

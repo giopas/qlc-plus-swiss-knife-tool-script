@@ -994,6 +994,7 @@ async function _vceCheckDuplicates() {
     box.innerHTML = `⚠ ${dups.length} widget ID(s) used twice — copy/move can't target them:<br>${list}<br>
       <button class="vce-ab" style="margin-top:4px" onclick="vceFixDuplicateIds()">🩹 Fix duplicate IDs</button>`;
     box.style.display = '';
+    _vceStatus(`⚠ ${dups.length} duplicated widget ID(s) — fix it at the top of the right panel`, 'warn');
   } catch { /* non-fatal */ }
 }
 

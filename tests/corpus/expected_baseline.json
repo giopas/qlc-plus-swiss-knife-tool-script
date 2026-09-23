@@ -1,0 +1,24 @@
+{
+  "SangAKlang_v41.qxw": {
+    "fixtures": 14,
+    "functions": 286,
+    "findings": {
+      "D002 duplicate VC widget ID": 1,
+      "D004 degenerate chaser (≤1 step)": 4,
+      "D005 incomplete channel declaration": 801,
+      "D006 strobe/program channel ≠ 0": 27,
+      "info VC pages (order)": 4,
+      "info caption-only buttons (label use)": 4,
+      "warn unreferenced function": 48
+    }
+  },
+  "LiquidBar_v14.qxw": {
+    "fixtures": 6,
+    "functions": 207,
+    "findings": {
+      "D006 strobe/program channel ≠ 0": 4,
+      "info VC pages (order)": 2,
+      "info caption-only buttons (label use)": 41
+    }
+  }
+}

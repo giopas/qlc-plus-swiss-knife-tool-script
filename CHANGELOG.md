@@ -5,6 +5,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Real-show test corpus in `tests/corpus/` (`SangAKlang_v41`, `LiquidBar_v14`, two QXFs, `expected_baseline.json`, README with baseline findings), `tests/test_corpus.py`, and `tools/doctor_prototype.py` (throw-away reference for Doctor). The QXW round-trip and Merger/Porter namespace tests now also run on the real files.
+
+---
+
 ## [1.3.2] — 2026-09-23
 
 ### Removed

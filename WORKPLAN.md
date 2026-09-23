@@ -319,3 +319,4 @@ Checks (★ = included in Phase 1.0):
 1. Phase 1.2 Porter: run the SangAKlang → 6-fixture fan-in case and check it with Doctor; VC porting.
 2. Add `20Minutes_FLOOR` to the corpus when available.
 3. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session.
+4. Investigate why a *Submaster* slider (as saved in SangAKlang_v41) made QLC+ 5 drop every later widget in the Quick Start frame; if it's a QLC+ bug, report it and add a Doctor check.

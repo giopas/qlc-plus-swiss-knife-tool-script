@@ -878,13 +878,17 @@ class VCLayoutGenerator:
 
         slider_w = st.slider_w
         slider_h = static_h + pad + eff_h + pad + grp_h
-        # Submaster, not a Level slider on the dimmer channels: a Level slider
-        # at 255 holds every dimmer at full (HTP), so BLACKOUT / PANIC RESET
-        # could never bring intensity down.
+        # Manual DIMMER: a Level slider on the dimmer channels that starts
+        # at 0, like the DIMMER slider in the 20Minutes shows.  At 0 it adds
+        # nothing; raised, it adds intensity on top of the looks (HTP).
+        # (It used to start at 255, which held every dimmer at full, so
+        # BLACKOUT / PANIC RESET could never bring intensity down.  A
+        # Submaster slider made QLC+ 5 drop every widget after it.)
         dimmer_slider = _vc_slider(
-            self._next_wid(), "MASTER",
+            self._next_wid(), "DIMMER",
             0, 0, slider_w, slider_h,
-            slider_mode="Submaster")
+            slider_mode="Level", value=0,
+            channels=dimmer_channels)
 
         # ── RGB + INTENSITY SLIDERS ───────────────────────────────────────
         rgb_sliders = []

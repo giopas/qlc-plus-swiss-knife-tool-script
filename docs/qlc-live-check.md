@@ -18,7 +18,7 @@ It found these bugs (23–24 Sep 2026) that no XML check could see:
 1. **VC loaded** — every widget in the file (pages excluded) is present in the running QLC+.
 2. **Buttons light up + PANIC RESET** — for every Toggle button with a function: press it and check at least one fixture lights up (except BLACKOUT); press PANIC RESET and compare every fixture channel with the *Reset: neutral state* scene; press it again and compare again.
 
-Keep the fixture `.qxf` files next to the workspace (Quick Start saves them there): without them QLC+ loads the fixtures as plain dimmers and check 2 reports dark buttons.
+Fixtures that aren't in the QLC+ library need their `.qxf` next to the workspace (Quick Start writes them there for exactly those fixtures): without it QLC+ loads them as plain dimmers and check 2 reports dark buttons.
 
 ## Run it
 

@@ -38,3 +38,6 @@ wiki/
 
 # Claude/Cowork scratch output (mockups, previews) — kept locally, not published
 Claude outputs/
+
+# QLC+ autosave files
+*.autosave.qxw

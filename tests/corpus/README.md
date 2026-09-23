@@ -10,7 +10,7 @@ Real QLC+ 5 show files used as the **oracle** for Doctor, Porter, Rig Reducer, S
 |---|---|---|
 | `SangAKlang_v41.qxw` | 14-fixture festival show:<br>• 6 × Eurolite LED 4C-12 (9 ch) on the ceiling<br>• 8 × Generic 7-Ch RGB PAR on the floor<br>• 286 functions<br>• 4 VC pages (Master + 3 bands) | Source for Rig Reducer and Porter; a "dirty" reference for Doctor. |
 | `LiquidBar_v14.qxw` | 6-fixture pub show derived from v41:<br>• 207 functions<br>• 2 VC pages (setlist first)<br>• CueList wired to the setlist chaser | Target of the Liquid Bar benchmark; a "clean" reference for Doctor. |
-| `QuickStart_6fix.qxw` | Quick Start output: 2 × Eurolite LED 4C-12 on the truss, 4 × Generic PAR on the floor, 35 functions. Plain names, default VC style. | Golden files for Quick Start determinism (`tests/test_quickstart_golden.py`); each must pass Doctor with 0 errors and 0 warnings. |
+| `QuickStart_6fix.qxw` | Quick Start output: 2 × Eurolite LED 4C-12 on the truss, 4 × Generic PAR on the floor, 36 functions. Plain names, default VC style. | Golden files for Quick Start determinism (`tests/test_quickstart_golden.py`); each must pass Doctor with 0 errors and 0 warnings. |
 | `QuickStart_club.qxw` | Quick Start output: 2 × Chauvet Intimidator Spot 110 in **6-channel mode** (mode order ≠ definition order) + 4 × SlimPAR 56. 20Minutes names, built-in LiquidBar VC style. QXFs in `tests/fixtures/`. | Same. Pins mode-aware channel indices. |
 | `QuickStart_multiuni.qxw` | Quick Start output: 8 × Intimidator Spot 375Z (15 ch, **shutter closed at 0**) + 60 × SlimPAR 56 → two universes. 20Minutes names, VC style cloned from `LiquidBar_v14.qxw`. | Same. Pins capability-aware neutral values (shutter open = 4), universe roll-over and style cloning. |
 

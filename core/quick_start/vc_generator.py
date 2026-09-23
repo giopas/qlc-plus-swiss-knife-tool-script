@@ -264,9 +264,14 @@ def _vc_slider(wid: int, caption: str, x: int, y: int,
     ws.set("Width", str(w)); ws.set("Height", str(h))
     app = _sub(sl, "Appearance")
     _sub(app, "FrameStyle", "Sunken")
-    _sub(sl, "SliderMode", slider_mode,
-         ValueDisplayStyle="Exact", ClickAndGoType="None",
-         Monitor="false")
+    if slider_mode == "Submaster":
+        # Submaster scales every function started from widgets in the same
+        # frame (as in the 20Minutes shows); it never *sets* a channel.
+        _sub(sl, "SliderMode", slider_mode, ValueDisplayStyle="Percentage")
+    else:
+        _sub(sl, "SliderMode", slider_mode,
+             ValueDisplayStyle="Exact", ClickAndGoType="None",
+             Monitor="false")
     init_val = value if value is not None else level_high
     level = _sub(sl, "Level",
                  LowLimit=str(level_low), HighLimit=str(level_high),
@@ -456,10 +461,35 @@ class VCLayoutGenerator:
         return out
 
     def _create_panic_reset_scene(self) -> int:
-        """PANIC RESET: every fixture neutral (shutter open, no effects,
-        Pan/Tilt centred) with intensity at 0 — a known, safe state."""
-        return self._create_full_scene(self._n("PANIC RESET", kind="utility"),
+        """The PANIC RESET *state*: every fixture neutral (shutter open, no
+        effects, Pan/Tilt centred) with intensity at 0."""
+        return self._create_full_scene(self._n("Reset: neutral state", kind="utility"),
                                        self._dark_overrides())
+
+    def _create_panic_reset_script(self, reset_scene: int) -> int:
+        """PANIC RESET: a Script that stops every generated function and then
+        starts the neutral scene.
+
+        A scene alone cannot do it: intensity/colour channels are HTP in
+        QLC+, so a scene at 0 does not pull down a look that is still
+        running.  Stopping everything first releases them; the neutral
+        scene then clears the LTP channels (shutter, programs, position).
+        Commands are percent-encoded, as QLC+ writes them.
+        """
+        fid = self._next_fid()
+        func = ET.Element(_ns("Function"))
+        func.set("ID", str(fid))
+        func.set("Type", "Script")
+        func.set("Name", self._n("PANIC RESET", kind="utility"))
+        _sub(func, "Speed", FadeIn="0", FadeOut="0", Duration="0")
+        _sub(func, "Direction", "Forward")
+        _sub(func, "RunOrder", "SingleShot")
+        ids = [int(f.get("ID")) for f in self.functions]
+        for i in sorted(ids):
+            _sub(func, "Command", f"stopfunction%3A{i}")
+        _sub(func, "Command", f"startfunction%3A{reset_scene}")
+        self.functions.append(func)
+        return fid
 
     def _create_warm_white_scene(self) -> int:
         overrides = {}
@@ -848,11 +878,13 @@ class VCLayoutGenerator:
 
         slider_w = st.slider_w
         slider_h = static_h + pad + eff_h + pad + grp_h
+        # Submaster, not a Level slider on the dimmer channels: a Level slider
+        # at 255 holds every dimmer at full (HTP), so BLACKOUT / PANIC RESET
+        # could never bring intensity down.
         dimmer_slider = _vc_slider(
             self._next_wid(), "MASTER",
             0, 0, slider_w, slider_h,
-            slider_mode="Level",
-            channels=dimmer_channels)
+            slider_mode="Submaster")
 
         # ── RGB + INTENSITY SLIDERS ───────────────────────────────────────
         rgb_sliders = []
@@ -893,11 +925,11 @@ class VCLayoutGenerator:
             bg_color=_CLR_DARK_RED, fg_color=_CLR_WHITE,
             action="StopAll")
 
-        fid_reset = self._create_panic_reset_scene()
+        fid_reset = self._create_panic_reset_script(self._create_panic_reset_scene())
         reset_btn = _vc_button(
             self._next_wid(),
             "PANIC\nRESET",
-            fid_reset, "Scene",
+            fid_reset, "Script",
             0, 0, panic_w, panic_h,
             bg_color=_CLR_ORANGE, fg_color=_CLR_BLACK)
 

@@ -51,7 +51,7 @@
   },
   "QuickStart_6fix.qxw": {
     "fixtures": 6,
-    "functions": 35,
+    "functions": 36,
     "doctor": {
       "summary": {
         "error": 0,
@@ -65,7 +65,7 @@
   },
   "QuickStart_club.qxw": {
     "fixtures": 6,
-    "functions": 36,
+    "functions": 37,
     "doctor": {
       "summary": {
         "error": 0,
@@ -79,7 +79,7 @@
   },
   "QuickStart_multiuni.qxw": {
     "fixtures": 68,
-    "functions": 36,
+    "functions": 37,
     "doctor": {
       "summary": {
         "error": 0,

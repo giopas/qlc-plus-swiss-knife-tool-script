@@ -164,10 +164,10 @@ def test_workspace_level_op_reparses_and_exports(tmp_path):
     ws._reset()
 
 
-@pytest.mark.skipif(not os.path.exists(os.path.join(HERE, "corpus", "LiquidBar_v14.qxw")),
+@pytest.mark.skipif(not os.path.exists(os.path.join(HERE, "corpus", "Pub_6fix.qxw")),
                     reason="corpus not present")
 def test_real_show_copy_page():
-    root = qxw_io.load_qxw(os.path.join(HERE, "corpus", "LiquidBar_v14.qxw")).getroot()
+    root = qxw_io.load_qxw(os.path.join(HERE, "corpus", "Pub_6fix.qxw")).getroot()
     before = len(vc_ops.list_pages(root))
     vc_ops.copy_page(root, vc_ops.list_pages(root)[1]["id"])
     ids = [e.get("ID") for e in root.iter() if e.tag.replace(N, "") in vc_ops.WIDGET_TYPES]

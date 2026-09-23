@@ -1,5 +1,5 @@
 {
-  "SangAKlang_v41.qxw": {
+  "Festival_14fix.qxw": {
     "fixtures": 14,
     "functions": 286,
     "doctor": {
@@ -28,7 +28,7 @@
       "warn unreferenced function": 48
     }
   },
-  "LiquidBar_v14.qxw": {
+  "Pub_6fix.qxw": {
     "fixtures": 6,
     "functions": 207,
     "doctor": {
@@ -51,7 +51,7 @@
   },
   "QuickStart_6fix.qxw": {
     "fixtures": 6,
-    "functions": 36,
+    "functions": 83,
     "doctor": {
       "summary": {
         "error": 0,
@@ -65,7 +65,7 @@
   },
   "QuickStart_club.qxw": {
     "fixtures": 6,
-    "functions": 37,
+    "functions": 69,
     "doctor": {
       "summary": {
         "error": 0,
@@ -79,7 +79,7 @@
   },
   "QuickStart_multiuni.qxw": {
     "fixtures": 68,
-    "functions": 37,
+    "functions": 69,
     "doctor": {
       "summary": {
         "error": 0,

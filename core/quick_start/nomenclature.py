@@ -50,6 +50,9 @@ class Nomenclature:
         self.category_group: Dict[str, str] = dict(p.get("category_group") or {})
         self.effect_letters: Dict[str, str] = dict(p.get("effect_letters") or {})
         self.prefix_captions: bool = bool(p.get("prefix_captions", False))
+        # Groups defined in Quick Start ("group:Front") get the first letter
+        # of their name unless category_group maps them explicitly.
+        self.auto_group_letter: bool = bool(p.get("auto_group_letter", False))
 
     @property
     def is_plain(self) -> bool:
@@ -60,6 +63,10 @@ class Nomenclature:
         if self.is_plain:
             return base
         group = self.category_group.get(category)
+        if not group and category.startswith("group:") and self.auto_group_letter:
+            gname = category.split(":", 1)[1]
+            group = self.category_group.get(gname) or next(
+                (ch.upper() for ch in gname if ch.isalnum()), None)
         effect = self.effect_letters.get(kind)
         if not group or not effect:
             return base
@@ -80,6 +87,8 @@ class Nomenclature:
         if not head:
             return ""
         groups = "|".join(re.escape(g) for g in sorted(set(self.category_group.values()), key=len, reverse=True)) or "(?!)"
+        if self.auto_group_letter:
+            groups = f"(?:{groups}|[A-Z0-9])"
         effects = "|".join(re.escape(e) for e in sorted(set(self.effect_letters.values()), key=len, reverse=True)) or "(?!)"
         pat = re.escape(head).replace(re.escape("{group}"), f"(?:{groups})") \
                              .replace(re.escape("{effect}"), f"(?:{effects})")

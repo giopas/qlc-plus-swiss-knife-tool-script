@@ -53,7 +53,7 @@ def test_porter_reads_namespaced_file(ns_file):
 
 @pytest.mark.skipif(not os.path.isdir(CORPUS), reason="corpus not present")
 @pytest.mark.parametrize("name,fixtures,functions", [
-    ("SangAKlang_v41.qxw", 14, 286), ("LiquidBar_v14.qxw", 6, 207)])
+    ("Festival_14fix.qxw", 14, 286), ("Pub_6fix.qxw", 6, 207)])
 def test_corpus_counts(name, fixtures, functions):
     path = os.path.join(CORPUS, name)
     porter.clear()
@@ -75,6 +75,6 @@ def test_upload_keeps_real_file_name(ns_file):
     c = app.create_app().test_client()
     data = Path(ns_file).read_bytes()
     for url in ("/api/porter/source/load", "/api/merger/src/load"):
-        r = c.post(url, data={"file": (io.BytesIO(data), "SangAKlang_v41.qxw")},
+        r = c.post(url, data={"file": (io.BytesIO(data), "Festival_14fix.qxw")},
                    content_type="multipart/form-data")
-        assert r.get_json()["name"] == "SangAKlang_v41", url
+        assert r.get_json()["name"] == "Festival_14fix", url

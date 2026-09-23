@@ -1,7 +1,7 @@
 {
-  "id": "liquidbar",
-  "label": "LiquidBar (built-in)",
-  "source": "LiquidBar_v14.qxw",
+  "id": "compact",
+  "label": "Compact (built-in)",
+  "source": "Pub_6fix.qxw",
   "page_w": 1650,
   "page_h": 884,
   "btn_w": 164,

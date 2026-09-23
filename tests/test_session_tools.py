@@ -8,14 +8,14 @@ from core import session as sess
 def test_tools_and_show_info_round_trip(tmp_path):
     c = app.create_app().test_client()
     c.post("/api/session/new")
-    qsk = {"version": 1, "workspace": None, "show_name": "Sang a Klang", "event_date": "2026-10-03",
+    qsk = {"version": 1, "workspace": None, "show_name": "My Show", "event_date": "2026-10-03",
            "tools": {"porter": {"source": "/a/S_v41.qxw"}, "paper": {"checklist": "A4 Portrait"},
                      "brightness": {"scales": {"0": 0.6}}}}
     p = tmp_path / "t.qsk"
     p.write_text(json.dumps(qsk))
     r = c.post("/api/session/load-from-path", json={"path": str(p)}).get_json()
     assert r["session"]["tools"]["porter"]["source"] == "/a/S_v41.qxw"
-    assert sess.get_show_name() == "Sang a Klang"
+    assert sess.get_show_name() == "My Show"
     exp = c.get("/api/session/export").get_json()
     assert exp["tools"]["brightness"]["scales"] == {"0": 0.6}
     assert exp["event_date"] == "2026-10-03"

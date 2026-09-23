@@ -1,5 +1,5 @@
 """Corpus sanity tests — real show files used as the oracle for Doctor, Porter,
-Rig Reducer and the Liquid Bar benchmark. See tests/corpus/README.md."""
+Rig Reducer and the Pub benchmark. See tests/corpus/README.md."""
 import json, os
 from pathlib import Path
 import xml.etree.ElementTree as ET

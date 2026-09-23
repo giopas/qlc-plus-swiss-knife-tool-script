@@ -3444,3 +3444,13 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .qs-options select { font-size:12px; min-width:170px; }
 .qs-opt-legend { flex-basis:100%; color:var(--overlay0); font-size:11px; line-height:1.5; }
 .qs-opt-legend:empty { display:none; }
+
+/* Quick Start — fixture groups editor */
+.qs-hint { color: var(--overlay0); font-size: 12px; margin: 0 0 8px; }
+.qs-group { border: 1px solid var(--surface1); border-radius: 6px; padding: 8px 10px; margin: 0 0 8px; }
+.qs-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.qs-group-head input { font-size: 12px; font-weight: 600; width: 200px; }
+.qs-group-fx { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; }
+.qs-group-fx label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.qs-groups-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.qs-preview { max-width: 100%; }

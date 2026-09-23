@@ -11,7 +11,7 @@
    <BeatGenerator BeatType="Disabled" BPM="120"/>
    <NetworkServer Type="Web" AutoStart="True"/>
    <Universe Name="Universe 1" ID="0">
-    <Output Plugin="DMX USB" Name="DMX USB PRO - DMX Output 1 - (S/N: 2325166)" UID="" Line="0">
+    <Output Plugin="DMX USB" Name="DMX USB PRO - DMX Output 1 - (S/N: 0000000)" UID="" Line="0">
      <PluginParameters UniverseChannels="154"/>
     </Output>
    </Universe>
@@ -268,7 +268,7 @@
    <Head X="1" Y="0" Fixture="13">0</Head>
    <Head X="2" Y="0" Fixture="8">0</Head>
   </FixtureGroup>
-  <Function ID="0" Type="Chaser" Name="Setlist: 20Minutes">
+  <Function ID="0" Type="Chaser" Name="Setlist: Band A">
    <Speed FadeIn="0" FadeOut="0" Duration="4294967294"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2292,13 +2292,13 @@
    <FixtureVal ID="12">0,255,1,255,2,180,3,110,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="13">0,255,1,255,2,255,3,255,4,0,5,0</FixtureVal>
   </Function>
-  <Function ID="1601" Type="Chaser" Name="Setlist: Unread">
+  <Function ID="1601" Type="Chaser" Name="Setlist: Band B">
    <Speed FadeIn="0" FadeOut="0" Duration="4294967294"/>
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
    <SpeedModes FadeIn="PerStep" FadeOut="PerStep" Duration="Common"/>
   </Function>
-  <Function ID="1602" Type="Chaser" Name="Setlist: Smoky Seattle">
+  <Function ID="1602" Type="Chaser" Name="Setlist: Band C">
    <Speed FadeIn="0" FadeOut="0" Duration="4294967294"/>
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
@@ -2656,7 +2656,7 @@
    <FixtureVal ID="12">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="13">0,0,4,0,5,0</FixtureVal>
   </Function>
-  <Function ID="2320" Type="Chaser" Name="The Smashing Pumpkins - 1979">
+  <Function ID="2320" Type="Chaser" Name="Song 34">
    <Speed FadeIn="5000" FadeOut="5000" Duration="10000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2665,7 +2665,7 @@
    <Step Number="1" FadeIn="5000" Hold="0" FadeOut="5000">1419</Step>
    <Step Number="2" FadeIn="5000" Hold="0" FadeOut="5000">1420</Step>
   </Function>
-  <Function ID="2321" Type="Collection" Name="The Clash - London Calling">
+  <Function ID="2321" Type="Collection" Name="Song 30">
    <Step Number="0">101</Step>
    <Step Number="1">813</Step>
   </Function>
@@ -2673,11 +2673,11 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2323" Type="Collection" Name="Franz Ferdinand - Take Me Out (Intro)">
+  <Function ID="2323" Type="Collection" Name="Song 09">
    <Step Number="0">302</Step>
    <Step Number="1">400</Step>
   </Function>
-  <Function ID="2324" Type="Collection" Name="Franz Ferdinand - Take Me Out (Heavy)">
+  <Function ID="2324" Type="Collection" Name="Song 08">
    <Step Number="0">112</Step>
    <Step Number="1">818</Step>
   </Function>
@@ -2685,7 +2685,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2326" Type="Chaser" Name="20M - Do Ut Des">
+  <Function ID="2326" Type="Chaser" Name="Song 01">
    <Speed FadeIn="80" FadeOut="80" Duration="700"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2693,7 +2693,7 @@
    <Step Number="0" FadeIn="80" Hold="0" FadeOut="80">2107</Step>
    <Step Number="1" FadeIn="80" Hold="0" FadeOut="80">2108</Step>
   </Function>
-  <Function ID="2327" Type="Chaser" Name="20M - Mirrors">
+  <Function ID="2327" Type="Chaser" Name="Song 02">
    <Speed FadeIn="2500" FadeOut="2500" Duration="5000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2701,11 +2701,11 @@
    <Step Number="0" FadeIn="2500" Hold="0" FadeOut="2500">2113</Step>
    <Step Number="1" FadeIn="2500" Hold="0" FadeOut="2500">2114</Step>
   </Function>
-  <Function ID="2328" Type="Collection" Name="Pearl Jam - Better Man (Intro)">
+  <Function ID="2328" Type="Collection" Name="Song 22">
    <Step Number="0">214</Step>
    <Step Number="1">107</Step>
   </Function>
-  <Function ID="2329" Type="Collection" Name="Pearl Jam - Better Man (Rock)">
+  <Function ID="2329" Type="Collection" Name="Song 23">
    <Step Number="0">300</Step>
    <Step Number="1">400</Step>
   </Function>
@@ -2713,11 +2713,11 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2331" Type="Collection" Name="The Cure - Boys Don't Cry">
+  <Function ID="2331" Type="Collection" Name="Song 31">
    <Step Number="0">301</Step>
    <Step Number="1">400</Step>
   </Function>
-  <Function ID="2332" Type="Chaser" Name="The Killers - Mr. Brightside">
+  <Function ID="2332" Type="Chaser" Name="Song 32">
    <Speed FadeIn="200" FadeOut="200" Duration="600"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2729,7 +2729,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2334" Type="Collection" Name="20M - Stay">
+  <Function ID="2334" Type="Collection" Name="Song 04">
    <Step Number="0">700</Step>
    <Step Number="1">710</Step>
   </Function>
@@ -2737,7 +2737,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2336" Type="Collection" Name="20M - Show Yourself">
+  <Function ID="2336" Type="Collection" Name="Song 03">
    <Step Number="0">700</Step>
    <Step Number="1">750</Step>
   </Function>
@@ -2745,7 +2745,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2338" Type="Chaser" Name="Foo Fighters - Everlong">
+  <Function ID="2338" Type="Chaser" Name="Song 07">
    <Speed FadeIn="500" FadeOut="500" Duration="700"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2774,7 +2774,7 @@
    <FixtureVal ID="12">0,255,1,255,2,180,3,110,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="13">0,255,1,255,2,120,3,0,4,0,5,0</FixtureVal>
   </Function>
-  <Function ID="2340" Type="Chaser" Name="Nirvana - Lithium">
+  <Function ID="2340" Type="Chaser" Name="Song 19">
    <Speed FadeIn="3000" FadeOut="3000" Duration="6000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2827,7 +2827,7 @@
    <FixtureVal ID="12">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="13">0,0,4,0,5,0</FixtureVal>
   </Function>
-  <Function ID="2344" Type="Chaser" Name="UNREAD - Band intro">
+  <Function ID="2344" Type="Chaser" Name="Song 37">
    <Speed FadeIn="2000" FadeOut="2000" Duration="2000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2835,11 +2835,11 @@
    <Step Number="0" FadeIn="2000" Hold="0" FadeOut="2000">212</Step>
    <Step Number="1" FadeIn="2000" Hold="0" FadeOut="2000">213</Step>
   </Function>
-  <Function ID="2345" Type="Collection" Name="The Subways - Rock &amp; Roll Queen">
+  <Function ID="2345" Type="Collection" Name="Song 35">
    <Step Number="0">102</Step>
    <Step Number="1">813</Step>
   </Function>
-  <Function ID="2346" Type="Scene" Name="Pierce The Veil - Karma Police">
+  <Function ID="2346" Type="Scene" Name="Song 26">
    <Speed FadeIn="3000" FadeOut="3000" Duration="0"/>
    <FixtureVal ID="0">0,108,1,0,2,60,3,80,4,200,5,180,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,108,1,0,2,60,3,80,4,200,5,180,6,0,7,0,8,0</FixtureVal>
@@ -2860,7 +2860,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2348" Type="Chaser" Name="Me First and the Gimme Gimmes - Can't Help Falling in Love">
+  <Function ID="2348" Type="Chaser" Name="Song 16">
    <Speed FadeIn="1200" FadeOut="1200" Duration="2400"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2868,7 +2868,7 @@
    <Step Number="0" FadeIn="1200" Hold="0" FadeOut="1200">1521</Step>
    <Step Number="1" FadeIn="1200" Hold="0" FadeOut="1200">1522</Step>
   </Function>
-  <Function ID="2349" Type="Scene" Name="Joey Ramone - What a Wonderful World">
+  <Function ID="2349" Type="Scene" Name="Song 11">
    <Speed FadeIn="1500" FadeOut="1500" Duration="0"/>
    <FixtureVal ID="0">0,162,1,0,2,0,3,255,4,80,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,162,1,0,2,0,3,255,4,80,5,0,6,0,7,0,8,0</FixtureVal>
@@ -2889,7 +2889,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2351" Type="Chaser" Name="The Presidents of the United States of America - Video Killed the Radio Star">
+  <Function ID="2351" Type="Chaser" Name="Song 33">
    <Speed FadeIn="300" FadeOut="300" Duration="1200"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2901,11 +2901,11 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2353" Type="Collection" Name="UNREAD - 90s Rock Medley">
+  <Function ID="2353" Type="Collection" Name="Song 36">
    <Step Number="0">104</Step>
    <Step Number="1">145</Step>
   </Function>
-  <Function ID="2354" Type="Scene" Name="Marilyn Manson - Sweet Dreams (Are Made of This)">
+  <Function ID="2354" Type="Scene" Name="Song 15">
    <Speed FadeIn="2000" FadeOut="2000" Duration="0"/>
    <FixtureVal ID="0">0,90,1,0,2,0,3,0,4,120,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,90,1,0,2,0,3,0,4,120,5,0,6,0,7,0,8,0</FixtureVal>
@@ -2926,7 +2926,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2356" Type="Chaser" Name="System of a Down - Lonely Day">
+  <Function ID="2356" Type="Chaser" Name="Song 29">
    <Speed FadeIn="5000" FadeOut="5000" Duration="10000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -2939,7 +2939,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2358" Type="Scene" Name="Liquido - Narcotic">
+  <Function ID="2358" Type="Scene" Name="Song 13">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">0,198,1,0,2,60,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,198,1,0,2,60,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
@@ -2960,7 +2960,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2360" Type="Collection" Name="Nirvana - The Man Who Sold the World (more rock)">
+  <Function ID="2360" Type="Collection" Name="Song 21">
    <Step Number="0">821</Step>
    <Step Number="1">822</Step>
   </Function>
@@ -3009,7 +3009,7 @@
    <FixtureVal ID="12">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="13">0,0,4,0,5,0</FixtureVal>
   </Function>
-  <Function ID="2364" Type="Chaser" Name="Nirvana - Breed">
+  <Function ID="2364" Type="Chaser" Name="Song 18">
    <Speed FadeIn="0" FadeOut="0" Duration="250"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -3017,7 +3017,7 @@
    <Step Number="0" FadeIn="0" Hold="250" FadeOut="0">1518</Step>
    <Step Number="1" FadeIn="0" Hold="250" FadeOut="0">1519</Step>
   </Function>
-  <Function ID="2365" Type="Collection" Name="Pearl Jam - Once">
+  <Function ID="2365" Type="Collection" Name="Song 25">
    <Step Number="0">201</Step>
    <Step Number="1">403</Step>
   </Function>
@@ -3025,7 +3025,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2367" Type="Chaser" Name="Maneskin - For Your Love">
+  <Function ID="2367" Type="Chaser" Name="Song 14">
    <Speed FadeIn="4000" FadeOut="4000" Duration="8000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -3037,7 +3037,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2369" Type="Scene" Name="Smoky Seattle - Neon Rain">
+  <Function ID="2369" Type="Scene" Name="Song 27">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">0,230,1,0,2,255,3,0,4,180,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,230,1,0,2,255,3,0,4,180,5,0,6,0,7,0,8,0</FixtureVal>
@@ -3054,7 +3054,7 @@
    <FixtureVal ID="12">0,255,1,255,2,180,3,110,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="13">0,255,1,255,2,0,3,200,4,0,5,0</FixtureVal>
   </Function>
-  <Function ID="2370" Type="Scene" Name="Alice in Chains - Would?">
+  <Function ID="2370" Type="Scene" Name="Song 05">
    <Speed FadeIn="500" FadeOut="500" Duration="0"/>
    <FixtureVal ID="0">0,180,1,0,2,140,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,180,1,0,2,140,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
@@ -3075,7 +3075,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2372" Type="Chaser" Name="Stone Temple Pilots - Plush">
+  <Function ID="2372" Type="Chaser" Name="Song 28">
    <Speed FadeIn="3000" FadeOut="3000" Duration="6000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -3083,7 +3083,7 @@
    <Step Number="0" FadeIn="3000" Hold="0" FadeOut="3000">1400</Step>
    <Step Number="1" FadeIn="3000" Hold="0" FadeOut="3000">1401</Step>
   </Function>
-  <Function ID="2373" Type="Chaser" Name="Light Down the Hall - Smoky Seattle">
+  <Function ID="2373" Type="Chaser" Name="Song 12">
    <Speed FadeIn="0" FadeOut="0" Duration="4294967294"/>
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
@@ -3093,11 +3093,11 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2375" Type="Collection" Name="Pearl Jam - Even Flow">
+  <Function ID="2375" Type="Collection" Name="Song 24">
    <Step Number="0">104</Step>
    <Step Number="1">145</Step>
   </Function>
-  <Function ID="2376" Type="Collection" Name="Bon Jovi - Livin' On A Prayer">
+  <Function ID="2376" Type="Collection" Name="Song 06">
    <Step Number="0">300</Step>
    <Step Number="1">400</Step>
   </Function>
@@ -3105,7 +3105,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2378" Type="Chaser" Name="G'n'R - Sweet Child O' Mine">
+  <Function ID="2378" Type="Chaser" Name="Song 10">
    <Speed FadeIn="1500" FadeOut="1500" Duration="3000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -3117,7 +3117,7 @@
    <Step Number="0">211</Step>
    <Step Number="1">402</Step>
   </Function>
-  <Function ID="2380" Type="Collection" Name="Metallica - Enter Sandman">
+  <Function ID="2380" Type="Collection" Name="Song 17">
    <Step Number="0">152</Step>
   </Function>
   <Function ID="2381" Type="Chaser" Name="AC/DC Highway to Hell">
@@ -3129,7 +3129,7 @@
    <Step Number="1" FadeIn="500" Hold="1000" FadeOut="500">131</Step>
    <Step Number="2" FadeIn="500" Hold="1000" FadeOut="500">132</Step>
   </Function>
-  <Function ID="2382" Type="Collection" Name="Nirvana - Smells Like Teen Spirit">
+  <Function ID="2382" Type="Collection" Name="Song 20">
    <Step Number="0">101</Step>
    <Step Number="1">813</Step>
   </Function>
@@ -4256,7 +4256,7 @@
     </SoloFrame>
    </SoloFrame>
   </Frame>
-  <Frame Caption="20Minutes" ID="4000">
+  <Frame Caption="Band A" ID="4000">
    <Appearance>
     <Font>Roboto,14,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
    </Appearance>
@@ -4266,7 +4266,7 @@
    <ShowEnableButton>True</ShowEnableButton>
    <Collapsed>False</Collapsed>
    <Disabled>False</Disabled>
-   <CueList Caption="Setlist: 20Minutes" ID="4001">
+   <CueList Caption="Setlist: Band A" ID="4001">
     <WindowState Visible="True" X="17" Y="51" Width="925" Height="826"/>
     <Chaser>1756</Chaser>
     <Next>
@@ -4320,7 +4320,7 @@
     <Action Override="0" ForceLTP="0">Flash</Action>
    </Button>
   </Frame>
-  <Frame Caption="Unread" ID="4100">
+  <Frame Caption="Band B" ID="4100">
    <Appearance>
     <Font>Roboto,14,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
    </Appearance>
@@ -4330,7 +4330,7 @@
    <ShowEnableButton>True</ShowEnableButton>
    <Collapsed>False</Collapsed>
    <Disabled>False</Disabled>
-   <CueList Caption="Setlist: Unread" ID="4101">
+   <CueList Caption="Setlist: Band B" ID="4101">
     <WindowState Visible="True" X="17" Y="53" Width="924" Height="824"/>
     <Chaser>1803</Chaser>
     <Next>
@@ -4384,7 +4384,7 @@
     <Action Override="0" ForceLTP="0">Flash</Action>
    </Button>
   </Frame>
-  <Frame Caption="Smoky Seattle" ID="4200">
+  <Frame Caption="Band C" ID="4200">
    <Appearance>
     <Font>Roboto,14,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
    </Appearance>
@@ -4394,7 +4394,7 @@
    <ShowEnableButton>True</ShowEnableButton>
    <Collapsed>False</Collapsed>
    <Disabled>False</Disabled>
-   <CueList Caption="Setlist: Smoky Seattle" ID="4201">
+   <CueList Caption="Setlist: Band C" ID="4201">
     <WindowState Visible="True" X="17" Y="53" Width="924" Height="824"/>
     <Chaser>1782</Chaser>
     <Next>

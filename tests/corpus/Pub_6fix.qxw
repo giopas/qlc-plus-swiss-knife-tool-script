@@ -993,103 +993,103 @@
   <Function ID="4001" Type="Collection" Name="- Intro (Silhouette)">
    <Step Number="0">831</Step>
   </Function>
-  <Function ID="4002" Type="Collection" Name="The Smashing Pumpkins - 1979">
+  <Function ID="4002" Type="Collection" Name="Song 22">
    <Step Number="0">5003</Step>
   </Function>
-  <Function ID="4003" Type="Collection" Name="Fastball - The Way">
+  <Function ID="4003" Type="Collection" Name="Song 07">
    <Step Number="0">5007</Step>
   </Function>
   <Function ID="4004" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4005" Type="Collection" Name="The Clash - London Calling">
+  <Function ID="4005" Type="Collection" Name="Song 19">
    <Step Number="0">5104</Step>
   </Function>
-  <Function ID="4006" Type="Collection" Name="Franz Ferdinand - Take Me Out (Intro)">
+  <Function ID="4006" Type="Collection" Name="Song 11">
    <Step Number="0">5015</Step>
   </Function>
-  <Function ID="4007" Type="Collection" Name="Franz Ferdinand - Take Me Out (Heavy)">
+  <Function ID="4007" Type="Collection" Name="Song 10">
    <Step Number="0">3210</Step>
   </Function>
   <Function ID="4008" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4009" Type="Collection" Name="20Minutes - Do Ut Des">
+  <Function ID="4009" Type="Collection" Name="Song 01">
    <Step Number="0">2112</Step>
   </Function>
-  <Function ID="4010" Type="Collection" Name="20Minutes - Mirrors">
+  <Function ID="4010" Type="Collection" Name="Song 02">
    <Step Number="0">2106</Step>
   </Function>
   <Function ID="4011" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4012" Type="Collection" Name="Pearl Jam - Better Man (Intro)">
+  <Function ID="4012" Type="Collection" Name="Song 14">
    <Step Number="0">5018</Step>
   </Function>
-  <Function ID="4013" Type="Collection" Name="Pearl Jam - Better Man (Rock)">
+  <Function ID="4013" Type="Collection" Name="Song 15">
    <Step Number="0">5022</Step>
   </Function>
-  <Function ID="4014" Type="Collection" Name="The Cure - Boys Don't Cry">
+  <Function ID="4014" Type="Collection" Name="Song 20">
    <Step Number="0">5026</Step>
   </Function>
   <Function ID="4015" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4016" Type="Collection" Name="Alice in Chains - Nutshell (Acoustic)">
+  <Function ID="4016" Type="Collection" Name="Song 06">
    <Step Number="0">5119</Step>
   </Function>
-  <Function ID="4017" Type="Collection" Name="Stone Temple Pilots - Interstate Love Song (Acoustic)">
+  <Function ID="4017" Type="Collection" Name="Song 17">
    <Step Number="0">5124</Step>
   </Function>
-  <Function ID="4018" Type="Collection" Name="Foo Fighters - My Hero (Acoustic)">
+  <Function ID="4018" Type="Collection" Name="Song 09">
    <Step Number="0">5128</Step>
   </Function>
-  <Function ID="4019" Type="Collection" Name="Nirvana - The Man Who Sold The World (Acoustic)">
+  <Function ID="4019" Type="Collection" Name="Song 13">
    <Step Number="0">5132</Step>
   </Function>
   <Function ID="4020" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4021" Type="Collection" Name="20Minutes - Resonance">
+  <Function ID="4021" Type="Collection" Name="Song 03">
    <Step Number="0">3104</Step>
   </Function>
-  <Function ID="4022" Type="Collection" Name="The Black Keys - Little Black Submarine">
+  <Function ID="4022" Type="Collection" Name="Song 18">
    <Step Number="0">5043</Step>
   </Function>
   <Function ID="4023" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4024" Type="Collection" Name="The Killers - Mr. Brightside">
+  <Function ID="4024" Type="Collection" Name="Song 21">
    <Step Number="0">5047</Step>
   </Function>
   <Function ID="4025" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4026" Type="Collection" Name="20Minutes - Stay">
+  <Function ID="4026" Type="Collection" Name="Song 05">
    <Step Number="0">3310</Step>
   </Function>
-  <Function ID="4027" Type="Collection" Name="20Minutes - Show Yourself">
+  <Function ID="4027" Type="Collection" Name="Song 04">
    <Step Number="0">5110</Step>
   </Function>
   <Function ID="4028" Type="Collection" Name="- Stage Patter">
    <Step Number="0">211</Step>
   </Function>
-  <Function ID="4029" Type="Collection" Name="Placebo - Bitter End">
+  <Function ID="4029" Type="Collection" Name="Song 16">
    <Step Number="0">5115</Step>
   </Function>
-  <Function ID="4030" Type="Collection" Name="Nirvana - All Apologies">
+  <Function ID="4030" Type="Collection" Name="Song 12">
    <Step Number="0">5055</Step>
   </Function>
   <Function ID="4031" Type="Collection" Name="- First Outro">
    <Step Number="0">3116</Step>
   </Function>
-  <Function ID="4032" Type="Collection" Name="Foo Fighters - Everlong">
+  <Function ID="4032" Type="Collection" Name="Song 08">
    <Step Number="0">5062</Step>
   </Function>
   <Function ID="4033" Type="Collection" Name="- End of Show">
    <Step Number="0">1600</Step>
   </Function>
-  <Function ID="4100" Type="Chaser" Name="Setlist: Liquid Bar">
+  <Function ID="4100" Type="Chaser" Name="Setlist: Pub">
    <Speed FadeIn="0" FadeOut="0" Duration="4294967294" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -1213,7 +1213,7 @@
     <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
     <Level LowLimit="0" HighLimit="255" Value="205" />
    </Slider>
-   <CueList Caption="Liquidbar Setlist" ID="9500">
+   <CueList Caption="Pub Setlist" ID="9500">
     <WindowState Visible="True" X="17" Y="14" Width="1098" Height="860" />
     <Chaser>4100</Chaser>
     <Next>

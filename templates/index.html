@@ -223,7 +223,7 @@
            data-tooltip="Used in PDF headers, export filenames and session files. Leave blank to auto-derive from the workspace filename.">
         <label class="field-label" for="show-name-input">Show Name</label>
         <input id="show-name-input" type="text" class="filter-input"
-               placeholder="e.g. Sang a Klang" spellcheck="false"
+               placeholder="e.g. My Show" spellcheck="false"
                onchange="updateShowInfo()">
         <label class="field-label" for="event-date-input">Date</label>
         <input id="event-date-input" type="date" class="filter-input"
@@ -1792,6 +1792,16 @@
         <h3>Capability Analysis</h3>
         <div id="qs-analysis-result">
           <div class="qs-loading">Analyzing fixture capabilities...</div>
+        </div>
+      </div>
+      <div class="qs-card">
+        <h3>Fixture Groups</h3>
+        <p class="qs-hint">Each group gets its own frame on the Virtual Console: a dimmer slider, looks (On, colours) and effects (Pulse, Color Fade, Chase) that act only on its fixtures. By default there is one group per fixture name. Tick fixtures to regroup them; a fixture can be in several groups.</p>
+        <div id="qs-groups"></div>
+        <div class="qs-groups-actions">
+          <button class="btn btn-surface btn-xs" onclick="qsGroupAdd()">＋ Add group</button>
+          <button class="btn btn-surface btn-xs" onclick="qsGroupsAuto()">↺ Automatic groups</button>
+          <span id="qs-groups-state" class="qs-hint"></span>
         </div>
       </div>
     </div>

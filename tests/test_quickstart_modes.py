@@ -91,16 +91,79 @@ def test_panic_reset_stops_everything_then_neutral():
     assert all(v == 0 for v in _scene_vals(funcs, "Reset: neutral state").values())
 
 
-def test_dimmer_slider_starts_at_zero():
-    """A Level slider at 255 on the dimmers would hold them at full (HTP).
-    (A Submaster slider made QLC+ 5 drop every widget after it.)"""
+def test_master_and_group_sliders_are_submasters():
+    """Submasters scale the looks; they never hold a channel up.  (They are
+    safe in QLC+ 5.2.2 only because the file is indented — see qxw_builder.)"""
     d = _defn("SlimPAR")
     _, _, frame = _gen(d, next(iter(d["modes"])))
     sliders = list(frame.iter(f"{NS}Slider"))
-    assert all(s.find(f"{NS}SliderMode").text == "Level" for s in sliders)
-    dim = next(s for s in sliders if s.get("Caption") == "DIMMER")
-    assert dim.find(f"{NS}Level").get("Value") == "0"
-    assert list(dim.iter(f"{NS}Channel"))
+    assert [s.get("Caption") for s in sliders] == ["MASTER", "F"]
+    assert all(s.find(f"{NS}SliderMode").text == "Submaster" for s in sliders)
+    assert not any(list(s.iter(f"{NS}Channel")) for s in sliders)
+
+
+def test_every_function_button_is_inside_the_show_soloframe():
+    """One button at a time: looks, effects and group buttons all live in
+    the SHOW SoloFrame; only the PANIC buttons are outside."""
+    d = _defn("SlimPAR")
+    _, _, page = _gen(d, next(iter(d["modes"])))
+    show = page.find(f"{NS}SoloFrame")
+    inside = {b.get("ID") for b in show.iter(f"{NS}Button")}
+    outside = [b.get("Caption") for b in page.iter(f"{NS}Button") if b.get("ID") not in inside]
+    assert sorted(outside) == ["PANIC\nBLACKOUT", "PANIC\nRESET"]
+
+
+def test_matrix_effects_open_the_dimmers():
+    """RGB-mode matrices don't drive the master dimmer in QLC+, so each
+    matrix button runs a Collection: dimmer scene + RGBMatrix."""
+    d = _defn("SlimPAR")
+    key = f"{d['manufacturer']}::{d['model']}"
+    mode = next(iter(d["modes"]))
+    rig = [{"key": key, "mode": mode, "ch_count": d["modes"][mode], "name": f"Par {i}",
+            "universe": 0, "address": i * 7} for i in range(3)]
+    qxf = {key: d}
+    gen = VCLayoutGenerator(rig, qxf, RigCapabilityAnalysis(rig, qxf))
+    funcs, page, groups = gen.generate()
+    by_id = {f.get("ID"): f for f in funcs}
+    colls = [f for f in funcs if f.get("Type") == "Collection"]
+    assert colls, "matrix effects expected with 3 RGB fixtures"
+    for c in colls:
+        kinds = sorted(by_id[s.text].get("Type") for s in c.findall(f"{NS}Step"))
+        assert kinds == ["RGBMatrix", "Scene"]
+    algos = {f.find(f"{NS}Algorithm").text for f in funcs if f.get("Type") == "RGBMatrix"}
+    assert algos <= {"One By One", "Even/Odd", "Gradient", "Plasma", "Waves", "Stripes"}
+    assert "Full Row" not in algos
+
+
+def test_custom_groups_scope_their_scenes():
+    d = _defn("SlimPAR")
+    key = f"{d['manufacturer']}::{d['model']}"
+    mode = next(iter(d["modes"]))
+    rig = [{"key": key, "mode": mode, "ch_count": d["modes"][mode], "name": f"Par {i}",
+            "universe": 0, "address": i * 7} for i in range(4)]
+    qxf = {key: d}
+    gen = VCLayoutGenerator(rig, qxf, RigCapabilityAnalysis(rig, qxf),
+                            groups=[{"name": "Front", "fixtures": [0, 1]},
+                                    {"name": "Back", "fixtures": [2, 3]}])
+    funcs, page, _ = gen.generate()
+    caps = [f.get("Caption") for f in page.iter(f"{NS}Frame")]
+    assert "GROUP · Front" in caps and "GROUP · Back" in caps
+    front_red = next(f for f in funcs if f.get("Name") == "Front Red")
+    assert sorted(v.get("ID") for v in front_red.findall(f"{NS}FixtureVal")) == ["0", "1"]
+
+
+def test_output_is_indented_like_qlcplus():
+    """QLC+ 5.2.2 drops VC widgets after an empty <Level/> with no
+    whitespace behind it — the builder must indent."""
+    from core.quick_start.qxw_builder import build_qxw
+    d = _defn("SlimPAR")
+    gen, funcs, frame = _gen(d, next(iter(d["modes"])))
+    key = f"{d['manufacturer']}::{d['model']}"
+    rig = [{"key": key, "mode": next(iter(d["modes"])), "ch_count": 7, "name": "F",
+            "universe": 0, "address": 0, "manufacturer": d["manufacturer"], "model": d["model"]}]
+    data = build_qxw(rig, funcs, frame, gen.fixture_groups).decode()
+    import re
+    assert re.search(r"<Level [^>]*/>\s*\n\s*</Slider>", data)
 
 
 @pytest.mark.parametrize("caps,expected", [

@@ -307,13 +307,16 @@ class VCLayoutGenerator:
 
     def __init__(self, rig: list, qxf_defs: dict,
                  analysis: RigCapabilityAnalysis,
-                 nomenclature=None, style=None):
+                 nomenclature=None, style=None, groups=None):
         self.rig = rig
         self.qxf_defs = qxf_defs
         self.analysis = analysis
         self.nom: Nomenclature = (nomenclature if isinstance(nomenclature, Nomenclature)
                                   else load_profile(nomenclature))
         self.style: VCStyle = load_style(style)
+        # User-defined fixture groups [{name, fixtures:[rig idx]}]; None = auto
+        self.groups = self._clean_groups(groups) if groups is not None else None
+        self.page_size = (0, 0)
         self.functions: List[ET.Element] = []
         self.fixture_groups: List[ET.Element] = []
         self._fid = _IDCounter(start=len(rig))  # functions start after fixture IDs
@@ -410,61 +413,72 @@ class VCLayoutGenerator:
         vals.update(overrides)
         return [(ch, v) for ch, v in sorted(vals.items())]
 
-    # ── Scene builders (forced zeros on ALL fixtures) ─────────────────────
+    # ── Scene builders (scope-aware) ──────────────────────────────────────
+    #
+    # A *scope* is a list of rig indices.  Whole-rig functions use every
+    # fixture; group functions only the fixtures of that group.  A scene
+    # declares every channel of every fixture in its scope (unused channels
+    # at their neutral value) and leaves other fixtures alone.
 
+    def _all(self) -> List[int]:
+        return list(range(len(self.rig)))
+
+    def _scene(self, name: str, overrides: Dict[int, Dict[int, int]],
+               scope: Optional[List[int]] = None,
+               fade_in: int = 0, fade_out: int = 0) -> int:
+        fid = self._next_fid()
+        idxs = self._all() if scope is None else list(scope)
+        fixture_channels = {i: self._set_channels(i, overrides.get(i, {})) for i in idxs}
+        self.functions.append(_build_scene(fid, name, fixture_channels, fade_in, fade_out))
+        return fid
+
+    # kept for callers / tests that use the old name
     def _create_full_scene(self, name: str,
                            per_fixture_overrides: Dict[int, Dict[int, int]],
                            fade_in: int = 0, fade_out: int = 0) -> int:
-        """
-        Create a scene that sets ALL channels on ALL fixtures.
+        return self._scene(name, per_fixture_overrides, None, fade_in, fade_out)
 
-        per_fixture_overrides: {fixture_idx: {ch_index: value, ...}}
-            Only the channels the look uses need to be specified;
-            everything else gets its neutral value.
-        """
-        fid = self._next_fid()
-        fixture_channels = {}
-        for idx in range(len(self.rig)):
-            overrides = per_fixture_overrides.get(idx, {})
-            fixture_channels[idx] = self._set_channels(idx, overrides)
-        self.functions.append(
-            _build_scene(fid, name, fixture_channels, fade_in, fade_out))
-        return fid
+    def _light(self, idx: int, rgb: Optional[Tuple[int, int, int]] = (255, 255, 255),
+               level: int = 255) -> Dict[int, int]:
+        """Overrides that light fixture *idx* at *level* in colour *rgb*."""
+        o: Dict[int, int] = {}
+        di = self._dimmer_index(idx)
+        if di is not None:
+            o[di] = level
+        ri = self._rgb_indices(idx)
+        if ri and rgb:
+            o[ri["red"]], o[ri["green"]], o[ri["blue"]] = rgb
+        return o
+
+    def _dark(self, idx: int) -> Dict[int, int]:
+        """Overrides that keep fixture *idx* dark (shutter closed if it has
+        no dimmer channel)."""
+        return {} if self._dimmer_index(idx) is not None else self._shutter_closed(idx)
+
+    def _color_scene(self, name: str, rgb, scope: Optional[List[int]] = None) -> int:
+        idxs = self._all() if scope is None else scope
+        return self._scene(name, {i: self._light(i, rgb) for i in idxs}, scope)
+
+    def _dark_scene(self, name: str, scope: Optional[List[int]] = None) -> int:
+        idxs = self._all() if scope is None else scope
+        return self._scene(name, {i: self._dark(i) for i in idxs}, scope)
 
     def _create_all_on_scene(self, name: str = None) -> int:
-        overrides = {}
-        for idx in range(len(self.rig)):
-            o = {}
-            di = self._dimmer_index(idx)
-            if di is not None:
-                o[di] = 255
-            # Also turn on RGB to white if available
-            rgb = self._rgb_indices(idx)
-            if rgb:
-                o[rgb["red"]] = 255
-                o[rgb["green"]] = 255
-                o[rgb["blue"]] = 255
-            overrides[idx] = o
-        return self._create_full_scene(name or self._n("ALL ON"), overrides)
+        return self._color_scene(name or self._n("ALL ON"), (255, 255, 255))
 
     def _create_blackout_scene(self, name: str = None) -> int:
         """Blackout: dimmers/colours at 0; fixtures without a dimmer
         channel also get their shutter closed."""
-        return self._create_full_scene(name or self._n("BLACKOUT", kind="utility"),
-                                       self._dark_overrides())
+        return self._dark_scene(name or self._n("BLACKOUT", kind="utility"))
 
     def _dark_overrides(self) -> Dict[int, Dict[int, int]]:
-        out = {}
-        for idx in range(len(self.rig)):
-            if self._dimmer_index(idx) is None:
-                out[idx] = self._shutter_closed(idx)
-        return out
+        return {i: self._dark(i) for i in self._all()}
 
     def _create_panic_reset_scene(self) -> int:
         """The PANIC RESET *state*: every fixture neutral (shutter open, no
         effects, Pan/Tilt centred) with intensity at 0."""
-        return self._create_full_scene(self._n("Reset: neutral state", kind="utility"),
-                                       self._dark_overrides())
+        return self._scene(self._n("Reset: neutral state", kind="utility"),
+                           self._dark_overrides())
 
     def _create_panic_reset_script(self, reset_scene: int) -> int:
         """PANIC RESET: a Script that stops every generated function and then
@@ -506,505 +520,302 @@ class VCLayoutGenerator:
         self.functions.append(func)
         return fid
 
-    def _create_warm_white_scene(self) -> int:
-        overrides = {}
-        for idx in range(len(self.rig)):
-            o = {}
-            di = self._dimmer_index(idx)
-            if di is not None:
-                o[di] = 255
-            rgb = self._rgb_indices(idx)
-            if rgb:
-                o[rgb["red"]] = 255
-                o[rgb["green"]] = 200
-                o[rgb["blue"]] = 0
-            overrides[idx] = o
-        return self._create_full_scene(self._n("Warm White"), overrides)
+    # ── Chasers ───────────────────────────────────────────────────────────
 
-    def _create_cold_white_scene(self) -> int:
-        overrides = {}
-        for idx in range(len(self.rig)):
-            o = {}
-            di = self._dimmer_index(idx)
-            if di is not None:
-                o[di] = 255
-            rgb = self._rgb_indices(idx)
-            if rgb:
-                o[rgb["red"]] = 255
-                o[rgb["green"]] = 255
-                o[rgb["blue"]] = 255
-            overrides[idx] = o
-        return self._create_full_scene(self._n("Cold White"), overrides)
+    def _chaser(self, name: str, steps: List[int], fade_in: int, fade_out: int,
+                duration: int) -> int:
+        fid = self._next_fid()
+        self.functions.append(_build_chaser(fid, name, steps, fade_in=fade_in,
+                                            fade_out=fade_out, duration=duration))
+        return fid
 
-    def _create_color_scene(self, name: str, r: int, g: int, b: int) -> int:
-        overrides = {}
-        for idx in range(len(self.rig)):
-            o = {}
-            di = self._dimmer_index(idx)
-            if di is not None:
-                o[di] = 255
-            rgb = self._rgb_indices(idx)
-            if rgb:
-                o[rgb["red"]] = r
-                o[rgb["green"]] = g
-                o[rgb["blue"]] = b
-            overrides[idx] = o
-        return self._create_full_scene(name, overrides)
+    def _dimmer_sweep(self, base: str, cat: str, scope=None) -> int:
+        on = self._color_scene(self._n(f"{base}: On", cat, "pulse"), (255, 255, 255), scope)
+        off = self._dark_scene(self._n(f"{base}: Off", cat, "pulse"), scope)
+        return self._chaser(self._n(base, cat, "pulse"), [off, on], 1000, 1000, 500)
 
-    def _create_strobe_scene(self, name: str = "Strobe",
-                             strobe_val: int = 200) -> int:
-        overrides = {}
-        for idx in range(len(self.rig)):
-            o = {}
-            si = self._strobe_index(idx)
+    _FADE_COLOURS = [("Red", (255, 0, 0)), ("Yellow", (255, 255, 0)),
+                     ("Green", (0, 255, 0)), ("Cyan", (0, 255, 255)),
+                     ("Blue", (0, 0, 255)), ("Magenta", (255, 0, 255))]
+
+    def _color_fade(self, base: str, cat: str, scope=None) -> int:
+        steps = [self._color_scene(self._n(f"{base}: {c}", cat, "dynamic"), rgb, scope)
+                 for c, rgb in self._FADE_COLOURS]
+        return self._chaser(self._n(base, cat, "dynamic"), steps, 2000, 0, 1000)
+
+    def _create_strobe_scene(self, name: str = "Strobe", strobe_val: int = 200,
+                             scope=None) -> int:
+        idxs = self._all() if scope is None else scope
+        ov = {}
+        for i in idxs:
+            o = self._light(i, (255, 255, 255))
+            si = self._strobe_index(i)
             if si is not None:
                 o[si] = strobe_val
-            di = self._dimmer_index(idx)
-            if di is not None:
-                o[di] = 255
-            # Set RGB to white so strobe is visible
-            rgb = self._rgb_indices(idx)
-            if rgb:
-                o[rgb["red"]] = 255
-                o[rgb["green"]] = 255
-                o[rgb["blue"]] = 255
-            overrides[idx] = o
-        return self._create_full_scene(name, overrides)
+            ov[i] = o
+        return self._scene(name, ov, scope)
 
-    def _create_group_scene(self, group_name: str,
-                            fixture_indices: List[int]) -> int:
-        display = {
-            "moving_heads":   "Moving Heads",
-            "color_fixtures": "Color Fixtures",
-            "dimmers_only":   "Dimmers",
-            "other":          "Other",
-        }.get(group_name, group_name)
-        overrides = {}
-        for idx in range(len(self.rig)):
-            o = {}
-            if idx in fixture_indices:
-                di = self._dimmer_index(idx)
-                if di is not None:
-                    o[di] = 255
-                rgb = self._rgb_indices(idx)
-                if rgb:
-                    o[rgb["red"]] = 255
-                    o[rgb["green"]] = 255
-                    o[rgb["blue"]] = 255
-            # else: all zeros (fixture not in this group)
-            overrides[idx] = o
-        return self._create_full_scene(self._n(display, group_name), overrides)
+    def _strobe(self, base: str, cat: str, on_ms: int, scope=None) -> int:
+        on = self._create_strobe_scene(self._n(f"{base}: On", cat, "fx"), scope=scope)
+        off = self._dark_scene(self._n(f"{base}: Off", cat, "fx"), scope)
+        return self._chaser(self._n(base, cat, "fx"), [on, off], 0, 0, on_ms)
 
-    # ── Chaser builders ───────────────────────────────────────────────────
+    # ── RGB matrix effects ────────────────────────────────────────────────
 
-    def _create_dimmer_sweep_chaser(self) -> int:
-        s_on  = self._create_all_on_scene(self._n("Dimmer Sweep: On", kind="pulse"))
-        s_off = self._create_blackout_scene(self._n("Dimmer Sweep: Off", kind="pulse"))
-        fid = self._next_fid()
-        self.functions.append(
-            _build_chaser(fid, self._n("Dimmer Sweep", kind="pulse"), [s_off, s_on],
-                          fade_in=1000, fade_out=1000, duration=500))
-        return fid
+    def _rgb_scope(self, scope=None) -> List[int]:
+        idxs = self._all() if scope is None else scope
+        return [i for i in idxs if self._rgb_indices(i)]
 
-    def _create_color_fade_chaser(self) -> int:
-        s_r = self._create_color_scene(self._n("Color Fade: Red", kind="dynamic"),     255,   0,   0)
-        s_g = self._create_color_scene(self._n("Color Fade: Green", kind="dynamic"),     0, 255,   0)
-        s_b = self._create_color_scene(self._n("Color Fade: Blue", kind="dynamic"),      0,   0, 255)
-        s_y = self._create_color_scene(self._n("Color Fade: Yellow", kind="dynamic"),  255, 255,   0)
-        s_m = self._create_color_scene(self._n("Color Fade: Magenta", kind="dynamic"), 255,   0, 255)
-        s_c = self._create_color_scene(self._n("Color Fade: Cyan", kind="dynamic"),      0, 255, 255)
-        fid = self._next_fid()
-        self.functions.append(
-            _build_chaser(fid, self._n("Color Fade", kind="dynamic"),
-                          [s_r, s_y, s_g, s_c, s_b, s_m],
-                          fade_in=2000, fade_out=0, duration=1000))
-        return fid
-
-    def _create_strobe_chaser(self, name: str, on_ms: int, off_ms: int) -> int:
-        s_on  = self._create_strobe_scene(self._n(f"{name}: On", kind="fx"))
-        s_off = self._create_blackout_scene(self._n(f"{name}: Off", kind="fx"))
-        fid = self._next_fid()
-        self.functions.append(
-            _build_chaser(fid, self._n(name, kind="fx"), [s_on, s_off],
-                          fade_in=0, fade_out=0, duration=on_ms))
-        return fid
-
-    # ── RGBMatrix builders ───────────────────────────────────────────────
-
-    def _create_fixture_group_for_rgb(self) -> int:
-        """Create a FixtureGroup with RGB-capable fixtures for RGBMatrix."""
+    def _fixture_group(self, name: str, idxs: List[int]) -> int:
+        """QLC+ FixtureGroup (1 × N, ordered left → right on stage)."""
+        key = tuple(idxs)
+        if key in self._fg_cache:
+            return self._fg_cache[key]
+        order = sorted(idxs, key=lambda i: (self.rig[i].get("x_mm", 0), i))
         gid = self._fg_id.next()
-        rgb_indices = []
-        for idx in range(len(self.rig)):
-            caps = self.analysis.fixture_caps[idx]
-            if caps.has_rgb():
-                rgb_indices.append(idx)
-        if not rgb_indices:
-            rgb_indices = list(range(len(self.rig)))
-
         fg = ET.Element(_ns("FixtureGroup"))
         fg.set("ID", str(gid))
-        _sub(fg, "Name", "RGB Fixtures")
-        _sub(fg, "Size", X=str(len(rgb_indices)), Y="1")
-        for i, fix_idx in enumerate(rgb_indices):
-            head = _sub(fg, "Head", X=str(i), Y="0", Fixture=str(fix_idx))
-            head.text = "0"
+        _sub(fg, "Name", name)
+        _sub(fg, "Size", X=str(len(order)), Y="1")
+        for x, fix in enumerate(order):
+            _sub(fg, "Head", "0", X=str(x), Y="0", Fixture=str(fix))
         self.fixture_groups.append(fg)
+        self._fg_cache[key] = gid
         return gid
 
-    def _create_fixture_group_vertical(self) -> int:
-        """Create a vertical (1xN) FixtureGroup for vertical RGBMatrix effects."""
-        gid = self._fg_id.next()
-        rgb_indices = []
-        for idx in range(len(self.rig)):
-            caps = self.analysis.fixture_caps[idx]
-            if caps.has_rgb():
-                rgb_indices.append(idx)
-        if not rgb_indices:
-            rgb_indices = list(range(len(self.rig)))
-        fg = ET.Element(_ns("FixtureGroup"))
-        fg.set("ID", str(gid))
-        _sub(fg, "Name", "RGB Fixtures (Vertical)")
-        _sub(fg, "Size", X="1", Y=str(len(rgb_indices)))
-        for i, fix_idx in enumerate(rgb_indices):
-            head = _sub(fg, "Head", X="0", Y=str(i), Fixture=str(fix_idx))
-            head.text = "0"
-        self.fixture_groups.append(fg)
-        return gid
+    def _matrix(self, base: str, cat: str, algorithm: str, colors: List[int],
+                duration: int, scope=None, props: Dict[str, str] = None) -> int:
+        """RGB matrix effect that is visible on fixtures with a master dimmer.
 
-    def _create_rgbmatrix_effects(self, fg_id: int, fg_id_v: int = None) -> List[Tuple[str, int]]:
-        """Create RGBMatrix template effects. Returns [(name, fid), ...]."""
-        effects = []
-
-        # Stripes H (red/blue)
-        fid = self._next_fid()
+        QLC+ matrices in RGB mode only drive the colour channels (the
+        DimmerControl flag is ignored in RGB mode, rgbmatrix.cpp), so a
+        fixture with a dimmer stays dark.  The button therefore runs a
+        Collection: a scene that opens the dimmers of the matrix fixtures +
+        the matrix itself.
+        """
+        rgb = self._rgb_scope(scope)
+        gid = self._fixture_group(f"QS · {cat.split(':', 1)[-1] if cat != 'all' else 'All RGB'}", rgb)
+        mid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, self._n("Stripes H (Red/Blue)", kind="matrix"), fg_id,
-            algorithm="Stripes", color0=_CLR_RED, color1=4278190335,
-            duration=800, properties={"orientation": "Horizontal"}))
-        effects.append(("Stripes H", fid))
+            mid, self._n(f"{base} (matrix)", cat, "matrix"), gid,
+            algorithm=algorithm, color0=colors[0],
+            color1=colors[1] if len(colors) > 1 else None,
+            duration=duration, properties=props or {}))
+        dim = self._scene(self._n(f"{base}: dimmers", cat, "matrix"),
+                          {i: self._light(i, None) for i in rgb}, rgb)
+        cid = self._next_fid()
+        coll = ET.Element(_ns("Function"))
+        coll.set("ID", str(cid))
+        coll.set("Type", "Collection")
+        coll.set("Name", self._n(base, cat, "matrix"))
+        _sub(coll, "Speed", FadeIn="0", FadeOut="0", Duration="0")
+        for n, f in enumerate((dim, mid)):
+            _sub(coll, "Step", str(f), Number=str(n))
+        self.functions.append(coll)
+        return cid
 
-        # Stripes V (green/magenta) — vertical group for correct direction
-        fid = self._next_fid()
-        self.functions.append(_build_rgbmatrix(
-            fid, self._n("Stripes V (Green/Mag)", kind="matrix"), fg_id_v or fg_id,
-            algorithm="Stripes", color0=_CLR_GREEN, color1=_CLR_MAGENTA,
-            duration=800, properties={"orientation": "Vertical"}))
-        effects.append(("Stripes V", fid))
+    # Whole-rig matrix effects: (caption, script, colours, duration ms, props)
+    _MATRIX_ALL = [
+        ("Chase",     "One By One", [_CLR_RED],               300,  {}),
+        ("Even/Odd",  "Even/Odd",   [_CLR_BLUE, _CLR_ORANGE], 600,  {}),
+        ("Gradient",  "Gradient",   [_CLR_CYAN, _CLR_PURPLE], 1200, {}),
+        ("Plasma",    "Plasma",     [_CLR_RED],               500,  {}),
+        ("Waves",     "Waves",      [_CLR_BLUE],              600,  {}),
+        ("Stripes",   "Stripes",    [_CLR_RED, _CLR_BLUE],    800,  {"orientation": "Horizontal"}),
+    ]
 
-        # Plasma (red)
-        fid = self._next_fid()
-        self.functions.append(_build_rgbmatrix(
-            fid, self._n("Plasma", kind="matrix"), fg_id,
-            algorithm="Plasma", color0=_CLR_RED, duration=500))
-        effects.append(("Plasma", fid))
+    # ── Groups ────────────────────────────────────────────────────────────
 
-        # Gradient (cyan/purple)
-        fid = self._next_fid()
-        self.functions.append(_build_rgbmatrix(
-            fid, self._n("Gradient", kind="matrix"), fg_id,
-            algorithm="Gradient", color0=_CLR_CYAN, color1=_CLR_PURPLE,
-            duration=1200))
-        effects.append(("Gradient", fid))
+    def _default_groups(self) -> List[dict]:
+        """One group per fixture name ("Spot 1", "Spot 2" → "Spot")."""
+        import re as _re
+        groups: Dict[str, List[int]] = {}
+        for i, e in enumerate(self.rig):
+            base = _re.sub(r"\s*\d+$", "", e.get("name") or e.get("model") or "Group").strip()
+            groups.setdefault(base or "Group", []).append(i)
+        return [{"name": n, "fixtures": f} for n, f in groups.items()]
 
-        # Waves (blue)
-        fid = self._next_fid()
-        self.functions.append(_build_rgbmatrix(
-            fid, self._n("Waves", kind="matrix"), fg_id,
-            algorithm="Waves", color0=_CLR_BLUE, duration=600))
-        effects.append(("Waves", fid))
-
-        # Full Row (orange) — vertical group so row sweeps across fixtures
-        fid = self._next_fid()
-        self.functions.append(_build_rgbmatrix(
-            fid, self._n("Full Row", kind="matrix"), fg_id_v or fg_id,
-            algorithm="Full Row", color0=_CLR_ORANGE, duration=1000))
-        effects.append(("Full Row", fid))
-
-        return effects
+    def _clean_groups(self, groups) -> List[dict]:
+        out, n = [], len(self.rig)
+        for g in groups or []:
+            idxs = sorted({int(i) for i in g.get("fixtures", []) if 0 <= int(i) < n})
+            name = (g.get("name") or "").strip()
+            if idxs and name:
+                out.append({"name": name, "fixtures": idxs})
+        return out
 
     # ── Main generation ───────────────────────────────────────────────────
 
     def generate(self) -> Tuple[List[ET.Element], ET.Element, List[ET.Element]]:
         """
-        Generate the complete VC layout and backing functions.
+        Generate the complete VC page and backing functions.
 
-        Returns
-        -------
-        (functions, vc_frame, fixture_groups)
-            functions       : list of <Function> XML elements
-            vc_frame        : root <Frame> XML element for the Virtual Console
-            fixture_groups  : list of <FixtureGroup> XML elements (for RGBMatrix)
+        Layout (one QLC+ page, sized to the VC style's page):
+
+        * **MASTER** — submaster slider on the left: scales everything.
+        * **SHOW** — one SoloFrame holding every look and effect, so pressing
+          any button switches the previous one off (nothing mixes):
+
+          - LOOKS (whole rig) and EFFECTS (whole rig);
+          - one frame per fixture group: its own submaster slider, looks
+            (on / colours) and effects (pulse, colour fade, chase).
+        * **PANIC / BLACKOUT** (StopAll) and **PANIC RESET** on the right.
+
+        Returns (functions, page_frame, fixture_groups).
         """
         self.functions = []
         self.fixture_groups = []
-        groups = self.analysis.group_by_type()
-
+        self._fg_cache: Dict[tuple, int] = {}
         st = self.style
-        pad = st.gap
-        hdr = st.header_h           # room for a frame's header before content
-        btn_h = st.btn_h
-        btn_w = st.btn_w
+        pad, hdr, bw, bh = st.gap, st.header_h, st.btn_w, st.btn_h
+        page_w = st.page_w or 1650
+        page_h = st.page_h or 884
+        groups = self.groups if self.groups is not None else self._default_groups()
+        any_rgb = self.analysis.has_any_rgb()
+        any_strobe = self.analysis.has_any_strobe()
+        n_rgb_all = len(self._rgb_scope())
 
-        # ── STATIC LOOKS (SoloFrame — mutual exclusivity) ────────────────
-        static_entries = []   # (caption, fid, bg, fg)
+        # ── whole-rig looks ─────────────────────────────────────────────
+        looks = [(self._n("ALL ON"), self._color_scene(self._n("ALL ON"), (255, 255, 255)),
+                  "ALL ON", _CLR_GREEN, _CLR_WHITE)]
+        looks.append(("", self._color_scene(self._n("Warm White"), (255, 160, 60)),
+                      "Warm White", _CLR_WARM, _CLR_BLACK))
+        looks.append(("", self._color_scene(self._n("Cold White"), (200, 220, 255)),
+                      "Cold White", _CLR_LIGHT_GRAY, _CLR_BLACK))
+        if any_rgb:
+            for cap, rgb, bg, fg in (("Red", (255, 0, 0), _CLR_RED, _CLR_WHITE),
+                                     ("Green", (0, 255, 0), _CLR_GREEN, _CLR_BLACK),
+                                     ("Blue", (0, 0, 255), _CLR_BLUE, _CLR_WHITE),
+                                     ("Yellow", (255, 255, 0), _CLR_YELLOW, _CLR_BLACK),
+                                     ("Magenta", (255, 0, 255), _CLR_MAGENTA, _CLR_BLACK),
+                                     ("Cyan", (0, 255, 255), _CLR_CYAN, _CLR_BLACK),
+                                     ("Purple", (148, 0, 211), _CLR_PURPLE, _CLR_WHITE)):
+                looks.append(("", self._color_scene(self._n(cap), rgb), cap, bg, fg))
+        looks.append(("", self._create_blackout_scene(), "BLACKOUT", _CLR_DARK_RED, _CLR_WHITE))
 
-        fid_on = self._create_all_on_scene()
-        static_entries.append(("ALL ON", fid_on, _CLR_GREEN, _CLR_WHITE))
+        # ── whole-rig effects ───────────────────────────────────────────
+        effects = [("", self._dimmer_sweep("Dimmer Sweep", "all"), "Dimmer Sweep",
+                    _CLR_ORANGE, _CLR_BLACK)]
+        if any_rgb:
+            effects.append(("", self._color_fade("Color Fade", "all"), "Color Fade",
+                            _CLR_PURPLE, _CLR_WHITE))
+        if any_strobe:
+            effects.append(("", self._strobe("Strobe Slow", "all", 200), "Strobe Slow",
+                            _CLR_YELLOW, _CLR_BLACK))
+            effects.append(("", self._strobe("Strobe Fast", "all", 50), "Strobe Fast",
+                            _CLR_RED, _CLR_WHITE))
+        if n_rgb_all >= 2:
+            pal = [(_CLR_RED, _CLR_WHITE), (_CLR_BLUE, _CLR_WHITE), (_CLR_CYAN, _CLR_BLACK),
+                   (_CLR_PURPLE, _CLR_WHITE), (_CLR_GREEN, _CLR_BLACK), (_CLR_ORANGE, _CLR_BLACK)]
+            for k, (cap, algo, cols, dur, props) in enumerate(self._MATRIX_ALL):
+                bg, fg = pal[k % len(pal)]
+                effects.append(("", self._matrix(cap, "all", algo, cols, dur, None, props),
+                                cap, bg, fg))
 
-        fid_ww = self._create_warm_white_scene()
-        static_entries.append(("Warm White", fid_ww, _CLR_WARM, _CLR_BLACK))
+        # ── per-group looks + effects ───────────────────────────────────
+        group_blocks = []   # (name, [(fid, caption, bg, fg)])
+        for g in groups:
+            scope, cat = g["fixtures"], f"group:{g['name']}"
+            has_rgb = bool(self._rgb_scope(scope))
+            btns = [(self._color_scene(self._n(f"{g['name']} On", cat), (255, 255, 255), scope),
+                     "On", _CLR_GREEN, _CLR_WHITE)]
+            if has_rgb:
+                for cap, rgb, bg, fg in (("Red", (255, 0, 0), _CLR_RED, _CLR_WHITE),
+                                         ("Blue", (0, 0, 255), _CLR_BLUE, _CLR_WHITE),
+                                         ("Green", (0, 255, 0), _CLR_GREEN, _CLR_BLACK),
+                                         ("Warm", (255, 160, 60), _CLR_WARM, _CLR_BLACK)):
+                    btns.append((self._color_scene(self._n(f"{g['name']} {cap}", cat), rgb, scope),
+                                 cap, bg, fg))
+            btns.append((self._dimmer_sweep(f"{g['name']} Pulse", cat, scope), "Pulse",
+                         _CLR_ORANGE, _CLR_BLACK))
+            if has_rgb:
+                btns.append((self._color_fade(f"{g['name']} Color Fade", cat, scope), "Color Fade",
+                             _CLR_PURPLE, _CLR_WHITE))
+            if len(self._rgb_scope(scope)) >= 2:
+                btns.append((self._matrix(f"{g['name']} Chase", cat, "One By One", [_CLR_RED],
+                                          300, scope), "Chase", _CLR_CYAN, _CLR_BLACK))
+            group_blocks.append((g["name"], btns))
 
-        fid_cw = self._create_cold_white_scene()
-        static_entries.append(("Cold White", fid_cw, _CLR_LIGHT_GRAY, _CLR_BLACK))
-
-        if self.analysis.has_any_rgb():
-            fid_r = self._create_color_scene(self._n("Red"),     255,   0,   0)
-            static_entries.append(("Red", fid_r, _CLR_RED, _CLR_WHITE))
-            fid_g = self._create_color_scene(self._n("Green"),     0, 255,   0)
-            static_entries.append(("Green", fid_g, _CLR_GREEN, _CLR_BLACK))
-            fid_b = self._create_color_scene(self._n("Blue"),      0,   0, 255)
-            static_entries.append(("Blue", fid_b, _CLR_BLUE, _CLR_WHITE))
-            fid_y = self._create_color_scene(self._n("Yellow"),  255, 255,   0)
-            static_entries.append(("Yellow", fid_y, _CLR_YELLOW, _CLR_BLACK))
-            fid_m = self._create_color_scene(self._n("Magenta"), 255,   0, 255)
-            static_entries.append(("Magenta", fid_m, _CLR_MAGENTA, _CLR_BLACK))
-            fid_c = self._create_color_scene(self._n("Cyan"),      0, 255, 255)
-            static_entries.append(("Cyan", fid_c, _CLR_CYAN, _CLR_BLACK))
-            fid_p = self._create_color_scene(self._n("Purple"),  148,   0, 211)
-            static_entries.append(("Purple", fid_p, _CLR_PURPLE, _CLR_WHITE))
-
-        # Blackout scene (inside SoloFrame so it cancels any active look)
-        fid_bo = self._create_blackout_scene()
-        static_entries.append(("BLACKOUT", fid_bo, _CLR_DARK_RED, _CLR_WHITE))
-
-        cols = 3
-        static_rows = (len(static_entries) + cols - 1) // cols
-        static_w = cols * (btn_w + pad) + pad
-        static_h = hdr + static_rows * (btn_h + pad) + pad
-
-        static_solo = _vc_solo_frame(
-            self._next_wid(), "STATIC LOOKS",
-            0, 0, static_w, static_h)
-        for si, (caption, fid, bg, fg) in enumerate(static_entries):
-            sc = si % cols
-            sr = si // cols
-            x = pad + sc * (btn_w + pad)
-            y = hdr + sr * (btn_h + pad)
-            static_solo.append(
-                _vc_button(self._next_wid(), caption, fid, "Scene",
-                           x, y, btn_w, btn_h,
-                           bg_color=bg, fg_color=fg))
-
-        # ── DYNAMIC EFFECTS (SoloFrame) ──────────────────────────────────
-        effect_entries = []  # (caption, fid, ftype, bg, fg)
-
-        fid_sweep = self._create_dimmer_sweep_chaser()
-        effect_entries.append(("Dimmer Sweep", fid_sweep, "Chaser",
-                               _CLR_ORANGE, _CLR_BLACK))
-
-        if self.analysis.has_any_rgb():
-            fid_cfade = self._create_color_fade_chaser()
-            effect_entries.append(("Color Fade", fid_cfade, "Chaser",
-                                   _CLR_PURPLE, _CLR_WHITE))
-
-        if self.analysis.has_any_strobe():
-            fid_slow = self._create_strobe_chaser("Strobe Slow", 200, 200)
-            effect_entries.append(("Strobe Slow", fid_slow, "Chaser",
-                                   _CLR_YELLOW, _CLR_BLACK))
-            fid_fast = self._create_strobe_chaser("Strobe Fast", 50, 50)
-            effect_entries.append(("Strobe Fast", fid_fast, "Chaser",
-                                   _CLR_RED, _CLR_WHITE))
-
-        # RGBMatrix effects (if we have RGB-capable fixtures)
-        if self.analysis.has_any_rgb():
-            fg_id = self._create_fixture_group_for_rgb()
-            fg_id_v = self._create_fixture_group_vertical()
-            rgbm_effects = self._create_rgbmatrix_effects(fg_id, fg_id_v)
-            _RGBM_COLORS = [
-                (_CLR_RED,    _CLR_WHITE),
-                (_CLR_GREEN,  _CLR_BLACK),
-                (_CLR_PURPLE, _CLR_WHITE),
-                (_CLR_CYAN,   _CLR_BLACK),
-                (_CLR_BLUE,   _CLR_WHITE),
-                (_CLR_ORANGE, _CLR_BLACK),
-            ]
-            for i, (ename, efid) in enumerate(rgbm_effects):
-                bg, fg = _RGBM_COLORS[i % len(_RGBM_COLORS)]
-                effect_entries.append((ename, efid, "RGBMatrix", bg, fg))
-
-        eff_cols = 3
-        eff_rows = max((len(effect_entries) + eff_cols - 1) // eff_cols, 1)
-        eff_w = eff_cols * (btn_w + pad) + pad
-        eff_h = hdr + eff_rows * (btn_h + pad) + pad
-
-        effects_solo = _vc_solo_frame(
-            self._next_wid(), "DYNAMIC / EFFECTS",
-            0, static_h + pad, eff_w, eff_h)
-        for ei, (caption, fid, ftype, bg, fg) in enumerate(effect_entries):
-            ec = ei % eff_cols
-            er = ei // eff_cols
-            x = pad + ec * (btn_w + pad)
-            y = hdr + er * (btn_h + pad)
-            effects_solo.append(
-                _vc_button(self._next_wid(), caption, fid, ftype,
-                           x, y, btn_w, btn_h,
-                           bg_color=bg, fg_color=fg))
-
-        # ── FIXTURE GROUPS (regular Frame) ────────────────────────────────
-        active_groups = [(gn, gi) for gn, gi in groups.items() if gi]
-
-        _GROUP_COLORS = {
-            "moving_heads":   (_CLR_BLUE,       _CLR_WHITE),
-            "color_fixtures": (_CLR_CYAN,        _CLR_BLACK),
-            "dimmers_only":   (_CLR_YELLOW,      _CLR_BLACK),
-            "other":          (_CLR_MID_GRAY,    _CLR_WHITE),
-        }
-
-        grp_rows = max(len(active_groups), 1)
-        grp_w = 2 * btn_w + 3 * pad
-        grp_h = hdr + grp_rows * (btn_h + pad) + pad
-
-        groups_frame = _vc_frame(self._next_wid(), "FIXTURE GROUPS",
-                                  0, static_h + pad + eff_h + pad,
-                                  grp_w, grp_h)
-        btn_y = hdr
-        for gname, indices in active_groups:
-            display = {
-                "moving_heads":   "Moving Heads",
-                "color_fixtures": "Color Fixtures",
-                "dimmers_only":   "Dimmers",
-                "other":          "Other",
-            }.get(gname, gname)
-            bg, fg = _GROUP_COLORS.get(gname, (_CLR_MID_GRAY, _CLR_WHITE))
-            fid_g = self._create_group_scene(gname, indices)
-            groups_frame.append(
-                _vc_button(self._next_wid(), display, fid_g, "Scene",
-                           pad, btn_y, 2 * btn_w + pad, btn_h,
-                           bg_color=bg, fg_color=fg))
-            btn_y += btn_h + pad
-
-        # ── MASTER DIMMER SLIDER ─────────────────────────────────────────
-        dimmer_channels = []
-        for idx in range(len(self.rig)):
-            di = self._dimmer_index(idx)
-            if di is not None:
-                dimmer_channels.append((idx, di))
-
-        slider_w = st.slider_w
-        slider_h = static_h + pad + eff_h + pad + grp_h
-        # Manual DIMMER: a Level slider on the dimmer channels that starts
-        # at 0, like the DIMMER slider in the 20Minutes shows.  At 0 it adds
-        # nothing; raised, it adds intensity on top of the looks (HTP).
-        # (It used to start at 255, which held every dimmer at full, so
-        # BLACKOUT / PANIC RESET could never bring intensity down.  A
-        # Submaster slider made QLC+ 5 drop every widget after it.)
-        dimmer_slider = _vc_slider(
-            self._next_wid(), "DIMMER",
-            0, 0, slider_w, slider_h,
-            slider_mode="Level", value=0,
-            channels=dimmer_channels)
-
-        # ── RGB + INTENSITY SLIDERS ───────────────────────────────────────
-        rgb_sliders = []
-        red_channels = []
-        green_channels = []
-        blue_channels = []
-        for idx in range(len(self.rig)):
-            rgb = self._rgb_indices(idx)
-            if rgb:
-                red_channels.append((idx, rgb["red"]))
-                green_channels.append((idx, rgb["green"]))
-                blue_channels.append((idx, rgb["blue"]))
-
-        rgb_slider_w = max(slider_w - 10, 30)
-        rgb_slider_h = slider_h  # same height as master
-        if red_channels:
-            sl_r = _vc_slider(self._next_wid(), "RED", 0, 0,
-                              rgb_slider_w, rgb_slider_h,
-                              slider_mode="Level", value=0, channels=red_channels)
-            rgb_sliders.append(sl_r)
-            sl_g = _vc_slider(self._next_wid(), "GREEN", 0, 0,
-                              rgb_slider_w, rgb_slider_h,
-                              slider_mode="Level", value=0, channels=green_channels)
-            rgb_sliders.append(sl_g)
-            sl_b = _vc_slider(self._next_wid(), "BLUE", 0, 0,
-                              rgb_slider_w, rgb_slider_h,
-                              slider_mode="Level", value=0, channels=blue_channels)
-            rgb_sliders.append(sl_b)
-
-        # ── PANIC button (StopAll) ───────────────────────────────────────
-        panic_w = btn_w
-        panic_h = max(80, btn_h)
-        panic_btn = _vc_button(
-            self._next_wid(),
-            "PANIC\nBLACKOUT",
-            _STOP_ALL_FID, "Scene",
-            0, 0, panic_w, panic_h,
-            bg_color=_CLR_DARK_RED, fg_color=_CLR_WHITE,
-            action="StopAll")
-
+        # ── PANIC (last, so the reset script can stop everything) ───────
         fid_reset = self._create_panic_reset_script(self._create_panic_reset_scene())
-        reset_btn = _vc_button(
-            self._next_wid(),
-            "PANIC\nRESET",
-            fid_reset, "Script",
-            0, 0, panic_w, panic_h,
-            bg_color=_CLR_ORANGE, fg_color=_CLR_BLACK)
 
-        # ── Assemble main frame ──────────────────────────────────────────
-        left_w = max(static_w, eff_w, grp_w)
+        # ── layout ──────────────────────────────────────────────────────
+        def grid(frame, entries, x0, y0, cols, w=bw):
+            for k, (fid, cap, bg, fg) in enumerate(entries):
+                c, r = k % cols, k // cols
+                frame.append(_vc_button(self._next_wid(), cap, fid, "",
+                                        x0 + c * (w + pad), y0 + r * (bh + pad), w, bh,
+                                        bg_color=bg, fg_color=fg))
 
-        # RGB sliders go between master and the button panels
-        rgb_block_w = len(rgb_sliders) * (rgb_slider_w + pad) if rgb_sliders else 0
-        panels_x = slider_w + pad + rgb_block_w + pad
-        right_col_x = panels_x + left_w + pad
+        def rows_h(n, cols):
+            return hdr + max((n + cols - 1) // cols, 1) * (bh + pad) + pad
 
-        total_w = right_col_x + panic_w + pad
-        left_h = static_h + pad + eff_h + pad + grp_h
-        total_h = max(left_h, 2 * (panic_h + pad)) + hdr + pad
-        # Reference page size (cloned style): the page is at least that big
-        total_w = max(total_w, st.page_w)
-        total_h = max(total_h, st.page_h)
+        master_w = st.slider_w
+        right_w = bw
+        show_x = pad + master_w + pad
+        show_w = page_w - show_x - right_w - 2 * pad
+        inner_w = show_w - 2 * pad
 
-        main_frame = _vc_frame(
-            self._next_wid(), "Quick Start",
-            0, 0, total_w, total_h,
-            caption="Quick Start", font=st.font_page)
+        # Row 1: LOOKS | EFFECTS, each half of the SHOW width
+        half = (inner_w - pad) // 2
+        cols1 = max(1, (half - pad) // (bw + pad))
+        e_looks = [(f, c, b, g) for _, f, c, b, g in looks]
+        e_fx = [(f, c, b, g) for _, f, c, b, g in effects]
+        row1_h = max(rows_h(len(e_looks), cols1), rows_h(len(e_fx), cols1))
 
-        # Position master slider on the far left
-        _update_ws(dimmer_slider, pad, hdr)
-        main_frame.append(dimmer_slider)
+        # Row 2+: one frame per group, flowing left to right
+        blocks = []
+        for name, btns in group_blocks:
+            gcols = max(1, min(3, (len(btns) + 2) // 3))
+            gw = pad + st.slider_w + pad + gcols * (bw + pad)
+            gh = max(rows_h(len(btns), gcols), hdr + 3 * (bh + pad) + pad)
+            blocks.append((name, btns, gcols, gw, gh))
+        placements, x, y, line_h = [], pad, hdr + pad + row1_h + pad, 0
+        for b in blocks:
+            if x > pad and x + b[3] > inner_w + pad:
+                x, y, line_h = pad, y + line_h + pad, 0
+            placements.append((b, x, y))
+            x += b[3] + pad
+            line_h = max(line_h, b[4])
+        show_h = max(y + line_h + pad, page_h - 2 * pad) if blocks else \
+            max(hdr + pad + row1_h + pad, page_h - 2 * pad)
+        page_h = max(page_h, show_h + 2 * pad)
 
-        # Position RGB sliders next to master
-        for si, sl in enumerate(rgb_sliders):
-            sx = slider_w + pad + si * (rgb_slider_w + pad)
-            _update_ws(sl, sx, hdr)
-            main_frame.append(sl)
+        page = _vc_frame(self._next_wid(), "Quick Start", 0, 0, page_w, page_h,
+                         caption="Quick Start", header=False, font=st.font_page)
+        page.append(_vc_slider(self._next_wid(), "MASTER", pad, pad, master_w,
+                               page_h - 2 * pad, slider_mode="Submaster"))
+        show = _vc_solo_frame(self._next_wid(), "SHOW", show_x, pad, show_w, show_h,
+                              caption="SHOW — one at a time")
+        page.append(show)
 
-        # Position static solo
-        _update_ws(static_solo, panels_x, hdr)
-        main_frame.append(static_solo)
+        f_looks = _vc_frame(self._next_wid(), "LOOKS", pad, hdr + pad, half, row1_h)
+        grid(f_looks, e_looks, pad, hdr, cols1)
+        show.append(f_looks)
+        f_fx = _vc_frame(self._next_wid(), "EFFECTS", pad + half + pad, hdr + pad, half, row1_h)
+        grid(f_fx, e_fx, pad, hdr, cols1)
+        show.append(f_fx)
 
-        # Position effects solo
-        _update_ws(effects_solo, panels_x,
-                   hdr + static_h + pad)
-        main_frame.append(effects_solo)
+        for (name, btns, gcols, gw, gh), gx, gy in placements:
+            gf = _vc_frame(self._next_wid(), f"GROUP · {name}", gx, gy, gw, gh)
+            gf.append(_vc_slider(self._next_wid(), name.upper()[:10], pad, hdr,
+                                 st.slider_w, gh - hdr - pad, slider_mode="Submaster"))
+            grid(gf, btns, pad + st.slider_w + pad, hdr, gcols)
+            show.append(gf)
 
-        # Position groups frame
-        _update_ws(groups_frame, panels_x,
-                   hdr + static_h + pad + eff_h + pad)
-        main_frame.append(groups_frame)
+        rx = page_w - pad - right_w
+        ph = max(80, bh)
+        page.append(_vc_button(self._next_wid(), "PANIC\nBLACKOUT", _STOP_ALL_FID, "",
+                               rx, pad, right_w, ph, bg_color=_CLR_DARK_RED,
+                               fg_color=_CLR_WHITE, action="StopAll"))
+        page.append(_vc_button(self._next_wid(), "PANIC\nRESET", fid_reset, "",
+                               rx, pad + ph + pad, right_w, ph,
+                               bg_color=_CLR_ORANGE, fg_color=_CLR_BLACK))
 
-        # Position panic button on the right side
-        _update_ws(panic_btn, right_col_x, hdr)
-        main_frame.append(panic_btn)
-        _update_ws(reset_btn, right_col_x, hdr + panic_h + pad)
-        main_frame.append(reset_btn)
-
-        self._apply_fonts(main_frame)
-        self._apply_caption_prefixes(main_frame)
-        return self.functions, main_frame, self.fixture_groups
+        self.page_size = (page_w, page_h)
+        self._apply_fonts(page)
+        self._apply_caption_prefixes(page)
+        return self.functions, page, self.fixture_groups
 
     def _apply_caption_prefixes(self, main_frame: ET.Element) -> None:
         """With ``prefix_captions``, a button shows its function's prefix

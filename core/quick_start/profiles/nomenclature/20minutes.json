@@ -1,7 +1,7 @@
 {
   "id": "20minutes",
   "label": "20Minutes (two-letter prefix)",
-  "description": "Two-letter prefix, as in the 20Minutes / LiquidBar shows: first letter = fixture group, second = effect type (\"AS · Red\", \"AD · Color Fade\", \"A* · Strobe Fast\"). Quick Start knows only \"all fixtures\"; map your own groups in category_group.",
+  "description": "Two-letter prefix, as in the 20Minutes shows: first letter = fixture group, second = effect type (\"AS · Red\", \"AD · Color Fade\", \"A* · Strobe Fast\"). Whole-rig functions use A; your Quick Start groups use the first letter of their name (\"Front\" → F) unless you map them in category_group.",
   "format": "{group}{effect} · {name}",
   "groups": {
     "A": "all fixtures",
@@ -31,5 +31,6 @@
     "matrix": "M",
     "fx": "*"
   },
-  "prefix_captions": true
+  "prefix_captions": true,
+  "auto_group_letter": true
 }

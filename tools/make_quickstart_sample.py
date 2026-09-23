@@ -6,10 +6,10 @@ Three reference rigs, driven through the real Flask routes, deterministic:
                             RGB PAR (floor). Plain names, default style.
 * ``QuickStart_club``     — 2 × Chauvet Intimidator Spot 110 (6-channel mode,
                             channel order ≠ definition order) + 4 × SlimPAR 56.
-                            20Minutes names, built-in LiquidBar style.
+                            20Minutes names, built-in Compact style.
 * ``QuickStart_multiuni`` — 8 × Intimidator Spot 375Z (15-ch, shutter closed
                             at 0) + 60 × SlimPAR 56 → spills into universe 2.
-                            20Minutes names, style cloned from LiquidBar_v14.qxw.
+                            20Minutes names, style cloned from Pub_6fix.qxw.
 
     python3 tools/make_quickstart_sample.py            # write all three
     python3 tools/make_quickstart_sample.py club       # one rig, to corpus
@@ -44,7 +44,7 @@ RIGS = {
         ],
         "positions": [(2000, 500, 2900), (4000, 500, 2900),
                       (750, 3500, 200), (2250, 3500, 200), (3750, 3500, 200), (5250, 3500, 200)],
-        "options": {"nomenclature": "20minutes", "style": "liquidbar"},
+        "options": {"nomenclature": "20minutes", "style": "compact"},
     },
     "multiuni": {
         "title": "QuickStart multiuni",
@@ -56,7 +56,7 @@ RIGS = {
         "positions": ([(500 + i * 700, 500, 2900) for i in range(8)] +
                       [(300 + (i % 12) * 480, 1500 + (i // 12) * 500, 200) for i in range(60)]),
         "options": {"nomenclature": "20minutes",
-                    "style_path": os.path.join(CORPUS, "LiquidBar_v14.qxw")},
+                    "style_path": os.path.join(CORPUS, "Pub_6fix.qxw")},
     },
 }
 

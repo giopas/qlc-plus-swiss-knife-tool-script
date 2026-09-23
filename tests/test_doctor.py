@@ -256,13 +256,13 @@ def test_corpus_matches_baseline(name):
     assert rep.severity_counts() == exp["summary"]
 
 
-def test_liquidbar_is_clean_reference():
-    rep = check_file(os.path.join(CORPUS, "LiquidBar_v14.qxw"), DEFS)
+def test_pub_is_clean_reference():
+    rep = check_file(os.path.join(CORPUS, "Pub_6fix.qxw"), DEFS)
     assert rep.ok and not rep.warnings
 
 
 def test_corpus_false_positives_gone():
-    """expected_baseline 'D006 … 4' in LiquidBar were all false positives."""
+    """expected_baseline 'D006 … 4' in Pub_6fix were all false positives."""
     for name in BASELINE:
         rep = check_file(os.path.join(CORPUS, name), DEFS)
         assert not rep.by_code("D006")
@@ -270,27 +270,27 @@ def test_corpus_false_positives_gone():
 
 
 def test_report_is_deterministic():
-    path = os.path.join(CORPUS, "SangAKlang_v41.qxw")
+    path = os.path.join(CORPUS, "Festival_14fix.qxw")
     assert check_file(path, DEFS).to_json() == check_file(path, load_qxf_defs([CORPUS])).to_json()
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def test_cli_exit_codes(capsys):
-    assert cli_main([os.path.join(CORPUS, "LiquidBar_v14.qxw")]) == 0
-    assert cli_main([os.path.join(CORPUS, "SangAKlang_v41.qxw")]) == 1
+    assert cli_main([os.path.join(CORPUS, "Pub_6fix.qxw")]) == 0
+    assert cli_main([os.path.join(CORPUS, "Festival_14fix.qxw")]) == 1
     assert cli_main([os.path.join(CORPUS, "missing.qxw")]) == 2
     capsys.readouterr()
 
 
 def test_cli_json(capsys):
-    cli_main([os.path.join(CORPUS, "LiquidBar_v14.qxw"), "--json"])
+    cli_main([os.path.join(CORPUS, "Pub_6fix.qxw"), "--json"])
     data = json.loads(capsys.readouterr().out)
     assert data["ok"] is True and data["stats"]["fixtures"] == 6
 
 
 def test_cli_as_module():
     r = subprocess.run([sys.executable, "-m", "core.doctor",
-                        os.path.join(CORPUS, "SangAKlang_v41.qxw"), "--min-severity", "error"],
+                        os.path.join(CORPUS, "Festival_14fix.qxw"), "--min-severity", "error"],
                        cwd=REPO, capture_output=True, text=True)
     assert r.returncode == 1 and "[ERROR] D002" in r.stdout and "D005" not in r.stdout

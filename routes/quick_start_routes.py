@@ -60,6 +60,9 @@ _qs_next_id: int = 0
 # Generation options: naming profile id + VC style (dict)
 _QS_DEFAULT_OPTIONS = {"nomenclature": "plain", "style": "default", "style_data": None}
 _qs_options: dict = dict(_QS_DEFAULT_OPTIONS)
+# Fixture groups [{name, fixtures:[rig index]}]; None = automatic (by fixture name)
+_qs_groups = None
+_qs_qxf_raw: dict = {}       # "Mfr::Model" → original .qxf bytes
 
 # GitHub fixture cache (avoid repeated API calls)
 _gh_manufacturer_cache: list = []
@@ -67,7 +70,9 @@ _gh_fixture_cache: dict = {}  # manufacturer → list of fixture files
 
 
 def _reset_qs():
-    global _qs_rig, _qs_qxf_defs, _qs_next_id, _qs_options
+    global _qs_rig, _qs_qxf_defs, _qs_next_id, _qs_options, _qs_groups
+    _qs_groups = None
+    _qs_qxf_raw.clear()
     _qs_rig = []
     _qs_qxf_defs = {}
     _qs_next_id = 0
@@ -96,7 +101,7 @@ def _make_generator(opts: dict = None):
     analysis = RigCapabilityAnalysis(_qs_rig, _qs_qxf_defs)
     gen = VCLayoutGenerator(_qs_rig, _qs_qxf_defs, analysis,
                             nomenclature=o.get("nomenclature"),
-                            style=_style_ref(o))
+                            style=_style_ref(o), groups=_qs_groups)
     return analysis, gen
 
 
@@ -123,6 +128,10 @@ def _parse_qxf(path: str) -> dict:
         "channel_defs":  rich["channel_defs"],
         "path":          path,
     }
+    # Keep the raw file: QLC+ needs it next to the saved workspace
+    # (Fixture::loader falls back to "<workspace dir>/<Mfr>-<Model>.qxf").
+    with open(path, "rb") as fh:
+        _qs_qxf_raw[key] = fh.read()
     _qs_qxf_defs[key] = defn
     return defn
 
@@ -305,6 +314,7 @@ def remove_fixture():
     if not (0 <= idx < len(_qs_rig)):
         return jsonify({'error': 'Invalid index.'}), 400
     _qs_rig.pop(idx)
+    _remap_groups_after_remove(idx)
     _auto_assign_dmx()
     return jsonify({'ok': True, 'rig': _rig_to_api()})
 
@@ -321,6 +331,7 @@ def remove_def():
     if data.get('remove_fixtures', False):
         global _qs_rig
         _qs_rig = [e for e in _qs_rig if e.get('key') != key]
+        _reset_groups()
         _auto_assign_dmx()
     return jsonify({
         'ok': True,
@@ -369,11 +380,103 @@ def auto_dmx():
     })
 
 
+def _reset_groups() -> None:
+    global _qs_groups
+    _qs_groups = None
+
+
+def _remap_groups_after_remove(idx: int) -> None:
+    global _qs_groups
+    if _qs_groups is None:
+        return
+    out = []
+    for g in _qs_groups:
+        fx = [i - 1 if i > idx else i for i in g["fixtures"] if i != idx]
+        if fx:
+            out.append({"name": g["name"], "fixtures": fx})
+    _qs_groups = out
+
+
+def _groups_payload() -> dict:
+    _, gen = _make_generator()
+    groups = _qs_groups if _qs_groups is not None else gen._default_groups()
+    return {
+        "auto": _qs_groups is None,
+        "groups": groups,
+        "fixtures": [{"idx": i, "name": e.get("name", f"#{i + 1}")} for i, e in enumerate(_qs_rig)],
+    }
+
+
+@bp.route('/groups', methods=['GET', 'POST'])
+def groups():
+    """Fixture groups used by Quick Start (VC group frames + matrix groups).
+
+    GET → {auto, groups:[{name, fixtures:[idx]}], fixtures:[{idx, name}]}.
+    POST {"groups": [...]} sets them; {"auto": true} goes back to the
+    automatic grouping (one group per fixture name).
+    """
+    global _qs_groups
+    if request.method == 'POST':
+        data = request.get_json(force=True) or {}
+        if data.get('auto'):
+            _qs_groups = None
+        else:
+            clean, seen = [], set()
+            for g in data.get('groups') or []:
+                name = str(g.get('name', '')).strip()[:40]
+                fx = sorted({int(i) for i in g.get('fixtures', []) if 0 <= int(i) < len(_qs_rig)})
+                if not name or not fx:
+                    continue
+                if name.lower() in seen:
+                    return jsonify({'error': f'Duplicate group name: {name}'}), 400
+                seen.add(name.lower())
+                clean.append({'name': name, 'fixtures': fx})
+            _qs_groups = clean
+    return jsonify(_groups_payload())
+
+
+def qxf_filename(manufacturer: str, model: str) -> str:
+    """File name QLC+ looks for next to a workspace (Fixture::loader)."""
+    return f"{manufacturer}-{model}.qxf".replace(" ", "-").replace("/", "-")
+
+
+@bp.route('/save-qxf', methods=['POST'])
+def save_qxf():
+    """Write the rig's fixture definitions next to a saved workspace.
+
+    QLC+ looks for a definition it doesn't know in the workspace folder as
+    ``<Manufacturer>-<Model>.qxf`` (spaces → dashes).  Without it the
+    fixtures load as generic dimmers: no colour, RGB matrices do nothing.
+    """
+    data = request.get_json(force=True) or {}
+    qxw = data.get('qxw_path') or ''
+    folder = os.path.dirname(os.path.abspath(qxw)) if qxw else ''
+    if not folder or not os.path.isdir(folder):
+        return jsonify({'error': 'Workspace folder not found.'}), 400
+    written = []
+    for key in sorted({e.get('key') for e in _qs_rig}):
+        raw, defn = _qs_qxf_raw.get(key), _qs_qxf_defs.get(key)
+        if not raw or not defn:
+            continue
+        fname = qxf_filename(defn['manufacturer'], defn['model'])
+        dest = os.path.join(folder, fname)
+        try:
+            with open(dest, 'rb') as fh:
+                same = fh.read() == raw
+        except OSError:
+            same = False
+        if not same:
+            with open(dest, 'wb') as fh:
+                fh.write(raw)
+        written.append(fname)
+    return jsonify({'ok': True, 'folder': folder, 'files': written})
+
+
 @bp.route('/options', methods=['GET', 'POST'])
 def options():
     """Get / set generation options: naming profile and VC style.
 
-    POST JSON: ``{"nomenclature": "20minutes"}``, ``{"style": "liquidbar"}``,
+    POST JSON: ``{"nomenclature": "20minutes"}``, ``{"style": "compact"}``,
     ``{"style_path": "/path/reference.qxw"}`` (clone the style of a
     reference workspace) or ``{"style": {...}}`` (explicit style dict).
     POST multipart ``style_file``: clone the style of an uploaded .qxw.
@@ -447,6 +550,12 @@ def preview():
             d['y'] = ws_el.get('Y', '0')
             d['w'] = ws_el.get('Width', '0')
             d['h'] = ws_el.get('Height', '0')
+        app_el = el.find(f'{{{fx.QLC_NS_URI}}}Appearance')
+        if app_el is not None:
+            for k, tag in (('bg', 'BackgroundColor'), ('fg', 'ForegroundColor')):
+                v = app_el.findtext(f'{{{fx.QLC_NS_URI}}}{tag}')
+                if v and v.isdigit():
+                    d[k] = '#%06x' % (int(v) & 0xFFFFFF)
         func_el = el.find(f'{{{fx.QLC_NS_URI}}}Function')
         if func_el is not None:
             d['function_id'] = func_el.get('ID', '')
@@ -515,8 +624,7 @@ def generate():
             stage_w_mm=stage_w,
             stage_d_mm=stage_d,
             stage_h_mm=stage_h,
-            vc_size=((gen.style.page_w, gen.style.page_h)
-                     if gen.style.page_w and gen.style.page_h else (1920, 1080)),
+            vc_size=gen.page_size,
         )
 
         # Doctor gates every export (WORKPLAN principle 4): errors block it.

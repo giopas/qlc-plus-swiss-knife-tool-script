@@ -413,10 +413,12 @@ class TestVCLayoutGenerator:
         gen, _ = self._make_gen(rig, qxf)
         _, vc_frame, _ = gen.generate()
         ns = "http://www.qlcplus.org/Workspace"
-        frames = [c.get("Caption") for c in vc_frame
-                  if c.tag in (f"{{{ns}}}Frame", f"{{{ns}}}SoloFrame")]
-        # Layout since 80d0340: two SoloFrames + fixture-group frame
-        assert frames == ["STATIC LOOKS", "DYNAMIC / EFFECTS", "FIXTURE GROUPS"]
+        # One page: MASTER + one SHOW SoloFrame (looks, effects, one frame
+        # per fixture group — everything exclusive) + PANIC buttons
+        solos = [c for c in vc_frame if c.tag == f"{{{ns}}}SoloFrame"]
+        assert len(solos) == 1
+        frames = [c.get("Caption") for c in solos[0] if c.tag == f"{{{ns}}}Frame"]
+        assert frames == ["LOOKS", "EFFECTS", "GROUP · DIM"]
 
     def test_stats_after_generate(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]

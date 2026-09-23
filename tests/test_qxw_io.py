@@ -103,8 +103,8 @@ def test_load_size_cap(tmp_path, monkeypatch):
 # ── versioned names ──────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("given,expected", [
-    ("BigShow_v41.qxw", "BigShow_v42.qxw"),
-    ("BarShow_v14.qxw", "BarShow_v15.qxw"),
+    ("Festival_v41.qxw", "Festival_v42.qxw"),
+    ("Pub_v14.qxw", "Pub_v15.qxw"),
     ("Show_V9.qxw", "Show_v10.qxw"),
     ("Show_v09.qxw", "Show_v10.qxw"),
     ("Show_v099.qxw", "Show_v100.qxw"),

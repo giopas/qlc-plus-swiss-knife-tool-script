@@ -238,4 +238,9 @@ def build_qxw(rig: list,
     _sub(sd, "Engine")
 
     # ── Serialise ─────────────────────────────────────────────────────────
+    # Indented like QLC+'s own files.  Not cosmetic: QLC+ 5.2.2's slider
+    # loader (VCSlider::loadXMLLevel) reads one token too many after an
+    # empty <Level/>; without whitespace after it, that token is the
+    # slider's end tag and every later VC widget is lost.
+    ET.indent(root, space=" ")
     return qxw_io.qxw_bytes(root)

@@ -96,7 +96,7 @@ function qsGoStep(n) {
   _qsUpdateNav();
 
   if (_qsStep === 2) qsInitStage();
-  if (_qsStep === 3) qsRunAnalysis();
+  if (_qsStep === 3) { qsRunAnalysis(); qsLoadGroups(); }
   if (_qsStep === 4) { qsLoadOptions(); qsLoadPreview(); }
   if (_qsStep === 5) qsLoadSummary();
 }
@@ -1158,7 +1158,7 @@ function qsRunAnalysis() {
     .then(d => {
       if (d.error) { if (wrap) wrap.innerHTML = `<div class="qs-error">${_esc(d.error)}</div>`; return; }
       let html = '<div class="qs-analysis">';
-      html += '<h4>Fixture Groups</h4>';
+      html += '<h4>Fixture types</h4>';
       const groups = d.groups || {};
       for (const [key, count] of Object.entries(groups)) {
         const label = { moving_heads: 'Moving Heads', color_fixtures: 'Color Fixtures', dimmers_only: 'Dimmers', other: 'Other' }[key] || key;
@@ -1174,6 +1174,68 @@ function qsRunAnalysis() {
       if (wrap) wrap.innerHTML = html;
     })
     .catch(e => { if (wrap) wrap.innerHTML = `<div class="qs-error">Analysis failed: ${_esc(String(e))}</div>`; });
+}
+
+/* ── Step 3: fixture groups ─────────────────────────────────────────────── */
+let _qsGroups = { auto: true, groups: [], fixtures: [] };
+
+function qsLoadGroups() {
+  return _qsApi('GET', '/groups').then(d => { if (!d.error) { _qsGroups = d; _qsRenderGroups(); } });
+}
+
+function _qsRenderGroups() {
+  const wrap = document.getElementById('qs-groups');
+  if (!wrap) return;
+  const fx = _qsGroups.fixtures || [];
+  wrap.innerHTML = (_qsGroups.groups || []).map((g, gi) => `
+    <div class="qs-group">
+      <div class="qs-group-head">
+        <input class="filter-input" value="${_esc(g.name)}" maxlength="40"
+               onchange="qsGroupRename(${gi}, this.value)" title="Group name (shown on the VC)">
+        <span class="qs-hint" style="margin:0">${g.fixtures.length} fixture(s)</span>
+        <div class="spacer"></div>
+        <button class="btn btn-surface btn-xs" onclick="qsGroupDelete(${gi})" title="Delete group">✕</button>
+      </div>
+      <div class="qs-group-fx">${fx.map(f => `
+        <label><input type="checkbox" ${g.fixtures.includes(f.idx) ? 'checked' : ''}
+               onchange="qsGroupToggle(${gi}, ${f.idx}, this.checked)">${_esc(f.name)}</label>`).join('')}
+      </div>
+    </div>`).join('') || '<div class="qs-hint">No groups — add fixtures in step 1.</div>';
+  const st = document.getElementById('qs-groups-state');
+  if (st) st.textContent = _qsGroups.auto ? 'Automatic (one group per fixture name)' : 'Custom groups';
+}
+
+function _qsSaveGroups() {
+  // groups still being filled in (no fixture yet) stay on screen only
+  const pending = (_qsGroups.groups || []).filter(g => !g.fixtures.length);
+  const groups = (_qsGroups.groups || []).filter(g => g.name.trim() && g.fixtures.length);
+  return _qsApi('POST', '/groups', { groups }).then(d => {
+    if (d.error) { setStatus(d.error, 'error'); return qsLoadGroups(); }
+    d.groups = [...d.groups, ...pending];
+    _qsGroups = d; _qsRenderGroups();
+  });
+}
+
+function qsGroupRename(gi, name) { _qsGroups.groups[gi].name = name.trim(); _qsSaveGroups(); }
+function qsGroupDelete(gi) { _qsGroups.groups.splice(gi, 1); _qsSaveGroups(); }
+function qsGroupToggle(gi, idx, on) {
+  const g = _qsGroups.groups[gi];
+  g.fixtures = on ? [...new Set([...g.fixtures, idx])].sort((a, b) => a - b)
+                  : g.fixtures.filter(i => i !== idx);
+  // keep an emptied group on screen (unsaved) so it can be refilled
+  if (!g.fixtures.length) { _qsRenderGroups(); return; }
+  _qsSaveGroups();
+}
+function qsGroupAdd() {
+  let n = (_qsGroups.groups || []).length + 1, name = 'Group ' + n;
+  const taken = new Set((_qsGroups.groups || []).map(g => g.name.toLowerCase()));
+  while (taken.has(name.toLowerCase())) name = 'Group ' + (++n);
+  _qsGroups.groups.push({ name, fixtures: [] });
+  _qsGroups.auto = false;
+  _qsRenderGroups();
+}
+function qsGroupsAuto() {
+  _qsApi('POST', '/groups', { auto: true }).then(d => { if (!d.error) { _qsGroups = d; _qsRenderGroups(); } });
 }
 
 /* ── Step 4: generation options (names + VC style) ─────────────────────── */
@@ -1248,7 +1310,9 @@ function qsLoadPreview() {
     .then(d => {
       if (d.error) { if (wrap) wrap.innerHTML = `<div class="qs-error">${_esc(d.error)}</div>`; return; }
       const vc = d.vc_layout || d.vc_tree || d;
-      const scale = 0.35;
+      // fit the preview to the card width (the VC page is 1650 px wide or more)
+      const avail = Math.max(320, ((wrap && wrap.clientWidth) || 900) - 12);
+      const scale = Math.min(1, avail / (parseInt(vc.w) || 1650));
       const previewW = Math.round((parseInt(vc.w) || 800) * scale) + 10;
       const previewH = Math.round((parseInt(vc.h) || 400) * scale) + 10;
       let html = `<div class="qs-preview" style="position:relative;background:#1a1a1a;border:1px solid #444;border-radius:4px;width:${previewW}px;height:${previewH}px;overflow:auto;">`;
@@ -1273,7 +1337,7 @@ function _qsRenderVcTree(node, scale) {
     const isSolo = node.type === 'SoloFrame';
     const borderClr = isSolo ? '#c59020' : '#555';
     html += `<div class="qs-vc-frame" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1px solid ${borderClr};border-radius:3px;overflow:hidden;">`;
-    html += `<div class="qs-vc-frame-title" style="font-size:9px;padding:1px 4px;background:${isSolo ? '#3a2a08' : '#2a2a2a'};color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cap}</div>`;
+    html += `<div class="qs-vc-frame-title" style="font-size:${Math.max(9, Math.round(13 * scale))}px;padding:1px 4px;background:${isSolo ? '#3a2a08' : '#2a2a2a'};color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cap}</div>`;
     if (node.children) node.children.forEach(c => { html += _qsRenderVcTree(c, scale); });
     html += '</div>';
   } else if (node.type === 'Slider' || node.type === 'slider') {
@@ -1287,13 +1351,14 @@ function _qsRenderVcTree(node, scale) {
     else if (isBlue) trackClr = '#44c';
     else if (isMaster) trackClr = '#888';
     html += `<div class="qs-vc-slider" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">`;
-    html += `<div style="font-size:7px;color:#aaa;text-align:center;white-space:nowrap;overflow:hidden;max-width:${w}px;margin-bottom:2px;">${cap}</div>`;
+    html += `<div style="font-size:${Math.max(8, Math.round(11 * scale))}px;color:#aaa;text-align:center;white-space:nowrap;overflow:hidden;max-width:${w}px;margin-bottom:2px;">${cap}</div>`;
     const trackH = Math.max(h - 20, 10);
     html += `<div style="width:6px;height:${trackH}px;background:#222;border-radius:3px;position:relative;border:1px solid #444;">`;
     html += `<div style="position:absolute;bottom:0;width:100%;height:40%;background:${trackClr};border-radius:0 0 3px 3px;"></div>`;
     html += '</div></div>';
   } else if (node.type === 'Button' || node.type === 'button') {
-    html += `<div class="qs-vc-btn qs-vc-btn-scene" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;font-size:8px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:3px;background:#333;color:#ccc;border:1px solid #555;overflow:hidden;padding:1px;line-height:1.1;">${cap}</div>`;
+    const bg = node.bg || '#333', fg = node.fg || '#ccc';
+    html += `<div class="qs-vc-btn qs-vc-btn-scene" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;font-size:${Math.max(8, Math.round(12 * scale))}px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:3px;background:${bg};color:${fg};border:1px solid #555;overflow:hidden;padding:1px;line-height:1.1;">${cap}</div>`;
   } else if (Array.isArray(node)) {
     node.forEach(c => { html += _qsRenderVcTree(c, scale); });
   } else if (node.frames) {
@@ -1381,9 +1446,18 @@ async function qsExport() {
 
     if (saved) {
       const fullPath = saveFileWithPicker.lastPath;
-      const msg = fullPath
+      let msg = fullPath
         ? 'Workspace saved to: ' + fullPath
         : 'Workspace saved as ' + saved;
+      // QLC+ must find the fixture definitions: write them next to the .qxw
+      if (fullPath) {
+        try {
+          const r = await _qsApi('POST', '/save-qxf', { qxw_path: fullPath });
+          if (r.files && r.files.length) msg += ' (+ ' + r.files.join(', ') + ')';
+        } catch (_) { /* non-fatal */ }
+      } else {
+        msg += ' — copy the fixture .qxf files next to it, or QLC+ will load them as generic dimmers';
+      }
       setStatus(msg, 'ok');
     }
     // saved === null means user cancelled — no message needed

@@ -628,7 +628,7 @@ def purge_workspace_clones() -> dict:
         c = copy.deepcopy(func)
         for attr in ('ID', 'Name', 'SwissKnifeClone'):
             c.attrib.pop(attr, None)
-        return ET.tostring(c)  # qxw-io: signature only, not output
+        return ET.tostring(c)  # qxw-io: not output (signature only)
 
     sig_named: dict  = {}   # (name, type, body) -> lowest original fid
     sig_struct: dict = {}   # (type, body)       -> lowest original fid

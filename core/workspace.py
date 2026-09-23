@@ -756,7 +756,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     -------
     tuple  — (suggested_filename: str, xml_bytes: bytes)
     """
-    if not _state['loaded'] or not _state['qxw_root']:
+    if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded.')
 
     songs = _slot_details.get(slot_id, [])
@@ -914,7 +914,7 @@ def generate_all_slots_qxw_content() -> tuple:
     For each slot uses the slot's existing linked chaser (if any) or creates a new one.
     Returns (suggested_filename, xml_bytes).
     """
-    if not _state['loaded'] or not _state['qxw_root']:
+    if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded.')
 
     # Only process slots that have at least one song with a function assignment.
@@ -1478,7 +1478,7 @@ def get_vc_tree() -> dict | None:
     Each top-level Frame under <VirtualConsole> is one 'page'.
     Returns None if no workspace is loaded.
     """
-    if not _state['loaded'] or not _state['qxw_root']:
+    if not _state['loaded'] or _state['qxw_root'] is None:
         return None
     vc_root = _state['qxw_root'].find('q:VirtualConsole', NS)
     if vc_root is None:
@@ -1514,7 +1514,7 @@ def patch_vc_widgets(changes: list) -> dict:
 
     Returns {'patched': int, 'errors': [str]}.
     """
-    if not _state['loaded'] or not _state['qxw_root']:
+    if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded')
 
     patched, errors = 0, []
@@ -1642,7 +1642,7 @@ def vc_undo_clear() -> None:
 def vc_structural_edit(op: str, **kw) -> dict:
     """Run a core.vc_ops operation on the loaded workspace and re-parse."""
     from core import vc_ops
-    if not _state['loaded'] or not _state['qxw_root']:
+    if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded')
     fn = {'copy': vc_ops.copy_widgets, 'move': vc_ops.move_widgets,
           'new_page': vc_ops.new_page, 'copy_page': vc_ops.copy_page,
@@ -1667,7 +1667,7 @@ def export_qxw(path: str) -> None:
     Write the current in-memory workspace XML (with any applied patches)
     to a new file.  Never overwrites the source file.
     """
-    if not _state['loaded'] or not _state['qxw_root']:
+    if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded')
 
     qxw_io.write_qxw(_state['qxw_root'], path, protect=[_state.get('path')])

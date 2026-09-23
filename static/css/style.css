@@ -3437,3 +3437,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .need-ws { display: flex; align-items: center; gap: 10px; padding: 10px 16px;
            background: var(--surface-0); border-bottom: 1px solid var(--border);
            color: var(--text-dim); font-size: 12.5px; }
+
+/* Quick Start — generation options (names + VC style) */
+.qs-options { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin:0 0 10px; font-size:12px; }
+.qs-options label { display:flex; align-items:center; gap:6px; font-weight:600; }
+.qs-options select { font-size:12px; min-width:170px; }
+.qs-opt-legend { flex-basis:100%; color:var(--overlay0); font-size:11px; line-height:1.5; }
+.qs-opt-legend:empty { display:none; }

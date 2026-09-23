@@ -1801,6 +1801,17 @@
       <div class="qs-card">
         <h3>Virtual Console Layout Preview</h3>
         <p style="color:var(--overlay0);font-size:12px;margin:0 0 8px">This is the VC widget tree that will be generated in your .qxw file.</p>
+        <div id="qs-options" class="qs-options">
+          <label>Names
+            <select id="qs-opt-names" class="filter-input" onchange="qsSetOption({nomenclature: this.value})"></select>
+          </label>
+          <label>VC style
+            <select id="qs-opt-style" class="filter-input" onchange="qsStyleChanged(this.value)"></select>
+          </label>
+          <span id="qs-style-chip" class="file-chip" title="">default</span>
+          <input type="file" id="qs-style-file" accept=".qxw" style="display:none" onchange="qsStyleUpload(this)">
+          <div id="qs-opt-legend" class="qs-opt-legend"></div>
+        </div>
         <div id="qs-vc-preview">
           <div class="qs-loading">Generating VC layout preview...</div>
         </div>

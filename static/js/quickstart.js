@@ -97,7 +97,7 @@ function qsGoStep(n) {
 
   if (_qsStep === 2) qsInitStage();
   if (_qsStep === 3) qsRunAnalysis();
-  if (_qsStep === 4) qsLoadPreview();
+  if (_qsStep === 4) { qsLoadOptions(); qsLoadPreview(); }
   if (_qsStep === 5) qsLoadSummary();
 }
 
@@ -1176,6 +1176,70 @@ function qsRunAnalysis() {
     .catch(e => { if (wrap) wrap.innerHTML = `<div class="qs-error">Analysis failed: ${_esc(String(e))}</div>`; });
 }
 
+/* ── Step 4: generation options (names + VC style) ─────────────────────── */
+function _qsRenderOptions(d) {
+  if (!d || d.error) return;
+  const names = document.getElementById('qs-opt-names');
+  const style = document.getElementById('qs-opt-style');
+  if (names) {
+    names.innerHTML = (d.profiles || []).map(p =>
+      `<option value="${_esc(p.id)}" title="${_esc(p.description || '')}">${_esc(p.label)}</option>`).join('');
+    names.value = d.nomenclature;
+  }
+  if (style) {
+    let opts = (d.styles || []).map(s => `<option value="${_esc(s.id)}">${_esc(s.label)}</option>`);
+    if (d.style === 'custom') {
+      opts.push(`<option value="custom">${_esc((d.style_data && d.style_data.label) || 'From reference')}</option>`);
+    }
+    opts.push('<option value="__pick">From a reference .qxw…</option>');
+    style.innerHTML = opts.join('');
+    style.value = d.style;
+  }
+  const sd = d.style_data || {};
+  const chip = document.getElementById('qs-style-chip');
+  if (chip) {
+    chip.textContent = `${sd.btn_w}×${sd.btn_h} buttons · gap ${sd.gap}` +
+      (sd.page_w ? ` · page ${sd.page_w}×${sd.page_h}` : '');
+    chip.title = sd.source ? 'Cloned from ' + sd.source : '';
+    chip.classList.toggle('set', !!sd.source || d.style !== 'default');
+  }
+  const leg = document.getElementById('qs-opt-legend');
+  if (leg) leg.innerHTML = (d.legend || []).map(_esc).join('<br>');
+}
+
+function qsLoadOptions() {
+  return _qsApi('GET', '/options').then(_qsRenderOptions).catch(() => {});
+}
+
+function qsSetOption(body) {
+  return _qsApi('POST', '/options', body).then(d => {
+    if (d.error) { setStatus(d.error, 'error'); return qsLoadOptions(); }
+    _qsRenderOptions(d);
+    qsLoadPreview();
+  });
+}
+
+async function qsStyleChanged(v) {
+  if (v !== '__pick') return qsSetOption({ style: v });
+  const p = await nativePick('Choose a reference workspace (.qxw)',
+                             [{ label: 'QLC+ Workspace', exts: ['.qxw'] }]);
+  if (p) return qsSetOption({ style_path: p });
+  if (nativePick.unavailable) document.getElementById('qs-style-file').click();
+  qsLoadOptions();                        // cancelled → restore the select
+}
+
+async function qsStyleUpload(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append('style_file', f);
+  try {
+    const r = await fetch('/api/quickstart/options', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.error) setStatus(d.error, 'error'); else { _qsRenderOptions(d); qsLoadPreview(); }
+  } finally { input.value = ''; }
+}
+
 /* ── Step 4: VC Preview ────────────────────────────────────────────────── */
 function qsLoadPreview() {
   const wrap = document.getElementById('qs-vc-preview');
@@ -1299,7 +1363,12 @@ async function qsExport() {
     const resp = await fetch(url);
     if (!resp.ok) {
       const errText = await resp.text();
-      throw new Error(errText || 'Server error ' + resp.status);
+      let msg = errText;
+      try {
+        const j = JSON.parse(errText);
+        msg = j.error + (j.findings ? ' ' + j.findings.slice(0, 3).join(' | ') : '');
+      } catch (_) { /* not JSON */ }
+      throw new Error(msg || 'Server error ' + resp.status);
     }
     const blob = await resp.blob();
 

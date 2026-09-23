@@ -1316,6 +1316,6 @@ async function qsExport() {
     console.error('Quick Start export failed:', err);
     setStatus('Export failed: ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Export .qxw'; }
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Generate QXW'; }
   }
 }

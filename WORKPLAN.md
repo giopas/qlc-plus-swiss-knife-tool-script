@@ -78,6 +78,7 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-23 | **One naming rule for every tool:** suggested/new files are `<name>_v<N+1>.qxw` (`<name>_v2.qxw` if there is no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported`, `_modified`. `next_version_path()` skips names already on disk. |
 | 2026-09-23 | Tilt sign convention (from the corpus): positive XRot swings a hanging beam toward +Z ("Front"). Defaults: truss 45/315, mid 90/270, floor 135/225 (upstage half / downstage half). **Confirmed in QLC+ 5 3D view on 23 Sep (0.2): all three pairs cross toward centre stage.** |
 | 2026-09-23 | Doctor severities: D001–D003 errors; D004–D009, D012, D016 warnings; D015 and I-codes info. D005 is a warning (not an error) so porting from older shows is not blocked before auto-fix exists. |
+| 2026-09-23 | VC copy/move (added to v1.3.2 at Giovanni's request): copies get new widget IDs (`max+1`) and **drop key/MIDI bindings by default** (opt-in to keep); moves keep IDs and bindings; operations refuse duplicated widget IDs (D002). The Triggers tab is renamed **Trigger Manager**. The venv lives in `~/.venvs/swissknife` (iCloud duplicates break pywebview). |
 | 2026-09-23 | D006 intent keywords: *strob, flash, `*`, punk, macro, program, audio, fx* (own name or any containing function). A value is neutral if it falls in a *No function / No flash / Open / Off / DMX mode* capability. StopAll/Blackout buttons are not "caption-only". |
 
 ---
@@ -241,9 +242,9 @@ Checks (★ = included in Phase 1.0):
 - Commits: `feat: look builder (group × palette)`, `feat: chaser pattern builder with BPM timing`
 
 **2.4 VC Builder → v1.7.0** (extends the existing VC Visual Editor)
-- [ ] Create, delete and duplicate widgets: frames, SoloFrames, buttons, sliders, labels, CueList.
+- [ ] Create, delete and duplicate widgets: frames, SoloFrames, buttons, sliders, labels, CueList. *(Copy/move of widgets and frames between pages shipped early in v1.3.2 — `core/vc_ops.py`.)*
 - [ ] Wire widgets to functions: a picker filtered by nomenclature, and drag a function from the list onto a button.
-- [ ] Pages (top-level frames): add, rename, reorder, set the default page.
+- [ ] Pages (top-level frames): add, rename, reorder, set the default page. *(Add and duplicate shipped in v1.3.2.)*
 - [ ] Layout tools: grid snap, multi-column label panels (e.g. the nomenclature legend), auto-arrange buttons by nomenclature group.
 - [ ] Screen profiles (1650×884 MacBook, 1920×1080, tablet).
 - [ ] VC templates: save any page as a template and apply it to another workspace.

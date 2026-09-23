@@ -24,6 +24,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Added
 
+- **VC Visual Editor — copy / move across pages**: select buttons or frames, pick a target page or frame (or *➕ New page…*) and click **⧉ Copy** or **➜ Move**. Copies get fresh widget IDs (`max + 1`, deterministic) and, by default, drop key/MIDI bindings so they don't fire together with the originals (tick *keep key/MIDI on copies* to keep them). Moves keep IDs and bindings. New **Pages** section: **＋ New page** (styled like the first page) and **⧉ Duplicate page**. Everything stays in memory until *Apply & Save QXW…*; pending position edits are no longer lost when switching pages. Backend: `core/vc_ops.py`, `GET /api/vc/pages`, `POST /api/vc/op`; 12 tests in `tests/test_vc_ops.py`.
 - **VC Visual Editor — zoom and multi-select**: pinch or ⌘/Ctrl+scroll zooms around the mouse pointer, a plain scroll pans, and ⌘+ / ⌘− / ⌘0 zoom in, zoom out and fit. Shift- or ⌘-click adds or removes a widget. Dragging from anywhere draws a selection box; before, it only worked from empty space, which the frames cover. ⌘A selects every widget on the page and Esc clears the selection.
 - `tests/test_version.py`: `VERSION` must match the latest CHANGELOG release, the README title and the UI. `app.py` now reads the version from `core/workspace.VERSION` instead of a hard-coded string (it said 1.3.1 while `VERSION` said 1.3.0).
 - `tools/make_tilt_check.py` → `tests/manual/tilt_check.qxw`, a 6-fixture file for checking tilt in the QLC+ 5 3D view; `tests/test_orientation.py` (18 tests).
@@ -32,6 +33,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Changed
 
+- The **Triggers** tab is renamed **Trigger Manager** (sidebar and page title), matching the docs and wiki.
 - Tests consolidated under `tests/` (`test_porter.py`, `test_qxf_parser.py`, sample QXFs now in `tests/fixtures/`); `pytest.ini` added, so `python -m pytest -q` runs the whole suite from the repo root. The 27 failing Quick Start tests were stale (3-tuple `generate()` return, 400 on invalid requests, the 80d0340 VC layout and effect names) and were updated; none was a code bug.
 - All workspace outputs (Setlist generate, Brightness, Fixture Configurator, Merger, Porter, Quick Start, ID Browser export, Trigger “save as new”) now go through `core/qxw_io`, so the XML declaration and `<!DOCTYPE Workspace>` are always present. Suggested file names now follow one rule: `<name>_v<N+1>.qxw` (or `<name>_v2.qxw` when the name has no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported` and `_modified`.
 - Docs: `ROADMAP.md` rewritten from the new work plan; `WORKPLAN.md` added (plan of record); `DEVELOPMENT.md` gains the engineering principles, test command and git workflow; old `RELEASE_NOTES_*.md` moved to `docs/release-notes/`; `Claude outputs/` (scratch mockups) is no longer tracked.

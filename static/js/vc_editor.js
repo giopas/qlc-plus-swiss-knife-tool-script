@@ -40,6 +40,7 @@ const VCE_DRAG_PX  = 4;      // screen pixels before a press becomes a drag
 const VCE_ZOOM_MIN = 0.1, VCE_ZOOM_MAX = 4.0;
 
 let _vceInited     = false;
+let _vceDirty      = false;   // structural edits (copy/move/pages) not yet saved
 
 const VCE_CV_ID    = 'vce-canvas';
 const VCE_TYPES    = new Set(['Button','Slider','Knob','SpeedDial','XYPad',
@@ -85,7 +86,7 @@ async function _vceLoad() {
     sel.innerHTML = _vcePages
       .map((p, i) => `<option value="${i}">${_esc(p.caption || 'Page ' + i)}</option>`)
       .join('');
-    sel.onchange = () => _vceSelectPage(+sel.value);
+    sel.onchange = async () => { await _vceFlush(); _vceSelectPage(+sel.value); };
   }
   _vceSelectPage(0);
   _vceStatus(`Loaded ${_vcePages.length} page(s) — ${Object.keys(_vceNodes).length} widgets`, 'ok');
@@ -562,7 +563,8 @@ function _vceRenderProps() {
       : '';
     pp.innerHTML = `<div style="color:var(--text-muted);font-size:11px;padding:20px 0;text-align:center">
       Click a widget to select<br>Shift/⌘-click to add or remove<br>Drag to box-select (Shift/⌘ adds)<br>
-      Pinch or ⌘/Ctrl+scroll to zoom · ⌘0 fit<br>Esc clears · ⌘A selects all
+      Pinch or ⌘/Ctrl+scroll to zoom · ⌘0 fit<br>Esc clears · ⌘A selects all<br>
+      Select widgets or frames to copy / move them to another page
     </div>${legend}`;
     return;
   }
@@ -641,6 +643,8 @@ function _vceRenderProps() {
 
     <div class="vce-pl">Font colour</div>
     <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px">${fgSwatches}</div>
+
+    ${_vceCopyMoveHtml(selArr)}
 
     ${aqSection}
 
@@ -880,11 +884,157 @@ function vceZoom(dir) {
 
 function vceFit() { _vceFitPage(); _vceRender(); }
 
+// ── Copy / move widgets, pages ───────────────────────────────────────────────
+// Structural edits run on the server's in-memory workspace (POST /api/vc/op);
+// nothing is written to disk until "Apply & Save QXW…".
+
+/** Pages and their frames, from the loaded tree: [{id, caption, frames:[{id,label}]}] */
+function _vceTargets() {
+  return _vcePages.map(p => {
+    const frames = [];
+    const walk = (n, depth) => (n.children || []).forEach(c => {
+      if (c.type === 'Frame' || c.type === 'SoloFrame') {
+        frames.push({ id: c.id, label: `${'  '.repeat(depth)}└ ${c.caption || c.type} [${c.id}]` });
+        walk(c, depth + 1);
+      }
+    });
+    walk(p, 0);
+    return { id: p.id, caption: p.caption || 'Page', frames };
+  });
+}
+
+function _vceCopyMoveHtml(selArr) {
+  const opts = _vceTargets().map(p =>
+    `<optgroup label="${_esc(p.caption)}">
+       <option value="${_esc(p.id)}">${_esc(p.caption)} (page)</option>
+       ${p.frames.map(f => `<option value="${_esc(f.id)}">${_esc(f.label)}</option>`).join('')}
+     </optgroup>`).join('');
+  const onlyPage = selArr.length === 1 && selArr[0].id === (_vcePage && _vcePage.id);
+  return `
+    <div class="vce-pl">Copy / move to</div>
+    <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+      <select id="vce-cm-target" class="vce-pi" style="width:220px"
+              onchange="document.getElementById('vce-cm-newname').style.display = this.value==='__new__' ? '' : 'none'">
+        ${opts}<option value="__new__">➕ New page…</option>
+      </select>
+      <input id="vce-cm-newname" class="vce-pi" style="width:140px;display:none" placeholder="New page name">
+    </div>
+    <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <button class="vce-ab" onclick="vceCopyMove('copy')" title="Copies get new IDs">⧉ Copy</button>
+      <button class="vce-ab" onclick="vceCopyMove('move')" ${onlyPage ? 'disabled' : ''}
+              title="Keeps IDs and key/MIDI bindings">➜ Move</button>
+      <label style="font-size:10px;color:var(--text-muted)" title="Copies normally drop key and MIDI bindings so they don't fire together with the originals">
+        <input type="checkbox" id="vce-cm-keep"> keep key/MIDI on copies</label>
+    </div>`;
+}
+
+/** Send pending position/appearance edits to the server before a structural edit. */
+async function _vceFlush() {
+  const changes = Object.entries(_vceChanges).map(([id, ch]) => ({ id, ...ch }));
+  if (!changes.length) return true;
+  const r = await fetch('/api/vc/patch', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ changes }),
+  });
+  const d = await r.json();
+  if (d.error) { _vceStatus('Patch error: ' + d.error, 'error'); return false; }
+  _vceChanges = {};
+  _vceDirty = true;
+  return true;
+}
+
+async function _vceOp(body) {
+  const r = await fetch('/api/vc/op', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const d = await r.json();
+  if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+  _vceDirty = true;
+  // widget counts / other tabs changed: refresh header, drop stale caches
+  fetch('/api/status').then(x => x.json()).then(st => {
+    if (typeof _updateHeader === 'function') _updateHeader(st);
+  }).catch(() => {});
+  if (typeof _invalidateIdBrowser === 'function') _invalidateIdBrowser();
+  if (typeof invalidateTriggers   === 'function') invalidateTriggers();
+  return d;
+}
+
+/** Reload the tree, show the page containing widget *focusId*, select *selIds*. */
+async function _vceReloadAt(focusId, selIds) {
+  const res = await fetch('/api/vc/tree');
+  if (!res.ok) { _vceStatus('Could not reload VC tree.', 'error'); return; }
+  _vceTree  = await res.json();
+  _vcePages = _vceTree.pages || [];
+  const has = (n, id) => n.id === id || (n.children || []).some(c => has(c, id));
+  let idx = _vcePages.findIndex(p => has(p, String(focusId)));
+  if (idx < 0) idx = 0;
+  const sel = document.getElementById('vce-page-sel');
+  if (sel) {
+    sel.innerHTML = _vcePages
+      .map((p, i) => `<option value="${i}">${_esc(p.caption || 'Page ' + i)}</option>`).join('');
+    sel.value = String(idx);
+  }
+  _vceSelectPage(idx);
+  (selIds || []).forEach(id => { if (_vceNodes[id]) _vceSel.add(String(id)); });
+  _vceRender(); _vceRenderProps();
+}
+
+function _vceNewPageName(inputId, fallback) {
+  const el = document.getElementById(inputId);
+  const v = (el && el.value || '').trim();
+  if (el) el.value = '';
+  return v || fallback;
+}
+
+async function vceCopyMove(op) {
+  const ids = [..._vceSel];
+  if (!ids.length) { _vceStatus('Select widgets first.', 'warn'); return; }
+  let target = document.getElementById('vce-cm-target')?.value;
+  const keep = !!document.getElementById('vce-cm-keep')?.checked;
+  try {
+    if (!(await _vceFlush())) return;
+    if (target === '__new__') {
+      const np = await _vceOp({ op: 'new_page', caption: _vceNewPageName('vce-cm-newname', 'New page') });
+      target = np.page_id;
+    }
+    const d = await _vceOp({ op, ids, target_id: target, keep_bindings: keep });
+    const newIds = op === 'copy' ? d.new_ids : d.moved_ids;
+    await _vceReloadAt(target, newIds);
+    _vceStatus(op === 'copy'
+      ? `✓ Copied ${d.count} widget(s)` + (d.bindings_removed ? ` — ${d.bindings_removed} key/MIDI binding(s) left on the originals only` : '') + ' · not saved yet'
+      : `✓ Moved ${newIds.length} widget(s) · not saved yet`, 'ok');
+  } catch (e) {
+    _vceStatus(`${op === 'copy' ? 'Copy' : 'Move'} failed: ${e.message}`, 'error');
+  }
+}
+
+async function vceNewPage() {
+  try {
+    if (!(await _vceFlush())) return;
+    const d = await _vceOp({ op: 'new_page', caption: _vceNewPageName('vce-page-name', 'New page') });
+    await _vceReloadAt(d.page_id, []);
+    _vceStatus('✓ New page added · not saved yet', 'ok');
+  } catch (e) { _vceStatus('New page failed: ' + e.message, 'error'); }
+}
+
+async function vceDuplicatePage() {
+  if (!_vcePage) return;
+  try {
+    if (!(await _vceFlush())) return;
+    const keep = !!document.getElementById('vce-page-keep')?.checked;
+    const d = await _vceOp({ op: 'copy_page', page_id: _vcePage.id, keep_bindings: keep,
+                             caption: _vceNewPageName('vce-page-name', (_vcePage.caption || 'Page') + ' (copy)') });
+    await _vceReloadAt(d.page_id, []);
+    _vceStatus('✓ Page duplicated' + (d.bindings_removed ? ` — ${d.bindings_removed} key/MIDI binding(s) not copied` : '') + ' · not saved yet', 'ok');
+  } catch (e) { _vceStatus('Duplicate failed: ' + e.message, 'error'); }
+}
+
 // ── Apply patches and export QXW ──────────────────────────────────────────────
 
 async function vceApplyAndExport() {
   const changes = Object.entries(_vceChanges).map(([id, ch]) => ({ id, ...ch }));
-  if (!changes.length) {
+  if (!changes.length && !_vceDirty) {
     _vceStatus('No pending changes to apply.', 'warn'); return;
   }
 
@@ -925,6 +1075,7 @@ async function vceApplyAndExport() {
   if (expData.error) { _vceStatus('Export error: ' + expData.error, 'error'); return; }
 
   _vceChanges = {};
+  _vceDirty = false;
   _vceStatus(`✓ Patched ${patchData.patched} widget(s) → saved as ${savePath.split(/[\\/]/).pop()}`, 'ok');
 }
 

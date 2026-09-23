@@ -1575,6 +1575,42 @@ def patch_vc_widgets(changes: list) -> dict:
     return {'patched': patched, 'errors': errors}
 
 
+# ── Structural VC edits (copy / move / pages) ────────────────────────────────
+
+def reparse_after_vc_edit() -> None:
+    """Re-derive every parsed map from the in-memory XML after a structural
+    VC edit (new/moved widgets). Setlist song lists are kept."""
+    keep = {k: _state[k] for k in ('path', 'original_name', 'output_dir', 'loaded',
+                                   'xml_tree', 'qxw_root', 'shared_descriptions',
+                                   'dict_file') if k in _state}
+    root = _state['qxw_root']
+    for key, val in (('fixture_map', {}), ('group_map', {}), ('fixture_groups_map', {}),
+                     ('func_by_name', {}), ('func_by_id', {}), ('func_detailed', {}),
+                     ('vc_buttons', {}), ('vc_widgets', []), ('vc_nodes_by_id', {}),
+                     ('trigger_items', {}), ('available_frames', set()), ('chasers', {}),
+                     ('cuelist_slots', []), ('highest_func_id', 0), ('clone_ids', set()),
+                     ('clone_base_map', {})):
+        _state[key] = val
+    _state.update(keep)
+    _parse_shared_data(root)
+    _parse_triggers(root)
+    _parse_cuelist_slots(root)
+
+
+def vc_structural_edit(op: str, **kw) -> dict:
+    """Run a core.vc_ops operation on the loaded workspace and re-parse."""
+    from core import vc_ops
+    if not _state['loaded'] or not _state['qxw_root']:
+        raise RuntimeError('No workspace loaded')
+    fn = {'copy': vc_ops.copy_widgets, 'move': vc_ops.move_widgets,
+          'new_page': vc_ops.new_page, 'copy_page': vc_ops.copy_page}.get(op)
+    if fn is None:
+        raise ValueError(f'Unknown VC operation: {op}')
+    result = fn(_state['qxw_root'], **kw)
+    reparse_after_vc_edit()
+    return result
+
+
 # ── Export modified QXW ────────────────────────────────────────────────────────
 
 def export_qxw(path: str) -> None:

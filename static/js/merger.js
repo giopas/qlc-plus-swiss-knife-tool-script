@@ -112,10 +112,12 @@ async function _loadSide(side, pathInputId, fileInputId) {
     if (side === 'src') {
       _srcLoaded = true; _srcName = d.name;
       if (file) document.getElementById(pathInputId).value = file.name;
+      setFileChip('merger-src-chip', file ? file.name : document.getElementById(pathInputId).value);
       await _fetchSrcElements();
     } else {
       _dstLoaded = true; _dstName = d.name;
       if (file) document.getElementById(pathInputId).value = file.name;
+      setFileChip('merger-dst-chip', file ? file.name : document.getElementById(pathInputId).value);
       await _fetchDstElements();
     }
     _setMergerStatus(`${label} loaded: ${d.name}  (${_summaryText(d.summary)})`, 'ok');

@@ -107,10 +107,12 @@ async function _pLoadSide(side, pathInputId, fileInputId) {
     if (side === 'source') {
       _pSrcLoaded = true; _pSrcName = d.name;
       if (file) document.getElementById(pathInputId).value = file.name;
+      setFileChip('porter-src-chip', file ? file.name : document.getElementById(pathInputId).value);
       await _pFetchSourceData();
     } else {
       _pTgtLoaded = true; _pTgtName = d.name;
       if (file) document.getElementById(pathInputId).value = file.name;
+      setFileChip('porter-tgt-chip', file ? file.name : document.getElementById(pathInputId).value);
       await _pFetchTargetData();
     }
     const s = d.summary;

@@ -61,8 +61,19 @@ async function _brtLoadFixtures() {
     const mk = _brtModelKey(fx);
     if (!seen[mk]) { seen[mk] = true; if (_brtLinked[mk] === undefined) _brtLinked[mk] = true; }
   }
+  // Slider values restored from a session (.qsk)
+  const rs = window._brtPendingRestore;
+  if (rs) {
+    for (const fx of _brtFixtures) {
+      if (rs.scales && rs.scales[fx.id] !== undefined) _brtScales[fx.id] = rs.scales[fx.id];
+      if (rs.manual && rs.manual[fx.id] !== undefined) _brtManual[fx.id] = rs.manual[fx.id];
+    }
+    Object.assign(_brtLinked, rs.linked || {});
+    window._brtPendingRestore = null;
+  }
   _brtRender();
   _brtUpdateFetchBtn();
+  if (rs && typeof _brtFetchPreview === 'function') _brtFetchPreview();
 }
 
 function _brtModelKey(fx) {

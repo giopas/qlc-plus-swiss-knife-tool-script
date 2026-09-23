@@ -650,6 +650,7 @@ select.search { cursor: pointer; }
 }
 .out-note.new { color: var(--green); }
 .out-note.ow  { color: var(--orange); }
+.out-note.ro  { color: var(--text-dim); }   /* read-only / non-workspace outputs */
 .out-note svg { width: 14px; height: 14px; }
 
 /* ── Side sections ─────────────────────────────────────────────────────────── */

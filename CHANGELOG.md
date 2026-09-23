@@ -13,6 +13,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Fixed
 
+- **VC Visual Editor right panel** was cut off (the lower tools sat in a small 260-px scroll box, and the *⚙ Panel* toggle did nothing because of a broken element ID). The whole panel now scrolls, the toggle works, and the duplicate-ID warning sits at the top of the panel.
 - **macOS native window crashed at start (`KeyError: 'text_select'`)** when the virtual environment lived in an iCloud-synced folder: iCloud adds "file 2.js" duplicates that pywebview tries to load. `run.sh`, the macOS app launcher and the README now use `~/.venvs/swissknife` (or `$SWK_VENV`); an existing `.venv` in the project still works.
 - **Function Porter wizard showed all five steps at once and stayed on "Loading…"**: the panels' CSS `display:flex` overrode the `hidden` attribute. Now one step at a time, and step 2 lists the source functions.
 - **VC Visual Editor did not react to clicks** (no select, align or drag): the tab loaded the Virtual Console but never attached the canvas mouse handlers. They are now attached on first open.
@@ -33,6 +34,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Changed
 
+- **Uniform action buttons.** Every tool footer now follows one pattern: a note on the left says what the tool writes (green = new `.qxw`, grey = TXT/PDF/CSV only, workspace untouched), secondary exports are grey buttons, and there is **one** primary teal button on the far right. Workspace-writing actions use 💾: *Generate QXW* (Setlist, Fixtures, Brightness, Quick Start), *Save new version* (Trigger Manager), *Apply & Save QXW…* (VC Visual Editor — was a small toolbar-style button), *Save merged QXW…* (QXW Merger — was a grey “Export”), *Import & Save QXW…* (Function Porter), *Save dictionary* (Dictionary). Wrong footer notes fixed (Dictionary, Checklist, ID Browser said they wrote a `.qxw`; Tech Rider had none). `tests/test_ui_consistency.py` keeps it that way.
+- **App updates always show up**: CSS/JS URLs carry a version hash (`?v=`) and static files are served with `no-cache`, so the native window no longer runs stale JavaScript after an update.
 - The **Triggers** tab is renamed **Trigger Manager** (sidebar and page title), matching the docs and wiki.
 - Tests consolidated under `tests/` (`test_porter.py`, `test_qxf_parser.py`, sample QXFs now in `tests/fixtures/`); `pytest.ini` added, so `python -m pytest -q` runs the whole suite from the repo root. The 27 failing Quick Start tests were stale (3-tuple `generate()` return, 400 on invalid requests, the 80d0340 VC layout and effect names) and were updated; none was a code bug.
 - All workspace outputs (Setlist generate, Brightness, Fixture Configurator, Merger, Porter, Quick Start, ID Browser export, Trigger “save as new”) now go through `core/qxw_io`, so the XML declaration and `<!DOCTYPE Workspace>` are always present. Suggested file names now follow one rule: `<name>_v<N+1>.qxw` (or `<name>_v2.qxw` when the name has no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported` and `_modified`.

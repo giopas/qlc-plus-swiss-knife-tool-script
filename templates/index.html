@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>⚡ QLC+ Swiss Knife</title>
-  <link rel="stylesheet" href="/static/css/tokens.css">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/tokens.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/css/style.css?v={{ asset_v }}">
 
   <!-- Grid.js — zero-config sortable/filterable tables -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
@@ -484,9 +484,6 @@
         Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
       </span>
       <div class="spacer"></div>
-      <button class="btn btn-accent" id="btn-generate-qxw"
-              onclick="slGenerateQxw()" disabled
-              data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">🚀 Generate QXW</button>
       <button class="btn btn-surface" id="btn-export-sl-pdf"
               onclick="slExportPdf()" disabled
               data-tooltip="Export this setlist as a formatted PDF document">📄 PDF</button>
@@ -496,6 +493,9 @@
       <button class="btn btn-surface" id="btn-export-sl-xml"
               onclick="slExportXmlTxt()" disabled
               data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
+      <button class="btn btn-accent" id="btn-generate-qxw"
+              onclick="slGenerateQxw()" disabled
+              data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">💾 Generate QXW</button>
     </div>
 
   </section>
@@ -671,15 +671,15 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note ro">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Saves a <b>&nbsp;.txt dictionary&nbsp;</b> — workspace untouched
       </span>
       <div class="spacer"></div>
-      <button class="btn btn-surface" onclick="saveDictFile()"
-              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save</button>
       <button class="btn btn-surface" onclick="exportDictTxt()"
               data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
+      <button class="btn btn-accent" onclick="saveDictFile()"
+              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save dictionary</button>
     </div>
 
   </section>
@@ -853,8 +853,8 @@
       </select>
       <button class="btn btn-surface" onclick="fixExportPdf()"
               data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
-      <button class="btn btn-primary" onclick="fixGenerateQxw()"
-              data-tooltip="Generate a QXW workspace with the current rig configuration">🚀 Generate QXW</button>
+      <button class="btn btn-accent" onclick="fixGenerateQxw()"
+              data-tooltip="Generate a QXW workspace with the current rig configuration">💾 Generate QXW</button>
     </div>
 
   </section>
@@ -879,9 +879,9 @@
     <div id="chk-table-wrap"></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note ro">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Exports <b>&nbsp;TXT / PDF&nbsp;</b> — workspace untouched
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="exportChecklistTxt()"
@@ -966,7 +966,7 @@
       <div class="spacer"></div>
       <button class="btn btn-accent" onclick="brtGenerateQxw()"
               title="Apply brightness scaling to all scenes and download a new .qxw">
-        🚀 Generate QXW
+        💾 Generate QXW
       </button>
     </div>
 
@@ -1010,9 +1010,9 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note ro">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Read-only — exports <b>&nbsp;CSV / PDF&nbsp;</b>
       </span>
       <div class="spacer"></div>
     </div>
@@ -1034,6 +1034,10 @@
     <div id="tr-table-wrap"></div>
 
     <div class="out-footer">
+      <span class="out-note ro">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Exports a <b>&nbsp;PDF&nbsp;</b> — workspace untouched
+      </span>
       <div class="spacer"></div>
       <select id="tr-pdf-paper" class="filter-input" style="width:160px">
         <option value="A3 Landscape">A3 Landscape</option>
@@ -1074,12 +1078,13 @@
       #vce-canvas-wrap { flex:1; overflow:auto; background:#11111b; padding:6px; }
       #vce-canvas { display:block; }
       #vce-right { display:flex; flex-direction:column; width:0; min-width:0;
-                   border-left:0.5px solid var(--border); overflow:hidden; transition:width .2s; }
+                   border-left:0.5px solid var(--border); overflow-x:hidden; overflow-y:auto;
+                   transition:width .2s; }
       #vce-right.open { width:400px; min-width:400px; }
       #vce-props-panel { flex:1; overflow-y:auto; background:var(--surface-1); padding:8px;
                          font-size:11px; font-family:var(--font-mono); }
       #vce-actions-panel { border-top:0.5px solid var(--border); background:var(--surface-0);
-                           padding:8px; overflow-y:auto; max-height:260px; }
+                           padding:8px; }
       .vce-pl { color:var(--text-muted); font-size:9px; margin:8px 0 4px;
                 text-transform:uppercase; letter-spacing:.07em; }
       .vce-pi { width:100%; box-sizing:border-box; padding:3px 5px; font-size:11px;
@@ -1132,7 +1137,7 @@
         <div class="vce-sep"></div>
 
         <!-- Toggle panel -->
-        <button class="vce-xb" id="vce-btn-panel"
+        <button class="vce-xb on" id="vce-btn-panel"
                 onclick="document.getElementById('vce-right').classList.toggle('open');
                          document.getElementById('vce-btn-panel').classList.toggle('on')">
           ⚙ Panel
@@ -1152,7 +1157,10 @@
         </div>
 
         <!-- Right panel (props + actions) -->
-        <div id="vce-right open" style="width:400px;min-width:400px">
+        <div id="vce-right" class="open">
+          <!-- Duplicate widget-ID warning (filled by _vceCheckDuplicates) -->
+          <div id="vce-dup-warn" style="display:none;font-size:11px;color:#f9e2af;padding:8px;
+               border-bottom:0.5px solid var(--border);background:var(--surface-0)"></div>
           <!-- Properties -->
           <div id="vce-props">
             <div style="color:var(--text-muted);padding:20px 0;text-align:center">
@@ -1225,7 +1233,6 @@
             <div style="margin-bottom:6px">
               <label style="font-size:10px;color:var(--text-muted)"><input type="checkbox" id="vce-page-keep"> keep key/MIDI bindings when duplicating</label>
             </div>
-            <div id="vce-dup-warn" style="display:none;font-size:10px;color:#f9e2af;margin-bottom:6px"></div>
 
             <div class="vce-pl">Snap to grid</div>
             <div style="display:flex;gap:4px;align-items:center;margin-bottom:2px">
@@ -1255,7 +1262,8 @@
         Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
       </span>
       <div class="spacer"></div>
-      <button class="vce-xb on" onclick="vceApplyAndExport()">💾 Apply &amp; Save QXW…</button>
+      <button class="btn btn-accent" onclick="vceApplyAndExport()"
+              data-tooltip="Apply all edits and save them as a new .qxw">💾 Apply &amp; Save QXW…</button>
     </div>
 
   </section>
@@ -1387,11 +1395,9 @@
         Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
       </span>
       <div class="spacer"></div>
-      <button id="merger-export-btn" class="btn btn-surface"
+      <button id="merger-export-btn" class="btn btn-accent"
               onclick="mergerExport()" disabled
-              data-tooltip="Save the merged destination as a new .qxw file">
-        ⬇ Export
-      </button>
+              data-tooltip="Save the merged destination as a new .qxw file">💾 Save merged QXW…</button>
     </div>
 
   </section>
@@ -1517,7 +1523,7 @@
         <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-btn" class="btn btn-accent" onclick="porterExecute()" disabled>⬇ Execute &amp; Export</button>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterExecute()" disabled>💾 Import &amp; Save QXW…</button>
       </div>
     </div>
 
@@ -1575,10 +1581,10 @@
       </div>
 
       <div class="sb-action-bar">
-        <button class="btn btn-accent" onclick="sbGenerate()">🔍 Generate Preview</button>
+        <button class="btn btn-surface" onclick="sbGenerate()">🔍 Generate Preview</button>
         <div class="spacer"></div>
-        <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF</button>
         <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)</button>
+        <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF</button>
       </div>
     </div>
 
@@ -1822,10 +1828,10 @@
 
     <!-- Navigation footer -->
     <div class="out-footer">
-      <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">Back</button>
+      <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">← Back</button>
       <div class="spacer"></div>
-      <button id="qs-btn-next" class="btn btn-primary" onclick="qsNext()">Next</button>
-      <button id="qs-btn-export" class="btn btn-success" onclick="qsExport()" style="display:none">Export .qxw</button>
+      <button id="qs-btn-next" class="btn btn-accent" onclick="qsNext()">Next →</button>
+      <button id="qs-btn-export" class="btn btn-accent" onclick="qsExport()" style="display:none">💾 Generate QXW</button>
     </div>
 
     <!-- GitHub Fixture Browser Modal -->
@@ -1914,19 +1920,19 @@
 <div id="nav-tip"></div>
 
 <!-- ── JS modules ──────────────────────────────────────────────────────────── -->
-<script src="/static/js/app.js"></script>
-<script src="/static/js/setlist.js"></script>
-<script src="/static/js/dictionary.js"></script>
-<script src="/static/js/checklist.js"></script>
-<script src="/static/js/techrider.js"></script>
-<script src="/static/js/triggers.js"></script>
-<script src="/static/js/fixture.js"></script>
-<script src="/static/js/merger.js"></script>
-<script src="/static/js/porter.js"></script>
-<script src="/static/js/showbook.js"></script>
-<script src="/static/js/brightness.js"></script>
-<script src="/static/js/session.js"></script>
-<script src="/static/js/vc_editor.js"></script>
-<script src="/static/js/quickstart.js"></script>
+<script src="/static/js/app.js?v={{ asset_v }}"></script>
+<script src="/static/js/setlist.js?v={{ asset_v }}"></script>
+<script src="/static/js/dictionary.js?v={{ asset_v }}"></script>
+<script src="/static/js/checklist.js?v={{ asset_v }}"></script>
+<script src="/static/js/techrider.js?v={{ asset_v }}"></script>
+<script src="/static/js/triggers.js?v={{ asset_v }}"></script>
+<script src="/static/js/fixture.js?v={{ asset_v }}"></script>
+<script src="/static/js/merger.js?v={{ asset_v }}"></script>
+<script src="/static/js/porter.js?v={{ asset_v }}"></script>
+<script src="/static/js/showbook.js?v={{ asset_v }}"></script>
+<script src="/static/js/brightness.js?v={{ asset_v }}"></script>
+<script src="/static/js/session.js?v={{ asset_v }}"></script>
+<script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>
+<script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
 </body>
 </html>

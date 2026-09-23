@@ -65,3 +65,15 @@ def test_corpus_counts(name, fixtures, functions):
     merger.load_dst(path)
     _, data = merger.export_dst()
     assert data == qxw_io.qxw_bytes(qxw_io.load_qxw(path).getroot())
+
+
+def test_upload_keeps_real_file_name(ns_file):
+    """Browse/upload in Merger and Porter must not show 'tmpxw7vxz61'."""
+    import io
+    import app
+    c = app.create_app().test_client()
+    data = open(ns_file, "rb").read()
+    for url in ("/api/porter/source/load", "/api/merger/src/load"):
+        r = c.post(url, data={"file": (io.BytesIO(data), "SangAKlang_v41.qxw")},
+                   content_type="multipart/form-data")
+        assert r.get_json()["name"] == "SangAKlang_v41", url

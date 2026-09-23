@@ -453,7 +453,7 @@ function _renderFnPool(list) {
 
   if (!list.length) {
     wrap.innerHTML = `<div class="slot-empty">${
-      _functions.length === 0 ? 'Load a workspace to see functions' : 'No results'
+      _functions.length === 0 ? '<a class="open-ws-link">📂 Open a workspace</a> to see functions' : 'No results'
     }</div>`;
     return;
   }

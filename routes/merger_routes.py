@@ -28,6 +28,7 @@ def _load_side(load_fn, state_key):
     Returns a Flask response tuple.
     """
     tmp = None
+    name = None          # uploads: keep the real file name, not the temp name
     try:
         if request.is_json:
             data = request.get_json(force=True) or {}
@@ -47,8 +48,9 @@ def _load_side(load_fn, state_key):
             f.save(tmp.name)
             tmp.close()
             path = tmp.name
+            name = os.path.splitext(os.path.basename(f.filename))[0]
 
-        summary = load_fn(path)
+        summary = load_fn(path, name)
         return jsonify({'ok': True, 'summary': summary, 'name': mg.get_state()[state_key]})
 
     except Exception as e:

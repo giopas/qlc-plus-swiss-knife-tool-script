@@ -128,8 +128,10 @@ function porterLoadSrc() {
   if (p && typeof _sess !== 'undefined') _sess.porter_source = p;
 }
 function porterLoadTgt() { _pLoadSide('target', 'porter-tgt-path', 'porter-tgt-file'); }
-function porterBrowseSrc() { document.getElementById('porter-src-file')?.click(); }
-function porterBrowseTgt() { document.getElementById('porter-tgt-file')?.click(); }
+function porterBrowseSrc() { pickQxwInto('porter-src-path', 'porter-src-file', porterLoadSrc); }
+function porterBrowseTgt() { pickQxwInto('porter-tgt-path', 'porter-tgt-file', porterLoadTgt); }
+function porterUseOpenSrc() { useOpenWorkspace('porter-src-path', 'porter-src-file', porterLoadSrc); }
+function porterUseOpenTgt() { useOpenWorkspace('porter-tgt-path', 'porter-tgt-file', porterLoadTgt); }
 function porterSetSourcePath(path) {
   const inp = document.getElementById('porter-src-path');
   if (inp && path) { inp.value = path; porterLoadSrc(); }

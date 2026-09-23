@@ -139,7 +139,7 @@ function _renderDictTable(rows) {
   if (!rows.length) {
     wrap.innerHTML = '<div style="padding:24px;color:var(--overlay0);font-size:12px">'
                    + ((_dictData.length === 0)
-                       ? 'Load a workspace to see functions.'
+                       ? '<a class="open-ws-link">📂 Open a workspace</a> to see functions.'
                        : 'No results for current filter.') + '</div>';
     return;
   }

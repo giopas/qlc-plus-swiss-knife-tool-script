@@ -63,11 +63,28 @@ def vc_patch():
         return jsonify({'error': "'changes' must be a list"}), 400
 
     try:
+        if changes and data.get('snapshot', True):
+            ws.vc_snapshot()                      # makes the flush undoable
         result = ws.patch_vc_widgets(changes)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
     return jsonify(result)
+
+
+@bp.route('/vc/undo', methods=['POST'])
+def vc_undo():
+    """Undo the last server-side VC edit. Body {"clear": true} empties the stack."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    d = request.get_json(silent=True) or {}
+    if d.get('clear'):
+        ws.vc_undo_clear()
+        return jsonify({'ok': True, 'remaining': 0})
+    try:
+        return jsonify({'ok': True, **ws.vc_undo()})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
 
 @bp.route('/vc/pages')

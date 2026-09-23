@@ -15,6 +15,8 @@ The plan of record is [WORKPLAN.md](WORKPLAN.md); [ROADMAP.md](ROADMAP.md) is th
 6. **QLC+ is the reference.** Run the manual QLC+ open-check (WORKPLAN §6) before every release.
 7. **Conventions are data, not code** — JSON profiles, not hard-coded names.
 8. **Tests and CI green before merge.**
+9. **One way to open files.** Tools that use the open workspace rely on the header **📂 Open…** (and the `.need-ws` banner, see `_WS_SCREENS` in `app.js`); every *Browse…* goes through `nativePick()` / `pickQxwInto()` and falls back to `<input type=file>` only when `nativePick.unavailable`. Uploads must keep the original file name.
+10. **Every VC edit is undoable.** Client-side edits go through the wrapped `vce*` functions (local snapshots); anything that changes the server's XML must call `ws.vc_snapshot()` first (see `vc_structural_edit`, `/api/vc/patch`).
 
 ## Tests
 

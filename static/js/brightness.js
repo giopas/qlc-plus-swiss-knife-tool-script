@@ -26,7 +26,7 @@ function invalidateBrightness() {
   _brtLinked   = {};
   _brtBaseline = {};
   const wrap = document.getElementById('brt-fixture-wrap');
-  if (wrap) wrap.innerHTML = '<div class="brt-placeholder">Load a workspace to adjust brightness.</div>';
+  if (wrap) wrap.innerHTML = '<div class="brt-placeholder"><a class="open-ws-link">📂 Open a workspace</a> to adjust brightness.</div>';
   _brtSetPreview(null);
 }
 

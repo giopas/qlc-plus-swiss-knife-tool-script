@@ -187,6 +187,12 @@
     <div class="ms-stat"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
     <div class="ms-stat"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
     <div class="ms-stat"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+    <div class="ms-actions">
+      <button class="btn btn-surface btn-sm" onclick="browseWorkspace()"
+              data-tooltip="Open a .qxw workspace — every tool works on it">📂 Open…</button>
+      <button class="btn btn-surface btn-sm" onclick="reloadFromDisk()"
+              data-tooltip="Re-read the open workspace from disk (discards unsaved edits)">↻ Reload</button>
+    </div>
   </div>
 
 
@@ -323,7 +329,7 @@
       <div class="slot-pane">
         <div class="pane-header">CueList Slots</div>
         <div id="slot-list">
-          <div class="slot-empty">Load a workspace to see slots</div>
+          <div class="slot-empty"><a class="open-ws-link">📂 Open a workspace</a> to see slots</div>
         </div>
       </div>
 
@@ -469,7 +475,7 @@
           </div>
         </div>
         <div id="fn-pool-list" class="fn-pool-list">
-          <div class="slot-empty">Load a workspace to see functions</div>
+          <div class="slot-empty"><a class="open-ws-link">📂 Open a workspace</a> to see functions</div>
         </div>
         <div class="fn-pool-footer">
           <span id="fn-pool-count" class="hint-text"></span>
@@ -955,7 +961,7 @@
 
     <!-- Fixture groups -->
     <div id="brt-fixture-wrap" class="brt-fixture-wrap">
-      <div class="brt-placeholder">Load a workspace to adjust brightness.</div>
+      <div class="brt-placeholder"><a class="open-ws-link">📂 Open a workspace</a> to adjust brightness.</div>
     </div>
 
     <div class="out-footer">
@@ -1145,7 +1151,8 @@
         <div style="flex:1"></div>
 
         <!-- Reload -->
-        <button class="vce-xb" onclick="_vceTree=null;_vceLoad()">↺ Reload</button>
+        <button class="vce-xb" id="vce-btn-undo" onclick="vceUndo()" disabled title="Nothing to undo">↶ Undo</button>
+        <button class="vce-xb" onclick="vceReload()" title="Discard unsaved VC edits in this tab and re-read the Virtual Console">↺ Reload</button>
       </div>
 
       <!-- Main body -->
@@ -1293,6 +1300,7 @@
                  onkeydown="if(event.key==='Enter') mergerLoadSrc()">
           <button class="btn btn-surface" onclick="mergerBrowseSrc()"
                   data-tooltip="Browse for source .qxw file">Browse…</button>
+          <button class="btn btn-surface" onclick="mergerUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
           <button class="btn btn-accent" onclick="mergerLoadSrc()"
                   data-tooltip="Parse the source workspace">Load</button>
           <input id="merger-src-file" type="file" accept=".qxw" style="display:none"
@@ -1313,6 +1321,7 @@
                  onkeydown="if(event.key==='Enter') mergerLoadDst()">
           <button class="btn btn-surface" onclick="mergerBrowseDst()"
                   data-tooltip="Browse for destination .qxw file">Browse…</button>
+          <button class="btn btn-surface" onclick="mergerUseOpenDst()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
           <button class="btn btn-accent" onclick="mergerLoadDst()"
                   data-tooltip="Parse the destination workspace">Load</button>
           <input id="merger-dst-file" type="file" accept=".qxw" style="display:none"
@@ -1431,9 +1440,10 @@
           <label class="merger-load-label">📂 Source QXW (import FROM)</label>
           <div class="merger-load-row">
             <input id="porter-src-path" type="text" class="filter-input"
-                   placeholder="Paste path or click Browse..." spellcheck="false"
+                   placeholder="Paste path or click Browse…" spellcheck="false"
                    onkeydown="if(event.key==='Enter') porterLoadSrc()">
             <button class="btn btn-surface" onclick="porterBrowseSrc()">Browse...</button>
+          <button class="btn btn-surface" onclick="porterUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
             <button class="btn btn-accent" onclick="porterLoadSrc()">Load</button>
             <input id="porter-src-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterSrcFileChosen()">
@@ -1447,9 +1457,10 @@
           <label class="merger-load-label">📥 Target QXW (import INTO)</label>
           <div class="merger-load-row">
             <input id="porter-tgt-path" type="text" class="filter-input"
-                   placeholder="Paste path or click Browse..." spellcheck="false"
+                   placeholder="Paste path or click Browse…" spellcheck="false"
                    onkeydown="if(event.key==='Enter') porterLoadTgt()">
             <button class="btn btn-surface" onclick="porterBrowseTgt()">Browse...</button>
+          <button class="btn btn-surface" onclick="porterUseOpenTgt()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
             <button class="btn btn-accent" onclick="porterLoadTgt()">Load</button>
             <input id="porter-tgt-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterTgtFileChosen()">

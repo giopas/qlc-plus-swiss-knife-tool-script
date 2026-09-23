@@ -87,7 +87,7 @@ function _renderTrgTable(rows) {
   if (!rows.length) {
     wrap.innerHTML = '<div style="padding:24px;color:var(--overlay0);font-size:12px">'
                    + (_trgData.length === 0
-                       ? 'Load a workspace to see triggers.'
+                       ? '<a class="open-ws-link">📂 Open a workspace</a> to see triggers.'
                        : 'No results for current filter.') + '</div>';
     return;
   }
@@ -228,6 +228,9 @@ async function checkDuplicates() {
 
 async function saveTriggers() {
   // Writes <name>_v<N+1>.qxw next to the loaded file — never overwrites it.
+  // An uploaded workspace has no folder to save next to: ask where instead.
+  const st = await _apiJson('/api/status');
+  if (st.loaded && !st.path) { await saveTriggersAs(); return; }
   const result = await _apiJson('/api/triggers/save', { method: 'POST' });
   if (result.error) { setStatus(result.error, 'error'); return; }
   setStatus(`Saved new version → ${result.path.split(/[\\/]/).pop()}`);

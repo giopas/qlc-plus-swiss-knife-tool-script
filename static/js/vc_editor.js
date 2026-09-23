@@ -41,6 +41,12 @@ const VCE_ZOOM_MIN = 0.1, VCE_ZOOM_MAX = 4.0;
 
 let _vceInited     = false;
 let _vceDirty      = false;   // structural edits (copy/move/pages) not yet saved
+// Undo history, newest last. Entries:
+//   {kind:'local',  pageId, page, changes}  — before a panel/align edit (client only)
+//   {kind:'server', changes}                — before a flush or copy/move/page op;
+//                                             undo = POST /api/vc/undo + restore `changes`
+let _vceHist       = [];
+const VCE_HIST_MAX = 100;
 
 const VCE_CV_ID    = 'vce-canvas';
 const VCE_TYPES    = new Set(['Button','Slider','Knob','SpeedDial','XYPad',
@@ -71,6 +77,22 @@ function initVcEditor() {
 async function vcEditorOnTabShow() {
   initVcEditor();
   if (!_vceTree) await _vceLoad();
+}
+
+/** Called by app.js when a (different) workspace is opened. */
+function invalidateVcEditor() {
+  _vceTree = null; _vcePages = []; _vcePage = null; _vceNodes = {};
+  _vceChanges = {}; _vceSel.clear(); _vceDirty = false;
+  _vceHist = []; _vceUpdateUndoBtn();
+}
+
+/** Toolbar ↺ Reload: drop pending edits and undo history, re-read the tree. */
+async function vceReload() {
+  _vceChanges = {}; _vceHist = []; _vceUpdateUndoBtn();
+  try { await fetch('/api/vc/undo', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ clear: true }) }); } catch {}
+  _vceTree = null;
+  await _vceLoad();
 }
 
 async function _vceLoad() {
@@ -259,6 +281,7 @@ function _vceOnKey(e) {
   if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); vceZoom(+1); }
   else if (mod && e.key === '-')               { e.preventDefault(); vceZoom(-1); }
   else if (mod && e.key === '0')               { e.preventDefault(); vceFit(); }
+  else if (mod && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) { e.preventDefault(); vceUndo(); }
   else if (mod && (e.key === 'a' || e.key === 'A')) {
     e.preventDefault();
     _vceSel = new Set(Object.values(_vceNodes)
@@ -885,6 +908,85 @@ function vceZoom(dir) {
 
 function vceFit() { _vceFitPage(); _vceRender(); }
 
+// ── Undo ─────────────────────────────────────────────────────────────────────
+
+function _vceUpdateUndoBtn() {
+  const b = document.getElementById('vce-btn-undo');
+  if (!b) return;
+  b.disabled = !_vceHist.length;
+  b.title = _vceHist.length ? `Undo (⌘Z) — ${_vceHist.length} step(s)` : 'Nothing to undo';
+}
+
+function _vcePush(entry) {
+  _vceHist.push(entry);
+  if (_vceHist.length > VCE_HIST_MAX) _vceHist.shift();
+  _vceUpdateUndoBtn();
+}
+
+function _vceLocalSnapshot() {
+  return { kind: 'local', pageId: _vcePage ? _vcePage.id : null,
+           page: _vcePage ? structuredClone(_vcePage) : null,
+           changes: structuredClone(_vceChanges) };
+}
+
+/** Re-draw the current page from _vcePage + _vceChanges (keeps the selection). */
+function _vceRedrawPage() {
+  if (!_vcePage) return;
+  _vceApplyChangesToTree(_vcePage);
+  _vceNodes = {};
+  _vceFlattenNode(_vcePage, null, 0, 0);
+  _vceComputeAlignQuality();
+  _vceSel = new Set([..._vceSel].filter(id => _vceNodes[id]));
+  _vceRender(); _vceRenderProps();
+}
+
+async function vceUndo() {
+  const e = _vceHist.pop();
+  _vceUpdateUndoBtn();
+  if (!e) { _vceStatus('Nothing to undo.', 'warn'); return; }
+  try {
+    if (e.kind === 'local') {
+      const idx = _vcePages.findIndex(p => p.id === e.pageId);
+      if (idx >= 0 && e.page) {
+        _vcePages[idx] = e.page;
+        const sel = document.getElementById('vce-page-sel');
+        if (_vcePage && _vcePage.id !== e.pageId && sel) sel.value = String(idx);
+        _vcePage = e.page;
+      }
+      _vceChanges = e.changes;
+      _vceRedrawPage();
+    } else {
+      const r = await fetch('/api/vc/undo', { method: 'POST' });
+      const d = await r.json();
+      if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+      const keepSel = [..._vceSel];
+      await _vceReloadAt(_vcePage ? _vcePage.id : null, keepSel, true);
+      _vceChanges = e.changes || {};
+      _vceRedrawPage();
+      _vceRefreshOtherTabs();
+    }
+    _vceDirty = true;
+    _vceStatus(`↶ Undone · ${_vceHist.length} step(s) left`, 'ok');
+  } catch (err) {
+    _vceStatus('Undo failed: ' + err.message, 'error');
+  }
+}
+
+// Make every panel/align edit undoable without touching each function:
+// snapshot before, keep the snapshot only if the edit changed something.
+['vceApplyProp', 'vceApplyColor', 'vceAlign', 'vceDistribute', 'vceSameSize',
+ 'vceFitText', 'vceArrangeGrid', 'vceSortSiblings', 'vceSnapToGrid'].forEach(name => {
+  const fn = window[name];
+  if (typeof fn !== 'function') return;
+  window[name] = function (...args) {
+    const snap = _vceLocalSnapshot();
+    const before = JSON.stringify(_vceChanges);
+    const out = fn.apply(this, args);
+    if (JSON.stringify(_vceChanges) !== before) _vcePush(snap);
+    return out;
+  };
+});
+
 // ── Copy / move widgets, pages ───────────────────────────────────────────────
 // Structural edits run on the server's in-memory workspace (POST /api/vc/op);
 // nothing is written to disk until "Apply & Save QXW…".
@@ -939,6 +1041,7 @@ async function _vceFlush() {
   });
   const d = await r.json();
   if (d.error) { _vceStatus('Patch error: ' + d.error, 'error'); return false; }
+  _vcePush({ kind: 'server', changes: structuredClone(_vceChanges) });
   _vceChanges = {};
   _vceDirty = true;
   return true;
@@ -952,17 +1055,22 @@ async function _vceOp(body) {
   const d = await r.json();
   if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
   _vceDirty = true;
-  // widget counts / other tabs changed: refresh header, drop stale caches
+  _vcePush({ kind: 'server', changes: {} });
+  _vceRefreshOtherTabs();
+  return d;
+}
+
+/** Widget counts / other tabs changed: refresh header, drop stale caches. */
+function _vceRefreshOtherTabs() {
   fetch('/api/status').then(x => x.json()).then(st => {
     if (typeof _updateHeader === 'function') _updateHeader(st);
   }).catch(() => {});
   if (typeof _invalidateIdBrowser === 'function') _invalidateIdBrowser();
   if (typeof invalidateTriggers   === 'function') invalidateTriggers();
-  return d;
 }
 
 /** Reload the tree, show the page containing widget *focusId*, select *selIds*. */
-async function _vceReloadAt(focusId, selIds) {
+async function _vceReloadAt(focusId, selIds, _quiet) {
   const res = await fetch('/api/vc/tree');
   if (!res.ok) { _vceStatus('Could not reload VC tree.', 'error'); return; }
   _vceTree  = await res.json();
@@ -1066,19 +1174,18 @@ async function vceApplyAndExport() {
     _vceStatus('No pending changes to apply.', 'warn'); return;
   }
 
-  // 1. Patch in-memory XML
-  const patchRes = await fetch('/api/vc/patch', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ changes }),
-  });
-  const patchData = await patchRes.json();
-  if (patchData.error) { _vceStatus('Patch error: ' + patchData.error, 'error'); return; }
+  // 1. Patch in-memory XML (undoable like any other flush)
+  if (!(await _vceFlush())) return;
+  const patchData = { patched: changes.length };
 
   // 2. Pick save path via native picker
   let savePath = null;
   const state = await (await fetch('/api/status')).json();
   const srcName = (state.original_name || state.path || 'workspace').replace(/\.qxw$/i,'');
-  const defName = srcName + '_edited.qxw';
+  const base = srcName.split(/[\\/]/).pop();
+  const m = base.match(/^(.*)_v(\d+)$/i);
+  const defName = m ? `${m[1]}_v${String(+m[2] + 1).padStart(m[2].length, '0')}.qxw`
+                    : `${base}_v2.qxw`;
 
   try {
     const pr = await fetch('/api/picker/save-name', {
@@ -1102,7 +1209,6 @@ async function vceApplyAndExport() {
   const expData = await expRes.json();
   if (expData.error) { _vceStatus('Export error: ' + expData.error, 'error'); return; }
 
-  _vceChanges = {};
   _vceDirty = false;
   _vceStatus(`✓ Patched ${patchData.patched} widget(s) → saved as ${savePath.split(/[\\/]/).pop()}`, 'ok');
 }
@@ -1143,3 +1249,4 @@ function _vceColorHue(hex) {
 
 window.vcEditorOnTabShow = vcEditorOnTabShow;
 window.initVcEditor      = initVcEditor;
+window.invalidateVcEditor = invalidateVcEditor;

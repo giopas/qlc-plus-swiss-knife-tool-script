@@ -423,6 +423,8 @@ main {
 }
 .ms-file.ws-loaded .ms-dot { background: var(--green); }
 .ms-file.ws-unloaded { color: var(--text-faint); font-weight: 500; }
+.ms-actions { margin-left: auto; display: flex; gap: 6px; }
+.open-ws-link { color: var(--accent); cursor: pointer; text-decoration: underline; }
 .ms-stat {
   display: flex;
   align-items: baseline;
@@ -3420,3 +3422,8 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   border-radius: 3px;
   color: var(--text);
 }
+
+/* "No workspace open" banner on tools that need one (see app.js _WS_SCREENS) */
+.need-ws { display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+           background: var(--surface-0); border-bottom: 1px solid var(--border);
+           color: var(--text-dim); font-size: 12.5px; }

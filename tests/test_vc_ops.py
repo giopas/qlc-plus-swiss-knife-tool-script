@@ -172,3 +172,31 @@ def test_real_show_copy_page():
     vc_ops.copy_page(root, vc_ops.list_pages(root)[1]["id"])
     ids = [e.get("ID") for e in root.iter() if e.tag.replace(N, "") in vc_ops.WIDGET_TYPES]
     assert len(vc_ops.list_pages(root)) == before + 1 and len(ids) == len(set(ids))
+
+
+def test_undo_stack_restores_vc(tmp_path):
+    src = tmp_path / "Show_v1.qxw"
+    src.write_text(XML, encoding="utf-8")
+    ws.load_qxw(str(src))
+    before = qxw_io.qxw_bytes(ws._state["qxw_root"])
+    ws.vc_snapshot(); ws.patch_vc_widgets([{"id": "1", "x": 99}])
+    ws.vc_structural_edit("copy_page", page_id="100")
+    ws.vc_structural_edit("move", ids=["1"], target_id="201")
+    with pytest.raises(vc_ops.VcOpError):
+        ws.vc_structural_edit("move", ids=["999"], target_id="201")   # failed op: no snapshot
+    assert len(ws._vc_undo) == 3
+    ws.vc_undo(); ws.vc_undo()
+    assert [p["caption"] for p in ws.get_vc_tree()["pages"]] == ["PAGE A", "PAGE B"]
+    ws.vc_undo()
+    assert qxw_io.qxw_bytes(ws._state["qxw_root"]) == before
+    assert ws._state["vc_nodes_by_id"]["1"].find(N + "WindowState").get("X") == "10"
+    with pytest.raises(ValueError):
+        ws.vc_undo()
+    ws._reset()
+    assert ws._vc_undo == []
+
+
+def test_undo_route():
+    import app
+    c = app.create_app().test_client()
+    assert c.post("/api/vc/undo").status_code == 400      # no workspace

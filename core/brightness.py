@@ -16,6 +16,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 from core.workspace import _state, NS, QLC_NS_URI
+from core import qxw_io
 from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, norm_name, GH_API_BASE, GH_RAW_BASE
 
 # ── QXF fixture-definition namespace ─────────────────────────────────────────
@@ -523,9 +524,7 @@ def fetch_fixtures_from_github(missing_fixtures: list, save_dir: str) -> dict:
         raw_url = f'{_GITHUB_RAW}/{gh_mfr_dir}/{matched_entry["name"]}'
         dest    = os.path.join(save_dir, matched_entry['name'])
         try:
-            req = urllib.request.Request(raw_url, headers=_HTTP_HEADERS)
-            with urllib.request.urlopen(req, timeout=20) as r:
-                data = r.read()
+            data = _gh_get_raw_shared(raw_url)
             with open(dest, 'wb') as f:
                 f.write(data)
             downloaded.append({
@@ -764,17 +763,8 @@ def apply_brightness_scales(
     # Build suggested output filename
     orig = _state.get('original_name')
     src  = orig or _state.get('path') or 'workspace.qxw'
-    obn  = os.path.splitext(os.path.basename(src))[0]
-    m    = re.search(r'(\d+)$', obn)
-    bn   = (
-        obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
-        if m else f'{obn}_BRIGHTNESS'
-    )
-    suggested_filename = bn + '.qxw'
-
-    xb  = ET.tostring(root_copy, encoding='utf-8').decode('utf-8')
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb
-    return suggested_filename, xml.encode('utf-8'), {
+    suggested_filename = qxw_io.next_version_name(os.path.basename(src))
+    return suggested_filename, qxw_io.qxw_bytes(root_copy), {
         'scenes_modified': scenes_modified,
         'values_changed':  values_changed,
     }

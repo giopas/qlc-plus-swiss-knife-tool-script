@@ -14,10 +14,20 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ### Fixed
 
 - **Quick Start 3D tilt defaults**: fixtures are now aimed at the performers instead of straight down/up. Truss/ceiling 45° from vertical, floor 45° uplight, mid-height horizontal; direction comes from depth (upstage fixtures tilt downstage, downstage fixtures tilt upstage). New helpers `height_zone()` / `default_x_rot()` in `core/quick_start/qxw_builder.py`; the Quick Start canvas mirrors the same rule and draws beam direction in the side view. Per-fixture override unchanged.
+- Brightness → “Fetch missing QXFs from GitHub” always failed with a hidden `NameError` (`_HTTP_HEADERS` was left behind when the GitHub helpers moved to `core/gh_fetch.py`); downloads now use `gh_get_raw()`.
 
 ### Added
 
 - `tools/make_tilt_check.py` → `tests/manual/tilt_check.qxw`, a 6-fixture file for checking tilt in the QLC+ 5 3D view; `tests/test_orientation.py` (18 tests).
+- `core/qxw_io.py` — the single QXW reader/writer: `load_qxw()`, `qxw_bytes()`, `write_qxw()` (atomic, refuses to overwrite protected source paths), `next_version_name()` / `next_version_path()` and `suffixed_name()`. `tests/test_qxw_io.py` covers round-trip, determinism, overwrite guard, versioned names, and a guard test that fails if any other module serialises a workspace.
+
+### Changed
+
+- All workspace outputs (Setlist generate, Brightness, Fixture Configurator, Merger, Porter, Quick Start, ID Browser export, Trigger “save as new”) now go through `core/qxw_io`, so the XML declaration and `<!DOCTYPE Workspace>` are always present. Suggested file names now follow one rule: `<name>_v<N+1>.qxw` (or `<name>_v2.qxw` when the name has no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported` and `_modified`.
+
+### Security
+
+- The native “Save As” helper (`/api/picker/save-blob`) refuses to overwrite the loaded source workspace.
 
 ---
 

@@ -24,6 +24,7 @@ Key design decisions (modelled on professional show files):
 
 from __future__ import annotations
 
+import re
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Tuple
 
@@ -258,6 +259,9 @@ def _vc_slider(wid: int, caption: str, x: int, y: int,
     sl = ET.Element(_ns("Slider"))
     sl.set("Caption", caption)
     sl.set("ID", str(wid))
+    # QLC+ 5 treats a missing InvertedAppearance as "true" (0 at the top)
+    sl.set("WidgetStyle", "Slider")
+    sl.set("InvertedAppearance", "false")
     ws = _sub(sl, "WindowState")
     ws.set("Visible", "True")
     ws.set("X", str(x)); ws.set("Y", str(y))
@@ -560,6 +564,37 @@ class VCLayoutGenerator:
         off = self._dark_scene(self._n(f"{base}: Off", cat, "fx"), scope)
         return self._chaser(self._n(base, cat, "fx"), [on, off], 0, 0, on_ms)
 
+    # ── Sound-active (the fixtures' own music mode) ──────────────────────
+
+    _SOUND_RE = re.compile(r"sound|audio|music", re.IGNORECASE)
+
+    def _sound_overrides(self, idx: int) -> Optional[Dict[int, int]]:
+        """{channel: value} that puts fixture *idx* in its built-in
+        sound-active mode (middle of the first "Sound/Audio/Music"
+        capability in its mode), or None if it has none."""
+        entry = self.rig[idx]
+        defs = (self.qxf_defs.get(entry.get("key", ""), {}) or {}).get("channel_defs") or {}
+        for ch, name in enumerate(self._mode_channels(idx)):
+            for cap in (defs.get(name) or {}).get("capabilities") or []:
+                if self._SOUND_RE.search(cap.get("label") or ""):
+                    return {ch: (int(cap["min"]) + int(cap["max"])) // 2}
+        return None
+
+    def _sound_scope(self, scope=None) -> List[int]:
+        idxs = self._all() if scope is None else scope
+        return [i for i in idxs if self._sound_overrides(i)]
+
+    def _sound_scene(self, name: str, scope=None) -> int:
+        """Fixtures with a sound mode: full + sound mode on; the others in
+        the scope stay dark.  The name must say "Audio" so Workspace Doctor
+        treats the program channel as intentional (D006)."""
+        idxs = self._all() if scope is None else scope
+        ov = {}
+        for i in idxs:
+            snd = self._sound_overrides(i)
+            ov[i] = {**self._light(i, (255, 255, 255)), **snd} if snd else self._dark(i)
+        return self._scene(name, ov, scope)
+
     # ── RGB matrix effects ────────────────────────────────────────────────
 
     def _rgb_scope(self, scope=None) -> List[int]:
@@ -704,6 +739,9 @@ class VCLayoutGenerator:
                             _CLR_YELLOW, _CLR_BLACK))
             effects.append(("", self._strobe("Strobe Fast", "all", 50), "Strobe Fast",
                             _CLR_RED, _CLR_WHITE))
+        if self._sound_scope():
+            effects.append(("", self._sound_scene(self._n("Audio React", "all", "fx")),
+                            "Audio React", _CLR_MAGENTA, _CLR_BLACK))
         if n_rgb_all >= 2:
             pal = [(_CLR_RED, _CLR_WHITE), (_CLR_BLUE, _CLR_WHITE), (_CLR_CYAN, _CLR_BLACK),
                    (_CLR_PURPLE, _CLR_WHITE), (_CLR_GREEN, _CLR_BLACK), (_CLR_ORANGE, _CLR_BLACK)]
@@ -734,6 +772,9 @@ class VCLayoutGenerator:
             if len(self._rgb_scope(scope)) >= 2:
                 btns.append((self._matrix(f"{g['name']} Chase", cat, "One By One", [_CLR_RED],
                                           300, scope), "Chase", _CLR_CYAN, _CLR_BLACK))
+            if self._sound_scope(scope):
+                btns.append((self._sound_scene(self._n(f"{g['name']} Audio React", cat, "fx"), scope),
+                             "Audio React", _CLR_MAGENTA, _CLR_BLACK))
             group_blocks.append((g["name"], btns))
 
         # ── PANIC (last, so the reset script can stop everything) ───────
@@ -770,23 +811,27 @@ class VCLayoutGenerator:
             gw = pad + st.slider_w + pad + gcols * (bw + pad)
             gh = max(rows_h(len(btns), gcols), hdr + 3 * (bh + pad) + pad)
             blocks.append((name, btns, gcols, gw, gh))
-        placements, x, y, line_h = [], pad, hdr + pad + row1_h + pad, 0
+        # SHOW (whole rig) holds only LOOKS + EFFECTS; each group is its own
+        # SoloFrame under it, so groups combine with each other (Front Red +
+        # Floor Blue) while buttons inside one group stay one-at-a-time.
+        show_h = hdr + pad + row1_h + pad
+        gx0, gy0 = show_x, pad + show_h + pad
+        placements, x, y, line_h = [], gx0, gy0, 0
         for b in blocks:
-            if x > pad and x + b[3] > inner_w + pad:
-                x, y, line_h = pad, y + line_h + pad, 0
+            if x > gx0 and x + b[3] > show_x + show_w:
+                x, y, line_h = gx0, y + line_h + pad, 0
             placements.append((b, x, y))
             x += b[3] + pad
             line_h = max(line_h, b[4])
-        show_h = max(y + line_h + pad, page_h - 2 * pad) if blocks else \
-            max(hdr + pad + row1_h + pad, page_h - 2 * pad)
-        page_h = max(page_h, show_h + 2 * pad)
+        bottom = (y + line_h) if blocks else pad + show_h
+        page_h = max(page_h, bottom + pad)
 
         page = _vc_frame(self._next_wid(), "Quick Start", 0, 0, page_w, page_h,
                          caption="Quick Start", header=False, font=st.font_page)
         page.append(_vc_slider(self._next_wid(), "MASTER", pad, pad, master_w,
                                page_h - 2 * pad, slider_mode="Submaster"))
         show = _vc_solo_frame(self._next_wid(), "SHOW", show_x, pad, show_w, show_h,
-                              caption="SHOW — one at a time")
+                              caption="WHOLE RIG — one at a time")
         page.append(show)
 
         f_looks = _vc_frame(self._next_wid(), "LOOKS", pad, hdr + pad, half, row1_h)
@@ -797,11 +842,11 @@ class VCLayoutGenerator:
         show.append(f_fx)
 
         for (name, btns, gcols, gw, gh), gx, gy in placements:
-            gf = _vc_frame(self._next_wid(), f"GROUP · {name}", gx, gy, gw, gh)
+            gf = _vc_solo_frame(self._next_wid(), f"GROUP · {name}", gx, gy, gw, gh)
             gf.append(_vc_slider(self._next_wid(), name.upper()[:10], pad, hdr,
                                  st.slider_w, gh - hdr - pad, slider_mode="Submaster"))
             grid(gf, btns, pad + st.slider_w + pad, hdr, gcols)
-            show.append(gf)
+            page.append(gf)
 
         rx = page_w - pad - right_w
         ph = max(80, bh)

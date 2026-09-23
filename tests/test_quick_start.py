@@ -415,10 +415,11 @@ class TestVCLayoutGenerator:
         ns = "http://www.qlcplus.org/Workspace"
         # One page: MASTER + one SHOW SoloFrame (looks, effects, one frame
         # per fixture group — everything exclusive) + PANIC buttons
+        # Whole-rig SoloFrame (LOOKS + EFFECTS) + one SoloFrame per group
         solos = [c for c in vc_frame if c.tag == f"{{{ns}}}SoloFrame"]
-        assert len(solos) == 1
+        assert [c.get("Caption") for c in solos] == ["WHOLE RIG — one at a time", "GROUP · DIM"]
         frames = [c.get("Caption") for c in solos[0] if c.tag == f"{{{ns}}}Frame"]
-        assert frames == ["LOOKS", "EFFECTS", "GROUP · DIM"]
+        assert frames == ["LOOKS", "EFFECTS"]
 
     def test_stats_after_generate(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]

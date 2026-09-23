@@ -349,7 +349,16 @@
    <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">30</Step>
    <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">31</Step>
   </Function>
-  <Function ID="33" Type="RGBMatrix" Name="Chase (matrix)">
+  <Function ID="33" Type="Scene" Name="Audio React">
+   <Speed FadeIn="0" FadeOut="0" Duration="0" />
+   <FixtureVal ID="0">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
+   <FixtureVal ID="1">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
+   <FixtureVal ID="2">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+  </Function>
+  <Function ID="34" Type="RGBMatrix" Name="Chase (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="300" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -359,7 +368,7 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>1</FixtureGroup>
   </Function>
-  <Function ID="34" Type="Scene" Name="Chase: dimmers">
+  <Function ID="35" Type="Scene" Name="Chase: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -368,12 +377,12 @@
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="35" Type="Collection" Name="Chase">
+  <Function ID="36" Type="Collection" Name="Chase">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">34</Step>
-   <Step Number="1">33</Step>
+   <Step Number="0">35</Step>
+   <Step Number="1">34</Step>
   </Function>
-  <Function ID="36" Type="RGBMatrix" Name="Even/Odd (matrix)">
+  <Function ID="37" Type="RGBMatrix" Name="Even/Odd (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="600" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -384,7 +393,7 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>1</FixtureGroup>
   </Function>
-  <Function ID="37" Type="Scene" Name="Even/Odd: dimmers">
+  <Function ID="38" Type="Scene" Name="Even/Odd: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -393,12 +402,12 @@
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="38" Type="Collection" Name="Even/Odd">
+  <Function ID="39" Type="Collection" Name="Even/Odd">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">37</Step>
-   <Step Number="1">36</Step>
+   <Step Number="0">38</Step>
+   <Step Number="1">37</Step>
   </Function>
-  <Function ID="39" Type="RGBMatrix" Name="Gradient (matrix)">
+  <Function ID="40" Type="RGBMatrix" Name="Gradient (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="1200" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -409,7 +418,7 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>1</FixtureGroup>
   </Function>
-  <Function ID="40" Type="Scene" Name="Gradient: dimmers">
+  <Function ID="41" Type="Scene" Name="Gradient: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -418,12 +427,12 @@
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="41" Type="Collection" Name="Gradient">
+  <Function ID="42" Type="Collection" Name="Gradient">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">40</Step>
-   <Step Number="1">39</Step>
+   <Step Number="0">41</Step>
+   <Step Number="1">40</Step>
   </Function>
-  <Function ID="42" Type="RGBMatrix" Name="Plasma (matrix)">
+  <Function ID="43" Type="RGBMatrix" Name="Plasma (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="500" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -433,7 +442,7 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>1</FixtureGroup>
   </Function>
-  <Function ID="43" Type="Scene" Name="Plasma: dimmers">
+  <Function ID="44" Type="Scene" Name="Plasma: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -442,12 +451,12 @@
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="44" Type="Collection" Name="Plasma">
+  <Function ID="45" Type="Collection" Name="Plasma">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">43</Step>
-   <Step Number="1">42</Step>
+   <Step Number="0">44</Step>
+   <Step Number="1">43</Step>
   </Function>
-  <Function ID="45" Type="RGBMatrix" Name="Waves (matrix)">
+  <Function ID="46" Type="RGBMatrix" Name="Waves (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="600" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -457,7 +466,7 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>1</FixtureGroup>
   </Function>
-  <Function ID="46" Type="Scene" Name="Waves: dimmers">
+  <Function ID="47" Type="Scene" Name="Waves: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -466,12 +475,12 @@
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="47" Type="Collection" Name="Waves">
+  <Function ID="48" Type="Collection" Name="Waves">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">46</Step>
-   <Step Number="1">45</Step>
+   <Step Number="0">47</Step>
+   <Step Number="1">46</Step>
   </Function>
-  <Function ID="48" Type="RGBMatrix" Name="Stripes (matrix)">
+  <Function ID="49" Type="RGBMatrix" Name="Stripes (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="800" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -483,7 +492,7 @@
    <FixtureGroup>1</FixtureGroup>
    <Property Name="orientation" Value="Horizontal" />
   </Function>
-  <Function ID="49" Type="Scene" Name="Stripes: dimmers">
+  <Function ID="50" Type="Scene" Name="Stripes: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -492,97 +501,97 @@
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="50" Type="Collection" Name="Stripes">
+  <Function ID="51" Type="Collection" Name="Stripes">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">49</Step>
-   <Step Number="1">48</Step>
+   <Step Number="0">50</Step>
+   <Step Number="1">49</Step>
   </Function>
-  <Function ID="51" Type="Scene" Name="Ceiling On">
+  <Function ID="52" Type="Scene" Name="Ceiling On">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,255,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,255,4,255,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="52" Type="Scene" Name="Ceiling Red">
+  <Function ID="53" Type="Scene" Name="Ceiling Red">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="53" Type="Scene" Name="Ceiling Blue">
+  <Function ID="54" Type="Scene" Name="Ceiling Blue">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="54" Type="Scene" Name="Ceiling Green">
+  <Function ID="55" Type="Scene" Name="Ceiling Green">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,255,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,255,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="55" Type="Scene" Name="Ceiling Warm">
+  <Function ID="56" Type="Scene" Name="Ceiling Warm">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,160,4,60,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,160,4,60,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="56" Type="Scene" Name="Ceiling Pulse: On">
+  <Function ID="57" Type="Scene" Name="Ceiling Pulse: On">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,255,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,255,4,255,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="57" Type="Scene" Name="Ceiling Pulse: Off">
+  <Function ID="58" Type="Scene" Name="Ceiling Pulse: Off">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="58" Type="Chaser" Name="Ceiling Pulse">
+  <Function ID="59" Type="Chaser" Name="Ceiling Pulse">
    <Speed FadeIn="1000" FadeOut="1000" Duration="500" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common" />
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">57</Step>
-   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">56</Step>
+   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">58</Step>
+   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">57</Step>
   </Function>
-  <Function ID="59" Type="Scene" Name="Ceiling Color Fade: Red">
+  <Function ID="60" Type="Scene" Name="Ceiling Color Fade: Red">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="60" Type="Scene" Name="Ceiling Color Fade: Yellow">
+  <Function ID="61" Type="Scene" Name="Ceiling Color Fade: Yellow">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,255,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,255,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="61" Type="Scene" Name="Ceiling Color Fade: Green">
+  <Function ID="62" Type="Scene" Name="Ceiling Color Fade: Green">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,255,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,255,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="62" Type="Scene" Name="Ceiling Color Fade: Cyan">
+  <Function ID="63" Type="Scene" Name="Ceiling Color Fade: Cyan">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,255,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,255,4,255,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="63" Type="Scene" Name="Ceiling Color Fade: Blue">
+  <Function ID="64" Type="Scene" Name="Ceiling Color Fade: Blue">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="64" Type="Scene" Name="Ceiling Color Fade: Magenta">
+  <Function ID="65" Type="Scene" Name="Ceiling Color Fade: Magenta">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,255,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,255,3,0,4,255,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="65" Type="Chaser" Name="Ceiling Color Fade">
+  <Function ID="66" Type="Chaser" Name="Ceiling Color Fade">
    <Speed FadeIn="2000" FadeOut="0" Duration="1000" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common" />
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">59</Step>
-   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">60</Step>
-   <Step Number="2" FadeIn="0" Hold="0" FadeOut="0">61</Step>
-   <Step Number="3" FadeIn="0" Hold="0" FadeOut="0">62</Step>
-   <Step Number="4" FadeIn="0" Hold="0" FadeOut="0">63</Step>
-   <Step Number="5" FadeIn="0" Hold="0" FadeOut="0">64</Step>
+   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">60</Step>
+   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">61</Step>
+   <Step Number="2" FadeIn="0" Hold="0" FadeOut="0">62</Step>
+   <Step Number="3" FadeIn="0" Hold="0" FadeOut="0">63</Step>
+   <Step Number="4" FadeIn="0" Hold="0" FadeOut="0">64</Step>
+   <Step Number="5" FadeIn="0" Hold="0" FadeOut="0">65</Step>
   </Function>
-  <Function ID="66" Type="RGBMatrix" Name="Ceiling Chase (matrix)">
+  <Function ID="67" Type="RGBMatrix" Name="Ceiling Chase (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="300" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -592,128 +601,128 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>2</FixtureGroup>
   </Function>
-  <Function ID="67" Type="Scene" Name="Ceiling Chase: dimmers">
+  <Function ID="68" Type="Scene" Name="Ceiling Chase: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
   </Function>
-  <Function ID="68" Type="Collection" Name="Ceiling Chase">
+  <Function ID="69" Type="Collection" Name="Ceiling Chase">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">67</Step>
-   <Step Number="1">66</Step>
+   <Step Number="0">68</Step>
+   <Step Number="1">67</Step>
   </Function>
-  <Function ID="69" Type="Scene" Name="Floor On">
+  <Function ID="70" Type="Scene" Name="Floor On">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="70" Type="Scene" Name="Floor Red">
+  <Function ID="71" Type="Scene" Name="Floor Red">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="71" Type="Scene" Name="Floor Blue">
+  <Function ID="72" Type="Scene" Name="Floor Blue">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="72" Type="Scene" Name="Floor Green">
+  <Function ID="73" Type="Scene" Name="Floor Green">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="73" Type="Scene" Name="Floor Warm">
+  <Function ID="74" Type="Scene" Name="Floor Warm">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,160,3,60,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,160,3,60,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,160,3,60,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,160,3,60,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="74" Type="Scene" Name="Floor Pulse: On">
+  <Function ID="75" Type="Scene" Name="Floor Pulse: On">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,255,3,255,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="75" Type="Scene" Name="Floor Pulse: Off">
+  <Function ID="76" Type="Scene" Name="Floor Pulse: Off">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="76" Type="Chaser" Name="Floor Pulse">
+  <Function ID="77" Type="Chaser" Name="Floor Pulse">
    <Speed FadeIn="1000" FadeOut="1000" Duration="500" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common" />
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">75</Step>
-   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">74</Step>
+   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">76</Step>
+   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">75</Step>
   </Function>
-  <Function ID="77" Type="Scene" Name="Floor Color Fade: Red">
+  <Function ID="78" Type="Scene" Name="Floor Color Fade: Red">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="78" Type="Scene" Name="Floor Color Fade: Yellow">
+  <Function ID="79" Type="Scene" Name="Floor Color Fade: Yellow">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,255,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="79" Type="Scene" Name="Floor Color Fade: Green">
+  <Function ID="80" Type="Scene" Name="Floor Color Fade: Green">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,255,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="80" Type="Scene" Name="Floor Color Fade: Cyan">
+  <Function ID="81" Type="Scene" Name="Floor Color Fade: Cyan">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,0,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,0,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,0,2,255,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,255,3,255,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="81" Type="Scene" Name="Floor Color Fade: Blue">
+  <Function ID="82" Type="Scene" Name="Floor Color Fade: Blue">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,255,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="82" Type="Scene" Name="Floor Color Fade: Magenta">
+  <Function ID="83" Type="Scene" Name="Floor Color Fade: Magenta">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,255,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,255,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,255,2,0,3,255,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,255,2,0,3,255,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="83" Type="Chaser" Name="Floor Color Fade">
+  <Function ID="84" Type="Chaser" Name="Floor Color Fade">
    <Speed FadeIn="2000" FadeOut="0" Duration="1000" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common" />
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">77</Step>
-   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">78</Step>
-   <Step Number="2" FadeIn="0" Hold="0" FadeOut="0">79</Step>
-   <Step Number="3" FadeIn="0" Hold="0" FadeOut="0">80</Step>
-   <Step Number="4" FadeIn="0" Hold="0" FadeOut="0">81</Step>
-   <Step Number="5" FadeIn="0" Hold="0" FadeOut="0">82</Step>
+   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">78</Step>
+   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0">79</Step>
+   <Step Number="2" FadeIn="0" Hold="0" FadeOut="0">80</Step>
+   <Step Number="3" FadeIn="0" Hold="0" FadeOut="0">81</Step>
+   <Step Number="4" FadeIn="0" Hold="0" FadeOut="0">82</Step>
+   <Step Number="5" FadeIn="0" Hold="0" FadeOut="0">83</Step>
   </Function>
-  <Function ID="84" Type="RGBMatrix" Name="Floor Chase (matrix)">
+  <Function ID="85" Type="RGBMatrix" Name="Floor Chase (matrix)">
    <Speed FadeIn="0" FadeOut="0" Duration="300" />
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -723,19 +732,26 @@
    <ControlMode>RGB</ControlMode>
    <FixtureGroup>3</FixtureGroup>
   </Function>
-  <Function ID="85" Type="Scene" Name="Floor Chase: dimmers">
+  <Function ID="86" Type="Scene" Name="Floor Chase: dimmers">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="2">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="3">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="4">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,255,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="86" Type="Collection" Name="Floor Chase">
+  <Function ID="87" Type="Collection" Name="Floor Chase">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
-   <Step Number="0">85</Step>
-   <Step Number="1">84</Step>
+   <Step Number="0">86</Step>
+   <Step Number="1">85</Step>
   </Function>
-  <Function ID="87" Type="Scene" Name="Reset: neutral state">
+  <Function ID="88" Type="Scene" Name="Floor Audio React">
+   <Speed FadeIn="0" FadeOut="0" Duration="0" />
+   <FixtureVal ID="2">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,255,2,255,3,255,4,0,5,233,6,0</FixtureVal>
+  </Function>
+  <Function ID="89" Type="Scene" Name="Reset: neutral state">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <FixtureVal ID="0">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
    <FixtureVal ID="1">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0</FixtureVal>
@@ -744,7 +760,7 @@
    <FixtureVal ID="4">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
    <FixtureVal ID="5">0,0,1,0,2,0,3,0,4,0,5,0,6,0</FixtureVal>
   </Function>
-  <Function ID="88" Type="Script" Name="PANIC RESET">
+  <Function ID="90" Type="Script" Name="PANIC RESET">
    <Speed FadeIn="0" FadeOut="0" Duration="0" />
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
@@ -830,9 +846,11 @@
    <Command>stopfunction%3A84</Command>
    <Command>stopfunction%3A85</Command>
    <Command>stopfunction%3A86</Command>
-   <Command>startfunction%3A87</Command>
-   <Command>wait%3A100ms</Command>
+   <Command>stopfunction%3A87</Command>
    <Command>stopfunction%3A88</Command>
+   <Command>startfunction%3A89</Command>
+   <Command>wait%3A100ms</Command>
+   <Command>stopfunction%3A90</Command>
   </Function>
   <Monitor DisplayMode="1" ShowLabels="1">
    <Grid Width="6" Height="3" Depth="4" Units="0" POV="1" />
@@ -852,7 +870,7 @@
     <FrameStyle>Sunken</FrameStyle>
    </Appearance>
    <ShowHeader>False</ShowHeader>
-   <Slider Caption="MASTER" ID="1">
+   <Slider Caption="MASTER" ID="1" WidgetStyle="Slider" InvertedAppearance="false">
     <WindowState Visible="True" X="5" Y="5" Width="70" Height="874" />
     <Appearance>
      <FrameStyle>Sunken</FrameStyle>
@@ -860,8 +878,8 @@
     <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
     <Level LowLimit="0" HighLimit="255" Value="255" />
    </Slider>
-   <SoloFrame Caption="SHOW — one at a time" ID="2">
-    <WindowState Visible="True" X="80" Y="5" Width="1430" Height="874" />
+   <SoloFrame Caption="WHOLE RIG — one at a time" ID="2">
+    <WindowState Visible="True" X="80" Y="5" Width="1430" Height="275" />
     <Appearance>
      <FrameStyle>Sunken</FrameStyle>
     </Appearance>
@@ -1044,281 +1062,303 @@
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Chase" ID="20" Icon="">
+     <Button Caption="Audio React" ID="20" Icon="">
       <WindowState Visible="True" X="545" Y="40" Width="130" Height="55" />
+      <Appearance>
+       <FrameStyle>None</FrameStyle>
+       <BackgroundColor>4294902015</BackgroundColor>
+       <ForegroundColor>4278190080</ForegroundColor>
+      </Appearance>
+      <Function ID="33" />
+      <Action>Toggle</Action>
+      <Intensity Adjust="False" />
+     </Button>
+     <Button Caption="Chase" ID="21" Icon="">
+      <WindowState Visible="True" X="5" Y="100" Width="130" Height="55" />
       <Appearance>
        <FrameStyle>None</FrameStyle>
        <BackgroundColor>4294901760</BackgroundColor>
        <ForegroundColor>4294967295</ForegroundColor>
       </Appearance>
-      <Function ID="35" />
+      <Function ID="36" />
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Even/Odd" ID="21" Icon="">
-      <WindowState Visible="True" X="5" Y="100" Width="130" Height="55" />
+     <Button Caption="Even/Odd" ID="22" Icon="">
+      <WindowState Visible="True" X="140" Y="100" Width="130" Height="55" />
       <Appearance>
        <FrameStyle>None</FrameStyle>
        <BackgroundColor>4278222079</BackgroundColor>
        <ForegroundColor>4294967295</ForegroundColor>
       </Appearance>
-      <Function ID="38" />
+      <Function ID="39" />
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Gradient" ID="22" Icon="">
-      <WindowState Visible="True" X="140" Y="100" Width="130" Height="55" />
+     <Button Caption="Gradient" ID="23" Icon="">
+      <WindowState Visible="True" X="275" Y="100" Width="130" Height="55" />
       <Appearance>
        <FrameStyle>None</FrameStyle>
        <BackgroundColor>4278255615</BackgroundColor>
        <ForegroundColor>4278190080</ForegroundColor>
       </Appearance>
-      <Function ID="41" />
+      <Function ID="42" />
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Plasma" ID="23" Icon="">
-      <WindowState Visible="True" X="275" Y="100" Width="130" Height="55" />
+     <Button Caption="Plasma" ID="24" Icon="">
+      <WindowState Visible="True" X="410" Y="100" Width="130" Height="55" />
       <Appearance>
        <FrameStyle>None</FrameStyle>
        <BackgroundColor>4287889619</BackgroundColor>
        <ForegroundColor>4294967295</ForegroundColor>
       </Appearance>
-      <Function ID="44" />
+      <Function ID="45" />
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Waves" ID="24" Icon="">
-      <WindowState Visible="True" X="410" Y="100" Width="130" Height="55" />
+     <Button Caption="Waves" ID="25" Icon="">
+      <WindowState Visible="True" X="545" Y="100" Width="130" Height="55" />
       <Appearance>
        <FrameStyle>None</FrameStyle>
        <BackgroundColor>4278236672</BackgroundColor>
        <ForegroundColor>4278190080</ForegroundColor>
       </Appearance>
-      <Function ID="47" />
+      <Function ID="48" />
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Stripes" ID="25" Icon="">
-      <WindowState Visible="True" X="545" Y="100" Width="130" Height="55" />
+     <Button Caption="Stripes" ID="26" Icon="">
+      <WindowState Visible="True" X="5" Y="160" Width="130" Height="55" />
       <Appearance>
        <FrameStyle>None</FrameStyle>
        <BackgroundColor>4294937600</BackgroundColor>
        <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="50" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-    </Frame>
-    <Frame Caption="GROUP · Ceiling" ID="26">
-     <WindowState Visible="True" X="5" Y="275" Width="485" Height="225" />
-     <Appearance>
-      <FrameStyle>Sunken</FrameStyle>
-     </Appearance>
-     <ShowHeader>True</ShowHeader>
-     <Slider Caption="CEILING" ID="27">
-      <WindowState Visible="True" X="5" Y="40" Width="70" Height="180" />
-      <Appearance>
-       <FrameStyle>Sunken</FrameStyle>
-      </Appearance>
-      <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
-      <Level LowLimit="0" HighLimit="255" Value="255" />
-     </Slider>
-     <Button Caption="On" ID="28" Icon="">
-      <WindowState Visible="True" X="80" Y="40" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278236672</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
       </Appearance>
       <Function ID="51" />
       <Action>Toggle</Action>
       <Intensity Adjust="False" />
      </Button>
-     <Button Caption="Red" ID="29" Icon="">
-      <WindowState Visible="True" X="215" Y="40" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4294901760</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="52" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Blue" ID="30" Icon="">
-      <WindowState Visible="True" X="350" Y="40" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278222079</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="53" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Green" ID="31" Icon="">
-      <WindowState Visible="True" X="80" Y="100" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278236672</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="54" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Warm" ID="32" Icon="">
-      <WindowState Visible="True" X="215" Y="100" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4294950656</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="55" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Pulse" ID="33" Icon="">
-      <WindowState Visible="True" X="350" Y="100" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4294937600</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="58" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Color Fade" ID="34" Icon="">
-      <WindowState Visible="True" X="80" Y="160" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4287889619</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="65" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Chase" ID="35" Icon="">
-      <WindowState Visible="True" X="215" Y="160" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278255615</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="68" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
     </Frame>
-    <Frame Caption="GROUP · Floor" ID="36">
-     <WindowState Visible="True" X="495" Y="275" Width="485" Height="225" />
+   </SoloFrame>
+   <SoloFrame Caption="GROUP · Ceiling" ID="27">
+    <WindowState Visible="True" X="80" Y="285" Width="485" Height="225" />
+    <Appearance>
+     <FrameStyle>Sunken</FrameStyle>
+    </Appearance>
+    <ShowHeader>True</ShowHeader>
+    <Slider Caption="CEILING" ID="28" WidgetStyle="Slider" InvertedAppearance="false">
+     <WindowState Visible="True" X="5" Y="40" Width="70" Height="180" />
      <Appearance>
       <FrameStyle>Sunken</FrameStyle>
      </Appearance>
-     <ShowHeader>True</ShowHeader>
-     <Slider Caption="FLOOR" ID="37">
-      <WindowState Visible="True" X="5" Y="40" Width="70" Height="180" />
-      <Appearance>
-       <FrameStyle>Sunken</FrameStyle>
-      </Appearance>
-      <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
-      <Level LowLimit="0" HighLimit="255" Value="255" />
-     </Slider>
-     <Button Caption="On" ID="38" Icon="">
-      <WindowState Visible="True" X="80" Y="40" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278236672</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="69" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Red" ID="39" Icon="">
-      <WindowState Visible="True" X="215" Y="40" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4294901760</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="70" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Blue" ID="40" Icon="">
-      <WindowState Visible="True" X="350" Y="40" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278222079</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="71" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Green" ID="41" Icon="">
-      <WindowState Visible="True" X="80" Y="100" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278236672</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="72" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Warm" ID="42" Icon="">
-      <WindowState Visible="True" X="215" Y="100" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4294950656</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="73" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Pulse" ID="43" Icon="">
-      <WindowState Visible="True" X="350" Y="100" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4294937600</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="76" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Color Fade" ID="44" Icon="">
-      <WindowState Visible="True" X="80" Y="160" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4287889619</BackgroundColor>
-       <ForegroundColor>4294967295</ForegroundColor>
-      </Appearance>
-      <Function ID="83" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-     <Button Caption="Chase" ID="45" Icon="">
-      <WindowState Visible="True" X="215" Y="160" Width="130" Height="55" />
-      <Appearance>
-       <FrameStyle>None</FrameStyle>
-       <BackgroundColor>4278255615</BackgroundColor>
-       <ForegroundColor>4278190080</ForegroundColor>
-      </Appearance>
-      <Function ID="86" />
-      <Action>Toggle</Action>
-      <Intensity Adjust="False" />
-     </Button>
-    </Frame>
+     <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
+     <Level LowLimit="0" HighLimit="255" Value="255" />
+    </Slider>
+    <Button Caption="On" ID="29" Icon="">
+     <WindowState Visible="True" X="80" Y="40" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278236672</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="52" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Red" ID="30" Icon="">
+     <WindowState Visible="True" X="215" Y="40" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294901760</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="53" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Blue" ID="31" Icon="">
+     <WindowState Visible="True" X="350" Y="40" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278222079</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="54" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Green" ID="32" Icon="">
+     <WindowState Visible="True" X="80" Y="100" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278236672</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="55" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Warm" ID="33" Icon="">
+     <WindowState Visible="True" X="215" Y="100" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294950656</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="56" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Pulse" ID="34" Icon="">
+     <WindowState Visible="True" X="350" Y="100" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294937600</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="59" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Color Fade" ID="35" Icon="">
+     <WindowState Visible="True" X="80" Y="160" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4287889619</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="66" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Chase" ID="36" Icon="">
+     <WindowState Visible="True" X="215" Y="160" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278255615</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="69" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
    </SoloFrame>
-   <Button Caption="PANIC&#10;BLACKOUT" ID="46" Icon="">
+   <SoloFrame Caption="GROUP · Floor" ID="37">
+    <WindowState Visible="True" X="570" Y="285" Width="485" Height="225" />
+    <Appearance>
+     <FrameStyle>Sunken</FrameStyle>
+    </Appearance>
+    <ShowHeader>True</ShowHeader>
+    <Slider Caption="FLOOR" ID="38" WidgetStyle="Slider" InvertedAppearance="false">
+     <WindowState Visible="True" X="5" Y="40" Width="70" Height="180" />
+     <Appearance>
+      <FrameStyle>Sunken</FrameStyle>
+     </Appearance>
+     <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
+     <Level LowLimit="0" HighLimit="255" Value="255" />
+    </Slider>
+    <Button Caption="On" ID="39" Icon="">
+     <WindowState Visible="True" X="80" Y="40" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278236672</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="70" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Red" ID="40" Icon="">
+     <WindowState Visible="True" X="215" Y="40" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294901760</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="71" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Blue" ID="41" Icon="">
+     <WindowState Visible="True" X="350" Y="40" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278222079</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="72" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Green" ID="42" Icon="">
+     <WindowState Visible="True" X="80" Y="100" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278236672</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="73" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Warm" ID="43" Icon="">
+     <WindowState Visible="True" X="215" Y="100" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294950656</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="74" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Pulse" ID="44" Icon="">
+     <WindowState Visible="True" X="350" Y="100" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294937600</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="77" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Color Fade" ID="45" Icon="">
+     <WindowState Visible="True" X="80" Y="160" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4287889619</BackgroundColor>
+      <ForegroundColor>4294967295</ForegroundColor>
+     </Appearance>
+     <Function ID="84" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Chase" ID="46" Icon="">
+     <WindowState Visible="True" X="215" Y="160" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4278255615</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="87" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+    <Button Caption="Audio React" ID="47" Icon="">
+     <WindowState Visible="True" X="350" Y="160" Width="130" Height="55" />
+     <Appearance>
+      <FrameStyle>None</FrameStyle>
+      <BackgroundColor>4294902015</BackgroundColor>
+      <ForegroundColor>4278190080</ForegroundColor>
+     </Appearance>
+     <Function ID="88" />
+     <Action>Toggle</Action>
+     <Intensity Adjust="False" />
+    </Button>
+   </SoloFrame>
+   <Button Caption="PANIC&#10;BLACKOUT" ID="48" Icon="">
     <WindowState Visible="True" X="1515" Y="5" Width="130" Height="80" />
     <Appearance>
      <FrameStyle>None</FrameStyle>
@@ -1329,14 +1369,14 @@
     <Action>StopAll</Action>
     <Intensity Adjust="False" />
    </Button>
-   <Button Caption="PANIC&#10;RESET" ID="47" Icon="">
+   <Button Caption="PANIC&#10;RESET" ID="49" Icon="">
     <WindowState Visible="True" X="1515" Y="90" Width="130" Height="80" />
     <Appearance>
      <FrameStyle>None</FrameStyle>
      <BackgroundColor>4294937600</BackgroundColor>
      <ForegroundColor>4278190080</ForegroundColor>
     </Appearance>
-    <Function ID="88" />
+    <Function ID="90" />
     <Action>Toggle</Action>
     <Intensity Adjust="False" />
    </Button>

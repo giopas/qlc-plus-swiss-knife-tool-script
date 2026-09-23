@@ -25,6 +25,7 @@ def state():
 def _load_side(load_fn, name_key):
     """Shared loader for source/target — supports JSON path or file upload."""
     tmp = None
+    name = None          # uploads: keep the real file name, not the temp name
     try:
         if request.is_json:
             data = request.get_json(force=True) or {}
@@ -44,8 +45,9 @@ def _load_side(load_fn, name_key):
             f.save(tmp.name)
             tmp.close()
             path = tmp.name
+            name = os.path.splitext(os.path.basename(f.filename))[0]
 
-        summary = load_fn(path)
+        summary = load_fn(path, name)
         return jsonify({'ok': True, 'summary': summary,
                         'name': porter.get_state()[name_key]})
 

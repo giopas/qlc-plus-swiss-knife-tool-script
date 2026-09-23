@@ -58,18 +58,18 @@ def _parse_qxw(path: str) -> tuple[ET.ElementTree, ET.Element]:
 # Load / clear
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def load_source(path: str) -> dict:
+def load_source(path: str, name: str = None) -> dict:
     global _src
     tree, root = _parse_qxw(path)
-    _src = {"loaded": True, "path": path, "name": _short_name(path),
+    _src = {"loaded": True, "path": path, "name": name or _short_name(path),
             "tree": tree, "root": root}
     return _make_summary(root)
 
 
-def load_target(path: str) -> dict:
+def load_target(path: str, name: str = None) -> dict:
     global _tgt
     tree, root = _parse_qxw(path)
-    _tgt = {"loaded": True, "path": path, "name": _short_name(path),
+    _tgt = {"loaded": True, "path": path, "name": name or _short_name(path),
             "tree": tree, "root": root}
     return _make_summary(root)
 

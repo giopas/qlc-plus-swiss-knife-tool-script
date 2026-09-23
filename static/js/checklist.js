@@ -94,7 +94,7 @@ function _renderChecklistTable(data) {
 
   if (!data.length) {
     wrap.innerHTML = `<div style="padding:24px;color:var(--overlay0);font-size:12px">${
-      _chkData.length === 0 ? 'Load a workspace to see fixtures.' : 'No results.'
+      _chkData.length === 0 ? '<a class="open-ws-link">📂 Open a workspace</a> to see fixtures.' : 'No results.'
     }</div>`;
     return;
   }

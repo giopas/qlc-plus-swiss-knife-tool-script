@@ -126,18 +126,18 @@ def _make_summary(root: ET.Element) -> dict:
 
 # ── Public load / clear ───────────────────────────────────────────────────────
 
-def load_src(path: str) -> dict:
+def load_src(path: str, name: str = None) -> dict:
     global _src
     tree, root = _parse_qxw(path)
-    _src = {'loaded': True, 'path': path, 'name': _short_name(path),
+    _src = {'loaded': True, 'path': path, 'name': name or _short_name(path),
              'tree': tree, 'root': root}
     return _make_summary(root)
 
 
-def load_dst(path: str) -> dict:
+def load_dst(path: str, name: str = None) -> dict:
     global _dst
     tree, root = _parse_qxw(path)
-    _dst = {'loaded': True, 'path': path, 'name': _short_name(path),
+    _dst = {'loaded': True, 'path': path, 'name': name or _short_name(path),
              'tree': tree, 'root': root}
     return _make_summary(root)
 

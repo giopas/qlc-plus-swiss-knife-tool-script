@@ -975,6 +975,7 @@ def _reset():
     _state['clone_base_map']     = {}
     _state['error']              = None
     _slot_songs.clear()
+    _vc_undo.clear()
     _slot_details.clear()
 
 
@@ -1597,6 +1598,47 @@ def reparse_after_vc_edit() -> None:
     _parse_cuelist_slots(root)
 
 
+# Undo stack for VC edits: snapshots of <VirtualConsole> (deep copies) taken
+# before every server-side change (patch flush or structural op).
+_vc_undo: list = []
+VC_UNDO_LIMIT = 50
+
+
+def _vc_element():
+    root = _state['qxw_root']
+    for i, c in enumerate(list(root)):
+        if c.tag in (f'{{{QLC_NS_URI}}}VirtualConsole', 'VirtualConsole'):
+            return i, c
+    return None, None
+
+
+def vc_snapshot() -> int:
+    """Push a copy of the Virtual Console onto the undo stack. Returns depth."""
+    i, vc = _vc_element()
+    if vc is not None:
+        _vc_undo.append((i, copy.deepcopy(vc)))
+        del _vc_undo[:-VC_UNDO_LIMIT]
+    return len(_vc_undo)
+
+
+def vc_undo() -> dict:
+    """Restore the Virtual Console as it was before the last server-side edit."""
+    if not _vc_undo:
+        raise ValueError('Nothing to undo.')
+    i, snap = _vc_undo.pop()
+    root = _state['qxw_root']
+    _, cur = _vc_element()
+    if cur is not None:
+        root.remove(cur)
+    root.insert(i, snap)
+    reparse_after_vc_edit()
+    return {'remaining': len(_vc_undo)}
+
+
+def vc_undo_clear() -> None:
+    _vc_undo.clear()
+
+
 def vc_structural_edit(op: str, **kw) -> dict:
     """Run a core.vc_ops operation on the loaded workspace and re-parse."""
     from core import vc_ops
@@ -1607,8 +1649,14 @@ def vc_structural_edit(op: str, **kw) -> dict:
           'fix_ids': vc_ops.fix_duplicate_ids}.get(op)
     if fn is None:
         raise ValueError(f'Unknown VC operation: {op}')
-    result = fn(_state['qxw_root'], **kw)
+    vc_snapshot()
+    try:
+        result = fn(_state['qxw_root'], **kw)
+    except Exception:
+        _vc_undo.pop()              # nothing changed: drop the snapshot
+        raise
     reparse_after_vc_edit()
+    result['undo_depth'] = len(_vc_undo)
     return result
 
 

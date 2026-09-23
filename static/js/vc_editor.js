@@ -33,8 +33,11 @@ let _vcePanY       = 0;
 let _vceThresholds = [2, 5];     // [minor, major]
 
 // Rubber-band drag state
-let _vceDragStart  = null;   // {cx, cy} canvas coords where drag started
+let _vceDragStart  = null;   // {ax, ay, sx, sy, add} where the drag started
 let _vceDragRect   = null;   // {x1,y1,x2,y2} current rubber-band rect
+let _vceSuppressClick = false;  // true right after a rubber-band drag
+const VCE_DRAG_PX  = 4;      // screen pixels before a press becomes a drag
+const VCE_ZOOM_MIN = 0.1, VCE_ZOOM_MAX = 4.0;
 
 let _vceInited     = false;
 
@@ -225,13 +228,65 @@ function _vceSetupCanvas() {
   cv.addEventListener('mousemove', _vceOnMouseMove);
   cv.addEventListener('mouseup',   _vceOnMouseUp);
   cv.addEventListener('mouseleave',() => { _vceHov = null; _vceRender(); });
+  // Trackpad pinch arrives as wheel+ctrlKey; Cmd/Ctrl+scroll also zooms.
+  // A plain scroll is left alone so the canvas area scrolls (pans).
   cv.addEventListener('wheel', e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.08 : 0.08;
-    _vceZoom = Math.max(0.1, Math.min(3.0, _vceZoom + delta));
-    document.getElementById('vce-zoom-lbl').textContent = Math.round(_vceZoom * 100) + '%';
-    _vceRender();
+    const d = Math.max(-50, Math.min(50, e.deltaY));   // tame mouse-wheel notches
+    const factor = Math.exp(-d * 0.01);
+    _vceZoomTo(_vceZoom * factor, e.clientX, e.clientY);
   }, { passive: false });
+
+  document.addEventListener('keydown', _vceOnKey);
+  // finish a box-select even if the mouse is released outside the canvas
+  document.addEventListener('mouseup', e => { if (_vceDragStart) _vceOnMouseUp(e); });
+}
+
+function _vceIsActive() {
+  const scr = document.getElementById('scr-vceditor');
+  return !!(scr && scr.classList.contains('active'));
+}
+
+/** Keyboard: ⌘/Ctrl + = / - / 0 zoom, ⌘/Ctrl+A select all, Esc clear. */
+function _vceOnKey(e) {
+  if (!_vceIsActive() || !_vcePage) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && (e.key === '=' || e.key === '+')) { e.preventDefault(); vceZoom(+1); }
+  else if (mod && e.key === '-')               { e.preventDefault(); vceZoom(-1); }
+  else if (mod && e.key === '0')               { e.preventDefault(); vceFit(); }
+  else if (mod && (e.key === 'a' || e.key === 'A')) {
+    e.preventDefault();
+    _vceSel = new Set(Object.values(_vceNodes)
+      .filter(n => n.type !== 'Frame' && n.type !== 'SoloFrame').map(n => n.id));
+    _vceRender(); _vceRenderProps();
+  } else if (e.key === 'Escape' && _vceSel.size) {
+    _vceSel.clear(); _vceRender(); _vceRenderProps();
+  }
+}
+
+/** Set the zoom, keeping the page point under (clientX, clientY) in place. */
+function _vceZoomTo(z, clientX, clientY) {
+  z = Math.max(VCE_ZOOM_MIN, Math.min(VCE_ZOOM_MAX, z));
+  const cv   = document.getElementById(VCE_CV_ID);
+  const wrap = document.getElementById('vce-canvas-wrap');
+  if (!cv || !wrap) return;
+  const r0 = cv.getBoundingClientRect();
+  if (clientX == null) {                      // no cursor: zoom about view centre
+    const wr = wrap.getBoundingClientRect();
+    clientX = wr.left + wr.width / 2; clientY = wr.top + wr.height / 2;
+  }
+  const px = (clientX - r0.left) / _vceZoom;  // page coords under the cursor
+  const py = (clientY - r0.top)  / _vceZoom;
+  _vceZoom = z;
+  const lbl = document.getElementById('vce-zoom-lbl');
+  if (lbl) lbl.textContent = Math.round(_vceZoom * 100) + '%';
+  _vceRender();
+  const r1 = cv.getBoundingClientRect();
+  wrap.scrollLeft += (r1.left + px * z) - clientX;
+  wrap.scrollTop  += (r1.top  + py * z) - clientY;
 }
 
 function _vceFitPage() {
@@ -421,8 +476,11 @@ function _vceOnMouseMove(e) {
   if (newHov !== _vceHov) { _vceHov = newHov; _vceRender(); }
   document.getElementById(VCE_CV_ID).style.cursor = hit ? 'pointer' : 'default';
 
-  // Update rubber-band
-  if (_vceDragStart) {
+  // Update rubber-band (only after the mouse really moved)
+  if (_vceDragStart && !_vceDragRect &&
+      Math.hypot(e.clientX - _vceDragStart.sx, e.clientY - _vceDragStart.sy) < VCE_DRAG_PX) {
+    // still a click
+  } else if (_vceDragStart) {
     _vceDragRect = {
       x1: Math.min(_vceDragStart.ax, ax), y1: Math.min(_vceDragStart.ay, ay),
       x2: Math.max(_vceDragStart.ax, ax), y2: Math.max(_vceDragStart.ay, ay),
@@ -441,18 +499,19 @@ function _vceOnMouseMove(e) {
 function _vceOnMouseDown(e) {
   if (e.button !== 0) return;
   const [ax, ay] = _vceCanvasXY(e);
-  const hit = _vceHitTest(ax, ay);
-  if (!hit) {
-    _vceDragStart = { ax, ay };
-    _vceDragRect  = null;
-  }
+  // Any press can become a rubber-band once the mouse moves VCE_DRAG_PX —
+  // pages are covered by frames, so "only on empty space" never triggered.
+  _vceDragStart = { ax, ay, sx: e.clientX, sy: e.clientY,
+                    add: e.shiftKey || e.metaKey || e.ctrlKey };
+  _vceDragRect  = null;
+  e.preventDefault();   // no text selection while dragging
 }
 
 function _vceOnMouseUp(e) {
   if (_vceDragRect && _vceDragStart) {
     // Rubber-band selection
     const r = _vceDragRect;
-    if (!e.shiftKey) _vceSel.clear();
+    if (!_vceDragStart.add) _vceSel.clear();
     Object.values(_vceNodes).forEach(n => {
       // Node must be fully inside rubber-band to be selected
       if (n._absX >= r.x1 && n._absX + n.w <= r.x2 &&
@@ -461,19 +520,22 @@ function _vceOnMouseUp(e) {
       }
     });
     _vceDragStart = null; _vceDragRect = null;
+    _vceSuppressClick = true;   // the click that follows mouseup is not a click
     _vceRender(); _vceRenderProps();
   }
   _vceDragStart = null; _vceDragRect = null;
 }
 
 function _vceOnClick(e) {
+  if (_vceSuppressClick) { _vceSuppressClick = false; return; }
   const [ax, ay] = _vceCanvasXY(e);
   const hit = _vceHitTest(ax, ay);
+  const add = e.shiftKey || e.metaKey || e.ctrlKey;   // Shift, ⌘ or Ctrl toggles
   if (!hit) {
-    if (!e.shiftKey) { _vceSel.clear(); _vceRenderProps(); _vceRender(); }
+    if (!add) { _vceSel.clear(); _vceRenderProps(); _vceRender(); }
     return;
   }
-  if (e.shiftKey) {
+  if (add) {
     if (_vceSel.has(hit.id)) _vceSel.delete(hit.id);
     else _vceSel.add(hit.id);
   } else {
@@ -499,7 +561,8 @@ function _vceRenderProps() {
            </div>`).join('')}`
       : '';
     pp.innerHTML = `<div style="color:var(--text-muted);font-size:11px;padding:20px 0;text-align:center">
-      Click a widget to select<br>Shift+click to multi-select<br>Drag to rubber-band select
+      Click a widget to select<br>Shift/⌘-click to add or remove<br>Drag to box-select (Shift/⌘ adds)<br>
+      Pinch or ⌘/Ctrl+scroll to zoom · ⌘0 fit<br>Esc clears · ⌘A selects all
     </div>${legend}`;
     return;
   }
@@ -810,10 +873,9 @@ function vceUpdateThresholds() {
 
 // ── Zoom / pan ─────────────────────────────────────────────────────────────────
 
-function vceZoom(delta) {
-  _vceZoom = Math.max(0.1, Math.min(3.0, _vceZoom + delta));
-  document.getElementById('vce-zoom-lbl').textContent = Math.round(_vceZoom * 100) + '%';
-  _vceRender();
+/** Toolbar / keyboard zoom: +1 zooms in 25 %, -1 out, about the view centre. */
+function vceZoom(dir) {
+  _vceZoomTo(_vceZoom * (dir > 0 ? 1.25 : 0.8));
 }
 
 function vceFit() { _vceFitPage(); _vceRender(); }

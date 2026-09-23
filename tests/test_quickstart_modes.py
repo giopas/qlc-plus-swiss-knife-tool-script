@@ -74,9 +74,11 @@ def test_panic_reset_stops_everything_then_neutral():
     assert len(script) == 1 and script[0].get("Type") == "Script"
     cmds = [unquote(c.text) for c in script[0].findall(f"{NS}Command")]
     neutral = next(f for f in funcs if f.get("Name") == "Reset: neutral state")
-    others = {f.get("ID") for f in funcs} - {script[0].get("ID")}
-    assert {c.split(":")[1] for c in cmds[:-1]} == others
-    assert all(c.startswith("stopfunction:") for c in cmds[:-1])
+    # QLC+ scripts stop what they started when they end, unless told not to
+    assert cmds[0] == "stoponexit:false"
+    others = {f.get("ID") for f in funcs} - {script[0].get("ID"), neutral.get("ID")}
+    assert {c.split(":")[1] for c in cmds[1:-1]} == others
+    assert all(c.startswith("stopfunction:") for c in cmds[1:-1])
     assert cmds[-1] == f"startfunction:{neutral.get('ID')}"
     fid = script[0].get("ID")
     assert any(b.find(f"{NS}Function") is not None

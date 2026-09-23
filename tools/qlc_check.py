@@ -6,10 +6,16 @@ web-socket API and checks the result on the DMX output:
 
 1. **VC loaded** — every Virtual Console widget in the file is present in
    the running QLC+ (catches widgets silently dropped by the loader).
-2. **PANIC RESET** — for every Toggle button that runs a function: press
-   it, press PANIC RESET, and check that every fixture channel equals the
-   *Reset: neutral state* scene; then press PANIC RESET again and check
-   it still holds (catches the "every second press does nothing" bug).
+2. **Buttons light up + PANIC RESET** — for every Toggle button that runs a
+   function: press it and check that at least one fixture lights up (not for
+   BLACKOUT); press PANIC RESET and check that every fixture channel equals
+   the *Reset: neutral state* scene; press PANIC RESET again and check it
+   still holds (catches the "every second press does nothing" bug).
+
+Fixture definitions: QLC+ must know every fixture (installed, or a
+``<Manufacturer>-<Model>.qxf`` next to the workspace — Quick Start writes
+them there).  Unknown fixtures load as generic dimmers and colour/matrix
+buttons stay dark, which check 2 reports.
 
 It found four real bugs on 23 Sep 2026 (script never ending in QLC+ 5,
 QLC+ 5.2.2 dropping script commands, a Level slider holding dimmers at
@@ -59,10 +65,14 @@ class Workspace:
         root = ET.parse(path).getroot()
         eng = root.find(f"{NS}Engine")
         self.fixtures = {}                      # id -> (universe, address)
+        self.owner = {}                         # (universe, abs address) -> fixture id
         for fx in eng.findall(f"{NS}Fixture"):
             self.fixtures[fx.findtext(f"{NS}ID")] = (
                 int(fx.findtext(f"{NS}Universe") or 0),
                 int(fx.findtext(f"{NS}Address") or 0))
+            u, ad = self.fixtures[fx.findtext(f"{NS}ID")]
+            for c in range(int(fx.findtext(f"{NS}Channels") or 0)):
+                self.owner[(u, ad + c)] = fx.findtext(f"{NS}ID")
         self.functions = {f.get("ID"): f for f in eng.findall(f"{NS}Function")}
         vc = root.find(f"{NS}VirtualConsole")
         self.widgets = {}                       # id -> (tag, caption), pages excluded
@@ -173,8 +183,38 @@ def check_panic_reset(ws: Workspace, qlc: QLC, settle: float) -> list:
             return False
         return True
 
+    # "Light" channels per fixture: what ALL ON drives above the neutral state
+    all_on = ws.find_function("ALL ON")
+    light = {}
+    if all_on:
+        for key, v in ws.scene_output(all_on).items():
+            if v > 0 and expected.get(key, 0) == 0:
+                light.setdefault(ws.owner.get(key), []).append(key)
+
+    def lit() -> bool:
+        got = {}
+        for u in universes:
+            for a, v in qlc.universe(u).items():
+                got[(u, a)] = v
+        for chans in light.values():
+            on = sum(1 for k in chans if got.get(k, 0) > 0)
+            if on >= min(2, len(chans)):
+                return True
+        return False
+
     for wid, caption, _fid, _ in targets:
         qlc.press(wid, settle)
+        dark_ok = any(w in caption.lower() for w in ("blackout", "off"))
+        if light and not dark_ok:
+            seen = lit()
+            for _ in range(4):
+                if seen:
+                    break
+                time.sleep(0.3)
+                seen = lit()
+            if not seen:
+                errors.append(f"'{caption}': no fixture lights up (all DMX intensity/colour at 0)")
+                print(f"  DARK {caption}")
         qlc.press(reset_btn[0], settle)
         ok = compare(f"'{caption}' → PANIC RESET")
         qlc.press(reset_btn[0], settle)
@@ -237,7 +277,7 @@ def main(argv=None) -> int:
         e = check_vc_loaded(ws, qlc)
         errors += e
         print("  ok" if not e else "\n".join("  FAIL " + x for x in e))
-        print("[2] PANIC RESET after every button")
+        print("[2] every button lights up; PANIC RESET after every button")
         errors += check_panic_reset(ws, qlc, a.settle)
     finally:
         if proc:

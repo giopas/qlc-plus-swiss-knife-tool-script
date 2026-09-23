@@ -133,12 +133,13 @@ Load any two `.qxw` files independently. Browse **Fixtures**, **Fixture Groups**
 ```bash
 git clone https://github.com/giopas/qlc-plus-swiss-knife-tool-script.git
 cd qlc-plus-swiss-knife-tool-script
-python3 -m venv .venv
-source .venv/bin/activate
-pip install flask
-pip install pywebview   # optional — opens in a native window instead of a browser tab
-python3 app.py
+python3 -m venv ~/.venvs/swissknife
+source ~/.venvs/swissknife/bin/activate
+python -m pip install -r requirements.txt   # flask + pywebview (native window)
+python app.py
 ```
+
+> **macOS: keep the virtual environment outside iCloud.** If the project lives in an iCloud-synced folder (Documents, Desktop), a `.venv` inside it gets "file 2.js" duplicates and the native window crashes with `KeyError: 'text_select'`. That's why the commands above put it in `~/.venvs/swissknife`; `run.sh` and the macOS app launcher use that location automatically.
 
 ### macOS / Linux — every subsequent run
 
@@ -148,7 +149,7 @@ python3 app.py              # native window (if pywebview is installed)
 python3 app.py --browser    # force browser mode
 ```
 
-> The launcher detects the `.venv` automatically — no need to activate it manually after the first setup.
+> `bash run.sh` finds the virtual environment automatically (`~/.venvs/swissknife`, or `.venv` in the project) — no need to activate it manually.
 >
 > **Tip:** if `pip` is not found, use `pip3` instead — or skip the `source .venv/bin/activate` step and call the venv pip directly:
 > ```bash

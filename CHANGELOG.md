@@ -13,6 +13,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Fixed
 
+- **macOS native window crashed at start (`KeyError: 'text_select'`)** when the virtual environment lived in an iCloud-synced folder: iCloud adds "file 2.js" duplicates that pywebview tries to load. `run.sh`, the macOS app launcher and the README now use `~/.venvs/swissknife` (or `$SWK_VENV`); an existing `.venv` in the project still works.
 - **Function Porter wizard showed all five steps at once and stayed on "Loading…"**: the panels' CSS `display:flex` overrode the `hidden` attribute. Now one step at a time, and step 2 lists the source functions.
 - **VC Visual Editor did not react to clicks** (no select, align or drag): the tab loaded the Virtual Console but never attached the canvas mouse handlers. They are now attached on first open.
 - **Brightness was slow to open** (and looked empty meanwhile): the QXF search walked the app's own folder including `.venv`. Hidden, virtualenv and cache folders are now skipped (about 1.4 s → 0.05 s on the corpus).

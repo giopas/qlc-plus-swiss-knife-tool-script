@@ -5,6 +5,22 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [Unreleased]
+
+### Removed
+
+- Stale duplicate Quick Start files `qxw_builder-1.py`, `quick_start_routes-1.py`, `quickstart-1.js` (older copies predating a950cc8).
+
+### Fixed
+
+- **Quick Start 3D tilt defaults**: fixtures are now aimed at the performers instead of straight down/up. Truss/ceiling 45° from vertical, floor 45° uplight, mid-height horizontal; direction comes from depth (upstage fixtures tilt downstage, downstage fixtures tilt upstage). New helpers `height_zone()` / `default_x_rot()` in `core/quick_start/qxw_builder.py`; the Quick Start canvas mirrors the same rule and draws beam direction in the side view. Per-fixture override unchanged.
+
+### Added
+
+- `tools/make_tilt_check.py` → `tests/manual/tilt_check.qxw`, a 6-fixture file for checking tilt in the QLC+ 5 3D view; `tests/test_orientation.py` (18 tests).
+
+---
+
 ## [1.3.1] — 2026-09-22
 
 ### Changed — UI density & shell pass

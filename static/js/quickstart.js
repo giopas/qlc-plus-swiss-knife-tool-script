@@ -855,48 +855,65 @@ function _qsTopPx(x_mm, z_mm, ox, oy, drawW, drawH) {
 
 
 /* ── Orientation helpers ──────────────────────────────────────────────── */
-const _QS_ORI = { up: 315, down: 65, horizontal: 0 };
+// Mirrors core/quick_start/qxw_builder.default_x_rot (WORKPLAN §3).
+// QLC+ 3D: XRot 0 = straight down, 90 = horizontal, 180 = straight up;
+// positive XRot swings the beam toward +Z (Front / downstage).
+// Each zone: [upstage half (z < d/2), downstage half].
+const _QS_TILT = 45;
+const _QS_ZONE_XROT = {
+  truss: [_QS_TILT, 360 - _QS_TILT],       // 45 / 315  — down, 45° toward stage
+  mid:   [90, 270],                         // horizontal, toward stage
+  floor: [180 - _QS_TILT, 180 + _QS_TILT],  // 135 / 225 — uplight 45°
+};
+// Preset buttons map to a zone rule (direction still comes from depth).
+const _QS_ORI = { down: 'truss', horizontal: 'mid', up: 'floor' };
+
+function _qsHeightZone(y_mm) {
+  const ratio = (y_mm || 0) / Math.max(_qsStage.h_mm, 1);
+  if (ratio < 0.15) return 'floor';
+  if (ratio > 0.65) return 'truss';
+  return 'mid';
+}
+
+function _qsZoneXRot(zone, f) {
+  const upstage = (f.z_mm || 0) < _qsStage.d_mm / 2;
+  return _QS_ZONE_XROT[zone][upstage ? 0 : 1];
+}
 
 function _qsEffectiveXRot(f) {
   if (f.x_rot != null) return f.x_rot;
-  const ratio = (f.y_mm || 0) / Math.max(_qsStage.h_mm, 1);
-  if (ratio < 0.15) return 315;   // up
-  if (ratio > 0.65) return 65;    // down
-  return 0;                        // horizontal
+  return _qsZoneXRot(_qsHeightZone(f.y_mm), f);
 }
 
 function qsSetOrientation(mode) {
   const idxs = _qsSelectedIdxs.size ? [..._qsSelectedIdxs] : _qsRigData.map((_, i) => i);
-  const val = mode === 'auto' ? null : (_QS_ORI[mode] ?? null);
   const promises = idxs.map(idx => {
-    _qsRigData[idx].x_rot = val;
+    const f = _qsRigData[idx];
+    const zone = _QS_ORI[mode];
+    const val = (mode === 'auto' || !zone) ? null : _qsZoneXRot(zone, f);
+    f.x_rot = val;
     return _qsApi('POST', '/update-placement', { idx, x_rot: val });
   });
   Promise.all(promises).then(() => _qsDrawCanvas());
 }
 
 function _qsBeamColor(xr) {
-  // Color code: green=up, red=down, blue=horizontal
-  if (xr === 315 || xr === -45) return 'rgba(80, 220, 80, 0.9)';   // up → green
-  if (xr === 65)                return 'rgba(220, 60, 60, 0.9)';    // down → red
-  if (xr === 0)                 return 'rgba(60, 140, 255, 0.9)';   // horizontal → blue
-  // Custom angle — interpolate
-  if (xr > 180) return 'rgba(80, 220, 80, 0.9)';   // pointing up range
-  return 'rgba(220, 60, 60, 0.9)';                   // pointing down range
+  // Color code: red = pointing down, green = pointing up, blue = ~horizontal
+  const a = ((xr % 360) + 360) % 360;
+  if (a <= 60 || a >= 300) return 'rgba(220, 60, 60, 0.9)';    // down
+  if (a >= 120 && a <= 240) return 'rgba(80, 220, 80, 0.9)';   // up
+  return 'rgba(60, 140, 255, 0.9)';                            // horizontal
 }
 
-function _qsDrawBeamLine(ctx, px, py, fixture, drawH) {
+function _qsDrawBeamLine(ctx, px, py, fixture, drawH, isfront) {
+  // Beam direction for XRot θ: (Z, Y) = (sin θ, -cos θ).
+  // Side view shows Z → right / Y ↑; front view has no Z axis.
   const xr = _qsEffectiveXRot(fixture);
   const len = Math.min(drawH * 0.12, 30);
-  let dx = 0, dy = 0;
-  if (xr === 315 || xr === -45) { dy = -len; }        // up
-  else if (xr === 65)           { dy = len; }           // down
-  else if (xr === 0)            { dx = len; }           // horizontal
-  else {
-    const rad = (xr * Math.PI) / 180;
-    dx = Math.sin(rad) * len;
-    dy = Math.cos(rad) * len;
-  }
+  const rad = (xr * Math.PI) / 180;
+  let dx = isfront ? 0 : Math.sin(rad) * len;
+  let dy = Math.cos(rad) * len;             // canvas y grows downward
+  if (isfront && Math.abs(dy) < 1) dy = 0;  // horizontal beam: no stub
   const beamClr = _qsBeamColor(xr);
   ctx.save();
   ctx.strokeStyle = beamClr;
@@ -990,7 +1007,7 @@ function _qsDrawElevationView(axis, W, H) {
     const py = oy + drawH - ((f.y_mm || 0) / _qsStage.h_mm) * drawH;
     const clr = f._color || '#888';
     const fg = _qsContrastColor(clr);
-    _qsDrawBeamLine(ctx, px, py, f, drawH);
+    _qsDrawBeamLine(ctx, px, py, f, drawH, isfront);
     _qsDrawDot(ctx, px, py, clr, fg, _qsSelectedIdxs.has(i));
     ctx.fillStyle = fg;
     ctx.font = '9px monospace';

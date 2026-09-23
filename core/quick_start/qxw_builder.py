@@ -28,20 +28,68 @@ def _sub(parent: ET.Element, tag: str, text: str = None, **attribs) -> ET.Elemen
     return el
 
 
+# ── Show-lighting tilt defaults (WORKPLAN §3, decision 2026-09-23) ──────
+# QLC+ 3D convention: XRot 0 = beam straight down, 90 = horizontal,
+# 180 = straight up.  A positive XRot swings a hanging fixture's beam
+# toward +Z (downstage / "Front"; Z = 0 is the back of the stage).
+#
+#   zone      upstage half (z < d/2)   downstage half (z >= d/2)
+#   truss     45   (down, toward +Z)   315 (down, toward -Z)
+#   mid       90   (horizontal, +Z)    270 (horizontal, -Z)
+#   floor     135  (up, toward +Z)     225 (up, toward -Z)
+#
+# i.e. downstage fixtures tilt upstage and upstage fixtures tilt
+# downstage, so beams cross the performance area instead of lighting
+# only the floor or the ceiling.
+FLOOR_RATIO = 0.15   # y / stage height below this  -> floor fixture
+TRUSS_RATIO = 0.65   # y / stage height above this  -> truss/ceiling fixture
+TILT_DEG = 45
+
+_ZONE_XROT = {
+    # zone: (upstage half, downstage half)
+    "truss": (TILT_DEG, 360 - TILT_DEG),
+    "mid":   (90, 270),
+    "floor": (180 - TILT_DEG, 180 + TILT_DEG),
+}
+
+
+def height_zone(y_mm: float, stage_h_mm: float) -> str:
+    """Classify a mounting height as ``'floor'``, ``'mid'`` or ``'truss'``."""
+    ratio = y_mm / max(stage_h_mm, 1)
+    if ratio < FLOOR_RATIO:
+        return "floor"
+    if ratio > TRUSS_RATIO:
+        return "truss"
+    return "mid"
+
+
+def default_x_rot(y_mm: float, stage_h_mm: float,
+                  z_mm: float = None, stage_d_mm: float = None) -> int:
+    """Default XRot for a fixture from its height zone and depth position.
+
+    Fixtures in the upstage half (``z < d/2``) tilt downstage (+Z); fixtures
+    at or beyond the centre line tilt upstage (-Z).  When depth is unknown
+    the fixture is treated as upstage (tilting toward the audience side).
+    """
+    upstage = (z_mm is None or stage_d_mm is None
+               or z_mm < stage_d_mm / 2)
+    up_val, down_val = _ZONE_XROT[height_zone(y_mm, stage_h_mm)]
+    return up_val if upstage else down_val
+
+
 def _compute_orientation(y_mm: int, stage_h_mm: int,
                          custom_x_rot=None, custom_y_rot=None,
-                         custom_z_rot=None):
-    """Return (XRot, YRot, ZRot) for a fixture based on height or overrides."""
+                         custom_z_rot=None,
+                         z_mm: int = None, stage_d_mm: int = None):
+    """Return (XRot, YRot, ZRot) for a fixture.
+
+    Per-axis overrides win; otherwise XRot comes from :func:`default_x_rot`
+    (height zone + depth) and YRot/ZRot default to 0.
+    """
     if custom_x_rot is not None:
         x_rot = int(custom_x_rot)
     else:
-        ratio = y_mm / max(stage_h_mm, 1)
-        if ratio < 0.15:
-            x_rot = 180   # point straight up (floor fixture)
-        elif ratio > 0.65:
-            x_rot = 0     # point straight down (top fixture)
-        else:
-            x_rot = 90    # horizontal beam (mid-height)
+        x_rot = default_x_rot(y_mm, stage_h_mm, z_mm, stage_d_mm)
     y_rot = int(custom_y_rot) if custom_y_rot is not None else 0
     z_rot = int(custom_z_rot) if custom_z_rot is not None else 0
     return x_rot, y_rot, z_rot
@@ -162,6 +210,7 @@ def build_qxw(rig: list,
             custom_x_rot=e.get("x_rot"),
             custom_y_rot=e.get("y_rot"),
             custom_z_rot=e.get("z_rot"),
+            z_mm=raw_z, stage_d_mm=stage_d_mm,
         )
 
         fxi = _sub(monitor, "FxItem",

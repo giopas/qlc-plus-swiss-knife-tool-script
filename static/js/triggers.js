@@ -227,9 +227,31 @@ async function checkDuplicates() {
 // ── Save to QXW ──────────────────────────────────────────────────────────────
 
 async function saveTriggers() {
+  // Writes <name>_v<N+1>.qxw next to the loaded file — never overwrites it.
   const result = await _apiJson('/api/triggers/save', { method: 'POST' });
   if (result.error) { setStatus(result.error, 'error'); return; }
-  setStatus(`Saved triggers → ${result.path.split(/[\\/]/).pop()}`);
+  setStatus(`Saved new version → ${result.path.split(/[\\/]/).pop()}`);
+}
+
+async function saveTriggersAs() {
+  try {
+    const resp = await fetch('/api/triggers/save-as-new', { method: 'POST' });
+    if (!resp.ok) {
+      const d = await resp.json().catch(() => ({}));
+      setStatus('Save error: ' + (d.error || resp.status), 'error');
+      return;
+    }
+    const blob = await resp.blob();
+    const name = resp.headers.get('X-Suggested-Filename') || 'workspace_v2.qxw';
+    const savedName = await saveFileWithPicker(
+      blob, name,
+      [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
+      'Save workspace as'
+    );
+    if (savedName) setStatus(`Saved → ${savedName}`);
+  } catch (e) {
+    setStatus('Network error: ' + e.message, 'error');
+  }
 }
 
 // ── Bulk MIDI Shift modal ─────────────────────────────────────────────────────

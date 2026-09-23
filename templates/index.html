@@ -604,14 +604,14 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note ow">
-        <svg class="ic"><use href="/static/icons.svg#alert-triangle"/></svg>
-        Save <b>&nbsp;overwrites the loaded .qxw&nbsp;</b> — the only tool that does
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Saves a <b>&nbsp;new version&nbsp;</b> — the loaded .qxw is never overwritten
       </span>
-      <button class="btn btn-surface btn-ghost" onclick="saveTriggers()" data-tooltip="Save triggers to a new file instead">Save as new file…</button>
+      <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Choose a name and folder for the new file">Save as new file…</button>
       <div class="spacer"></div>
-      <button class="btn btn-overwrite" onclick="saveTriggers()"
-              data-tooltip="Write all trigger assignments back to the .qxw file (path mode only)">💾 Save to loaded QXW</button>
+      <button class="btn btn-accent" onclick="saveTriggers()"
+              data-tooltip="Write &lt;name&gt;_v&lt;N+1&gt;.qxw next to the loaded file (path mode only)">💾 Save new version</button>
     </div>
 
   </section>

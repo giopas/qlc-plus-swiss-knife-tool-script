@@ -383,23 +383,23 @@ def get_key_matrix() -> dict:
 
 
 def save_triggers() -> str:
-    """Write the modified XML tree back to the .qxw file. Returns path."""
+    """Write the modified workspace to a NEW versioned file next to the source.
+
+    ``Show_v41.qxw`` → ``Show_v42.qxw`` (skipping names that already exist).
+    The loaded file is never overwritten (WORKPLAN §3, 2026-09-23).
+    Returns the new path.
+    """
     if not _state['loaded']:
         raise RuntimeError('No workspace loaded.')
     if _state.get('original_name'):
         raise RuntimeError(
-            'Triggers cannot be saved: the workspace was loaded via file upload. '
-            'Use "Load by path" to enable this feature (paste the full .qxw path '
-            'in the path field and click Load).'
+            'The workspace was loaded via file upload, so there is no folder to '
+            'save next to. Use "Save as new file…" instead, or load by path.'
         )
     if not _state['path']:
         raise RuntimeError('No workspace path available.')
-    _state['xml_tree'].write(
-        _state['path'],
-        encoding='utf-8',
-        xml_declaration=True,
-    )
-    return _state['path']
+    out = qxw_io.next_version_path(_state['path'])
+    return qxw_io.write_qxw(_state['qxw_root'], out, protect=[_state['path']])
 
 
 # ── Dictionary Manager ────────────────────────────────────────────────────────

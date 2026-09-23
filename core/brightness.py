@@ -717,7 +717,7 @@ def apply_brightness_scales(
 
     Returns (suggested_filename: str, xml_bytes: bytes, stats: dict)
     """
-    if not _state.get('loaded') or not _state['qxw_root']:
+    if not _state.get('loaded') or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded.')
     if not scales:
         raise ValueError('No brightness scales provided.')

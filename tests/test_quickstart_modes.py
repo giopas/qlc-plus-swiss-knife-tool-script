@@ -85,13 +85,16 @@ def test_panic_reset_stops_everything_then_neutral():
     assert all(v == 0 for v in _scene_vals(funcs, "Reset: neutral state").values())
 
 
-def test_master_is_submaster_not_level():
-    """A Level slider at 255 on the dimmers would hold them at full (HTP)."""
+def test_dimmer_slider_starts_at_zero():
+    """A Level slider at 255 on the dimmers would hold them at full (HTP).
+    (A Submaster slider made QLC+ 5 drop every widget after it.)"""
     d = _defn("SlimPAR")
     _, _, frame = _gen(d, next(iter(d["modes"])))
-    master = next(s for s in frame.iter(f"{NS}Slider") if s.get("Caption") == "MASTER")
-    assert master.find(f"{NS}SliderMode").text == "Submaster"
-    assert not list(master.iter(f"{NS}Channel"))
+    sliders = list(frame.iter(f"{NS}Slider"))
+    assert all(s.find(f"{NS}SliderMode").text == "Level" for s in sliders)
+    dim = next(s for s in sliders if s.get("Caption") == "DIMMER")
+    assert dim.find(f"{NS}Level").get("Value") == "0"
+    assert list(dim.iter(f"{NS}Channel"))
 
 
 @pytest.mark.parametrize("caps,expected", [

@@ -5,15 +5,20 @@ Generate a complete QLC+ Virtual Console layout with backing functions
 (Scenes, Chasers, RGBMatrix) from a rig + capability analysis.
 
 Key design decisions (modelled on professional show files):
-  - Every Scene sets ALL channels on ALL fixtures explicitly (forced zeros)
-    so that switching scenes never leaves stale DMX values.
+  - Every Scene sets ALL channels on ALL fixtures explicitly so that
+    switching scenes never leaves stale DMX values.  Channels a look does
+    not use get their capability-aware *neutral* value (shutter open,
+    "no function", Pan/Tilt centred) — see channel_model.py.
+  - Channel indices follow the fixture's selected mode, not the QXF
+    definition order.
   - FixtureVal uses the correct QLC+ format:
         <FixtureVal ID="X">ch0,val0,ch1,val1,...,chN,valN</FixtureVal>
     i.e. ONE element per fixture with all channel/value pairs.
   - Scene buttons live inside SoloFrames for mutual exclusivity —
     only one scene per SoloFrame can be active at a time.
   - A PANIC / BLACKOUT button uses StopAll (function ID 4294967295)
-    to kill all running functions instantly.
+    to kill all running functions instantly, and a PANIC RESET scene
+    button puts every fixture back to its neutral state.
   - RGBMatrix functions provide colour-chase templates.
 """
 
@@ -22,7 +27,12 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Tuple
 
+from core.quick_start.channel_model import (
+    closed_value, mode_channels, neutral_map,
+)
 from core.quick_start.fixture_analyzer import RigCapabilityAnalysis
+from core.quick_start.nomenclature import Nomenclature, load_profile
+from core.quick_start.vc_style import VCStyle, load_style
 
 QLC_NS_URI = "http://www.qlcplus.org/Workspace"
 
@@ -173,7 +183,7 @@ def _build_rgbmatrix(func_id: int, name: str,
 
 def _vc_frame(wid: int, name: str, x: int, y: int, w: int, h: int,
               caption: str = None, header: bool = True,
-              bg_color: int = None) -> ET.Element:
+              bg_color: int = None, font: str = "") -> ET.Element:
     frame = ET.Element(_ns("Frame"))
     frame.set("Caption", caption or name)
     frame.set("ID", str(wid))
@@ -185,14 +195,15 @@ def _vc_frame(wid: int, name: str, x: int, y: int, w: int, h: int,
     _sub(app, "FrameStyle", "Sunken")
     if bg_color is not None:
         _sub(app, "BackgroundColor", str(bg_color))
-    if header:
-        _sub(frame, "ShowHeader", "True")
+    if font:
+        _sub(app, "Font", font)
+    _sub(frame, "ShowHeader", "True" if header else "False")
     return frame
 
 
 def _vc_solo_frame(wid: int, name: str, x: int, y: int, w: int, h: int,
                    caption: str = None, header: bool = True,
-                   bg_color: int = None) -> ET.Element:
+                   bg_color: int = None, font: str = "") -> ET.Element:
     """Build a SoloFrame — same as Frame but ensures mutual exclusivity."""
     frame = ET.Element(_ns("SoloFrame"))
     frame.set("Caption", caption or name)
@@ -205,15 +216,16 @@ def _vc_solo_frame(wid: int, name: str, x: int, y: int, w: int, h: int,
     _sub(app, "FrameStyle", "Sunken")
     if bg_color is not None:
         _sub(app, "BackgroundColor", str(bg_color))
-    if header:
-        _sub(frame, "ShowHeader", "True")
+    if font:
+        _sub(app, "Font", font)
+    _sub(frame, "ShowHeader", "True" if header else "False")
     return frame
 
 
 def _vc_button(wid: int, caption: str, func_id: int, func_type: str,
                x: int, y: int, w: int = 120, h: int = 60,
                bg_color: int = None, fg_color: int = None,
-               action: str = "Toggle") -> ET.Element:
+               action: str = "Toggle", font: str = "") -> ET.Element:
     btn = ET.Element(_ns("Button"))
     btn.set("Caption", caption)
     btn.set("ID", str(wid))
@@ -228,6 +240,8 @@ def _vc_button(wid: int, caption: str, func_id: int, func_type: str,
         _sub(app, "BackgroundColor", str(bg_color))
     if fg_color is not None:
         _sub(app, "ForegroundColor", str(fg_color))
+    if font:
+        _sub(app, "Font", font)
     _sub(btn, "Function", ID=str(func_id))
     _sub(btn, "Action", action)
     _sub(btn, "Intensity", Adjust="False")
@@ -287,16 +301,24 @@ class VCLayoutGenerator:
     """
 
     def __init__(self, rig: list, qxf_defs: dict,
-                 analysis: RigCapabilityAnalysis):
+                 analysis: RigCapabilityAnalysis,
+                 nomenclature=None, style=None):
         self.rig = rig
         self.qxf_defs = qxf_defs
         self.analysis = analysis
+        self.nom: Nomenclature = (nomenclature if isinstance(nomenclature, Nomenclature)
+                                  else load_profile(nomenclature))
+        self.style: VCStyle = load_style(style)
         self.functions: List[ET.Element] = []
         self.fixture_groups: List[ET.Element] = []
         self._fid = _IDCounter(start=len(rig))  # functions start after fixture IDs
         self._wid = _IDCounter(start=0)
         # Fixture group IDs start at 1 (0 is "All Fixtures" in qxw_builder)
         self._fg_id = _IDCounter(start=1)
+
+    def _n(self, base: str, category: str = "all", kind: str = "static") -> str:
+        """Function name according to the nomenclature profile."""
+        return self.nom.name(base, category, kind)
 
     def _next_fid(self) -> int:
         return self._fid.next()
@@ -306,16 +328,40 @@ class VCLayoutGenerator:
 
     # ── Channel index helpers ─────────────────────────────────────────────
 
-    def _channel_index(self, rig_idx: int, pattern_name: str) -> Optional[int]:
-        """Find the 0-based channel index for a channel name within a fixture."""
+    def _mode_channels(self, rig_idx: int) -> List[str]:
         entry = self.rig[rig_idx]
-        key = entry.get("key", "")
-        defn = self.qxf_defs.get(key, {})
-        channels = defn.get("channels", [])
+        return mode_channels(entry, self.qxf_defs.get(entry.get("key", ""), {}))
+
+    def _channel_index(self, rig_idx: int, pattern_name: str) -> Optional[int]:
+        """0-based index of a channel within the fixture's *mode*.
+
+        Exact name first, then a case-insensitive substring match.
+        """
+        channels = self._mode_channels(rig_idx)
+        if pattern_name in channels:
+            return channels.index(pattern_name)
         for i, ch in enumerate(channels):
             if pattern_name.lower() in ch.lower():
                 return i
         return None
+
+    def _neutral(self, rig_idx: int) -> Dict[int, int]:
+        entry = self.rig[rig_idx]
+        return neutral_map(entry, self.qxf_defs.get(entry.get("key", ""), {}))
+
+    def _shutter_closed(self, rig_idx: int) -> Dict[int, int]:
+        """{index: closed value} for shutter channels that can close."""
+        entry = self.rig[rig_idx]
+        defn = self.qxf_defs.get(entry.get("key", ""), {})
+        defs = defn.get("channel_defs") or {}
+        out = {}
+        for i, n in enumerate(self._mode_channels(rig_idx)):
+            d = defs.get(n) or {}
+            if (d.get("group") or "").lower() == "shutter":
+                cv = closed_value(d)
+                if cv is not None:
+                    out[i] = cv
+        return out
 
     def _dimmer_index(self, rig_idx: int) -> Optional[int]:
         caps = self.analysis.fixture_caps[rig_idx]
@@ -351,10 +397,11 @@ class VCLayoutGenerator:
     def _set_channels(self, rig_idx: int,
                       overrides: Dict[int, int]) -> List[Tuple[int, int]]:
         """
-        Build a full channel list for a fixture: all zeros except
-        channels specified in `overrides`.
+        Build a full channel list for a fixture: every channel at its
+        neutral value except those specified in `overrides`.
         """
-        vals = {ch: 0 for ch in range(self._ch_count(rig_idx))}
+        neutral = self._neutral(rig_idx)
+        vals = {ch: neutral.get(ch, 0) for ch in range(self._ch_count(rig_idx))}
         vals.update(overrides)
         return [(ch, v) for ch, v in sorted(vals.items())]
 
@@ -367,8 +414,8 @@ class VCLayoutGenerator:
         Create a scene that sets ALL channels on ALL fixtures.
 
         per_fixture_overrides: {fixture_idx: {ch_index: value, ...}}
-            Only non-zero channels need to be specified; everything else
-            gets forced to 0.
+            Only the channels the look uses need to be specified;
+            everything else gets its neutral value.
         """
         fid = self._next_fid()
         fixture_channels = {}
@@ -379,7 +426,7 @@ class VCLayoutGenerator:
             _build_scene(fid, name, fixture_channels, fade_in, fade_out))
         return fid
 
-    def _create_all_on_scene(self) -> int:
+    def _create_all_on_scene(self, name: str = None) -> int:
         overrides = {}
         for idx in range(len(self.rig)):
             o = {}
@@ -393,11 +440,26 @@ class VCLayoutGenerator:
                 o[rgb["green"]] = 255
                 o[rgb["blue"]] = 255
             overrides[idx] = o
-        return self._create_full_scene("ALL ON", overrides)
+        return self._create_full_scene(name or self._n("ALL ON"), overrides)
 
-    def _create_blackout_scene(self) -> int:
-        """Blackout: ALL channels on ALL fixtures forced to zero."""
-        return self._create_full_scene("BLACKOUT", {})
+    def _create_blackout_scene(self, name: str = None) -> int:
+        """Blackout: dimmers/colours at 0; fixtures without a dimmer
+        channel also get their shutter closed."""
+        return self._create_full_scene(name or self._n("BLACKOUT", kind="utility"),
+                                       self._dark_overrides())
+
+    def _dark_overrides(self) -> Dict[int, Dict[int, int]]:
+        out = {}
+        for idx in range(len(self.rig)):
+            if self._dimmer_index(idx) is None:
+                out[idx] = self._shutter_closed(idx)
+        return out
+
+    def _create_panic_reset_scene(self) -> int:
+        """PANIC RESET: every fixture neutral (shutter open, no effects,
+        Pan/Tilt centred) with intensity at 0 — a known, safe state."""
+        return self._create_full_scene(self._n("PANIC RESET", kind="utility"),
+                                       self._dark_overrides())
 
     def _create_warm_white_scene(self) -> int:
         overrides = {}
@@ -412,7 +474,7 @@ class VCLayoutGenerator:
                 o[rgb["green"]] = 200
                 o[rgb["blue"]] = 0
             overrides[idx] = o
-        return self._create_full_scene("Warm White", overrides)
+        return self._create_full_scene(self._n("Warm White"), overrides)
 
     def _create_cold_white_scene(self) -> int:
         overrides = {}
@@ -427,7 +489,7 @@ class VCLayoutGenerator:
                 o[rgb["green"]] = 255
                 o[rgb["blue"]] = 255
             overrides[idx] = o
-        return self._create_full_scene("Cold White", overrides)
+        return self._create_full_scene(self._n("Cold White"), overrides)
 
     def _create_color_scene(self, name: str, r: int, g: int, b: int) -> int:
         overrides = {}
@@ -486,38 +548,39 @@ class VCLayoutGenerator:
                     o[rgb["blue"]] = 255
             # else: all zeros (fixture not in this group)
             overrides[idx] = o
-        return self._create_full_scene(display, overrides)
+        return self._create_full_scene(self._n(display, group_name), overrides)
 
     # ── Chaser builders ───────────────────────────────────────────────────
 
     def _create_dimmer_sweep_chaser(self) -> int:
-        s_on  = self._create_all_on_scene()
-        s_off = self._create_blackout_scene()
+        s_on  = self._create_all_on_scene(self._n("Dimmer Sweep: On", kind="pulse"))
+        s_off = self._create_blackout_scene(self._n("Dimmer Sweep: Off", kind="pulse"))
         fid = self._next_fid()
         self.functions.append(
-            _build_chaser(fid, "Dimmer Sweep", [s_off, s_on],
+            _build_chaser(fid, self._n("Dimmer Sweep", kind="pulse"), [s_off, s_on],
                           fade_in=1000, fade_out=1000, duration=500))
         return fid
 
     def _create_color_fade_chaser(self) -> int:
-        s_r = self._create_color_scene("Fade: Red",     255,   0,   0)
-        s_g = self._create_color_scene("Fade: Green",     0, 255,   0)
-        s_b = self._create_color_scene("Fade: Blue",      0,   0, 255)
-        s_y = self._create_color_scene("Fade: Yellow",  255, 255,   0)
-        s_m = self._create_color_scene("Fade: Magenta", 255,   0, 255)
-        s_c = self._create_color_scene("Fade: Cyan",      0, 255, 255)
+        s_r = self._create_color_scene(self._n("Color Fade: Red", kind="dynamic"),     255,   0,   0)
+        s_g = self._create_color_scene(self._n("Color Fade: Green", kind="dynamic"),     0, 255,   0)
+        s_b = self._create_color_scene(self._n("Color Fade: Blue", kind="dynamic"),      0,   0, 255)
+        s_y = self._create_color_scene(self._n("Color Fade: Yellow", kind="dynamic"),  255, 255,   0)
+        s_m = self._create_color_scene(self._n("Color Fade: Magenta", kind="dynamic"), 255,   0, 255)
+        s_c = self._create_color_scene(self._n("Color Fade: Cyan", kind="dynamic"),      0, 255, 255)
         fid = self._next_fid()
         self.functions.append(
-            _build_chaser(fid, "Color Fade", [s_r, s_y, s_g, s_c, s_b, s_m],
+            _build_chaser(fid, self._n("Color Fade", kind="dynamic"),
+                          [s_r, s_y, s_g, s_c, s_b, s_m],
                           fade_in=2000, fade_out=0, duration=1000))
         return fid
 
     def _create_strobe_chaser(self, name: str, on_ms: int, off_ms: int) -> int:
-        s_on  = self._create_strobe_scene(f"{name} On")
-        s_off = self._create_blackout_scene()
+        s_on  = self._create_strobe_scene(self._n(f"{name}: On", kind="fx"))
+        s_off = self._create_blackout_scene(self._n(f"{name}: Off", kind="fx"))
         fid = self._next_fid()
         self.functions.append(
-            _build_chaser(fid, name, [s_on, s_off],
+            _build_chaser(fid, self._n(name, kind="fx"), [s_on, s_off],
                           fade_in=0, fade_out=0, duration=on_ms))
         return fid
 
@@ -571,7 +634,7 @@ class VCLayoutGenerator:
         # Stripes H (red/blue)
         fid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, "Stripes H (Red/Blue)", fg_id,
+            fid, self._n("Stripes H (Red/Blue)", kind="matrix"), fg_id,
             algorithm="Stripes", color0=_CLR_RED, color1=4278190335,
             duration=800, properties={"orientation": "Horizontal"}))
         effects.append(("Stripes H", fid))
@@ -579,7 +642,7 @@ class VCLayoutGenerator:
         # Stripes V (green/magenta) — vertical group for correct direction
         fid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, "Stripes V (Green/Mag)", fg_id_v or fg_id,
+            fid, self._n("Stripes V (Green/Mag)", kind="matrix"), fg_id_v or fg_id,
             algorithm="Stripes", color0=_CLR_GREEN, color1=_CLR_MAGENTA,
             duration=800, properties={"orientation": "Vertical"}))
         effects.append(("Stripes V", fid))
@@ -587,14 +650,14 @@ class VCLayoutGenerator:
         # Plasma (red)
         fid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, "Plasma", fg_id,
+            fid, self._n("Plasma", kind="matrix"), fg_id,
             algorithm="Plasma", color0=_CLR_RED, duration=500))
         effects.append(("Plasma", fid))
 
         # Gradient (cyan/purple)
         fid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, "Gradient", fg_id,
+            fid, self._n("Gradient", kind="matrix"), fg_id,
             algorithm="Gradient", color0=_CLR_CYAN, color1=_CLR_PURPLE,
             duration=1200))
         effects.append(("Gradient", fid))
@@ -602,14 +665,14 @@ class VCLayoutGenerator:
         # Waves (blue)
         fid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, "Waves", fg_id,
+            fid, self._n("Waves", kind="matrix"), fg_id,
             algorithm="Waves", color0=_CLR_BLUE, duration=600))
         effects.append(("Waves", fid))
 
         # Full Row (orange) — vertical group so row sweeps across fixtures
         fid = self._next_fid()
         self.functions.append(_build_rgbmatrix(
-            fid, "Full Row", fg_id_v or fg_id,
+            fid, self._n("Full Row", kind="matrix"), fg_id_v or fg_id,
             algorithm="Full Row", color0=_CLR_ORANGE, duration=1000))
         effects.append(("Full Row", fid))
 
@@ -632,9 +695,11 @@ class VCLayoutGenerator:
         self.fixture_groups = []
         groups = self.analysis.group_by_type()
 
-        pad = 5
-        btn_h = 55
-        btn_w = 130
+        st = self.style
+        pad = st.gap
+        hdr = st.header_h           # room for a frame's header before content
+        btn_h = st.btn_h
+        btn_w = st.btn_w
 
         # ── STATIC LOOKS (SoloFrame — mutual exclusivity) ────────────────
         static_entries = []   # (caption, fid, bg, fg)
@@ -649,19 +714,19 @@ class VCLayoutGenerator:
         static_entries.append(("Cold White", fid_cw, _CLR_LIGHT_GRAY, _CLR_BLACK))
 
         if self.analysis.has_any_rgb():
-            fid_r = self._create_color_scene("Red",     255,   0,   0)
+            fid_r = self._create_color_scene(self._n("Red"),     255,   0,   0)
             static_entries.append(("Red", fid_r, _CLR_RED, _CLR_WHITE))
-            fid_g = self._create_color_scene("Green",     0, 255,   0)
+            fid_g = self._create_color_scene(self._n("Green"),     0, 255,   0)
             static_entries.append(("Green", fid_g, _CLR_GREEN, _CLR_BLACK))
-            fid_b = self._create_color_scene("Blue",      0,   0, 255)
+            fid_b = self._create_color_scene(self._n("Blue"),      0,   0, 255)
             static_entries.append(("Blue", fid_b, _CLR_BLUE, _CLR_WHITE))
-            fid_y = self._create_color_scene("Yellow",  255, 255,   0)
+            fid_y = self._create_color_scene(self._n("Yellow"),  255, 255,   0)
             static_entries.append(("Yellow", fid_y, _CLR_YELLOW, _CLR_BLACK))
-            fid_m = self._create_color_scene("Magenta", 255,   0, 255)
+            fid_m = self._create_color_scene(self._n("Magenta"), 255,   0, 255)
             static_entries.append(("Magenta", fid_m, _CLR_MAGENTA, _CLR_BLACK))
-            fid_c = self._create_color_scene("Cyan",      0, 255, 255)
+            fid_c = self._create_color_scene(self._n("Cyan"),      0, 255, 255)
             static_entries.append(("Cyan", fid_c, _CLR_CYAN, _CLR_BLACK))
-            fid_p = self._create_color_scene("Purple",  148,   0, 211)
+            fid_p = self._create_color_scene(self._n("Purple"),  148,   0, 211)
             static_entries.append(("Purple", fid_p, _CLR_PURPLE, _CLR_WHITE))
 
         # Blackout scene (inside SoloFrame so it cancels any active look)
@@ -671,7 +736,7 @@ class VCLayoutGenerator:
         cols = 3
         static_rows = (len(static_entries) + cols - 1) // cols
         static_w = cols * (btn_w + pad) + pad
-        static_h = 40 + static_rows * (btn_h + pad) + pad
+        static_h = hdr + static_rows * (btn_h + pad) + pad
 
         static_solo = _vc_solo_frame(
             self._next_wid(), "STATIC LOOKS",
@@ -680,7 +745,7 @@ class VCLayoutGenerator:
             sc = si % cols
             sr = si // cols
             x = pad + sc * (btn_w + pad)
-            y = 40 + sr * (btn_h + pad)
+            y = hdr + sr * (btn_h + pad)
             static_solo.append(
                 _vc_button(self._next_wid(), caption, fid, "Scene",
                            x, y, btn_w, btn_h,
@@ -726,7 +791,7 @@ class VCLayoutGenerator:
         eff_cols = 3
         eff_rows = max((len(effect_entries) + eff_cols - 1) // eff_cols, 1)
         eff_w = eff_cols * (btn_w + pad) + pad
-        eff_h = 40 + eff_rows * (btn_h + pad) + pad
+        eff_h = hdr + eff_rows * (btn_h + pad) + pad
 
         effects_solo = _vc_solo_frame(
             self._next_wid(), "DYNAMIC / EFFECTS",
@@ -735,7 +800,7 @@ class VCLayoutGenerator:
             ec = ei % eff_cols
             er = ei // eff_cols
             x = pad + ec * (btn_w + pad)
-            y = 40 + er * (btn_h + pad)
+            y = hdr + er * (btn_h + pad)
             effects_solo.append(
                 _vc_button(self._next_wid(), caption, fid, ftype,
                            x, y, btn_w, btn_h,
@@ -753,12 +818,12 @@ class VCLayoutGenerator:
 
         grp_rows = max(len(active_groups), 1)
         grp_w = 2 * btn_w + 3 * pad
-        grp_h = 40 + grp_rows * (btn_h + pad) + pad
+        grp_h = hdr + grp_rows * (btn_h + pad) + pad
 
         groups_frame = _vc_frame(self._next_wid(), "FIXTURE GROUPS",
                                   0, static_h + pad + eff_h + pad,
                                   grp_w, grp_h)
-        btn_y = 40
+        btn_y = hdr
         for gname, indices in active_groups:
             display = {
                 "moving_heads":   "Moving Heads",
@@ -781,7 +846,7 @@ class VCLayoutGenerator:
             if di is not None:
                 dimmer_channels.append((idx, di))
 
-        slider_w = 70
+        slider_w = st.slider_w
         slider_h = static_h + pad + eff_h + pad + grp_h
         dimmer_slider = _vc_slider(
             self._next_wid(), "MASTER",
@@ -801,7 +866,7 @@ class VCLayoutGenerator:
                 green_channels.append((idx, rgb["green"]))
                 blue_channels.append((idx, rgb["blue"]))
 
-        rgb_slider_w = 60
+        rgb_slider_w = max(slider_w - 10, 30)
         rgb_slider_h = slider_h  # same height as master
         if red_channels:
             sl_r = _vc_slider(self._next_wid(), "RED", 0, 0,
@@ -818,8 +883,8 @@ class VCLayoutGenerator:
             rgb_sliders.append(sl_b)
 
         # ── PANIC button (StopAll) ───────────────────────────────────────
-        panic_w = slider_w
-        panic_h = 80
+        panic_w = btn_w
+        panic_h = max(80, btn_h)
         panic_btn = _vc_button(
             self._next_wid(),
             "PANIC\nBLACKOUT",
@@ -827,6 +892,14 @@ class VCLayoutGenerator:
             0, 0, panic_w, panic_h,
             bg_color=_CLR_DARK_RED, fg_color=_CLR_WHITE,
             action="StopAll")
+
+        fid_reset = self._create_panic_reset_scene()
+        reset_btn = _vc_button(
+            self._next_wid(),
+            "PANIC\nRESET",
+            fid_reset, "Scene",
+            0, 0, panic_w, panic_h,
+            bg_color=_CLR_ORANGE, fg_color=_CLR_BLACK)
 
         # ── Assemble main frame ──────────────────────────────────────────
         left_w = max(static_w, eff_w, grp_w)
@@ -838,42 +911,76 @@ class VCLayoutGenerator:
 
         total_w = right_col_x + panic_w + pad
         left_h = static_h + pad + eff_h + pad + grp_h
-        total_h = max(left_h, slider_h + pad + panic_h) + 40 + pad
+        total_h = max(left_h, 2 * (panic_h + pad)) + hdr + pad
+        # Reference page size (cloned style): the page is at least that big
+        total_w = max(total_w, st.page_w)
+        total_h = max(total_h, st.page_h)
 
         main_frame = _vc_frame(
             self._next_wid(), "Quick Start",
             0, 0, total_w, total_h,
-            caption="Quick Start")
+            caption="Quick Start", font=st.font_page)
 
         # Position master slider on the far left
-        _update_ws(dimmer_slider, pad, 40)
+        _update_ws(dimmer_slider, pad, hdr)
         main_frame.append(dimmer_slider)
 
         # Position RGB sliders next to master
         for si, sl in enumerate(rgb_sliders):
             sx = slider_w + pad + si * (rgb_slider_w + pad)
-            _update_ws(sl, sx, 40)
+            _update_ws(sl, sx, hdr)
             main_frame.append(sl)
 
         # Position static solo
-        _update_ws(static_solo, panels_x, 40)
+        _update_ws(static_solo, panels_x, hdr)
         main_frame.append(static_solo)
 
         # Position effects solo
         _update_ws(effects_solo, panels_x,
-                   40 + static_h + pad)
+                   hdr + static_h + pad)
         main_frame.append(effects_solo)
 
         # Position groups frame
         _update_ws(groups_frame, panels_x,
-                   40 + static_h + pad + eff_h + pad)
+                   hdr + static_h + pad + eff_h + pad)
         main_frame.append(groups_frame)
 
         # Position panic button on the right side
-        _update_ws(panic_btn, right_col_x, 40)
+        _update_ws(panic_btn, right_col_x, hdr)
         main_frame.append(panic_btn)
+        _update_ws(reset_btn, right_col_x, hdr + panic_h + pad)
+        main_frame.append(reset_btn)
 
+        self._apply_fonts(main_frame)
+        self._apply_caption_prefixes(main_frame)
         return self.functions, main_frame, self.fixture_groups
+
+    def _apply_caption_prefixes(self, main_frame: ET.Element) -> None:
+        """With ``prefix_captions``, a button shows its function's prefix
+        too ("AS · Red") so the VC reads like the naming legend."""
+        if not self.nom.prefix_captions:
+            return
+        names = {f.get("ID"): f.get("Name", "") for f in self.functions}
+        for btn in main_frame.iter(_ns("Button")):
+            fn = btn.find(_ns("Function"))
+            pre = self.nom.prefix_of(names.get(fn.get("ID"), "")) if fn is not None else ""
+            cap = btn.get("Caption", "")
+            if pre and not cap.startswith(pre):
+                btn.set("Caption", pre + cap)
+
+    def _apply_fonts(self, main_frame: ET.Element) -> None:
+        """Give buttons / inner frames the style's fonts (if any)."""
+        st = self.style
+        for el in main_frame.iter():
+            tag = el.tag.split("}")[-1]
+            font = (st.font_button if tag == "Button" else
+                    st.font_frame if tag in ("Frame", "SoloFrame") and el is not main_frame
+                    else "")
+            if not font:
+                continue
+            app = el.find(_ns("Appearance"))
+            if app is not None and app.find(_ns("Font")) is None:
+                _sub(app, "Font", font)
 
     # ── Statistics ────────────────────────────────────────────────────────
 

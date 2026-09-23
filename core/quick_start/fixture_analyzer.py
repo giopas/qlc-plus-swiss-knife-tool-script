@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from typing import Dict, List, Optional
 
+from core.quick_start.channel_model import mode_channels
+
 
 # ─── channel-name patterns ────────────────────────────────────────────────────
 
@@ -179,8 +181,8 @@ class RigCapabilityAnalysis:
         for idx, entry in enumerate(rig):
             key = entry.get("key", "")
             defn = qxf_defs.get(key, {})
-            channels = defn.get("channels", [])
-            self.fixture_caps[idx] = FixtureCapabilities(channels)
+            # Channels in the order of the entry's *mode* (not definition order)
+            self.fixture_caps[idx] = FixtureCapabilities(mode_channels(entry, defn))
 
     def group_by_type(self) -> Dict[str, List[int]]:
         """

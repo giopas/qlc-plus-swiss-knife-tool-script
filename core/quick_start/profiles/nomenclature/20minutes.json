@@ -1,0 +1,35 @@
+{
+  "id": "20minutes",
+  "label": "20Minutes (two-letter prefix)",
+  "description": "Two-letter prefix, as in the 20Minutes / LiquidBar shows: first letter = fixture group, second = effect type (\"AS · Red\", \"AD · Color Fade\", \"A* · Strobe Fast\"). Quick Start knows only \"all fixtures\"; map your own groups in category_group.",
+  "format": "{group}{effect} · {name}",
+  "groups": {
+    "A": "all fixtures",
+    "F": "front four (singer pair + band pair)",
+    "S": "singer pair only",
+    "B": "band pair only",
+    "R": "rear two (drums floor + logo)",
+    "D": "drums floor only",
+    "L": "logo only",
+    "X": "split / spatial (left vs right, travelling)"
+  },
+  "effects": {
+    "S": "static colour (scene, no movement)",
+    "D": "dynamic colour (chaser, loops colours)",
+    "P": "pulse / breathe (slow dimmer swell)",
+    "M": "movement (position travels across the rig)",
+    "*": "special FX (strobe, flash — use sparingly)"
+  },
+  "category_group": {
+    "all": "A"
+  },
+  "effect_letters": {
+    "static": "S",
+    "dynamic": "D",
+    "pulse": "P",
+    "movement": "M",
+    "matrix": "M",
+    "fx": "*"
+  },
+  "prefix_captions": true
+}

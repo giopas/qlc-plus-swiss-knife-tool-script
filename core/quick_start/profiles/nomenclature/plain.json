@@ -1,0 +1,10 @@
+{
+  "id": "plain",
+  "label": "Plain names",
+  "description": "Descriptive function names with no prefix (\"Red\", \"Color Fade\").",
+  "format": "{name}",
+  "groups": {},
+  "effects": {},
+  "category_group": {},
+  "prefix_captions": false
+}

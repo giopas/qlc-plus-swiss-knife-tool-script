@@ -334,7 +334,7 @@ class TestVCLayoutGenerator:
         functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
         assert "Color Fade" in names
-        assert "Fade: Red" in names   # chaser steps are dedicated scenes
+        assert "Color Fade: Red" in names   # chaser steps are dedicated scenes
 
     def test_no_color_fade_without_rgb(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]

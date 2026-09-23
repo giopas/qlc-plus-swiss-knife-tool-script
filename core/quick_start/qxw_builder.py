@@ -103,7 +103,8 @@ def build_qxw(rig: list,
               fixture_groups: List[ET.Element] = None,
               stage_w_mm: int = 8000,
               stage_d_mm: int = 6000,
-              stage_h_mm: int = 4000) -> bytes:
+              stage_h_mm: int = 4000,
+              vc_size: tuple = (1920, 1080)) -> bytes:
     """
     Build a complete .qxw XML file.
 
@@ -228,7 +229,7 @@ def build_qxw(rig: list,
     vc = _sub(root, "VirtualConsole")
     vc.append(vc_frame)
     props = _sub(vc, "Properties")
-    _sub(props, "Size", Width="1920", Height="1080")
+    _sub(props, "Size", Width=str(vc_size[0]), Height=str(vc_size[1]))
     _sub(props, "GrandMaster", ChannelMode="Intensity",
          ValueMode="Reduce", SliderMode="Normal")
 

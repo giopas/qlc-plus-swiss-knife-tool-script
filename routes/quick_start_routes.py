@@ -31,6 +31,8 @@ from core.quick_start.fixture_analyzer import (
 )
 from core.quick_start.vc_generator import VCLayoutGenerator
 from core.quick_start.qxw_builder import build_qxw
+from core.quick_start.nomenclature import list_profiles, load_profile
+from core.quick_start.vc_style import extract_style_file, list_styles, load_style
 from core.quick_start.template_library import list_templates
 from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, GH_API_BASE, GH_RAW_BASE
 
@@ -55,6 +57,9 @@ bp = Blueprint('quickstart', __name__, url_prefix='/api/quickstart')
 _qs_rig: list = []          # list of fixture entry dicts
 _qs_qxf_defs: dict = {}     # "Manufacturer::Model" → parsed definition dict
 _qs_next_id: int = 0
+# Generation options: naming profile id + VC style (dict)
+_QS_DEFAULT_OPTIONS = {"nomenclature": "plain", "style": "default", "style_data": None}
+_qs_options: dict = dict(_QS_DEFAULT_OPTIONS)
 
 # GitHub fixture cache (avoid repeated API calls)
 _gh_manufacturer_cache: list = []
@@ -62,43 +67,61 @@ _gh_fixture_cache: dict = {}  # manufacturer → list of fixture files
 
 
 def _reset_qs():
-    global _qs_rig, _qs_qxf_defs, _qs_next_id
+    global _qs_rig, _qs_qxf_defs, _qs_next_id, _qs_options
     _qs_rig = []
     _qs_qxf_defs = {}
     _qs_next_id = 0
+    _qs_options = dict(_QS_DEFAULT_OPTIONS)
+
+
+def _style_ref(opts: dict):
+    """What to hand VCLayoutGenerator as *style*."""
+    return opts.get("style_data") or opts.get("style") or "default"
+
+
+def _options_payload() -> dict:
+    st = load_style(_style_ref(_qs_options))
+    return {
+        "nomenclature": _qs_options["nomenclature"],
+        "style": _qs_options["style"],
+        "style_data": st.to_dict(),
+        "profiles": list_profiles(),
+        "styles": list_styles(),
+        "legend": load_profile(_qs_options["nomenclature"]).legend(),
+    }
+
+
+def _make_generator(opts: dict = None):
+    o = {**_qs_options, **(opts or {})}
+    analysis = RigCapabilityAnalysis(_qs_rig, _qs_qxf_defs)
+    gen = VCLayoutGenerator(_qs_rig, _qs_qxf_defs, analysis,
+                            nomenclature=o.get("nomenclature"),
+                            style=_style_ref(o))
+    return analysis, gen
 
 
 # ── QXF parsing (local to quick start) ───────────────────────────────────────
 
 def _parse_qxf(path: str) -> dict:
-    """Parse a .qxf fixture definition file. Returns definition dict."""
-    ns = {"f": QXF_NS_URI}
-    tree = ET.parse(path)
-    root = tree.getroot()
+    """Parse a .qxf fixture definition file. Returns definition dict.
 
-    if QXF_NS_URI not in (root.tag or ""):
-        raise ValueError("Not a valid QXF file")
-
-    mfg   = root.findtext("f:Manufacturer", default="Unknown", namespaces=ns)
-    model = root.findtext("f:Model",        default="Unknown", namespaces=ns)
-    ftype = root.findtext("f:Type",         default="Color Changer", namespaces=ns)
-
-    modes = {}
-    for mode_el in root.findall("f:Mode", ns):
-        mname    = mode_el.get("Name", "Default")
-        ch_count = len(mode_el.findall("f:Channel", ns))
-        modes[mname] = ch_count
-
-    channels = [ch.get("Name", "?") for ch in root.findall("f:Channel", ns)]
-
-    key = f"{mfg}::{model}"
+    Besides the flat ``channels``/``modes`` summary, the definition carries
+    ``mode_channels`` (ordered channel names per mode) and ``channel_defs``
+    (groups + capabilities) so the generator can address channels by their
+    position *in the selected mode* and pick capability-aware neutral values.
+    """
+    from core.qxf_parser import parse_qxf
+    rich = parse_qxf(path)
+    key = f"{rich['manufacturer']}::{rich['model']}"
     defn = {
-        "manufacturer": mfg,
-        "model":        model,
-        "type":         ftype,
-        "modes":        modes,
-        "channels":     channels,
-        "path":         path,
+        "manufacturer":  rich["manufacturer"],
+        "model":         rich["model"],
+        "type":          rich["type"],
+        "modes":         rich["modes"],
+        "channels":      rich["channels"],
+        "mode_channels": rich["mode_channels"],
+        "channel_defs":  rich["channel_defs"],
+        "path":          path,
     }
     _qs_qxf_defs[key] = defn
     return defn
@@ -346,6 +369,48 @@ def auto_dmx():
     })
 
 
+@bp.route('/options', methods=['GET', 'POST'])
+def options():
+    """Get / set generation options: naming profile and VC style.
+
+    POST JSON: ``{"nomenclature": "20minutes"}``, ``{"style": "liquidbar"}``,
+    ``{"style_path": "/path/reference.qxw"}`` (clone the style of a
+    reference workspace) or ``{"style": {...}}`` (explicit style dict).
+    POST multipart ``style_file``: clone the style of an uploaded .qxw.
+    """
+    global _qs_options
+    if request.method == 'POST':
+        upload = request.files.get('style_file')
+        data = {} if upload else (request.get_json(force=True, silent=True) or {})
+        try:
+            if upload:
+                from core.qxw_io import loads_qxw, strip_ns
+                from core.quick_start.vc_style import extract_style
+                st = extract_style(strip_ns(loads_qxw(upload.read())),
+                                   source=upload.filename or 'reference.qxw')
+                _qs_options['style'] = 'custom'
+                _qs_options['style_data'] = st.to_dict()
+            if 'nomenclature' in data:
+                load_profile(data['nomenclature'])          # validate
+                _qs_options['nomenclature'] = data['nomenclature'] or 'plain'
+            if data.get('style_path'):
+                st = extract_style_file(data['style_path'])
+                _qs_options['style'] = 'custom'
+                _qs_options['style_data'] = st.to_dict()
+            elif isinstance(data.get('style'), dict):
+                _qs_options['style'] = 'custom'
+                _qs_options['style_data'] = load_style(data['style']).to_dict()
+            elif 'style' in data:
+                load_style(data['style'])                    # validate
+                _qs_options['style'] = data['style'] or 'default'
+                _qs_options['style_data'] = None
+        except (ValueError, OSError) as e:
+            return jsonify({'error': _safe_err(e)}), 400
+        except Exception as e:  # malformed reference file
+            return jsonify({'error': 'Could not read the reference workspace: ' + _safe_err(e)}), 400
+    return jsonify(_options_payload())
+
+
 @bp.route('/analyse')
 def analyse():
     """Run capability analysis on the current rig."""
@@ -369,8 +434,7 @@ def preview():
     if not _qs_rig:
         return jsonify({'error': 'Rig is empty.'}), 400
 
-    analysis = RigCapabilityAnalysis(_qs_rig, _qs_qxf_defs)
-    gen      = VCLayoutGenerator(_qs_rig, _qs_qxf_defs, analysis)
+    analysis, gen = _make_generator()
     funcs, vc_frame, _fg = gen.generate()
     stats    = gen.stats()
 
@@ -419,8 +483,10 @@ def generate():
         data = request.form.to_dict()
 
     try:
-        analysis = RigCapabilityAnalysis(_qs_rig, _qs_qxf_defs)
-        gen      = VCLayoutGenerator(_qs_rig, _qs_qxf_defs, analysis)
+        over = {k: data[k] for k in ("nomenclature", "style") if data.get(k)}
+        if "style" in over:
+            over["style_data"] = None if isinstance(over["style"], str) else over["style"]
+        analysis, gen = _make_generator(over)
         funcs, vc_frame, fixture_groups = gen.generate()
 
         # Use QS-specific stage dims if provided, else fall back to global
@@ -449,7 +515,19 @@ def generate():
             stage_w_mm=stage_w,
             stage_d_mm=stage_d,
             stage_h_mm=stage_h,
+            vc_size=((gen.style.page_w, gen.style.page_h)
+                     if gen.style.page_w and gen.style.page_h else (1920, 1080)),
         )
+
+        # Doctor gates every export (WORKPLAN principle 4): errors block it.
+        from core.doctor import check
+        from core.qxw_io import loads_qxw
+        report = check(loads_qxw(qxw_bytes), list(_qs_qxf_defs.values()))
+        if report.errors:
+            return jsonify({
+                'error': 'Doctor found errors in the generated workspace; not exported.',
+                'findings': [f"{f.code} {f.location}: {f.message}" for f in report.errors],
+            }), 422
 
         # Build filename: project_name_YYYYMMDD_HHMM.qxw
         proj = (data.get('project_name') or '').strip()

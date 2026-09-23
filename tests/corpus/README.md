@@ -2,7 +2,7 @@
 
 Real QLC+ 5 show files used as the **oracle** for Doctor, Porter, Rig Reducer, Show Book and the Liquid Bar benchmark (see `WORKPLAN.md` §1).
 
-**Do not edit these files.** If a newer show version replaces one, add it as a new file and update `expected_baseline.json`.
+**Do not edit these files** (except regenerating `QuickStart_6fix.qxw` with its script). If a newer show version replaces one, add it as a new file and update `expected_baseline.json`.
 
 ## Files
 
@@ -10,6 +10,7 @@ Real QLC+ 5 show files used as the **oracle** for Doctor, Porter, Rig Reducer, S
 |---|---|---|
 | `SangAKlang_v41.qxw` | 14-fixture festival show:<br>• 6 × Eurolite LED 4C-12 (9 ch) on the ceiling<br>• 8 × Generic 7-Ch RGB PAR on the floor<br>• 286 functions<br>• 4 VC pages (Master + 3 bands) | Source for Rig Reducer and Porter; a "dirty" reference for Doctor. |
 | `LiquidBar_v14.qxw` | 6-fixture pub show derived from v41:<br>• 207 functions<br>• 2 VC pages (setlist first)<br>• CueList wired to the setlist chaser | Target of the Liquid Bar benchmark; a "clean" reference for Doctor. |
+| `QuickStart_6fix.qxw` | Quick Start output: 2 × Eurolite LED 4C-12 on the truss, 4 × Generic PAR on the floor, 34 functions. **Generated** by `tools/make_quickstart_sample.py` (regenerate it when Quick Start output changes on purpose) | Golden file for Quick Start determinism (`tests/test_quickstart_golden.py`); Doctor on generated output. |
 | `Generic-7Ch-RGB-PAR.qxf` | Floor PAR definition (7 ch: dimmer, R, G, B, strobe, mode, mode speed) | Channel decoding, D005/D006. |
 | `Eurolite-LED-4C-12-Silent-Slim-Spot.qxf` | Ceiling spot definition (9 ch, includes Internal Programs) | Channel decoding, D006. |
 
@@ -45,3 +46,7 @@ Produced by `tools/doctor_prototype.py`, a throw-away prototype of the Phase 1.0
 2. **New check D015, unnamed functions.** Names like `[NNN] Scene - Unassigned` hide a function's purpose; rename them or remove them.
 3. **Caption-only buttons are a real pattern.** They are used as a label or legend panel. Doctor reports them as *info*, not errors. VC Builder should offer proper Label widgets and a "legend panel" generator.
 4. **D012 should cross-check** that input bindings exist while no input device is patched.
+
+### QuickStart_6fix
+
+0 errors; 1 warning — **D008, no PANIC RESET function**: Quick Start's `PANIC / BLACKOUT` button points at a plain BLACKOUT scene. A real PANIC RESET is Phase 1.1 work ("safe defaults baked in").

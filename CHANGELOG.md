@@ -22,6 +22,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 - `tools/make_tilt_check.py` → `tests/manual/tilt_check.qxw`, a 6-fixture file for checking tilt in the QLC+ 5 3D view; `tests/test_orientation.py` (18 tests).
 - `core/qxw_io.py` — the single QXW reader/writer: `load_qxw()`, `qxw_bytes()`, `write_qxw()` (atomic, refuses to overwrite protected source paths), `next_version_name()` / `next_version_path()` and `suffixed_name()`. `tests/test_qxw_io.py` covers round-trip, determinism, overwrite guard, versioned names, and a guard test that fails if any other module serialises a workspace.
+- GitHub Actions CI (`.github/workflows/tests.yml`): `pytest` on Python 3.11 and 3.12 for every push and pull request; status badge in the README.
 
 ### Changed
 

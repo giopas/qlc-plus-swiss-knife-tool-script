@@ -74,9 +74,9 @@
       <svg class="ic"><use href="/static/icons.svg#music"/></svg>
       <span>Setlist</span>
     </button>
-    <button class="sn-item" id="sn-triggers" data-tip="Triggers" data-desc="Audit and edit every keyboard &amp; MIDI binding in the Virtual Console." onclick="go('triggers')">
+    <button class="sn-item" id="sn-triggers" data-tip="Trigger Manager" data-desc="Audit and edit every keyboard &amp; MIDI binding in the Virtual Console." onclick="go('triggers')">
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
-      <span>Triggers</span>
+      <span>Trigger Manager</span>
     </button>
     <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does." onclick="go('dictionary')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
@@ -507,7 +507,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
-      <div><h2>Triggers</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
+      <div><h2>Trigger Manager</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1214,6 +1214,16 @@
                 <option value="id">Widget ID</option>
               </select>
               <button class="vce-ab" onclick="vceSortSiblings()">↕ Sort</button>
+            </div>
+
+            <div class="vce-pl">Pages</div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+              <input id="vce-page-name" class="vce-pi" style="width:150px" placeholder="Name (optional)">
+              <button class="vce-ab" onclick="vceNewPage()" title="Add an empty page">＋ New page</button>
+              <button class="vce-ab" onclick="vceDuplicatePage()" title="Copy the current page with all its widgets (new IDs)">⧉ Duplicate page</button>
+            </div>
+            <div style="margin-bottom:6px">
+              <label style="font-size:10px;color:var(--text-muted)"><input type="checkbox" id="vce-page-keep"> keep key/MIDI bindings when duplicating</label>
             </div>
 
             <div class="vce-pl">Snap to grid</div>

@@ -70,6 +70,54 @@ def vc_patch():
     return jsonify(result)
 
 
+@bp.route('/vc/pages')
+def vc_pages():
+    """Pages and their frames, for the copy/move target pickers."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import vc_ops
+    try:
+        return jsonify(vc_ops.list_pages(ws._state['qxw_root']))
+    except vc_ops.VcOpError as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@bp.route('/vc/op', methods=['POST'])
+def vc_op():
+    """
+    Structural VC edit on the in-memory workspace (saved later via export).
+
+    Body: {"op": "copy"|"move", "ids": [...], "target_id": "...",
+           "x"?: int, "y"?: int, "keep_bindings"?: bool}
+       or {"op": "new_page", "caption": "..."}
+       or {"op": "copy_page", "page_id": "...", "caption"?: "...", "keep_bindings"?: bool}
+    """
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import vc_ops
+    d = request.get_json(force=True) or {}
+    op = d.get('op')
+    try:
+        if op in ('copy', 'move'):
+            kw = {'ids': [str(i) for i in (d.get('ids') or [])],
+                  'target_id': str(d.get('target_id', '')),
+                  'x': d.get('x'), 'y': d.get('y')}
+            if op == 'copy':
+                kw['keep_bindings'] = bool(d.get('keep_bindings'))
+        elif op == 'new_page':
+            kw = {'caption': d.get('caption', '')}
+        elif op == 'copy_page':
+            kw = {'page_id': str(d.get('page_id', '')), 'caption': d.get('caption', ''),
+                  'keep_bindings': bool(d.get('keep_bindings'))}
+        else:
+            return jsonify({'error': f'Unknown operation: {op}'}), 400
+        return jsonify({'ok': True, **ws.vc_structural_edit(op, **kw)})
+    except vc_ops.VcOpError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)[:300]}), 500
+
+
 @bp.route('/vc/export-qxw', methods=['POST'])
 def vc_export_qxw():
     """

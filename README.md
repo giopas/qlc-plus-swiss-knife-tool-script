@@ -14,7 +14,7 @@
 This tool is in active development. Some features may be incomplete, behave unexpectedly, or not yet work at all. **Please test it and report any issues on the [Issues page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/issues)** — every bug report helps.
 
 **Your show files are safe to experiment with:**
-All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* via a Save dialog — your original `.qxw` is never overwritten. The one intentional exception is the **Trigger Manager "Save to loaded QXW"** button, which writes keyboard/MIDI bindings back to the file you loaded by path — exactly as described on that page. A "Save as new file…" option is also available for Triggers.
+All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
 
 ---
 
@@ -26,6 +26,8 @@ A "clean the bench" release — first step of the new [work plan](WORKPLAN.md) t
 - **QXW Merger and Function Porter work on real QLC+ files again** — they were seeing 0 fixtures / 0 functions in any workspace saved by QLC+.
 - **Quick Start aims fixtures at the stage**: truss 45° from vertical, floor 45° uplight, mid-height horizontal, tilted toward the centre of the stage.
 - **Brightness → Fetch missing QXFs from GitHub** works again.
+- **VC Visual Editor: copy and move across pages.** Copy or move buttons and whole frames to another page or frame, duplicate a page, or start a new empty page. Plus pinch/⌘-scroll zoom, box-select from anywhere and ⌘-click multi-select.
+- **Function Porter**, **VC Visual Editor** clicks and **Brightness** loading fixed; the Triggers tab is now called **Trigger Manager**.
 - Tests consolidated, all green, and run on GitHub Actions for every push.
 
 ---
@@ -77,8 +79,8 @@ Build complete show cue lists from a plain-text setlist. The **multi-slot archit
 
 The **function pool panel** shows usage counts, ✦ marks for already-generated clones, Used/Unused filtering, inline descriptions, and a refresh button to pull the latest descriptions from the Dictionary. Assigned songs display the matched function name, its VC button caption, and its description inline.
 
-### Triggers
-Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and write changes back to the workspace. Additional tools: **Duplicates** highlights conflicting rows inline; **MIDI Shift** bulk-reassigns all triggers from one MIDI address to another; **Matrix** toggles an assignment grid showing every widget vs. every key, with duplicate keys flagged.
+### Trigger Manager
+Audit and edit all **Virtual Console keyboard and MIDI bindings** in a spreadsheet-style table. Resolves nested VC frame ancestry so the Frame filter works at any nesting depth. Spot conflicts, fix missing assignments, and save the result as a new version of the workspace (`_v<N+1>.qxw`). Additional tools: **Duplicates** highlights conflicting rows inline; **MIDI Shift** bulk-reassigns all triggers from one MIDI address to another; **Matrix** toggles an assignment grid showing every widget vs. every key, with duplicate keys flagged.
 
 ### Dictionary
 Create and maintain `ID → description` mapping files that annotate your QLC+ function pool with human-readable labels. Load/save `.txt` dictionaries, edit descriptions inline, and filter by function type, VC button presence, **VC button name**, and **VC frame** (dropdown auto-populated from all frames in the workspace, with nested ancestry support).
@@ -107,7 +109,7 @@ Adjust the relative brightness of any fixture type across an entire show file wi
 Inspect every function and Virtual Console widget in sortable, filterable Grid.js tables. Live filtering, click-to-sort column headers, and **Export CSV** for both the Functions and VC Widgets sub-tabs.
 
 ### VC Visual Editor *(Beta)*
-See your Virtual Console as a canvas — select, align, distribute, resize, and sort widgets visually. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
+See your Virtual Console as a canvas — select, align, distribute, resize, and sort widgets visually. **Copy or move** buttons and frames to another page or frame, **duplicate a page**, or add a new one. Pinch or ⌘-scroll to zoom, drag a box or ⌘-click to multi-select. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
 
 ### QXW Merger *(Alpha)*
 Load any two `.qxw` files independently. Browse **Fixtures**, **Fixture Groups**, and **Functions** (filterable by type and name) from the source. Tick what you want, click **Copy →**, and the selected elements are inserted into the destination with IDs remapped above the highest existing ID. Export the merged result via the native OS Save dialog.

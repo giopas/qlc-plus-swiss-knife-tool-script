@@ -2,7 +2,23 @@
   "SangAKlang_v41.qxw": {
     "fixtures": 14,
     "functions": 286,
-    "findings": {
+    "doctor": {
+      "summary": {
+        "error": 1,
+        "warning": 854,
+        "info": 91
+      },
+      "counts": {
+        "D002": 1,
+        "D004": 4,
+        "D005": 801,
+        "D012": 1,
+        "D015": 90,
+        "D016": 48,
+        "I002": 1
+      }
+    },
+    "prototype_findings": {
       "D002 duplicate VC widget ID": 1,
       "D004 degenerate chaser (≤1 step)": 4,
       "D005 incomplete channel declaration": 801,
@@ -15,7 +31,19 @@
   "LiquidBar_v14.qxw": {
     "fixtures": 6,
     "functions": 207,
-    "findings": {
+    "doctor": {
+      "summary": {
+        "error": 0,
+        "warning": 0,
+        "info": 44
+      },
+      "counts": {
+        "D015": 4,
+        "I001": 39,
+        "I002": 1
+      }
+    },
+    "prototype_findings": {
       "D006 strobe/program channel ≠ 0": 4,
       "info VC pages (order)": 2,
       "info caption-only buttons (label use)": 41

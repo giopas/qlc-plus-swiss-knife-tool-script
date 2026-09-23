@@ -43,7 +43,8 @@ const _LAZY = {
   porter:     () => typeof porterInit             === 'function' && porterInit(),
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
-  vceditor:   () => typeof _vceLoad               === 'function' && _vceLoad(),
+  // initVcEditor() attaches the canvas mouse handlers (once); _vceLoad() re-reads the tree
+  vceditor:   () => typeof _vceLoad               === 'function' && (initVcEditor(), _vceLoad()),
   quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
 };
 

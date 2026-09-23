@@ -13,6 +13,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Fixed
 
+- **Function Porter wizard showed all five steps at once and stayed on "Loading…"**: the panels' CSS `display:flex` overrode the `hidden` attribute. Now one step at a time, and step 2 lists the source functions.
+- **VC Visual Editor did not react to clicks** (no select, align or drag): the tab loaded the Virtual Console but never attached the canvas mouse handlers. They are now attached on first open.
+- **Brightness was slow to open** (and looked empty meanwhile): the QXF search walked the app's own folder including `.venv`. Hidden, virtualenv and cache folders are now skipped (about 1.4 s → 0.05 s on the corpus).
 - **Quick Start 3D tilt defaults**: fixtures are now aimed at the performers instead of straight down/up. Truss/ceiling 45° from vertical, floor 45° uplight, mid-height horizontal; direction comes from depth (upstage fixtures tilt downstage, downstage fixtures tilt upstage). New helpers `height_zone()` / `default_x_rot()` in `core/quick_start/qxw_builder.py`; the Quick Start canvas mirrors the same rule and draws beam direction in the side view. Per-fixture override unchanged.
 - Brightness → “Fetch missing QXFs from GitHub” always failed with a hidden `NameError` (`_HTTP_HEADERS` was left behind when the GitHub helpers moved to `core/gh_fetch.py`); downloads now use `gh_get_raw()`.
 - **Trigger Manager no longer overwrites the loaded workspace.** “💾 Save new version” writes `<name>_v<N+1>.qxw` next to the original (skipping names that already exist) through `core/qxw_io`, so the `<!DOCTYPE Workspace>` line is kept — the old in-place `ElementTree.write()` dropped it. “Save as new file…” now really downloads a new file (both buttons used to call the in-place save).

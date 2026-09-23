@@ -230,13 +230,13 @@
                onchange="updateShowInfo()">
       </div>
 
-      <!-- Advanced path input -->
-      <div class="adv-row" id="adv-path-row">
-        Advanced: <a onclick="document.getElementById('adv-path-input-wrap').style.display='flex'">paste a file path…</a>
-        <span id="adv-path-input-wrap" style="display:none;gap:6px;align-items:center;margin-left:8px">
-          <input id="path-input" type="text" class="search" placeholder="Paste .qxw file path…" spellcheck="false" style="width:300px">
-          <button class="btn btn-primary btn-sm" onclick="loadFromPath()">Load</button>
-        </span>
+      <!-- Path of the open workspace (set by 📂 Open…, used by sessions / reload) -->
+      <input id="path-input" type="hidden">
+      <!-- Plain browser without a native dialog only: paste a path -->
+      <div class="adv-row path-fallback">
+        <input id="path-input-fallback" type="text" class="search" placeholder="Paste .qxw file path…" spellcheck="false" style="width:300px"
+               onkeydown="if(event.key==='Enter'){document.getElementById('path-input').value=this.value;loadFromPath()}">
+        <button class="btn btn-surface btn-sm" onclick="document.getElementById('path-input').value=document.getElementById('path-input-fallback').value;loadFromPath()">Load</button>
       </div>
 
       <!-- Recents -->
@@ -635,10 +635,8 @@
               data-tooltip="Browse and load a dictionary .txt file (path remembered for session)">
         📂 Browse TXT
       </button>
-      <input id="dict-path" type="text" class="filter-input" style="width:220px"
-             placeholder="Dictionary .txt path…" spellcheck="false">
-      <button class="btn btn-surface" onclick="loadDictFile()"
-              data-tooltip="Load descriptions from the dictionary .txt path">Load path</button>
+      <input id="dict-path" type="hidden">
+      <span id="dict-path-name" class="file-chip" title="">no dictionary loaded</span>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -699,11 +697,10 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
       <div><h2>Fixtures</h2><div class="p-desc">Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace.</div></div>
       <div class="spacer"></div>
-      <label class="field-label">QXF:</label>
-      <input id="fix-qxf-path" class="filter-input" type="text"
-             placeholder="Path to .qxf file…" style="width:260px">
-      <button class="btn btn-surface" onclick="fixLoadQxf()"
-              data-tooltip="Load a QLC+ fixture definition file (.qxf) as the fixture template">📂 Load QXF</button>
+      <input id="fix-qxf-path" type="hidden">
+      <span id="fix-qxf-name" class="file-chip">no QXF loaded</span>
+      <button class="btn btn-surface" onclick="fixBrowseQxf()"
+              data-tooltip="Choose a QLC+ fixture definition file (.qxf) as the fixture template">📂 Browse QXF…</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1294,15 +1291,11 @@
       <div class="merger-load-col">
         <label class="merger-load-label">📂 Source QXW</label>
         <div class="merger-load-row">
-          <input id="merger-src-path" type="text" class="filter-input"
-                 placeholder="Paste path or click Browse…" spellcheck="false"
-                 data-tooltip="Path to the QXW file you want to copy elements FROM"
-                 onkeydown="if(event.key==='Enter') mergerLoadSrc()">
+          <input id="merger-src-path" type="hidden">
+          <span id="merger-src-chip" class="file-chip">no file</span>
           <button class="btn btn-surface" onclick="mergerBrowseSrc()"
-                  data-tooltip="Browse for source .qxw file">Browse…</button>
+                  data-tooltip="Browse for source .qxw file">📂 Browse…</button>
           <button class="btn btn-surface" onclick="mergerUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-          <button class="btn btn-accent" onclick="mergerLoadSrc()"
-                  data-tooltip="Parse the source workspace">Load</button>
           <input id="merger-src-file" type="file" accept=".qxw" style="display:none"
                  onchange="mergerSrcFileChosen()">
         </div>
@@ -1315,15 +1308,11 @@
       <div class="merger-load-col">
         <label class="merger-load-label">📥 Destination QXW</label>
         <div class="merger-load-row">
-          <input id="merger-dst-path" type="text" class="filter-input"
-                 placeholder="Paste path or click Browse…" spellcheck="false"
-                 data-tooltip="Path to the QXW file you want to copy elements INTO"
-                 onkeydown="if(event.key==='Enter') mergerLoadDst()">
+          <input id="merger-dst-path" type="hidden">
+          <span id="merger-dst-chip" class="file-chip">no file</span>
           <button class="btn btn-surface" onclick="mergerBrowseDst()"
-                  data-tooltip="Browse for destination .qxw file">Browse…</button>
+                  data-tooltip="Browse for destination .qxw file">📂 Browse…</button>
           <button class="btn btn-surface" onclick="mergerUseOpenDst()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-          <button class="btn btn-accent" onclick="mergerLoadDst()"
-                  data-tooltip="Parse the destination workspace">Load</button>
           <input id="merger-dst-file" type="file" accept=".qxw" style="display:none"
                  onchange="mergerDstFileChosen()">
         </div>
@@ -1439,12 +1428,10 @@
         <div class="merger-load-col">
           <label class="merger-load-label">📂 Source QXW (import FROM)</label>
           <div class="merger-load-row">
-            <input id="porter-src-path" type="text" class="filter-input"
-                   placeholder="Paste path or click Browse…" spellcheck="false"
-                   onkeydown="if(event.key==='Enter') porterLoadSrc()">
-            <button class="btn btn-surface" onclick="porterBrowseSrc()">Browse...</button>
+            <input id="porter-src-path" type="hidden">
+          <span id="porter-src-chip" class="file-chip">no file</span>
+            <button class="btn btn-surface" onclick="porterBrowseSrc()">📂 Browse…</button>
           <button class="btn btn-surface" onclick="porterUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-            <button class="btn btn-accent" onclick="porterLoadSrc()">Load</button>
             <input id="porter-src-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterSrcFileChosen()">
           </div>
@@ -1456,12 +1443,10 @@
         <div class="merger-load-col">
           <label class="merger-load-label">📥 Target QXW (import INTO)</label>
           <div class="merger-load-row">
-            <input id="porter-tgt-path" type="text" class="filter-input"
-                   placeholder="Paste path or click Browse…" spellcheck="false"
-                   onkeydown="if(event.key==='Enter') porterLoadTgt()">
-            <button class="btn btn-surface" onclick="porterBrowseTgt()">Browse...</button>
+            <input id="porter-tgt-path" type="hidden">
+          <span id="porter-tgt-chip" class="file-chip">no file</span>
+            <button class="btn btn-surface" onclick="porterBrowseTgt()">📂 Browse…</button>
           <button class="btn btn-surface" onclick="porterUseOpenTgt()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-            <button class="btn btn-accent" onclick="porterLoadTgt()">Load</button>
             <input id="porter-tgt-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterTgtFileChosen()">
           </div>
@@ -1584,9 +1569,9 @@
         <div class="sb-ctrl-col sb-qxf-col">
           <label class="sb-label">QXF fixture definitions folder <span class="sb-optional">(optional — for DMX decoding)</span>:</label>
           <div class="merger-load-row">
-            <input id="sb-qxf-path" type="text" class="filter-input"
-                   placeholder="Path to QXF folder…" spellcheck="false">
-            <button class="btn btn-surface" onclick="sbBrowseQxf()">Browse...</button>
+            <input id="sb-qxf-path" type="hidden">
+            <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
+            <button class="btn btn-surface" onclick="sbBrowseQxf()">📂 Browse folder…</button>
           </div>
         </div>
       </div>
@@ -1662,11 +1647,9 @@
         <p style="color:var(--overlay0);font-size:12px;margin:0 0 10px">Load one or more fixture types from local .qxf files or browse the QLC+ official fixture library.</p>
 
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-          <input id="qs-qxf-path" class="filter-input" type="text" placeholder="Path to local .qxf file..." style="width:280px">
-          <button class="btn btn-surface" onclick="qsLoadQxf()">Load from path</button>
-          <span style="color:var(--overlay0);margin:0 4px">or</span>
+          <input id="qs-qxf-path" type="hidden">
           <input id="qs-qxf-upload" type="file" accept=".qxf" style="display:none" onchange="qsUploadQxf()">
-          <button class="btn btn-surface" onclick="document.getElementById('qs-qxf-upload').click()">Upload .qxf file</button>
+          <button class="btn btn-surface" onclick="qsBrowseQxf()">📂 Browse .qxf…</button>
           <span style="color:var(--overlay0);margin:0 4px">or</span>
           <button class="btn btn-primary" onclick="qsOpenGitHub()">Browse QLC+ Library</button>
         </div>

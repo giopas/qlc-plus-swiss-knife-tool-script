@@ -41,6 +41,7 @@ _sess: dict = {
     'brightness_forced':  {},     # "norm_mfr||norm_model" → absolute path
     'show_name':          '',     # user-defined show name (displayed in exports)
     'event_date':         '',     # user-defined event date (displayed in exports)
+    'tools':              {},     # per-tool UI state: porter/merger files, showbook, brightness, paper sizes
     'dirty':              False,  # True if state differs from last save/load
     'session_file':       None,   # path of the .qsk file last loaded / saved
 }
@@ -104,6 +105,15 @@ def get_event_date() -> str:
     return _sess.get('event_date', '')
 
 
+def set_tools(tools: dict) -> None:
+    """Replace the per-tool UI state (see WORKPLAN / wiki Sessions and Files)."""
+    _set_if_changed('tools', dict(tools or {}))
+
+
+def get_tools() -> dict:
+    return dict(_sess['tools'])
+
+
 def set_brightness_forced(forced: dict) -> None:
     """Replace the forced-QXF map.  forced is {"norm_mfr||norm_model": path}."""
     if forced != _sess['brightness_forced']:
@@ -123,6 +133,7 @@ def to_export() -> dict:
         'brightness_forced': _sess['brightness_forced'],
         'show_name':         _sess['show_name'],
         'event_date':        _sess['event_date'],
+        'tools':             _sess['tools'],
     }
 
 
@@ -137,6 +148,7 @@ def apply_import(data: dict, session_file_path: str | None = None) -> None:
     _sess['brightness_forced'] = data.get('brightness_forced') or {}
     _sess['show_name']         = data.get('show_name', '')
     _sess['event_date']        = data.get('event_date', '')
+    _sess['tools']             = data.get('tools') or {}
     _sess['session_file']      = session_file_path
     _sess['dirty']             = False
 
@@ -155,6 +167,7 @@ def clear_session() -> None:
     _sess['brightness_forced'] = {}
     _sess['show_name']         = ''
     _sess['event_date']        = ''
+    _sess['tools']             = {}
     _sess['dirty']             = False
     _sess['session_file']      = None
 

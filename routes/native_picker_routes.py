@@ -60,28 +60,30 @@ def pick():
     title       = data.get('title', 'Select file')
     types       = data.get('types', [])       # [{label, exts:['.txt']}]
     initial_dir = (data.get('initial_dir') or '').strip()
+    folder      = bool(data.get('folder'))
 
     # Validate: initial_dir must exist (don't expose arbitrary server paths)
     if initial_dir and not os.path.isdir(initial_dir):
         initial_dir = ''
 
-    path = _open_picker(title, types, initial_dir)
+    path = _open_picker(title, types, initial_dir, folder)
     return jsonify({'path': path, 'cancelled': path is None})
 
 
 # ── platform implementations ──────────────────────────────────────────────────
 
-def _open_picker(title: str, types: list, initial_dir: str) -> str | None:
+def _open_picker(title: str, types: list, initial_dir: str, folder: bool = False) -> str | None:
     system = platform.system()
     if system == 'Darwin':
-        return _pick_macos(title, types, initial_dir)
-    return _pick_tkinter(title, types, initial_dir)
+        return _pick_macos(title, types, initial_dir, folder)
+    return _pick_tkinter(title, types, initial_dir, folder)
 
 
-def _pick_macos(title: str, types: list, initial_dir: str) -> str | None:
-    """Use AppleScript choose-file dialog (always available on macOS)."""
-    # Build the AppleScript
-    script = f'POSIX path of (choose file with prompt {_as_str(title)})'
+def _pick_macos(title: str, types: list, initial_dir: str, folder: bool = False) -> str | None:
+    """Use AppleScript choose-file / choose-folder dialog (always available on macOS)."""
+    what = 'choose folder' if folder else 'choose file'
+    loc = f' default location (POSIX file {_as_str(initial_dir)})' if initial_dir else ''
+    script = f'POSIX path of ({what} with prompt {_as_str(title)}{loc})'
     # Note: 'of type' in choose file accepts file-type codes (4-char) or
     # UTIs, not plain extensions. Restricting by type is fragile for custom
     # extensions like .qxf / .qxw, so we omit the restriction and rely on
@@ -93,14 +95,14 @@ def _pick_macos(title: str, types: list, initial_dir: str) -> str | None:
         )
         if result.returncode == 0:
             path = result.stdout.strip()
-            if path and os.path.isfile(path):
-                return path
+            if path and (os.path.isdir(path) if folder else os.path.isfile(path)):
+                return path.rstrip('/') if folder else path
     except Exception:
         pass
     return None
 
 
-def _pick_tkinter(title: str, types: list, initial_dir: str) -> str | None:
+def _pick_tkinter(title: str, types: list, initial_dir: str, folder: bool = False) -> str | None:
     """Use tkinter filedialog (Linux / Windows fallback)."""
     result_box: list = [None]
     exc_box:    list = [None]
@@ -130,7 +132,11 @@ def _pick_tkinter(title: str, types: list, initial_dir: str) -> str | None:
             if initial_dir:
                 kwargs['initialdir'] = initial_dir
 
-            path = filedialog.askopenfilename(**kwargs)
+            if folder:
+                kwargs.pop('filetypes', None)
+                path = filedialog.askdirectory(**kwargs)
+            else:
+                path = filedialog.askopenfilename(**kwargs)
             root.destroy()
             result_box[0] = path or None
         except Exception as e:

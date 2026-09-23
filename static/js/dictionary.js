@@ -250,6 +250,7 @@ async function browseDictTxt() {
     // Path mode: fill the path field and load server-side (session tracks it)
     document.getElementById('dict-path').value = path;
     await loadDictFile();
+    setFileChip('dict-path-name', path, 'no dictionary loaded');
     return;
   }
 

@@ -358,7 +358,25 @@ function loadRecentFile(path, type) {
 
 let _pickerAvailable = null;
 
-async function nativePick(title, types = [], initDir = '') {
+/** Show a picked file's name in a .file-chip (full path as tooltip). */
+function setFileChip(id, path, emptyText) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (path) {
+    el.textContent = String(path).split(/[\\/]/).pop();
+    el.title = path; el.classList.add('set');
+  } else {
+    el.textContent = emptyText || 'no file'; el.title = ''; el.classList.remove('set');
+  }
+}
+
+// Plain browser without native dialog → show the paste-path fallbacks.
+fetch('/api/picker/available').then(r => r.json()).then(d => {
+  _pickerAvailable = !!d.available;
+  document.body.classList.toggle('no-native-picker', !d.available);
+}).catch(() => document.body.classList.add('no-native-picker'));
+
+async function nativePick(title, types = [], initDir = '', folder = false) {
   if (_pickerAvailable === null) {
     try {
       const r = await fetch('/api/picker/available');
@@ -372,7 +390,7 @@ async function nativePick(title, types = [], initDir = '') {
     const r = await fetch('/api/picker/pick', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, types, initial_dir: initDir }),
+      body: JSON.stringify({ title, types, initial_dir: initDir, folder }),
     });
     const d = await r.json();
     return d.cancelled ? null : (d.path || null);
@@ -436,6 +454,7 @@ async function pickQxwInto(pathInputId, fileInputId, loadFn) {
   if (p) {
     if (fileEl) fileEl.value = '';           // a path wins over an old upload
     document.getElementById(pathInputId).value = p;
+    setFileChip(pathInputId.replace(/-path$/, '-chip'), p);
     await loadFn();
   } else if (nativePick.unavailable && fileEl) {
     fileEl.click();
@@ -450,6 +469,7 @@ async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
   const fileEl = document.getElementById(fileInputId);
   if (fileEl) fileEl.value = '';
   document.getElementById(pathInputId).value = st.path;
+  setFileChip(pathInputId.replace(/-path$/, '-chip'), st.path);
   await loadFn();
 }
 

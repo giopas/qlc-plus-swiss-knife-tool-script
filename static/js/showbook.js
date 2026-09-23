@@ -68,14 +68,11 @@ function sbSelectNone() {
 // ── QXF directory ───────────────────────────────────────────────────────────
 
 async function sbBrowseQxf() {
-  const path = await nativePick(
-    'Select QXF fixture definition folder',
-    [],   // directory pick — no file filter
-    ''
-  );
+  const path = await nativePick('Select QXF fixture definition folder', [], '', true);
   if (path) {
     const inp = document.getElementById('sb-qxf-path');
     if (inp) inp.value = path;
+    setFileChip('sb-qxf-name', path, 'no folder chosen');
     // Track in session
     if (typeof _sess !== 'undefined') {
       _sess.showbook_qxf_dir = path;

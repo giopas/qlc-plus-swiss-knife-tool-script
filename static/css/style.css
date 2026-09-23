@@ -425,6 +425,16 @@ main {
 .ms-file.ws-unloaded { color: var(--text-faint); font-weight: 500; }
 .ms-actions { margin-left: auto; display: flex; gap: 6px; }
 .open-ws-link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+/* Name of the file a Browse… button picked (no paste-path fields) */
+.file-chip { display: inline-flex; align-items: center; min-width: 0; max-width: 260px;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+             padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px;
+             background: var(--surface-0); border: 1px solid var(--border); color: var(--text-dim); }
+.file-chip.set { color: var(--text); }
+/* Paste-a-path fields only where no native file dialog exists (plain browser) */
+.path-fallback { display: none !important; }
+body.no-native-picker .path-fallback { display: flex !important; }
+.merger-load-row { flex-wrap: wrap; }
 .ms-stat {
   display: flex;
   align-items: baseline;

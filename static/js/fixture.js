@@ -166,6 +166,14 @@ function _bindStageFields() {
 
 // ── QXF / Import ──────────────────────────────────────────────────────────────
 
+async function fixBrowseQxf() {
+  const p = await nativePick('Select fixture definition (.qxf)', [{ label: 'QLC+ Fixture', exts: ['.qxf'] }]);
+  if (!p) { if (nativePick.unavailable) setStatus('No native file dialog available.', 'warn'); return; }
+  document.getElementById('fix-qxf-path').value = p;
+  setFileChip('fix-qxf-name', p, 'no QXF loaded');
+  await fixLoadQxf();
+}
+
 async function fixLoadQxf() {
   const inp = document.getElementById('fix-qxf-path');
   const path = (inp?.value || '').trim();

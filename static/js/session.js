@@ -302,12 +302,42 @@ async function sessionPickDictionary(fallbackInput) {
 
 
 // ── Save session (download .qsk) ──────────────────────────────────────────────
+//
+// A session (.qsk) remembers everything needed to pick up where you left off:
+//   workspace, dictionary, setlist slot files, show name + date,
+//   Brightness (forced QXFs + slider values), Function Porter and QXW Merger
+//   files, Show Book QXF folder + sections, PDF paper sizes.
+// Not saved on purpose: unsaved edits inside the workspace (VC editor, Trigger
+// Manager, Setlist) — those belong in a new .qxw via each tool's 💾 button.
+
+function _absPath(p) {
+  p = (p || '').trim();
+  return (p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p)) ? p : null;
+}
+
+function _collectToolState() {
+  const val = id => (document.getElementById(id) || {}).value || '';
+  const tools = {
+    porter: { source: _absPath(val('porter-src-path')), target: _absPath(val('porter-tgt-path')) },
+    merger: { source: _absPath(val('merger-src-path')), destination: _absPath(val('merger-dst-path')) },
+    showbook: {
+      qxf_dir: _absPath(val('sb-qxf-path')) || _sess.showbook_qxf_dir || null,
+      sections: Array.from(document.querySelectorAll('#sb-section-checks input[type=checkbox]:checked'))
+                     .map(c => c.value),
+    },
+    paper: { fixtures: val('fix-pdf-paper'), checklist: val('chk-pdf-paper'), techrider: val('tr-pdf-paper') },
+  };
+  if (typeof _brtScales !== 'undefined' && Object.keys(_brtScales).length) {
+    tools.brightness = { scales: _brtScales, manual: _brtManual, linked: _brtLinked };
+  } else if (_sess.tools && _sess.tools.brightness) {
+    tools.brightness = _sess.tools.brightness;     // restored but tab not opened yet
+  }
+  return tools;
+}
 
 async function sessionSave() {
   await _syncFromServer();
 
-  // Collect paths from modal inputs (if modal is open) — user may have typed
-  // paths directly without re-loading files
   const modal = document.getElementById('session-modal');
   if (modal && modal.classList.contains('open')) {
     const inp = _collectModalPaths();
@@ -315,27 +345,20 @@ async function sessionSave() {
     if (inp.dictionary) _sess.dictionary = inp.dictionary;
   }
 
-  // Collect Show Book state from UI
-  const sbQxf = document.getElementById('sb-qxf-path');
-  if (sbQxf && sbQxf.value.trim()) _sess.showbook_qxf_dir = sbQxf.value.trim();
-  const sbChecks = document.querySelectorAll('#sb-section-checks input[type=checkbox]:checked');
-  if (sbChecks.length) _sess.showbook_sections = Array.from(sbChecks).map(c => c.value);
-
+  const srv = _sess._serverData || {};
   const data = {
     version:           1,
     workspace:         _sess.workspace || null,
     dictionary:        _sess.dictionary || null,
     slot_paths:        _sess.slot_paths || {},
     brightness_forced: _sess.brightness_forced || {},
-    showbook_qxf_dir:  _sess.showbook_qxf_dir || null,
-    showbook_sections: _sess.showbook_sections || null,
-    porter_source:     _sess.porter_source || null,
+    show_name:         srv.show_name || '',
+    event_date:        srv.event_date || '',
+    tools:             _collectToolState(),
   };
 
   const filename = _sess.filename || _suggestFilename();
-  const json     = JSON.stringify(data, null, 2);
-  const blob     = new Blob([json], { type: 'application/json' });
-
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const savedName = await saveFileWithPicker(
     blob, filename,
     [{ description: 'QLC+ Swiss Knife session', accept: { 'application/json': ['.qsk'] } }],
@@ -344,198 +367,134 @@ async function sessionSave() {
   if (!savedName) return;  // user cancelled
 
   _sess.filename = savedName;
+  _sess.tools = data.tools;
   _clearDirty();
   await fetch('/api/session/mark-saved', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_file: savedName }),
   });
-  // Track in recents if we have the full path
+  await _postUpdateField('tools', data.tools);
   const fullPath = saveFileWithPicker.lastPath;
-  if (fullPath && typeof _addRecent === 'function') {
-    _addRecent(fullPath, 'qsk');
-  }
+  if (fullPath && typeof _addRecent === 'function') _addRecent(fullPath, 'qsk');
   _renderSessionList();
   sessionCloseModal();
   _showStatus(`💾 Session saved: ${savedName}`);
 }
 
 
-// ── Load session (file input → parse → apply) ─────────────────────────────────
+// ── Load session: one code path for "Open .qsk", recents and drag & drop ─────
 
 async function sessionLoad(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   input.value = '';
-
   let data;
-  try {
-    const text = await file.text();
-    data = JSON.parse(text);
-  } catch (e) {
-    _showStatus('⚠ Could not parse session file: ' + e.message);
-    return;
-  }
-
-  if (!data || data.version !== 1) {
-    _showStatus('⚠ Not a valid .qsk session file.');
-    return;
-  }
+  try { data = JSON.parse(await file.text()); }
+  catch (e) { _showStatus('⚠ Could not parse session file: ' + e.message); return; }
+  if (!data || data.version !== 1) { _showStatus('⚠ Not a valid .qsk session file.'); return; }
 
   sessionCloseModal();
   _showStatus('⏳ Loading session…');
-
   try {
     const r = await fetch('/api/session/apply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session: data }),
     });
-    const result = await r.json();
-
-    // Update client state
-    _sess.filename          = file.name;
-    _sess.workspace         = data.workspace         || null;
-    _sess.dictionary        = data.dictionary        || null;
-    _sess.slot_paths        = data.slot_paths        || {};
-    _sess.brightness_forced = data.brightness_forced || {};
-    _sess.showbook_qxf_dir  = data.showbook_qxf_dir || null;
-    _sess.showbook_sections = data.showbook_sections || null;
-    _sess.porter_source     = data.porter_source     || null;
-    _clearDirty();
-
-    // Reflect workspace in header
-    if (data.workspace && result.results?.workspace === 'ok') {
-      const inp = document.getElementById('path-input');
-      if (inp) inp.value = data.workspace;
-      const wsName = document.getElementById('ws-name');
-      if (wsName) {
-        const name = data.workspace.split('/').pop().split('\\').pop();
-        wsName.textContent = name;
-        wsName.className = 'ws-loaded';
-      }
-      // Refresh all tab data
-      if (typeof invalidateBrightness === 'function') invalidateBrightness();
-      if (typeof invalidateShowbook   === 'function') invalidateShowbook();
-      if (typeof refreshSlots         === 'function') refreshSlots();
-
-      // Restore Show Book QXF path and sections
-      if (_sess.showbook_qxf_dir) {
-        const sbInp = document.getElementById('sb-qxf-path');
-        if (sbInp) sbInp.value = _sess.showbook_qxf_dir;
-      }
-      if (_sess.showbook_sections && Array.isArray(_sess.showbook_sections)) {
-        document.querySelectorAll('#sb-section-checks input[type=checkbox]').forEach(c => {
-          c.checked = _sess.showbook_sections.includes(c.value);
-        });
-      }
-
-      // Restore Porter source path
-      if (_sess.porter_source && typeof porterSetSourcePath === 'function') {
-        porterSetSourcePath(_sess.porter_source);
-      }
-      // If a slot is currently open in the setlist, re-select it so the
-      // auto-matched song rows are visible without requiring a manual click.
-      if (typeof selectSlot === 'function' && typeof _selectedSlot !== 'undefined' && _selectedSlot) {
-        selectSlot(_selectedSlot);
-      }
-      // Enable reload button
-      const rl = document.getElementById('btn-reload');
-      if (rl) rl.disabled = false;
-    }
-
-    // Build status summary — include auto-match count if any songs were matched
-    const res        = result.results || {};
-    const matchInfo  = res.auto_match && res.auto_match.startsWith('ok')
-      ? ` · ${res.auto_match.replace(/^ok\s*/, '')}` : '';
-    const ok = result.ok;
-    _showStatus(
-      (ok ? '✅ Session loaded' : '⚠ Session loaded (with errors)') +
-      ` — ${file.name}${matchInfo}`
-    );
-    _renderSessionBadge();
-
+    await _afterSessionApplied(await r.json(), data, file.name);
   } catch (e) {
     _showStatus('⚠ Failed to apply session: ' + e.message);
   }
 }
 
-
-// ── Load session from a .qsk file path (recents / session list) ──────────────
-
 async function sessionLoadFromPath(path) {
   if (!path) return;
-
-  // Prompt to save current session if dirty
   if (_sess.dirty) {
     const oldName = (_sess.filename || 'current session').replace(/\.qsk$/i, '');
-    const save = confirm(
-      `You have unsaved session changes for "${oldName}".\n\n` +
-      `Save before switching?`
-    );
-    if (save) {
+    if (confirm(`You have unsaved session changes for "${oldName}".\n\nSave before switching?`)) {
       await sessionSave();
     }
   }
-
   _showStatus('⏳ Loading session…');
-
   try {
     const r = await fetch('/api/session/load-from-path', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
     });
-    if (!r.ok) {
-      const err = await r.json();
-      _showStatus('⚠ ' + (err.error || 'Failed to load session'));
-      return;
-    }
     const result = await r.json();
-
-    // Update client state
-    _sess.filename          = result.session_file || path.split(/[\\/]/).pop();
-    _sess.workspace         = result.session?.workspace  || null;
-    _sess.dictionary        = result.session?.dictionary || null;
-    _sess.slot_paths        = result.session?.slot_paths || {};
-    _sess.brightness_forced = result.session?.brightness_forced || {};
-    _clearDirty();
-
-    // Reflect workspace in header
-    if (_sess.workspace && result.results?.workspace === 'ok') {
-      const inp = document.getElementById('path-input');
-      if (inp) inp.value = _sess.workspace;
-      const wsName = document.getElementById('ws-name');
-      if (wsName) {
-        const name = _sess.workspace.split(/[\\/]/).pop();
-        wsName.textContent = name;
-        wsName.className = 'ws-loaded';
-      }
-      if (typeof invalidateBrightness === 'function') invalidateBrightness();
-      if (typeof refreshSlots         === 'function') refreshSlots();
-      if (typeof selectSlot === 'function' && typeof _selectedSlot !== 'undefined' && _selectedSlot) {
-        selectSlot(_selectedSlot);
-      }
-      const rl = document.getElementById('btn-reload');
-      if (rl) rl.disabled = false;
-    }
-
-    // Add to recents
+    if (!r.ok) { _showStatus('⚠ ' + (result.error || 'Failed to load session')); return; }
     if (typeof _addRecent === 'function') _addRecent(path, 'qsk');
-
-    const res       = result.results || {};
-    const matchInfo = res.auto_match && res.auto_match.startsWith('ok')
-      ? ` · ${res.auto_match.replace(/^ok\s*/, '')}` : '';
-    _showStatus(
-      (result.ok ? '✅ Session loaded' : '⚠ Session loaded (with errors)') +
-      ` — ${_sess.filename}${matchInfo}`
-    );
-    _renderSessionBadge();
-    _renderSessionList();
-
+    await _afterSessionApplied(result, result.session || {}, result.session_file || path.split(/[\\/]/).pop());
   } catch (e) {
     _showStatus('⚠ Failed to load session: ' + e.message);
   }
+}
+
+/** Shared by every way of opening a session: sync state, refresh UI, restore tools. */
+async function _afterSessionApplied(result, data, filename) {
+  const srv = result.session || {};
+  _sess.filename          = filename;
+  _sess.workspace         = srv.workspace         || data.workspace  || null;
+  _sess.dictionary        = srv.dictionary        || data.dictionary || null;
+  _sess.slot_paths        = srv.slot_paths        || data.slot_paths || {};
+  _sess.brightness_forced = srv.brightness_forced || data.brightness_forced || {};
+  _sess.tools             = srv.tools             || data.tools || {};
+  _clearDirty();
+
+  // Header, banners and every tab's cache
+  if (typeof _refreshAfterLoad === 'function') await _refreshAfterLoad();
+  if (typeof _loadShowInfo === 'function') _loadShowInfo();
+  if (typeof refreshSlots === 'function') refreshSlots();
+  if (typeof selectSlot === 'function' && typeof _selectedSlot !== 'undefined' && _selectedSlot) {
+    selectSlot(_selectedSlot);
+  }
+  if (_sess.dictionary) {
+    const d = document.getElementById('dict-path'); if (d) d.value = _sess.dictionary;
+    if (typeof setFileChip === 'function') setFileChip('dict-path-name', _sess.dictionary, 'no dictionary loaded');
+  }
+  await _restoreToolState(_sess.tools);
+
+  const res = result.results || {};
+  const matchInfo = res.auto_match && res.auto_match.startsWith('ok')
+    ? ` · ${res.auto_match.replace(/^ok\s*/, '')}` : '';
+  _showStatus((result.ok ? '✅ Session loaded' : '⚠ Session loaded (with errors)') +
+              ` — ${filename}${matchInfo}`);
+  _renderSessionBadge();
+  _renderSessionList();
+}
+
+async function _restoreToolState(t) {
+  t = t || {};
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+  // Show Book
+  const sb = t.showbook || {};
+  if (sb.qxf_dir) {
+    _sess.showbook_qxf_dir = sb.qxf_dir;
+    setVal('sb-qxf-path', sb.qxf_dir);
+    if (typeof setFileChip === 'function') setFileChip('sb-qxf-name', sb.qxf_dir, 'no folder chosen');
+  }
+  if (Array.isArray(sb.sections) && sb.sections.length) {
+    document.querySelectorAll('#sb-section-checks input[type=checkbox]').forEach(c => {
+      c.checked = sb.sections.includes(c.value);
+    });
+  }
+  // PDF paper sizes
+  const pp = t.paper || {};
+  setVal('fix-pdf-paper', pp.fixtures); setVal('chk-pdf-paper', pp.checklist); setVal('tr-pdf-paper', pp.techrider);
+  // Brightness sliders: applied when the Brightness tab (re)loads its fixtures
+  window._brtPendingRestore = t.brightness || null;
+  // Two-file tools: reload their files from disk
+  const load = async (side, path, fn) => {
+    if (!path || typeof window[fn] !== 'function') return;
+    const f = document.getElementById(side + '-file'); if (f) f.value = '';
+    document.getElementById(side + '-path').value = path;
+    if (typeof setFileChip === 'function') setFileChip(side + '-chip', path);
+    try { await window[fn](); } catch { /* reported in the tool's status bar */ }
+  };
+  const po = t.porter || {}, me = t.merger || {};
+  await load('porter-src', po.source, 'porterLoadSrc');
+  await load('porter-tgt', po.target, 'porterLoadTgt');
+  await load('merger-src', me.source, 'mergerLoadSrc');
+  await load('merger-dst', me.destination, 'mergerLoadDst');
 }
 
 
@@ -722,4 +681,9 @@ function _showStatus(msg) {
     const el = document.getElementById('status-bar');
     if (el) el.textContent = msg;
   }
+}
+
+/** Drag & drop of a .qsk file anywhere on the window (see app.js drop handler). */
+function sessionLoadDroppedFile(file) {
+  return sessionLoad({ files: [file], value: '' });
 }

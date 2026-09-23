@@ -1,0 +1,283 @@
+# QLC+ Swiss Knife — Work Plan
+
+> Living plan for turning Swiss Knife from a set of helpers into a **deterministic, accurate show-file builder** for QLC+ 5.
+> Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
+> Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
+
+**Status:** Phase 0 not started. Test corpus prepared on 23 Sep (`tests/corpus/`, see Phase 1.0).
+
+---
+
+## 1. Goal
+
+Build the next show file (e.g. a new venue version like Liquid Bar) **with the tool, not with an AI patching XML**:
+
+- Reduce or adapt a rig.
+- Port looks and effects.
+- Generate looks and chasers.
+- Lay out the Virtual Console: pages, frames, buttons, CueList and labels.
+- Place fixtures and meshes in 3D.
+- Validate everything before export.
+
+The result must be:
+
+- **Deterministic:** same input gives byte-identical output.
+- **Accurate:** QLC+ opens it cleanly and it behaves on stage.
+- **Useful to other QLC+ users too:** conventions are configurable, not hard-coded to 20Minutes.
+
+### Acceptance benchmark (the "Liquid Bar test")
+
+Rebuild `LiquidBar_v14.qxw` starting from `SangAKlang_v41.qxw` using **only Swiss Knife**:
+
+1. Reduce the rig from 14 fixtures to 6.
+2. Port the looks.
+3. Generate the new chasers.
+4. Build the two-page VC and wire the setlist CueList.
+5. Run Doctor.
+
+The result must pass Doctor with zero errors, and a Doctor diff against v14 must show no functional regressions. When this passes, the goal is met.
+
+---
+
+## 2. Engineering principles (apply to every change)
+
+1. **Never overwrite.** Every write produces a new file: `<name>_v<N+1>.qxw` for edits, `<name>_doctor.qxw` for Doctor fixes. The original is never touched.
+2. **One writer.** All QXW output goes through `core/qxw_io.write_qxw()`:
+   - XML declaration and `<!DOCTYPE Workspace>` are always present.
+   - `ElementTree.write()` is never used directly.
+   - A round-trip test (load → write → load) must be lossless.
+3. **Deterministic IDs and ordering.**
+   - New IDs are allocated as `max(existing) + 1`, in a stable sorted order.
+   - Generated XML has no timestamps or random values.
+   - Golden-file tests compare output byte-for-byte.
+4. **Doctor gates every export.** Quick Start, Porter, Rig Reducer, Look Builder and VC Builder all run Doctor before writing. Errors block the export; warnings are shown in the report.
+5. **Safe-by-default show content.** Generated scenes:
+   - declare **every channel of every fixture** they touch (no LTP bleed);
+   - keep strobe and internal-program channels at 0 unless explicitly asked;
+   - always include a PANIC RESET.
+   - VC buttons and chaser steps never share a scene (latch conflict).
+6. **QLC+ is the reference.** Every generator has a manual *QLC+ open-check* (§6) before release.
+7. **Conventions are data, not code.** Nomenclature, palettes, VC screen size and templates live in JSON *profiles* that users can share. The 20Minutes profile is just the first one.
+8. **Tests and CI green before merge.** No feature merges without tests; CI runs on every push.
+
+---
+
+## 3. Decisions log
+
+| Date | Decision |
+|---|---|
+| 2026-09-23 | Doctor **always saves to a new file** (never in place). The same applies to every tool that writes a QXW, including Trigger Manager. |
+| 2026-09-23 | **Fixture tilt defaults for music shows** (QLC+ 3D convention: XRot 0 = beam straight down, 90 = horizontal, 180 = straight up):<br>• Truss/ceiling: 45° from vertical, aimed at the stage (front/back-light angle).<br>• Floor: 45° up toward the performers (uplight).<br>• Mid-height: horizontal, aimed at the stage.<br>Tilt direction comes from the fixture's depth position (downstage fixtures tilt upstage, upstage fixtures tilt downstage). Per-fixture override stays available. The previous straight down/up defaults lit only the floor and the ceiling. |
+| 2026-09-23 | The `*-1` files (`qxw_builder-1.py`, `quick_start_routes-1.py`, `quickstart-1.js`) are **older copies** of the current files (they predate commit `a950cc8` and still use `requests`). They are to be deleted, not merged. |
+| 2026-09-23 | The benchmark target is **LiquidBar_v14** (it supersedes v11). `20Minutes_FLOOR` is optional; add it when available. |
+| 2026-09-23 | Doctor treats a scene as intentional FX if it **or any function containing it** is marked as FX (name or allow-list). Caption-only buttons are *info*, not errors. |
+| 2026-09-23 | AI integration (MCP server) is deferred until Doctor and the builders are done. See §7. |
+
+---
+
+## 4. Git and documentation workflow (every step)
+
+**Branches**
+- One branch per phase: `chore/phase0-cleanup`, `feat/doctor`, `feat/porter-vc`, and so on.
+- Merge to `main` when CI is green.
+- Tag releases `vX.Y.Z`.
+
+**Commits** (Conventional Commits, as already used in the repo)
+- Types: `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`.
+- Keep commits small and focused: one logical change each.
+- Suggested messages are listed per step below.
+
+**Per step, before committing**
+- [ ] Tests added or updated; `python -m pytest -q` is green locally.
+- [ ] `CHANGELOG.md`: entry under `## [Unreleased]` (Added / Changed / Fixed / Security).
+- [ ] Docstrings for new public functions; user-facing wording checked.
+
+**Per release**
+- [ ] Bump `VERSION` in `core/workspace.py`. The single source of truth; check that it matches the CHANGELOG.
+- [ ] Move `[Unreleased]` to `[X.Y.Z] — date`.
+- [ ] README *What's new* updated; screenshots refreshed if the UI changed.
+- [ ] Wiki page for each new or changed tool (usage, limits, examples).
+- [ ] `git tag vX.Y.Z` and a GitHub Release, with notes copied from the CHANGELOG.
+- [ ] Forum post (BBCode) on the QLC+ forum for minor and major releases.
+
+**Push:** Cowork's sandbox cannot reach GitHub, so Cowork commits locally and Giovanni pushes.
+
+---
+
+## 5. Work programme
+
+### Phase 0 — Clean the bench → **v1.3.2** *(½ session)*
+
+Findings this phase fixes (repo review, 23 Sep):
+- 27 stale Quick Start tests.
+- `test_porter.py` imports a module that doesn't exist (`core_porter`).
+- Trigger save uses `ET.write()` in place, which drops the DOCTYPE and overwrites the original.
+- `VERSION` says 1.3.0 while the CHANGELOG says 1.3.1.
+- No CI.
+- `ROADMAP.md` is still the May tkinter plan.
+
+| # | Task | Acceptance | Commit |
+|---|---|---|---|
+| 0.1 | Delete the three `*-1` duplicate files; confirm nothing imports them. | App starts; all tabs load. | `chore: remove stale duplicate Quick Start files` |
+| 0.2 | Apply the tilt defaults from §3 in `_compute_orientation()`, deriving direction from depth. Update the Quick Start UI presets to match. | Unit tests per zone. Visual check in the QLC+ 5 3D view using a 4-fixture test file. | `fix(quickstart): show-lighting tilt defaults (45°)` |
+| 0.3 | Create `core/qxw_io.py`:<br>• `write_qxw(root, path)`<br>• `next_version_path(path)` (`_v41` → `_v42`, otherwise `_v2`)<br>• `load_qxw(path)`<br>Refactor all write sites (workspace, merger, porter, fixture, brightness, quick start) to use it. | Round-trip test; a grep finds no other `.write(`/`tostring` output paths. | `refactor: single safe QXW writer` |
+| 0.4 | Trigger Manager saves to a new versioned file via `write_qxw()`. | DOCTYPE kept; original untouched. | `fix(triggers): keep DOCTYPE, never overwrite original` |
+| 0.5 | Move `test_porter.py` and `test_qxf_parser.py` into `tests/` and fix the import. Update the stale Quick Start tests to the 3-tuple return; check each failure is a stale test, not a bug. Add `pytest.ini`. | `pytest -q`: 0 failures. | `test: consolidate suites under tests/, fix stale tests` |
+| 0.6 | Add `.github/workflows/tests.yml` (Python 3.11 and 3.12, pytest). | Badge in README; green run. | `ci: run tests on push and PR` |
+| 0.7 | Documentation:<br>• Rewrite `ROADMAP.md` from this plan.<br>• Move the `RELEASE_NOTES_*.md` files to `docs/release-notes/`.<br>• Add these principles and the test command to `DEVELOPMENT.md`.<br>• Add `WORKPLAN.md` (this file).<br>• Decide whether `Claude outputs/` belongs in the repo (probably `.gitignore` it). | Docs reviewed. | `docs: new roadmap, work plan, dev principles` |
+| 0.8 | Fix the `VERSION` mismatch and release **v1.3.2**. | Tag and GitHub Release. | `chore(release): v1.3.2` |
+
+### Phase 1 — Take the three tools out of Alpha → **v1.4.0** *(2–3 sessions)*
+
+**1.0 Test corpus and Doctor core (read-only checks).** Doctor comes first because it is the test oracle for everything else.
+- [x] Create `tests/corpus/` *(done 23 Sep)*:
+  - Workspaces: `SangAKlang_v41`, `LiquidBar_v14` (only `<Author>` sanitised).
+  - QXFs: Eurolite LED 4C-12, Generic 7-Ch RGB PAR.
+  - Also included: `expected_baseline.json`, `README.md` (baseline findings and lessons), `tests/test_corpus.py` (6 tests), and `tools/doctor_prototype.py` (throw-away reference implementation).
+- [ ] Add a clean Quick Start output to the corpus; add `20Minutes_FLOOR` when available.
+- [ ] `core/doctor/` exposes `check(root, qxf_defs) → Report`. Each finding has an ID, severity, location and message. Read-only in this phase.
+- [ ] Initial checks: the D-codes in §5 Phase 2.1 marked ★.
+- [ ] Command line: `python -m core.doctor file.qxw` prints the report and exits non-zero on errors. Used by tests and CI; it's also the future hook for automation.
+- Commit: `feat(doctor): read-only check engine + CLI`
+
+**1.1 Quick Start**
+- [ ] Golden-file tests: 3 reference rigs produce byte-identical `.qxw` output.
+- [ ] Output passes Doctor with zero errors, and the QLC+ open-check (§6) passes.
+- [ ] Safe defaults baked in: PANIC RESET, strobe and program channels at 0, full channel declaration.
+- [ ] **Clone VC style from a reference QXW**: frame layout, button size and colours, page structure. The first template is taken from `LiquidBar_v14`.
+- [ ] Nomenclature profile (JSON). The 20Minutes profile:
+  - First letter, fixture group: A = all, F, S, B, R, D, L, X.
+  - Second letter, effect type: S, D, P, M, \*.
+- Commits: `test(quickstart): golden outputs`, `feat(quickstart): clone VC style from reference`, `feat: nomenclature profiles`
+
+**1.2 Function Porter**
+- [ ] **VC porting**: bring each ported function's buttons and frames too, with widget ID remapping, a target page chosen by the user, and collision-free placement.
+- [ ] Verify **fan-in** (many source fixtures to fewer targets, e.g. 14 → 6). `auto_map` currently maps same model+mode; add an explicit fan-in mode if needed.
+- [ ] Real case: port looks from SangAKlang_v41 into a 6-fixture rig. The result passes Doctor.
+- [ ] The import report is saved next to the output file.
+- Commits: `feat(porter): port VC widgets with functions`, `test(porter): SangAKlang→LiquidBar fan-in case`
+
+**1.3 Show Book**
+- [ ] Test suite: section builders, DMX decoding against the corpus QXFs, CSV zip contents, and the PDF text layer.
+- [ ] The VC Layout section matches the LiquidBar_v14 pages and frames.
+- [ ] Add an optional Doctor summary section.
+- Commit: `test(showbook): coverage for sections, decoding, exports`
+
+**1.4 Release v1.4.0**
+- [ ] Remove the Alpha badges.
+- [ ] Wiki pages for Quick Start, Porter, Show Book and Doctor (read-only).
+- [ ] Forum post.
+
+### Phase 2 — Show-building toolkit (replaces manual/AI XML patching)
+
+**2.1 Workspace Doctor: fixes → v1.5.0**
+
+Doctor is a UI tab plus the CLI. Every fix is opt-in per finding, and the output always goes to a new file with a fix report.
+
+Checks (★ = included in Phase 1.0):
+
+| ID | Check | Auto-fix |
+|---|---|---|
+| D001★ | XML well-formed, DOCTYPE present, no stray closing tags | — (report) |
+| D002★ | Duplicate function IDs / duplicate VC widget IDs (across pages) | Renumber |
+| D003★ | Dangling references (chaser step → missing function, button → missing function, CueList → `4294967295`) | Unlink / prompt to rewire |
+| D004★ | Empty scenes, orphaned functions, degenerate chasers (0–1 real steps) | Remove / merge |
+| D005★ | Scene doesn't declare all channels of each fixture it touches (LTP bleed) | Complete with 0 |
+| D006★ | Strobe / internal program / macro channels ≠ 0 outside intentional FX (the scene or any parent is marked FX, or it is allow-listed) | Zero out |
+| D007★ | Scene shared by a VC button and a chaser step (latch conflict) | Duplicate scene for one side |
+| D008★ | No PANIC RESET scene, or it isn't on a VC button | Create and place |
+| D009 | Fixture references to fixtures not in the patch; DMX address overlaps | Report |
+| D010 | Default VC page isn't the setlist page | Reorder pages |
+| D011 | Widgets overflow the target screen profile (e.g. 1650×884) | Report / clamp |
+| D012 | Input profile / MIDI input missing (saved as None); key binding duplicates | Report |
+| D013 | Chaser timing anomalies (Hold 0 = infinite where not intended; mixed speed modes) | Report |
+| D014 | Setlist CueList chaser ≠ the chaser attached to the CueList widget | Rewire |
+| D015 | Unnamed functions (`[NNN] Scene - Unassigned` pattern) | Suggest a name from context / remove if unreferenced |
+| D016 | Unreferenced functions (not used by any function or VC widget) | Report; optional bulk remove |
+
+- Commits: `feat(doctor): auto-fix engine, always writes new file`, `feat(doctor): UI tab with per-finding fixes`
+
+**2.2 Rig Reducer → v1.5.0**
+- [ ] Choose the fixtures to keep. Everything else is removed, with cascade:
+  - channel values in scenes;
+  - EFX and RGB Matrix fixture lists;
+  - fixture groups;
+  - 3D monitor items;
+  - functions that become empty;
+  - VC buttons for functions that no longer exist.
+- [ ] Optional re-patch of the kept fixtures (DMX addresses, renames), e.g. FLS/FRS/FLB/FRB/DR/LG.
+- [ ] Doctor runs automatically, and the result is saved as a new version.
+- Commit: `feat: Rig Reducer with cascading clean-up`
+
+**2.3 Look and Chaser Builder → v1.6.0**
+- [ ] **Looks**: fixture group × palette. Palettes are warm, cold, scenic and custom (with RGB pickers). Every channel is declared. Names follow the nomenclature profile.
+- [ ] **Chaser patterns**:
+  - all-hit;
+  - left/right alternation;
+  - chase across a group;
+  - ping-pong;
+  - build-up;
+  - random (seeded, so it stays deterministic).
+- [ ] Chaser options: cut vs fade, and step time entered in ms or as BPM plus note length.
+- [ ] Song presets (e.g. "Take Me Out Drive": 8 steps, 280 ms, hard cut) are saved in a profile and reusable.
+- [ ] Simulated DMX preview: a per-step colour strip for each fixture.
+- Commits: `feat: look builder (group × palette)`, `feat: chaser pattern builder with BPM timing`
+
+**2.4 VC Builder → v1.7.0** (extends the existing VC Visual Editor)
+- [ ] Create, delete and duplicate widgets: frames, SoloFrames, buttons, sliders, labels, CueList.
+- [ ] Wire widgets to functions: a picker filtered by nomenclature, and drag a function from the list onto a button.
+- [ ] Pages (top-level frames): add, rename, reorder, set the default page.
+- [ ] Layout tools: grid snap, multi-column label panels (e.g. the nomenclature legend), auto-arrange buttons by nomenclature group.
+- [ ] Screen profiles (1650×884 MacBook, 1920×1080, tablet).
+- [ ] VC templates: save any page as a template and apply it to another workspace.
+- [ ] Setlist integration: wire the setlist chaser to the CueList widget in one click; Doctor D014 checks it.
+- Commits: `feat(vc): create/delete/wire widgets`, `feat(vc): pages, grid snap, screen profiles`, `feat(vc): page templates`
+
+**2.5 Stage and Meshes → v1.8.0**
+- [ ] Work out how QLC+ 5 stores meshes: add an OBJ in QLC+, save, and diff the files. Record the findings in the wiki.
+- [ ] Import OBJ meshes (band members, risers, truss) with position, rotation and scale. Build a small reusable mesh library.
+- [ ] Unified 3D placement for fixtures and meshes, reusing the tilt logic from §3.
+- Commit: `feat: stage meshes in 3D monitor`
+
+**2.6 Benchmark → v2.0.0**
+- [ ] Run the Liquid Bar test (§1) end-to-end.
+- [ ] Document it as a tutorial ("From a big-venue show to a pub show in 30 minutes").
+- [ ] Release **v2.0.0**, with a forum post and a video or GIF.
+
+---
+
+## 6. QLC+ open-check (manual, before each release)
+
+1. Open the output in QLC+ 5. No warnings in the log; all functions are listed; the VC renders on the expected default page.
+2. Fixture Manager: addresses match and there are no overlaps.
+3. 3D monitor: fixtures and meshes are positioned and tilted as expected.
+4. Run PANIC RESET, a scene, a chaser and the CueList with DMX output enabled.
+5. Save from QLC+, then run Doctor on the saved file. It must still be clean, which confirms QLC+ didn't have to "repair" anything.
+
+---
+
+## 7. Backlog / next steps (after v2.0)
+
+- **Show Profile**: one JSON describing rig, conventions, palettes, VC screen and templates, so a new show starts from the profile. This is the base for sharing with other users.
+- **Command-line pipeline**: `swissknife build profile.json → show.qxw`, fully scripted and reproducible.
+- **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
+- **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
+- **Audio triggers** helper (DMX-mode pitfalls documented).
+- Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
+- Tech Rider: pull the patch, tilt and meshes into the rider and the blueprint PDF.
+- Workspace diff: compare two versions functionally (fixtures, functions, VC), not as text.
+- Packaging: PyInstaller builds for macOS and Windows; community template and profile library.
+- Localisation (EN / IT / FR).
+- Upstream: report QLC+ 5 bugs found along the way (RGBMatrix orientation, Audio Triggers DMX mode, shared-scene latch) to the QLC+ project.
+
+---
+
+## 8. Next session checklist
+
+1. Create branch `chore/phase0-cleanup`.
+2. Do tasks 0.1 → 0.8 in order, committing after each.
+3. Verify the tilt directions in the QLC+ 3D view (Giovanni, on the Mac).
+4. Push; check that CI is green; tag v1.3.2.
+5. Commit the corpus package: copy `tests/corpus/`, `tests/test_corpus.py` and `tools/doctor_prototype.py` into the repo.
+   Commit message: `test: add real-show corpus and baseline`.
+6. Start Phase 1.0: build `core/doctor` against the corpus baseline, fixing the false positives listed in `tests/corpus/README.md`.

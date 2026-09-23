@@ -35,3 +35,6 @@ settings.json
 
 # Local wiki clone (published separately to the GitHub wiki)
 wiki/
+
+# Claude/Cowork scratch output (mockups, previews) — kept locally, not published
+Claude outputs/

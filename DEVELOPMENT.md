@@ -1,7 +1,37 @@
-# Development Guide — QLC+ Swiss Knife Web UI (v1.0)
+# Development Guide — QLC+ Swiss Knife
 
-This branch (`web-ui`) is the active development line for the Flask/SPA rewrite of QLC+ Swiss Knife.  
-The tkinter version lives on `main` and remains the stable release until v1.0 ships.
+`main` is the active line: a Flask server plus a single-page web UI (the old tkinter app lives on the `legacy-tkinter` branch).
+The plan of record is [WORKPLAN.md](WORKPLAN.md); [ROADMAP.md](ROADMAP.md) is the short version.
+
+---
+
+## Engineering principles (apply to every change)
+
+1. **Never overwrite.** Every write produces a new file: `<name>_v<N+1>.qxw` for edits, `<name>_doctor.qxw` for Doctor fixes. The original is never touched.
+2. **One writer.** All QXW output goes through `core/qxw_io` (`qxw_bytes()`, `write_qxw()`, `next_version_path()`). Never call `ElementTree.write()` or build the `<!DOCTYPE Workspace>` header by hand — `tests/test_qxw_io.py` fails if you do. Load with `qxw_io.load_qxw()` (pass `strip_namespace=True` if you want plain tag names).
+3. **Deterministic IDs and ordering.** New IDs are `max(existing) + 1` in a stable order; no timestamps or random values in generated XML; golden-file tests compare bytes.
+4. **Doctor gates every export** (from v1.4). Errors block the export; warnings are shown.
+5. **Safe-by-default show content.** Generated scenes declare every channel of every fixture they touch, keep strobe/program channels at 0 unless asked, and there is always a PANIC RESET. VC buttons and chaser steps never share a scene.
+6. **QLC+ is the reference.** Run the manual QLC+ open-check (WORKPLAN §6) before every release.
+7. **Conventions are data, not code** — JSON profiles, not hard-coded names.
+8. **Tests and CI green before merge.**
+
+## Tests
+
+```bash
+pip install flask pytest
+python -m pytest -q          # whole suite (pytest.ini sets testpaths = tests)
+```
+
+* Tests live in `tests/`; sample fixture definitions in `tests/fixtures/`, real show files in `tests/corpus/` (do not edit them).
+* `tests/manual/tilt_check.qxw` (regenerate with `python tools/make_tilt_check.py`) is for checking fixture tilt in the QLC+ 5 3D view.
+* CI runs the suite on Python 3.11 and 3.12 for every push and PR (`.github/workflows/tests.yml`).
+
+## Git workflow
+
+* One branch per phase (`chore/phase0-cleanup`, `feat/doctor`, …); merge to `main` when CI is green; tag releases `vX.Y.Z`.
+* [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:` — small, one logical change each.
+* Every change adds a `CHANGELOG.md` entry under `## [Unreleased]`. At release, bump `VERSION` in `core/workspace.py` (single source of truth) and move `[Unreleased]` to `[X.Y.Z] — date`.
 
 ---
 
@@ -20,7 +50,7 @@ Browser (SPA)  ←→  Flask (localhost:5731)  ←→  .qxw file on disk
 ## How to run
 
 ```bash
-# Install the single dependency
+# Install the dependency (pywebview is optional, for a native window)
 pip install flask          # or: pip3 install flask
 
 # Start the server (opens browser automatically)
@@ -32,6 +62,8 @@ The app opens at `http://localhost:5731`.  Press `Ctrl+C` to quit.
 ---
 
 ## Project structure
+
+*Partial and historical — see `.claude/.codebase-info/directory-structure.md` for the current map. Key additions since: `core/qxw_io.py` (the single QXW reader/writer), `core/porter.py`, `core/qxf_parser.py`, `core/showbook.py`, `core/quick_start/`.*
 
 ```
 app.py                  Flask entry point — registers blueprints, auto-opens browser
@@ -105,7 +137,7 @@ static/
 
 ---
 
-## Porting guide — tab by tab
+## Porting guide — tab by tab *(historical: the tkinter → web port is complete)*
 
 Each tab follows the same three-step pattern:
 
@@ -137,7 +169,7 @@ Each tab follows the same three-step pattern:
 - **Core logic location:** `TriggerManagerTab`
 - **Key data:** vc_widgets + KeySequence/Input nodes from raw XML (need a second pass in `_parse_vc_node`)
 - **Frontend:** editable Grid.js table (key, MIDI, function assignment per row), save-back button
-- **Important:** the save-back writes directly to the `.qxw` file — use `ET.ElementTree.write()` with the same namespace handling as the original
+- **Save-back:** writes `<name>_v<N+1>.qxw` next to the loaded file via `core/qxw_io.write_qxw()` — never in place
 - **New file:** `core/triggers.py`, `static/js/triggers.js`
 
 ### Tab 5 — Fixture Configurator
@@ -162,22 +194,6 @@ All endpoints return JSON.  Error responses always include an `error` key:
 Success responses return the relevant data array or dict.  A successful load returns the full `get_state()` dict so the frontend can update the header and status bar in one round-trip.
 
 For endpoints that write files (save triggers, generate QXW), return `{"ok": true, "path": "..."}` on success.
-
----
-
-## Branching & release plan
-
-```
-main       stable tkinter releases (0.7.x)
-web-ui     this branch — Flask/SPA development
-```
-
-When every tab is ported and tested:
-
-1. Merge `web-ui` → `main` as **v1.0.0**
-2. The `qlc_swiss_knife_0.7.3.py` file is removed (it lives in git history)
-3. Tag `v1.0.0`, publish GitHub Release
-4. From v1.0 onwards only one codebase to maintain
 
 ---
 

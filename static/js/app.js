@@ -44,7 +44,7 @@ const _LAZY = {
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
   // initVcEditor() attaches the canvas mouse handlers (once); _vceLoad() re-reads the tree
-  vceditor:   () => typeof _vceLoad               === 'function' && (initVcEditor(), _vceLoad()),
+  vceditor:   () => typeof vcEditorOnTabShow     === 'function' && vcEditorOnTabShow(),
   quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
 };
 
@@ -365,6 +365,7 @@ async function nativePick(title, types = [], initDir = '') {
       _pickerAvailable = (await r.json()).available;
     } catch { _pickerAvailable = false; }
   }
+  nativePick.unavailable = !_pickerAvailable;   // callers: fall back to <input type=file>
   if (!_pickerAvailable) return null;
 
   try {
@@ -404,10 +405,59 @@ async function browseWorkspace() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
     });
-  } else {
+  } else if (nativePick.unavailable) {
+    // Plain browser without a native dialog: upload the file instead
     document.getElementById('file-input').click();
   }
+  // else: the user cancelled the dialog — do nothing
 }
+
+/** Header "↻ Reload": re-read the open workspace from its file. */
+async function reloadFromDisk() {
+  const st = await _apiJson('/api/status');
+  if (!st.loaded) { browseWorkspace(); return; }
+  if (!st.path) {
+    setStatus('This workspace was uploaded, so it cannot be re-read — use 📂 Open… to pick the file.', 'warn');
+    return;
+  }
+  await _doLoad({ method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ path: st.path }) });
+}
+
+/**
+ * Two-file tools (QXW Merger, Function Porter): "Browse…" uses the same native
+ * dialog as the header, so files keep their real path and name. Falls back to
+ * the hidden <input type=file> only when no native dialog exists.
+ */
+async function pickQxwInto(pathInputId, fileInputId, loadFn) {
+  const p = await nativePick('Select QLC+ workspace (.qxw)',
+                             [{ label: 'QLC+ Workspace', exts: ['.qxw'] }]);
+  const fileEl = document.getElementById(fileInputId);
+  if (p) {
+    if (fileEl) fileEl.value = '';           // a path wins over an old upload
+    document.getElementById(pathInputId).value = p;
+    await loadFn();
+  } else if (nativePick.unavailable && fileEl) {
+    fileEl.click();
+  }
+}
+
+/** "⤵ Open workspace" button in two-file tools: use the file open in the header. */
+async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
+  const st = await _apiJson('/api/status');
+  if (!st.loaded) { setStatus('No workspace is open — use 📂 Open… in the header.', 'warn'); return; }
+  if (!st.path) { setStatus('The open workspace was uploaded (no file path) — use Browse… instead.', 'warn'); return; }
+  const fileEl = document.getElementById(fileInputId);
+  if (fileEl) fileEl.value = '';
+  document.getElementById(pathInputId).value = st.path;
+  await loadFn();
+}
+
+// Any "📂 Open a workspace" link in an empty state opens the picker.
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('.open-ws-link');
+  if (a) { e.preventDefault(); browseWorkspace(); }
+});
 
 function loadFromInput(input) {
   if (!input.files.length) return;
@@ -468,6 +518,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateFixtures   === 'function') invalidateFixtures();
   if (typeof invalidateBrightness === 'function') invalidateBrightness();
   if (typeof invalidateShowbook === 'function') invalidateShowbook();
+  if (typeof invalidateVcEditor === 'function') invalidateVcEditor();
   // Re-load whichever screen is currently visible
   const activeScr = document.querySelector('.screen.active');
   if (activeScr) {
@@ -506,7 +557,32 @@ function _updateHeader(state) {
 
   // ── Global metrics strip (v1.3.1) — persistent across every tool ────────
   _updateMetricsStrip(state);
+  _updateNeedWsBanners(!!state.loaded);
 }
+
+// Tools that work on the open workspace show the same banner when none is open,
+// so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
+// banner or Start screen). Merger / Porter / Quick Start pick their own files.
+const _WS_SCREENS = ['setlist', 'triggers', 'dictionary', 'checklist', 'techrider',
+                     'brightness', 'idbrowser', 'vceditor', 'showbook'];
+
+function _updateNeedWsBanners(loaded) {
+  _WS_SCREENS.forEach(id => {
+    const scr = document.getElementById(`scr-${id}`);
+    if (!scr) return;
+    let b = scr.querySelector(':scope > .need-ws');
+    if (!b) {
+      b = document.createElement('div');
+      b.className = 'need-ws';
+      b.innerHTML = 'No workspace open — this tool works on the open workspace. ' +
+        '<button class="btn btn-accent btn-sm" onclick="browseWorkspace()">📂 Open workspace…</button>';
+      const head = scr.querySelector(':scope > .page-h');
+      if (head && head.nextSibling) scr.insertBefore(b, head.nextSibling); else scr.prepend(b);
+    }
+    b.style.display = loaded ? 'none' : '';
+  });
+}
+document.addEventListener('DOMContentLoaded', () => _updateNeedWsBanners(false));
 
 /** Populate the persistent top metrics strip. Mirrors _updateHeader's logic
  *  so the strip and the Start-screen file panel never disagree. */

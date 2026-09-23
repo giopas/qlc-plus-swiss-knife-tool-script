@@ -47,7 +47,7 @@ function _renderTechRider(data) {
 
   if (!data || !data.types || !data.types.length) {
     wrap.innerHTML = `<div style="padding:24px;color:var(--overlay0);font-size:12px">
-      Load a workspace to see the tech rider.
+      <a class="open-ws-link">📂 Open a workspace</a> to see the tech rider.
     </div>`;
     return;
   }

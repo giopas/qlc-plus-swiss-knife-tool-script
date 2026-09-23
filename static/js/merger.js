@@ -129,8 +129,10 @@ async function _loadSide(side, pathInputId, fileInputId) {
 async function mergerLoadSrc() { await _loadSide('src', 'merger-src-path', 'merger-src-file'); }
 async function mergerLoadDst() { await _loadSide('dst', 'merger-dst-path', 'merger-dst-file'); }
 
-function mergerBrowseSrc() { document.getElementById('merger-src-file')?.click(); }
-function mergerBrowseDst() { document.getElementById('merger-dst-file')?.click(); }
+function mergerBrowseSrc() { pickQxwInto('merger-src-path', 'merger-src-file', mergerLoadSrc); }
+function mergerBrowseDst() { pickQxwInto('merger-dst-path', 'merger-dst-file', mergerLoadDst); }
+function mergerUseOpenSrc() { useOpenWorkspace('merger-src-path', 'merger-src-file', mergerLoadSrc); }
+function mergerUseOpenDst() { useOpenWorkspace('merger-dst-path', 'merger-dst-file', mergerLoadDst); }
 function mergerSrcFileChosen() {
   const f = document.getElementById('merger-src-file')?.files?.[0];
   if (f) { document.getElementById('merger-src-path').value = ''; mergerLoadSrc(); }

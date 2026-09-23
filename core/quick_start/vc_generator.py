@@ -494,6 +494,10 @@ class VCLayoutGenerator:
             if i != reset_scene:        # keep it if it's already running
                 _sub(func, "Command", f"stopfunction%3A{i}")
         _sub(func, "Command", f"startfunction%3A{reset_scene}")
+        # Give the engine time to carry out the queued start/stop commands.
+        # QLC+ 5.2.2 drops them when the script code ends before the next
+        # engine tick (fixed upstream in Aug 2026, qlcplus ca8ffd41).
+        _sub(func, "Command", "wait%3A100ms")
         # Finally stop the script itself.  QLC+ 5 (at least up to spring
         # 2026) never ends a script on its own, so its Toggle button stayed
         # "on" and every second press just switched it off — nothing

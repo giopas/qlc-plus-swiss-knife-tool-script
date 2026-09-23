@@ -106,6 +106,7 @@ def save_as_new():
             mimetype='application/xml',
             headers={
                 'Content-Disposition': f'attachment; filename="{filename}"',
+                'X-Suggested-Filename': filename,
             },
         )
     except Exception as e:

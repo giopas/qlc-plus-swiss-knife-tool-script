@@ -132,7 +132,7 @@ def test_suffixed_name():
 def test_no_other_qxw_output_paths():
     """Only core/qxw_io.py may serialise workspaces (WORKPLAN §2.2)."""
     bad = []
-    pat = re.compile(r"ET\.tostring\(|\.write\([^)]*xml_declaration|<!DOCTYPE Workspace>")
+    pat = re.compile(r"ET\.tostring\(|\.write\([^)]*xml_declaration|<!DOCTYPE Workspace>|tree\W*\]?\.write\(")
     for folder in ("core", "routes"):
         for p in glob.glob(os.path.join(REPO, folder, "**", "*.py"), recursive=True):
             if p.endswith(os.path.join("core", "qxw_io.py")):

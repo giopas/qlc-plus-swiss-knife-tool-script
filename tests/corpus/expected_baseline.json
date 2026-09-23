@@ -48,5 +48,20 @@
       "info VC pages (order)": 2,
       "info caption-only buttons (label use)": 41
     }
+  },
+  "QuickStart_6fix.qxw": {
+    "fixtures": 6,
+    "functions": 34,
+    "doctor": {
+      "summary": {
+        "error": 0,
+        "warning": 1,
+        "info": 1
+      },
+      "counts": {
+        "D008": 1,
+        "I002": 1
+      }
+    }
   }
 }

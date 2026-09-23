@@ -34,7 +34,17 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 cd "$PROJECT_DIR"
 
-VENV_PY="$PROJECT_DIR/.venv/bin/python3"
+# Virtualenv location: $SWK_VENV, else ~/.venvs/swissknife if it exists, else
+# ./.venv if it exists; new installs on macOS go to ~/.venvs/swissknife because
+# iCloud-synced folders (Documents, Desktop) create "file 2.js" duplicates inside
+# a venv, which crashes pywebview (KeyError: 'text_select').
+if [ -n "$SWK_VENV" ]; then VENV_DIR="$SWK_VENV"
+elif [ -x "$HOME/.venvs/swissknife/bin/python3" ]; then VENV_DIR="$HOME/.venvs/swissknife"
+elif [ -x "$PROJECT_DIR/.venv/bin/python3" ]; then VENV_DIR="$PROJECT_DIR/.venv"
+elif [ "$(uname)" = "Darwin" ]; then VENV_DIR="$HOME/.venvs/swissknife"
+else VENV_DIR="$PROJECT_DIR/.venv"
+fi
+VENV_PY="$VENV_DIR/bin/python3"
 SYSTEM_PY="$(command -v python3 || command -v python || echo '')"
 
 # Create venv if needed
@@ -43,7 +53,8 @@ if [ ! -f "$VENV_PY" ]; then
         osascript -e 'display alert "Python 3 not found" message "Install Python 3 from python.org to use QLC+ Swiss Knife." as critical'
         exit 1
     fi
-    "$SYSTEM_PY" -m venv .venv
+    mkdir -p "$(dirname "$VENV_DIR")"
+    "$SYSTEM_PY" -m venv "$VENV_DIR"
 fi
 
 # Install Flask if needed

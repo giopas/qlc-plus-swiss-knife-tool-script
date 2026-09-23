@@ -149,6 +149,21 @@ _qxf_content_index: dict  = {}   # (mfr, model) → path  (both raw & norm keys)
 _qxf_indexed_dirs:  set   = set()
 
 
+_SKIP_DIRS = {'.git', '.venv', 'venv', 'node_modules', '__pycache__',
+              '.pytest_cache', 'site-packages'}
+
+
+def _walk(top: str):
+    """os.walk() that skips hidden folders and virtualenv/cache folders.
+
+    The app's own folder is searched for QXFs; without this, a local .venv
+    (thousands of files) made every Brightness load walk the whole virtualenv.
+    """
+    for root_dir, dirs, files in os.walk(top):
+        dirs[:] = [x for x in dirs if x not in _SKIP_DIRS and not x.startswith('.')]
+        yield root_dir, dirs, files
+
+
 def _read_qxf_identity(path: str) -> tuple[str, str]:
     """Quick-parse the first 3 KB of a QXF to extract Manufacturer and Model."""
     try:
@@ -167,7 +182,7 @@ def _build_content_index(search_dirs: list) -> None:
         if d in _qxf_indexed_dirs:
             continue
         _qxf_indexed_dirs.add(d)
-        for root_dir, _dirs, files in os.walk(d):
+        for root_dir, _dirs, files in _walk(d):
             for fname in files:
                 if not fname.lower().endswith('.qxf'):
                     continue
@@ -242,7 +257,7 @@ def _find_qxf(manufacturer: str, model: str) -> str | None:
 
     # ── Phase 1: filename normalisation ──────────────────────────────────────
     for search_dir in dirs:
-        for root_dir, _dirs, files in os.walk(search_dir):
+        for root_dir, _dirs, files in _walk(search_dir):
             for fname in files:
                 if not fname.lower().endswith('.qxf'):
                     continue
@@ -383,7 +398,7 @@ def scan_local_fixtures() -> dict:
 
     for d in _qlc_fixture_dirs():
         count = 0
-        for _, _, files in os.walk(d):
+        for _, _, files in _walk(d):
             count += sum(1 for f in files if f.lower().endswith('.qxf'))
         dirs_checked.append({'path': d, 'exists': True, 'qxf_count': count})
         total_found += count

@@ -70,7 +70,7 @@ qlc-plus-swiss-knife-tool-script/
 │   ├── create-macos-app.sh   # Creates .app bundle
 │   ├── QLC_Swiss_Knife.bat   # Windows launcher
 │   └── qlc-swiss-knife.desktop  # Linux .desktop file
-├── test_fixtures/            # Sample QXF files for testing
+├── tests/fixtures/           # Sample QXF files for testing
 ├── tests/                    # Pytest test files
 ├── screenshots/              # App screenshots for README
 ├── wiki/                     # GitHub wiki pages (gitignored, separate git repo)

@@ -289,13 +289,13 @@ class TestVCLayoutGenerator:
         gen, _ = self._make_gen(rig, qxf)
         result = gen.generate()
         assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert len(result) == 3  # (functions, vc_frame, fixture_groups)
 
     def test_generate_functions_list(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, vc_frame = gen.generate()
+        functions, vc_frame, _ = gen.generate()
         assert isinstance(functions, list)
         assert len(functions) > 0
 
@@ -303,7 +303,7 @@ class TestVCLayoutGenerator:
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, vc_frame = gen.generate()
+        functions, vc_frame, _ = gen.generate()
         assert isinstance(vc_frame, ET.Element)
         assert "Frame" in vc_frame.tag
 
@@ -311,17 +311,18 @@ class TestVCLayoutGenerator:
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
+        # "ALL OFF" was folded into BLACKOUT in 80d0340
         assert "ALL ON" in names
-        assert "ALL OFF" in names
+        assert "ALL OFF" not in names
         assert "BLACKOUT" in names
 
     def test_warm_cold_white_scenes(self):
         rig = [_make_rig_entry("PAR", "G::P", len(RGB_PAR_CHANNELS))]
         qxf = _make_qxf_defs({"G::P": RGB_PAR_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
         assert "Warm White" in names
         assert "Cold White" in names
@@ -330,16 +331,16 @@ class TestVCLayoutGenerator:
         rig = [_make_rig_entry("PAR", "G::P", len(RGB_PAR_CHANNELS))]
         qxf = _make_qxf_defs({"G::P": RGB_PAR_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
         assert "Color Fade" in names
-        assert "Colors" in names
+        assert "Fade: Red" in names   # chaser steps are dedicated scenes
 
     def test_no_color_fade_without_rgb(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
         assert "Color Fade" not in names
 
@@ -347,34 +348,37 @@ class TestVCLayoutGenerator:
         rig = [_make_rig_entry("PAR", "G::P", len(RGB_PAR_CHANNELS))]
         qxf = _make_qxf_defs({"G::P": RGB_PAR_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
-        assert "Strobe Low" in names
-        assert "Strobe High" in names
+        assert "Strobe Slow" in names
+        assert "Strobe Fast" in names
 
     def test_no_strobe_without_strobe_channel(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
-        assert "Strobe Low" not in names
-        assert "Strobe High" not in names
+        assert "Strobe Slow" not in names
+        assert "Strobe Fast" not in names
 
-    def test_custom_slots_always_present(self):
+    def test_panic_button_always_present(self):
+        # "Custom N" placeholder slots were replaced by a PANIC button (80d0340)
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, vc_frame, _ = gen.generate()
         names = [f.get("Name") for f in functions]
-        for i in range(1, 5):
-            assert f"Custom {i}" in names
+        assert not any(n.startswith("Custom ") for n in names)
+        ns = "{http://www.qlcplus.org/Workspace}"
+        captions = [b.get("Caption", "") for b in vc_frame.findall(f"{ns}Button")]
+        assert any(c.startswith("PANIC") for c in captions)
 
     def test_dimmer_sweep_chaser(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         names = [f.get("Name") for f in functions]
         assert "Dimmer Sweep" in names
 
@@ -388,7 +392,7 @@ class TestVCLayoutGenerator:
             "G::P": RGB_PAR_CHANNELS,
         })
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         ids = [f.get("ID") for f in functions]
         assert len(ids) == len(set(ids)), "Function IDs must be unique"
 
@@ -399,7 +403,7 @@ class TestVCLayoutGenerator:
         ]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        functions, _ = gen.generate()
+        functions, _, _ = gen.generate()
         min_fid = min(int(f.get("ID")) for f in functions)
         assert min_fid >= len(rig), "Function IDs should start at or above fixture count"
 
@@ -407,11 +411,12 @@ class TestVCLayoutGenerator:
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
         gen, _ = self._make_gen(rig, qxf)
-        _, vc_frame = gen.generate()
+        _, vc_frame, _ = gen.generate()
         ns = "http://www.qlcplus.org/Workspace"
-        subframes = vc_frame.findall(f"{{{ns}}}Frame")
-        # Should have Macros, Fixture Groups, Scenes, Effects
-        assert len(subframes) == 4
+        frames = [c.get("Caption") for c in vc_frame
+                  if c.tag in (f"{{{ns}}}Frame", f"{{{ns}}}SoloFrame")]
+        # Layout since 80d0340: two SoloFrames + fixture-group frame
+        assert frames == ["STATIC LOOKS", "DYNAMIC / EFFECTS", "FIXTURE GROUPS"]
 
     def test_stats_after_generate(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
@@ -438,14 +443,14 @@ class TestBuildQxw:
     def test_returns_bytes(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         result = build_qxw(rig, funcs, vc)
         assert isinstance(result, bytes)
 
     def test_valid_xml(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         root = ET.fromstring(xml_bytes)
         assert root is not None
@@ -453,7 +458,7 @@ class TestBuildQxw:
     def test_contains_xml_declaration(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         text = xml_bytes.decode("utf-8")
         assert text.startswith('<?xml version="1.0"')
@@ -462,7 +467,7 @@ class TestBuildQxw:
     def test_contains_workspace_root(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         root = ET.fromstring(xml_bytes)
         assert "Workspace" in root.tag
@@ -470,7 +475,7 @@ class TestBuildQxw:
     def test_contains_creator(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         root = ET.fromstring(xml_bytes)
         ns = "http://www.qlcplus.org/Workspace"
@@ -483,7 +488,7 @@ class TestBuildQxw:
             _make_rig_entry("DIM2", "G::D", 1, universe=0, address=1),
         ]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         root = ET.fromstring(xml_bytes)
         ns = "http://www.qlcplus.org/Workspace"
@@ -494,7 +499,7 @@ class TestBuildQxw:
     def test_contains_virtual_console(self):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         root = ET.fromstring(xml_bytes)
         ns = "http://www.qlcplus.org/Workspace"
@@ -507,7 +512,7 @@ class TestBuildQxw:
             _make_rig_entry("F2", "G::D", 1, universe=1, address=0),
         ]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         root = ET.fromstring(xml_bytes)
         ns = "http://www.qlcplus.org/Workspace"
@@ -519,7 +524,7 @@ class TestBuildQxw:
     def test_export_to_file(self, tmp_path):
         rig = [_make_rig_entry("DIM", "G::D", 1)]
         qxf = _make_qxf_defs({"G::D": DIMMER_CHANNELS})
-        funcs, vc = self._generate(rig, qxf)
+        funcs, vc, _ = self._generate(rig, qxf)
         xml_bytes = build_qxw(rig, funcs, vc)
         out = tmp_path / "test_output.qxw"
         out.write_bytes(xml_bytes)
@@ -587,15 +592,14 @@ class TestQuickStartRoutes:
         """Adding a fixture without loading a QXF first should error."""
         resp = client.post("/api/quickstart/add-fixture",
                            json={"name": "Test", "quantity": 1})
-        assert resp.status_code == 200
-        data = resp.get_json()
-        # Should either error or add with minimal info
-        assert "error" in data or "rig" in data
+        assert resp.status_code == 400
+        assert "error" in resp.get_json()
 
     def test_analyse_empty_rig(self, client):
         client.post("/api/quickstart/clear")
         resp = client.get("/api/quickstart/analyse")
-        assert resp.status_code == 200
+        assert resp.status_code == 400
+        assert "error" in resp.get_json()
 
     def test_auto_dmx_empty_rig(self, client):
         client.post("/api/quickstart/clear")
@@ -634,7 +638,7 @@ class TestEndToEnd:
 
         # Generate
         gen = VCLayoutGenerator(rig, qxf, analysis)
-        functions, vc_frame = gen.generate()
+        functions, vc_frame, _ = gen.generate()
         assert len(functions) > 10  # Should have many functions for complex rig
 
         # Build QXW
@@ -660,7 +664,7 @@ class TestEndToEnd:
         assert analysis.has_any_strobe() is False
 
         gen = VCLayoutGenerator(rig, qxf, analysis)
-        functions, vc_frame = gen.generate()
+        functions, vc_frame, _ = gen.generate()
 
         # No color fade or strobe effects
         names = [f.get("Name") for f in functions]

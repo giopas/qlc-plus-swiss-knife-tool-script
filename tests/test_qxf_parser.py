@@ -1,7 +1,7 @@
 """
 test_qxf_parser.py — Tests for the deep QXF parser
 =====================================================
-Run with:  python3 -m pytest test_qxf_parser.py -v
+Run with:  python3 -m pytest tests/test_qxf_parser.py -v
 """
 
 import os
@@ -9,13 +9,13 @@ import sys
 import pytest
 
 # Module under test
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.qxf_parser import (
     parse_qxf, decode_value, detect_fine_pairs,
     PRESET_GROUPS, PRESET_COLOUR_ROLE, _parse_channel, _parse_physical,
 )
 
-FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "test_fixtures")
+FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -4,17 +4,17 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
-**Status (23 Sep, end of session):**
+**Status (24 Sep, end of session):**
 - **Phase 0 — done and released** as `v1.3.2` (main @ `2cc9dbc`, CI green).
 - **Phase 1.0 — core done** on branch `feat/doctor`: corpus, `core/doctor` engine + CLI. Still open: `20Minutes_FLOOR` corpus file.
-- **Phase 1.1 — done** on branch `feat/quickstart-1.1` (local commits; Giovanni pushes): mode-aware channels, neutral values, PANIC RESET (script, works in QLC+ 5.2.2), DIMMER slider, naming profiles, VC style cloning, Doctor gate, 3 golden rigs, live QLC+ check (`tools/qlc_check.py`). QLC+ open-check passed on Giovanni's Mac (QLC+ 5.2.2) and headless on 4.14.5 / 5.2.1 / 5.2.2 / 5.3.0-git.
+- **Phase 1.1 — done** on branch `feat/quickstart-1.1` (local commits; Giovanni pushes): mode-aware channels, neutral values, PANIC RESET (script, works in QLC+ 5.2.2), naming profiles, VC style cloning, Doctor gate, 3 golden rigs, live QLC+ check (`tools/qlc_check.py`). **1.1b (24 Sep, after Giovanni's test):** full-width page, one SHOW solo frame (one button at a time), fixture groups (editor in step 3; per-group frame with submaster, looks, effects), MASTER submaster, working RGB-matrix effects (Collection: dimmer scene + matrix), fixture `.qxf` saved next to the workspace, indented XML (QLC+ 5.2.2 loader bug), corpus renamed/scrubbed (`Festival_14fix`, `Pub_6fix`). All golden rigs PASS `tools/qlc_check.py` in QLC+ 5.2.2 (and club in 4.14.5). Waiting for Giovanni: test on the Mac, push.
 - Next: Phase 1.2 (Function Porter), see §8.
 
 ---
 
 ## 1. Goal
 
-Build the next show file (e.g. a new venue version like Liquid Bar) **with the tool, not with an AI patching XML**:
+Build the next show file (e.g. a new venue version like Pub) **with the tool, not with an AI patching XML**:
 
 - Reduce or adapt a rig.
 - Port looks and effects.
@@ -29,9 +29,9 @@ The result must be:
 - **Accurate:** QLC+ opens it cleanly and it behaves on stage.
 - **Useful to other QLC+ users too:** conventions are configurable, not hard-coded to 20Minutes.
 
-### Acceptance benchmark (the "Liquid Bar test")
+### Acceptance benchmark (the "Pub test")
 
-Rebuild `LiquidBar_v14.qxw` starting from `SangAKlang_v41.qxw` using **only Swiss Knife**:
+Rebuild `Pub_6fix.qxw` starting from `Festival_14fix.qxw` using **only Swiss Knife**:
 
 1. Reduce the rig from 14 fixtures to 6.
 2. Port the looks.
@@ -73,7 +73,7 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-23 | Doctor **always saves to a new file** (never in place). The same applies to every tool that writes a QXW, including Trigger Manager. |
 | 2026-09-23 | **Fixture tilt defaults for music shows** (QLC+ 3D convention: XRot 0 = beam straight down, 90 = horizontal, 180 = straight up):<br>• Truss/ceiling: 45° from vertical, aimed at the stage (front/back-light angle).<br>• Floor: 45° up toward the performers (uplight).<br>• Mid-height: horizontal, aimed at the stage.<br>Tilt direction comes from the fixture's depth position (downstage fixtures tilt upstage, upstage fixtures tilt downstage). Per-fixture override stays available. The previous straight down/up defaults lit only the floor and the ceiling. |
 | 2026-09-23 | The `*-1` files (`qxw_builder-1.py`, `quick_start_routes-1.py`, `quickstart-1.js`) are **older copies** of the current files (they predate commit `a950cc8` and still use `requests`). They are to be deleted, not merged. |
-| 2026-09-23 | The benchmark target is **LiquidBar_v14** (it supersedes v11). `20Minutes_FLOOR` is optional; add it when available. |
+| 2026-09-23 | The benchmark target is **Pub_6fix** (it supersedes v11). `20Minutes_FLOOR` is optional; add it when available. |
 | 2026-09-23 | Doctor treats a scene as intentional FX if it **or any function containing it** is marked as FX (name or allow-list). Caption-only buttons are *info*, not errors. |
 | 2026-09-23 | AI integration (MCP server) is deferred until Doctor and the builders are done. See §7. |
 | 2026-09-23 | **One naming rule for every tool:** suggested/new files are `<name>_v<N+1>.qxw` (`<name>_v2.qxw` if there is no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported`, `_modified`. `next_version_path()` skips names already on disk. |
@@ -81,9 +81,14 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-23 | Doctor severities: D001–D003 errors; D004–D009, D012, D016 warnings; D015 and I-codes info. D005 is a warning (not an error) so porting from older shows is not blocked before auto-fix exists. |
 | 2026-09-23 | VC copy/move (added to v1.3.2 at Giovanni's request): copies get new widget IDs (`max+1`) and **drop key/MIDI bindings by default** (opt-in to keep); moves keep IDs and bindings; operations refuse duplicated widget IDs (D002). The Triggers tab is renamed **Trigger Manager**. The venv lives in `~/.venvs/swissknife` (iCloud duplicates break pywebview). |
 | 2026-09-23 | **Quick Start channel model:** channel indices come from the selected **mode**; unused channels get a capability-aware **neutral** value (ShutterOpen preset or an *Open / No function / White / Off* capability, never a *Closed/Blackout* one; Pan/Tilt coarse 127, fine 0; otherwise 0). BLACKOUT additionally closes the shutter on fixtures with no dimmer channel. PANIC RESET = neutral + intensity 0, on its own Toggle button. |
-| 2026-09-23 | **20Minutes naming profile** taken from the legend on the LiquidBar_v14 EFFECTS page: format `{group}{effect} · {name}`; groups A F S B R D L X (all, front four, singer pair, band pair, rear two, drums floor, logo, split/spatial); effects S D P M \* (static, dynamic, pulse, movement, special FX). Quick Start only knows "all" (A); anything the profile can't map (utility functions, per-type group scenes) gets **no prefix** rather than a wrong one. Buttons carry the prefix too (`prefix_captions`). |
+| 2026-09-23 | **20Minutes naming profile** taken from the legend on the Pub_6fix EFFECTS page: format `{group}{effect} · {name}`; groups A F S B R D L X (all, front four, singer pair, band pair, rear two, drums floor, logo, split/spatial); effects S D P M \* (static, dynamic, pulse, movement, special FX). Quick Start only knows "all" (A); anything the profile can't map (utility functions, per-type group scenes) gets **no prefix** rather than a wrong one. Buttons carry the prefix too (`prefix_captions`). |
 | 2026-09-23 | **VC style cloning** copies geometry and fonts only (button size = most common ≥30 px tall, gap = median horizontal gap, header = smallest child Y in headed frames, page = most common top-level frame size). Colours stay semantic. |
 | 2026-09-23 | Doctor D006: a value of **0** on a capability with no preset and no "active" words (strobe, program, auto, macro, sound, pulse, chase …) is safe — it is the fixture's plain operating mode (SlimPAR 56 `Mode = 0 (RGB)`). Corpus baselines unchanged. |
+| 2026-09-24 | **Quick Start VC = one page, one SHOW SoloFrame.** Every look, effect and group button is inside it (plain sub-frames pass the solo signal up in QLC+ 5), so one button at a time — Giovanni: "if I click one button the other buttons should switch off". Only PANIC / BLACKOUT and PANIC RESET are outside. Page size = style page (default 1650 × 884). |
+| 2026-09-24 | **Fixture groups** are user-defined in step 3 (default: one per fixture name). Each group: frame with a **submaster** (group dimmer), looks (On, Red, Blue, Green, Warm), effects (Pulse, Color Fade, Chase). Group scenes declare only the group's fixtures. MASTER is a page-level submaster. RED/GREEN/BLUE Level sliders and the *Color Fixtures* button are dropped. 20Minutes names: group letter = first letter of the group name unless mapped. |
+| 2026-09-24 | **RGB-matrix buttons run a Collection** (scene opening the master dimmers + the matrix): QLC+ ignores *DimmerControl* in RGB mode (`rgbmatrix.cpp`). Only scripts that exist in QLC+ 4 and 5: One By One, Even/Odd, Gradient, Plasma, Waves, Stripes. |
+| 2026-09-24 | **Generated XML is indented** like QLC+'s own (QLC+ 5.2.2 `VCSlider::loadXMLLevel` reads one token too many after an empty `<Level/>`; on a one-line file that drops every later widget). **Fixture definitions are saved next to the workspace** as `<Manufacturer>-<Model>.qxf` (QLC+'s fallback path in `Fixture::loader`), else unknown fixtures load as plain dimmers. |
+| 2026-09-24 | Real show files in the public repo are **renamed and scrubbed** (`Festival_14fix`, `Pub_6fix`; bands/songs/venue → neutral names). Git history still contains the originals — purge only if needed (needs a force-push). |
 | 2026-09-23 | **PANIC RESET is a Script**, not a scene: `stoponexit:false`, stop every generated function, start *Reset: neutral state*, `wait:100ms`, stop itself. Reasons, all reproduced in real QLC+ builds: HTP channels can't be pulled down by a scene; QLC+ 5 scripts (to spring 2026) never end on their own; QLC+ 5.2.2 drops queued script commands if the code ends before the next tick (upstream fix `ca8ffd41`). The master slider is a Level **DIMMER** at 0 (a Level slider at 255 held dimmers full; a Submaster slider made 5.2.2 drop the VC). |
 | 2026-09-23 | **Behaviour is verified in real QLC+**, not only by reading XML: `tools/qlc_check.py` (web-socket API) is part of the §6 open-check. Target versions: QLC+ 5.2.2 (Giovanni's) and 4.14. |
 | 2026-09-23 | D006 intent keywords: *strob, flash, `*`, punk, macro, program, audio, fx* (own name or any containing function). A value is neutral if it falls in a *No function / No flash / Open / Off / DMX mode* capability. StopAll/Blackout buttons are not "caption-only". |
@@ -155,22 +160,23 @@ Found and fixed along the way (all in the CHANGELOG):
 
 **1.0 Test corpus and Doctor core (read-only checks).** Doctor comes first because it is the test oracle for everything else.
 - [x] Create `tests/corpus/` *(done 23 Sep)*:
-  - Workspaces: `SangAKlang_v41`, `LiquidBar_v14` (only `<Author>` sanitised).
+  - Workspaces: `Festival_14fix`, `Pub_6fix` (only `<Author>` sanitised).
   - QXFs: Eurolite LED 4C-12, Generic 7-Ch RGB PAR.
   - Also included: `expected_baseline.json`, `README.md` (baseline findings and lessons), `tests/test_corpus.py` (6 tests), and `tools/doctor_prototype.py` (throw-away reference implementation).
 - [x] Add a clean Quick Start output to the corpus *(`QuickStart_6fix.qxw`, generated by `tools/make_quickstart_sample.py`; Doctor: 0 errors, 1 warning D008)*.
 - [ ] Add `20Minutes_FLOOR` when available.
 - [x] `core/doctor/` exposes `check(root, qxf_defs) → Report`. Each finding has an ID, severity, location and message. Read-only in this phase. *(Also `check_file()`, `load_qxf_defs()`; docs in `docs/doctor.md`.)*
-- [x] Initial checks: the D-codes in §5 Phase 2.1 marked ★. *(Plus D009, D012, D015, D016 and info I001–I003. Corpus: LiquidBar_v14 0 errors / 0 warnings; SangAKlang_v41 1 error (D002 widget ID 0); all prototype D006 false positives gone. Counts pinned in `expected_baseline.json`.)*
+- [x] Initial checks: the D-codes in §5 Phase 2.1 marked ★. *(Plus D009, D012, D015, D016 and info I001–I003. Corpus: Pub_6fix 0 errors / 0 warnings; Festival_14fix 1 error (D002 widget ID 0); all prototype D006 false positives gone. Counts pinned in `expected_baseline.json`.)*
 - [x] Command line: `python -m core.doctor file.qxw` prints the report and exits non-zero on errors. Used by tests and CI; it's also the future hook for automation. *(`--json`, `--qxf`, `--allow-fx`, `--all`, `--min-severity`.)*
 - Commit: `feat(doctor): read-only check engine + CLI`
 
 **1.1 Quick Start**
 - [x] Golden-file tests: 3 reference rigs produce byte-identical `.qxw` output. *(`QuickStart_6fix`, `QuickStart_club` (Spot 110 6-ch + SlimPAR 56), `QuickStart_multiuni` (8 × Spot 375Z + 60 × SlimPAR 56, 2 universes); `tests/test_quickstart_golden.py`.)*
 - [x] Output passes Doctor with zero errors, and the QLC+ open-check (§6) passes. *(Doctor: all three golden files 0 errors / 0 warnings; export gated by Doctor. QLC+: `tools/qlc_check.py` PASS on club + multiuni in 5.2.2 and 4.14.5; manual check on the Mac, 23 Sep.)*
-- [x] **Live QLC+ check** (`tools/qlc_check.py`, `docs/qlc-live-check.md`, opt-in `tests/test_qlc_live.py`): VC loaded + PANIC RESET after every button, on the real DMX output.
+- [x] **Live QLC+ check** (`tools/qlc_check.py`, `docs/qlc-live-check.md`, opt-in `tests/test_qlc_live.py`): VC loaded + every button lights something + PANIC RESET after every button, on the real DMX output.
+- [x] **1.1b after Giovanni's test (24 Sep):** full-width page; one SHOW solo frame (one button at a time); fixture groups (step 3 editor, per-group frame + submaster + looks + effects); MASTER submaster; RGB matrices lit (Collection); `.qxf` next to the `.qxw`; indented XML.
 - [x] Safe defaults baked in: PANIC RESET, strobe and program channels at 0, full channel declaration. *(Plus mode-aware channel indices and capability-aware neutral values — `core/quick_start/channel_model.py`.)*
-- [x] **Clone VC style from a reference QXW**: button size, gaps, header, fonts, page size (`core/quick_start/vc_style.py`). Built-in `liquidbar` style extracted from `LiquidBar_v14`; *From a reference .qxw…* in step 4. *(Frame layout/page structure cloning → Phase 2.4 VC templates.)*
+- [x] **Clone VC style from a reference QXW**: button size, gaps, header, fonts, page size (`core/quick_start/vc_style.py`). Built-in `compact` style extracted from `Pub_6fix`; *From a reference .qxw…* in step 4. *(Frame layout/page structure cloning → Phase 2.4 VC templates.)*
 - [x] Nomenclature profile (JSON): `plain` and `20minutes` in `core/quick_start/profiles/nomenclature/`. The 20Minutes profile:
   - First letter, fixture group: A = all, F = front four, S = singer pair, B = band pair, R = rear two, D = drums floor, L = logo, X = split/spatial.
   - Second letter, effect type: S = static, D = dynamic, P = pulse, M = movement, \* = special FX.
@@ -179,13 +185,13 @@ Found and fixed along the way (all in the CHANGELOG):
 **1.2 Function Porter**
 - [ ] **VC porting**: bring each ported function's buttons and frames too, with widget ID remapping, a target page chosen by the user, and collision-free placement.
 - [ ] Verify **fan-in** (many source fixtures to fewer targets, e.g. 14 → 6). `auto_map` currently maps same model+mode; add an explicit fan-in mode if needed.
-- [ ] Real case: port looks from SangAKlang_v41 into a 6-fixture rig. The result passes Doctor.
+- [ ] Real case: port looks from Festival_14fix into a 6-fixture rig. The result passes Doctor.
 - [ ] The import report is saved next to the output file.
-- Commits: `feat(porter): port VC widgets with functions`, `test(porter): SangAKlang→LiquidBar fan-in case`
+- Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
 
 **1.3 Show Book**
 - [ ] Test suite: section builders, DMX decoding against the corpus QXFs, CSV zip contents, and the PDF text layer.
-- [ ] The VC Layout section matches the LiquidBar_v14 pages and frames.
+- [ ] The VC Layout section matches the Pub_6fix pages and frames.
 - [ ] Add an optional Doctor summary section.
 - Commit: `test(showbook): coverage for sections, decoding, exports`
 
@@ -266,7 +272,7 @@ Checks (★ = included in Phase 1.0):
 - Commit: `feat: stage meshes in 3D monitor`
 
 **2.6 Benchmark → v2.0.0**
-- [ ] Run the Liquid Bar test (§1) end-to-end.
+- [ ] Run the Pub test (§1) end-to-end.
 - [ ] Document it as a tutorial ("From a big-venue show to a pub show in 30 minutes").
 - [ ] Release **v2.0.0**, with a forum post and a video or GIF.
 
@@ -315,11 +321,12 @@ Checks (★ = included in Phase 1.0):
 
 **Giovanni, before the next session (Phase 1.1):**
 1. ✅ *Done 23 Sep* — QLC+ open-check on the club / multiuni files (PANIC RESET works in 5.2.2).
-2. `git push -u origin feat/quickstart-1.1`; CI green; merge into `main` (it contains `feat/doctor`). Push the wiki.
+2. Test 1.1b in the app: step 3 groups editor, step 4 preview, export (the `.qxf` files appear next to the `.qxw`), then in QLC+: one button at a time, matrix effects light up, MASTER and group sliders dim.
+3. `git push -u origin feat/quickstart-1.1`; CI green; merge into `main` (it contains `feat/doctor`). Push the wiki.
 3. Optional: `pip install websocket-client`, then `python3 tools/qlc_check.py tests/corpus/QuickStart_club.qxw` with QLC+ closed — should print `RESULT: PASS`.
 
 **Next Cowork session:**
-1. Phase 1.2 Porter: run the SangAKlang → 6-fixture fan-in case and check it with Doctor; VC porting.
+1. Phase 1.2 Porter: run the Festival_14fix → 6-fixture fan-in case and check it with Doctor; VC porting.
 2. Add `20Minutes_FLOOR` to the corpus when available.
 3. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session; run `tools/qlc_check.py` in CI (build QLC+ 5.2.2 in a cached Docker image).
-4. Submaster slider: `tools/qlc_check.py` reproduces QLC+ 5.2.2 dropping every VC widget after a Submaster slider in a Quick Start frame. Find the minimal case, report it upstream, add a Doctor check (does SangAKlang_v41 lose widgets too?). Also report the 5.2.2 script-command race if not already covered by `ca8ffd41`.
+4. Upstream reports (QLC+ forum/GitHub): `VCSlider::loadXMLLevel` token over-read after an empty `<Level/>` on unindented XML; RGB-mode matrices ignoring *DimmerControl*; 5.2.2 script-command race (if not covered by `ca8ffd41`). Doctor: add a check for fixtures whose definition won't be found next to the workspace.

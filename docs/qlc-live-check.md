@@ -2,19 +2,23 @@
 
 Doctor reads the XML. This tool checks how **QLC+ itself behaves** with a generated workspace: it opens the file in a real QLC+ with web access (`-w`), presses Virtual Console buttons over the web-socket API and reads the DMX output.
 
-It found four bugs on 23 Sep 2026 that no XML check could see:
+It found these bugs (23–24 Sep 2026) that no XML check could see:
 
 | Bug | QLC+ | Seen as |
 |---|---|---|
-| A *Submaster* slider makes the loader drop every later VC widget | 5.2.2 | VC empty except the slider |
+| An empty `<Level/>` in a one-line file makes the slider loader swallow the slider's end tag, so every later VC widget is dropped (fixed on our side by writing indented XML) | 5.2.2 | VC empty except the slider |
 | A *Level* slider at 255 on the dimmers holds them at full (HTP) | all | BLACKOUT / PANIC RESET can't darken |
 | A script never ends on its own, so its Toggle button stays on | 5.x up to spring 2026 | every second PANIC RESET press does nothing |
 | Script start/stop commands are dropped if the script code ends before the next engine tick | 5.2.2 (fixed upstream Aug 2026, `ca8ffd41`) | PANIC RESET does nothing (works when QLC+ runs slower, e.g. from Terminal with `-d`) |
+| RGB matrices in RGB mode ignore *DimmerControl*, so fixtures with a master dimmer stay dark | all | matrix buttons do nothing |
+| Fixture definition not found → fixture loaded as a plain dimmer | all | colours / matrices dark |
 
 ## What it checks
 
 1. **VC loaded** — every widget in the file (pages excluded) is present in the running QLC+.
-2. **PANIC RESET** — for every Toggle button with a function: press it, press PANIC RESET, compare every fixture channel with the *Reset: neutral state* scene; press PANIC RESET again and compare again.
+2. **Buttons light up + PANIC RESET** — for every Toggle button with a function: press it and check at least one fixture lights up (except BLACKOUT); press PANIC RESET and compare every fixture channel with the *Reset: neutral state* scene; press it again and compare again.
+
+Keep the fixture `.qxf` files next to the workspace (Quick Start saves them there): without them QLC+ loads the fixtures as plain dimmers and check 2 reports dark buttons.
 
 ## Run it
 

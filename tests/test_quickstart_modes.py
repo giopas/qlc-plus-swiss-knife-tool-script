@@ -60,22 +60,38 @@ def test_spot375z_shutter_open_in_looks_closed_in_nothing():
     sh = names.index("Shutter")
     _, funcs, _ = _gen(d, mode)
     assert _scene_vals(funcs, "ALL ON")[sh] == 4          # Open, not Closed (0)
-    assert _scene_vals(funcs, "PANIC RESET")[sh] == 4
+    assert _scene_vals(funcs, "Reset: neutral state")[sh] == 4
 
 
-def test_panic_reset_scene_and_button():
+def test_panic_reset_stops_everything_then_neutral():
+    """HTP channels can't be pulled down by a scene, so PANIC RESET is a
+    Script: stop every function, then start the neutral scene."""
+    from urllib.parse import unquote
     d = _defn("SlimPAR")
     mode = next(iter(d["modes"]))
     _, funcs, frame = _gen(d, mode)
-    reset = [f for f in funcs if f.get("Name") == "PANIC RESET"]
-    assert len(reset) == 1
-    fid = reset[0].get("ID")
-    buttons = [b for b in frame.iter(f"{NS}Button")
-               if (b.find(f"{NS}Function") is not None
-                   and b.find(f"{NS}Function").get("ID") == fid)]
-    assert buttons, "PANIC RESET must be on a VC button"
-    vals = _scene_vals(funcs, "PANIC RESET")
-    assert all(v == 0 for v in vals.values())
+    script = [f for f in funcs if f.get("Name") == "PANIC RESET"]
+    assert len(script) == 1 and script[0].get("Type") == "Script"
+    cmds = [unquote(c.text) for c in script[0].findall(f"{NS}Command")]
+    neutral = next(f for f in funcs if f.get("Name") == "Reset: neutral state")
+    others = {f.get("ID") for f in funcs} - {script[0].get("ID")}
+    assert {c.split(":")[1] for c in cmds[:-1]} == others
+    assert all(c.startswith("stopfunction:") for c in cmds[:-1])
+    assert cmds[-1] == f"startfunction:{neutral.get('ID')}"
+    fid = script[0].get("ID")
+    assert any(b.find(f"{NS}Function") is not None
+               and b.find(f"{NS}Function").get("ID") == fid
+               for b in frame.iter(f"{NS}Button")), "PANIC RESET must be on a VC button"
+    assert all(v == 0 for v in _scene_vals(funcs, "Reset: neutral state").values())
+
+
+def test_master_is_submaster_not_level():
+    """A Level slider at 255 on the dimmers would hold them at full (HTP)."""
+    d = _defn("SlimPAR")
+    _, _, frame = _gen(d, next(iter(d["modes"])))
+    master = next(s for s in frame.iter(f"{NS}Slider") if s.get("Caption") == "MASTER")
+    assert master.find(f"{NS}SliderMode").text == "Submaster"
+    assert not list(master.iter(f"{NS}Channel"))
 
 
 @pytest.mark.parametrize("caps,expected", [

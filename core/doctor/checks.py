@@ -13,6 +13,7 @@ import copy
 import glob
 import os
 import re
+from urllib.parse import unquote
 import xml.etree.ElementTree as ET  # nosec B405
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
@@ -189,7 +190,8 @@ class _Workspace:
             yield "bound", f.get("BoundScene")
         if f.get("Type") == "Script":
             for cmd in f.findall("Command"):
-                for m in SCRIPT_FUNC_RE.finditer(cmd.text or ""):
+                # QLC+ saves script commands percent-encoded ("%3A" = ":")
+                for m in SCRIPT_FUNC_RE.finditer(unquote(cmd.text or "")):
                     yield "script", m.group(1)
 
     def _walk_vc(self, el: ET.Element, page: str):

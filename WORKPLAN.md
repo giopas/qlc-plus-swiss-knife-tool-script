@@ -5,9 +5,10 @@
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
 **Status (23 Sep, end of session):**
-- **Phase 0 — done** on branch `chore/phase0-cleanup` (9 commits). Tilt check in QLC+ passed. Waiting for Giovanni: push, green CI, merge, tag `v1.3.2`.
-- **Phase 1.0 — core done** on branch `feat/doctor` (stacked on Phase 0): corpus committed, `core/doctor` engine + CLI, Quick Start golden sample. Still open: `20Minutes_FLOOR` corpus file.
-- Next: Phase 1.1 (Quick Start), see §8.
+- **Phase 0 — done and released** as `v1.3.2` (main @ `2cc9dbc`, CI green).
+- **Phase 1.0 — core done** on branch `feat/doctor`: corpus, `core/doctor` engine + CLI. Still open: `20Minutes_FLOOR` corpus file.
+- **Phase 1.1 — code done** on branch `feat/quickstart-1.1` (local commits, not pushed): mode-aware channels, neutral values, PANIC RESET, naming profiles, VC style cloning, Doctor gate, 3 golden rigs. Waiting for Giovanni: QLC+ open-check (§6) of the three golden files, push.
+- Next: Phase 1.2 (Function Porter), see §8.
 
 ---
 
@@ -79,6 +80,10 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-23 | Tilt sign convention (from the corpus): positive XRot swings a hanging beam toward +Z ("Front"). Defaults: truss 45/315, mid 90/270, floor 135/225 (upstage half / downstage half). **Confirmed in QLC+ 5 3D view on 23 Sep (0.2): all three pairs cross toward centre stage.** |
 | 2026-09-23 | Doctor severities: D001–D003 errors; D004–D009, D012, D016 warnings; D015 and I-codes info. D005 is a warning (not an error) so porting from older shows is not blocked before auto-fix exists. |
 | 2026-09-23 | VC copy/move (added to v1.3.2 at Giovanni's request): copies get new widget IDs (`max+1`) and **drop key/MIDI bindings by default** (opt-in to keep); moves keep IDs and bindings; operations refuse duplicated widget IDs (D002). The Triggers tab is renamed **Trigger Manager**. The venv lives in `~/.venvs/swissknife` (iCloud duplicates break pywebview). |
+| 2026-09-23 | **Quick Start channel model:** channel indices come from the selected **mode**; unused channels get a capability-aware **neutral** value (ShutterOpen preset or an *Open / No function / White / Off* capability, never a *Closed/Blackout* one; Pan/Tilt coarse 127, fine 0; otherwise 0). BLACKOUT additionally closes the shutter on fixtures with no dimmer channel. PANIC RESET = neutral + intensity 0, on its own Toggle button. |
+| 2026-09-23 | **20Minutes naming profile** taken from the legend on the LiquidBar_v14 EFFECTS page: format `{group}{effect} · {name}`; groups A F S B R D L X (all, front four, singer pair, band pair, rear two, drums floor, logo, split/spatial); effects S D P M \* (static, dynamic, pulse, movement, special FX). Quick Start only knows "all" (A); anything the profile can't map (utility functions, per-type group scenes) gets **no prefix** rather than a wrong one. Buttons carry the prefix too (`prefix_captions`). |
+| 2026-09-23 | **VC style cloning** copies geometry and fonts only (button size = most common ≥30 px tall, gap = median horizontal gap, header = smallest child Y in headed frames, page = most common top-level frame size). Colours stay semantic. |
+| 2026-09-23 | Doctor D006: a value of **0** on a capability with no preset and no "active" words (strobe, program, auto, macro, sound, pulse, chase …) is safe — it is the fixture's plain operating mode (SlimPAR 56 `Mode = 0 (RGB)`). Corpus baselines unchanged. |
 | 2026-09-23 | D006 intent keywords: *strob, flash, `*`, punk, macro, program, audio, fx* (own name or any containing function). A value is neutral if it falls in a *No function / No flash / Open / Off / DMX mode* capability. StopAll/Blackout buttons are not "caption-only". |
 
 ---
@@ -159,13 +164,13 @@ Found and fixed along the way (all in the CHANGELOG):
 - Commit: `feat(doctor): read-only check engine + CLI`
 
 **1.1 Quick Start**
-- [ ] Golden-file tests: 3 reference rigs produce byte-identical `.qxw` output. *(1/3 done: `QuickStart_6fix`, `tests/test_quickstart_golden.py`.)*
-- [ ] Output passes Doctor with zero errors, and the QLC+ open-check (§6) passes.
-- [ ] Safe defaults baked in: PANIC RESET, strobe and program channels at 0, full channel declaration.
-- [ ] **Clone VC style from a reference QXW**: frame layout, button size and colours, page structure. The first template is taken from `LiquidBar_v14`.
-- [ ] Nomenclature profile (JSON). The 20Minutes profile:
-  - First letter, fixture group: A = all, F, S, B, R, D, L, X.
-  - Second letter, effect type: S, D, P, M, \*.
+- [x] Golden-file tests: 3 reference rigs produce byte-identical `.qxw` output. *(`QuickStart_6fix`, `QuickStart_club` (Spot 110 6-ch + SlimPAR 56), `QuickStart_multiuni` (8 × Spot 375Z + 60 × SlimPAR 56, 2 universes); `tests/test_quickstart_golden.py`.)*
+- [ ] Output passes Doctor with zero errors, and the QLC+ open-check (§6) passes. *(Doctor: all three golden files 0 errors / 0 warnings, and the export is gated by Doctor. QLC+ open-check: Giovanni.)*
+- [x] Safe defaults baked in: PANIC RESET, strobe and program channels at 0, full channel declaration. *(Plus mode-aware channel indices and capability-aware neutral values — `core/quick_start/channel_model.py`.)*
+- [x] **Clone VC style from a reference QXW**: button size, gaps, header, fonts, page size (`core/quick_start/vc_style.py`). Built-in `liquidbar` style extracted from `LiquidBar_v14`; *From a reference .qxw…* in step 4. *(Frame layout/page structure cloning → Phase 2.4 VC templates.)*
+- [x] Nomenclature profile (JSON): `plain` and `20minutes` in `core/quick_start/profiles/nomenclature/`. The 20Minutes profile:
+  - First letter, fixture group: A = all, F = front four, S = singer pair, B = band pair, R = rear two, D = drums floor, L = logo, X = split/spatial.
+  - Second letter, effect type: S = static, D = dynamic, P = pulse, M = movement, \* = special FX.
 - Commits: `test(quickstart): golden outputs`, `feat(quickstart): clone VC style from reference`, `feat: nomenclature profiles`
 
 **1.2 Function Porter**
@@ -305,8 +310,12 @@ Checks (★ = included in Phase 1.0):
 3. Merge to `main`, then `git tag -a v1.3.2 -m "v1.3.2" && git push --tags`; create the GitHub Release from the CHANGELOG; forum post optional (patch release).
 4. `git push -u origin feat/doctor` (it is stacked on Phase 0; rebase onto `main` after the merge if needed).
 
+**Giovanni, before the next session (Phase 1.1):**
+1. Test Quick Start in the app (step 4: *Names* and *VC style*, including *From a reference .qxw…*).
+2. QLC+ open-check (§6) on `tests/corpus/QuickStart_club.qxw` and `QuickStart_multiuni.qxw`: moving heads light up on ALL ON (shutter open), PANIC RESET works, the LiquidBar style looks right.
+3. `git push -u origin feat/quickstart-1.1`; CI green. It contains `feat/doctor` (linear history), so merging it into `main` brings both. Push the wiki (new *Quick Start* page).
+
 **Next Cowork session:**
-1. Continue on `feat/doctor` or a new `feat/quickstart-1.1` branch.
-2. Phase 1.1 Quick Start: PANIC RESET scene + button (clears D008), two more golden rigs, clone VC style from `LiquidBar_v14`, nomenclature profile JSON.
-3. Phase 1.2 Porter: now that it reads real files, run the SangAKlang → 6-fixture fan-in case and check it with Doctor.
-4. Add `20Minutes_FLOOR` to the corpus when available.
+1. Phase 1.2 Porter: run the SangAKlang → 6-fixture fan-in case and check it with Doctor; VC porting.
+2. Add `20Minutes_FLOOR` to the corpus when available.
+3. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session.

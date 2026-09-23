@@ -102,15 +102,44 @@ def test_master_and_group_sliders_are_submasters():
     assert not any(list(s.iter(f"{NS}Channel")) for s in sliders)
 
 
-def test_every_function_button_is_inside_the_show_soloframe():
-    """One button at a time: looks, effects and group buttons all live in
-    the SHOW SoloFrame; only the PANIC buttons are outside."""
+def test_buttons_are_one_at_a_time_per_solo_frame():
+    """Whole-rig looks/effects share one SoloFrame; each group has its own
+    (groups combine); only the PANIC buttons are outside any solo frame."""
     d = _defn("SlimPAR")
     _, _, page = _gen(d, next(iter(d["modes"])))
-    show = page.find(f"{NS}SoloFrame")
-    inside = {b.get("ID") for b in show.iter(f"{NS}Button")}
+    solos = [c for c in page if c.tag == f"{NS}SoloFrame"]
+    assert [c.get("Caption") for c in solos] == ["WHOLE RIG — one at a time", "GROUP · F"]
+    inside = {b.get("ID") for sf in solos for b in sf.iter(f"{NS}Button")}
     outside = [b.get("Caption") for b in page.iter(f"{NS}Button") if b.get("ID") not in inside]
     assert sorted(outside) == ["PANIC\nBLACKOUT", "PANIC\nRESET"]
+
+
+def test_sliders_not_inverted():
+    """QLC+ 5 reads a missing InvertedAppearance as true (0 at the top)."""
+    d = _defn("SlimPAR")
+    _, _, page = _gen(d, next(iter(d["modes"])))
+    for sl in page.iter(f"{NS}Slider"):
+        assert sl.get("InvertedAppearance") == "false" and sl.get("WidgetStyle") == "Slider"
+
+
+def test_audio_react_uses_the_fixture_sound_mode():
+    d = _defn("SlimPAR")
+    mode = "7-Ch"
+    names = mode_channels({"mode": mode}, d)
+    _, funcs, page = _gen(d, mode)
+    f = next(f for f in funcs if f.get("Name") == "Audio React")
+    vals = _scene_vals(funcs, "Audio React")
+    assert vals[names.index("Mode")] == (224 + 255) // 2          # "Sound triggering mode"
+    assert "Audio React" in [b.get("Caption") for b in page.iter(f"{NS}Button")]
+
+
+def test_no_audio_button_without_sound_mode():
+    d = _defn("375Z")        # has sound programs → button;  Generic dimmer has none
+    rig = [{"key": "G::D", "mode": "", "ch_count": 1, "name": "Dim", "universe": 0, "address": 0}]
+    qxf = {"G::D": {"channels": ["Dimmer"]}}
+    gen = VCLayoutGenerator(rig, qxf, RigCapabilityAnalysis(rig, qxf))
+    funcs, _, _ = gen.generate()
+    assert not any("Audio" in (f.get("Name") or "") for f in funcs)
 
 
 def test_matrix_effects_open_the_dimmers():
@@ -146,7 +175,7 @@ def test_custom_groups_scope_their_scenes():
                             groups=[{"name": "Front", "fixtures": [0, 1]},
                                     {"name": "Back", "fixtures": [2, 3]}])
     funcs, page, _ = gen.generate()
-    caps = [f.get("Caption") for f in page.iter(f"{NS}Frame")]
+    caps = [f.get("Caption") for f in page.iter(f"{NS}SoloFrame")]
     assert "GROUP · Front" in caps and "GROUP · Back" in caps
     front_red = next(f for f in funcs if f.get("Name") == "Front Red")
     assert sorted(v.get("ID") for v in front_red.findall(f"{NS}FixtureVal")) == ["0", "1"]

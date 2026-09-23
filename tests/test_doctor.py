@@ -1,6 +1,7 @@
 """Workspace Doctor — read-only checks (WORKPLAN Phase 1.0)."""
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -13,7 +14,7 @@ from core.doctor.__main__ import main as cli_main
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 CORPUS = os.path.join(HERE, "corpus")
-BASELINE = json.load(open(os.path.join(CORPUS, "expected_baseline.json"), encoding="utf-8"))
+BASELINE = json.loads(Path(CORPUS, "expected_baseline.json").read_text(encoding="utf-8"))
 DEFS = load_qxf_defs([CORPUS])
 
 PAR = ("<Fixture><Manufacturer>Generic</Manufacturer><Model>7-Ch RGB LED PAR</Model>"

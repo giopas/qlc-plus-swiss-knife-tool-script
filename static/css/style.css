@@ -2996,6 +2996,8 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   flex: 1;
   overflow: hidden;
 }
+/* display:flex above would override the [hidden] attribute the wizard uses */
+.porter-panel[hidden] { display: none; }
 
 /* Function list (Step 2) */
 .porter-toolbar { gap: 8px; }

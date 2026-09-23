@@ -16,6 +16,8 @@ REPO = os.path.dirname(HERE)
 CORPUS = os.path.join(HERE, "corpus")
 BASELINE = json.loads(Path(CORPUS, "expected_baseline.json").read_text(encoding="utf-8"))
 DEFS = load_qxf_defs([CORPUS])
+# Corpus files built from the Chauvet test fixtures need those definitions too
+ALL_DEFS = load_qxf_defs([CORPUS, os.path.join(HERE, "fixtures")])
 
 PAR = ("<Fixture><Manufacturer>Generic</Manufacturer><Model>7-Ch RGB LED PAR</Model>"
        "<Mode>7 Channel</Mode><ID>{id}</ID><Name>PAR {id}</Name><Universe>0</Universe>"
@@ -249,7 +251,7 @@ def test_d015_d016_i001_i002():
 @pytest.mark.parametrize("name", sorted(BASELINE))
 def test_corpus_matches_baseline(name):
     exp = BASELINE[name]["doctor"]
-    rep = check_file(os.path.join(CORPUS, name), DEFS)
+    rep = check_file(os.path.join(CORPUS, name), ALL_DEFS)
     assert rep.counts() == exp["counts"]
     assert rep.severity_counts() == exp["summary"]
 

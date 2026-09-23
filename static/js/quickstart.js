@@ -1280,7 +1280,7 @@ function _qsRenderVcTree(node, scale) {
     const isRed = cap.toUpperCase().includes('RED');
     const isGreen = cap.toUpperCase().includes('GREEN');
     const isBlue = cap.toUpperCase().includes('BLUE');
-    const isMaster = cap.toUpperCase().includes('MASTER');
+    const isMaster = cap.toUpperCase().includes('MASTER') || cap.toUpperCase().includes('DIMMER');
     let trackClr = '#555';
     if (isRed) trackClr = '#c44';
     else if (isGreen) trackClr = '#4a4';

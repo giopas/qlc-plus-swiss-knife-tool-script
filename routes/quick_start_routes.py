@@ -136,13 +136,15 @@ def _parse_qxf(path: str) -> dict:
     return defn
 
 
-def _parse_qxf_bytes(data: bytes, filename: str = 'fixture.qxf') -> dict:
+def _parse_qxf_bytes(data: bytes, filename: str = 'fixture.qxf', origin: str = 'file') -> dict:
     """Parse QXF from raw bytes (upload or GitHub fetch)."""
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.qxf')
     try:
         tmp.write(data)
         tmp.close()
-        return _parse_qxf(tmp.name)
+        defn = _parse_qxf(tmp.name)
+        defn["origin"] = origin
+        return defn
     finally:
         try:
             os.unlink(tmp.name)
@@ -442,23 +444,43 @@ def qxf_filename(manufacturer: str, model: str) -> str:
 
 @bp.route('/save-qxf', methods=['POST'])
 def save_qxf():
-    """Write the rig's fixture definitions next to a saved workspace.
+    """Write fixture definitions next to a saved workspace — only those the
+    installed QLC+ doesn't already have.
 
-    QLC+ looks for a definition it doesn't know in the workspace folder as
-    ``<Manufacturer>-<Model>.qxf`` (spaces → dashes).  Without it the
-    fixtures load as generic dimmers: no colour, RGB matrices do nothing.
+    QLC+ resolves fixtures from its own library (stock + user folder) first;
+    only a missing definition is looked up next to the workspace as
+    ``<Manufacturer>-<Model>.qxf``.  Without it the fixture loads as a plain
+    dimmer (no colour, RGB effects dark).
+
+    Response: ``files`` written, ``skipped`` [{file, reason}] (already in
+    QLC+), ``warnings`` (e.g. the installed definition lacks the mode used).
     """
+    from core.quick_start import qlc_library
     data = request.get_json(force=True) or {}
     qxw = data.get('qxw_path') or ''
     folder = os.path.dirname(os.path.abspath(qxw)) if qxw else ''
     if not folder or not os.path.isdir(folder):
         return jsonify({'error': 'Workspace folder not found.'}), 400
-    written = []
+    written, skipped, warnings = [], [], []
     for key in sorted({e.get('key') for e in _qs_rig}):
         raw, defn = _qs_qxf_raw.get(key), _qs_qxf_defs.get(key)
         if not raw or not defn:
             continue
         fname = qxf_filename(defn['manufacturer'], defn['model'])
+        modes = sorted({e.get('mode') for e in _qs_rig if e.get('key') == key and e.get('mode')})
+        state, detail = qlc_library.check(defn['manufacturer'], defn['model'], modes)
+        if state == 'installed':
+            skipped.append({'file': fname, 'reason': 'in the installed QLC+ library'})
+            continue
+        if state == 'no-qlc' and defn.get('origin') == 'qlcplus-github':
+            skipped.append({'file': fname, 'reason': 'stock QLC+ definition (loaded from the QLC+ library)'})
+            continue
+        if state == 'mode-missing':
+            # QLC+ will use its own definition, not ours: warn, no file
+            warnings.append(f"{defn['manufacturer']} {defn['model']}: {detail}. QLC+ will load it "
+                            "as a generic dimmer — copy your .qxf into QLC+'s user fixtures folder "
+                            "or pick a mode the installed definition has.")
+            continue
         dest = os.path.join(folder, fname)
         try:
             with open(dest, 'rb') as fh:
@@ -469,7 +491,8 @@ def save_qxf():
             with open(dest, 'wb') as fh:
                 fh.write(raw)
         written.append(fname)
-    return jsonify({'ok': True, 'folder': folder, 'files': written})
+    return jsonify({'ok': True, 'folder': folder, 'files': written,
+                    'skipped': skipped, 'warnings': warnings})
 
 
 @bp.route('/options', methods=['GET', 'POST'])
@@ -738,7 +761,7 @@ def gh_load():
                f"{mfg.replace(' ', '%20')}/"
                f"{filename.replace(' ', '%20')}")
         raw = _gh_get_raw(url)
-        defn = _parse_qxf_bytes(raw, filename)
+        defn = _parse_qxf_bytes(raw, filename, origin='qlcplus-github')
         key = f"{defn['manufacturer']}::{defn['model']}"
         return jsonify({
             'ok': True,

@@ -1453,10 +1453,11 @@ async function qsExport() {
       if (fullPath) {
         try {
           const r = await _qsApi('POST', '/save-qxf', { qxw_path: fullPath });
-          if (r.files && r.files.length) msg += ' (+ ' + r.files.join(', ') + ')';
+          if (r.files && r.files.length) msg += ' (+ fixture file(s) QLC+ lacks: ' + r.files.join(', ') + ')';
+          if (r.warnings && r.warnings.length) { setStatus(msg + ' — ⚠ ' + r.warnings.join(' | '), 'warn'); return; }
         } catch (_) { /* non-fatal */ }
       } else {
-        msg += ' — copy the fixture .qxf files next to it, or QLC+ will load them as generic dimmers';
+        msg += ' — if a fixture is not in the QLC+ library, copy its .qxf next to the workspace';
       }
       setStatus(msg, 'ok');
     }

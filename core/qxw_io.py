@@ -15,6 +15,7 @@ Rules (WORKPLAN §2):
 
 from __future__ import annotations
 
+import copy
 import os
 import re
 import tempfile
@@ -36,15 +37,22 @@ class OverwriteError(ValueError):
 
 # ── Reading ──────────────────────────────────────────────────────────────────
 
-def load_qxw(path: str) -> ET.ElementTree:
-    """Parse a .qxw file (size-capped) and return its ElementTree."""
+def load_qxw(path: str, strip_namespace: bool = False) -> ET.ElementTree:
+    """Parse a .qxw file (size-capped) and return its ElementTree.
+
+    With ``strip_namespace=True`` tags are plain (``"Engine"``) instead of
+    ``"{http://www.qlcplus.org/Workspace}Engine"``.
+    """
     size = os.path.getsize(path)
     if size > MAX_QXW_BYTES:
         raise ValueError(
             f"File too large ({size // (1024 * 1024)} MB). "
             f"Max allowed: {MAX_QXW_BYTES // (1024 * 1024)} MB."
         )
-    return ET.parse(path)  # nosec B314
+    tree = ET.parse(path)  # nosec B314
+    if strip_namespace:
+        strip_ns(tree.getroot())
+    return tree
 
 
 def loads_qxw(data: bytes) -> ET.Element:
@@ -54,12 +62,44 @@ def loads_qxw(data: bytes) -> ET.Element:
     return ET.fromstring(data)  # nosec B314
 
 
+# ── Namespace helpers ────────────────────────────────────────────────────────
+# Real QLC+ files declare xmlns="http://www.qlcplus.org/Workspace", so ET
+# tags look like "{http://www.qlcplus.org/Workspace}Engine".  Modules that
+# prefer plain tag names (Merger, Porter) strip the namespace on load;
+# qxw_bytes() puts it back on output.
+
+_NS_PREFIX = "{" + QLC_NS_URI + "}"
+
+
+def strip_ns(root: ET.Element) -> ET.Element:
+    """Remove the QLC+ namespace from every tag in place; returns *root*."""
+    for el in root.iter():
+        if isinstance(el.tag, str) and el.tag.startswith(_NS_PREFIX):
+            el.tag = el.tag[len(_NS_PREFIX):]
+    return root
+
+
+def qualify_ns(root: ET.Element) -> ET.Element:
+    """Put every un-namespaced tag in the QLC+ namespace in place; returns *root*."""
+    for el in root.iter():
+        if isinstance(el.tag, str) and not el.tag.startswith("{"):
+            el.tag = _NS_PREFIX + el.tag
+    return root
+
+
 # ── Serialising ──────────────────────────────────────────────────────────────
 
 def qxw_bytes(root: ET.Element) -> bytes:
-    """Serialise a workspace root to canonical UTF-8 bytes (with DOCTYPE)."""
+    """Serialise a workspace root to canonical UTF-8 bytes (with DOCTYPE).
+
+    A tree whose tags were stripped of the QLC+ namespace (see
+    :func:`strip_ns`) is re-qualified on a copy, so the output always
+    carries ``xmlns="http://www.qlcplus.org/Workspace"`` like QLC+'s own files.
+    """
     if isinstance(root, ET.ElementTree):
         root = root.getroot()
+    if root.tag == "Workspace":
+        root = qualify_ns(copy.deepcopy(root))
     body = ET.tostring(root, encoding="unicode")
     return (XML_HEADER + body).encode("utf-8")
 

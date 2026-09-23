@@ -5,10 +5,11 @@ tool writes, secondary buttons (``btn-surface``), and at most ONE primary
 action (``btn-accent``) as the right-most button. Local CSS/JS carry ``?v=``.
 """
 import os
+from pathlib import Path
 import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-HTML = open(os.path.join(os.path.dirname(HERE), "templates", "index.html"), encoding="utf-8").read()
+HTML = Path(os.path.dirname(HERE), "templates", "index.html").read_text(encoding="utf-8")
 
 
 def _footers():

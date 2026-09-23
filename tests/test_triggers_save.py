@@ -1,5 +1,6 @@
 """Trigger Manager never overwrites the loaded workspace (WORKPLAN 0.4)."""
 import os
+from pathlib import Path
 import shutil
 
 import pytest
@@ -25,7 +26,7 @@ def test_save_writes_next_version_and_keeps_original(loaded):
     out = ws.save_triggers()
     assert os.path.basename(out) == "Show_v42.qxw"
     assert loaded.read_bytes() == before
-    data = open(out, "rb").read()
+    data = Path(out).read_bytes()
     assert data.startswith(b'<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n')
     # second save does not clobber the first
     assert os.path.basename(ws.save_triggers()) == "Show_v43.qxw"

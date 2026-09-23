@@ -1,6 +1,7 @@
 """core.qxw_io — the single safe QXW reader/writer (WORKPLAN 0.3)."""
 import glob
 import os
+from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
 
@@ -137,7 +138,7 @@ def test_no_other_qxw_output_paths():
         for p in glob.glob(os.path.join(REPO, folder, "**", "*.py"), recursive=True):
             if p.endswith(os.path.join("core", "qxw_io.py")):
                 continue
-            for n, line in enumerate(open(p, encoding="utf-8"), 1):
+            for n, line in enumerate(Path(p).read_text(encoding="utf-8").splitlines(), 1):
                 if pat.search(line) and "qxw-io: not output" not in line:
                     bad.append(f"{os.path.relpath(p, REPO)}:{n}: {line.strip()}")
     assert not bad, "\n".join(bad)

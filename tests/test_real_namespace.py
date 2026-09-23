@@ -4,6 +4,7 @@ Regression: both modules looked up plain tag names ("Engine") on namespaced
 trees and silently found 0 fixtures / 0 functions in every real workspace.
 """
 import os
+from pathlib import Path
 
 import pytest
 
@@ -72,7 +73,7 @@ def test_upload_keeps_real_file_name(ns_file):
     import io
     import app
     c = app.create_app().test_client()
-    data = open(ns_file, "rb").read()
+    data = Path(ns_file).read_bytes()
     for url in ("/api/porter/source/load", "/api/merger/src/load"):
         r = c.post(url, data={"file": (io.BytesIO(data), "SangAKlang_v41.qxw")},
                    content_type="multipart/form-data")

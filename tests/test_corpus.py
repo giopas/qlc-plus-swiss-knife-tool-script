@@ -1,12 +1,13 @@
 """Corpus sanity tests — real show files used as the oracle for Doctor, Porter,
 Rig Reducer and the Liquid Bar benchmark. See tests/corpus/README.md."""
 import json, os
+from pathlib import Path
 import xml.etree.ElementTree as ET
 import pytest
 
 CORPUS = os.path.join(os.path.dirname(__file__), "corpus")
 W = "{http://www.qlcplus.org/Workspace}"
-EXPECTED = json.load(open(os.path.join(CORPUS, "expected_baseline.json"), encoding="utf-8"))
+EXPECTED = json.loads(Path(CORPUS, "expected_baseline.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))

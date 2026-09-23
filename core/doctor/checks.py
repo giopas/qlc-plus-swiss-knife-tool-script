@@ -44,6 +44,12 @@ SAFE_CAP_RE = re.compile(
     r"no function|no flash|no effect|shutter open|\bopen\b|\boff\b|"
     r"dmx mode|manual|^none$", re.I)
 SAFE_PRESETS = {"ShutterOpen"}
+# Words that make a capability "active" (a program, a strobe, a macro …).
+# At DMX 0, a capability whose label has none of these is the fixture's
+# plain operating mode (e.g. SlimPAR 56 "Mode = 0 (RGB)") and is safe.
+ACTIVE_CAP_RE = re.compile(
+    r"strob|flash|pulse|program|auto|macro|sound|music|chase|jump|fade|"
+    r"random|effect|rotat|shake|blackout|close|reset|lamp", re.I)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -379,8 +385,11 @@ def _is_safe_value(chdef: dict, val: int) -> bool:
     caps = chdef.get("capabilities") or []
     for cap in caps:
         if cap["min"] <= val <= cap["max"]:
-            return (cap.get("preset") in SAFE_PRESETS
-                    or bool(SAFE_CAP_RE.search(cap.get("label") or "")))
+            label = cap.get("label") or ""
+            if cap.get("preset") in SAFE_PRESETS or SAFE_CAP_RE.search(label):
+                return True
+            return (val == 0 and not cap.get("preset")
+                    and not ACTIVE_CAP_RE.search(label))
     return val == 0
 
 

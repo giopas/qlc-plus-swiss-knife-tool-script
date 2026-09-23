@@ -141,3 +141,22 @@ def test_no_other_qxw_output_paths():
                 if pat.search(line) and "qxw-io: signature only" not in line:
                     bad.append(f"{os.path.relpath(p, REPO)}:{n}: {line.strip()}")
     assert not bad, "\n".join(bad)
+
+
+# ── namespace handling ───────────────────────────────────────────────────────
+
+def test_strip_and_requalify_round_trip():
+    root = qxw_io.loads_qxw(SAMPLE)
+    ref = qxw_io.qxw_bytes(root)
+    qxw_io.strip_ns(root)
+    assert root.tag == "Workspace" and root.find("Engine") is not None
+    # qxw_bytes restores the namespace without mutating the stripped tree
+    assert qxw_io.qxw_bytes(root) == ref
+    assert root.tag == "Workspace"
+
+
+def test_load_strip_namespace(tmp_path):
+    p = tmp_path / "s.qxw"
+    p.write_bytes(SAMPLE)
+    root = qxw_io.load_qxw(str(p), strip_namespace=True).getroot()
+    assert root.find("Engine/Function").get("ID") == "401"

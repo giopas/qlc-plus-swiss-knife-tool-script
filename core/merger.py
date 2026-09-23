@@ -43,7 +43,8 @@ _dst: dict = {'loaded': False, 'path': None, 'name': None, 'tree': None, 'root':
 
 def _parse_qxw(path: str) -> tuple[ET.ElementTree, ET.Element]:
     """Parse a QXW file; return (tree, root)."""
-    tree = qxw_io.load_qxw(path)
+    # Strip the QLC+ namespace so plain tag names ("Engine") work.
+    tree = qxw_io.load_qxw(path, strip_namespace=True)
     root = tree.getroot()
     return tree, root
 

@@ -1,5 +1,7 @@
 # ⚡ QLC+ Swiss Knife — v1.3.1
 
+[![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
+
 **A web-based toolkit for QLC+ 5.x — load your `.qxw` workspace in a browser (or a native window) and manage every aspect of your show from a clean, sidebar-driven interface.**
 
 > ⚠️ **Independent Project Notice**

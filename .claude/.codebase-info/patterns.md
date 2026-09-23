@@ -48,7 +48,7 @@ When copying elements between workspaces, IDs must be remapped to avoid collisio
 
 - **Framework:** pytest
 - **Test files:** `test_porter.py`, `test_qxf_parser.py` (root), `tests/test_quick_start.py`
-- **Fixtures:** Sample QXF files in `test_fixtures/` (Chauvet models)
+- **Fixtures:** Sample QXF files in `tests/fixtures/` (Chauvet models)
 - **Coverage:** Focused on core logic (porter, qxf_parser, quick_start). Routes and UI are not unit-tested.
 
 ## Configuration

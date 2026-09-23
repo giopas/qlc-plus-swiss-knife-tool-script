@@ -474,7 +474,8 @@ class VCLayoutGenerator:
         QLC+, so a scene at 0 does not pull down a look that is still
         running.  Stopping everything first releases them; the neutral
         scene then clears the LTP channels (shutter, programs, position).
-        Commands are percent-encoded, as QLC+ writes them.
+        Commands are percent-encoded, as QLC+ writes them
+        (``QUrl::toPercentEncoding`` in Script::saveXML).
         """
         fid = self._next_fid()
         func = ET.Element(_ns("Function"))
@@ -484,9 +485,14 @@ class VCLayoutGenerator:
         _sub(func, "Speed", FadeIn="0", FadeOut="0", Duration="0")
         _sub(func, "Direction", "Forward")
         _sub(func, "RunOrder", "SingleShot")
+        # A QLC+ Script stops every function it started when it ends
+        # (stoponexit defaults to true, engine/src/script.cpp preRun) —
+        # without this line the neutral scene is switched off at once.
+        _sub(func, "Command", "stoponexit%3Afalse")
         ids = [int(f.get("ID")) for f in self.functions]
         for i in sorted(ids):
-            _sub(func, "Command", f"stopfunction%3A{i}")
+            if i != reset_scene:        # keep it if it's already running
+                _sub(func, "Command", f"stopfunction%3A{i}")
         _sub(func, "Command", f"startfunction%3A{reset_scene}")
         self.functions.append(func)
         return fid

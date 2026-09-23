@@ -38,6 +38,7 @@ import datetime
 import xml.etree.ElementTree as ET
 
 from core.qxf_parser import parse_qxf as _deep_parse_qxf
+from core import qxw_io
 
 QLC_NS_URI = "http://www.qlcplus.org/Workspace"
 QXF_NS_URI = "http://www.qlcplus.org/FixtureDefinition"
@@ -611,9 +612,7 @@ def build_qxw(template_root: "ET.Element" = None,
     if vc is not None:
         _update_vc_sliders(vc, new_count)
 
-    xml_str = ET.tostring(root, encoding="utf-8").decode("utf-8")
-    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<!DOCTYPE Workspace>\n' + xml_str).encode("utf-8")
+    return qxw_io.qxw_bytes(root)
 
 
 def _update_vc_sliders(vc_node: "ET.Element", new_count: int):

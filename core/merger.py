@@ -28,9 +28,10 @@ get_state()          → dict {src_loaded, dst_loaded, src_name, dst_name}
 from __future__ import annotations
 
 import os
-import re
 import copy
 from xml.etree import ElementTree as ET
+
+from core import qxw_io
 
 # ── Module-level state ────────────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ _dst: dict = {'loaded': False, 'path': None, 'name': None, 'tree': None, 'root':
 
 def _parse_qxw(path: str) -> tuple[ET.ElementTree, ET.Element]:
     """Parse a QXW file; return (tree, root)."""
-    tree = ET.parse(path)
+    tree = qxw_io.load_qxw(path)
     root = tree.getroot()
     return tree, root
 
@@ -413,11 +414,6 @@ def export_dst() -> tuple[str, bytes]:
         raise RuntimeError('Destination QXW not loaded.')
     name = _dst['name'] or 'merged'
     # Suggest name: appended with _merged
-    m = re.search(r'(\d+)$', name)
-    if m:
-        suggested = name[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1))) + '.qxw'
-    else:
-        suggested = name + '_merged.qxw'
-    xml_str   = ET.tostring(_dst['root'], encoding='unicode')
-    xml_bytes = ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xml_str).encode('utf-8')
+    suggested = qxw_io.next_version_name(name + '.qxw')
+    xml_bytes = qxw_io.qxw_bytes(_dst['root'])
     return suggested, xml_bytes

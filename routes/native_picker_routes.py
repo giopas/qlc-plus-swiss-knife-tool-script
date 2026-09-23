@@ -29,6 +29,9 @@ import threading
 
 from flask import Blueprint, jsonify, request
 
+from core import qxw_io
+from core import workspace as ws
+
 bp = Blueprint('picker', __name__, url_prefix='/api/picker')
 
 
@@ -255,8 +258,10 @@ def save_blob():
 
     try:
         raw = base64.b64decode(data_b64)
-        with open(path, 'wb') as f:
-            f.write(raw)
+        # Never overwrite the loaded source workspace (WORKPLAN §2.1).
+        qxw_io.write_bytes(raw, path, protect=[ws._state.get('path')])
+    except qxw_io.OverwriteError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': f'Write failed: {str(e)[:200]}'}), 500
 

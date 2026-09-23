@@ -29,6 +29,8 @@ import re
 from collections import defaultdict
 from xml.etree import ElementTree as ET
 
+from core import qxw_io
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Module state
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -46,7 +48,7 @@ def _engine(root: ET.Element) -> ET.Element | None:
 
 
 def _parse_qxw(path: str) -> tuple[ET.ElementTree, ET.Element]:
-    tree = ET.parse(path)
+    tree = qxw_io.load_qxw(path)
     root = tree.getroot()
     return tree, root
 
@@ -749,14 +751,10 @@ def execute(plan: dict) -> tuple[str, bytes]:
         tgt_engine.append(new_fn)
 
     # ── 6. Serialize ──────────────────────────────────────────────────────
-    xml_str = ET.tostring(tgt_root, encoding="unicode")
-    xml_bytes = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<!DOCTYPE Workspace>\n' + xml_str
-    ).encode("utf-8")
+    xml_bytes = qxw_io.qxw_bytes(tgt_root)
 
     name = _tgt["name"] or "workspace"
-    suggested = f"{name}_imported.qxw"
+    suggested = qxw_io.next_version_name(f"{name}.qxw")
 
     return suggested, xml_bytes
 

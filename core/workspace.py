@@ -22,6 +22,8 @@ import re
 import string
 import xml.etree.ElementTree as ET  # nosec B405
 
+from core import qxw_io
+
 # ── QLC+ XML namespace ────────────────────────────────────────────────────────
 QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
@@ -626,7 +628,7 @@ def purge_workspace_clones() -> dict:
         c = copy.deepcopy(func)
         for attr in ('ID', 'Name', 'SwissKnifeClone'):
             c.attrib.pop(attr, None)
-        return ET.tostring(c)
+        return ET.tostring(c)  # qxw-io: signature only, not output
 
     sig_named: dict  = {}   # (name, type, body) -> lowest original fid
     sig_struct: dict = {}   # (type, body)       -> lowest original fid
@@ -900,17 +902,8 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     # We don't write to disk here — the browser will prompt the user.
     orig_name = _state.get('original_name')
     src       = orig_name or _state['path'] or 'workspace.qxw'
-    obn       = os.path.splitext(os.path.basename(src))[0]
-    m         = re.search(r'(\d+)$', obn)
-    if m:
-        bn = obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
-    else:
-        bn = f'{obn}_GIG_READY'
-    suggested_filename = bn + '.qxw'
-
-    xb          = ET.tostring(root, encoding='utf-8').decode('utf-8')
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb
-    xml_bytes   = xml_content.encode('utf-8')
+    suggested_filename = qxw_io.next_version_name(os.path.basename(src))
+    xml_bytes = qxw_io.qxw_bytes(root)
 
     return suggested_filename, xml_bytes
 
@@ -946,19 +939,10 @@ def generate_all_slots_qxw_content() -> tuple:
 
     # Serialize the combined result once
     root       = _state['qxw_root']
-    orig_name  = _state.get('original_name')
-    src        = orig_name or _state['path'] or 'workspace.qxw'
-    obn        = os.path.splitext(os.path.basename(src))[0]
-    m          = re.search(r'(\d+)$', obn)
-    if m:
-        bn = obn[:m.start()] + str(int(m.group(1)) + 1).zfill(len(m.group(1)))
-    else:
-        bn = f'{obn}_GIG_READY'
-    suggested_filename = bn + '.qxw'
-
-    xb          = ET.tostring(root, encoding='utf-8').decode('utf-8')
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE Workspace>\n' + xb
-    xml_bytes   = xml_content.encode('utf-8')
+    orig_name = _state.get('original_name')
+    src       = orig_name or _state['path'] or 'workspace.qxw'
+    suggested_filename = qxw_io.next_version_name(os.path.basename(src))
+    xml_bytes = qxw_io.qxw_bytes(root)
 
     return suggested_filename, xml_bytes
 
@@ -1003,13 +987,7 @@ def _int(s, default=0) -> int:
 
 def _safe_parse_xml(path: str) -> ET.ElementTree:
     """Parse XML with a 50 MB size cap to mitigate billion-laughs DoS."""
-    size = os.path.getsize(path)
-    if size > _MAX_XML_BYTES:
-        raise ValueError(
-            f"File too large ({size // (1024*1024)} MB). "
-            f"Max allowed: {_MAX_XML_BYTES // (1024*1024)} MB."
-        )
-    return ET.parse(path)  # nosec B314
+    return qxw_io.load_qxw(path)
 
 
 def _safe_read_txt(path: str) -> list:
@@ -1607,14 +1585,4 @@ def export_qxw(path: str) -> None:
     if not _state['loaded'] or not _state['qxw_root']:
         raise RuntimeError('No workspace loaded')
 
-    src = _state.get('path') or ''
-    if os.path.abspath(path) == os.path.abspath(src):
-        raise ValueError('Cannot overwrite the source file — choose a different name')
-
-    # ET.register_namespace('', QLC_NS_URI) is called at module level (line 28).
-    xml_body = ET.tostring(_state['qxw_root'], encoding='unicode')
-
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        f.write('<!DOCTYPE Workspace>\n')
-        f.write(xml_body)
+    qxw_io.write_qxw(_state['qxw_root'], path, protect=[_state.get('path')])

@@ -11,6 +11,8 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from typing import List
 
+from core import qxw_io
+
 QLC_NS_URI = "http://www.qlcplus.org/Workspace"
 ET.register_namespace("", QLC_NS_URI)
 
@@ -235,6 +237,4 @@ def build_qxw(rig: list,
     _sub(sd, "Engine")
 
     # ── Serialise ─────────────────────────────────────────────────────────
-    xml_str = ET.tostring(root, encoding="unicode")
-    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<!DOCTYPE Workspace>\n' + xml_str).encode("utf-8")
+    return qxw_io.qxw_bytes(root)

@@ -24,6 +24,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Added
 
+- **VC Visual Editor — zoom and multi-select**: pinch or ⌘/Ctrl+scroll zooms around the mouse pointer, a plain scroll pans, and ⌘+ / ⌘− / ⌘0 zoom in, zoom out and fit. Shift- or ⌘-click adds or removes a widget. Dragging from anywhere draws a selection box; before, it only worked from empty space, which the frames cover. ⌘A selects every widget on the page and Esc clears the selection.
 - `tests/test_version.py`: `VERSION` must match the latest CHANGELOG release, the README title and the UI. `app.py` now reads the version from `core/workspace.VERSION` instead of a hard-coded string (it said 1.3.1 while `VERSION` said 1.3.0).
 - `tools/make_tilt_check.py` → `tests/manual/tilt_check.qxw`, a 6-fixture file for checking tilt in the QLC+ 5 3D view; `tests/test_orientation.py` (18 tests).
 - `core/qxw_io.py` — the single QXW reader/writer: `load_qxw()`, `qxw_bytes()`, `write_qxw()` (atomic, refuses to overwrite protected source paths), `next_version_name()` / `next_version_path()` and `suffixed_name()`. `tests/test_qxw_io.py` covers round-trip, determinism, overwrite guard, versioned names, and a guard test that fails if any other module serialises a workspace.

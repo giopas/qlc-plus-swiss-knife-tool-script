@@ -12,8 +12,8 @@ import unittest
 from xml.etree import ElementTree as ET
 
 # Make the module importable from the cloud container
-sys.path.insert(0, os.path.dirname(__file__))
-import core_porter as porter
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core import porter, qxw_io
 
 
 # ─── Helpers: build minimal QXW XML ──────────────────────────────────────────
@@ -711,7 +711,7 @@ class TestExecute(unittest.TestCase):
         filename, xml_bytes = porter.execute(plan)
 
         # Parse the result
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         functions = engine.findall("Function")
 
@@ -742,12 +742,12 @@ class TestExecute(unittest.TestCase):
         plan = self._make_plan()
         filename, _ = porter.execute(plan)
         self.assertTrue(filename.endswith(".qxw"))
-        self.assertIn("imported", filename)
+        self.assertTrue(filename.endswith("_v2.qxw"))  # qxw_io.next_version_name
 
     def test_name_prefix(self):
         plan = self._make_plan(name_prefix="SHOW2 / ")
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         for fn in engine.findall("Function"):
             self.assertTrue(fn.get("Name", "").startswith("SHOW2 / "),
@@ -765,7 +765,7 @@ class TestExecute(unittest.TestCase):
 
         plan = self._make_plan()
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
 
         names = [fn.get("Name") for fn in engine.findall("Function")]
@@ -793,7 +793,7 @@ class TestExecute(unittest.TestCase):
             "pan_channel_map": {},
         }
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         scene = engine.findall("Function")[0]
         fvals = scene.findall("FixtureVal")
@@ -825,7 +825,7 @@ class TestExecute(unittest.TestCase):
             "pan_channel_map": {},
         }
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         efx = engine.findall("Function")[0]
         efx_fixtures = efx.findall("EFXFixture")
@@ -855,7 +855,7 @@ class TestExecute(unittest.TestCase):
             "pan_channel_map": {},
         }
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         script_fn = [fn for fn in engine.findall("Function")
                      if fn.get("Type") == "Script"][0]
@@ -889,7 +889,7 @@ class TestExecute(unittest.TestCase):
             "pan_channel_map": {"1": {"coarse": 0, "fine": 1}},
         }
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         scene = engine.findall("Function")[0]
 
@@ -955,7 +955,7 @@ class TestSequenceBoundSceneRemap(unittest.TestCase):
             "pan_channel_map": {},
         }
         _, xml_bytes = porter.execute(plan)
-        root = ET.fromstring(xml_bytes)
+        root = qxw_io.strip_ns(ET.fromstring(xml_bytes))
         engine = root.find("Engine")
         seq = [fn for fn in engine.findall("Function")
                if fn.get("Type") == "Sequence"][0]

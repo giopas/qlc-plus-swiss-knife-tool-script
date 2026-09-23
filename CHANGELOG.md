@@ -25,6 +25,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Changed
 
+- Tests consolidated under `tests/` (`test_porter.py`, `test_qxf_parser.py`, sample QXFs now in `tests/fixtures/`); `pytest.ini` added, so `python -m pytest -q` runs the whole suite from the repo root. The 27 failing Quick Start tests were stale (3-tuple `generate()` return, 400 on invalid requests, the 80d0340 VC layout and effect names) and were updated; none was a code bug.
 - All workspace outputs (Setlist generate, Brightness, Fixture Configurator, Merger, Porter, Quick Start, ID Browser export, Trigger “save as new”) now go through `core/qxw_io`, so the XML declaration and `<!DOCTYPE Workspace>` are always present. Suggested file names now follow one rule: `<name>_v<N+1>.qxw` (or `<name>_v2.qxw` when the name has no `_vN`), replacing `_GIG_READY`, `_BRIGHTNESS`, `_merged`, `_imported` and `_modified`.
 
 ### Security

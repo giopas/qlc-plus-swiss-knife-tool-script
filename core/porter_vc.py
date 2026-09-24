@@ -117,8 +117,9 @@ def widget_keys(root: ET.Element) -> Dict[str, ET.Element]:
 
 def list_source_vc(root: ET.Element) -> List[dict]:
     """Pages and their frames/widgets as a tree for the Porter UI:
-    ``[{key, id, tag, caption, depth, functions}]`` in document order, where
-    ``functions`` counts the function IDs used in the element's subtree."""
+    ``[{key, id, tag, caption, depth, functions, fids}]`` in document order, where
+    ``functions`` counts the function IDs used in the element's subtree and
+    ``fids`` lists the ones the widget itself uses."""
     vc = _vc(root)
     if vc is None:
         return []
@@ -133,7 +134,8 @@ def list_source_vc(root: ET.Element) -> List[dict]:
             if _local(c.tag) in CONTAINERS or fns:
                 out.append({"key": keys[id(c)], "id": c.get("ID", ""), "tag": _local(c.tag),
                             "caption": (c.get("Caption") or "").replace("\n", " "),
-                            "depth": depth, "functions": len(fns)})
+                            "depth": depth, "functions": len(fns),
+                            "fids": widget_function_refs(c)})
             if _local(c.tag) in CONTAINERS:
                 walk(c, depth + 1)
     walk(vc, 0)

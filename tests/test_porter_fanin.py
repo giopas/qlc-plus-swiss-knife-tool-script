@@ -399,3 +399,28 @@ class TestStagePlan(unittest.TestCase):
         self.assertEqual(len(d["fixtures"]), 14)
         self.assertEqual(c.get("/api/porter/stage/nope").status_code, 400)
         c.post("/api/porter/clear")
+
+
+class TestLitFixtureMap(unittest.TestCase):
+    """resolve_closure reports which fixtures a function actually lights
+    (used by step 3's "Port this fixture" to untick functions)."""
+
+    def test_zero_declared_fixtures_are_not_lit(self):
+        porter.load_source(PUB)
+        try:
+            fns = {f["name"]: f["id"] for f in porter.list_source_functions()}
+            cl = porter.resolve_closure([fns["AS · Stage Patter"]] if "AS · Stage Patter" in fns
+                                        else [next(iter(fns.values()))])
+            lit = cl["lit_fixture_map"]
+            self.assertTrue(set(lit) <= set(cl["function_ids"]))
+            for fid, fx in lit.items():
+                self.assertTrue(set(fx) <= set(cl["fixture_ids"]))
+            src = {f.get("ID"): f for f in porter.source_root().find("Engine").findall("Function")}
+            for fid, fx in lit.items():
+                f = src[fid]
+                if f.get("Type") == "Scene":
+                    want = {fv.get("ID") for fv in f.findall("FixtureVal")
+                            if any(v > 0 for v in porter._pairs(fv.text).values())}
+                    self.assertEqual(set(fx), want)
+        finally:
+            porter.clear()

@@ -44,7 +44,11 @@ let _pVcScope        = [];          // widget keys ticked in the VC tree
 let _pVcSeeds        = [];          // functions used by those widgets
 let _pClosureKey     = '';          // seeds the current closure was built from
 let _pResolveTimer   = null;
-let _pPlans = { source: null, target: null };   // /api/porter/stage/<side>
+let _pPlans = { source: null, target: null };
+let _pSkipFx = new Set();          // source fixtures "not ported" (step 3)
+let _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };  // what skipping unticked
+let _pHlFx = null;                 // source fixture highlighted on the plans (hover)
+let _pHlSticky = null;             // … and the clicked one   // /api/porter/stage/<side>
 let _pVc = { enabled: true, target_page: '', page_caption: '', bindings: 'keep_free' };
 
 let _pStep = 1;  // current wizard step (1–5)
@@ -426,7 +430,10 @@ async function porterResolve(quiet = false) {
     if (!r.ok) { _pStatus('Error: ' + d.error, 'error'); return false; }
     _pClosure = d;
     _pClosureKey = key;
-    _pFixMapping = {};          // selection changed: map again
+    // Selection changed: keep the mapping of fixtures still used (and of
+    // skipped ones); new fixtures are auto-mapped when step 3 renders.
+    const keep = new Set([...d.fixture_ids.map(String), ..._pSkipFx]);
+    for (const k of Object.keys(_pFixMapping)) if (!keep.has(String(k))) delete _pFixMapping[k];
     _pRenderClosureSummary();
     if (d.unresolved.length) {
       _pStatus(`⚠ ${d.unresolved.length} referenced function(s) missing in the source: ${d.unresolved.join(', ')}`, 'warn');
@@ -475,14 +482,18 @@ async function _pRenderMapFixtures() {
   const container = document.getElementById('porter-fixture-map');
   if (!container) return;
 
-  if (!_pClosure || !_pClosure.fixture_ids.length) {
+  const fxIds = _pClosure ? _pClosure.fixture_ids : [];
+  if (!fxIds.length && !_pSkipFx.size) {
     container.innerHTML = '<div class="porter-placeholder">No fixtures to map (functions have no fixture references)</div>';
+    _pDrawPlans();
     return;
   }
 
   // Fetch candidates if not already fetched (or closure changed)
   _pStatus('Finding compatible fixtures...', 'info');
-  try {
+  if (!fxIds.length) {
+    _pCandidates = { source_fixtures: [], candidates: {} };
+  } else try {
     const r = await fetch('/api/porter/fixture-candidates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -496,17 +507,22 @@ async function _pRenderMapFixtures() {
     return;
   }
 
-  // Auto-map if mapping is empty
-  if (Object.keys(_pFixMapping).length === 0) {
+  // Auto-map the fixtures that have no mapping yet (others keep theirs)
+  const missing = fxIds.filter(id => !(String(id) in _pFixMapping));
+  if (missing.length) {
     try {
       const r = await fetch('/api/porter/auto-map', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fixture_ids: _pClosure.fixture_ids, strategy: _pStrategy() }),
       });
-      if (r.ok) _pFixMapping = await r.json();
+      if (r.ok) {
+        const auto = await r.json();
+        for (const id of missing) _pFixMapping[String(id)] = auto[String(id)] || [];
+      }
     } catch (e) { /* best-effort */ }
   }
+  for (const id of _pSkipFx) _pFixMapping[id] = [];
 
   // Render mapping table
   let html = '<table class="porter-map-table"><thead><tr>'
@@ -532,14 +548,20 @@ async function _pRenderMapFixtures() {
 
     const hasTier1 = (cands.tier1 || []).length > 0;
 
-    html += `<tr>
+    const skipped = _pSkipFx.has(String(srcId));
+    html += `<tr class="porter-map-row${skipped ? ' porter-skipped' : ''}${_pHlSticky === String(srcId) ? ' porter-hl' : ''}"
+                 data-src-id="${srcId}" onmouseenter="porterHighlight('${srcId}')"
+                 onmouseleave="porterHighlight(null)" onclick="porterPinHighlight('${srcId}', event)">
       <td>
         <strong>${_esc(srcFix.name)}</strong> [${srcId}]<br>
-        <small>${_esc(srcFix.manufacturer)} ${_esc(srcFix.model)} · ${srcFix.mode} · ${srcFix.channels}ch</small>
+        <small>${_esc(srcFix.manufacturer)} ${_esc(srcFix.model)} · ${srcFix.mode} · ${srcFix.channels}ch</small><br>
+        <label class="porter-skip" data-tooltip="Untick if this fixture is not needed: it gets no target, and functions that only use it are unticked in step 2">
+          <input type="checkbox" ${skipped ? '' : 'checked'} onchange="porterSkipFixture('${srcId}', !this.checked)">
+          Port this fixture</label>
       </td>
       <td class="porter-arrow">→</td>
       <td>
-        <select multiple class="porter-tgt-select" data-src-id="${srcId}"
+        <select multiple class="porter-tgt-select" data-src-id="${srcId}" ${skipped ? 'disabled' : ''}
                 onchange="porterUpdateMapping('${srcId}', this)"
                 size="${Math.min(5, (cands.tier1||[]).length + (cands.tier2||[]).length + 2)}">
           ${options || '<option disabled>No target fixtures available</option>'}
@@ -551,6 +573,21 @@ async function _pRenderMapFixtures() {
                onchange="porterToggleMirror('${srcId}', this.checked)"
                ${_pMirrorFixtures.has(srcId) ? 'checked' : ''}> Mirror Pan</label>
       </td>
+    </tr>`;
+  }
+  // Skipped fixtures that no ticked function uses any more: keep a row so
+  // they can be brought back
+  const shown = new Set(_pCandidates.source_fixtures.map(f => String(f.id)));
+  for (const id of _pSkipFx) {
+    if (shown.has(id)) continue;
+    const f = (_pSrcFixtures || []).find(x => String(x.id) === id) || { name: 'Fixture ' + id };
+    html += `<tr class="porter-map-row porter-skipped" data-src-id="${id}"
+                 onmouseenter="porterHighlight('${id}')" onmouseleave="porterHighlight(null)">
+      <td><strong>${_esc(f.name)}</strong> [${id}]<br>
+        <label class="porter-skip"><input type="checkbox" onchange="porterSkipFixture('${id}', !this.checked)">
+          Port this fixture</label></td>
+      <td class="porter-arrow">→</td>
+      <td><small>Not ported — the functions that only used it were unticked in step 2.</small></td><td></td>
     </tr>`;
   }
   html += '</tbody></table>';
@@ -587,6 +624,105 @@ async function _pRenderMapFixtures() {
 function porterUpdateMapping(srcId, selectEl) {
   const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
   _pFixMapping[srcId] = selected;
+  _pDrawPlans();
+}
+
+// ── "Port this fixture" (step 3) ────────────────────────────────────────────
+
+/** Fixtures a function lights (> 0), following chaser steps / collection members. */
+function _pFunctionFixtures(fid, seen = new Set()) {
+  fid = String(fid);
+  const out = new Set();
+  if (!_pClosure || seen.has(fid)) return out;
+  seen.add(fid);
+  const lit = _pClosure.lit_fixture_map || _pClosure.fixture_map;
+  for (const x of (lit[fid] || [])) out.add(String(x));
+  for (const c of (_pClosure.dep_map[fid] || [])) for (const x of _pFunctionFixtures(c, seen)) out.add(x);
+  return out;
+}
+
+/** Untick (in step 2) what uses only skipped fixtures; remember it for undo. */
+function _pApplySkips() {
+  if (!_pClosure) return;
+  const onlySkipped = fid => {
+    const fx = _pFunctionFixtures(fid);
+    return fx.size > 0 && [...fx].every(x => _pSkipFx.has(x));
+  };
+  const gone = new Set();
+  for (const s of _pClosure.seed_ids.map(String)) {
+    if (!onlySkipped(s)) continue;
+    gone.add(s);
+    if (_pManual.has(s)) { _pManual.delete(s); _pSkipUndo.manual.add(s); }
+    if (_pVcSeeds.map(String).includes(s) && !_pExcluded.has(s)) { _pExcluded.add(s); _pSkipUndo.excluded.add(s); }
+  }
+  // VC widgets whose functions are all gone
+  const scope = new Set(_pVcScope);
+  for (const w of _pVcTree) {
+    const f = (w.fids || []).map(String);
+    if (f.length && scope.has(w.key) && f.every(x => gone.has(x) || _pExcluded.has(x))) {
+      scope.delete(w.key); _pSkipUndo.vc.add(w.key);
+    }
+  }
+  // a frame with nothing ticked inside is unticked too
+  for (let i = _pVcTree.length - 1; i >= 0; i--) {
+    const kids = _pVcChildren(i);
+    if (kids.length && scope.has(_pVcTree[i].key) && !kids.some(j => scope.has(_pVcTree[j].key))) {
+      scope.delete(_pVcTree[i].key); _pSkipUndo.vc.add(_pVcTree[i].key);
+    }
+  }
+  _pVcScope = _pVcTree.map(w => w.key).filter(k => scope.has(k));
+}
+
+async function _pRefreshVcSeeds() {
+  if (!_pVcScope.length) { _pVcSeeds = []; return; }
+  try {
+    const r = await fetch('/api/porter/vc/seeds', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys: _pVcScope }),
+    });
+    if (r.ok) _pVcSeeds = (await r.json()).seed_ids.map(String);
+  } catch (e) { /* keep the old list */ }
+}
+
+async function porterSkipFixture(srcId, skip) {
+  srcId = String(srcId);
+  if (skip) {
+    _pSkipFx.add(srcId);
+    _pFixMapping[srcId] = [];
+    _pDropUnmapped = true;                      // a skipped fixture has no target on purpose
+    _pApplySkips();
+  } else {
+    _pSkipFx.delete(srcId);
+    delete _pFixMapping[srcId];                 // auto-mapped again below
+    // undo everything skipping removed, then re-apply the remaining skips
+    _pSkipUndo.manual.forEach(s => _pManual.add(s));
+    _pSkipUndo.excluded.forEach(s => _pExcluded.delete(s));
+    const vc = new Set([..._pVcScope, ..._pSkipUndo.vc]);
+    _pVcScope = _pVcTree.map(w => w.key).filter(k => vc.has(k));
+    _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };
+  }
+  await _pRefreshVcSeeds();
+  await porterResolve(true);
+  if (!skip && _pSkipFx.size) { _pApplySkips(); await _pRefreshVcSeeds(); await porterResolve(true); }
+  await _pRenderMapFixtures();
+  const n = _pClosure ? _pClosure.function_ids.length : 0;
+  _pStatus(skip ? `Fixture ${srcId} not ported — ${n} function(s) left to port (step 2 updated).`
+                : `Fixture ${srcId} ported again — ${n} function(s) to port.`, 'ok');
+}
+
+// ── Highlight a fixture on the plans (step 3) ───────────────────────────────
+
+function porterHighlight(srcId) {
+  _pHlFx = srcId == null ? null : String(srcId);
+  _pDrawPlans();
+}
+
+function porterPinHighlight(srcId, ev) {
+  if (ev && ev.target && /^(INPUT|SELECT|OPTION|LABEL)$/.test(ev.target.tagName)) return;
+  srcId = String(srcId);
+  _pHlSticky = _pHlSticky === srcId ? null : srcId;
+  document.querySelectorAll('#porter-fixture-map .porter-map-row').forEach(r =>
+    r.classList.toggle('porter-hl', r.dataset.srcId === _pHlSticky));
   _pDrawPlans();
 }
 
@@ -641,9 +777,16 @@ function _pDrawPlans() {
       const map = side === 'source' ? colors.src : colors.tgt;
       rig = rig.map(f => Object.assign({}, f, { color: map[String(f.id)] || '#585b70' }));
     }
+    // Step 3: ring the highlighted source fixture and its target(s)
+    const hl = step === 3 ? (_pHlFx || _pHlSticky) : null;
+    const hlTargets = hl ? (_pFixMapping[hl] || []).map(String) : [];
+    const ring = !hl ? null : (side === 'source'
+      ? f => (String(f.id) === hl ? _cv('--text') : null)
+      : f => (hlTargets.includes(String(f.id)) ? _cv('--text') : null));
     drawStageTopView(ctx, cv.width, cv.height, plan.stage, rig, {
       title: title + '  (top view)',
       label: f => `[${f.id}] ${(f.name || '').substring(0, 12)}`,
+      ring,
     });
   }
 }
@@ -667,7 +810,7 @@ function porterAutoMap() {
   if (st === 'fan_in') { _pFanoutMode = 'fan_in'; _pDropUnmapped = true; }
   else if (st === 'same_id') { _pFanoutMode = 'manual'; _pDropUnmapped = true; }
   else if (_pFanoutMode === 'fan_in' || _pFanoutMode === 'manual') _pFanoutMode = 'pattern_repeat';
-  _pFixMapping = {};
+  _pFixMapping = {};             // skipped fixtures stay skipped (re-applied in render)
   _pRenderMapFixtures();
 }
 
@@ -871,6 +1014,9 @@ function porterReset() {
   _pVcSeeds = [];
   _pClosureKey = '';
   _pDropUnmapped = false;
+  _pSkipFx = new Set();
+  _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };
+  _pHlFx = _pHlSticky = null;
   _pStep = 1;
   _pStatus('Ready for a new import.', 'info');
   _pRenderStep();

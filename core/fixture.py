@@ -257,6 +257,74 @@ def move_fixture(idx: int, direction: int):
 
 # ── Import from QXW ───────────────────────────────────────────────────────────
 
+def read_stage_dims(qxw_root: "ET.Element") -> "dict | None":
+    """Stage size in mm from the 3D monitor grid (``Monitor/Grid``), or None.
+    Pure: does not touch the configurator state (also used by the Porter)."""
+    grid = qxw_root.find('.//q:Monitor/q:Grid', NS)
+    if grid is None:
+        return None
+    try:
+        units = int(grid.get('Units', '0'))
+        w = float(grid.get('Width', '8'))
+        d = float(grid.get('Depth', '6'))
+        h = float(grid.get('Height', '4'))
+    except (ValueError, TypeError):
+        return None
+    k = 304.8 if units == 1 else 1000.0     # feet or metres
+    return {"w_mm": int(w * k), "d_mm": int(d * k), "h_mm": int(h * k)}
+
+
+def read_positions(qxw_root: "ET.Element") -> dict:
+    """``fixture_id → {x, y, z}`` (mm) from ``Monitor/FxItem``. Pure."""
+    pos = {}
+    for fxi in qxw_root.findall(".//q:Monitor/q:FxItem", NS):
+        try:
+            pos[fxi.get("ID")] = {"x": float(fxi.get("XPos", "0")),
+                                  "y": float(fxi.get("YPos", "0")),
+                                  "z": float(fxi.get("ZPos", "0"))}
+        except ValueError:
+            continue
+    return pos
+
+
+def stage_plan(qxw_root: "ET.Element") -> dict:
+    """Everything needed to draw a workspace's fixtures on the Fixtures-tab
+    top view, without touching the configurator state.
+
+    Returns ``{"stage": {w_mm, d_mm, h_mm, cols, rows}, "fixtures": [{id,
+    name, manufacturer, model, mode, x_mm, y_mm, z_mm, color}],
+    "has_positions": bool}``.  Fixtures without a saved 3D position are
+    left out; the stage grows to fit fixtures placed outside the grid.
+    Colours: one per model, in order of first appearance (COLOR_PALETTE).
+    """
+    dims = read_stage_dims(qxw_root) or {"w_mm": _stage_w_mm, "d_mm": _stage_d_mm,
+                                         "h_mm": _stage_h_mm}
+    pos = read_positions(qxw_root)
+    colors: dict = {}
+    fixtures = []
+    for fix in qxw_root.findall("q:Engine/q:Fixture", NS):
+        fid = (fix.findtext("q:ID", default="", namespaces=NS) or "").strip()
+        if fid not in pos:
+            continue
+        model = fix.findtext("q:Model", default="", namespaces=NS) or ""
+        mfg = fix.findtext("q:Manufacturer", default="", namespaces=NS) or ""
+        key = f"{mfg}::{model}"
+        colors.setdefault(key, COLOR_PALETTE[len(colors) % len(COLOR_PALETTE)])
+        p = pos[fid]
+        fixtures.append({"id": fid,
+                         "name": (fix.findtext("q:Name", default="", namespaces=NS) or "").strip(),
+                         "manufacturer": mfg, "model": model,
+                         "mode": fix.findtext("q:Mode", default="", namespaces=NS) or "",
+                         "x_mm": int(p["x"]), "y_mm": int(p["y"]), "z_mm": int(p["z"]),
+                         "color": colors[key]})
+    w = max([dims["w_mm"]] + [f["x_mm"] + 250 for f in fixtures])
+    d = max([dims["d_mm"]] + [f["z_mm"] + 250 for f in fixtures])
+    h = max([dims["h_mm"]] + [f["y_mm"] + 250 for f in fixtures])
+    stage = {"w_mm": w, "d_mm": d, "h_mm": h,
+             "cols": max(2, round(w / 1000)), "rows": max(2, round(d / 1000))}
+    return {"stage": stage, "fixtures": fixtures, "has_positions": bool(fixtures)}
+
+
 def import_from_qxw(qxw_root: "ET.Element"):
     """
     Read Fixture elements from a QXW root and populate the rig.
@@ -271,33 +339,12 @@ def import_from_qxw(qxw_root: "ET.Element"):
     _template_root = qxw_root
 
     # Stage dims from Monitor/Grid
-    grid = qxw_root.find('.//q:Monitor/q:Grid', NS)
-    if grid is not None:
-        units = int(grid.get('Units', '0'))
-        try:
-            w = float(grid.get('Width',  str(_stage_w_mm // 1000)))
-            d = float(grid.get('Depth',  str(_stage_d_mm // 1000)))
-            h = float(grid.get('Height', str(_stage_h_mm // 1000)))
-            if units == 1:  # feet
-                _stage_w_mm = int(w * 304.8)
-                _stage_d_mm = int(d * 304.8)
-                _stage_h_mm = int(h * 304.8)
-            else:           # metres
-                _stage_w_mm = int(w * 1000)
-                _stage_d_mm = int(d * 1000)
-                _stage_h_mm = int(h * 1000)
-        except (ValueError, TypeError):
-            pass
+    dims = read_stage_dims(qxw_root)
+    if dims:
+        _stage_w_mm, _stage_d_mm, _stage_h_mm = dims["w_mm"], dims["d_mm"], dims["h_mm"]
 
     # 3-D positions from Monitor/FxItem
-    monitor_pos = {}
-    for fxi in qxw_root.findall(".//q:Monitor/q:FxItem", NS):
-        fid = fxi.get("ID")
-        monitor_pos[fid] = {
-            "x": float(fxi.get("XPos", "0")),
-            "y": float(fxi.get("YPos", "0")),
-            "z": float(fxi.get("ZPos", "0")),
-        }
+    monitor_pos = read_positions(qxw_root)
 
     existing_keys = {(e["name"], e["address"], e["universe"]) for e in _rig}
 

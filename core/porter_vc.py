@@ -115,7 +115,7 @@ def widget_keys(root: ET.Element) -> Dict[str, ET.Element]:
     return {f"w{i}": el for i, el in enumerate(_all_widgets(vc))}
 
 
-def list_source_vc(root: ET.Element) -> List[dict]:
+def list_source_vc(root: ET.Element, include_all: bool = False) -> List[dict]:
     """Pages and their frames/widgets as a tree for the Porter UI:
     ``[{key, id, tag, caption, depth, functions, fids}]`` in document order, where
     ``functions`` counts the function IDs used in the element's subtree and
@@ -131,7 +131,7 @@ def list_source_vc(root: ET.Element) -> List[dict]:
             if not _is_widget(c):
                 continue
             fns = sorted({f for w in c.iter() if _is_widget(w) for f in widget_function_refs(w)})
-            if _local(c.tag) in CONTAINERS or fns:
+            if _local(c.tag) in CONTAINERS or fns or include_all:
                 out.append({"key": keys[id(c)], "id": c.get("ID", ""), "tag": _local(c.tag),
                             "caption": (c.get("Caption") or "").replace("\n", " "),
                             "depth": depth, "functions": len(fns),
@@ -140,6 +140,37 @@ def list_source_vc(root: ET.Element) -> List[dict]:
                 walk(c, depth + 1)
     walk(vc, 0)
     return out
+
+
+def remove_widgets(root: ET.Element, keys: Iterable[str]) -> List[str]:
+    """Remove VC widgets (pages, frames, buttons…) by key from *root* in
+    place; an item inside another removed one goes with it.  Keys come from
+    :func:`widget_keys` on the same tree (or an identical copy).  Returns
+    the captions removed (for the report)."""
+    by_key = widget_keys(root)
+    vc = _vc(root)
+    if vc is None:
+        return []
+    parent = {c: p for p in vc.iter() for c in p}
+    chosen = [by_key[k] for k in dict.fromkeys(str(k) for k in keys) if k in by_key]
+    chosen_set = set(chosen)
+    removed = []
+    for el in chosen:
+        p = parent.get(el)
+        inside = False
+        while p is not None:
+            if p in chosen_set:
+                inside = True
+                break
+            p = parent.get(p)
+        if inside:
+            continue
+        parent[el].remove(el)
+        n = sum(1 for w in el.iter() if _is_widget(w))
+        what = "page" if parent[el] is vc else _local(el.tag)
+        removed.append(f"{what} '{(el.get('Caption') or '').replace(chr(10), ' ')}'"
+                       + (f" ({n} widgets)" if n > 1 else ""))
+    return removed
 
 
 def seeds_from_widgets(root: ET.Element, keys: Iterable[str]) -> List[str]:

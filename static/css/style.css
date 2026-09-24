@@ -3181,9 +3181,13 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 
 /* Done panel (Step 5) */
 .porter-done {
-  text-align: center;
-  padding: 40px 20px;
+  text-align: left;
+  padding: 32px 20px;
+  max-width: 900px;
+  margin: 0 auto;
 }
+.porter-done ul { margin: 4px 0 12px 18px; color: var(--text-dim); font-size: 14px; }
+.porter-done code { font-size: 13px; }
 .porter-done h3 { margin: 0 0 12px 0; color: var(--green, #4caf50); }
 .porter-done p { color: var(--text-dim); font-size: 14px; }
 

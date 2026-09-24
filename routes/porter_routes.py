@@ -185,6 +185,15 @@ def stage(side):
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/target/vc')
+def target_vc():
+    """Every widget of the target VC (keys in document order) — for choosing
+    what to remove from the output."""
+    if not porter.get_state()['tgt_loaded']:
+        return jsonify([])
+    return jsonify(porter_vc.list_source_vc(porter.target_root(), include_all=True))
+
+
 @bp.route('/target/pages')
 def target_pages():
     if not porter.get_state()['tgt_loaded']:
@@ -271,6 +280,7 @@ def last_result():
     return jsonify({'filename': r.get('filename'), 'doctor': r.get('doctor'),
                     'vc': r.get('vc'), 'pruned': r.get('pruned', []),
                     'groups': r.get('groups', []), 'panic': r.get('panic', []),
+                    'removed_vc': r.get('removed_vc', []),
                     'functions': len(r.get('func_id_map', {}))})
 
 
@@ -355,6 +365,7 @@ def _normalize_plan(data: dict) -> dict:
             'target_page':  str(vc.get('target_page') or ''),
             'page_caption': str(vc.get('page_caption') or ''),
             'bindings':     vc.get('bindings') if vc.get('bindings') in ('keep_free', 'keep', 'drop') else 'keep_free',
+            'remove':       [str(k) for k in (vc.get('remove') or [])],
         },
         'closure':         closure,
         'fixture_mapping': normalized_mapping,

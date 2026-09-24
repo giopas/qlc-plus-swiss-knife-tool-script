@@ -1562,6 +1562,14 @@
             </select></label>
         </div>
         <small>Widgets whose function is not ported are left out; each ported widget gets a new ID and a free spot on the page (a new page is added when it is full). Level sliders start at 0.</small>
+        <details id="porter-rm-pick" class="porter-vc-pick">
+          <summary>Remove existing items from the target's Virtual Console <small id="porter-rm-info">(optional — nothing removed)</small></summary>
+          <div class="tab-toolbar porter-toolbar">
+            <span class="porter-row-sub" style="flex:1">Ticked pages, frames and widgets are left out of the new file (the target file itself is not changed). Their space is reused for the ported widgets. Their functions stay (Doctor lists any that are no longer used).</span>
+            <button class="btn btn-surface" onclick="porterRmAll(false)">✗ None</button>
+          </div>
+          <div id="porter-rm-tree" class="porter-list porter-vc-tree"></div>
+        </details>
       </div>
 
       <div id="porter-validation-result" class="porter-validation-result">

@@ -1128,6 +1128,12 @@ def _build(plan: dict) -> dict:
     # ── 6. Virtual Console ────────────────────────────────────────────────
     vc_result = None
     vc_opts = plan.get("vc") or {}
+    removed_vc: list[str] = []
+    if vc_opts.get("remove"):
+        # Target items the user chose to drop — before placement, so their
+        # space is reused.  Keys index the target as loaded (same order).
+        from core import porter_vc
+        removed_vc = porter_vc.remove_widgets(tgt_root, vc_opts["remove"])
     if vc_opts.get("enabled"):
         from core import porter_vc
         vc_result = porter_vc.port_vc(src_root, tgt_root, kept_map, blocks, vc_opts,
@@ -1146,6 +1152,7 @@ def _build(plan: dict) -> dict:
         "groups": [{"id": g.get("ID"), "name": g.findtext("Name", "")} for g in new_groups],
         "vc": vc_result,
         "panic": panic,
+        "removed_vc": removed_vc,
         "_defs": defs,
     }
 
@@ -1495,6 +1502,11 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
             lines.append("── FIXTURE GROUPS CREATED ──")
             for g in result["groups"]:
                 lines.append(f"  + {g['id']} '{g['name']}'")
+            lines.append("")
+        if result.get("removed_vc"):
+            lines.append(f"── REMOVED FROM THE TARGET VC ({len(result['removed_vc'])}) ──")
+            for r in result["removed_vc"]:
+                lines.append(f"  - {r}")
             lines.append("")
         vc = result.get("vc")
         if vc:

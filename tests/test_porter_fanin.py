@@ -424,3 +424,48 @@ class TestLitFixtureMap(unittest.TestCase):
                     self.assertEqual(set(fx), want)
         finally:
             porter.clear()
+
+
+class TestRemoveTargetVc(unittest.TestCase):
+    """Step 4: leave existing target VC items out of the output."""
+
+    def test_remove_page_and_place_in_freed_space(self):
+        tmp = tempfile.mkdtemp()
+        porter.load_source(FESTIVAL)
+        porter.load_target(QS6)
+        try:
+            tgt_tree = porter_vc.list_source_vc(porter.target_root(), include_all=True)
+            page = next(w for w in tgt_tree if w["depth"] == 0)
+            # every widget is listed (labels and function-less buttons too)
+            self.assertGreater(len(tgt_tree), len(porter_vc.list_source_vc(porter.target_root())))
+            scope = _keys_by_caption(porter.source_root(), "CEILING")
+            plan = _plan(scope, "fan_in", "fan_in",
+                         vc=dict(enabled=True, scope=scope, remove=[page["key"]]))
+            res = porter.port(plan)
+            root = _parse(res)
+            pages = [p.get("Caption") for p in root.find("VirtualConsole")
+                     if p.tag in ("Frame", "SoloFrame")]
+            self.assertNotIn(page["caption"], pages)
+            self.assertEqual(pages, ["Ported from Festival_14fix"])
+            self.assertTrue(res["removed_vc"][0].startswith(f"page '{page['caption']}'"))
+            self.assertIn("REMOVED FROM THE TARGET VC", res["report"])
+            self.assertEqual(res["doctor"]["errors"], [])
+            # the target as loaded is untouched
+            self.assertIn(page["caption"], [p["caption"] for p in
+                                            porter_vc.list_target_pages(porter.target_root())])
+        finally:
+            porter.clear()
+
+    def test_nested_selection_removed_once(self):
+        root = ET.fromstring("""<Workspace><VirtualConsole>
+          <Frame Caption="P" ID="0"><WindowState X="0" Y="0" Width="800" Height="600"/>
+            <Frame Caption="F" ID="1"><WindowState X="0" Y="0" Width="100" Height="100"/>
+              <Button Caption="B" ID="2"><WindowState X="0" Y="0" Width="50" Height="50"/></Button>
+            </Frame>
+            <Button Caption="C" ID="3"><WindowState X="200" Y="0" Width="50" Height="50"/></Button>
+          </Frame></VirtualConsole></Workspace>""")
+        keys = {w["caption"]: w["key"] for w in porter_vc.list_source_vc(root, include_all=True)}
+        removed = porter_vc.remove_widgets(root, [keys["F"], keys["B"]])
+        self.assertEqual(removed, ["Frame 'F' (2 widgets)"])
+        self.assertEqual([c.get("Caption") for c in root.find("VirtualConsole/Frame")
+                          if c.tag in ("Frame", "Button")], ["C"])

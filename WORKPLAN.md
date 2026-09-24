@@ -4,11 +4,14 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (25 Sep):**
+- **Phase 1.2 — done** on branch `feat/porter-vc` (local commits, stacked on `main` @ `60db1fa`; Giovanni pushes): VC porting, fan-in, Doctor gate, import report next to the output. Real cases Festival_14fix → QuickStart_6fix (fan-in 14 → 6) and Festival_14fix → bare Pub rig (same IDs) pass Doctor with 0 errors / 0 warnings and are byte-identical run to run; the fan-in output passes `tools/qlc_check.py` in QLC+ 5.2.2 for every ported button. 365 tests green. Waiting for Giovanni: try the Porter tab on the Mac, push.
+- Next: Phase 1.3 (Show Book), see §8.
+
 **Status (24 Sep, end of session):**
 - **Phase 0 — done and released** as `v1.3.2` (main @ `2cc9dbc`, CI green).
 - **Phase 1.0 — core done** on branch `feat/doctor`: corpus, `core/doctor` engine + CLI. Still open: `20Minutes_FLOOR` corpus file.
 - **Phase 1.1 — done** on branch `feat/quickstart-1.1` (local commits; Giovanni pushes): mode-aware channels, neutral values, PANIC RESET (script, works in QLC+ 5.2.2), naming profiles, VC style cloning, Doctor gate, 3 golden rigs, live QLC+ check (`tools/qlc_check.py`). **1.1b (24 Sep, after Giovanni's test):** full-width page, whole-rig solo frame + one solo frame per group (groups combine), Audio React, fixture groups (editor in step 3; per-group frame with submaster, looks, effects), MASTER submaster, working RGB-matrix effects (Collection: dimmer scene + matrix), fixture `.qxf` saved next to the workspace only when QLC+ lacks it, indented XML (QLC+ 5.2.2 loader bug), corpus renamed/scrubbed (`Festival_14fix`, `Pub_6fix`). All golden rigs PASS `tools/qlc_check.py` in QLC+ 5.2.2 (and club in 4.14.5). Waiting for Giovanni: test on the Mac, push.
-- Next: Phase 1.2 (Function Porter), see §8.
 
 ---
 
@@ -91,6 +94,9 @@ The result must pass Doctor with zero errors, and a Doctor diff against v14 must
 | 2026-09-24 | Real show files in the public repo are **renamed and scrubbed** (`Festival_14fix`, `Pub_6fix`; bands/songs/venue → neutral names). Git history still contains the originals — purge only if needed (needs a force-push). |
 | 2026-09-23 | **PANIC RESET is a Script**, not a scene: `stoponexit:false`, stop every generated function, start *Reset: neutral state*, `wait:100ms`, stop itself. Reasons, all reproduced in real QLC+ builds: HTP channels can't be pulled down by a scene; QLC+ 5 scripts (to spring 2026) never end on their own; QLC+ 5.2.2 drops queued script commands if the code ends before the next tick (upstream fix `ca8ffd41`). The master slider is a Level **DIMMER** at 0 (a Level slider at 255 held dimmers full; a Submaster slider made 5.2.2 drop the VC). |
 | 2026-09-23 | **Behaviour is verified in real QLC+**, not only by reading XML: `tools/qlc_check.py` (web-socket API) is part of the §6 open-check. Target versions: QLC+ 5.2.2 (Giovanni's) and 4.14. |
+| 2026-09-25 | **Porter fan-in rule:** a target fed by several sources takes, per scene, the values of the **first lit source** in its block (intensity/colour > 0, from the QXF; any channel > 0 without one), else the first declared source. Blocks come from 3D stage order (X, then depth; DMX address if positions are missing), per fixture type. Colours are never mixed. |
+| 2026-09-25 | **Porter safety defaults:** unmapped source fixtures are an error unless *leave out* is ticked; functions left with no fixture are removed with their steps/buttons (reported); ported scenes declare every channel (neutral values from `channel_model`); a Quick Start PANIC RESET script in the target gets `stopfunction` for every ported function; ported Level sliders start at their low limit; Doctor blocks the export only on errors the target didn't already have. |
+| 2026-09-25 | **Porter VC rules:** units = items directly on a source page (a picked page = its items); a widget stays if all its functions are ported; label/StopAll buttons stay inside kept frames; in auto mode a frame needs a working widget. New IDs `max+1` in document order; bottom-left placement with 10 px margin/gap; continuation page when full. Bindings default *keep unless already used in the target*. Source widgets are addressed by document-order keys (`w<N>`), since real files can repeat widget IDs (D002). |
 | 2026-09-23 | D006 intent keywords: *strob, flash, `*`, punk, macro, program, audio, fx* (own name or any containing function). A value is neutral if it falls in a *No function / No flash / Open / Off / DMX mode* capability. StopAll/Blackout buttons are not "caption-only". |
 
 ---
@@ -182,11 +188,12 @@ Found and fixed along the way (all in the CHANGELOG):
   - Second letter, effect type: S = static, D = dynamic, P = pulse, M = movement, \* = special FX.
 - Commits: `test(quickstart): golden outputs`, `feat(quickstart): clone VC style from reference`, `feat: nomenclature profiles`
 
-**1.2 Function Porter**
-- [ ] **VC porting**: bring each ported function's buttons and frames too, with widget ID remapping, a target page chosen by the user, and collision-free placement.
-- [ ] Verify **fan-in** (many source fixtures to fewer targets, e.g. 14 → 6). `auto_map` currently maps same model+mode; add an explicit fan-in mode if needed.
-- [ ] Real case: port looks from Festival_14fix into a 6-fixture rig. The result passes Doctor.
-- [ ] The import report is saved next to the output file.
+**1.2 Function Porter** — ✅ *done 25 Sep, branch `feat/porter-vc`*
+- [x] **VC porting**: bring each ported function's buttons and frames too, with widget ID remapping, a target page chosen by the user, and collision-free placement. *(`core/porter_vc.py`; step 2 picks frames/buttons from the source VC and seeds the port; step 4: target page or new page, binding policy.)*
+- [x] Verify **fan-in** (many source fixtures to fewer targets, e.g. 14 → 6). *(Explicit `fan_in` mode + Auto-Map strategies `fan_in` (stage order) and `same_id` (reduced rig); "first lit source wins" per scene.)*
+- [x] Real case: port looks from Festival_14fix into a 6-fixture rig. The result passes Doctor. *(Both QuickStart_6fix (fan-in) and the bare Pub rig (same IDs): 0 errors, 0 warnings; `tests/test_porter_fanin.py`.)*
+- [x] The import report is saved next to the output file. *(`<name>_port_report.txt`.)*
+- Found and fixed along the way: non-deterministic function IDs (closure ordered by a set); EFX fixtures and percent-encoded script commands not recognised in real QLC+ files; values of unmapped fixtures left in scenes (dangling refs); RGB matrices pointing at a group missing in the target; ported looks surviving the target's PANIC RESET (live check).
 - Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
 
 **1.3 Show Book**
@@ -325,8 +332,14 @@ Checks (★ = included in Phase 1.0):
 3. `git push -u origin feat/quickstart-1.1`; CI green; merge into `main` (it contains `feat/doctor`). Push the wiki.
 3. Optional: `pip install websocket-client`, then `python3 tools/qlc_check.py tests/corpus/QuickStart_club.qxw` with QLC+ closed — should print `RESULT: PASS`.
 
+**Giovanni, before the next session (Phase 1.2):**
+1. Try the Porter tab: source *Festival_14fix*, target a 6-fixture rig; step 2 tick *COMBINED FX* → *Select their functions*; step 3 Auto-Map *Fan-in by stage position* (or *Same fixture ID* for a reduced copy); step 4 new page; export → `<name>_v2.qxw` + `<name>_v2_port_report.txt`. Open in QLC+ 5.2.2: ported page renders, buttons light, PANIC RESET clears them.
+2. `git push -u origin feat/porter-vc`; CI green; merge into `main`. Push the wiki (new page *Function Porter*).
+
 **Next Cowork session:**
-1. Phase 1.2 Porter: run the Festival_14fix → 6-fixture fan-in case and check it with Doctor; VC porting.
+1. Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `20Minutes_FLOOR` to the corpus when available.
-3. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session; run `tools/qlc_check.py` in CI (build QLC+ 5.2.2 in a cached Docker image).
-4. Upstream reports (QLC+ forum/GitHub): `VCSlider::loadXMLLevel` token over-read after an empty `<Level/>` on unindented XML; RGB-mode matrices ignoring *DimmerControl*; 5.2.2 script-command race (if not covered by `ca8ffd41`). Doctor: add a check for fixtures whose definition won't be found next to the workspace.
+3. Look into `QuickStart_6fix`'s whole-rig *Chase* / *Stripes* buttons: in the live check (QLC+ 5.2.2 headless) one of them is intermittently dark (a different one per run) — timing of the Collection (dimmer scene + matrix) start, or the check's 1 s settle?
+4. Porter backlog: channel translation between different fixture types (by capability, e.g. PAR → spot); Sequence step values; Show timelines; optional "compact frames" after pruning.
+5. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session; run `tools/qlc_check.py` in CI (build QLC+ 5.2.2 in a cached Docker image).
+6. Upstream reports (QLC+ forum/GitHub): `VCSlider::loadXMLLevel` token over-read after an empty `<Level/>` on unindented XML; RGB-mode matrices ignoring *DimmerControl*; 5.2.2 script-command race (if not covered by `ca8ffd41`). Doctor: add a check for fixtures whose definition won't be found next to the workspace.

@@ -3011,6 +3011,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 }
 /* display:flex above would override the [hidden] attribute the wizard uses */
 .porter-panel[hidden] { display: none; }
+/* Scrolling part of a step; the nav bar below it (Back / Next) stays visible */
+.porter-panel-body { flex: 1; min-height: 0; overflow-y: auto; }
+.porter-panel-body .porter-list { max-height: 34vh; }
+.porter-panel > .porter-nav-bar { flex: none; }
 
 /* Function list (Step 2) */
 .porter-toolbar { gap: 8px; }

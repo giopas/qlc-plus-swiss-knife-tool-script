@@ -201,6 +201,8 @@ Found and fixed along the way (all in the CHANGELOG):
   - [x] Step 2 **Next button hidden** when the two lists are tall (Giovanni's screenshot, 25 Sep): the step's content now scrolls in `.porter-panel-body`, the Back / Next bar stays at the bottom (checked at 1000×620 and 1600×1000).
   - [x] Step 3 **"Don't port this fixture"** *(done 25 Sep: "Port this fixture" checkbox per row; uses `lit_fixture_map` from `resolve_closure` — a scene declaring a fixture at 0 doesn't "use" it; checked in a browser: skipping DR + LG unticks *RS · Silhouette* and *LS · Logo Only* in step 2, re-including restores them)* per source fixture (Giovanni, 25 Sep): the fixture gets no target and its values are left out; functions (and VC widgets) that use *only* skipped fixtures are unticked in step 2 (visible when going back) and come back when the fixture is included again. The mapping of the other fixtures is kept when the selection changes.
   - [x] Step 3 **highlight**: hovering or clicking a mapping row rings that source fixture on the source plan and its target(s) on the target plan. *(done 25 Sep; click pins the highlight)*
+  - [ ] Export step: say clearly that the **import report** was saved too (file name + folder of both files); if it could not be saved, say so and point to 📋 Copy Report. (Giovanni, 25 Sep)
+  - [ ] Step 4: **remove existing target VC items** (pages, frames, buttons, sliders…) from the output — a tree of the target VC with "remove" ticks; removal happens before placement so the freed space is reused; a removed page can't be the "Place on" page. (Giovanni, 25 Sep)
   - [ ] Fan-in ordering idea (not started): use Left/Right/Front/Back words in fixture names when positions and names disagree (MiniRockShow case).
 - Found and fixed along the way: non-deterministic function IDs (closure ordered by a set); EFX fixtures and percent-encoded script commands not recognised in real QLC+ files; values of unmapped fixtures left in scenes (dangling refs); RGB matrices pointing at a group missing in the target; ported looks surviving the target's PANIC RESET (live check).
 - Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
@@ -215,6 +217,16 @@ Found and fixed along the way (all in the CHANGELOG):
 - [ ] Remove the Alpha badges.
 - [ ] Wiki pages for Quick Start, Porter, Show Book and Doctor (read-only).
 - [ ] Forum post.
+
+**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by Giovanni 25 Sep; next development stage after 1.3/1.4 — design sketch, not started)*
+
+Goal: build a new show for a **different rig** (other fixture types, number, arrangement, positions) and port everything that can be ported from an existing show in one flow, instead of Quick Start first and Porter second.
+
+- [ ] Quick Start gets an optional step **"Port from an existing show"** after the rig/stage steps: pick a source `.qxw`; the Quick Start rig (in memory, not yet exported) becomes the Porter target.
+- [ ] Mapping uses the Porter step 3 UI (stage plans side by side, fan-in, "Port this fixture", highlight), with the Quick Start stage positions as the target plan.
+- [ ] **Different fixture types** (the new part): translate values by **capability** instead of channel index — intensity, RGB(W/A/UV) colour mixing, colour wheel (nearest colour), pan/tilt (degrees via QXF physical ranges), strobe/shutter (safe mapping or dropped), everything else neutral. Needs a `core/capability_map.py` built on `qxf_parser` + `channel_model`; tier-3 mappings in the Porter use it too.
+- [ ] Output = one workspace: Quick Start's generated VC/looks + the ported functions and widgets (placed with the Porter's VC rules), PANIC RESET covering both, Doctor gate once.
+- [ ] Golden test: Festival_14fix → a Quick Start rig of different types (e.g. Chauvet Intimidator Spot 110 + SlimPAR 56) → Doctor clean + `tools/qlc_check.py` pass.
 
 ### Phase 2 — Show-building toolkit (replaces manual/AI XML patching)
 

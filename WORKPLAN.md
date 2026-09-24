@@ -6,7 +6,7 @@
 
 **Status (25 Sep):**
 - **Phase 1.2 — done** on branch `feat/porter-vc` (local commits, stacked on `main` @ `60db1fa`; Giovanni pushes): VC porting, fan-in, Doctor gate, import report next to the output. Real cases Festival_14fix → QuickStart_6fix (fan-in 14 → 6) and Festival_14fix → bare Pub rig (same IDs) pass Doctor with 0 errors / 0 warnings and are byte-identical run to run; the fan-in output passes `tools/qlc_check.py` in QLC+ 5.2.2 for every ported button. 365 tests green. Waiting for Giovanni: try the Porter tab on the Mac, push.
-- Next: Phase 1.3 (Show Book), see §8.
+- Next: **Phase 1.5 (Quick Start × Porter)**, then 1.3 (Show Book) — order changed by Giovanni on 25 Sep, see §8.
 
 **Status (24 Sep, end of session):**
 - **Phase 0 — done and released** as `v1.3.2` (main @ `2cc9dbc`, CI green).
@@ -218,7 +218,7 @@ Found and fixed along the way (all in the CHANGELOG):
 - [ ] Wiki pages for Quick Start, Porter, Show Book and Doctor (read-only).
 - [ ] Forum post.
 
-**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by Giovanni 25 Sep; next development stage after 1.3/1.4 — design sketch, not started)*
+**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by Giovanni 25 Sep; **done next, before 1.3 Show Book** (Giovanni, 25 Sep) — design sketch, not started)*
 
 Goal: build a new show for a **different rig** (other fixture types, number, arrangement, positions) and port everything that can be ported from an existing show in one flow, instead of Quick Start first and Porter second.
 
@@ -358,7 +358,8 @@ Checks (★ = included in Phase 1.0):
 2. `git push -u origin feat/porter-vc`; CI green; merge into `main`. Push the wiki (new page *Function Porter*).
 
 **Next Cowork session:**
-1. Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
+1. Phase 1.5 Quick Start × Porter (see §5): start with `core/capability_map.py` (value translation between fixture types) + tests, then the Quick Start "Port from an existing show" step.
+1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `20Minutes_FLOOR` to the corpus when available.
 3. Look into `QuickStart_6fix`'s whole-rig *Chase* / *Stripes* buttons: in the live check (QLC+ 5.2.2 headless) one of them is intermittently dark (a different one per run) — timing of the Collection (dimmer scene + matrix) start, or the check's 1 s settle?
 4. Porter backlog: channel translation between different fixture types (by capability, e.g. PAR → spot); Sequence step values; Show timelines; optional "compact frames" after pruning.

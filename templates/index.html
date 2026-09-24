@@ -1460,49 +1460,55 @@
       </div>
     </div>
 
-    <!-- Step 2: Select functions -->
+    <!-- Step 2: Select what to port -->
     <div id="porter-panel-2" class="porter-panel" hidden>
-      <div class="tab-toolbar porter-toolbar">
-        <input type="text" class="filter-input" placeholder="Search functions..." style="flex:1"
-               oninput="porterFnSearch(this.value)">
-        <select class="filter-input" style="flex:0 0 140px" onchange="porterFnTypeFilter(this.value)">
-          <option value="">All types</option>
-          <option value="Scene">Scene</option>
-          <option value="Chaser">Chaser</option>
-          <option value="Sequence">Sequence</option>
-          <option value="EFX">EFX</option>
-          <option value="Collection">Collection</option>
-          <option value="Show">Show</option>
-          <option value="Audio">Audio</option>
-          <option value="Script">Script</option>
-          <option value="RGBMatrix">RGBMatrix</option>
-        </select>
-        <button class="btn btn-surface" onclick="porterSelectAllFn()">✓ All</button>
-        <button class="btn btn-surface" onclick="porterSelectNoneFn()">✗ None</button>
-      </div>
+      <p class="porter-hint">Tick what you want in the new show: <b>pages, frames or buttons</b> of the source Virtual Console
+        (ticking a frame ticks everything inside; the widgets come along) and/or single <b>functions</b>.
+        Whatever they need to run — chaser steps, collection members, matrix groups — is added automatically.</p>
 
       <details id="porter-vc-pick" class="porter-vc-pick" open>
-        <summary>Pick from the source Virtual Console <small>(frames and buttons — their functions are selected, and the widgets can come along)</small></summary>
+        <summary>From the source Virtual Console</summary>
+        <div class="tab-toolbar porter-toolbar">
+          <span id="porter-vc-pick-info" class="porter-row-sub" style="flex:1"></span>
+          <button class="btn btn-surface" onclick="porterVcAll(true)">✓ All</button>
+          <button class="btn btn-surface" onclick="porterVcAll(false)">✗ None</button>
+        </div>
         <div id="porter-vc-tree" class="porter-list porter-vc-tree">
           <div class="porter-placeholder">Loading...</div>
         </div>
-        <div class="porter-nav-bar">
-          <button class="btn btn-surface" onclick="porterSelectFromVc()">☑ Select their functions</button>
-          <span id="porter-vc-pick-info" class="porter-row-sub"></span>
-        </div>
       </details>
 
-      <div id="porter-fn-list" class="porter-list">
-        <div class="porter-placeholder">Loading...</div>
-      </div>
+      <details id="porter-fn-pick" class="porter-vc-pick" open>
+        <summary>Functions</summary>
+        <div class="tab-toolbar porter-toolbar">
+          <input type="text" class="filter-input" placeholder="Search functions..." style="flex:1"
+                 oninput="porterFnSearch(this.value)">
+          <select class="filter-input" style="flex:0 0 140px" onchange="porterFnTypeFilter(this.value)">
+            <option value="">All types</option>
+            <option value="Scene">Scene</option>
+            <option value="Chaser">Chaser</option>
+            <option value="Sequence">Sequence</option>
+            <option value="EFX">EFX</option>
+            <option value="Collection">Collection</option>
+            <option value="Show">Show</option>
+            <option value="Audio">Audio</option>
+            <option value="Script">Script</option>
+            <option value="RGBMatrix">RGBMatrix</option>
+          </select>
+          <button class="btn btn-surface" onclick="porterSelectAllFn()" data-tooltip="Tick every function shown (search/type filter applies)">✓ All</button>
+          <button class="btn btn-surface" onclick="porterSelectNoneFn()" data-tooltip="Untick every function shown">✗ None</button>
+        </div>
+        <div id="porter-fn-list" class="porter-list">
+          <div class="porter-placeholder">Loading...</div>
+        </div>
+      </details>
 
       <div id="porter-closure-summary"></div>
 
       <div class="porter-nav-bar">
         <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
-        <button class="btn btn-accent" onclick="porterResolve()">Resolve Dependencies</button>
         <div class="spacer"></div>
-        <button class="btn btn-accent" onclick="if(_pClosure) porterGoStep(3); else _pStatus('Resolve dependencies first.','error')">Next: Map Fixtures →</button>
+        <button class="btn btn-accent" onclick="porterNextFromSelect()">Next: Map Fixtures →</button>
       </div>
     </div>
 
@@ -1566,7 +1572,7 @@
     </div>
 
     <!-- Status bar -->
-    <div id="porter-status" class="status-bar status-info">Load both .qxw files to begin.</div>
+    <div id="porter-status" class="status-bar status-info" hidden></div>
 
     <div class="out-footer">
       <span class="out-note new">

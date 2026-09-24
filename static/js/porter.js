@@ -37,9 +37,13 @@ let _pImportPath     = '';
 let _pValidation     = null;
 let _pDropUnmapped   = false;
 let _pCompleteCh     = true;
-let _pSelected       = new Set();   // selected source function IDs
+let _pManual         = new Set();   // functions ticked in the function list
+let _pExcluded       = new Set();   // functions coming from the VC but unticked by hand
 let _pVcTree         = [];          // source VC (from /source/vc)
-let _pVcScope        = [];          // widget keys picked in step 2
+let _pVcScope        = [];          // widget keys ticked in the VC tree
+let _pVcSeeds        = [];          // functions used by those widgets
+let _pClosureKey     = '';          // seeds the current closure was built from
+let _pResolveTimer   = null;
 let _pVc = { enabled: true, target_page: '', page_caption: '', bindings: 'keep_free' };
 
 let _pStep = 1;  // current wizard step (1–5)
@@ -58,12 +62,24 @@ async function porterInit() {
   await _pRefreshState();
 }
 
+// Messages go to the app's one status bar (bottom of the window), so an old
+// message from another tool never sits next to a Porter one.
 function _pStatus(msg, type = 'info') {
+  const level = (type === 'error' || type === 'warn') ? type : 'ok';
+  if (typeof setStatus === 'function') { setStatus(msg, level); return; }
   const el = document.getElementById('porter-status');
   if (!el) return;
+  el.hidden = false;
   el.textContent = msg;
   el.className = `status-bar status-${type}`;
 }
+
+const _P_STEP_HINT = {
+  1: 'Pick the source show (import from) and the target show (import into).',
+  2: 'Tick pages, frames, buttons or functions to port — what they need is added automatically.',
+  3: 'Check where each source fixture goes in the target rig.',
+  4: 'Check the plan and the Virtual Console options, then export.',
+};
 
 // ── State refresh ────────────────────────────────────────────────────────────
 
@@ -168,8 +184,12 @@ async function _pFetchSourceData() {
     const r = await fetch('/api/porter/source/vc');
     _pVcTree = r.ok ? await r.json() : [];
   } catch (e) { _pVcTree = []; }
-  _pSelected = new Set();
+  _pManual = new Set();
+  _pExcluded = new Set();
   _pVcScope = [];
+  _pVcSeeds = [];
+  _pClosure = null;
+  _pClosureKey = '';
 }
 
 async function _pFetchTargetData() {
@@ -179,15 +199,18 @@ async function _pFetchTargetData() {
 
 // ── Wizard navigation ────────────────────────────────────────────────────────
 
-function porterGoStep(n) {
+async function porterGoStep(n) {
   if (n < 1 || n > 5) return;
   // Guard: can't advance past step 1 without both files loaded
   if (n > 1 && (!_pSrcLoaded || !_pTgtLoaded)) {
     _pStatus('Load both source and target QXW files first.', 'error');
     return;
   }
+  // Steps 3–5 need the selection resolved (done automatically)
+  if (n >= 3 && !(await porterResolve(false))) { if (_pStep !== 2) { _pStep = 2; _pRenderStep(); } return; }
   _pStep = n;
   _pRenderStep();
+  if (_P_STEP_HINT[n]) _pStatus(_P_STEP_HINT[n], 'info');
 }
 
 function _pRenderStep() {
@@ -219,15 +242,39 @@ function _pRenderStep() {
 
 function porterFnSearch(val) { _pFnSearch = (val || '').toLowerCase(); _pRenderSelectFunctions(); }
 function porterFnTypeFilter(val) { _pFnTypeFilter = val || ''; _pRenderSelectFunctions(); }
+// ── What is selected ────────────────────────────────────────────────────────
+
+/** Seeds = functions ticked by hand + functions of ticked VC widgets,
+ *  minus the ones unticked by hand; in source order (deterministic). */
+function _pSeedIds() {
+  const vc = new Set(_pVcSeeds.map(String));
+  return _pSrcFunctions.map(f => String(f.id))
+    .filter(id => _pManual.has(id) || (vc.has(id) && !_pExcluded.has(id)));
+}
+function _pIsSelected(id) {
+  id = String(id);
+  return _pManual.has(id) || (_pVcSeeds.map(String).includes(id) && !_pExcluded.has(id));
+}
+function _pSetFn(id, on) {
+  id = String(id);
+  if (on) { _pManual.add(id); _pExcluded.delete(id); }
+  else { _pManual.delete(id); if (_pVcSeeds.map(String).includes(id)) _pExcluded.add(id); }
+}
+
 function porterSelectAllFn() {
-  document.querySelectorAll('#porter-fn-list .porter-check').forEach(cb => { cb.checked = true; _pSelected.add(cb.value); });
+  document.querySelectorAll('#porter-fn-list .porter-check').forEach(cb => { cb.checked = true; _pSetFn(cb.value, true); });
+  _pScheduleResolve();
 }
 function porterSelectNoneFn() {
-  document.querySelectorAll('#porter-fn-list .porter-check').forEach(cb => { cb.checked = false; _pSelected.delete(cb.value); });
+  document.querySelectorAll('#porter-fn-list .porter-check').forEach(cb => { cb.checked = false; _pSetFn(cb.value, false); });
+  _pScheduleResolve();
 }
 function porterToggleFn(cb) {
-  if (cb.checked) _pSelected.add(cb.value); else _pSelected.delete(cb.value);
+  _pSetFn(cb.value, cb.checked);
+  _pScheduleResolve();
 }
+
+// ── Source VC tree (ticking a frame ticks everything inside) ────────────────
 
 function _pRenderVcTree() {
   const el = document.getElementById('porter-vc-tree');
@@ -237,37 +284,96 @@ function _pRenderVcTree() {
     return;
   }
   const scope = new Set(_pVcScope);
-  el.innerHTML = _pVcTree.map(w => `
-    <label class="porter-row" style="padding-left:${0.5 + w.depth * 1.2}rem">
-      <input type="checkbox" class="porter-vc-check" value="${w.key}" ${scope.has(w.key) ? 'checked' : ''}>
-      <span class="porter-row-label">${w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '')}${_esc(w.caption || '(no caption)')}</span>
+  el.innerHTML = _pVcTree.map((w, i) => {
+    const icon = w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
+    return `<label class="porter-row${w.depth === 0 ? ' porter-vc-page' : ''}" style="padding-left:${0.5 + w.depth * 1.2}rem">
+      <input type="checkbox" class="porter-vc-check" data-idx="${i}" value="${w.key}"
+             ${scope.has(w.key) ? 'checked' : ''} onchange="porterVcToggle(${i}, this.checked)">
+      <span class="porter-row-label">${icon}${_esc(w.caption || '(no caption)')}</span>
       <span class="porter-row-sub">${_esc(w.tag)} · ${w.functions} function(s)</span>
-    </label>`).join('');
+    </label>`;
+  }).join('');
+  _pVcSyncParents();
 }
 
-async function porterSelectFromVc() {
-  const keys = Array.from(document.querySelectorAll('#porter-vc-tree .porter-vc-check:checked')).map(c => c.value);
-  if (!keys.length) { _pStatus('Tick at least one page, frame or button.', 'error'); return; }
-  try {
-    const r = await fetch('/api/porter/vc/seeds', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keys }),
-    });
-    const d = await r.json();
-    if (!r.ok) { _pStatus('Error: ' + d.error, 'error'); return; }
-    _pVcScope = keys;
-    d.seed_ids.forEach(id => _pSelected.add(String(id)));
-    const info = document.getElementById('porter-vc-pick-info');
-    if (info) info.textContent = `${keys.length} widget(s) → ${d.seed_ids.length} function(s) selected; these widgets will be ported too.`;
-    _pRenderSelectFunctions();
-    await porterResolve();
-  } catch (e) {
-    _pStatus('Network error: ' + e.message, 'error');
+function _pVcBoxes() {
+  return Array.from(document.querySelectorAll('#porter-vc-tree .porter-vc-check'));
+}
+
+/** Indexes of the rows inside row *i* (the tree is in document order). */
+function _pVcChildren(i) {
+  const out = [];
+  const d = _pVcTree[i].depth;
+  for (let j = i + 1; j < _pVcTree.length && _pVcTree[j].depth > d; j++) out.push(j);
+  return out;
+}
+
+/** A frame shows ticked when everything inside is ticked, dashed when partly. */
+function _pVcSyncParents() {
+  const boxes = _pVcBoxes();
+  for (let i = _pVcTree.length - 1; i >= 0; i--) {
+    const kids = _pVcChildren(i);
+    if (!kids.length) { boxes[i].indeterminate = false; continue; }
+    const on = kids.filter(j => boxes[j].checked).length;
+    boxes[i].checked = on === kids.length;
+    boxes[i].indeterminate = on > 0 && on < kids.length;
   }
+}
+
+function porterVcToggle(i, checked) {
+  const boxes = _pVcBoxes();
+  for (const j of _pVcChildren(i)) { boxes[j].checked = checked; boxes[j].indeterminate = false; }
+  _pVcSyncParents();
+  _pVcScopeChanged();
+}
+
+function porterVcAll(on) {
+  _pVcBoxes().forEach(b => { b.checked = on; b.indeterminate = false; });
+  _pVcScopeChanged();
+}
+
+async function _pVcScopeChanged() {
+  _pVcScope = _pVcBoxes().filter(b => b.checked).map(b => b.value);
+  if (!_pVcScope.length) {
+    _pVcSeeds = [];
+  } else {
+    try {
+      const r = await fetch('/api/porter/vc/seeds', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys: _pVcScope }),
+      });
+      const d = await r.json();
+      if (!r.ok) { _pStatus('Error: ' + d.error, 'error'); return; }
+      _pVcSeeds = d.seed_ids.map(String);
+    } catch (e) { _pStatus('Network error: ' + e.message, 'error'); return; }
+  }
+  const info = document.getElementById('porter-vc-pick-info');
+  const nW = _pVcScope.length;
+  if (info) info.textContent = nW ? `${nW} widget(s) ticked → ${_pVcSeeds.length} function(s); the widgets come along.` : '';
+  _pRenderFnList();
+  _pScheduleResolve();
+}
+
+// ── Dependencies: resolved automatically ────────────────────────────────────
+
+function _pScheduleResolve() {
+  clearTimeout(_pResolveTimer);
+  _pResolveTimer = setTimeout(() => porterResolve(true), 250);
+}
+
+async function porterNextFromSelect() {
+  clearTimeout(_pResolveTimer);
+  const ok = await porterResolve(false);
+  if (ok) porterGoStep(3);
 }
 
 function _pRenderSelectFunctions() {
   _pRenderVcTree();
+  _pRenderFnList();
+  _pRenderClosureSummary();
+}
+
+function _pRenderFnList() {
   const container = document.getElementById('porter-fn-list');
   if (!container) return;
 
@@ -286,22 +392,26 @@ function _pRenderSelectFunctions() {
   container.innerHTML = items.map(f => `
     <label class="porter-row">
       <input type="checkbox" class="porter-check" value="${f.id}" data-name="${_esc(f.name)}"
-             ${_pSelected.has(String(f.id)) ? 'checked' : ''} onchange="porterToggleFn(this)">
+             ${_pIsSelected(f.id) ? 'checked' : ''} onchange="porterToggleFn(this)">
       <span class="porter-row-label">${_esc(f.name)}</span>
       <span class="porter-row-sub">${_esc(f.type)}${f.path ? ' · ' + _esc(f.path) : ''}</span>
     </label>`).join('');
 
 }
 
-async function porterResolve() {
-  // Keep the source order of the function list (deterministic seeds)
-  const seedIds = _pSrcFunctions.map(f => String(f.id)).filter(id => _pSelected.has(id));
+/** Build the closure for the current selection.  *quiet*: while ticking
+ *  (no status noise).  Returns true when there is something to port. */
+async function porterResolve(quiet = false) {
+  const seedIds = _pSeedIds();
+  const key = seedIds.join(',');
   if (!seedIds.length) {
-    _pStatus('Select at least one function.', 'error');
-    return;
+    _pClosure = null;
+    _pClosureKey = '';
+    _pRenderClosureSummary();
+    if (!quiet) _pStatus('Tick at least one page, frame, button or function.', 'error');
+    return false;
   }
-
-  _pStatus('Resolving dependencies...', 'info');
+  if (_pClosure && key === _pClosureKey) return true;
   try {
     const r = await fetch('/api/porter/resolve', {
       method: 'POST',
@@ -309,35 +419,39 @@ async function porterResolve() {
       body: JSON.stringify({ seed_ids: seedIds }),
     });
     const d = await r.json();
-    if (!r.ok) { _pStatus('Resolve error: ' + d.error, 'error'); return; }
-
+    if (!r.ok) { _pStatus('Error: ' + d.error, 'error'); return false; }
     _pClosure = d;
-    _pFixMapping = {};          // closure changed: map again
-    const nSeed = d.seed_ids.length;
-    const nDep  = d.function_ids.length - nSeed;
-    let msg = `Resolved: ${nSeed} selected + ${nDep} dependencies = ${d.function_ids.length} functions.`;
-    if (d.fixture_ids.length) msg += ` ${d.fixture_ids.length} fixtures referenced.`;
-    if (d.cycles.length) msg += ` ⚠ ${d.cycles.length} cycle(s) detected.`;
-    if (d.unresolved.length) msg += ` ⚠ ${d.unresolved.length} unresolved ref(s).`;
-    _pStatus(msg, d.unresolved.length ? 'warn' : 'ok');
-
-    // Show closure summary
+    _pClosureKey = key;
+    _pFixMapping = {};          // selection changed: map again
     _pRenderClosureSummary();
+    if (d.unresolved.length) {
+      _pStatus(`⚠ ${d.unresolved.length} referenced function(s) missing in the source: ${d.unresolved.join(', ')}`, 'warn');
+    } else if (!quiet) {
+      _pStatus(`${d.function_ids.length} function(s) to port.`, 'ok');
+    }
+    return true;
   } catch (e) {
     _pStatus('Network error: ' + e.message, 'error');
+    return false;
   }
 }
 
 function _pRenderClosureSummary() {
   const el = document.getElementById('porter-closure-summary');
-  if (!el || !_pClosure) return;
+  if (!el) return;
+  if (!_pClosure) {
+    el.innerHTML = '<div class="porter-summary-box">Nothing ticked yet.</div>';
+    return;
+  }
 
   const c = _pClosure;
+  const nDep = c.function_ids.length - c.seed_ids.length;
   let html = `<div class="porter-summary-box">
-    <strong>${c.function_ids.length}</strong> function(s) in closure
-    (<strong>${c.seed_ids.length}</strong> selected +
-     <strong>${c.function_ids.length - c.seed_ids.length}</strong> dependencies)<br>
-    <strong>${c.fixture_ids.length}</strong> source fixture(s) referenced`;
+    To port: <strong>${c.function_ids.length}</strong> function(s) —
+    <strong>${c.seed_ids.length}</strong> ticked
+    ${nDep ? `+ <strong>${nDep}</strong> they need (chaser steps, collection members…)` : ''}
+    · using <strong>${c.fixture_ids.length}</strong> source fixture(s)
+    ${_pVcScope.length ? ` · <strong>${_pVcScope.length}</strong> VC widget(s) come along` : ''}`;
 
   if (c.cycles.length) {
     html += `<br><span class="porter-warn">⚠ Cycles: ${c.cycles.map(_esc).join('; ')}</span>`;
@@ -685,8 +799,11 @@ function porterReset() {
   _pPanChannelMap = {};
   _pValidation = null;
   _pNamePrefix = '';
-  _pSelected = new Set();
+  _pManual = new Set();
+  _pExcluded = new Set();
   _pVcScope = [];
+  _pVcSeeds = [];
+  _pClosureKey = '';
   _pDropUnmapped = false;
   _pStep = 1;
   _pStatus('Ready for a new import.', 'info');

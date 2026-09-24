@@ -44,6 +44,7 @@ let _pVcScope        = [];          // widget keys ticked in the VC tree
 let _pVcSeeds        = [];          // functions used by those widgets
 let _pClosureKey     = '';          // seeds the current closure was built from
 let _pResolveTimer   = null;
+let _pPlans = { source: null, target: null };   // /api/porter/stage/<side>
 let _pVc = { enabled: true, target_page: '', page_caption: '', bindings: 'keep_free' };
 
 let _pStep = 1;  // current wizard step (1–5)
@@ -178,6 +179,7 @@ async function _pFetchSourceData() {
     fetch('/api/porter/source/functions'),
     fetch('/api/porter/source/fixtures'),
   ]);
+  await _pFetchPlan('source');
   _pSrcFunctions = fnR.ok ? await fnR.json() : [];
   _pSrcFixtures  = fxR.ok ? await fxR.json() : [];
   try {
@@ -195,6 +197,7 @@ async function _pFetchSourceData() {
 async function _pFetchTargetData() {
   const r = await fetch('/api/porter/target/fixtures');
   _pTgtFixtures = r.ok ? await r.json() : [];
+  await _pFetchPlan('target');
 }
 
 // ── Wizard navigation ────────────────────────────────────────────────────────
@@ -231,6 +234,7 @@ function _pRenderStep() {
   if (tgtH) tgtH.textContent = _pTgtLoaded ? _pTgtName : '— not loaded —';
 
   // Render the active panel
+  if (_pStep === 1 || _pStep === 3) setTimeout(_pDrawPlans, 0);
   if (_pStep === 2) _pRenderSelectFunctions();
   if (_pStep === 3) _pRenderMapFixtures();
   if (_pStep === 4) { _pRenderVcOptions(); _pRenderValidation(); }
@@ -576,13 +580,75 @@ async function _pRenderMapFixtures() {
   </div>`;
 
   container.innerHTML = html;
+  _pDrawPlans();
   _pStatus(`${_pCandidates.source_fixtures.length} source fixture(s) to map.`, 'info');
 }
 
 function porterUpdateMapping(srcId, selectEl) {
   const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
   _pFixMapping[srcId] = selected;
+  _pDrawPlans();
 }
+
+// ── Stage plans (top view, drawn with the Fixtures tab's drawStageTopView) ──
+
+async function _pFetchPlan(side) {
+  try {
+    const r = await fetch('/api/porter/stage/' + side);
+    _pPlans[side] = r.ok ? await r.json() : null;
+  } catch (e) { _pPlans[side] = null; }
+}
+
+const _P_MAP_COLORS = ['#f38ba8', '#89b4fa', '#a6e3a1', '#f9e2af', '#cba6f7', '#fab387',
+                       '#94e2d5', '#eba0ac', '#74c7ec', '#b4befe', '#f5c2e7', '#89dceb'];
+
+/** Step 3 colours: one per target fixture; its sources get the same colour. */
+function _pMappingColors() {
+  const tgtIds = (_pTgtFixtures || []).map(f => String(f.id))
+    .filter(id => Object.values(_pFixMapping).some(ts => ts.map(String).includes(id)));
+  const tgt = {};
+  tgtIds.forEach((id, i) => { tgt[id] = _P_MAP_COLORS[i % _P_MAP_COLORS.length]; });
+  const src = {};
+  for (const [s, ts] of Object.entries(_pFixMapping)) {
+    const t = (ts || []).map(String).find(id => tgt[id]);
+    if (t) src[String(s)] = tgt[t];
+  }
+  return { src, tgt };
+}
+
+function _pDrawPlans() {
+  if (typeof drawStageTopView !== 'function') return;
+  const step = _pStep === 3 ? 3 : 1;
+  const colors = step === 3 ? _pMappingColors() : null;
+  for (const side of ['source', 'target']) {
+    const cv = document.getElementById(`porter-plan-${side}-${step}`);
+    if (!cv || !cv.parentElement || cv.parentElement.offsetParent === null) continue;
+    cv.width = cv.parentElement.clientWidth || 500;
+    cv.height = cv.parentElement.clientHeight || 300;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const plan = _pPlans[side];
+    const name = side === 'source' ? _pSrcName : _pTgtName;
+    const title = `${side === 'source' ? 'Source' : 'Target'}${name ? ': ' + name : ''}`;
+    if (!plan || !plan.has_positions) {
+      ctx.fillStyle = _cv('--overlay0');
+      ctx.font = '12px monospace';
+      ctx.fillText(plan ? `${title} — no 3D positions saved in this file` : `${title} — not loaded`, 12, 22);
+      continue;
+    }
+    let rig = plan.fixtures;
+    if (colors) {
+      const map = side === 'source' ? colors.src : colors.tgt;
+      rig = rig.map(f => Object.assign({}, f, { color: map[String(f.id)] || '#585b70' }));
+    }
+    drawStageTopView(ctx, cv.width, cv.height, plan.stage, rig, {
+      title: title + '  (top view)',
+      label: f => `[${f.id}] ${(f.name || '').substring(0, 12)}`,
+    });
+  }
+}
+
+window.addEventListener('resize', () => { if (_pStep === 1 || _pStep === 3) _pDrawPlans(); });
 
 function porterToggleMirror(srcId, checked) {
   if (checked) _pMirrorFixtures.add(srcId);

@@ -168,6 +168,23 @@ def source_vc():
     return jsonify(porter_vc.list_source_vc(porter.source_root()))
 
 
+@bp.route('/stage/<side>')
+def stage(side):
+    """Stage plan of the source or target (3D positions, for the top view)."""
+    import copy
+    from core import fixture as fx, qxw_io
+    st = porter.get_state()
+    if side not in ('source', 'target'):
+        return jsonify({'error': 'side must be source or target'}), 400
+    if not st['src_loaded' if side == 'source' else 'tgt_loaded']:
+        return jsonify({'stage': None, 'fixtures': [], 'has_positions': False})
+    root = porter.source_root() if side == 'source' else porter.target_root()
+    try:
+        return jsonify(fx.stage_plan(qxw_io.qualify_ns(copy.deepcopy(root))))
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 @bp.route('/target/pages')
 def target_pages():
     if not porter.get_state()['tgt_loaded']:

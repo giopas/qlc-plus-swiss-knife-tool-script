@@ -486,7 +486,18 @@ const _MARGIN_T = 16;
 const _MARGIN_B = 40;
 
 function _drawTopView(W, H) {
-  const ctx   = _ctx;
+  drawStageTopView(_ctx, W, H, _stage, _rig, { selectedIdx: _selectedIdx });
+}
+
+/**
+ * Top view of a stage with fixtures — shared by the Fixtures tab and the
+ * Function Porter's stage plans.
+ *   stage: {w_mm, d_mm, cols, rows};  rig: [{name, x_mm, z_mm, color, grid?}]
+ *   opts:  selectedIdx, title, label(f) → text under the dot,
+ *          ring(f) → colour of an outline ring (e.g. the Porter mapping)
+ */
+function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
+  const _stage = stage, _rig = rig, _selectedIdx = opts.selectedIdx ?? -1;
   const drawW = W - _MARGIN_L - _MARGIN_R;
   const drawH = H - _TITLE_H - _MARGIN_T - _MARGIN_B;
   const ox = _MARGIN_L, oy = _TITLE_H + _MARGIN_T;
@@ -509,7 +520,7 @@ function _drawTopView(W, H) {
   // Title
   ctx.fillStyle = cText;
   ctx.font = 'bold 13px monospace';
-  ctx.fillText('Top View  (X → / Z ↓)', 8, 18);
+  ctx.fillText(opts.title || 'Top View  (X → / Z ↓)', 8, 18);
 
   // Stage area (checkerboard cells)
   const cellW = drawW / _stage.cols;
@@ -575,13 +586,18 @@ function _drawTopView(W, H) {
   // Fixtures
   for (let i = 0; i < _rig.length; i++) {
     const f   = _rig[i];
-    const [px, py] = _topViewPx(f.x_mm || 0, f.z_mm || 0, ox, oy, drawW, drawH);
+    const [px, py] = _topViewPx(f.x_mm || 0, f.z_mm || 0, ox, oy, drawW, drawH, _stage);
     const clr = f.color || '#888';
     const fg  = _contrastColor(clr);
     _drawFixtureDot(ctx, px, py, clr, fg, i === _selectedIdx);
-    ctx.fillStyle = fg;
+    const ring = opts.ring ? opts.ring(f) : null;
+    if (ring) {
+      ctx.beginPath(); ctx.arc(px, py, 12, 0, 2 * Math.PI);
+      ctx.strokeStyle = ring; ctx.lineWidth = 3; ctx.stroke();
+    }
+    ctx.fillStyle = opts.label ? cText : fg;
     ctx.font = '9px monospace';
-    const lbl = (f.name || '').substring(0, 10);
+    const lbl = opts.label ? opts.label(f) : (f.name || '').substring(0, 10);
     ctx.fillText(lbl, px - lbl.length * 2.8, py + 14);
     if (f.grid) {
       ctx.fillStyle = cSubtext0;
@@ -591,9 +607,9 @@ function _drawTopView(W, H) {
   }
 }
 
-function _topViewPx(x_mm, z_mm, ox, oy, drawW, drawH) {
-  const px = ox + (x_mm / _stage.w_mm) * drawW;
-  const py = oy + (z_mm / _stage.d_mm) * drawH;
+function _topViewPx(x_mm, z_mm, ox, oy, drawW, drawH, stage = _stage) {
+  const px = ox + (x_mm / stage.w_mm) * drawW;
+  const py = oy + (z_mm / stage.d_mm) * drawH;
   return [px, py];
 }
 

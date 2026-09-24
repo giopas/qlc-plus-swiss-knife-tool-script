@@ -193,6 +193,12 @@ Found and fixed along the way (all in the CHANGELOG):
 - [x] Verify **fan-in** (many source fixtures to fewer targets, e.g. 14 → 6). *(Explicit `fan_in` mode + Auto-Map strategies `fan_in` (stage order) and `same_id` (reduced rig); "first lit source wins" per scene.)*
 - [x] Real case: port looks from Festival_14fix into a 6-fixture rig. The result passes Doctor. *(Both QuickStart_6fix (fan-in) and the bare Pub rig (same IDs): 0 errors, 0 warnings; `tests/test_porter_fanin.py`.)*
 - [x] The import report is saved next to the output file. *(`<name>_port_report.txt`.)*
+- **1.2b — Porter UX after Giovanni's test (25 Sep)** *(branch `feat/porter-vc`)*:
+  - [x] Step 2: VC list has its own ✓ All / ✗ None; ticking a page/frame ticks everything inside (dash when partly ticked). *(commit `3bdaaee`)*
+  - [x] Step 2: dependencies resolve automatically while ticking; *Resolve Dependencies* button removed; **Next** resolves then moves on. *(`3bdaaee`)*
+  - [x] Porter messages use the app's single status bar (a stale "No workspace is open" from ⤵ Open workspace no longer shows under the Porter). *(`3bdaaee`)*
+  - [ ] **Stage plans**: step 1 shows a top view of where the fixtures are in the source and in the target (from the 3D monitor positions; nothing drawn if the file has none), reusing the Fixtures-tab drawing code (`static/js/fixture.js` top view, `core/fixture.py` stage/position reading). Step 3 shows the same two plans coloured by the mapping (each target a colour, its sources in the same colour, unmapped grey) so the mapping can be checked at a glance.
+  - [ ] Fan-in ordering idea (not started): use Left/Right/Front/Back words in fixture names when positions and names disagree (MiniRockShow case).
 - Found and fixed along the way: non-deterministic function IDs (closure ordered by a set); EFX fixtures and percent-encoded script commands not recognised in real QLC+ files; values of unmapped fixtures left in scenes (dangling refs); RGB matrices pointing at a group missing in the target; ported looks surviving the target's PANIC RESET (live check).
 - Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
 

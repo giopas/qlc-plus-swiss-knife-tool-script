@@ -3123,6 +3123,11 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .porter-plan { flex: 1; min-width: 0; height: 320px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .porter-plans-map .porter-plan { height: 240px; }
 .porter-plan canvas { display: block; width: 100%; height: 100%; }
+.porter-map-row { cursor: pointer; }
+.porter-map-row:hover, .porter-map-row.porter-hl { background: var(--surface0); }
+.porter-map-row.porter-hl { outline: 2px solid var(--text); outline-offset: -2px; }
+.porter-map-row.porter-skipped strong, .porter-map-row.porter-skipped small { opacity: .5; }
+.porter-skip { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; margin-top: 4px; cursor: pointer; }
 .porter-hint { font-size: 13px; color: var(--text-dim); margin: 4px 0 8px; }
 .porter-vc-pick .porter-toolbar { padding: 4px 0; }
 .porter-row.porter-vc-page .porter-row-label { font-weight: 600; }

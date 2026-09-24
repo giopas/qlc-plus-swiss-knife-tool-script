@@ -5,7 +5,7 @@
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
 **Status (25 Sep):**
-- **Phase 1.2 — done** on branch `feat/porter-vc` (local commits, stacked on `main` @ `60db1fa`; Giovanni pushes): VC porting, fan-in, Doctor gate, import report next to the output. Real cases Festival_14fix → QuickStart_6fix (fan-in 14 → 6) and Festival_14fix → bare Pub rig (same IDs) pass Doctor with 0 errors / 0 warnings and are byte-identical run to run; the fan-in output passes `tools/qlc_check.py` in QLC+ 5.2.2 for every ported button. 365 tests green. Waiting for Giovanni: try the Porter tab on the Mac, push.
+- **Phase 1.2 + 1.2b — done** on branch `feat/porter-vc` (local commits, stacked on `main` @ `60db1fa`; Giovanni pushes, commands in §8): VC porting, fan-in, Doctor gate, port report next to the output; 1.2b UX after Giovanni's tests (VC tree ticking, automatic dependencies, stage plans, "Port this fixture", highlight, remove target VC items, step 4 → Next / step 5 Export). Real cases Festival_14fix → QuickStart_6fix (fan-in 14 → 6) and Festival_14fix → bare Pub rig (same IDs) pass Doctor with 0 errors / 0 warnings and are byte-identical run to run; the fan-in output passes `tools/qlc_check.py` in QLC+ 5.2.2 for every ported button. 365 tests green. Waiting for Giovanni: try the Porter tab on the Mac, push.
 - Next: **Phase 1.5 (Quick Start × Porter)**, then 1.3 (Show Book) — order changed by Giovanni on 25 Sep, see §8.
 
 **Status (24 Sep, end of session):**
@@ -203,8 +203,8 @@ Found and fixed along the way (all in the CHANGELOG):
   - [x] Step 3 **highlight**: hovering or clicking a mapping row rings that source fixture on the source plan and its target(s) on the target plan. *(done 25 Sep; click pins the highlight)*
   - [x] *(done 25 Sep)* Export step: say clearly that the **import report** was saved too (file name + folder of both files); if it could not be saved, say so and point to 📋 Copy Report. (Giovanni, 25 Sep)
   - [x] *(done 25 Sep: `porter_vc.remove_widgets()`, `GET /api/porter/target/vc`, plan `vc.remove`; report section "Removed from the target VC"; browser-checked on MiniRockShow — removing *Control Panel (Exclusive)*: 0 new Doctor errors, the now-unused functions show as D016 warnings)* Step 4: **remove existing target VC items** (pages, frames, buttons, sliders…) from the output — a tree of the target VC with "remove" ticks; removal happens before placement so the freed space is reused; a removed page can't be the "Place on" page. (Giovanni, 25 Sep)
-  - [ ] Step 4 → **Next: Export**; the new `.qxw` is written only in step 5 (summary of what will be written + "💾 Export new QXW…"), so step 5 is a real step. Wording: Porter *exports* a new workspace + *port report* (no "Import & Save"). (Giovanni, 25 Sep)
-  - [ ] Full documentation pass (WORKPLAN, wiki, README, CHANGELOG) and push commands for Giovanni before starting 1.5.
+  - [x] *(done 25 Sep, browser-checked)* Step 4 → **Next: Export**; the new `.qxw` is written only in step 5 (summary of what will be written + "💾 Export new QXW…"), so step 5 is a real step. Wording: Porter *exports* a new workspace + *port report* (no "Import & Save"). (Giovanni, 25 Sep)
+  - [x] *(done 25 Sep)* Full documentation pass (WORKPLAN, wiki, README "Coming in v1.4.0" + Function Porter section + project structure, CHANGELOG) and push commands for Giovanni before starting 1.5.
   - [ ] Fan-in ordering idea (not started): use Left/Right/Front/Back words in fixture names when positions and names disagree (MiniRockShow case).
 - Found and fixed along the way: non-deterministic function IDs (closure ordered by a set); EFX fixtures and percent-encoded script commands not recognised in real QLC+ files; values of unmapped fixtures left in scenes (dangling refs); RGB matrices pointing at a group missing in the target; ported looks surviving the target's PANIC RESET (live check).
 - Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
@@ -355,9 +355,17 @@ Checks (★ = included in Phase 1.0):
 3. `git push -u origin feat/quickstart-1.1`; CI green; merge into `main` (it contains `feat/doctor`). Push the wiki.
 3. Optional: `pip install websocket-client`, then `python3 tools/qlc_check.py tests/corpus/QuickStart_club.qxw` with QLC+ closed — should print `RESULT: PASS`.
 
-**Giovanni, before the next session (Phase 1.2):**
-1. Try the Porter tab: source *Festival_14fix*, target a 6-fixture rig; step 2 tick *COMBINED FX* → *Select their functions*; step 3 Auto-Map *Fan-in by stage position* (or *Same fixture ID* for a reduced copy); step 4 new page; export → `<name>_v2.qxw` + `<name>_v2_port_report.txt`. Open in QLC+ 5.2.2: ported page renders, buttons light, PANIC RESET clears them.
-2. `git push -u origin feat/porter-vc`; CI green; merge into `main`. Push the wiki (new page *Function Porter*).
+**Giovanni, before the next session (Phase 1.2 + 1.2b) — push and merge:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect all green
+git push -u origin feat/porter-vc                                    # CI runs on the branch
+git checkout main && git pull --ff-only
+git merge --no-ff feat/porter-vc -m "Merge feat/porter-vc: Function Porter 1.2/1.2b"
+python -m pytest -q && git push origin main
+cd wiki && git push origin master && cd ..                           # wiki: Function Porter page
+git checkout -b feat/quickstart-porter                               # branch for Phase 1.5
+```
 
 **Next Cowork session:**
 1. Phase 1.5 Quick Start × Porter (see §5): start with `core/capability_map.py` (value translation between fixture types) + tests, then the Quick Start "Port from an existing show" step.

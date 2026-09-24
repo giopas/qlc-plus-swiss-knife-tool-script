@@ -20,6 +20,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Porter step 3 — highlight**: hovering a mapping row rings that source fixture on the source plan and its target(s) on the target plan; clicking pins it.
 - **Porter step 4 — remove existing target VC items**: tick pages, frames or widgets of the target's Virtual Console to leave them out of the new file (the target file is not changed); their space is reused for the ported widgets and a removed page can't be the "Place on" page. Listed in the report.
 - Porter export: the finish screen and status bar say where the workspace **and the import report** were saved (or that the report couldn't be saved, with Copy Report).
+- **Porter steps 4 and 5**: step 4 ends with **Next: Export** (no more "Import & Save"); step 5 shows what will be written and has the **💾 Export new QXW…** button, then the result (workspace, port report, Doctor). "Import report" is now called **port report** everywhere.
 - `tools/qlc_check.py` waits for a look's fade-out after PANIC RESET before comparing (ported Festival looks fade out over 2–3 s).
 - Tests: `tests/test_porter_fanin.py` — Festival_14fix → QuickStart_6fix fan-in and Festival_14fix → bare Pub rig (same IDs), both Doctor-clean and byte-identical run to run; VC pruning, bindings and placement; HTTP flow.
 

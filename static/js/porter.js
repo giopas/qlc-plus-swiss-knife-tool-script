@@ -9,8 +9,9 @@
  *   5. Execute & export
  *
  * v1.4: pick functions from the source Virtual Console (their widgets come
- * along), fan-in mapping (many source fixtures → fewer targets), Doctor gate
- * on export and an import report saved next to the new workspace.
+ * along), fan-in mapping (many source fixtures → fewer targets), stage plans,
+ * "Port this fixture", removal of target VC items.  Step 5 exports the new
+ * workspace (Doctor gate) and saves the port report next to it.
  */
 
 'use strict';
@@ -35,6 +36,7 @@ let _pPanChannelMap  = {};  // src_fix_id → {coarse, fine?}
 let _pNamePrefix     = '';
 let _pImportPath     = '';
 let _pValidation     = null;
+let _pExported       = false;   // step 5: the new .qxw has been written
 let _pDropUnmapped   = false;
 let _pCompleteCh     = true;
 let _pManual         = new Set();   // functions ticked in the function list
@@ -82,10 +84,11 @@ function _pStatus(msg, type = 'info') {
 }
 
 const _P_STEP_HINT = {
-  1: 'Pick the source show (import from) and the target show (import into).',
+  1: 'Pick the source show (port from) and the target show (port into).',
   2: 'Tick pages, frames, buttons or functions to port — what they need is added automatically.',
   3: 'Check where each source fixture goes in the target rig.',
-  4: 'Check the plan and the Virtual Console options, then export.',
+  4: 'Check the plan and the Virtual Console options, then go to Export.',
+  5: 'Export writes a new workspace and its port report; the target file is not changed.',
 };
 
 // ── State refresh ────────────────────────────────────────────────────────────
@@ -215,6 +218,11 @@ async function porterGoStep(n) {
     _pStatus('Load both source and target QXW files first.', 'error');
     return;
   }
+  if (n === 5 && !(_pValidation && _pValidation.ok)) {
+    _pStatus('Check the plan in step 4 first — it must be valid to export.', 'error');
+    if (_pStep !== 4) { n = 4; } else return;
+  }
+  if (n < 5) _pExported = false;
   // Steps 3–5 need the selection resolved (done automatically)
   if (n >= 3 && !(await porterResolve(false))) { if (_pStep !== 2) { _pStep = 2; _pRenderStep(); } return; }
   _pStep = n;
@@ -244,6 +252,7 @@ function _pRenderStep() {
   if (_pStep === 2) _pRenderSelectFunctions();
   if (_pStep === 3) _pRenderMapFixtures();
   if (_pStep === 4) { _pRenderVcOptions(); _pRenderValidation(); }
+  if (_pStep === 5 && !_pExported) _pRenderExportReady();
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -960,7 +969,7 @@ async function _pRenderValidation() {
 
     if (d.ok) {
       html += '<div class="porter-val-ok">✓ Plan is valid — ready to export.</div>';
-      _pStatus('Validation passed. Ready to export.', 'ok');
+      _pStatus('Plan is valid — click Next: Export.', 'ok');
     } else {
       _pStatus('Validation failed. Fix errors before exporting.', 'error');
     }
@@ -977,11 +986,11 @@ async function _pRenderValidation() {
 
 async function porterExecute() {
   if (!_pValidation?.ok) {
-    _pStatus('Validate first (Step 4).', 'error');
+    _pStatus('Check the plan in step 4 first.', 'error');
     return;
   }
 
-  _pStatus('Executing import...', 'info');
+  _pStatus('Building the new workspace…', 'info');
   const plan = _pBuildPlan();
 
   try {
@@ -1003,12 +1012,12 @@ async function porterExecute() {
     }
 
     const blob = await r.blob();
-    const suggestedName = r.headers.get('X-Suggested-Filename') || 'imported.qxw';
+    const suggestedName = r.headers.get('X-Suggested-Filename') || 'ported.qxw';
 
     const savedName = await saveFileWithPicker(
       blob, suggestedName,
       [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }],
-      'Save imported workspace as'
+      'Save the new workspace as'
     );
     if (!savedName) return;
     let reportName = '';
@@ -1027,29 +1036,60 @@ async function porterExecute() {
     try { const rs = await fetch('/api/porter/last-result'); summary = rs.ok ? await rs.json() : {}; } catch (e) { /* ignore */ }
     const folder = fullPath ? fullPath.replace(/[\\/][^\\/]*$/, '') : '';
     _pStatus(reportName
-      ? `Saved ${savedName} and the import report ${reportName} in ${folder}.`
-      : `Saved ${savedName}. The import report could not be saved next to it — use 📋 Copy Report.`,
+      ? `Exported ${savedName} and the port report ${reportName} in ${folder}.`
+      : `Exported ${savedName}. The port report could not be saved next to it — use 📋 Copy Report.`,
       reportName ? 'ok' : 'warn');
-    porterGoStep(5);
+    _pExported = true;
     _pRenderDone(savedName, summary, reportName, folder);
   } catch (e) {
     _pStatus('Network error: ' + e.message, 'error');
   }
 }
 
+/** Step 5 before exporting: what will be written. */
+function _pRenderExportReady() {
+  const el = document.getElementById('porter-export-body');
+  if (!el) return;
+  const go = document.getElementById('porter-export-go');
+  if (go) go.style.display = '';
+  const c = _pClosure || { function_ids: [], fixture_ids: [] };
+  const skipped = [..._pSkipFx];
+  const li = [];
+  li.push(`<b>${c.function_ids.length}</b> function(s) from <b>${_esc(_pSrcName)}</b> into a copy of <b>${_esc(_pTgtName)}</b>`);
+  li.push(`fixtures: ${c.fixture_ids.length} source fixture(s) mapped with <b>${_esc(_pFanoutMode)}</b>`
+          + (skipped.length ? `; not ported: ${skipped.join(', ')}` : ''));
+  if (_pVc.enabled) {
+    const page = _pVc.target_page
+      ? (document.querySelector(`#porter-vc-page option[value="${_pVc.target_page}"]`) || {}).textContent || 'page ' + _pVc.target_page
+      : `a new page “${_pVc.page_caption || 'Ported from ' + _pSrcName}”`;
+    li.push(`Virtual Console: ${_pVcScope.length ? _pVcScope.length + ' ticked widget(s)' : 'widgets of the ported functions'} → ${_esc(page)}`);
+  } else {
+    li.push('Virtual Console: no widgets ported');
+  }
+  if (_pRmScope.length) li.push(`removed from the target's Virtual Console: ${_pRmScope.length} item(s)`);
+  if (_pValidation && _pValidation.warnings.length) li.push(`${_pValidation.warnings.length} warning(s) — see step 4`);
+  el.innerHTML = `
+    <h3>Ready to export</h3>
+    <p>Export writes a <b>new workspace</b> (<code>${_esc(_pTgtName)}_v&lt;N+1&gt;.qxw</code>, you choose the folder) and the
+       <b>port report</b> next to it. The source and target files are not changed. Doctor checks the result first; new errors stop the export.</p>
+    <ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>`;
+}
+
 function _pRenderDone(filename, summary, reportName, folder) {
-  const el = document.getElementById('porter-panel-5');
+  const go = document.getElementById('porter-export-go');
+  if (go) go.style.display = 'none';
+  const el = document.getElementById('porter-export-body');
   if (!el) return;
   summary = summary || {};
   const doc = summary.doctor || {};
   const li = (arr) => (arr || []).map(x => `<li>${_esc(x)}</li>`).join('');
   el.innerHTML = `
     <div class="porter-done">
-      <h3>Import complete</h3>
+      <h3>Export complete</h3>
       <p>Workspace: <strong>${_esc(filename)}</strong></p>
       ${reportName
-        ? `<p>Import report: <strong>${_esc(reportName)}</strong> — saved next to it${folder ? ` in <code>${_esc(folder)}</code>` : ''}. It lists every ported function, what was left out, the Virtual Console placement and Doctor's result.</p>`
-        : `<p class="porter-warn">The import report could not be saved next to the workspace. <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button></p>`}
+        ? `<p>Port report: <strong>${_esc(reportName)}</strong> — saved next to it${folder ? ` in <code>${_esc(folder)}</code>` : ''}. It lists every ported function, what was left out, the Virtual Console placement and Doctor's result.</p>`
+        : `<p class="porter-warn">The port report could not be saved next to the workspace — use 📋 Copy Report.</p>`}
       ${summary.removed_vc && summary.removed_vc.length ? `<p>Removed from the target's Virtual Console: ${summary.removed_vc.map(_esc).join('; ')}.</p>` : ''}
       <p>${summary.functions ?? _pClosure.function_ids.length} function(s) ported
          ${summary.pruned && summary.pruned.length ? `(${summary.pruned.length} left out: none of their fixtures is in the target)` : ''}.</p>
@@ -1057,7 +1097,7 @@ function _pRenderDone(filename, summary, reportName, folder) {
       ${summary.panic && summary.panic.length ? `<ul>${li(summary.panic.map(p => 'PANIC RESET: ' + p))}</ul>` : ''}
       <p>Doctor: ${(doc.errors || []).length} new error(s), ${(doc.warnings || []).length} new warning(s)
          (file: ${doc.total_errors ?? '?'} error(s), ${doc.total_warnings ?? '?'} warning(s)).</p>
-      <button class="btn btn-accent" onclick="porterReset()">Start new import</button>
+      <button class="btn btn-accent" onclick="porterReset()">Start a new port</button>
     </div>`;
 }
 
@@ -1098,7 +1138,7 @@ function porterReset() {
   _pHlFx = _pHlSticky = null;
   _pRmScope = [];
   _pStep = 1;
-  _pStatus('Ready for a new import.', 'info');
+  _pStatus('Ready for a new port.', 'info');
   _pRenderStep();
 }
 

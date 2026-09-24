@@ -1440,7 +1440,7 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
     """Plain-text import report.  With *result* (from :func:`port`) it also
     lists the fixture blocks, removed functions, VC widgets and Doctor."""
     lines = [
-        "═══ Function Porter — Import Report ═══",
+        "═══ Function Porter — Port Report ═══",
         "",
         f"Source:  {_src['name']}",
         f"Target:  {_tgt['name']}",

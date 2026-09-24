@@ -1481,6 +1481,17 @@
         <button class="btn btn-surface" onclick="porterSelectNoneFn()">✗ None</button>
       </div>
 
+      <details id="porter-vc-pick" class="porter-vc-pick" open>
+        <summary>Pick from the source Virtual Console <small>(frames and buttons — their functions are selected, and the widgets can come along)</small></summary>
+        <div id="porter-vc-tree" class="porter-list porter-vc-tree">
+          <div class="porter-placeholder">Loading...</div>
+        </div>
+        <div class="porter-nav-bar">
+          <button class="btn btn-surface" onclick="porterSelectFromVc()">☑ Select their functions</button>
+          <span id="porter-vc-pick-info" class="porter-row-sub"></span>
+        </div>
+      </details>
+
       <div id="porter-fn-list" class="porter-list">
         <div class="porter-placeholder">Loading...</div>
       </div>
@@ -1503,7 +1514,13 @@
 
       <div class="porter-nav-bar">
         <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
-        <button class="btn btn-surface" onclick="porterAutoMap()">🔄 Auto-Map (Tier 1)</button>
+        <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
+                data-tooltip="How Auto-Map pairs source and target fixtures">
+          <option value="all">Every exact match (fan-out)</option>
+          <option value="same_id">Same fixture ID (reduced rig)</option>
+          <option value="fan_in">Fan-in by stage position</option>
+        </select>
+        <button class="btn btn-surface" onclick="porterAutoMap()">🔄 Auto-Map</button>
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(4)">Next: Validate →</button>
       </div>
@@ -1511,6 +1528,24 @@
 
     <!-- Step 4: Validate -->
     <div id="porter-panel-4" class="porter-panel" hidden>
+      <div id="porter-vc-options" class="porter-summary-box porter-vc-options">
+        <label><input type="checkbox" id="porter-vc-enabled" checked onchange="porterVcOpt()">
+          Bring the Virtual Console widgets of the ported functions</label>
+        <div class="porter-vc-row">
+          <label>Place on
+            <select id="porter-vc-page" class="filter-input" onchange="porterVcOpt()"></select></label>
+          <label>New page name
+            <input type="text" id="porter-vc-caption" class="filter-input" placeholder="Ported from …" oninput="porterVcOpt()"></label>
+          <label>Key / MIDI bindings
+            <select id="porter-vc-bindings" class="filter-input" onchange="porterVcOpt()">
+              <option value="keep_free">Keep unless already used in the target</option>
+              <option value="keep">Keep all</option>
+              <option value="drop">Drop all</option>
+            </select></label>
+        </div>
+        <small>Widgets whose function is not ported are left out; each ported widget gets a new ID and a free spot on the page (a new page is added when it is full). Level sliders start at 0.</small>
+      </div>
+
       <div id="porter-validation-result" class="porter-validation-result">
         <div class="porter-placeholder">Validating...</div>
       </div>

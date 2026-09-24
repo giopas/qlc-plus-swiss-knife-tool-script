@@ -3110,6 +3110,16 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   flex-wrap: wrap;
 }
 
+/* VC picker (Step 2) and VC options (Step 4) */
+.porter-vc-pick { margin-bottom: 8px; }
+.porter-vc-pick > summary { cursor: pointer; font-size: 13px; padding: 4px 0; }
+.porter-vc-pick > summary small { color: var(--text-dim); }
+.porter-vc-tree { max-height: 28vh; flex: none; }
+.porter-vc-options { display: flex; flex-direction: column; gap: 6px; font-size: 13px; margin-bottom: 8px; }
+.porter-vc-options small { color: var(--text-dim); }
+.porter-vc-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.porter-vc-row label { display: flex; gap: 6px; align-items: center; }
+
 /* Navigation bar (bottom of each step) */
 .porter-nav-bar {
   display: flex;

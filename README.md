@@ -18,6 +18,15 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
+## Coming in v1.4.0 *(on `main`, not yet released)*
+
+Phase 1 of the [work plan](WORKPLAN.md): the three Alpha builders become dependable.
+
+- **Workspace Doctor** (`python -m core.doctor show.qxw`): read-only checks for duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, missing PANIC RESET and more. It gates every export of Quick Start and Function Porter.
+- **Quick Start**: mode-aware channels and safe neutral values, a PANIC RESET that really resets (tested in QLC+ 5.2.2), fixture groups with their own frame and dimmer, one-button-at-a-time looks, naming profiles and VC style cloned from any show.
+- **Function Porter**: port looks, chasers and effects **with their Virtual Console buttons and frames** into another rig — even a smaller one (**fan-in**, e.g. 14 → 6 fixtures). Pick frames straight from the source VC, see both rigs on **stage plans**, untick fixtures you don't need, remove old pages/buttons from the result, and get a **port report** next to the new file. Output is checked by Doctor and is byte-identical run to run.
+- **Live QLC+ check** (`tools/qlc_check.py`): opens a file in a real QLC+ and presses every button to prove it works.
+
 ## What's new in v1.3.2
 
 A "clean the bench" release — first step of the new [work plan](WORKPLAN.md) towards a deterministic show-file builder.
@@ -94,7 +103,14 @@ Create production-ready QLC+ workspaces in minutes, even with zero QLC+ experien
 > **Internet access note:** The "Browse QLC+ Library" button in Step 1 fetches fixture definitions from the [official QLC+ fixture repository on GitHub](https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures). This is the **only feature** in the app that makes external network calls. All other operations — loading, editing, exporting — are fully local with no internet required. If you prefer to stay offline, load fixture definitions from local `.qxf` files instead.
 
 ### Function Porter *(Alpha)*
-Import functions from any source `.qxw` workspace into your loaded workspace — the intelligent alternative to QXW Merger for function-level transfers. Full **dependency resolution** automatically includes nested functions (Scenes inside Chasers, Chasers inside Collections). When source fixtures don't exist in the destination, an interactive **fixture remapping wizard** lets you re-map each fixture with QXF-aware channel matching. IDs are remapped above the highest existing ID to avoid conflicts. Browse and filter source functions by type and name, then import with one click.
+Port looks, chasers and effects from one show (**source**) into another rig (**target**) — with their **Virtual Console buttons and frames** — in five steps:
+1. **Load** both files; each rig is drawn from above (stage plan).
+2. **Select** pages, frames or buttons of the source VC (ticking a frame ticks everything inside) and/or single functions; everything they need (chaser steps, collection members, matrix groups) is added automatically.
+3. **Map** source fixtures to target fixtures: every exact match, same fixture ID (a reduced rig) or **fan-in by stage position** (14 → 6: each target takes the first *lit* source of its block, so chases still move and colours never mix). The stage plans are coloured by the mapping; hover a row to see the fixture; untick **Port this fixture** for what you don't need.
+4. **Validate**: warnings and summary; choose where the widgets go (a new page by default), the key/MIDI binding policy, and optionally **remove existing pages/buttons** from the result.
+5. **Export** a new `<target>_v<N+1>.qxw` plus a **port report** next to it. Doctor checks it first; the source and target files are never changed.
+
+Ported scenes declare every channel (neutral values for the missing ones), new IDs are allocated deterministically, a Quick Start PANIC RESET in the target also stops the ported functions, and Level sliders start at 0. See the [Function Porter wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter).
 
 ### Show Book *(Alpha)*
 Export your entire workspace as structured show paperwork. Choose from **10 sections** — Summary, Patch List, Function Index, Scenes, Chasers, Collections, EFX, Shows, Scripts, VC Layout — and export as **PDF** (A4 landscape with cover page) or **CSV** (ZIP with one file per section). When QXF fixture definitions are provided, raw DMX values are decoded to human-readable labels. Generate a **live preview** in-app before exporting — tables are interactive and scenes show per-fixture channel breakdowns.
@@ -242,7 +258,11 @@ core/
   brightness.py          ← Per-fixture dimmer scaling
   fixture.py             ← Rig state, QXF parsing, DMX auto-assign
   pdf.py                 ← Pure-Python PDF builder (no reportlab)
-  porter.py              ← Function Porter: dependency resolver, fixture remapper
+  porter.py              ← Function Porter: dependency resolver, fixture remapper, fan-in, Doctor gate, report
+  porter_vc.py           ← Function Porter: VC widget porting (pruning, IDs, placement, removal)
+  doctor/                ← Workspace Doctor: read-only checks + CLI (python -m core.doctor)
+  quick_start/           ← Quick Start: channel model, VC generator, profiles, QXW builder
+  qxw_io.py              ← the one safe QXW reader/writer (never overwrites)
   showbook.py            ← Show Book: document generator, PDF/CSV exporter
   qxf_parser.py          ← Deep QXF channel parser, DMX value decoder
 routes/

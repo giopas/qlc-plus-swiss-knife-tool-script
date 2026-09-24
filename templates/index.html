@@ -1580,14 +1580,22 @@
         <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-btn" class="btn btn-accent" onclick="porterExecute()" disabled>💾 Import &amp; Save QXW…</button>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Export →</button>
       </div>
     </div>
 
     <!-- Step 5: Done -->
     <div id="porter-panel-5" class="porter-panel" hidden>
-      <div class="porter-done">
-        <p>Complete the previous steps first.</p>
+      <div class="porter-panel-body">
+        <div id="porter-export-body" class="porter-done">
+          <p>Complete the previous steps first.</p>
+        </div>
+      </div>
+      <div class="porter-nav-bar" id="porter-export-nav">
+        <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
+        <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
+        <div class="spacer"></div>
+        <button id="porter-export-go" class="btn btn-accent" onclick="porterExecute()">💾 Export new QXW…</button>
       </div>
     </div>
 

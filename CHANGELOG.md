@@ -18,6 +18,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - Porter step 2: the Back / Next bar stays visible; the lists scroll above it (Next was pushed off-screen on smaller windows).
 - **Porter step 3 — "Port this fixture"**: untick a source fixture you don't need; it gets no target, its values are left out, and functions/widgets that only light skipped fixtures are unticked in step 2 (you see it when going back; ticking the fixture again restores them). Other fixtures keep their mapping when the selection changes. `resolve_closure` returns `lit_fixture_map` (fixtures a function lights, > 0).
 - **Porter step 3 — highlight**: hovering a mapping row rings that source fixture on the source plan and its target(s) on the target plan; clicking pins it.
+- **Porter step 4 — remove existing target VC items**: tick pages, frames or widgets of the target's Virtual Console to leave them out of the new file (the target file is not changed); their space is reused for the ported widgets and a removed page can't be the "Place on" page. Listed in the report.
+- Porter export: the finish screen and status bar say where the workspace **and the import report** were saved (or that the report couldn't be saved, with Copy Report).
 - `tools/qlc_check.py` waits for a look's fade-out after PANIC RESET before comparing (ported Festival looks fade out over 2–3 s).
 - Tests: `tests/test_porter_fanin.py` — Festival_14fix → QuickStart_6fix fan-in and Festival_14fix → bare Pub rig (same IDs), both Doctor-clean and byte-identical run to run; VC pruning, bindings and placement; HTTP flow.
 

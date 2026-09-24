@@ -45,6 +45,8 @@ let _pVcSeeds        = [];          // functions used by those widgets
 let _pClosureKey     = '';          // seeds the current closure was built from
 let _pResolveTimer   = null;
 let _pPlans = { source: null, target: null };
+let _pTgtVcTree = [];              // target VC (every widget) for "remove"
+let _pRmScope = [];                // target widget keys to remove from the output
 let _pSkipFx = new Set();          // source fixtures "not ported" (step 3)
 let _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };  // what skipping unticked
 let _pHlFx = null;                 // source fixture highlighted on the plans (hover)
@@ -830,6 +832,75 @@ async function _pRenderVcOptions() {
   document.getElementById('porter-vc-caption').value = _pVc.page_caption;
   document.getElementById('porter-vc-caption').placeholder = 'Ported from ' + (_pSrcName || 'source');
   document.getElementById('porter-vc-bindings').value = _pVc.bindings;
+  try {
+    const r = await fetch('/api/porter/target/vc');
+    _pTgtVcTree = r.ok ? await r.json() : [];
+  } catch (e) { _pTgtVcTree = []; }
+  _pRenderRmTree();
+}
+
+// ── Remove existing target VC items (step 4) ────────────────────────────────
+
+function _pRenderRmTree() {
+  const el = document.getElementById('porter-rm-tree');
+  if (!el) return;
+  if (!_pTgtVcTree.length) { el.innerHTML = '<div class="porter-placeholder">The target has no Virtual Console.</div>'; return; }
+  const scope = new Set(_pRmScope);
+  el.innerHTML = _pTgtVcTree.map((w, i) => {
+    const icon = w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
+    return `<label class="porter-row${w.depth === 0 ? ' porter-vc-page' : ''}" style="padding-left:${0.5 + w.depth * 1.2}rem">
+      <input type="checkbox" class="porter-rm-check" data-idx="${i}" value="${w.key}"
+             ${scope.has(w.key) ? 'checked' : ''} onchange="porterRmToggle(${i}, this.checked)">
+      <span class="porter-row-label">${icon}${_esc(w.caption || '(no caption)')}</span>
+      <span class="porter-row-sub">${_esc(w.tag)}${w.functions ? ' · ' + w.functions + ' function(s)' : ''}</span>
+    </label>`;
+  }).join('');
+  _pRmSync();
+}
+
+function _pRmBoxes() { return Array.from(document.querySelectorAll('#porter-rm-tree .porter-rm-check')); }
+
+function _pRmChildren(i) {
+  const out = [], d = _pTgtVcTree[i].depth;
+  for (let j = i + 1; j < _pTgtVcTree.length && _pTgtVcTree[j].depth > d; j++) out.push(j);
+  return out;
+}
+
+function _pRmSync() {
+  const boxes = _pRmBoxes();
+  for (let i = _pTgtVcTree.length - 1; i >= 0; i--) {
+    const kids = _pRmChildren(i);
+    if (!kids.length) { boxes[i].indeterminate = false; continue; }
+    const on = kids.filter(j => boxes[j].checked).length;
+    if (on === kids.length) boxes[i].checked = true;
+    else if (on > 0) { boxes[i].checked = false; boxes[i].indeterminate = true; }
+    else boxes[i].indeterminate = false;
+  }
+  _pRmScope = boxes.filter(b => b.checked).map(b => b.value);
+  const info = document.getElementById('porter-rm-info');
+  const pages = _pTgtVcTree.filter((w, i) => w.depth === 0 && boxes[i].checked).length;
+  if (info) info.textContent = _pRmScope.length
+    ? `(${_pRmScope.length} item(s) ticked${pages ? ', ' + pages + ' page(s)' : ''})` : '(optional — nothing removed)';
+  // a removed page can't receive the ported widgets
+  const sel = document.getElementById('porter-vc-page');
+  if (sel) {
+    for (const opt of sel.options) {
+      const i = _pTgtVcTree.findIndex(w => w.depth === 0 && String(w.id) === opt.value);
+      opt.disabled = i >= 0 && boxes[i].checked;
+      if (opt.disabled && opt.selected) { sel.value = ''; porterVcOpt(); }
+    }
+  }
+}
+
+function porterRmToggle(i, checked) {
+  const boxes = _pRmBoxes();
+  for (const j of _pRmChildren(i)) { boxes[j].checked = checked; boxes[j].indeterminate = false; }
+  _pRmSync();
+}
+
+function porterRmAll(on) {
+  _pRmBoxes().forEach(b => { b.checked = on; b.indeterminate = false; });
+  _pRmSync();
 }
 
 function porterVcOpt() {
@@ -954,15 +1025,19 @@ async function porterExecute() {
     }
     let summary = {};
     try { const rs = await fetch('/api/porter/last-result'); summary = rs.ok ? await rs.json() : {}; } catch (e) { /* ignore */ }
-    _pStatus(`Saved: ${savedName}` + (reportName ? ` (+ ${reportName})` : ' — use 📋 Copy Report for the import report'), 'ok');
+    const folder = fullPath ? fullPath.replace(/[\\/][^\\/]*$/, '') : '';
+    _pStatus(reportName
+      ? `Saved ${savedName} and the import report ${reportName} in ${folder}.`
+      : `Saved ${savedName}. The import report could not be saved next to it — use 📋 Copy Report.`,
+      reportName ? 'ok' : 'warn');
     porterGoStep(5);
-    _pRenderDone(savedName, summary, reportName);
+    _pRenderDone(savedName, summary, reportName, folder);
   } catch (e) {
     _pStatus('Network error: ' + e.message, 'error');
   }
 }
 
-function _pRenderDone(filename, summary, reportName) {
+function _pRenderDone(filename, summary, reportName, folder) {
   const el = document.getElementById('porter-panel-5');
   if (!el) return;
   summary = summary || {};
@@ -971,7 +1046,11 @@ function _pRenderDone(filename, summary, reportName) {
   el.innerHTML = `
     <div class="porter-done">
       <h3>Import complete</h3>
-      <p>Saved as: <strong>${_esc(filename)}</strong>${reportName ? ` · report: <strong>${_esc(reportName)}</strong>` : ''}</p>
+      <p>Workspace: <strong>${_esc(filename)}</strong></p>
+      ${reportName
+        ? `<p>Import report: <strong>${_esc(reportName)}</strong> — saved next to it${folder ? ` in <code>${_esc(folder)}</code>` : ''}. It lists every ported function, what was left out, the Virtual Console placement and Doctor's result.</p>`
+        : `<p class="porter-warn">The import report could not be saved next to the workspace. <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button></p>`}
+      ${summary.removed_vc && summary.removed_vc.length ? `<p>Removed from the target's Virtual Console: ${summary.removed_vc.map(_esc).join('; ')}.</p>` : ''}
       <p>${summary.functions ?? _pClosure.function_ids.length} function(s) ported
          ${summary.pruned && summary.pruned.length ? `(${summary.pruned.length} left out: none of their fixtures is in the target)` : ''}.</p>
       ${summary.vc ? `<ul>${li(summary.vc.summary)}</ul>` : ''}
@@ -1017,6 +1096,7 @@ function porterReset() {
   _pSkipFx = new Set();
   _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };
   _pHlFx = _pHlSticky = null;
+  _pRmScope = [];
   _pStep = 1;
   _pStatus('Ready for a new import.', 'info');
   _pRenderStep();
@@ -1035,7 +1115,7 @@ function _pBuildPlan() {
     import_path:     _pImportPath,
     drop_unmapped:   _pDropUnmapped,
     complete_channels: _pCompleteCh,
-    vc: Object.assign({}, _pVc, { scope: _pVcScope }),
+    vc: Object.assign({}, _pVc, { scope: _pVcScope, remove: _pRmScope }),
   };
 }
 

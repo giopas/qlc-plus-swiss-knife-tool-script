@@ -3114,7 +3114,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .porter-vc-pick { margin-bottom: 8px; }
 .porter-vc-pick > summary { cursor: pointer; font-size: 13px; padding: 4px 0; }
 .porter-vc-pick > summary small { color: var(--text-dim); }
-.porter-vc-tree { max-height: 28vh; flex: none; }
+.porter-vc-tree { max-height: 30vh; flex: none; }
+.porter-hint { font-size: 13px; color: var(--text-dim); margin: 4px 0 8px; }
+.porter-vc-pick .porter-toolbar { padding: 4px 0; }
+.porter-row.porter-vc-page .porter-row-label { font-weight: 600; }
 .porter-vc-options { display: flex; flex-direction: column; gap: 6px; font-size: 13px; margin-bottom: 8px; }
 .porter-vc-options small { color: var(--text-dim); }
 .porter-vc-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }

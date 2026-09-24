@@ -4,7 +4,7 @@ import os
 import re
 import tempfile
 from flask import Blueprint, jsonify, request, Response
-from core import porter
+from core import porter, porter_vc
 
 bp = Blueprint('porter', __name__, url_prefix='/api/porter')
 
@@ -74,7 +74,9 @@ def load_target():
 
 @bp.route('/clear', methods=['POST'])
 def clear():
+    global _last_result
     porter.clear()
+    _last_result = {}
     return jsonify({'ok': True})
 
 
@@ -138,19 +140,75 @@ def fixture_candidates():
 @bp.route('/auto-map', methods=['POST'])
 def auto_map():
     """
-    Auto-generate a fixture mapping (tier-1 only).
-    Body: { fixture_ids: ["0", "1", ...] }
+    Auto-generate a fixture mapping.
+    Body: { fixture_ids: ["0", "1", ...], strategy: "all" | "same_id" | "fan_in" }
     """
     data = request.get_json(force=True) or {}
     fixture_ids = [str(x) for x in (data.get('fixture_ids') or [])]
     if not fixture_ids:
         return jsonify({'error': 'No fixture IDs provided.'}), 400
+    strategy = data.get('strategy') or 'all'
+    if strategy not in ('all', 'same_id', 'fan_in'):
+        return jsonify({'error': f'Unknown strategy {strategy!r}.'}), 400
 
     try:
-        result = porter.auto_map(fixture_ids)
+        result = porter.auto_map(fixture_ids, strategy)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
+
+
+# ── Virtual Console ──────────────────────────────────────────────────────────
+
+@bp.route('/source/vc')
+def source_vc():
+    """Source VC pages/frames/widgets as a flat tree (keys, captions, depth)."""
+    if not porter.get_state()['src_loaded']:
+        return jsonify([])
+    return jsonify(porter_vc.list_source_vc(porter.source_root()))
+
+
+@bp.route('/stage/<side>')
+def stage(side):
+    """Stage plan of the source or target (3D positions, for the top view)."""
+    import copy
+    from core import fixture as fx, qxw_io
+    st = porter.get_state()
+    if side not in ('source', 'target'):
+        return jsonify({'error': 'side must be source or target'}), 400
+    if not st['src_loaded' if side == 'source' else 'tgt_loaded']:
+        return jsonify({'stage': None, 'fixtures': [], 'has_positions': False})
+    root = porter.source_root() if side == 'source' else porter.target_root()
+    try:
+        return jsonify(fx.stage_plan(qxw_io.qualify_ns(copy.deepcopy(root))))
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/target/vc')
+def target_vc():
+    """Every widget of the target VC (keys in document order) — for choosing
+    what to remove from the output."""
+    if not porter.get_state()['tgt_loaded']:
+        return jsonify([])
+    return jsonify(porter_vc.list_source_vc(porter.target_root(), include_all=True))
+
+
+@bp.route('/target/pages')
+def target_pages():
+    if not porter.get_state()['tgt_loaded']:
+        return jsonify([])
+    return jsonify(porter_vc.list_target_pages(porter.target_root()))
+
+
+@bp.route('/vc/seeds', methods=['POST'])
+def vc_seeds():
+    """Function IDs used by the chosen source widgets. Body: { keys: ["w12", ...] }"""
+    data = request.get_json(force=True) or {}
+    keys = [str(k) for k in (data.get('keys') or [])]
+    if not porter.get_state()['src_loaded']:
+        return jsonify({'error': 'Source QXW not loaded.'}), 400
+    return jsonify({'seed_ids': porter_vc.seeds_from_widgets(porter.source_root(), keys)})
 
 
 # ── Validate ─────────────────────────────────────────────────────────────────
@@ -182,14 +240,21 @@ def execute():
     data = request.get_json(force=True) or {}
     plan = _normalize_plan(data)
 
+    global _last_result
     try:
-        # Validate first
-        validation = porter.validate(plan)
-        if not validation['ok']:
-            return jsonify({'error': 'Validation failed.',
-                            'validation': validation}), 400
+        # Validate, build, port the VC, Doctor gate (new errors block)
+        try:
+            res = porter.port(plan)
+        except porter.PorterBlocked as b:
+            if 'validation' in b.result and 'bytes' not in b.result:
+                return jsonify({'error': 'Validation failed.',
+                                'validation': b.result['validation']}), 400
+            return jsonify({'error': str(b),
+                            'findings': b.result['doctor']['errors'],
+                            'report': b.result.get('report', '')}), 422
 
-        fname, xml_bytes = porter.execute(plan)
+        _last_result = {k: v for k, v in res.items() if k != 'bytes'}
+        fname, xml_bytes = res['filename'], res['bytes']
         return Response(
             xml_bytes,
             mimetype='application/octet-stream',
@@ -201,6 +266,39 @@ def execute():
         )
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
+
+
+_last_result: dict = {}
+
+
+@bp.route('/last-result')
+def last_result():
+    """Summary of the last export (Doctor, VC, removed functions)."""
+    r = _last_result
+    if not r:
+        return jsonify({})
+    return jsonify({'filename': r.get('filename'), 'doctor': r.get('doctor'),
+                    'vc': r.get('vc'), 'pruned': r.get('pruned', []),
+                    'groups': r.get('groups', []), 'panic': r.get('panic', []),
+                    'removed_vc': r.get('removed_vc', []),
+                    'functions': len(r.get('func_id_map', {}))})
+
+
+@bp.route('/save-report', methods=['POST'])
+def save_report():
+    """Write the last import report next to the saved workspace:
+    ``<name>_port_report.txt``.  Body: { qxw_path }"""
+    data = request.get_json(force=True) or {}
+    qxw = (data.get('qxw_path') or '').strip()
+    if not _last_result.get('report'):
+        return jsonify({'error': 'No import report yet.'}), 400
+    folder = os.path.dirname(os.path.abspath(qxw)) if qxw else ''
+    if not qxw.lower().endswith('.qxw') or not os.path.isdir(folder):
+        return jsonify({'error': 'Workspace folder not found.'}), 400
+    path = porter.report_path(os.path.abspath(qxw))
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(_last_result['report'])
+    return jsonify({'ok': True, 'path': path, 'name': os.path.basename(path)})
 
 
 # ── Report ───────────────────────────────────────────────────────────────────
@@ -218,7 +316,10 @@ def report():
     try:
         if validation is None:
             validation = porter.validate(plan)
-        text = porter.generate_report(plan, validation)
+        if _last_result.get('report'):
+            text = _last_result['report']
+        else:
+            text = porter.generate_report(plan, validation)
         return jsonify({'ok': True, 'report': text})
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
@@ -253,7 +354,19 @@ def _normalize_plan(data: dict) -> dict:
                 entry['fine'] = int(v['fine'])
             normalized_pan[str(k)] = entry
 
+    vc = data.get('vc') or {}
     return {
+        'drop_unmapped':     bool(data.get('drop_unmapped', False)),
+        'complete_channels': bool(data.get('complete_channels', True)),
+        'extend_panic':      bool(data.get('extend_panic', True)),
+        'vc': {
+            'enabled':      bool(vc.get('enabled', False)),
+            'scope':        [str(k) for k in (vc.get('scope') or [])],
+            'target_page':  str(vc.get('target_page') or ''),
+            'page_caption': str(vc.get('page_caption') or ''),
+            'bindings':     vc.get('bindings') if vc.get('bindings') in ('keep_free', 'keep', 'drop') else 'keep_free',
+            'remove':       [str(k) for k in (vc.get('remove') or [])],
+        },
         'closure':         closure,
         'fixture_mapping': normalized_mapping,
         'fanout_mode':     data.get('fanout_mode', 'pattern_repeat'),

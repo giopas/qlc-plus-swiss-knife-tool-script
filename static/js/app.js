@@ -464,7 +464,7 @@ async function pickQxwInto(pathInputId, fileInputId, loadFn) {
 /** "⤵ Open workspace" button in two-file tools: use the file open in the header. */
 async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
   const st = await _apiJson('/api/status');
-  if (!st.loaded) { setStatus('No workspace is open — use 📂 Open… in the header.', 'warn'); return; }
+  if (!st.loaded) { setStatus('"⤵ Open workspace" copies the workspace open in the header, and none is open — use 📂 Browse… next to it instead.', 'warn'); return; }
   if (!st.path) { setStatus('The open workspace was uploaded (no file path) — use Browse… instead.', 'warn'); return; }
   const fileEl = document.getElementById(fileInputId);
   if (fileEl) fileEl.value = '';

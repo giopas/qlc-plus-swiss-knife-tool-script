@@ -1454,56 +1454,91 @@
         </div>
       </div>
 
+      <div class="porter-plans">
+        <div class="porter-plan"><canvas id="porter-plan-source-1"></canvas></div>
+        <div class="porter-plan"><canvas id="porter-plan-target-1"></canvas></div>
+      </div>
+
       <div class="porter-nav-bar">
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(2)">Next: Select Functions →</button>
       </div>
     </div>
 
-    <!-- Step 2: Select functions -->
+    <!-- Step 2: Select what to port -->
     <div id="porter-panel-2" class="porter-panel" hidden>
-      <div class="tab-toolbar porter-toolbar">
-        <input type="text" class="filter-input" placeholder="Search functions..." style="flex:1"
-               oninput="porterFnSearch(this.value)">
-        <select class="filter-input" style="flex:0 0 140px" onchange="porterFnTypeFilter(this.value)">
-          <option value="">All types</option>
-          <option value="Scene">Scene</option>
-          <option value="Chaser">Chaser</option>
-          <option value="Sequence">Sequence</option>
-          <option value="EFX">EFX</option>
-          <option value="Collection">Collection</option>
-          <option value="Show">Show</option>
-          <option value="Audio">Audio</option>
-          <option value="Script">Script</option>
-          <option value="RGBMatrix">RGBMatrix</option>
-        </select>
-        <button class="btn btn-surface" onclick="porterSelectAllFn()">✓ All</button>
-        <button class="btn btn-surface" onclick="porterSelectNoneFn()">✗ None</button>
-      </div>
+      <div class="porter-panel-body">
+      <p class="porter-hint">Tick what you want in the new show: <b>pages, frames or buttons</b> of the source Virtual Console
+        (ticking a frame ticks everything inside; the widgets come along) and/or single <b>functions</b>.
+        Whatever they need to run — chaser steps, collection members, matrix groups — is added automatically.</p>
 
-      <div id="porter-fn-list" class="porter-list">
-        <div class="porter-placeholder">Loading...</div>
-      </div>
+      <details id="porter-vc-pick" class="porter-vc-pick" open>
+        <summary>From the source Virtual Console</summary>
+        <div class="tab-toolbar porter-toolbar">
+          <span id="porter-vc-pick-info" class="porter-row-sub" style="flex:1"></span>
+          <button class="btn btn-surface" onclick="porterVcAll(true)">✓ All</button>
+          <button class="btn btn-surface" onclick="porterVcAll(false)">✗ None</button>
+        </div>
+        <div id="porter-vc-tree" class="porter-list porter-vc-tree">
+          <div class="porter-placeholder">Loading...</div>
+        </div>
+      </details>
+
+      <details id="porter-fn-pick" class="porter-vc-pick" open>
+        <summary>Functions</summary>
+        <div class="tab-toolbar porter-toolbar">
+          <input type="text" class="filter-input" placeholder="Search functions..." style="flex:1"
+                 oninput="porterFnSearch(this.value)">
+          <select class="filter-input" style="flex:0 0 140px" onchange="porterFnTypeFilter(this.value)">
+            <option value="">All types</option>
+            <option value="Scene">Scene</option>
+            <option value="Chaser">Chaser</option>
+            <option value="Sequence">Sequence</option>
+            <option value="EFX">EFX</option>
+            <option value="Collection">Collection</option>
+            <option value="Show">Show</option>
+            <option value="Audio">Audio</option>
+            <option value="Script">Script</option>
+            <option value="RGBMatrix">RGBMatrix</option>
+          </select>
+          <button class="btn btn-surface" onclick="porterSelectAllFn()" data-tooltip="Tick every function shown (search/type filter applies)">✓ All</button>
+          <button class="btn btn-surface" onclick="porterSelectNoneFn()" data-tooltip="Untick every function shown">✗ None</button>
+        </div>
+        <div id="porter-fn-list" class="porter-list">
+          <div class="porter-placeholder">Loading...</div>
+        </div>
+      </details>
 
       <div id="porter-closure-summary"></div>
+      </div>
 
       <div class="porter-nav-bar">
         <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
-        <button class="btn btn-accent" onclick="porterResolve()">Resolve Dependencies</button>
         <div class="spacer"></div>
-        <button class="btn btn-accent" onclick="if(_pClosure) porterGoStep(3); else _pStatus('Resolve dependencies first.','error')">Next: Map Fixtures →</button>
+        <button class="btn btn-accent" onclick="porterNextFromSelect()">Next: Map Fixtures →</button>
       </div>
     </div>
 
     <!-- Step 3: Map fixtures -->
     <div id="porter-panel-3" class="porter-panel" hidden>
+      <div class="porter-plans porter-plans-map">
+        <div class="porter-plan"><canvas id="porter-plan-source-3"></canvas></div>
+        <div class="porter-plan"><canvas id="porter-plan-target-3"></canvas></div>
+      </div>
+      <p class="porter-hint">Same colour = same target: each target fixture has a colour, and the source fixtures sent to it share that colour. Grey = no target.</p>
       <div id="porter-fixture-map" class="porter-fixture-map">
         <div class="porter-placeholder">Loading fixture mapping...</div>
       </div>
 
       <div class="porter-nav-bar">
         <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
-        <button class="btn btn-surface" onclick="porterAutoMap()">🔄 Auto-Map (Tier 1)</button>
+        <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
+                data-tooltip="How Auto-Map pairs source and target fixtures">
+          <option value="all">Every exact match (fan-out)</option>
+          <option value="same_id">Same fixture ID (reduced rig)</option>
+          <option value="fan_in">Fan-in by stage position</option>
+        </select>
+        <button class="btn btn-surface" onclick="porterAutoMap()">🔄 Auto-Map</button>
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(4)">Next: Validate →</button>
       </div>
@@ -1511,6 +1546,32 @@
 
     <!-- Step 4: Validate -->
     <div id="porter-panel-4" class="porter-panel" hidden>
+      <div id="porter-vc-options" class="porter-summary-box porter-vc-options">
+        <label><input type="checkbox" id="porter-vc-enabled" checked onchange="porterVcOpt()">
+          Bring the Virtual Console widgets of the ported functions</label>
+        <div class="porter-vc-row">
+          <label>Place on
+            <select id="porter-vc-page" class="filter-input" onchange="porterVcOpt()"></select></label>
+          <label>New page name
+            <input type="text" id="porter-vc-caption" class="filter-input" placeholder="Ported from …" oninput="porterVcOpt()"></label>
+          <label>Key / MIDI bindings
+            <select id="porter-vc-bindings" class="filter-input" onchange="porterVcOpt()">
+              <option value="keep_free">Keep unless already used in the target</option>
+              <option value="keep">Keep all</option>
+              <option value="drop">Drop all</option>
+            </select></label>
+        </div>
+        <small>Widgets whose function is not ported are left out; each ported widget gets a new ID and a free spot on the page (a new page is added when it is full). Level sliders start at 0.</small>
+        <details id="porter-rm-pick" class="porter-vc-pick">
+          <summary>Remove existing items from the target's Virtual Console <small id="porter-rm-info">(optional — nothing removed)</small></summary>
+          <div class="tab-toolbar porter-toolbar">
+            <span class="porter-row-sub" style="flex:1">Ticked pages, frames and widgets are left out of the new file (the target file itself is not changed). Their space is reused for the ported widgets. Their functions stay (Doctor lists any that are no longer used).</span>
+            <button class="btn btn-surface" onclick="porterRmAll(false)">✗ None</button>
+          </div>
+          <div id="porter-rm-tree" class="porter-list porter-vc-tree"></div>
+        </details>
+      </div>
+
       <div id="porter-validation-result" class="porter-validation-result">
         <div class="porter-placeholder">Validating...</div>
       </div>
@@ -1519,19 +1580,27 @@
         <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-btn" class="btn btn-accent" onclick="porterExecute()" disabled>💾 Import &amp; Save QXW…</button>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Export →</button>
       </div>
     </div>
 
     <!-- Step 5: Done -->
     <div id="porter-panel-5" class="porter-panel" hidden>
-      <div class="porter-done">
-        <p>Complete the previous steps first.</p>
+      <div class="porter-panel-body">
+        <div id="porter-export-body" class="porter-done">
+          <p>Complete the previous steps first.</p>
+        </div>
+      </div>
+      <div class="porter-nav-bar" id="porter-export-nav">
+        <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
+        <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
+        <div class="spacer"></div>
+        <button id="porter-export-go" class="btn btn-accent" onclick="porterExecute()">💾 Export new QXW…</button>
       </div>
     </div>
 
     <!-- Status bar -->
-    <div id="porter-status" class="status-bar status-info">Load both .qxw files to begin.</div>
+    <div id="porter-status" class="status-bar status-info" hidden></div>
 
     <div class="out-footer">
       <span class="out-note new">

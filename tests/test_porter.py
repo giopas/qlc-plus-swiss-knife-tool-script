@@ -718,17 +718,19 @@ class TestExecute(unittest.TestCase):
         # Should have 3 new functions
         self.assertEqual(len(functions), 3)
 
-        # All function IDs should be > max existing target ID (11)
-        for fn in functions:
-            fid = int(fn.get("ID"))
-            self.assertGreater(fid, 11)
+        # New function IDs are max(existing function ID) + 1 upwards; the
+        # target has no functions, so 0, 1, 2 (fixture IDs are a separate space)
+        self.assertEqual(sorted(int(fn.get("ID")) for fn in functions), [0, 1, 2])
+        new_ids = {fn.get("ID") for fn in functions}
 
         # The chaser's Steps should reference the new IDs, not 0 and 1
         chaser = [fn for fn in functions if fn.get("Type") == "Chaser"][0]
         steps = chaser.findall("Step")
         step_ids = [s.text.strip() for s in steps]
+        scene_ids = {fn.get("ID") for fn in functions if fn.get("Type") == "Scene"}
         for sid in step_ids:
-            self.assertGreater(int(sid), 11, "Chaser step IDs should be rebased")
+            self.assertIn(sid, scene_ids, "Chaser step IDs should be rebased")
+        self.assertLessEqual(set(step_ids), new_ids)
 
         # The scenes should reference target fixture IDs
         scenes = [fn for fn in functions if fn.get("Type") == "Scene"]
@@ -860,12 +862,14 @@ class TestExecute(unittest.TestCase):
         script_fn = [fn for fn in engine.findall("Function")
                      if fn.get("Type") == "Script"][0]
         commands = [cmd.text for cmd in script_fn.findall("Command")]
-        # startfunction and stopfunction should reference new IDs (>11)
+        # startfunction and stopfunction should reference the new IDs
+        new_ids = {fn.get("ID") for fn in engine.findall("Function")
+                   if fn.get("Type") != "Script"}
         for cmd in commands:
             if cmd and "function:" in cmd:
                 m = porter._SCRIPT_FUNC_RE.search(cmd)
                 if m:
-                    self.assertGreater(int(m.group(1)), 11)
+                    self.assertIn(m.group(2), new_ids)
         os.unlink(src_path)
         os.unlink(tgt_path)
 
@@ -961,8 +965,6 @@ class TestSequenceBoundSceneRemap(unittest.TestCase):
                if fn.get("Type") == "Sequence"][0]
         bound_scene = seq.get("BoundScene", "")
         self.assertTrue(bound_scene.isdigit())
-        self.assertGreater(int(bound_scene), 11,
-                           "BoundScene should reference the new Scene ID")
         # The bound scene ID should match the new ID of the imported Scene A
         scene = [fn for fn in engine.findall("Function")
                  if fn.get("Type") == "Scene"][0]

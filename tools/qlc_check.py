@@ -98,6 +98,25 @@ class Workspace:
                 out[(uni, addr + ch)] = val
         return out
 
+    def fade_out_ms(self, fid: str, _seen=None) -> int:
+        """Longest fade-out in a function and everything it runs (chaser
+        steps, collection members): how long QLC+ may still be fading after
+        the function is stopped."""
+        _seen = _seen if _seen is not None else set()
+        f = self.functions.get(fid)
+        if f is None or fid in _seen:
+            return 0
+        _seen.add(fid)
+        best = 0
+        sp = f.find(f"{NS}Speed")
+        if sp is not None and (sp.get("FadeOut") or "").isdigit():
+            best = int(sp.get("FadeOut"))
+        for st in f.findall(f"{NS}Step"):
+            if (st.get("FadeOut") or "").isdigit():
+                best = max(best, int(st.get("FadeOut")))
+            best = max(best, self.fade_out_ms((st.text or "").strip(), _seen))
+        return best
+
     def find_function(self, name_part: str):
         for fid, f in self.functions.items():
             if name_part.lower() in (f.get("Name") or "").lower():
@@ -171,12 +190,18 @@ def check_panic_reset(ws: Workspace, qlc: QLC, settle: float) -> list:
                and ws.functions.get(b[2]) is not None]
     errors = []
 
-    def compare(label):
-        got = {}
-        for u in universes:
-            for a, v in qlc.universe(u).items():
-                got[(u, a)] = v
-        bad = [(k, v, got.get(k)) for k, v in sorted(expected.items()) if got.get(k) != v]
+    def compare(label, deadline=0.0):
+        """Compare with the neutral state; retry until *deadline* (time.time())
+        so looks with a fade-out can finish fading first."""
+        while True:
+            got = {}
+            for u in universes:
+                for a, v in qlc.universe(u).items():
+                    got[(u, a)] = v
+            bad = [(k, v, got.get(k)) for k, v in sorted(expected.items()) if got.get(k) != v]
+            if not bad or time.time() >= deadline:
+                break
+            time.sleep(0.3)
         if bad:
             sample = ", ".join(f"U{u + 1}.{a + 1}={g} (want {w})" for (u, a), w, g in bad[:6])
             errors.append(f"{label}: {len(bad)} channel(s) differ — {sample}")
@@ -202,7 +227,7 @@ def check_panic_reset(ws: Workspace, qlc: QLC, settle: float) -> list:
                 return True
         return False
 
-    for wid, caption, _fid, _ in targets:
+    for wid, caption, fid, _ in targets:
         qlc.press(wid, settle)
         dark_ok = any(w in caption.lower() for w in ("blackout", "off"))
         if light and not dark_ok:
@@ -216,7 +241,8 @@ def check_panic_reset(ws: Workspace, qlc: QLC, settle: float) -> list:
                 errors.append(f"'{caption}': no fixture lights up (all DMX intensity/colour at 0)")
                 print(f"  DARK {caption}")
         qlc.press(reset_btn[0], settle)
-        ok = compare(f"'{caption}' → PANIC RESET")
+        fade = ws.fade_out_ms(fid) / 1000.0     # stopped looks fade out first
+        ok = compare(f"'{caption}' → PANIC RESET", time.time() + fade + 0.5)
         qlc.press(reset_btn[0], settle)
         ok = compare(f"'{caption}' → PANIC RESET ×2") and ok
         print(f"  {'ok  ' if ok else 'FAIL'} {caption}")

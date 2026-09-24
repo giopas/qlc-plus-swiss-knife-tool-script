@@ -218,6 +218,7 @@ def resolve_closure(seed_ids: list[str]) -> dict:
         fixture_ids    list[str] — all fixture IDs referenced by the closure
         dep_map        dict[str, list[str]] — func_id → [func_ids it depends on]
         fixture_map    dict[str, list[str]] — func_id → [fixture_ids it references]
+        lit_fixture_map dict[str, list[str]] — func_id → fixtures it lights (> 0)
         cycles         list[str] — cycle descriptions (if any)
         unresolved     list[str] — IDs referenced but not found in source
         seed_ids       list[str] — the original seeds (for UI distinction)
@@ -312,9 +313,24 @@ def resolve_closure(seed_ids: list[str]) -> dict:
     for fids in fixture_refs.values():
         all_fixture_ids.update(fids)
 
+    # Fixtures a function actually lights (a scene declaring a fixture at 0
+    # does not use it) — the Porter UI uses it to untick functions that only
+    # light fixtures the user chose not to port.
+    lit_map: dict[str, list[str]] = {}
+    for fid in ordered:
+        fn = func_by_id.get(fid)
+        if fn is None:
+            continue
+        if fn.get("Type") in ("Scene", "Sequence"):
+            lit_map[fid] = _id_sorted({fv.get("ID", "") for fv in fn.findall("FixtureVal")
+                                       if any(v > 0 for v in _pairs(fv.text).values())})
+        else:
+            lit_map[fid] = _id_sorted(fixture_refs.get(fid, set()))
+
     return {
         "function_ids": ordered,
         "fixture_ids":  _id_sorted(all_fixture_ids),
+        "lit_fixture_map": lit_map,
         "group_ids":    group_ids,
         "dep_map":      dict(dep_map),
         "fixture_map":  {k: _id_sorted(v) for k, v in fixture_refs.items()},

@@ -361,3 +361,41 @@ class TestPorterRoutes(unittest.TestCase):
         self.assertEqual(c.post("/api/porter/auto-map", json={"fixture_ids": ["0"],
                                                               "strategy": "nope"}).status_code, 400)
         c.post("/api/porter/clear")
+
+
+class TestStagePlan(unittest.TestCase):
+    """Stage plans for the Porter's step 1/3 (Fixtures-tab reading code)."""
+
+    def test_plan_from_positions(self):
+        from core import fixture as fx
+        plan = fx.stage_plan(qxw_io.load_qxw(FESTIVAL).getroot())
+        self.assertTrue(plan["has_positions"])
+        self.assertEqual(len(plan["fixtures"]), 14)
+        f0 = plan["fixtures"][0]
+        self.assertEqual((f0["id"], f0["x_mm"], f0["z_mm"]), ("0", 750, 90))
+        colors = {f["model"]: f["color"] for f in plan["fixtures"]}
+        self.assertEqual(len(set(colors.values())), 2)          # one colour per model
+        for f in plan["fixtures"]:
+            self.assertLessEqual(f["x_mm"], plan["stage"]["w_mm"])
+            self.assertLessEqual(f["z_mm"], plan["stage"]["d_mm"])
+
+    def test_no_positions_and_state_untouched(self):
+        from core import fixture as fx
+        before = fx.get_stage_dims()
+        root = ET.fromstring('<Workspace xmlns="http://www.qlcplus.org/Workspace"><Engine>'
+                             '<Fixture><ID>0</ID><Name>A</Name></Fixture></Engine></Workspace>')
+        plan = fx.stage_plan(root)
+        self.assertFalse(plan["has_positions"])
+        self.assertEqual(plan["fixtures"], [])
+        self.assertEqual(fx.get_stage_dims(), before)
+
+    def test_route(self):
+        import app
+        c = app.create_app().test_client()
+        c.post("/api/porter/clear")
+        self.assertFalse(c.get("/api/porter/stage/source").get_json()["has_positions"])
+        c.post("/api/porter/source/load", json={"path": FESTIVAL})
+        d = c.get("/api/porter/stage/source").get_json()
+        self.assertEqual(len(d["fixtures"]), 14)
+        self.assertEqual(c.get("/api/porter/stage/nope").status_code, 400)
+        c.post("/api/porter/clear")

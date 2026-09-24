@@ -1454,6 +1454,11 @@
         </div>
       </div>
 
+      <div class="porter-plans">
+        <div class="porter-plan"><canvas id="porter-plan-source-1"></canvas></div>
+        <div class="porter-plan"><canvas id="porter-plan-target-1"></canvas></div>
+      </div>
+
       <div class="porter-nav-bar">
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(2)">Next: Select Functions →</button>
@@ -1514,6 +1519,11 @@
 
     <!-- Step 3: Map fixtures -->
     <div id="porter-panel-3" class="porter-panel" hidden>
+      <div class="porter-plans porter-plans-map">
+        <div class="porter-plan"><canvas id="porter-plan-source-3"></canvas></div>
+        <div class="porter-plan"><canvas id="porter-plan-target-3"></canvas></div>
+      </div>
+      <p class="porter-hint">Same colour = same target: each target fixture has a colour, and the source fixtures sent to it share that colour. Grey = no target.</p>
       <div id="porter-fixture-map" class="porter-fixture-map">
         <div class="porter-placeholder">Loading fixture mapping...</div>
       </div>

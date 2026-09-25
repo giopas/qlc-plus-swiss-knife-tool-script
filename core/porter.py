@@ -463,7 +463,8 @@ def build_fixture_candidates(closure_fixture_ids: list[str]) -> dict:
     }
 
 
-def auto_map(closure_fixture_ids: list[str], strategy: str = "all") -> dict:
+def auto_map(closure_fixture_ids: list[str], strategy: str = "all",
+             qxf_paths: list[str] | None = None) -> dict:
     """
     Propose a fixture mapping ``src_id → [tgt_id, ...]``.
 
@@ -474,13 +475,19 @@ def auto_map(closure_fixture_ids: list[str], strategy: str = "all") -> dict:
         ``"fan_in"``   per fixture type, sources and targets in stage order
                        split into equal contiguous blocks (14 → 6: each target
                        gets 2–3 neighbouring sources).  Use with
-                       ``fanout_mode="fan_in"``.
+                       ``fanout_mode="fan_in"``.  Source types with no
+                       target of the same type are paired with the target
+                       types no source uses (bigger source types first; an
+                       unused target type of the same family — moving head /
+                       colour / dimmer, ``capability_map.kind`` — preferred,
+                       then any unused one) — values are then translated by
+                       capability.
     Sources with no suitable target map to ``[]``.
     """
     if strategy == "same_id":
         return _map_same_id(closure_fixture_ids)
     if strategy == "fan_in":
-        return _map_fan_in(closure_fixture_ids)
+        return _map_fan_in(closure_fixture_ids, qxf_paths)
     info = build_fixture_candidates(closure_fixture_ids)
     mapping = {}
     for src_id, cands in info["candidates"].items():
@@ -545,7 +552,17 @@ def _map_same_id(ids: list[str]) -> dict:
     return out
 
 
-def _map_fan_in(ids: list[str]) -> dict:
+def _split(S: list[str], T: list[str], out: dict[str, list[str]]) -> None:
+    """Equal contiguous blocks: target k gets sources [k*m/n, (k+1)*m/n)."""
+    m, n = len(S), len(T)
+    for k, t in enumerate(T):
+        a = k * m // n
+        b = max(a + 1, (k + 1) * m // n)
+        for s in S[a:b]:
+            out[s].append(t)
+
+
+def _map_fan_in(ids: list[str], qxf_paths: list[str] | None = None) -> dict:
     if not _src["loaded"] or not _tgt["loaded"]:
         raise RuntimeError("Both source and target must be loaded.")
     src, tgt = _fixture_infos(_src["root"]), _fixture_infos(_tgt["root"])
@@ -554,15 +571,48 @@ def _map_fan_in(ids: list[str]) -> dict:
     for s in out:
         if s in src:
             by_type[_type_key(src[s])].append(s)
+    tgt_keys = {_type_key(i) for i in tgt.values()}
+    leftover_src = []
     for key in sorted(by_type):
+        if key not in tgt_keys:
+            leftover_src += by_type[key]
+            continue
         S = stage_order(_src["root"], by_type[key])
         T = stage_order(_tgt["root"], [t for t, i in tgt.items() if _type_key(i) == key])
-        m, n = len(S), len(T)
-        for k, t in enumerate(T):
-            a = k * m // n
-            b = max(a + 1, (k + 1) * m // n)
-            for s in S[a:b]:
-                out[s].append(t)
+        _split(S, T, out)
+    leftover_tgt = [t for t, i in tgt.items() if _type_key(i) not in by_type]
+    if leftover_src and leftover_tgt:
+        # different fixture types (Quick Start rig from an existing show, 1.5)
+        from core.capability_map import kind
+        defs = _load_defs({"qxf_paths": list(qxf_paths or [])})
+
+        def fam(inf):
+            d = defs.get((inf["manufacturer"].strip().lower(), inf["model"].strip().lower()))
+            return kind(d, inf["mode"])
+        # pair source types with target types: an unused target type of the
+        # same family first, then any unused target type, then the same
+        # family (shared), then any; bigger source types choose first
+        src_types: dict[tuple, list[str]] = defaultdict(list)
+        for x in leftover_src:
+            src_types[_type_key(src[x])].append(x)
+        tgt_types: dict[tuple, list[str]] = defaultdict(list)
+        for t in leftover_tgt:
+            tgt_types[_type_key(tgt[t])].append(t)
+        tfam = {k: fam(tgt[v[0]]) for k, v in tgt_types.items()}
+        used: set = set()
+        feeds: dict[tuple, list[str]] = defaultdict(list)   # target type → sources
+        for key in sorted(src_types, key=lambda k: (-len(src_types[k]), k)):
+            f = fam(src[src_types[key][0]])
+            tk = sorted(tgt_types)
+            pick = (next((k for k in tk if k not in used and tfam[k] == f and f != "unknown"), None)
+                    or next((k for k in tk if k not in used), None)
+                    or next((k for k in tk if tfam[k] == f and f != "unknown"), None)
+                    or tk[0])
+            used.add(pick)
+            feeds[pick] += src_types[key]
+        for tkey in sorted(feeds):
+            _split(stage_order(_src["root"], feeds[tkey]),
+                   stage_order(_tgt["root"], tgt_types[tkey]), out)
     return out
 
 
@@ -613,6 +663,29 @@ def _neutral_maps(infos: dict[str, dict], defs: dict) -> dict[str, dict[int, int
         except ValueError:
             n = 0
         out[fid] = neutral_map({"mode": inf["mode"], "ch_count": n}, d)
+    return out
+
+
+def _translators(src_infos: dict[str, dict], tgt_infos: dict[str, dict],
+                 blocks: dict[str, list[str]], defs: dict) -> dict[tuple, tuple]:
+    """``(source id, target id) → (src def, src mode, tgt def, tgt mode)`` for
+    every mapped pair of **different fixture types** whose definitions are
+    both known: their scene values are translated by capability
+    (``core.capability_map``) instead of copied channel by channel."""
+    from core.capability_map import can_translate
+
+    def d(inf):
+        return defs.get((inf["manufacturer"].strip().lower(), inf["model"].strip().lower()))
+    out = {}
+    for t, block in blocks.items():
+        ti = tgt_infos.get(t)
+        for s in block:
+            si = src_infos.get(s)
+            if not si or not ti or _type_key(si) == _type_key(ti):
+                continue
+            sd, td = d(si), d(ti)
+            if can_translate(sd, si["mode"]) and can_translate(td, ti["mode"]):
+                out[(s, t)] = (sd, si["mode"], td, ti["mode"])
     return out
 
 
@@ -862,14 +935,21 @@ def validate(plan: dict) -> dict:
         for c in cycles:
             warnings.append(f"Reference cycle detected: {c}")
 
+    translatable = (_translators(src_infos, tgt_infos, blocks, _load_defs(plan))
+                    if plan.get("translate_types", True) else {})
     for t, block in sorted(blocks.items(), key=lambda kv: _id_sorted([kv[0]])[0]):
         for s in block:
             si, ti = src_infos.get(s), tgt_infos.get(t)
             if si and ti and _type_key(si) != _type_key(ti):
-                warnings.append(
-                    f"Source fixture {fx_label(src_infos, s)} ({si['model']}, {si['mode']}) → "
-                    f"target {fx_label(tgt_infos, t)} ({ti['model']}, {ti['mode']}): "
-                    f"different fixture type, values are copied channel by channel.")
+                pair = (f"Source fixture {fx_label(src_infos, s)} ({si['model']}, {si['mode']}) → "
+                        f"target {fx_label(tgt_infos, t)} ({ti['model']}, {ti['mode']})")
+                if (s, t) in translatable:
+                    info.append(f"{pair}: different fixture type, values translated by "
+                                f"capability (intensity, colour, pan/tilt, shutter).")
+                else:
+                    warnings.append(
+                        f"{pair}: different fixture type and no fixture definition for "
+                        f"one of them, values are copied channel by channel.")
 
     # Check name collisions with target
     if _tgt["loaded"] and _src["loaded"]:
@@ -1057,6 +1137,10 @@ def _build(plan: dict) -> dict:
     # ── 1. Who feeds which target ─────────────────────────────────────────
     order = stage_order(src_root, fix_ids)
     blocks = compute_blocks(order, fixture_mapping, fanout_mode)
+    translate = (_translators(_fixture_infos(src_root), _fixture_infos(_tgt["root"]),
+                             blocks, defs)
+                 if plan.get("translate_types", True) else {})
+    translated: list[dict] = []
 
     # ── 2. Allocate new function IDs in the target (max + 1) ──────────────
     max_id = _max_id_in(tgt_root)
@@ -1094,7 +1178,9 @@ def _build(plan: dict) -> dict:
 
         _remap_func_refs(new_fn, func_id_map)
         before, after = _remap_fixture_refs(new_fn, blocks, mirror_fixtures,
-                                            pan_channel_map, intensity, neutral)
+                                            pan_channel_map, intensity, neutral,
+                                            translate, plan.get("strobe", "keep"),
+                                            translated)
         if new_fn.get("Type") == "RGBMatrix":
             gid = (new_fn.findtext("FixtureGroup") or "").strip()
             if gid not in group_map:
@@ -1153,6 +1239,7 @@ def _build(plan: dict) -> dict:
         "vc": vc_result,
         "panic": panic,
         "removed_vc": removed_vc,
+        "translated": translated,
         "_defs": defs,
     }
 
@@ -1353,7 +1440,10 @@ def _remap_fixture_refs(fn_el: ET.Element,
                         mirror_fixtures: set[str],
                         pan_channel_map: dict,
                         intensity: dict[str, set] | None = None,
-                        neutral: dict[str, dict[int, int]] | None = None) -> tuple[int, int]:
+                        neutral: dict[str, dict[int, int]] | None = None,
+                        translate: dict[tuple, tuple] | None = None,
+                        strobe: str = "keep",
+                        log: list | None = None) -> tuple[int, int]:
     """
     Remap fixture IDs in a Scene (``FixtureVal``) or EFX (``Fixture``).
 
@@ -1362,7 +1452,9 @@ def _remap_fixture_refs(fn_el: ET.Element,
     Values of sources that feed no target are left out.  Output order
     follows the source order.  With *neutral* (target fixture → neutral
     values) scene values are completed so every channel is declared
-    (no LTP bleed, WORKPLAN principle 5).
+    (no LTP bleed, WORKPLAN principle 5).  With *translate* (see
+    :func:`_translators`) the values of a different fixture type are
+    translated by capability; notes go to *log*.
 
     Returns ``(fixtures before, fixtures after)``.
     """
@@ -1415,6 +1507,16 @@ def _remap_fixture_refs(fn_el: ET.Element,
                 dup.find("ID").text = t
             else:
                 dup.set("ID", t)
+                if translate and (s, t) in translate and fn_type == "Scene":
+                    from core.capability_map import translate_text
+                    sd, sm, td, tm = translate[(s, t)]
+                    dup.text, notes = translate_text(sd, sm, td, tm, dup.text or "",
+                                                     strobe=strobe)
+                    if log is not None:
+                        log.append({"function": fn_el.get("Name", ""), "source": s,
+                                    "target": t, "notes": notes})
+                    new.append(dup)
+                    continue
                 if t in mirror_fixtures and s in pan_channel_map and (dup.text or "").strip():
                     pan = pan_channel_map[s]
                     dup.text = mirror_pan_values(dup.text.strip(), pan["coarse"], pan.get("fine"))
@@ -1502,6 +1604,17 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
             lines.append("── FIXTURE GROUPS CREATED ──")
             for g in result["groups"]:
                 lines.append(f"  + {g['id']} '{g['name']}'")
+            lines.append("")
+        if result.get("translated"):
+            tr = result["translated"]
+            lines.append(f"── TRANSLATED BETWEEN FIXTURE TYPES ({len(tr)} scene value set(s)) ──")
+            pairs = sorted({(x["source"], x["target"]) for x in tr},
+                           key=lambda p: (_id_sorted([p[0]])[0], _id_sorted([p[1]])[0]))
+            for sp, tp in pairs:
+                lines.append(f"  • source {sp} → target {tp}: by capability")
+            for x in tr:
+                for n in x["notes"]:
+                    lines.append(f"    - '{x['function']}' {x['source']}→{x['target']}: {n}")
             lines.append("")
         if result.get("removed_vc"):
             lines.append(f"── REMOVED FROM THE TARGET VC ({len(result['removed_vc'])}) ──")

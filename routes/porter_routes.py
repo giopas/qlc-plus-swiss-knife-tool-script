@@ -152,7 +152,8 @@ def auto_map():
         return jsonify({'error': f'Unknown strategy {strategy!r}.'}), 400
 
     try:
-        result = porter.auto_map(fixture_ids, strategy)
+        result = porter.auto_map(fixture_ids, strategy,
+                                 data.get('qxf_paths') or None)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

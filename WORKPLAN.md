@@ -230,6 +230,17 @@ Goal: build a new show for a **different rig** (other fixture types, number, arr
 - [ ] Output = one workspace: Quick Start's generated VC/looks + the ported functions and widgets (placed with the Porter's VC rules), PANIC RESET covering both, Doctor gate once.
 - [ ] Golden test: Festival_14fix → a Quick Start rig of different types (e.g. Chauvet Intimidator Spot 110 + SlimPAR 56) → Doctor clean + `tools/qlc_check.py` pass.
 
+**1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; after 1.5, before the v1.4.0 release — not started)*
+
+Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy *keep unless already used in the target*), but it does not bring the **input setup** they depend on, so in the new file they may point at a universe with no MIDI input (dead bindings, Doctor D012).
+
+- [ ] **Input patch**: read the source `InputOutputMap` (per universe: input plugin, UID/device, line, input profile, feedback). If the target has no input on that universe, copy it; if the target uses a different universe for the same controller, offer a **universe mapping** (source universe → target universe) and rewrite every ported `<Input Universe=…>`.
+- [ ] **Bindings on ported widgets**: remap universe as above; report bindings dropped because the target already uses them, and bindings kept but whose controller is not patched in the target.
+- [ ] **Bindings only (no widgets)**: optional mode to copy the MIDI/key bindings from source widgets onto the *matching* target widgets (same function after porting, or same caption) — for when the VC was rebuilt but the controller layout should stay the same.
+- [ ] Doctor D012 on the result must be clean for ported bindings; the port report lists the input patch copied and every binding kept / remapped / dropped.
+- [ ] Test case: giopas's show with MIDI controls added (to be attached to the corpus, scrubbed) → a target without MIDI input.
+- Later (Phase 2 backlog "MIDI / input mapping manager"): re-patch inputs across a whole show, MIDI-learn simulation.
+
 ### Phase 2 — Show-building toolkit (replaces manual/AI XML patching)
 
 **2.1 Workspace Doctor: fixes → v1.5.0**
@@ -369,6 +380,7 @@ git checkout -b feat/quickstart-porter                               # branch fo
 
 **Next Cowork session:**
 1. Phase 1.5 Quick Start × Porter (see §5): start with `core/capability_map.py` (value translation between fixture types) + tests, then the Quick Start "Port from an existing show" step.
+1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.
 3. Look into `QuickStart_6fix`'s whole-rig *Chase* / *Stripes* buttons: in the live check (QLC+ 5.2.2 headless) one of them is intermittently dark (a different one per run) — timing of the Collection (dimmer scene + matrix) start, or the check's 1 s settle?

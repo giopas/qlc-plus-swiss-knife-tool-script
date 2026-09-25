@@ -4,6 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (25 Sep, late — Phase 1.5 part 1):**
+- **1.5 — capability translation + Quick Start hand-off done** on branch `feat/quickstart-porter` (local commits `cdf4ea6`, `f179f39`; giopas pushes). New `core/capability_map.py`; the Porter translates scene values between different fixture types and fan-in Auto-Map pairs different types by family; Quick Start has *➜ Port from an existing show* after export. Festival_14fix → QuickStart_club (all types different): Doctor 0 / 0, byte-identical. 397 tests green. **Waiting for giopas:** QLC+ check of `tests/manual/Festival_to_club_translated.qxw` + UI test of the hand-off (see §8), push.
+- Still open in 1.5: in-memory target (no save first), Porter step 3 hint for translated pairs, EFX/Sequence on different types, live `qlc_check` golden. Then 1.6, then 1.3.
+
 **Status (25 Sep):**
 - **Phase 1.2 + 1.2b — done** on branch `feat/porter-vc` (local commits, stacked on `main` @ `60db1fa`; giopas pushes, commands in §8): VC porting, fan-in, Doctor gate, port report next to the output; 1.2b UX after giopas's tests (VC tree ticking, automatic dependencies, stage plans, "Port this fixture", highlight, remove target VC items, step 4 → Next / step 5 Export). Real cases Festival_14fix → QuickStart_6fix (fan-in 14 → 6) and Festival_14fix → bare Pub rig (same IDs) pass Doctor with 0 errors / 0 warnings and are byte-identical run to run; the fan-in output passes `tools/qlc_check.py` in QLC+ 5.2.2 for every ported button. 365 tests green. Waiting for giopas: try the Porter tab on the Mac, push.
 - Next: **Phase 1.5 (Quick Start × Porter)**, then 1.3 (Show Book) — order changed by giopas on 25 Sep, see §8.
@@ -220,15 +224,25 @@ Found and fixed along the way (all in the CHANGELOG):
 - [ ] Wiki pages for Quick Start, Porter, Show Book and Doctor (read-only).
 - [ ] Forum post.
 
-**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by giopas 25 Sep; **done next, before 1.3 Show Book** (giopas, 25 Sep) — design sketch, not started)*
+**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by giopas 25 Sep; before 1.3 Show Book. **Part 1 done 25 Sep**, branch `feat/quickstart-porter`: commits `cdf4ea6` capability translation + Porter, `f179f39` Quick Start hand-off)*
 
 Goal: build a new show for a **different rig** (other fixture types, number, arrangement, positions) and port everything that can be ported from an existing show in one flow, instead of Quick Start first and Porter second.
 
-- [ ] Quick Start gets an optional step **"Port from an existing show"** after the rig/stage steps: pick a source `.qxw`; the Quick Start rig (in memory, not yet exported) becomes the Porter target.
-- [ ] Mapping uses the Porter step 3 UI (stage plans side by side, fan-in, "Port this fixture", highlight), with the Quick Start stage positions as the target plan.
-- [ ] **Different fixture types** (the new part): translate values by **capability** instead of channel index — intensity, RGB(W/A/UV) colour mixing, colour wheel (nearest colour), pan/tilt (degrees via QXF physical ranges), strobe/shutter (safe mapping or dropped), everything else neutral. Needs a `core/capability_map.py` built on `qxf_parser` + `channel_model`; tier-3 mappings in the Porter use it too.
-- [ ] Output = one workspace: Quick Start's generated VC/looks + the ported functions and widgets (placed with the Porter's VC rules), PANIC RESET covering both, Doctor gate once.
-- [ ] Golden test: Festival_14fix → a Quick Start rig of different types (e.g. Chauvet Intimidator Spot 110 + SlimPAR 56) → Doctor clean + `tools/qlc_check.py` pass.
+- [x] **Different fixture types — `core/capability_map.py`** *(done 25 Sep, `cdf4ea6`)*: `decode()` reads a fixture's values into a `LookState` (dimmer level, colour, white emitter, pan/tilt in degrees from centre, shutter open/closed/strobe + relative speed); `encode()` writes it on the target mode, every channel declared; `translate()` / `translate_text()` ("ch,val,…"); `kind()` = family *moving / colour / dimmer / unknown*. Rules (also in the module docstring):
+  - level = source master dimmer (1.0 if none); colour from emitters R G B W A UV C M Y Lime Indigo, else colour wheel, else white;
+  - target dimmer + RGB → dimmer = level, RGB = colour; RGB without dimmer → RGB × level; dimmer + wheel → dimmer = level × brightest component, wheel = nearest slot (`Res1` hex, else a colour word in the label; *Open*/*White* = white; ties → lowest DMX value); dimmer only → level × peak;
+  - target White emitter = the source's white emitter (0 if none), RGB reduced by it;
+  - pan/tilt: centre-relative degrees via QXF `PanMax`/`TiltMax` (fraction of range if either side lacks it), 16-bit when the mode has fine channels, clamped + noted; position on a fixture without pan/tilt is dropped (noted only if off-centre, > 3°);
+  - shutter: open → target open value; closed → target closed value, or intensity 0 when it has none; strobe → same relative speed in the target's first strobe range (`strobe="drop"` → open, noted);
+  - everything else (gobo, prism, macros, programs, speeds, zoom) → `channel_model.neutral_value`.
+- [x] **Porter uses it** *(done 25 Sep, `cdf4ea6`)*: `_translators()` builds `(src, tgt) → defs` for mapped pairs whose model/mode differ and whose definitions are both known; `_remap_fixture_refs()` translates Scene values for those pairs (EFX / Sequence untouched). Validation: *info* "values translated by capability" (the "copied channel by channel" warning stays for pairs without definitions). Plan options `translate_types` (default True), `strobe` ("keep" | "drop"). Result key `translated` → report section *TRANSLATED BETWEEN FIXTURE TYPES* (pairs + notes).
+- [x] **Fan-in Auto-Map across types** *(done 25 Sep, `cdf4ea6`)*: same-type pairs as before; source types with no same-type target are paired with the target types no source uses — bigger source types choose first: unused target type of the same family, else any unused one, else same family (shared), else any; then equal stage-order blocks. `auto_map(ids, strategy, qxf_paths=None)`; `POST /api/porter/auto-map` accepts `qxf_paths`.
+- [x] **Golden test (Doctor part)** *(done 25 Sep, `tests/test_capability_map.py`, 24 tests)*: Festival_14fix FLOOR + CEILING → QuickStart_club (Spot 110 ×2 + SlimPAR 56 ×4, all types different): 6 ceiling spots → the 2 Spot 110, 8 floor PARs → the 4 SlimPARs; Doctor 0 errors / 0 warnings; *Dark Red* on the Spot 110 = wheel 32 (Red) + dimmer > 0; byte-identical run to run. Sample output for the QLC+ check: `tests/manual/Festival_to_club_translated.qxw`.
+- [x] **Quick Start hand-off** *(first version, done 25 Sep, `f179f39`)*: after *💾 Generate QXW* saves the rig, the footer shows **➜ Port from an existing show** (`qsPortFromShow()` in `static/js/quickstart.js`): opens the Porter, loads the saved file as the target, goes to step 1; the user loads the source show and uses Auto-Map *Fan-in*. Output = the Porter's `<name>_v2.qxw` (Quick Start VC/looks + ported functions/widgets, PANIC RESET extended, Doctor gate once). *Not browser-tested in this session (the app runs on the Mac) — giopas to test.*
+- [ ] `tools/qlc_check.py` PASS on the translated output (needs QLC+ — giopas's Mac, or the Docker idea in §8).
+- [ ] Quick Start rig **in memory** as the Porter target (no need to save first) — only if the save-first hand-off feels clumsy in use.
+- [ ] Porter step 3: mark translated pairs (e.g. "↔ by capability" badge) and show the translation notes before export.
+- [ ] EFX on a target without pan/tilt (today kept as-is → Doctor will flag), Sequence step values (backlog), gobo mapping (today neutral/open).
 
 **1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; after 1.5, before the v1.4.0 release — analysis done, not started)*
 
@@ -383,8 +397,17 @@ cd wiki && git push origin master && cd ..                           # wiki: Fun
 git checkout -b feat/quickstart-porter                               # branch for Phase 1.5
 ```
 
+**giopas, before the next session (Phase 1.5 part 1):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 397 passed
+python3 tools/qlc_check.py tests/manual/Festival_to_club_translated.qxw   # QLC+ closed; expect RESULT: PASS
+git push -u origin feat/quickstart-porter
+```
+Then in the app: Quick Start with a rig of *different* types (e.g. 2 × Intimidator Spot 110 + 4 × SlimPAR 56) → 💾 Generate QXW → **➜ Port from an existing show** → load Festival_14fix (or BarShow) as source → step 2 tick FLOOR/CEILING → step 3 Auto-Map *Fan-in* → export. Open the result in QLC+: colours on the spots come from the wheel, PARs keep their colours, PANIC RESET stops everything. Note anything that looks wrong (colour choice, dimmer levels) — the rules are in WORKPLAN 1.5.
+
 **Next Cowork session:**
-1. Phase 1.5 Quick Start × Porter (see §5): start with `core/capability_map.py` (value translation between fixture types) + tests, then the Quick Start "Port from an existing show" step.
+1. Phase 1.5 part 2 (see §5, open items): results of giopas's test first; then the step 3 "by capability" badge + notes; EFX on fixtures without pan/tilt.
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.

@@ -77,6 +77,8 @@ function _qsUpdateNav() {
   if (back) back.style.display = _qsStep > 1 ? '' : 'none';
   if (next) next.style.display = _qsStep < _qsTotalSteps ? '' : 'none';
   if (exp)  exp.style.display  = _qsStep === _qsTotalSteps ? '' : 'none';
+  const port = document.getElementById('qs-btn-port');
+  if (port) port.style.display = (_qsStep === _qsTotalSteps && _qsLastSavedPath) ? '' : 'none';
 
   const ind = document.getElementById('qs-step-indicator');
   if (ind) ind.textContent = `Step ${_qsStep} of ${_qsTotalSteps}`;
@@ -1409,6 +1411,28 @@ function _qsUpdateFilenamePreview() {
   if (el) el.textContent = _qsGenerateFilename();
 }
 
+// Path of the last exported workspace (Phase 1.5: hand-off to the Porter)
+let _qsLastSavedPath = null;
+
+/**
+ * Quick Start × Porter (WORKPLAN 1.5): open the Function Porter with the
+ * workspace just exported as the TARGET; the user then picks the source
+ * show in Porter step 1.  Different fixture types are translated by
+ * capability (core/capability_map.py); Doctor gates the Porter export.
+ */
+function qsPortFromShow() {
+  if (!_qsLastSavedPath) { setStatus('Generate and save the workspace first.', 'warn'); return; }
+  go('porter');
+  const inp = document.getElementById('porter-tgt-path');
+  const file = document.getElementById('porter-tgt-file');
+  if (file) file.value = '';
+  if (inp) inp.value = _qsLastSavedPath;
+  if (typeof porterGoStep === 'function') porterGoStep(1);
+  if (typeof porterLoadTgt === 'function') porterLoadTgt();
+  setStatus('Porter: target = your new rig (' + _qsLastSavedPath + '). Now load the existing show as the source, '
+            + 'then Auto-Map "Fan-in" in step 3 — different fixture types are translated by capability.', 'ok');
+}
+
 async function qsExport() {
   const btn = document.getElementById('qs-btn-export');
   if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
@@ -1446,6 +1470,8 @@ async function qsExport() {
 
     if (saved) {
       const fullPath = saveFileWithPicker.lastPath;
+      _qsLastSavedPath = fullPath || null;
+      _qsUpdateNav();
       let msg = fullPath
         ? 'Workspace saved to: ' + fullPath
         : 'Workspace saved as ' + saved;

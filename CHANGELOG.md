@@ -45,6 +45,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Fixed
 
+- Doctor D012 no longer reports "no input device patched" for MIDI inputs saved by QLC+ 5.2.1 builds as `UID="<device>"` without a `Name`.
 - **Function Porter output was not deterministic**: dependencies were ordered by iterating a Python set, so new function IDs could change between runs. They now follow discovery order.
 - **Function Porter didn't port EFX fixtures or script references from real QLC+ files**: it looked for `<EFXFixture>` (QLC+ saves `<Fixture>`) and for `startfunction:` (QLC+ saves `startfunction%3A`).
 - **Function Porter left values for unmapped fixtures in ported scenes** (dangling fixture references, or values landing on an unrelated target fixture with the same ID). They are now left out.

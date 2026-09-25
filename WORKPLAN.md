@@ -230,7 +230,7 @@ Goal: build a new show for a **different rig** (other fixture types, number, arr
 - [ ] Output = one workspace: Quick Start's generated VC/looks + the ported functions and widgets (placed with the Porter's VC rules), PANIC RESET covering both, Doctor gate once.
 - [ ] Golden test: Festival_14fix → a Quick Start rig of different types (e.g. Chauvet Intimidator Spot 110 + SlimPAR 56) → Doctor clean + `tools/qlc_check.py` pass.
 
-**1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; after 1.5, before the v1.4.0 release — not started)*
+**1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; after 1.5, before the v1.4.0 release — analysis done, not started)*
 
 Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy *keep unless already used in the target*), but it does not bring the **input setup** they depend on, so in the new file they may point at a universe with no MIDI input (dead bindings, Doctor D012).
 
@@ -238,7 +238,12 @@ Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy
 - [ ] **Bindings on ported widgets**: remap universe as above; report bindings dropped because the target already uses them, and bindings kept but whose controller is not patched in the target.
 - [ ] **Bindings only (no widgets)**: optional mode to copy the MIDI/key bindings from source widgets onto the *matching* target widgets (same function after porting, or same caption) — for when the VC was rebuilt but the controller layout should stay the same.
 - [ ] Doctor D012 on the result must be clean for ported bindings; the port report lists the input patch copied and every binding kept / remapped / dropped.
-- [ ] Test case: giopas's show with MIDI controls added (to be attached to the corpus, scrubbed) → a target without MIDI input.
+- [ ] Test case: giopas's show with MIDI controls added → a target without MIDI input, and → SmallShow (same controller). *(File received 25 Sep: `BarShow_v14.qxw` with MIDI — not committed (real names); tests rebuild the same bindings on the scrubbed `Pub_6fix.qxw`.)*
+
+*Analysis of giopas's file (25 Sep):*
+- Input patch: Universe 2 (ID 1) ← MIDI device **SINCO** (`Name="SINCO" UID="528145425"`, mode *Program Change*). 3 VC bindings, all on that universe: **PANIC / BLACKOUT** ← ch 40, setlist **CueList Next** ← ch 20, **Previous** ← ch 10. Plus 42 keyboard keys.
+- SmallShow (target) has the same controller on the same universe (5.2.1 GIT saves it as `UID="SINCO"`, no Name) and uses the **same channels** (40 = STROBE BLIND, 20/10/30 = CueList Next/Previous/Stop). So porting *1. SETLIST* today: with the target page kept, 3 of the source bindings are dropped as conflicts (*keep unless used*); with the target page removed in step 4, all 3 are kept and work. → 1.6 needs a third policy **"source wins"** (move the binding to the ported widget and remove it from the target widget), and the report should name each conflict (which target widget had it).
+- Found a Doctor false positive (fixed 25 Sep): D012 reported "no input device patched" for inputs saved as `UID="SINCO"` without `Name` (QLC+ 5.2.1 GIT format).
 - Later (Phase 2 backlog "MIDI / input mapping manager"): re-patch inputs across a whole show, MIDI-learn simulation.
 
 ### Phase 2 — Show-building toolkit (replaces manual/AI XML patching)

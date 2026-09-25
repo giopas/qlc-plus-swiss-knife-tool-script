@@ -230,6 +230,9 @@ def test_d012_inputs_without_device():
     assert rep.by_code("D012")[0].ref == {"universe": "1", "bindings": 1}
     patched = iomap.replace('Name="None" UID="None"', 'Name="nanoKONTROL" UID="x"')
     assert not check(ws(scene("1"), vc, iomap=patched), DEFS).by_code("D012")
+    # QLC+ 5.2.1 GIT saves only UID="<device name>" (no Name): still patched
+    uid_only = iomap.replace('Name="None" UID="None"', 'UID="SINCO"')
+    assert not check(ws(scene("1"), vc, iomap=uid_only), DEFS).by_code("D012")
 
 
 # ── D015 / D016 / I001 / I002 ────────────────────────────────────────────────

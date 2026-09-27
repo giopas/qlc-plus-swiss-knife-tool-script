@@ -49,14 +49,24 @@ ALL_SECTIONS = [
     "shows",
     "scripts",
     "vc_layout",
+    "doctor",
 ]
+
+# Buttons without a function
+_ACTION_LABELS = {"StopAll": "(stop all functions)", "Blackout": "(blackout)"}
+
+# Binding-slot names shown in the VC layout (CueList / Frame sub-controls)
+_SLOT_LABELS = {"Next": "Next", "Previous": "Prev", "Stop": "Stop", "Playback": "Play",
+                "CrossFade": "Xfade", "Enable": "Enable", "NextPage": "Next page",
+                "PreviousPage": "Prev page"}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN GENERATOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def generate(sections: list[str] | None = None,
-             qxf_dir: str | None = None) -> dict:
+             qxf_dir: str | None = None,
+             date: str | None = None) -> dict:
     """Build a structured document from the loaded workspace.
 
     Parameters
@@ -65,7 +75,12 @@ def generate(sections: list[str] | None = None,
         Which sections to include.  None or empty means all.
     qxf_dir : str or None
         Optional directory to scan for .qxf files (for value decoding).
-        If None, uses whatever QXF defs are already loaded.
+        If None, uses whatever QXF defs are already loaded.  Definitions
+        next to the workspace and, for fixtures still missing, the installed
+        QLC+ library are always added.
+    date : str or None
+        Date printed in the book (default: today) — pass one for
+        reproducible output.
 
     Returns
     -------
@@ -86,6 +101,8 @@ def generate(sections: list[str] | None = None,
     if qxf_dir and os.path.isdir(qxf_dir):
         _load_qxf_dir(qxf_dir)
 
+    _load_workspace_qxfs(state)
+
     # Build QXF lookup for value decoding
     qxf_lookup = _build_qxf_lookup()
 
@@ -96,7 +113,7 @@ def generate(sections: list[str] | None = None,
 
     doc = {
         "show_name": show_name,
-        "date": datetime.date.today().isoformat(),
+        "date": date or datetime.date.today().isoformat(),
         "sections": {},
     }
 
@@ -128,7 +145,10 @@ def generate(sections: list[str] | None = None,
         doc["sections"]["scripts"] = _build_scripts(root, state)
 
     if "vc_layout" in sections:
-        doc["sections"]["vc_layout"] = _build_vc_layout(state)
+        doc["sections"]["vc_layout"] = _build_vc_layout(root, state)
+
+    if "doctor" in sections:
+        doc["sections"]["doctor"] = _build_doctor(root, qxf_lookup)
 
     return doc
 
@@ -146,6 +166,43 @@ def _load_qxf_dir(qxf_dir: str):
                 fixture_mod.load_qxf(path)
             except Exception:
                 pass  # skip broken files
+
+
+def _load_workspace_qxfs(state: dict):
+    """Add the definitions QLC+ itself would use: ``.qxf`` files next to the
+    workspace, then the installed QLC+ library for models still missing."""
+    path = state.get("path") or ""
+    folder = os.path.dirname(os.path.abspath(path)) if path else ""
+    if folder and os.path.isdir(folder):
+        _load_qxf_dir(folder)
+    have = {(d.get("manufacturer", "").lower(), d.get("model", "").lower())
+            for d in fixture_mod.get_qxf_defs().values()}
+    try:
+        from core.quick_start import qlc_library
+    except Exception:  # noqa: BLE001
+        return
+    for info in state.get("fixture_map", {}).values():
+        mfg = info.get("manufacturer", "")
+        model = _model_only(info)
+        if (mfg.lower(), model.lower()) in have:
+            continue
+        try:
+            found = qlc_library.find(mfg, model)
+            if found:
+                fixture_mod.load_qxf(found)
+                have.add((mfg.lower(), model.lower()))
+        except Exception:  # noqa: BLE001 — decoding just stays raw
+            pass
+
+
+def _model_only(info: dict) -> str:
+    """Workspace fixture model without the manufacturer prefix
+    (``fixture_map`` stores "Manufacturer Model")."""
+    mfg = info.get("manufacturer", "")
+    model = info.get("model", "")
+    if mfg and model.startswith(mfg + " "):
+        return model[len(mfg) + 1:]
+    return model
 
 
 def _build_qxf_lookup() -> dict:
@@ -193,7 +250,8 @@ def _build_summary(state: dict, root: ET.Element) -> dict:
     """Overview statistics."""
     fixture_count = len(state.get("fixture_map", {}))
     func_count = len(state.get("func_detailed", {}))
-    vc_count = len(state.get("vc_widgets", []))
+    layout = _build_vc_layout(root, state)
+    vc_count = layout["widget_count"]
 
     # Count by function type
     type_counts = {}
@@ -210,6 +268,7 @@ def _build_summary(state: dict, root: ET.Element) -> dict:
         "fixture_count": fixture_count,
         "function_count": func_count,
         "vc_widget_count": vc_count,
+        "vc_page_count": len(layout["pages"]),
         "universe_count": len(universes),
         "universes": sorted(universes),
         "function_types": type_counts,
@@ -224,7 +283,7 @@ def _build_patch(state: dict) -> list[dict]:
             "id": fid,
             "name": info.get("name", ""),
             "manufacturer": info.get("manufacturer", "Unknown"),
-            "model": info.get("model", "Unknown"),
+            "model": _model_only(info) or "Unknown",
             "mode": info.get("mode", "Default"),
             "universe": info.get("universe", 0),
             "address": info.get("address", 0),
@@ -542,21 +601,115 @@ def _build_scripts(root: ET.Element, state: dict) -> list[dict]:
     return scripts
 
 
-def _build_vc_layout(state: dict) -> list[dict]:
-    """Virtual Console widget overview."""
-    widgets = state.get("vc_widgets", [])
-    rows = []
-    for w in widgets:
-        rows.append({
-            "id": w.get("id", ""),
-            "type": w.get("type", ""),
-            "caption": w.get("caption", ""),
-            "function_id": w.get("func_id", ""),
-            "function_name": w.get("func_name", ""),
-            "frame": w.get("frame_path", ""),
-        })
-    rows.sort(key=lambda r: int(r["id"]) if r["id"].isdigit() else 0)
-    return rows
+def _vc_bindings(w: ET.Element) -> str:
+    """Key / MIDI bindings of widget *w* itself, e.g. ``"Next: key Space,
+    MIDI U2 ch 20"``."""
+    parts = []
+
+    def walk(el, slot):
+        for c in el:
+            tag = c.tag.replace(f"{{{QLC_NS_URI}}}", "")
+            if tag in workspace._WIDGET_TYPES:
+                continue
+            label = (_SLOT_LABELS.get(slot, slot) + ": ") if slot else ""
+            if tag == "Key" and (c.text or "").strip():
+                parts.append(f"{label}key {(c.text or '').strip()}")
+            elif tag == "Input" and c.get("Channel") is not None:
+                u = c.get("Universe", "")
+                u = int(u) + 1 if u.isdigit() else u
+                parts.append(f"{label}MIDI U{u} ch {c.get('Channel')}")
+            elif len(c):
+                walk(c, tag if not slot else slot)
+    walk(w, "")
+    return ", ".join(parts)
+
+
+def _build_vc_layout(root: ET.Element, state: dict) -> dict:
+    """Virtual Console by page: every page (top-level frame), its frames and
+    widgets in document order, with position, size, function and key/MIDI
+    bindings.
+
+    Returns ``{"pages": [{id, type, caption, size, widgets: [row]}],
+    "widget_count"}``; a row is ``{id, type, caption, frame (path inside the
+    page), depth, x, y, w, h, function_id, function_name, bindings}``.
+    """
+    func_by_id = state.get("func_by_id", {})
+    vc = root.find("q:VirtualConsole", NS)
+    pages = []
+    count = 0
+    if vc is None:
+        return {"pages": pages, "widget_count": 0}
+
+    def tag_of(el):
+        return el.tag.replace(f"{{{QLC_NS_URI}}}", "")
+
+    def geom(el):
+        ws = el.find("q:WindowState", NS)
+        if ws is None:
+            return "", "", "", ""
+        return ws.get("X", ""), ws.get("Y", ""), ws.get("Width", ""), ws.get("Height", "")
+
+    def func_of(el):
+        t = tag_of(el)
+        if t == "CueList":
+            fid = (el.findtext("q:Chaser", default="", namespaces=NS) or "").strip()
+        else:
+            fe = el.find("q:Function", NS)
+            fid = fe.get("ID", "") if fe is not None else ""
+        return "" if fid in ("", "4294967295", "-1") else fid
+
+    def walk(el, path, depth, rows):
+        nonlocal count
+        for c in el:
+            t = tag_of(c)
+            if t not in workspace._WIDGET_TYPES:
+                continue
+            x, y, w, h = geom(c)
+            fid = func_of(c)
+            cap = (c.get("Caption", "") or "").replace("\n", " ").strip()
+            rows.append({
+                "id": c.get("ID", ""), "type": t, "caption": cap,
+                "frame": " › ".join(path), "depth": depth,
+                "x": x, "y": y, "w": w, "h": h,
+                "function_id": fid,
+                "function_name": (func_by_id.get(fid, "") if fid else
+                                  _ACTION_LABELS.get((c.findtext("q:Action", default="",
+                                                                 namespaces=NS) or "").strip(), "")),
+                "bindings": _vc_bindings(c),
+            })
+            count += 1
+            if t in ("Frame", "SoloFrame"):
+                walk(c, path + [cap or "(frame)"], depth + 1, rows)
+
+    for pg in vc:
+        t = tag_of(pg)
+        if t not in ("Frame", "SoloFrame"):
+            continue
+        _x, _y, w, h = geom(pg)
+        rows: list[dict] = []
+        walk(pg, [], 0, rows)
+        pages.append({"id": pg.get("ID", ""), "type": t,
+                      "caption": (pg.get("Caption", "") or "").replace("\n", " ").strip(),
+                      "size": f"{w}×{h}" if w and h else "", "widgets": rows})
+    return {"pages": pages, "widget_count": count}
+
+
+def _build_doctor(root: ET.Element, qxf_lookup: dict) -> dict:
+    """Workspace Doctor summary (read-only): counts and every error and
+    warning (info findings counted only)."""
+    from core import qxw_io
+    from core.doctor import check
+    plain = qxw_io.strip_ns(copy.deepcopy(root))
+    report = check(plain, list(qxf_lookup.values()))
+    findings = [{"code": f.code, "severity": f.severity, "location": f.location,
+                 "message": f.message}
+                for f in report.findings if f.severity in ("error", "warning")]
+    return {
+        "errors": len(report.errors),
+        "warnings": len(report.warnings),
+        "info": len([f for f in report.findings if f.severity == "info"]),
+        "findings": findings,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -595,6 +748,7 @@ def export_csv(document: dict) -> bytes:
     sections = document.get("sections", {})
 
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr = _fixed_time_writestr(zf)       # same input → same bytes
         if "patch" in sections:
             zf.writestr("patch.csv", _csv_patch(sections["patch"]))
 
@@ -613,14 +767,36 @@ def export_csv(document: dict) -> bytes:
         if "efx" in sections:
             zf.writestr("efx.csv", _csv_efx(sections["efx"]))
 
+        if "shows" in sections:
+            zf.writestr("shows.csv", _csv_shows(sections["shows"]))
+
+        if "scripts" in sections:
+            zf.writestr("scripts.csv", _csv_scripts(sections["scripts"]))
+
         if "vc_layout" in sections:
             zf.writestr("vc_layout.csv", _csv_vc(sections["vc_layout"]))
+
+        if "doctor" in sections:
+            zf.writestr("doctor.csv", _csv_doctor(sections["doctor"]))
 
         # Summary as a simple text file
         if "summary" in sections:
             zf.writestr("summary.txt", _txt_summary(document))
 
     return buf.getvalue()
+
+
+def _fixed_time_writestr(zf: zipfile.ZipFile):
+    """``zf.writestr`` with a fixed timestamp (1980-01-01), so the ZIP is
+    byte-identical run to run (WORKPLAN principle 3)."""
+    orig = zf.writestr
+
+    def w(name, data):
+        info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.external_attr = 0o644 << 16
+        return orig(info, data)
+    return w
 
 
 def _csv_write(rows: list[list], headers: list[str]) -> str:
@@ -699,12 +875,43 @@ def _csv_efx(efx_list: list[dict]) -> str:
     return _csv_write(rows, headers)
 
 
-def _csv_vc(widgets: list[dict]) -> str:
-    headers = ["Widget ID", "Type", "Caption",
-               "Function ID", "Function Name", "Frame Path"]
-    rows = [[w["id"], w["type"], w["caption"],
-             w["function_id"], w["function_name"],
-             w["frame"]] for w in widgets]
+def _csv_vc(layout: dict) -> str:
+    headers = ["Page", "Frame Path", "Widget ID", "Type", "Caption", "X", "Y",
+               "Width", "Height", "Function ID", "Function Name", "Key / MIDI"]
+    rows = []
+    for pg in layout.get("pages", []):
+        rows.append([pg["caption"], "", pg["id"], pg["type"] + " (page)", pg["caption"],
+                     "", "", *(pg["size"].split("×") if pg["size"] else ["", ""]), "", "", ""])
+        for w in pg["widgets"]:
+            rows.append([pg["caption"], w["frame"], w["id"], w["type"], w["caption"],
+                         w["x"], w["y"], w["w"], w["h"],
+                         w["function_id"], w["function_name"], w["bindings"]])
+    return _csv_write(rows, headers)
+
+
+def _csv_shows(shows: list[dict]) -> str:
+    headers = ["Show ID", "Show Name", "Track", "Function ID", "Function Name",
+               "Start", "Duration"]
+    rows = []
+    for sh in shows:
+        for tr in sh["tracks"]:
+            for sf in tr["show_functions"] or [{}]:
+                rows.append([sh["id"], sh["name"], tr["name"], sf.get("function_id", ""),
+                             sf.get("function_name", ""), sf.get("start_time", ""),
+                             sf.get("duration", "")])
+    return _csv_write(rows, headers)
+
+
+def _csv_scripts(scripts: list[dict]) -> str:
+    headers = ["Script ID", "Script Name", "Line", "Command"]
+    rows = [[sc["id"], sc["name"], i + 1, cmd]
+            for sc in scripts for i, cmd in enumerate(sc["commands"])]
+    return _csv_write(rows, headers)
+
+
+def _csv_doctor(doc: dict) -> str:
+    headers = ["Code", "Severity", "Location", "Message"]
+    rows = [[f["code"], f["severity"], f["location"], f["message"]] for f in doc["findings"]]
     return _csv_write(rows, headers)
 
 
@@ -716,13 +923,17 @@ def _txt_summary(document: dict) -> str:
         "",
         f"Fixtures: {s.get('fixture_count', 0)}",
         f"Functions: {s.get('function_count', 0)}",
-        f"VC Widgets: {s.get('vc_widget_count', 0)}",
+        f"VC Widgets: {s.get('vc_widget_count', 0)} on {s.get('vc_page_count', 0)} page(s)",
         f"Universes: {s.get('universe_count', 0)} ({', '.join(str(u) for u in s.get('universes', []))})",
         "",
         "Functions by type:",
     ]
     for ftype, count in sorted(s.get("function_types", {}).items()):
         lines.append(f"  {ftype}: {count}")
+    d = document["sections"].get("doctor")
+    if d:
+        lines += ["", f"Doctor: {d['errors']} error(s), {d['warnings']} warning(s), "
+                      f"{d['info']} info"]
     return "\n".join(lines)
 
 
@@ -750,6 +961,17 @@ _COL_WHITE    = (1.0, 1.0, 1.0)
 _COL_BORDER   = (0.80, 0.84, 0.92)
 _COL_ACCENT   = (0.20, 0.45, 0.75)
 _COL_SECTION  = (0.15, 0.18, 0.28)
+
+
+def _pdf_clean(s) -> str:
+    """Text the built-in PDF fonts can show: typographic characters mapped to
+    Latin-1 look-alikes, emoji and other symbols dropped (not printed as ?)."""
+    s = str(s)
+    for a, b in (("›", ">"), ("→", "->"), ("—", "-"), ("–", "-"), ("…", "..."),
+                 ("“", '"'), ("”", '"'), ("‘", "'"), ("’", "'"), ("×", "x"), ("\n", " ")):
+        s = s.replace(a, b)
+    s = "".join(ch for ch in s if ord(ch) < 256)
+    return re.sub(r"\s{2,}", " ", s).strip()
 
 
 class _PdfBuilder:
@@ -787,13 +1009,13 @@ class _PdfBuilder:
         self._emit(f"{x:.2f} {y:.2f} {w:.2f} {h:.2f} re B")
 
     def txt(self, x, y, s, sz=8, bold=False):
-        s = _pdf_str(str(s))
+        s = _pdf_str(_pdf_clean(s))
         f = "/F2" if bold else "/F1"
         self._emit(f"BT {f} {sz} Tf {x:.2f} {y:.2f} Td ({s}) Tj ET")
 
     def txt_trunc(self, x, y, s, sz, max_w):
         """Write text, truncating if wider than max_w."""
-        s = str(s) if s is not None else ""
+        s = _pdf_clean(s) if s is not None else ""
         max_chars = max(4, int(max_w / (sz * 0.52)))
         if len(s) > max_chars:
             s = s[:max_chars - 1] + "~"
@@ -919,24 +1141,34 @@ def export_pdf(document: dict) -> bytes:
         _pdf_functions(pdf, sections["functions"])
 
     # ── Scenes ────────────────────────────────────────────────────────────
-    if "scenes" in sections:
+    if sections.get("scenes"):
         _pdf_scenes(pdf, sections["scenes"])
 
     # ── Chasers ───────────────────────────────────────────────────────────
-    if "chasers" in sections:
+    if sections.get("chasers"):
         _pdf_chasers(pdf, sections["chasers"])
 
     # ── Collections ───────────────────────────────────────────────────────
-    if "collections" in sections:
+    if sections.get("collections"):
         _pdf_collections(pdf, sections["collections"])
 
     # ── EFX ───────────────────────────────────────────────────────────────
-    if "efx" in sections:
+    if sections.get("efx"):
         _pdf_efx(pdf, sections["efx"])
+
+    # ── Shows / Scripts ───────────────────────────────────────────────────
+    if "shows" in sections and sections["shows"]:
+        _pdf_shows(pdf, sections["shows"])
+    if "scripts" in sections and sections["scripts"]:
+        _pdf_scripts(pdf, sections["scripts"])
 
     # ── VC Layout ─────────────────────────────────────────────────────────
     if "vc_layout" in sections:
         _pdf_vc(pdf, sections["vc_layout"])
+
+    # ── Doctor ────────────────────────────────────────────────────────────
+    if "doctor" in sections:
+        _pdf_doctor(pdf, sections["doctor"])
 
     return pdf.build()
 
@@ -956,7 +1188,8 @@ def _pdf_summary(pdf: _PdfBuilder, summary: dict, show_name: str, date: str):
     stats = [
         ("Fixtures", summary.get("fixture_count", 0)),
         ("Functions", summary.get("function_count", 0)),
-        ("VC Widgets", summary.get("vc_widget_count", 0)),
+        ("VC Widgets", f"{summary.get('vc_widget_count', 0)} on "
+                       f"{summary.get('vc_page_count', 0)} page(s)"),
         ("Universes", summary.get("universe_count", 0)),
     ]
     pdf.fc(0, 0, 0)
@@ -1016,16 +1249,16 @@ def _pdf_scenes(pdf: _PdfBuilder, scenes: list[dict]):
         label = f"Scene #{scene['id']}: {scene['name']}"
         if scene.get("description"):
             label += f"  — {scene['description']}"
-        pdf.txt(_PAD + 4, pdf.cy, label, sz=9, bold=True)
-        pdf.cy -= 14
+        pdf.txt(_PAD + 4, pdf.cy - 11, label, sz=9, bold=True)
+        pdf.cy -= 16
 
         for fx_group in scene.get("fixtures", []):
             pdf.ensure_space(30)
             pdf.fc(0.3, 0.3, 0.3)
-            pdf.txt(_PAD + 10, pdf.cy,
+            pdf.txt(_PAD + 10, pdf.cy - 10,
                     f"{fx_group['fixture_name']} ({fx_group['fixture_model']})",
                     sz=8, bold=True)
-            pdf.cy -= 12
+            pdf.cy -= 13
 
             headers = ["Ch#", "Channel", "Raw", "Decoded"]
             fixed = {"Ch#": 30, "Raw": 35}
@@ -1052,11 +1285,11 @@ def _pdf_chasers(pdf: _PdfBuilder, chasers: list[dict]):
     for chaser in chasers:
         pdf.ensure_space(40)
         pdf.fc(*_COL_ACCENT)
-        pdf.txt(_PAD + 4, pdf.cy,
+        pdf.txt(_PAD + 4, pdf.cy - 11,
                 f"Chaser #{chaser['id']}: {chaser['name']}  "
                 f"[{chaser['direction']} / {chaser['run_order']}]",
                 sz=9, bold=True)
-        pdf.cy -= 14
+        pdf.cy -= 16
 
         headers = ["Step", "Function", "Fade In", "Hold", "Fade Out", "Duration"]
         fixed = {"Step": 35, "Fade In": 60, "Hold": 55, "Fade Out": 60, "Duration": 60}
@@ -1083,10 +1316,10 @@ def _pdf_collections(pdf: _PdfBuilder, collections: list[dict]):
     for coll in collections:
         pdf.ensure_space(30)
         pdf.fc(*_COL_ACCENT)
-        pdf.txt(_PAD + 4, pdf.cy,
+        pdf.txt(_PAD + 4, pdf.cy - 11,
                 f"Collection #{coll['id']}: {coll['name']}",
                 sz=9, bold=True)
-        pdf.cy -= 14
+        pdf.cy -= 16
 
         headers = ["#", "Function ID", "Function Name"]
         fixed = {"#": 30, "Function ID": 60}
@@ -1110,10 +1343,10 @@ def _pdf_efx(pdf: _PdfBuilder, efx_list: list[dict]):
     for efx in efx_list:
         pdf.ensure_space(30)
         pdf.fc(*_COL_ACCENT)
-        pdf.txt(_PAD + 4, pdf.cy,
+        pdf.txt(_PAD + 4, pdf.cy - 11,
                 f"EFX #{efx['id']}: {efx['name']}  [{efx['algorithm']}]",
                 sz=9, bold=True)
-        pdf.cy -= 14
+        pdf.cy -= 16
 
         headers = ["Fixture ID", "Fixture Name"]
         fixed = {"Fixture ID": 60}
@@ -1126,17 +1359,65 @@ def _pdf_efx(pdf: _PdfBuilder, efx_list: list[dict]):
         pdf.spacer(4)
 
 
-def _pdf_vc(pdf: _PdfBuilder, widgets: list[dict]):
-    """Render VC layout table."""
+def _pdf_vc(pdf: _PdfBuilder, layout: dict):
+    """VC layout: one sub-table per page, frames indented."""
     pdf.section_heading("Virtual Console Layout")
-
-    headers = ["ID", "Type", "Caption", "Func ID", "Function", "Frame"]
-    fixed = {"ID": 35, "Type": 65, "Func ID": 45}
+    headers = ["ID", "Type", "Caption", "Position / size", "Function", "Key / MIDI"]
+    fixed = {"ID": 35, "Type": 60, "Position / size": 105}
     col_w = _auto_col_widths(headers, fixed)
-    pdf.table_header(headers, col_w)
+    for pg in layout.get("pages", []):
+        pdf.ensure_space(40)
+        pdf.fc(*_COL_ACCENT)
+        pdf.txt(_PAD, pdf.cy - 12, f"Page: {pg['caption']}"
+                + (f"   ({pg['size']} px, {len(pg['widgets'])} widgets)" if pg["size"] else ""),
+                sz=10, bold=True)
+        pdf.cy -= 18
+        pdf.table_header(headers, col_w)
+        for wi, w in enumerate(pg["widgets"]):
+            pos = f"{w['x']},{w['y']}  {w['w']}x{w['h']}" if w["w"] else ""
+            fn = f"{w['function_id']} {w['function_name']}".strip()
+            pdf.table_row([w["id"], w["type"], "» " * w["depth"] + w["caption"], pos, fn,
+                           w["bindings"]], col_w, wi)
+        pdf.spacer(8)
 
-    for wi, w in enumerate(widgets):
-        pdf.table_row([
-            w["id"], w["type"], w["caption"],
-            w["function_id"], w["function_name"], w["frame"],
-        ], col_w, wi)
+
+def _pdf_shows(pdf: _PdfBuilder, shows: list[dict]):
+    pdf.section_heading("Shows")
+    headers = ["Show", "Track", "Function", "Start", "Duration"]
+    col_w = _auto_col_widths(headers, {"Start": 70, "Duration": 70})
+    pdf.table_header(headers, col_w)
+    i = 0
+    for sh in shows:
+        for tr in sh["tracks"]:
+            for sf in tr["show_functions"]:
+                pdf.table_row([f"{sh['id']} {sh['name']}", tr["name"],
+                               f"{sf['function_id']} {sf['function_name']}",
+                               sf["start_time"], sf["duration"]], col_w, i)
+                i += 1
+
+
+def _pdf_scripts(pdf: _PdfBuilder, scripts: list[dict]):
+    pdf.section_heading("Scripts")
+    headers = ["Script", "Line", "Command"]
+    col_w = _auto_col_widths(headers, {"Line": 35})
+    pdf.table_header(headers, col_w)
+    i = 0
+    for sc in scripts:
+        for n, cmd in enumerate(sc["commands"]):
+            pdf.table_row([f"{sc['id']} {sc['name']}", str(n + 1), cmd], col_w, i)
+            i += 1
+
+
+def _pdf_doctor(pdf: _PdfBuilder, doc: dict):
+    pdf.section_heading("Workspace Doctor")
+    pdf.fc(0, 0, 0)
+    pdf.txt(_PAD + 6, pdf.cy - 12, f"{doc['errors']} error(s), {doc['warnings']} warning(s), "
+            f"{doc['info']} info finding(s).", sz=9, bold=True)
+    pdf.cy -= 20
+    if not doc["findings"]:
+        return
+    headers = ["Code", "Severity", "Location", "Message"]
+    col_w = _auto_col_widths(headers, {"Code": 40, "Severity": 55})
+    pdf.table_header(headers, col_w)
+    for i, f in enumerate(doc["findings"]):
+        pdf.table_row([f["code"], f["severity"], f["location"], f["message"]], col_w, i)

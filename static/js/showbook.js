@@ -21,6 +21,7 @@ const _SB_SECTIONS = [
   { id: 'shows',       label: 'Shows',          icon: '🎭' },
   { id: 'scripts',     label: 'Scripts',        icon: '📝' },
   { id: 'vc_layout',   label: 'VC Layout',      icon: '🖼' },
+  { id: 'doctor',      label: 'Doctor summary', icon: '🩺' },
 ];
 
 // ── Init ────────────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ function _sbRenderPreview(doc) {
       <div class="sb-stats">
         <span><b>Fixtures:</b> ${s.fixture_count}</span>
         <span><b>Functions:</b> ${s.function_count}</span>
-        <span><b>VC Widgets:</b> ${s.vc_widget_count}</span>
+        <span><b>VC Widgets:</b> ${s.vc_widget_count} on ${s.vc_page_count || 0} page(s)</span>
         <span><b>Universes:</b> ${s.universe_count}</span>
       </div>
       <div class="sb-type-breakdown">${
@@ -197,14 +198,41 @@ function _sbRenderPreview(doc) {
   }
 
   // VC Layout
-  if (secs.vc_layout) {
-    parts.push(_sbTable('🖼 VC Layout', secs.vc_layout,
-      ['ID', 'Type', 'Caption', 'Func ID', 'Function', 'Frame'],
-      w => [w.id, w.type, w.caption, w.function_id, w.function_name, w.frame],
-      'sb-sec-vclayout'));
-  }
+  if (secs.vc_layout) parts.push(_sbVcLayout(secs.vc_layout));
+
+  // Doctor
+  if (secs.doctor) parts.push(_sbDoctor(secs.doctor));
 
   wrap.innerHTML = parts.join('') || '<div class="porter-placeholder">No sections to display.</div>';
+}
+
+// VC layout: one table per page, frames indented (WORKPLAN 1.3)
+function _sbVcLayout(layout) {
+  const pages = layout.pages || [];
+  const head = '<div class="sb-section" id="sb-sec-vclayout"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🖼 VC Layout <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">';
+  if (!pages.length) return head + '<div class="sb-empty">No Virtual Console.</div></div></div>';
+  const body = pages.map(pg => `
+    <h4 class="sb-subhead">📄 ${_esc(pg.caption)} <small>${_esc(pg.size)}${pg.size ? ' px · ' : ''}${pg.widgets.length} widget(s)</small></h4>
+    <div class="sb-table-wrap"><table class="sb-table">
+      <thead><tr><th>ID</th><th>Type</th><th>Caption</th><th>Position / size</th><th>Function</th><th>Key / MIDI</th></tr></thead>
+      <tbody>${pg.widgets.map(w => `<tr>
+        <td>${_esc(w.id)}</td><td>${_esc(w.type)}</td>
+        <td style="padding-left:${0.4 + w.depth * 1.1}rem">${w.type === 'Frame' || w.type === 'SoloFrame' ? '▣ ' : ''}${_esc(w.caption)}</td>
+        <td>${w.w ? _esc(w.x + ',' + w.y + '  ' + w.w + '×' + w.h) : ''}</td>
+        <td>${_esc((w.function_id ? w.function_id + ' ' : '') + (w.function_name || ''))}</td>
+        <td>${_esc(w.bindings)}</td></tr>`).join('')}</tbody>
+    </table></div>`).join('');
+  return head + body + '</div></div>';
+}
+
+function _sbDoctor(d) {
+  const head = '<div class="sb-section" id="sb-sec-doctor"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🩺 Workspace Doctor <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">';
+  const line = `<div class="sb-stats"><span><b>Errors:</b> ${d.errors}</span><span><b>Warnings:</b> ${d.warnings}</span><span><b>Info:</b> ${d.info}</span></div>`;
+  if (!d.findings.length) return head + line + '<div class="sb-empty">No errors or warnings.</div></div></div>';
+  return head + line + `<div class="sb-table-wrap"><table class="sb-table">
+    <thead><tr><th>Code</th><th>Severity</th><th>Location</th><th>Message</th></tr></thead>
+    <tbody>${d.findings.map(f => `<tr><td>${_esc(f.code)}</td><td>${_esc(f.severity)}</td><td>${_esc(f.location)}</td><td>${_esc(f.message)}</td></tr>`).join('')}</tbody>
+    </table></div></div></div>`;
 }
 
 // ── Collapse / expand helpers ──────────────────────────────────────────────

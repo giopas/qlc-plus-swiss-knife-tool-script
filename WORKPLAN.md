@@ -4,6 +4,9 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (27 Sep, night — Phase 1.4 release prepared):**
+- **v1.4.0 prepared** on branch `chore/release-1.4.0` (stacked on `feat/showbook` @ `88bae82`; worktree `.wt-release/`): VERSION 1.4.0, CHANGELOG `[1.4.0] — 2026-09-27`, README *What's new in v1.4.0* + Workspace Doctor feature section, Alpha badges removed (Quick Start, Function Porter, Show Book — QXW Merger stays α, VC Visual Editor β), new screenshots 13 (Porter) + 14 (Show Book) — the README referenced them but they were missing — release notes `docs/release-notes/RELEASE_NOTES_v1.4.0.md`, forum post `docs/release-notes/FORUM_v1.4.0.bbcode`, ROADMAP. Wiki `f78d1ed`: *Workspace Doctor* page, "(Alpha)" removed. 443 tests green. **giopas:** merge, tag, GitHub Release, forum post — commands in §8. Waits for his tests of 1.5 / 1.6 / 1.3 (any fix goes on `chore/release-1.4.0` before tagging).
+
 **Status (27 Sep, evening — Phase 1.3 done):**
 - **1.3 Show Book — done** on branch `feat/showbook` (stacked on `feat/porter-midi` @ `6a5bd84`; local commit `67cbd1f` + docs; wiki `c276e17` *Show Book* page). Built in a separate git worktree (`.wt-showbook/`, git-excluded) so giopas could test 1.5/1.6 in the main folder at the same time — remove it with `git worktree remove .wt-showbook` after pushing. 443 tests green; preview browser-checked; PDF pages checked as images.
 - Next: **1.4 release v1.4.0** (after giopas's tests of 1.5 / 1.6 and merges).
@@ -233,10 +236,12 @@ Found and fixed along the way (all in the CHANGELOG):
 - Commit: `feat(showbook): VC layout by page with bindings, Doctor section, tests`
 - Commit: `test(showbook): coverage for sections, decoding, exports`
 
-**1.4 Release v1.4.0**
-- [ ] Remove the Alpha badges.
-- [ ] Wiki pages for Quick Start, Porter, Show Book and Doctor (read-only).
-- [ ] Forum post.
+**1.4 Release v1.4.0** — *prepared 27 Sep, branch `chore/release-1.4.0`; tag + release by giopas*
+- [x] Remove the Alpha badges (sidebar + page titles of Quick Start, Function Porter, Show Book; README feature headings and screenshot captions; wiki titles and Home).
+- [x] Wiki pages for Quick Start, Porter, Show Book (all current) and **Workspace Doctor** (new, from `docs/doctor.md`: where it runs, CLI, checks table, v1.5 auto-fixes).
+- [x] VERSION `1.4.0` (`core/workspace.py`), CHANGELOG `[1.4.0] — 2026-09-27` (+ Changed: out of Alpha), README title + *What's new in v1.4.0*, ROADMAP ✅, release notes, screenshots 13/14 (taken from the app with the scrubbed corpus files).
+- [x] Forum post drafted (BBCode): `docs/release-notes/FORUM_v1.4.0.bbcode`.
+- [ ] giopas: merge to `main`, `git tag -a v1.4.0`, GitHub Release (body = `RELEASE_NOTES_v1.4.0.md`), forum post, wiki push.
 
 **1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by giopas 25 Sep; before 1.3 Show Book. **Part 1 done 25 Sep**, branch `feat/quickstart-porter`: commits `cdf4ea6` capability translation + Porter, `f179f39` Quick Start hand-off)*
 
@@ -450,9 +455,24 @@ git worktree remove .wt-showbook                      # the branch stays
 ```
 Try: open a show → Show Book → Generate Preview → VC Layout (pages, indented frames, Key / MIDI column) and Doctor summary → Export PDF. Merge order into `main`: `feat/quickstart-porter` → `feat/porter-midi` → `feat/showbook` (each contains the previous; merging `feat/showbook` alone brings all three).
 
+**giopas — release v1.4.0 (after your tests of 1.5 / 1.6 / 1.3 pass):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git worktree remove .wt-release                       # branch chore/release-1.4.0 stays
+source ~/.venvs/swissknife/bin/activate
+git checkout chore/release-1.4.0 && python -m pytest -q          # expect 443 passed
+git push -u origin chore/release-1.4.0                # CI runs
+git checkout main && git pull --ff-only
+git merge --no-ff chore/release-1.4.0 -m "Release v1.4.0"   # brings 1.5, 1.6, 1.3 and the release commit
+python -m pytest -q && git push origin main
+git tag -a v1.4.0 -m "v1.4.0" && git push origin v1.4.0
+cd wiki && git push origin master && cd ..
+```
+Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
+
 **Next Cowork session:**
-1. Results of giopas's tests (1.5 translated file in QLC+, 1.6 real MIDI case, 1.3 Show Book); fix what they show.
-2. Phase 1.4 release v1.4.0 (Alpha badges, wiki pages for Quick Start / Porter / Show Book / Doctor, VERSION, CHANGELOG, tag, forum post).
+1. Results of giopas's tests (1.5 translated file in QLC+, 1.6 real MIDI case, 1.3 Show Book); fixes go on `chore/release-1.4.0` if v1.4.0 isn't tagged yet, else a v1.4.1.
+2. Phase 2.1 Workspace Doctor fixes → v1.5.0 (auto-fix engine, always a new file; Doctor UI tab).
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.

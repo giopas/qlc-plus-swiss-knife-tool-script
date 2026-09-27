@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-27
+
+Phase 1 of the work plan: Quick Start, Function Porter and Show Book leave Alpha — deterministic output, Workspace Doctor on every export, tests on real show files.
+
 ### Added
 
 - **Show Book — tests and accuracy pass** (Phase 1.3, `tests/test_showbook.py`, 24 tests on the corpus): section builders, DMX decoding with the corpus QXFs (dimmer %, capability labels, pan/tilt in degrees), CSV zip contents, PDF text layer. **VC Layout** is now built from the Virtual Console itself, page by page: every frame and widget in order with its ID (was empty), frame path and depth, position and size, function (or *(stop all functions)*), and **key / MIDI bindings** including CueList *Next / Prev / Stop* — it matches Pub_6fix's two pages and nested frames. New optional **Doctor summary** section (errors, warnings, info counts and every error/warning). Shows and Scripts now appear in the PDF and CSV too (`shows.csv`, `scripts.csv`, `doctor.csv`). Fixture definitions next to the workspace and in the installed QLC+ library are used automatically for decoding. The patch list shows the model without the manufacturer repeated.
@@ -53,6 +57,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Changed
 
+- **Quick Start, Function Porter and Show Book are no longer Alpha** (badges removed). QXW Merger stays Alpha, VC Visual Editor Beta.
 - Test corpus show files renamed `Festival_14fix.qxw` and `Pub_6fix.qxw`; band, venue and song names inside replaced by neutral ones (*Band A*, *Song 01*…). Built-in VC style renamed **Compact**.
 
 ### Fixed

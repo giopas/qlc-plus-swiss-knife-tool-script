@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.3.2
+# ⚡ QLC+ Swiss Knife — v1.4.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -18,15 +18,16 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
-## Coming in v1.4.0 *(on `main`, not yet released)*
+## What's new in v1.4.0
 
-Phase 1 of the [work plan](WORKPLAN.md): the three Alpha builders become dependable.
+Phase 1 of the [work plan](WORKPLAN.md): **Quick Start, Function Porter and Show Book leave Alpha.** Build the next show with the tool — every output is checked by Workspace Doctor, tested on real show files and identical run to run.
 
 - **Workspace Doctor** (`python -m core.doctor show.qxw`): read-only checks for duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, missing PANIC RESET and more. It gates every export of Quick Start and Function Porter.
 - **Quick Start**: mode-aware channels and safe neutral values, a PANIC RESET that really resets (tested in QLC+ 5.2.2), fixture groups with their own frame and dimmer, one-button-at-a-time looks, naming profiles and VC style cloned from any show.
 - **Function Porter**: port looks, chasers and effects **with their Virtual Console buttons and frames** into another rig — even a smaller one (**fan-in**, e.g. 14 → 6 fixtures). Pick frames straight from the source VC, see both rigs on **stage plans**, untick fixtures you don't need, remove old pages/buttons from the result, and get a **port report** next to the new file. Output is checked by Doctor and is byte-identical run to run.
 - **Start a new rig from an existing show**: build the rig in Quick Start, then **➜ Port from an existing show**. The rig can use **other fixture types** — looks are translated by capability (intensity, RGB mixing ↔ colour wheel, pan/tilt angles, strobe, gobo), not copied by channel number.
 - **MIDI / key control comes along**: ported buttons and CueLists keep their controller bindings, the controller's input patch (device + input profile) is copied into the new file, bindings can move to another universe, and *Source wins* moves a binding off the widget that used it in the target.
+- **Show Book**: the Virtual Console page by page with every frame, widget, position and **key/MIDI binding**; an optional **Doctor summary**; Shows and Scripts in the PDF/CSV; cleaner PDF.
 - **Live QLC+ check** (`tools/qlc_check.py`): opens a file in a real QLC+ and presses every button to prove it works.
 
 ## What's new in v1.3.2
@@ -73,13 +74,13 @@ Export your entire workspace as structured show paperwork — **PDF** or **CSV (
 | ![Start Screen](screenshots/01-start-screen.png) | ![Setlist Manager](screenshots/02-setlist-manager.png) | ![Trigger Manager](screenshots/03-trigger-manager.png) |
 | Start Screen | Setlist Manager | Trigger Manager |
 | ![Dictionary](screenshots/04-dictionary.png) | ![Fixture Configurator](screenshots/05-fixture-configurator.png) | ![Quick Start](screenshots/06-quick-start.png) |
-| Dictionary | Fixture Configurator | Quick Start *(Alpha)* |
+| Dictionary | Fixture Configurator | Quick Start |
 | ![Setup Checklist](screenshots/07-setup-checklist.png) | ![Brightness](screenshots/08-brightness.png) | ![ID Browser](screenshots/09-id-browser.png) |
 | Setup Checklist | Brightness | ID Browser |
 | ![VC Visual Editor](screenshots/10-vc-visual-editor.png) | ![QXW Merger](screenshots/11-qxw-merger.png) | ![Tech Rider](screenshots/12-tech-rider.png) |
 | VC Visual Editor *(Beta)* | QXW Merger *(Alpha)* | Tech Rider |
 | ![Function Porter](screenshots/13-function-porter.png) | ![Show Book](screenshots/14-show-book.png) | |
-| Function Porter *(Alpha)* | Show Book *(Alpha)* | |
+| Function Porter | Show Book | |
 
 ---
 
@@ -99,12 +100,12 @@ Create and maintain `ID → description` mapping files that annotate your QLC+ f
 ### Fixtures
 Design your stage rig from scratch. Load `.qxf` fixture definitions, add instances to a rig table, and **drag them on a 2D top-down canvas**. Configure stage dimensions, auto-assign DMX addresses, then generate a ready-to-use workspace with all fixture blocks and 3D monitor positions populated from your canvas layout. Export **blueprint PDFs** in multiple paper sizes.
 
-### Quick Start QXW Generator *(Alpha)*
+### Quick Start QXW Generator
 Create production-ready QLC+ workspaces in minutes, even with zero QLC+ experience. A 5-step wizard walks you through fixture selection, stage placement, automatic capability analysis, and intelligent VC layout generation. The system detects RGB, strobe, pan/tilt, and dimmer channels, groups fixtures by type, and auto-generates macro buttons (ALL ON/OFF, BLACKOUT), fixture group selectors, pre-configured scenes (Warm White, Cold White, Colors), skeleton effect chasers (Dimmer Sweep, Color Fade, Strobe), and four custom slots ready for your own scenes. Export a complete, wired `.qxw` file and open it in QLC+ — time to running show: ~5 minutes. Scenes follow each fixture's **selected mode** and leave unused channels at safe **neutral values** (shutter open, no effects, Pan/Tilt centred); every workspace gets a **PANIC RESET** button. Define **fixture groups** (each gets its own frame with a dimmer, looks and effects); all buttons sit in one solo frame, so pressing one switches the previous one off. The fixture `.qxf` files are saved next to the workspace so QLC+ always finds them. Pick a **naming profile** (plain, or the TheBand two-letter prefix `AS · Red`) and a **VC style** — built-in, or cloned from any reference `.qxw` (button size, gaps, fonts, page size). Workspace Doctor checks the result before it is saved. See the [Quick Start wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Quick-Start).
 
 > **Internet access note:** The "Browse QLC+ Library" button in Step 1 fetches fixture definitions from the [official QLC+ fixture repository on GitHub](https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures). This is the **only feature** in the app that makes external network calls. All other operations — loading, editing, exporting — are fully local with no internet required. If you prefer to stay offline, load fixture definitions from local `.qxf` files instead.
 
-### Function Porter *(Alpha)*
+### Function Porter
 Port looks, chasers and effects from one show (**source**) into another rig (**target**) — with their **Virtual Console buttons and frames** — in five steps:
 1. **Load** both files; each rig is drawn from above (stage plan).
 2. **Select** pages, frames or buttons of the source VC (ticking a frame ticks everything inside) and/or single functions; everything they need (chaser steps, collection members, matrix groups) is added automatically.
@@ -112,10 +113,13 @@ Port looks, chasers and effects from one show (**source**) into another rig (**t
 4. **Validate**: warnings and summary; choose where the widgets go (a new page by default), the key/MIDI binding policy, and optionally **remove existing pages/buttons** from the result.
 5. **Export** a new `<target>_v<N+1>.qxw` plus a **port report** next to it. Doctor checks it first; the source and target files are never changed.
 
-Ported scenes declare every channel (neutral values for the missing ones), new IDs are allocated deterministically, a Quick Start PANIC RESET in the target also stops the ported functions, and Level sliders start at 0. See the [Function Porter wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter).
+Ported scenes declare every channel (neutral values for the missing ones), new IDs are allocated deterministically, a Quick Start PANIC RESET in the target also stops the ported functions, and Level sliders start at 0. The target can use **different fixture types**: values are translated by capability (dimmer, RGB mixing ↔ colour wheel, pan/tilt angles, strobe, gobo), and Sequences and EFX follow. **Key / MIDI bindings** come along with the controller's input patch; choose the target universe, and *Source wins* moves a binding the target already used. From Quick Start, **➜ Port from an existing show** opens the Porter with the new rig as the target. See the [Function Porter wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter).
 
-### Show Book *(Alpha)*
-Export your entire workspace as structured show paperwork. Choose from **10 sections** — Summary, Patch List, Function Index, Scenes, Chasers, Collections, EFX, Shows, Scripts, VC Layout — and export as **PDF** (A4 landscape with cover page) or **CSV** (ZIP with one file per section). When QXF fixture definitions are provided, raw DMX values are decoded to human-readable labels. Generate a **live preview** in-app before exporting — tables are interactive and scenes show per-fixture channel breakdowns.
+### Show Book
+Export your entire workspace as structured show paperwork. Choose from **11 sections** — Summary, Patch List, Function Index, Scenes, Chasers, Collections, EFX, Shows, Scripts, VC Layout (page by page, with frames, positions and key/MIDI bindings), Doctor summary — and export as **PDF** (A4 landscape with cover page) or **CSV** (ZIP with one file per section). When QXF fixture definitions are provided, raw DMX values are decoded to human-readable labels. Generate a **live preview** in-app before exporting — tables are interactive and scenes show per-fixture channel breakdowns.
+
+### Workspace Doctor
+Read-only health check of any `.qxw`: duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, shared latch scenes, missing PANIC RESET, dead MIDI inputs, unused functions and more (codes D001–D016). It runs before every Quick Start and Function Porter export — errors block, warnings are reported — and from the command line: `python -m core.doctor show.qxw` (`--json`, `--all`). See the [Workspace Doctor wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor).
 
 ### Checklist
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.

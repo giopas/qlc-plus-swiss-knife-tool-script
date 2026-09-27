@@ -1,13 +1,13 @@
 # Technology Landscape
 
-*Last Updated: 2026-09-14*
+*Last Updated: 2026-09-25*
 
 ## Source-of-Truth Files
 
 | Information | File |
 |-------------|------|
 | Dependencies | `requirements.txt` |
-| Version | `core/workspace.py` (`VERSION = "1.3.0"`) and `app.py` context processor |
+| Version | `core/workspace.py` (`VERSION = "1.3.2"`) and `app.py` context processor |
 | App config | `app.py` (`PORT = 5731`, CSP headers, CSRF) |
 | Git ignores | `.gitignore` |
 | Launcher scripts | `run.sh` (Unix), `launchers/QLC_Swiss_Knife.bat` (Windows), `launchers/create-macos-app.sh`, `launchers/qlc-swiss-knife.desktop` (Linux) |
@@ -18,7 +18,7 @@
 
 | Layer | Technology | Notes |
 |-------|------------|-------|
-| Language | Python 3.x | Tested with 3.14 (venv) |
+| Language | Python 3.x | CI: 3.11 + 3.12; dev: 3.14 |
 | Backend framework | Flask ≥ 3.0 | Only required dependency |
 | Native window | pywebview ≥ 5.0 | Optional — falls back to browser |
 | Frontend | Vanilla JavaScript (ES6+) | No build step, no bundler |
@@ -32,6 +32,6 @@
 ## Infrastructure
 
 - **Hosting:** Runs locally only (`127.0.0.1:5731`). No deployment, no cloud.
-- **CI/CD:** None. Manual releases via git tags + GitHub.
+- **CI/CD:** GitHub Actions — pytest on push and PR (Python 3.11, 3.12).
 - **Issue tracking:** GitHub Issues with templates (`bug_report.md`, `feature_request.md`).
 - **Wiki:** Separate git-tracked `wiki/` directory (GitHub wiki pages, gitignored from main repo).

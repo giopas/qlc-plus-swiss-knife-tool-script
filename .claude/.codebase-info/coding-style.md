@@ -1,6 +1,6 @@
 # Coding Style
 
-*Last Updated: 2026-09-14*
+*Last Updated: 2026-09-25*
 
 ## Conventions (derived from existing code)
 
@@ -9,7 +9,7 @@
 - **Docstrings:** Module-level docstrings describe purpose and public API. Google/numpy style for functions when present.
 - **Naming:** `snake_case` for functions, variables, files. `_private` prefix for internal helpers. `UPPER_CASE` for constants.
 - **Imports:** stdlib first, then Flask, then `core.*` modules. `from core import workspace as ws` is a common alias.
-- **Type hints:** Sparse — `from __future__ import annotations` used in newer modules (`porter.py`, `merger.py`, `showbook.py`). Older modules have no type hints.
+- **Type hints:** Sparse but growing — `from __future__ import annotations` used in newer modules (`porter.py`, `merger.py`, `showbook.py`, `porter_vc.py`, `vc_ops.py`, `qxw_io.py`, `doctor/`). Older modules have no type hints.
 - **Line length:** ~90–100 chars typical, no hard enforcement.
 - **Comments:** Liberal use of section-divider comments with box-drawing chars:
   ```python
@@ -31,5 +31,6 @@
 - **Blueprint variable** always named `bp` in routes files.
 
 ### Git
-- **Commit message prefix:** `feat:`, `fix:`, `docs:`, `security:` (conventional-ish).
-- **No branch strategy documented** — appears to be trunk-based on `main`.
+- **Commit message prefix:** `feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`, `style:`, `ci:` (conventional-ish).
+- **Scoped prefixes:** `feat(porter):`, `fix(doctor):`, `test(quickstart):` — scope names the module.
+- **Branch strategy:** Feature branches (`feat/porter-vc`) merged to `main`.

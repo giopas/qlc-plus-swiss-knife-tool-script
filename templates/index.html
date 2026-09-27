@@ -88,7 +88,6 @@
     <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes." onclick="go('quickstart')">
       <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
       <span>Quick Start</span>
-      <span class="b alpha">&alpha;</span>
     </button>
 
     <div class="sn-group-label">Build the rig</div>
@@ -128,12 +127,10 @@
     <button class="sn-item" id="sn-porter" data-tip="Function Porter" data-desc="Import functions from one workspace into another with dependency resolution and fixture remapping." onclick="go('porter')">
       <svg class="ic"><use href="/static/icons.svg#upload"/></svg>
       <span>Function Porter</span>
-      <span class="b alpha">&alpha;</span>
     </button>
     <button class="sn-item" id="sn-showbook" data-tip="Show Book" data-desc="Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values." onclick="go('showbook')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Show Book</span>
-      <span class="b alpha">&alpha;</span>
     </button>
 
   </div>
@@ -1408,7 +1405,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
-      <div><h2>Function Porter <span class="b alpha">ALPHA</span></h2><div class="p-desc">Import functions from one workspace into another with dependency resolution and fixture remapping.</div></div>
+      <div><h2>Function Porter</h2><div class="p-desc">Import functions from one workspace into another with dependency resolution and fixture remapping.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1557,10 +1554,21 @@
           <label>Key / MIDI bindings
             <select id="porter-vc-bindings" class="filter-input" onchange="porterVcOpt()">
               <option value="keep_free">Keep unless already used in the target</option>
+              <option value="source_wins">Source wins (move them from the target widgets)</option>
               <option value="keep">Keep all</option>
               <option value="drop">Drop all</option>
             </select></label>
         </div>
+        <details id="porter-midi-opts" class="porter-vc-pick">
+          <summary>Key / MIDI input <small id="porter-midi-info">(loading…)</small></summary>
+          <div id="porter-midi-body" class="porter-midi-body"></div>
+          <label data-tooltip="When the target universe has no input device, copy the source's device, line and input profile to it — otherwise the ported MIDI bindings don't respond">
+            <input type="checkbox" id="porter-midi-copy" checked onchange="porterVcOpt()">
+            Copy the input patch (device + profile) when the target universe has none</label><br>
+          <label data-tooltip="For a Virtual Console you rebuilt: copies each source widget's key/MIDI bindings onto the target widget with the same function (after porting) or the same caption, using the policy above">
+            <input type="checkbox" id="porter-midi-only" onchange="porterVcOpt()">
+            Also copy bindings onto matching <b>existing</b> target widgets (same function or caption)</label>
+        </details>
         <small>Widgets whose function is not ported are left out; each ported widget gets a new ID and a free spot on the page (a new page is added when it is full). Level sliders start at 0.</small>
         <details id="porter-rm-pick" class="porter-vc-pick">
           <summary>Remove existing items from the target's Virtual Console <small id="porter-rm-info">(optional — nothing removed)</small></summary>
@@ -1618,7 +1626,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Show Book <span class="b alpha">ALPHA</span></h2><div class="p-desc">Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values.</div></div>
+      <div><h2>Show Book</h2><div class="p-desc">Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1914,6 +1922,8 @@
     <div class="out-footer">
       <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">← Back</button>
       <div class="spacer"></div>
+      <button id="qs-btn-port" class="btn btn-surface" onclick="qsPortFromShow()" style="display:none"
+              title="Open the Function Porter with this new rig as the target, then pick an existing show as the source: looks, effects and their VC buttons are ported, translated by capability when the fixture types differ.">➜ Port from an existing show</button>
       <button id="qs-btn-next" class="btn btn-accent" onclick="qsNext()">Next →</button>
       <button id="qs-btn-export" class="btn btn-accent" onclick="qsExport()" style="display:none">💾 Generate QXW</button>
     </div>

@@ -177,8 +177,9 @@ class _Workspace:
     @staticmethod
     def _function_refs(f: ET.Element):
         """Yield ``(kind, function_id)`` for every function *f* references."""
-        for step in f.findall("Step"):
-            yield "step", (step.text or "").strip()
+        if f.get("Type") != "Sequence":       # Sequence steps hold values, not IDs
+            for step in f.findall("Step"):
+                yield "step", (step.text or "").strip()
         for el in f.iter():
             if el is not f and el.get("BoundScene"):
                 yield "bound", el.get("BoundScene")
@@ -504,7 +505,10 @@ def _d012_inputs(ws: _Workspace):
     if iom is not None:
         for u in iom.findall("Universe"):
             for i in u.findall("Input"):
-                if (i.get("Name") or "None") not in ("None", "") and i.get("Plugin") not in (None, "None"):
+                # QLC+ 5.2.2 saves Name + a numeric UID; older/GIT builds save
+                # only UID="<device name>" — either names a real device.
+                dev = i.get("Name") or i.get("UID") or "None"
+                if dev not in ("None", "") and i.get("Plugin") not in (None, "None"):
                     patched.add(u.get("ID"))
     for u in sorted(bound, key=lambda x: _int(x, 0)):
         if u not in patched:

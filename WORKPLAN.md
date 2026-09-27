@@ -4,6 +4,25 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (27 Sep, night — Phase 1.4 release prepared):**
+- **v1.4.0 prepared** on branch `chore/release-1.4.0` (stacked on `feat/showbook` @ `88bae82`; worktree `.wt-release/`): VERSION 1.4.0, CHANGELOG `[1.4.0] — 2026-09-27`, README *What's new in v1.4.0* + Workspace Doctor feature section, Alpha badges removed (Quick Start, Function Porter, Show Book — QXW Merger stays α, VC Visual Editor β), new screenshots 13 (Porter) + 14 (Show Book) — the README referenced them but they were missing — release notes `docs/release-notes/RELEASE_NOTES_v1.4.0.md`, forum post `docs/release-notes/FORUM_v1.4.0.bbcode`, ROADMAP. Wiki `f78d1ed`: *Workspace Doctor* page, "(Alpha)" removed. 443 tests green. **giopas:** merge, tag, GitHub Release, forum post — commands in §8. Waits for his tests of 1.5 / 1.6 / 1.3 (any fix goes on `chore/release-1.4.0` before tagging).
+
+**Status (27 Sep, evening — Phase 1.3 done):**
+- **1.3 Show Book — done** on branch `feat/showbook` (stacked on `feat/porter-midi` @ `6a5bd84`; local commit `67cbd1f` + docs; wiki `c276e17` *Show Book* page). Built in a separate git worktree (`.wt-showbook/`, git-excluded) so giopas could test 1.5/1.6 in the main folder at the same time — remove it with `git worktree remove .wt-showbook` after pushing. 443 tests green; preview browser-checked; PDF pages checked as images.
+- Next: **1.4 release v1.4.0** (after giopas's tests of 1.5 / 1.6 and merges).
+
+**Status (27 Sep, later — Phase 1.6 done):**
+- **1.6 Port MIDI / input control — done** on new branch `feat/porter-midi` (stacked on `feat/quickstart-porter` @ `4a234b8`; local commits `0f5275d` engine + tests, `5df21f2` step 4 UI, + docs; wiki `ab21a18`). New `core/porter_input.py`; input patch copied, universe mapping, policy *source wins*, bindings-only copy, report section INPUT / MIDI, step 4 Key / MIDI panel (browser-checked). 420 tests green. Waiting for giopas: push both branches, try with the real BarShow → SmallShow case (§8).
+- Next: **1.3 Show Book**, then 1.4 release v1.4.0.
+
+**Status (27 Sep — Phase 1.5 done except the live QLC+ check):**
+- **1.5 part 2 done** on `feat/quickstart-porter` (local commits `6b2fd33`, `f08d197`, `6106647` + docs; giopas pushes; wiki commit `0b32320`): Sequence step values remapped/translated, EFX drop targets that can't run their mode, gobo by slot number, Doctor D003 fix for Sequence steps, step 3 translation badge, step 4 translation preview, step 3 starts with Fan-in when the target has none of the source's types. 409 tests green. UI browser-checked (Quick Start hand-off → Porter steps 3/4, Festival_14fix → QuickStart_club).
+- **Open:** `tools/qlc_check.py` on the translated output — must run on the Mac (the cloud container's apt QLC+ 4.12.7 reports every button dark even on the untouched `QuickStart_club.qxw`, so it can't judge). Then 1.6.
+
+**Status (25 Sep, late — Phase 1.5 part 1):**
+- **1.5 — capability translation + Quick Start hand-off done** on branch `feat/quickstart-porter` (local commits `cdf4ea6`, `f179f39`; giopas pushes). New `core/capability_map.py`; the Porter translates scene values between different fixture types and fan-in Auto-Map pairs different types by family; Quick Start has *➜ Port from an existing show* after export. Festival_14fix → QuickStart_club (all types different): Doctor 0 / 0, byte-identical. 397 tests green. **Waiting for giopas:** QLC+ check of `tests/manual/Festival_to_club_translated.qxw` + UI test of the hand-off (see §8), push.
+- Still open in 1.5: in-memory target (no save first), Porter step 3 hint for translated pairs, EFX/Sequence on different types, live `qlc_check` golden. Then 1.6, then 1.3.
+
 **Status (25 Sep):**
 - **Phase 1.2 + 1.2b — done** on branch `feat/porter-vc` (local commits, stacked on `main` @ `60db1fa`; giopas pushes, commands in §8): VC porting, fan-in, Doctor gate, port report next to the output; 1.2b UX after giopas's tests (VC tree ticking, automatic dependencies, stage plans, "Port this fixture", highlight, remove target VC items, step 4 → Next / step 5 Export). Real cases Festival_14fix → QuickStart_6fix (fan-in 14 → 6) and Festival_14fix → bare Pub rig (same IDs) pass Doctor with 0 errors / 0 warnings and are byte-identical run to run; the fan-in output passes `tools/qlc_check.py` in QLC+ 5.2.2 for every ported button. 365 tests green. Waiting for giopas: try the Porter tab on the Mac, push.
 - Next: **Phase 1.5 (Quick Start × Porter)**, then 1.3 (Show Book) — order changed by giopas on 25 Sep, see §8.
@@ -209,26 +228,64 @@ Found and fixed along the way (all in the CHANGELOG):
 - Found and fixed along the way: non-deterministic function IDs (closure ordered by a set); EFX fixtures and percent-encoded script commands not recognised in real QLC+ files; values of unmapped fixtures left in scenes (dangling refs); RGB matrices pointing at a group missing in the target; ported looks surviving the target's PANIC RESET (live check).
 - Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
 
-**1.3 Show Book**
-- [ ] Test suite: section builders, DMX decoding against the corpus QXFs, CSV zip contents, and the PDF text layer.
-- [ ] The VC Layout section matches the Pub_6fix pages and frames.
-- [ ] Add an optional Doctor summary section.
+**1.3 Show Book** — ✅ *done 27 Sep, branch `feat/showbook` (`67cbd1f`)*
+- [x] Test suite `tests/test_showbook.py` (24): section builders on Pub_6fix (summary 6 fixtures / 207 functions / 98 widgets on 2 pages, patch sorted, function index, chaser times), DMX decoding against the corpus QXFs (`78% (200)`, `No flash (0)`, `DMX Mode …`, Eurolite RGBW names, Spot 110 pan `268.9° (127)` with `qxf_dir`, raw when no definition), CSV zip contents (11 files, row counts, summary.txt), PDF text layer (own Flate/`Tj` extractor: patch names, `Page: 1. SETLIST`, emoji dropped, `» »` depth), deterministic zip + PDF.
+- [x] **VC Layout** rebuilt from the VC XML (`_build_vc_layout(root, state)` → `{pages: [{id, type, caption, size, widgets}], widget_count}`): widgets in document order with ID (was always empty: `widget_id` vs `id`), frame path inside the page, depth, X/Y/W/H, function (or *(stop all functions)* / *(blackout)*), key/MIDI bindings with slot (`Next: key Space, Prev: key Backspace, Stop: key Esc`, `MIDI U2 ch 40`). Matches Pub_6fix: pages *1. SETLIST* / *2. EFFECTS* 1650×884, *AS · Emerald City* in `◆ SHOW — one look at a time › ◼ LOOKS` at depth 2. Preview: one table per page, frames indented; PDF: per-page sub-tables (`» ` per depth); CSV: page + frame path + geometry + bindings.
+- [x] **Doctor summary** section `doctor` (in `ALL_SECTIONS`, can be unticked): counts of errors / warnings / info + every error and warning; preview, PDF, `doctor.csv`, summary.txt.
+- [x] Also: shows/scripts in PDF + CSV; definitions next to the workspace and from the installed QLC+ library loaded automatically; patch model without the manufacturer prefix; PDF text cleaned (emoji dropped, `—`→`-`, `›`→`>`); title/table overlap fixed; empty sections left out of the PDF; `generate(date=…)` + fixed zip timestamps → byte-identical exports.
+- Commit: `feat(showbook): VC layout by page with bindings, Doctor section, tests`
 - Commit: `test(showbook): coverage for sections, decoding, exports`
 
-**1.4 Release v1.4.0**
-- [ ] Remove the Alpha badges.
-- [ ] Wiki pages for Quick Start, Porter, Show Book and Doctor (read-only).
-- [ ] Forum post.
+**1.4 Release v1.4.0** — *prepared 27 Sep, branch `chore/release-1.4.0`; tag + release by giopas*
+- [x] Remove the Alpha badges (sidebar + page titles of Quick Start, Function Porter, Show Book; README feature headings and screenshot captions; wiki titles and Home).
+- [x] Wiki pages for Quick Start, Porter, Show Book (all current) and **Workspace Doctor** (new, from `docs/doctor.md`: where it runs, CLI, checks table, v1.5 auto-fixes).
+- [x] VERSION `1.4.0` (`core/workspace.py`), CHANGELOG `[1.4.0] — 2026-09-27` (+ Changed: out of Alpha), README title + *What's new in v1.4.0*, ROADMAP ✅, release notes, screenshots 13/14 (taken from the app with the scrubbed corpus files).
+- [x] Forum post drafted (BBCode): `docs/release-notes/FORUM_v1.4.0.bbcode`.
+- [ ] giopas: merge to `main`, `git tag -a v1.4.0`, GitHub Release (body = `RELEASE_NOTES_v1.4.0.md`), forum post, wiki push.
 
-**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by giopas 25 Sep; **done next, before 1.3 Show Book** (giopas, 25 Sep) — design sketch, not started)*
+**1.5 Quick Start × Porter — "start a new rig from an existing show"** *(requested by giopas 25 Sep; before 1.3 Show Book. **Part 1 done 25 Sep**, branch `feat/quickstart-porter`: commits `cdf4ea6` capability translation + Porter, `f179f39` Quick Start hand-off)*
 
 Goal: build a new show for a **different rig** (other fixture types, number, arrangement, positions) and port everything that can be ported from an existing show in one flow, instead of Quick Start first and Porter second.
 
-- [ ] Quick Start gets an optional step **"Port from an existing show"** after the rig/stage steps: pick a source `.qxw`; the Quick Start rig (in memory, not yet exported) becomes the Porter target.
-- [ ] Mapping uses the Porter step 3 UI (stage plans side by side, fan-in, "Port this fixture", highlight), with the Quick Start stage positions as the target plan.
-- [ ] **Different fixture types** (the new part): translate values by **capability** instead of channel index — intensity, RGB(W/A/UV) colour mixing, colour wheel (nearest colour), pan/tilt (degrees via QXF physical ranges), strobe/shutter (safe mapping or dropped), everything else neutral. Needs a `core/capability_map.py` built on `qxf_parser` + `channel_model`; tier-3 mappings in the Porter use it too.
-- [ ] Output = one workspace: Quick Start's generated VC/looks + the ported functions and widgets (placed with the Porter's VC rules), PANIC RESET covering both, Doctor gate once.
-- [ ] Golden test: Festival_14fix → a Quick Start rig of different types (e.g. Chauvet Intimidator Spot 110 + SlimPAR 56) → Doctor clean + `tools/qlc_check.py` pass.
+- [x] **Different fixture types — `core/capability_map.py`** *(done 25 Sep, `cdf4ea6`)*: `decode()` reads a fixture's values into a `LookState` (dimmer level, colour, white emitter, pan/tilt in degrees from centre, shutter open/closed/strobe + relative speed); `encode()` writes it on the target mode, every channel declared; `translate()` / `translate_text()` ("ch,val,…"); `kind()` = family *moving / colour / dimmer / unknown*. Rules (also in the module docstring):
+  - level = source master dimmer (1.0 if none); colour from emitters R G B W A UV C M Y Lime Indigo, else colour wheel, else white;
+  - target dimmer + RGB → dimmer = level, RGB = colour; RGB without dimmer → RGB × level; dimmer + wheel → dimmer = level × brightest component, wheel = nearest slot (`Res1` hex, else a colour word in the label; *Open*/*White* = white; ties → lowest DMX value); dimmer only → level × peak;
+  - target White emitter = the source's white emitter (0 if none), RGB reduced by it;
+  - pan/tilt: centre-relative degrees via QXF `PanMax`/`TiltMax` (fraction of range if either side lacks it), 16-bit when the mode has fine channels, clamped + noted; position on a fixture without pan/tilt is dropped (noted only if off-centre, > 3°);
+  - shutter: open → target open value; closed → target closed value, or intensity 0 when it has none; strobe → same relative speed in the target's first strobe range (`strobe="drop"` → open, noted);
+  - everything else (gobo, prism, macros, programs, speeds, zoom) → `channel_model.neutral_value`.
+- [x] **Porter uses it** *(done 25 Sep, `cdf4ea6`)*: `_translators()` builds `(src, tgt) → defs` for mapped pairs whose model/mode differ and whose definitions are both known; `_remap_fixture_refs()` translates Scene values for those pairs (EFX / Sequence untouched). Validation: *info* "values translated by capability" (the "copied channel by channel" warning stays for pairs without definitions). Plan options `translate_types` (default True), `strobe` ("keep" | "drop"). Result key `translated` → report section *TRANSLATED BETWEEN FIXTURE TYPES* (pairs + notes).
+- [x] **Fan-in Auto-Map across types** *(done 25 Sep, `cdf4ea6`)*: same-type pairs as before; source types with no same-type target are paired with the target types no source uses — bigger source types choose first: unused target type of the same family, else any unused one, else same family (shared), else any; then equal stage-order blocks. `auto_map(ids, strategy, qxf_paths=None)`; `POST /api/porter/auto-map` accepts `qxf_paths`.
+- [x] **Golden test (Doctor part)** *(done 25 Sep, `tests/test_capability_map.py`, 24 tests)*: Festival_14fix FLOOR + CEILING → QuickStart_club (Spot 110 ×2 + SlimPAR 56 ×4, all types different): 6 ceiling spots → the 2 Spot 110, 8 floor PARs → the 4 SlimPARs; Doctor 0 errors / 0 warnings; *Dark Red* on the Spot 110 = wheel 32 (Red) + dimmer > 0; byte-identical run to run. Sample output for the QLC+ check: `tests/manual/Festival_to_club_translated.qxw`.
+- [x] **Quick Start hand-off** *(first version, done 25 Sep, `f179f39`)*: after *💾 Generate QXW* saves the rig, the footer shows **➜ Port from an existing show** (`qsPortFromShow()` in `static/js/quickstart.js`): opens the Porter, loads the saved file as the target, goes to step 1; the user loads the source show and uses Auto-Map *Fan-in*. Output = the Porter's `<name>_v2.qxw` (Quick Start VC/looks + ported functions/widgets, PANIC RESET extended, Doctor gate once). *Not browser-tested in this session (the app runs on the Mac) — giopas to test.*
+- [ ] `tools/qlc_check.py` PASS on the translated output (needs QLC+ — giopas's Mac; tried 27 Sep in the cloud container with `apt install qlcplus` (4.12.7 GUI build, `--offscreen`): every button reads dark even on the untouched `QuickStart_club.qxw`, so that setup can't judge — use the source build from `docs/qlc-live-check.md` for CI later).
+- [ ] *(optional, only if the save-first hand-off feels clumsy in use)* Quick Start rig **in memory** as the Porter target.
+- [x] **Step 3 translation badge** *(27 Sep, `f08d197`)*: under each mapping row — *↔ Different type — values translated by capability* or *⚠ Different type, definition missing — values copied channel by channel* (`_pXlateBadge()` in `static/js/porter.js`; tier2/tier3 candidates carry `translatable`; `build_fixture_candidates(ids, qxf_paths)`, route accepts `qxf_paths`).
+- [x] **Step 4 translation preview** *(27 Sep, `f08d197`)*: `porter.translation_preview()` runs the translation on the closure's scene/sequence values before export → *info* "Translation source X → target Y: <note> (n×)"; *warning* for every EFX target that will be left out. Called from `validate()`.
+- [x] **Step 3 default** *(27 Sep, `6106647`)*: when no source fixture has an exact-type target, the first Auto-Map uses *Fan-in by stage position* (and fan-out mode fan-in, leave-out on) instead of *every exact match* (which mapped nothing). Browser-checked: all 14 rows mapped with the ↔ badge.
+- [x] **Sequence step values** *(27 Sep, `6b2fd33`)*: `Step` text `fid:ch,val,…:fid:…` remapped like scenes (fan-in "first lit", translation, every channel declared, `Values` = number of pairs); step fixtures are part of the closure. Doctor D003 no longer reads Sequence steps as function IDs (false "step → missing function").
+- [x] **EFX** *(27 Sep, `6b2fd33`)*: `capability_map.efx_modes()` (position / dimmer / rgb); an EFX fixture whose target can't run its `<Mode>` (0 position, 1 dimmer, 2 RGB) is left out, noted in the report; an EFX left with no fixture is removed as before.
+- [x] **Gobo** *(27 Sep, `6b2fd33`)*: gobo wheel slots (preset GoboMacro or *Open* / *Gobo N*) map by slot number; *Open* stays open; wraps on a smaller wheel (noted); dropped with a note on fixtures without a gobo wheel. Rotation channels are not wheels.
+- Fixed along the way (27 Sep): false note *target cannot make colour* for a dark look on a colour-wheel fixture.
+
+**1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; **done 27 Sep**, branch `feat/porter-midi`: `0f5275d`, `5df21f2`)*
+
+Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy *keep unless already used in the target*), but it does not bring the **input setup** they depend on, so in the new file they may point at a universe with no MIDI input (dead bindings, Doctor D012).
+
+- [x] **Input patch** (`porter_input.apply_patch()`): for every target universe that kept bindings use — same device already there → ok; no device → copy the source universe's `<Input>` (plugin, UID, Name, line, `Profile`) and `<Feedback>` (option `vc.copy_input`, default on; creates the `<Universe>` in ID order if the target lacks it); another device → warning (bindings kept); source had none → warning. Device name = `Name`, else `UID` (5.2.1 GIT saves `UID="SINCO"` only), compared case-insensitively.
+- [x] **Universe mapping** (`vc.universe_map` = {source universe ID: target universe ID}, 0-based): `remap_universes()` rewrites every `<Input Universe>` in ported widgets before the binding policy runs, so conflicts are checked on the target universe.
+- [x] **Bindings on ported widgets**: `porter_vc._filter_bindings()` logs each binding (kept / dropped: *already used by the target's Button 'X'* / moved); new policy **`source_wins`** keeps the binding on the ported widget and removes it from the target widgets that had it (after placement). Summary line counts kept / dropped / moved / remapped.
+- [x] **Bindings only** (`vc.bindings_only`, `porter_input.copy_bindings()`): source widgets (the step 2 selection, else all) → target widget using the ported copy of the same function, else the **only** target widget of the same type with the same caption (letters/digits, case-insensitive: `🚨 PANIC RESET` = `PANIC\nRESET`); slots kept (CueList `Next`/`Previous`/`Stop`, created if missing); same policies and universe map. Runs after "remove target items" and before the ported widgets are placed.
+- [x] **Report**: section *INPUT / MIDI* — input patch lines (⚠ for other device / none / skipped), every binding not simply kept, copied bindings with where they came from. Doctor D012 clean on the result when the patch is copied (test).
+- [x] **Step 4 UI**: *Key / MIDI input* panel (`GET /api/porter/inputs` → `porter_input.summary()`): per source universe with bindings — device, profile, count, target universe select (target devices shown), live status; *Copy the input patch*; *Also copy bindings onto matching existing target widgets*; policy *Source wins*. Step 5 summary line. Browser-checked (rebuilt MIDI Pub → QuickStart_6fix, universe 2 → 3).
+- [x] **Tests** (`tests/test_porter_input.py`, 11): Pub_6fix + SINCO on universe 2 + PANIC RESET ← ch 40, CueList Next ← 20, Previous ← 10 (giopas's setup, rebuilt; the real `BarShow_v14.qxw` is not committed) → QuickStart_6fix (patch copied incl. profile, D012 clean; copy off → D012; universe 2 → 3); → a copy with SINCO (`UID` only) and *ALL ON* on ch 40 (keep-free names the conflict, source-wins moves it, same device = ok); → a copy with another device (warning); bindings only (PANIC RESET by caption, CueList binding reported as unmatched); deterministic.
+- [ ] giopas: real case BarShow_v14 (*1. SETLIST*) → SmallShow with *Source wins*, and → a rig without MIDI; check in QLC+ that PANIC / Next / Previous respond on the SINCO.
+
+*Analysis of giopas's file (25 Sep):*
+- Input patch: Universe 2 (ID 1) ← MIDI device **SINCO** (`Name="SINCO" UID="528145425"`, mode *Program Change*). 3 VC bindings, all on that universe: **PANIC / BLACKOUT** ← ch 40, setlist **CueList Next** ← ch 20, **Previous** ← ch 10. Plus 42 keyboard keys.
+- SmallShow (target) has the same controller on the same universe (5.2.1 GIT saves it as `UID="SINCO"`, no Name) and uses the **same channels** (40 = STROBE BLIND, 20/10/30 = CueList Next/Previous/Stop). So porting *1. SETLIST* today: with the target page kept, 3 of the source bindings are dropped as conflicts (*keep unless used*); with the target page removed in step 4, all 3 are kept and work. → 1.6 needs a third policy **"source wins"** (move the binding to the ported widget and remove it from the target widget), and the report should name each conflict (which target widget had it).
+- Found a Doctor false positive (fixed 25 Sep): D012 reported "no input device patched" for inputs saved as `UID="SINCO"` without `Name` (QLC+ 5.2.1 GIT format).
+- Later (Phase 2 backlog "MIDI / input mapping manager"): re-patch inputs across a whole show, MIDI-learn simulation.
 
 ### Phase 2 — Show-building toolkit (replaces manual/AI XML patching)
 
@@ -367,8 +424,56 @@ cd wiki && git push origin master && cd ..                           # wiki: Fun
 git checkout -b feat/quickstart-porter                               # branch for Phase 1.5
 ```
 
+**giopas, before the next session (Phase 1.5 part 1):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 397 passed
+python3 tools/qlc_check.py tests/manual/Festival_to_club_translated.qxw   # QLC+ closed; expect RESULT: PASS
+git push -u origin feat/quickstart-porter
+```
+Then in the app: Quick Start with a rig of *different* types (e.g. 2 × Intimidator Spot 110 + 4 × SlimPAR 56) → 💾 Generate QXW → **➜ Port from an existing show** → load Festival_14fix (or BarShow) as source → step 2 tick FLOOR/CEILING → step 3 Auto-Map *Fan-in* → export. Open the result in QLC+: colours on the spots come from the wheel, PARs keep their colours, PANIC RESET stops everything. Note anything that looks wrong (colour choice, dimmer levels) — the rules are in WORKPLAN 1.5.
+
+**giopas, before the next session (Phase 1.5 part 2):** same as above (pytest now 409 passed), plus `cd wiki && git push origin master && cd ..` for the wiki pages (Function Porter: different fixture types; Quick Start: port from an existing show). If the QLC+ check or the app test is fine, merge `feat/quickstart-porter` into `main` like the Porter branch.
+
+**giopas, before the next session (Phase 1.6):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/porter-midi
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 420 passed
+git push -u origin feat/quickstart-porter feat/porter-midi
+cd wiki && git push origin master && cd ..
+```
+Try in the app: Porter, source BarShow_v14, target SmallShow, step 2 tick *1. SETLIST*, step 4 open *Key / MIDI input* (SINCO, universe 2 → *same device already patched*), policy *Source wins* → export; the report's INPUT / MIDI section lists the 3 bindings moved from STROBE BLIND / the CueList. Then merge `feat/porter-midi` into `main` (it contains `feat/quickstart-porter`).
+
+**giopas, before the next session (Phase 1.3):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git -C .wt-showbook log --oneline -2                 # feat/showbook
+git push -u origin feat/showbook
+cd wiki && git push origin master && cd ..
+git worktree remove .wt-showbook                      # the branch stays
+```
+Try: open a show → Show Book → Generate Preview → VC Layout (pages, indented frames, Key / MIDI column) and Doctor summary → Export PDF. Merge order into `main`: `feat/quickstart-porter` → `feat/porter-midi` → `feat/showbook` (each contains the previous; merging `feat/showbook` alone brings all three).
+
+**giopas — release v1.4.0 (after your tests of 1.5 / 1.6 / 1.3 pass):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git worktree remove .wt-release                       # branch chore/release-1.4.0 stays
+source ~/.venvs/swissknife/bin/activate
+git checkout chore/release-1.4.0 && python -m pytest -q          # expect 443 passed
+git push -u origin chore/release-1.4.0                # CI runs
+git checkout main && git pull --ff-only
+git merge --no-ff chore/release-1.4.0 -m "Release v1.4.0"   # brings 1.5, 1.6, 1.3 and the release commit
+python -m pytest -q && git push origin main
+git tag -a v1.4.0 -m "v1.4.0" && git push origin v1.4.0
+cd wiki && git push origin master && cd ..
+```
+Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
+
 **Next Cowork session:**
-1. Phase 1.5 Quick Start × Porter (see §5): start with `core/capability_map.py` (value translation between fixture types) + tests, then the Quick Start "Port from an existing show" step.
+1. Results of giopas's tests (1.5 translated file in QLC+, 1.6 real MIDI case, 1.3 Show Book); fixes go on `chore/release-1.4.0` if v1.4.0 isn't tagged yet, else a v1.4.1.
+2. Phase 2.1 Workspace Doctor fixes → v1.5.0 (auto-fix engine, always a new file; Doctor UI tab).
+1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.
 3. Look into `QuickStart_6fix`'s whole-rig *Chase* / *Stripes* buttons: in the live check (QLC+ 5.2.2 headless) one of them is intermittently dark (a different one per run) — timing of the Collection (dimmer scene + matrix) start, or the check's 1 s settle?

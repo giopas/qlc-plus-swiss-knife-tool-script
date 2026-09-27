@@ -1,6 +1,6 @@
 # Entry Points
 
-*Last Updated: 2026-09-14*
+*Last Updated: 2026-09-25*
 
 ## Application Bootstrap
 
@@ -11,6 +11,8 @@
 | `bash run.sh` | Auto-creates venv, installs Flask, launches app | `run.sh` |
 | `launchers/QLC_Swiss_Knife.bat` | Windows launcher | `launchers/` |
 | `launchers/create-macos-app.sh` | Creates macOS .app bundle | `launchers/` |
+| `python -m core.doctor FILE.qxw` | Workspace Doctor CLI (read-only checks) | `core/doctor/__main__.py` |
+| `python tools/qlc_check.py` | Live QLC+ workspace checker | `tools/qlc_check.py` |
 
 ## Bootstrap Sequence
 

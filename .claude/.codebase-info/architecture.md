@@ -1,6 +1,6 @@
 # Architecture
 
-*Last Updated: 2026-09-14*
+*Last Updated: 2026-09-25*
 
 ## Summary
 
@@ -28,11 +28,15 @@ All state lives in module-level Python dicts (singletons). There is no database 
 ┌──────────────────────────┴──────────────────────────┐
 │                   Core Logic Layer                    │
 │  core/workspace.py  — singleton state + QXW parser    │
+│  core/qxw_io.py     — centralised QXW reader/writer   │
 │  core/fixture.py    — fixture configurator            │
 │  core/qxf_parser.py — deep QXF parser                 │
 │  core/brightness.py — dimmer scaling                  │
 │  core/merger.py     — QXW merge engine                │
 │  core/porter.py     — cross-workspace function import │
+│  core/porter_vc.py  — VC widget porting for porter    │
+│  core/vc_ops.py     — VC Visual Editor operations     │
+│  core/doctor/       — read-only workspace checker     │
 │  core/showbook.py   — show doc generator (PDF/CSV)    │
 │  core/pdf.py        — raw PDF builder (stdlib only)   │
 │  core/session.py    — .qsk project file I/O           │
@@ -63,6 +67,7 @@ All state lives in module-level Python dicts (singletons). There is no database 
 
 ## Key Decisions & Constraints
 
+- **Centralised QXW I/O.** All workspace file reading and writing goes through `core/qxw_io.py`, which preserves the `<!DOCTYPE Workspace>` header (QLC+ requires it), enforces overwrite protection, and caps file size at 50 MB.
 - **Zero mandatory external deps beyond Flask.** pywebview is optional. PDF generation uses raw PDF construction (no reportlab/weasyprint). This keeps installation trivial.
 - **Module-level singleton state** (`workspace._state`, `merger._src/_dst`, `porter._src/_tgt`). Safe because the tool is single-user, localhost-only.
 - **QLC+ XML namespace handling** is critical: `QLC_NS_URI = 'http://www.qlcplus.org/Workspace'` registered globally; all XPath queries use `NS = {'q': QLC_NS_URI}`.

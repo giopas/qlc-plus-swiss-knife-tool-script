@@ -1,6 +1,6 @@
 # Onboarding
 
-*Last Updated: 2026-09-14*
+*Last Updated: 2026-09-25*
 
 ## Quick Start
 
@@ -55,16 +55,28 @@ The app opens at `http://localhost:5731`. Use `--browser` flag to force browser 
 ```bash
 source .venv/bin/activate
 pip install pytest   # if not installed
-pytest               # runs all tests
-pytest test_porter.py -v   # specific test file
+pytest               # runs all tests (17 test files)
+pytest tests/test_porter.py -v   # specific test file
+pytest tests/test_doctor.py -v   # workspace doctor checks
+```
+
+CI runs automatically on push and PR (GitHub Actions, Python 3.11 + 3.12).
+
+### Run the Workspace Doctor
+
+```bash
+python -m core.doctor path/to/Show.qxw --qxf fixtures/
+python -m core.doctor Show.qxw --json          # JSON output
+python -m core.doctor Show.qxw --min-severity warning  # skip info
 ```
 
 ### Modify QXW parsing
 
-All QXW XML parsing is in `core/workspace.py`. The namespace `NS = {'q': 'http://www.qlcplus.org/Workspace'}` must be used in all XPath queries. Example:
+QXW file I/O is centralised in `core/qxw_io.py` — always use `load_qxw()` / `save_qxw()`. The namespace `NS = {'q': 'http://www.qlcplus.org/Workspace'}` must be used in all XPath queries:
 ```python
 root.findall('.//q:Function', NS)
 ```
+For checks and VC operations, use `load_qxw(path, strip_namespace=True)` for plain tags.
 
 ### Build a macOS .app bundle
 

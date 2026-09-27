@@ -4,6 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (27 Sep — Phase 1.5 done except the live QLC+ check):**
+- **1.5 part 2 done** on `feat/quickstart-porter` (local commits `6b2fd33`, `f08d197`, `6106647` + docs; giopas pushes; wiki commit `0b32320`): Sequence step values remapped/translated, EFX drop targets that can't run their mode, gobo by slot number, Doctor D003 fix for Sequence steps, step 3 translation badge, step 4 translation preview, step 3 starts with Fan-in when the target has none of the source's types. 409 tests green. UI browser-checked (Quick Start hand-off → Porter steps 3/4, Festival_14fix → QuickStart_club).
+- **Open:** `tools/qlc_check.py` on the translated output — must run on the Mac (the cloud container's apt QLC+ 4.12.7 reports every button dark even on the untouched `QuickStart_club.qxw`, so it can't judge). Then 1.6.
+
 **Status (25 Sep, late — Phase 1.5 part 1):**
 - **1.5 — capability translation + Quick Start hand-off done** on branch `feat/quickstart-porter` (local commits `cdf4ea6`, `f179f39`; giopas pushes). New `core/capability_map.py`; the Porter translates scene values between different fixture types and fan-in Auto-Map pairs different types by family; Quick Start has *➜ Port from an existing show* after export. Festival_14fix → QuickStart_club (all types different): Doctor 0 / 0, byte-identical. 397 tests green. **Waiting for giopas:** QLC+ check of `tests/manual/Festival_to_club_translated.qxw` + UI test of the hand-off (see §8), push.
 - Still open in 1.5: in-memory target (no save first), Porter step 3 hint for translated pairs, EFX/Sequence on different types, live `qlc_check` golden. Then 1.6, then 1.3.
@@ -239,10 +243,15 @@ Goal: build a new show for a **different rig** (other fixture types, number, arr
 - [x] **Fan-in Auto-Map across types** *(done 25 Sep, `cdf4ea6`)*: same-type pairs as before; source types with no same-type target are paired with the target types no source uses — bigger source types choose first: unused target type of the same family, else any unused one, else same family (shared), else any; then equal stage-order blocks. `auto_map(ids, strategy, qxf_paths=None)`; `POST /api/porter/auto-map` accepts `qxf_paths`.
 - [x] **Golden test (Doctor part)** *(done 25 Sep, `tests/test_capability_map.py`, 24 tests)*: Festival_14fix FLOOR + CEILING → QuickStart_club (Spot 110 ×2 + SlimPAR 56 ×4, all types different): 6 ceiling spots → the 2 Spot 110, 8 floor PARs → the 4 SlimPARs; Doctor 0 errors / 0 warnings; *Dark Red* on the Spot 110 = wheel 32 (Red) + dimmer > 0; byte-identical run to run. Sample output for the QLC+ check: `tests/manual/Festival_to_club_translated.qxw`.
 - [x] **Quick Start hand-off** *(first version, done 25 Sep, `f179f39`)*: after *💾 Generate QXW* saves the rig, the footer shows **➜ Port from an existing show** (`qsPortFromShow()` in `static/js/quickstart.js`): opens the Porter, loads the saved file as the target, goes to step 1; the user loads the source show and uses Auto-Map *Fan-in*. Output = the Porter's `<name>_v2.qxw` (Quick Start VC/looks + ported functions/widgets, PANIC RESET extended, Doctor gate once). *Not browser-tested in this session (the app runs on the Mac) — giopas to test.*
-- [ ] `tools/qlc_check.py` PASS on the translated output (needs QLC+ — giopas's Mac, or the Docker idea in §8).
-- [ ] Quick Start rig **in memory** as the Porter target (no need to save first) — only if the save-first hand-off feels clumsy in use.
-- [ ] Porter step 3: mark translated pairs (e.g. "↔ by capability" badge) and show the translation notes before export.
-- [ ] EFX on a target without pan/tilt (today kept as-is → Doctor will flag), Sequence step values (backlog), gobo mapping (today neutral/open).
+- [ ] `tools/qlc_check.py` PASS on the translated output (needs QLC+ — giopas's Mac; tried 27 Sep in the cloud container with `apt install qlcplus` (4.12.7 GUI build, `--offscreen`): every button reads dark even on the untouched `QuickStart_club.qxw`, so that setup can't judge — use the source build from `docs/qlc-live-check.md` for CI later).
+- [ ] *(optional, only if the save-first hand-off feels clumsy in use)* Quick Start rig **in memory** as the Porter target.
+- [x] **Step 3 translation badge** *(27 Sep, `f08d197`)*: under each mapping row — *↔ Different type — values translated by capability* or *⚠ Different type, definition missing — values copied channel by channel* (`_pXlateBadge()` in `static/js/porter.js`; tier2/tier3 candidates carry `translatable`; `build_fixture_candidates(ids, qxf_paths)`, route accepts `qxf_paths`).
+- [x] **Step 4 translation preview** *(27 Sep, `f08d197`)*: `porter.translation_preview()` runs the translation on the closure's scene/sequence values before export → *info* "Translation source X → target Y: <note> (n×)"; *warning* for every EFX target that will be left out. Called from `validate()`.
+- [x] **Step 3 default** *(27 Sep, `6106647`)*: when no source fixture has an exact-type target, the first Auto-Map uses *Fan-in by stage position* (and fan-out mode fan-in, leave-out on) instead of *every exact match* (which mapped nothing). Browser-checked: all 14 rows mapped with the ↔ badge.
+- [x] **Sequence step values** *(27 Sep, `6b2fd33`)*: `Step` text `fid:ch,val,…:fid:…` remapped like scenes (fan-in "first lit", translation, every channel declared, `Values` = number of pairs); step fixtures are part of the closure. Doctor D003 no longer reads Sequence steps as function IDs (false "step → missing function").
+- [x] **EFX** *(27 Sep, `6b2fd33`)*: `capability_map.efx_modes()` (position / dimmer / rgb); an EFX fixture whose target can't run its `<Mode>` (0 position, 1 dimmer, 2 RGB) is left out, noted in the report; an EFX left with no fixture is removed as before.
+- [x] **Gobo** *(27 Sep, `6b2fd33`)*: gobo wheel slots (preset GoboMacro or *Open* / *Gobo N*) map by slot number; *Open* stays open; wraps on a smaller wheel (noted); dropped with a note on fixtures without a gobo wheel. Rotation channels are not wheels.
+- Fixed along the way (27 Sep): false note *target cannot make colour* for a dark look on a colour-wheel fixture.
 
 **1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; after 1.5, before the v1.4.0 release — analysis done, not started)*
 
@@ -406,8 +415,10 @@ git push -u origin feat/quickstart-porter
 ```
 Then in the app: Quick Start with a rig of *different* types (e.g. 2 × Intimidator Spot 110 + 4 × SlimPAR 56) → 💾 Generate QXW → **➜ Port from an existing show** → load Festival_14fix (or BarShow) as source → step 2 tick FLOOR/CEILING → step 3 Auto-Map *Fan-in* → export. Open the result in QLC+: colours on the spots come from the wheel, PARs keep their colours, PANIC RESET stops everything. Note anything that looks wrong (colour choice, dimmer levels) — the rules are in WORKPLAN 1.5.
 
+**giopas, before the next session (Phase 1.5 part 2):** same as above (pytest now 409 passed), plus `cd wiki && git push origin master && cd ..` for the wiki pages (Function Porter: different fixture types; Quick Start: port from an existing show). If the QLC+ check or the app test is fine, merge `feat/quickstart-porter` into `main` like the Porter branch.
+
 **Next Cowork session:**
-1. Phase 1.5 part 2 (see §5, open items): results of giopas's test first; then the step 3 "by capability" badge + notes; EFX on fixtures without pan/tilt.
+1. Results of giopas's QLC+ check of `tests/manual/Festival_to_club_translated.qxw` and of the hand-off test; fix what they show. Phase 1.5 is otherwise done.
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.

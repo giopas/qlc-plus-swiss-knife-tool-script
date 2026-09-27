@@ -26,6 +26,7 @@ Phase 1 of the [work plan](WORKPLAN.md): the three Alpha builders become dependa
 - **Quick Start**: mode-aware channels and safe neutral values, a PANIC RESET that really resets (tested in QLC+ 5.2.2), fixture groups with their own frame and dimmer, one-button-at-a-time looks, naming profiles and VC style cloned from any show.
 - **Function Porter**: port looks, chasers and effects **with their Virtual Console buttons and frames** into another rig — even a smaller one (**fan-in**, e.g. 14 → 6 fixtures). Pick frames straight from the source VC, see both rigs on **stage plans**, untick fixtures you don't need, remove old pages/buttons from the result, and get a **port report** next to the new file. Output is checked by Doctor and is byte-identical run to run.
 - **Start a new rig from an existing show**: build the rig in Quick Start, then **➜ Port from an existing show**. The rig can use **other fixture types** — looks are translated by capability (intensity, RGB mixing ↔ colour wheel, pan/tilt angles, strobe, gobo), not copied by channel number.
+- **MIDI / key control comes along**: ported buttons and CueLists keep their controller bindings, the controller's input patch (device + input profile) is copied into the new file, bindings can move to another universe, and *Source wins* moves a binding off the widget that used it in the target.
 - **Live QLC+ check** (`tools/qlc_check.py`): opens a file in a real QLC+ and presses every button to prove it works.
 
 ## What's new in v1.3.2

@@ -1,6 +1,6 @@
 # Codebase Map — QLC+ Swiss Knife
 
-*Last Updated: 2026-09-14*
+*Last Updated: 2026-09-25*
 
 Desktop tool for managing QLC+ v5.x.x lighting show files. Python/Flask backend serves a single-page web UI (vanilla JS + Jinja2 template) on `localhost:5731`, optionally wrapped in a pywebview native window. Parses and manipulates QXW workspace XML, QXF fixture definitions, and companion text files (setlists, dictionaries).
 

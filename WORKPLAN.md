@@ -4,6 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (27 Sep, later — Phase 1.6 done):**
+- **1.6 Port MIDI / input control — done** on new branch `feat/porter-midi` (stacked on `feat/quickstart-porter` @ `4a234b8`; local commits `0f5275d` engine + tests, `5df21f2` step 4 UI, + docs; wiki `ab21a18`). New `core/porter_input.py`; input patch copied, universe mapping, policy *source wins*, bindings-only copy, report section INPUT / MIDI, step 4 Key / MIDI panel (browser-checked). 420 tests green. Waiting for giopas: push both branches, try with the real BarShow → SmallShow case (§8).
+- Next: **1.3 Show Book**, then 1.4 release v1.4.0.
+
 **Status (27 Sep — Phase 1.5 done except the live QLC+ check):**
 - **1.5 part 2 done** on `feat/quickstart-porter` (local commits `6b2fd33`, `f08d197`, `6106647` + docs; giopas pushes; wiki commit `0b32320`): Sequence step values remapped/translated, EFX drop targets that can't run their mode, gobo by slot number, Doctor D003 fix for Sequence steps, step 3 translation badge, step 4 translation preview, step 3 starts with Fan-in when the target has none of the source's types. 409 tests green. UI browser-checked (Quick Start hand-off → Porter steps 3/4, Festival_14fix → QuickStart_club).
 - **Open:** `tools/qlc_check.py` on the translated output — must run on the Mac (the cloud container's apt QLC+ 4.12.7 reports every button dark even on the untouched `QuickStart_club.qxw`, so it can't judge). Then 1.6.
@@ -253,15 +257,18 @@ Goal: build a new show for a **different rig** (other fixture types, number, arr
 - [x] **Gobo** *(27 Sep, `6b2fd33`)*: gobo wheel slots (preset GoboMacro or *Open* / *Gobo N*) map by slot number; *Open* stays open; wraps on a smaller wheel (noted); dropped with a note on fixtures without a gobo wheel. Rotation channels are not wheels.
 - Fixed along the way (27 Sep): false note *target cannot make colour* for a dark look on a colour-wheel fixture.
 
-**1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; after 1.5, before the v1.4.0 release — analysis done, not started)*
+**1.6 Port MIDI / input control from the old show** *(requested by giopas 25 Sep; **done 27 Sep**, branch `feat/porter-midi`: `0f5275d`, `5df21f2`)*
 
 Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy *keep unless already used in the target*), but it does not bring the **input setup** they depend on, so in the new file they may point at a universe with no MIDI input (dead bindings, Doctor D012).
 
-- [ ] **Input patch**: read the source `InputOutputMap` (per universe: input plugin, UID/device, line, input profile, feedback). If the target has no input on that universe, copy it; if the target uses a different universe for the same controller, offer a **universe mapping** (source universe → target universe) and rewrite every ported `<Input Universe=…>`.
-- [ ] **Bindings on ported widgets**: remap universe as above; report bindings dropped because the target already uses them, and bindings kept but whose controller is not patched in the target.
-- [ ] **Bindings only (no widgets)**: optional mode to copy the MIDI/key bindings from source widgets onto the *matching* target widgets (same function after porting, or same caption) — for when the VC was rebuilt but the controller layout should stay the same.
-- [ ] Doctor D012 on the result must be clean for ported bindings; the port report lists the input patch copied and every binding kept / remapped / dropped.
-- [ ] Test case: giopas's show with MIDI controls added → a target without MIDI input, and → SmallShow (same controller). *(File received 25 Sep: `BarShow_v14.qxw` with MIDI — not committed (real names); tests rebuild the same bindings on the scrubbed `Pub_6fix.qxw`.)*
+- [x] **Input patch** (`porter_input.apply_patch()`): for every target universe that kept bindings use — same device already there → ok; no device → copy the source universe's `<Input>` (plugin, UID, Name, line, `Profile`) and `<Feedback>` (option `vc.copy_input`, default on; creates the `<Universe>` in ID order if the target lacks it); another device → warning (bindings kept); source had none → warning. Device name = `Name`, else `UID` (5.2.1 GIT saves `UID="SINCO"` only), compared case-insensitively.
+- [x] **Universe mapping** (`vc.universe_map` = {source universe ID: target universe ID}, 0-based): `remap_universes()` rewrites every `<Input Universe>` in ported widgets before the binding policy runs, so conflicts are checked on the target universe.
+- [x] **Bindings on ported widgets**: `porter_vc._filter_bindings()` logs each binding (kept / dropped: *already used by the target's Button 'X'* / moved); new policy **`source_wins`** keeps the binding on the ported widget and removes it from the target widgets that had it (after placement). Summary line counts kept / dropped / moved / remapped.
+- [x] **Bindings only** (`vc.bindings_only`, `porter_input.copy_bindings()`): source widgets (the step 2 selection, else all) → target widget using the ported copy of the same function, else the **only** target widget of the same type with the same caption (letters/digits, case-insensitive: `🚨 PANIC RESET` = `PANIC\nRESET`); slots kept (CueList `Next`/`Previous`/`Stop`, created if missing); same policies and universe map. Runs after "remove target items" and before the ported widgets are placed.
+- [x] **Report**: section *INPUT / MIDI* — input patch lines (⚠ for other device / none / skipped), every binding not simply kept, copied bindings with where they came from. Doctor D012 clean on the result when the patch is copied (test).
+- [x] **Step 4 UI**: *Key / MIDI input* panel (`GET /api/porter/inputs` → `porter_input.summary()`): per source universe with bindings — device, profile, count, target universe select (target devices shown), live status; *Copy the input patch*; *Also copy bindings onto matching existing target widgets*; policy *Source wins*. Step 5 summary line. Browser-checked (rebuilt MIDI Pub → QuickStart_6fix, universe 2 → 3).
+- [x] **Tests** (`tests/test_porter_input.py`, 11): Pub_6fix + SINCO on universe 2 + PANIC RESET ← ch 40, CueList Next ← 20, Previous ← 10 (giopas's setup, rebuilt; the real `BarShow_v14.qxw` is not committed) → QuickStart_6fix (patch copied incl. profile, D012 clean; copy off → D012; universe 2 → 3); → a copy with SINCO (`UID` only) and *ALL ON* on ch 40 (keep-free names the conflict, source-wins moves it, same device = ok); → a copy with another device (warning); bindings only (PANIC RESET by caption, CueList binding reported as unmatched); deterministic.
+- [ ] giopas: real case BarShow_v14 (*1. SETLIST*) → SmallShow with *Source wins*, and → a rig without MIDI; check in QLC+ that PANIC / Next / Previous respond on the SINCO.
 
 *Analysis of giopas's file (25 Sep):*
 - Input patch: Universe 2 (ID 1) ← MIDI device **SINCO** (`Name="SINCO" UID="528145425"`, mode *Program Change*). 3 VC bindings, all on that universe: **PANIC / BLACKOUT** ← ch 40, setlist **CueList Next** ← ch 20, **Previous** ← ch 10. Plus 42 keyboard keys.
@@ -417,8 +424,19 @@ Then in the app: Quick Start with a rig of *different* types (e.g. 2 × Intimida
 
 **giopas, before the next session (Phase 1.5 part 2):** same as above (pytest now 409 passed), plus `cd wiki && git push origin master && cd ..` for the wiki pages (Function Porter: different fixture types; Quick Start: port from an existing show). If the QLC+ check or the app test is fine, merge `feat/quickstart-porter` into `main` like the Porter branch.
 
+**giopas, before the next session (Phase 1.6):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/porter-midi
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 420 passed
+git push -u origin feat/quickstart-porter feat/porter-midi
+cd wiki && git push origin master && cd ..
+```
+Try in the app: Porter, source BarShow_v14, target SmallShow, step 2 tick *1. SETLIST*, step 4 open *Key / MIDI input* (SINCO, universe 2 → *same device already patched*), policy *Source wins* → export; the report's INPUT / MIDI section lists the 3 bindings moved from STROBE BLIND / the CueList. Then merge `feat/porter-midi` into `main` (it contains `feat/quickstart-porter`).
+
 **Next Cowork session:**
-1. Results of giopas's QLC+ check of `tests/manual/Festival_to_club_translated.qxw` and of the hand-off test; fix what they show. Phase 1.5 is otherwise done.
+1. Results of giopas's QLC+ checks (1.5 translated file, 1.6 real MIDI case); fix what they show.
+2. Phase 1.3 Show Book, then 1.4 release v1.4.0.
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.

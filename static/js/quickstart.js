@@ -1430,7 +1430,7 @@ function qsPortFromShow() {
   if (typeof porterGoStep === 'function') porterGoStep(1);
   if (typeof porterLoadTgt === 'function') porterLoadTgt();
   setStatus('Porter: target = your new rig (' + _qsLastSavedPath + '). Now load the existing show as the source, '
-            + 'then Auto-Map "Fan-in" in step 3 — different fixture types are translated by capability.', 'ok');
+            + 'tick what to port in step 2; step 3 starts with Fan-in by stage position — different fixture types are translated by capability.', 'ok');
 }
 
 async function qsExport() {

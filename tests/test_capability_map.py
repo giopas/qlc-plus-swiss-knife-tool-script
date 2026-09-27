@@ -70,8 +70,9 @@ class TestIntensityAndColour(unittest.TestCase):
         self.assertEqual((v[0], v[2], v[3], v[4], v[5]), (255, 255, 255, 255, 0))
 
     def test_dark_source_stays_dark(self):
-        out, _ = tr(G7, "7 Channel", SPOT, "6 Channel", "0,255,1,0,2,0,3,0")
+        out, notes = tr(G7, "7 Channel", SPOT, "6 Channel", "0,255,1,0,2,0,3,0")
         self.assertEqual(cm._pairs(out)[4], 0)
+        self.assertEqual(notes, [])            # no "cannot make colour" for a dark look
 
     def test_every_target_channel_declared(self):
         out, _ = tr(G7, "7 Channel", SPOT375, "15 channel", "0,255,1,255")
@@ -120,6 +121,21 @@ class TestPositionAndShutter(unittest.TestCase):
     def test_deterministic(self):
         a = tr(EURO, "9 Channel", SPOT, "12 Channel", "0,90,2,255,3,180,5,30")
         self.assertEqual(a, tr(EURO, "9 Channel", SPOT, "12 Channel", "0,90,2,255,3,180,5,30"))
+
+
+class TestTranslationPreview(unittest.TestCase):
+    """Step 4 Validate lists the translation notes before export."""
+
+    def test_notes_counted_per_pair(self):
+        from core import porter as p
+        p.load_source(os.path.join(CORPUS, "Festival_14fix.qxw"))
+        p.load_target(os.path.join(CORPUS, "QuickStart_club.qxw"))
+        fns = [f.get("ID") for f in p._engine(p.source_root()).findall("Function")]
+        pair = {("0", "0"): (EURO, "9 Channel", SPOT, "6 Channel")}   # ceiling spot → Spot 110
+        pv = p.translation_preview(fns, {"0": ["0"]}, pair, {}, strobe="drop")
+        self.assertEqual(len(pv["info"]), 1)
+        self.assertRegex(pv["info"][0], r"^Translation source 0 → target 0: strobe dropped \(\d+×\)\.$")
+        self.assertEqual(p.translation_preview(fns, {"0": ["0"]}, pair, {})["info"], [])
 
 
 class TestKind(unittest.TestCase):
@@ -272,6 +288,16 @@ class TestPorterEfxAndSequence(unittest.TestCase):
 
     def test_byte_identical(self):
         self.assertEqual(self.res["bytes"], porter.port(self.plan)["bytes"])
+
+    def test_validate_previews_efx_drop(self):
+        v = porter.validate(self.plan)
+        self.assertTrue(any("EFX 9001" in w and "has no position" in w for w in v["warnings"]))
+
+    def test_candidates_flag_translatable(self):
+        c = porter.build_fixture_candidates(["0", "6"], [CORPUS, FIXT])
+        self.assertTrue(all(t["translatable"] for t in c["candidates"]["0"]["tier3"]))
+        c = porter.build_fixture_candidates(["0"])      # no definitions for the club rig here
+        self.assertIn("translatable", c["candidates"]["0"]["tier3"][0])
 
 
 class TestGobo(unittest.TestCase):

@@ -3057,6 +3057,7 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   font-size: 13px;
 }
 .porter-warn { color: var(--orange, #ff9800); }
+.porter-ok { color: var(--green, #2e9e5b); }
 
 /* Closure summary box */
 .porter-summary-box {

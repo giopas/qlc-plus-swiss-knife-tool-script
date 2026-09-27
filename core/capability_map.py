@@ -338,7 +338,8 @@ def encode(defn: dict, mode: str, st: LookState,
             v = nearest_wheel_value(wheel_ch[1], colour)
             if v is not None:
                 out[wheel_ch[0]] = v
-        elif st.colour_source != "none" and _norm(colour) != (1.0, 1.0, 1.0):
+        elif (wheel_ch is None and peak > 0 and st.colour_source != "none"
+              and _norm(colour) != (1.0, 1.0, 1.0)):
             notes.append("target cannot make colour; intensity only")
         if not has_dimmer and mix_idx:
             notes.append("target colour channels incomplete; left neutral")

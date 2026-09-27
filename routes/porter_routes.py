@@ -131,7 +131,8 @@ def fixture_candidates():
         return jsonify({'error': 'No fixture IDs provided.'}), 400
 
     try:
-        result = porter.build_fixture_candidates(fixture_ids)
+        result = porter.build_fixture_candidates(fixture_ids,
+                                                 data.get('qxf_paths') or None)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
@@ -152,7 +153,8 @@ def auto_map():
         return jsonify({'error': f'Unknown strategy {strategy!r}.'}), 400
 
     try:
-        result = porter.auto_map(fixture_ids, strategy)
+        result = porter.auto_map(fixture_ids, strategy,
+                                 data.get('qxf_paths') or None)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
@@ -192,6 +194,16 @@ def target_vc():
     if not porter.get_state()['tgt_loaded']:
         return jsonify([])
     return jsonify(porter_vc.list_source_vc(porter.target_root(), include_all=True))
+
+
+@bp.route('/inputs')
+def inputs():
+    """Key/MIDI input summary for step 4 (WORKPLAN 1.6): source universes
+    used by VC bindings (device, count) and the target's universes."""
+    from core import porter_input
+    st = porter.get_state()
+    return jsonify(porter_input.summary(porter.source_root() if st['src_loaded'] else None,
+                                        porter.target_root() if st['tgt_loaded'] else None))
 
 
 @bp.route('/target/pages')

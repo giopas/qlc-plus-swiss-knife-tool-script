@@ -53,7 +53,9 @@ let _pSkipFx = new Set();          // source fixtures "not ported" (step 3)
 let _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };  // what skipping unticked
 let _pHlFx = null;                 // source fixture highlighted on the plans (hover)
 let _pHlSticky = null;             // … and the clicked one   // /api/porter/stage/<side>
-let _pVc = { enabled: true, target_page: '', page_caption: '', bindings: 'keep_free' };
+let _pVc = { enabled: true, target_page: '', page_caption: '', bindings: 'keep_free',
+             universe_map: {}, copy_input: true, bindings_only: false };
+let _pInputs = { source: [], target: [], keys: 0 };      // /api/porter/inputs (1.6)
 
 let _pStep = 1;  // current wizard step (1–5)
 
@@ -876,6 +878,11 @@ async function _pRenderVcOptions() {
   document.getElementById('porter-vc-caption').value = _pVc.page_caption;
   document.getElementById('porter-vc-caption').placeholder = 'Ported from ' + (_pSrcName || 'source');
   document.getElementById('porter-vc-bindings').value = _pVc.bindings;
+  const mc = document.getElementById('porter-midi-copy');
+  if (mc) mc.checked = _pVc.copy_input !== false;
+  const mo = document.getElementById('porter-midi-only');
+  if (mo) mo.checked = !!_pVc.bindings_only;
+  _pRenderMidi();
   try {
     const r = await fetch('/api/porter/target/vc');
     _pTgtVcTree = r.ok ? await r.json() : [];
@@ -948,12 +955,71 @@ function porterRmAll(on) {
 }
 
 function porterVcOpt() {
+  const umap = {};
+  document.querySelectorAll('.porter-midi-umap').forEach(sel => {
+    if (sel.value !== sel.dataset.src) umap[sel.dataset.src] = sel.value;
+  });
   _pVc = {
-    enabled:      document.getElementById('porter-vc-enabled').checked,
-    target_page:  document.getElementById('porter-vc-page').value,
-    page_caption: document.getElementById('porter-vc-caption').value,
-    bindings:     document.getElementById('porter-vc-bindings').value,
+    enabled:       document.getElementById('porter-vc-enabled').checked,
+    target_page:   document.getElementById('porter-vc-page').value,
+    page_caption:  document.getElementById('porter-vc-caption').value,
+    bindings:      document.getElementById('porter-vc-bindings').value,
+    universe_map:  umap,
+    copy_input:    document.getElementById('porter-midi-copy')?.checked !== false,
+    bindings_only: !!document.getElementById('porter-midi-only')?.checked,
   };
+  _pRenderMidiStatus();
+}
+
+// ── Key / MIDI input (step 4, WORKPLAN 1.6) ─────────────────────────────────
+
+async function _pRenderMidi() {
+  try {
+    const r = await fetch('/api/porter/inputs');
+    _pInputs = r.ok ? await r.json() : { source: [], target: [], keys: 0 };
+  } catch (e) { _pInputs = { source: [], target: [], keys: 0 }; }
+  const body = document.getElementById('porter-midi-body');
+  const info = document.getElementById('porter-midi-info');
+  if (!body) return;
+  const n = _pInputs.source.reduce((a, u) => a + u.bindings, 0);
+  if (info) info.textContent = n
+    ? `(${n} MIDI/input binding(s) in the source${_pInputs.keys ? ', ' + _pInputs.keys + ' key(s)' : ''})`
+    : `(no MIDI/input bindings in the source${_pInputs.keys ? '; ' + _pInputs.keys + ' key(s)' : ''})`;
+  if (!_pInputs.source.length) { body.innerHTML = ''; return; }
+  const maxU = Math.max(3, ..._pInputs.target.map(u => +u.universe), ..._pInputs.source.map(u => +u.universe));
+  body.innerHTML = _pInputs.source.map(u => {
+    const cur = (_pVc.universe_map || {})[u.universe] ?? u.universe;
+    let opts = '';
+    for (let i = 0; i <= maxU; i++) {
+      const t = _pInputs.target.find(x => +x.universe === i);
+      const dev = t && t.device ? ' — ' + t.device : (t ? ' — no input' : ' — not in the target yet');
+      opts += `<option value="${i}" ${String(cur) === String(i) ? 'selected' : ''}>Universe ${i + 1}${_esc(dev)}</option>`;
+    }
+    return `<div class="porter-vc-row">
+      <span>Source universe ${+u.universe + 1} <b>${_esc(u.device || 'no device')}</b>${u.profile ? ' <small>(' + _esc(u.profile) + ')</small>' : ''} · ${u.bindings} binding(s) →</span>
+      <select class="filter-input porter-midi-umap" data-src="${u.universe}" onchange="porterVcOpt()">${opts}</select>
+      <small class="porter-midi-status" data-src="${u.universe}"></small>
+    </div>`;
+  }).join('');
+  _pRenderMidiStatus();
+}
+
+/** What will happen to each source universe's bindings, per the options. */
+function _pRenderMidiStatus() {
+  document.querySelectorAll('.porter-midi-status').forEach(el => {
+    const su = el.dataset.src;
+    const src = _pInputs.source.find(u => u.universe === su) || {};
+    const tu = String((_pVc.universe_map || {})[su] ?? su);
+    const tgt = _pInputs.target.find(u => String(u.universe) === tu) || {};
+    let msg, cls;
+    if (!src.device) { msg = '⚠ the source has no device here either'; cls = 'porter-warn'; }
+    else if (tgt.device && tgt.device.toLowerCase() === src.device.toLowerCase()) { msg = '✓ same device already patched'; cls = 'porter-ok'; }
+    else if (tgt.device) { msg = `⚠ target has ${tgt.device}: bindings will listen to it`; cls = 'porter-warn'; }
+    else if (_pVc.copy_input) { msg = `✓ ${src.device} will be patched on the target universe`; cls = 'porter-ok'; }
+    else { msg = '⚠ no device on the target universe: bindings won\'t respond'; cls = 'porter-warn'; }
+    el.className = 'porter-midi-status ' + cls;
+    el.textContent = msg;
+  });
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1102,6 +1168,14 @@ function _pRenderExportReady() {
     li.push('Virtual Console: no widgets ported');
   }
   if (_pRmScope.length) li.push(`removed from the target's Virtual Console: ${_pRmScope.length} item(s)`);
+  if (_pInputs.source.length && (_pVc.enabled || _pVc.bindings_only)) {
+    const names = { keep_free: 'keep unless used in the target', source_wins: 'source wins', keep: 'keep all', drop: 'drop all' };
+    const um = Object.entries(_pVc.universe_map || {}).map(([a, b]) => `universe ${+a + 1} → ${+b + 1}`);
+    li.push(`Key / MIDI: ${names[_pVc.bindings] || _pVc.bindings}`
+            + (um.length ? '; ' + um.join(', ') : '')
+            + (_pVc.copy_input ? '; input patch copied where the target has none' : '; input patch not copied')
+            + (_pVc.bindings_only ? '; bindings also copied onto matching target widgets' : ''));
+  }
   if (_pValidation && _pValidation.warnings.length) li.push(`${_pValidation.warnings.length} warning(s) — see step 4`);
   el.innerHTML = `
     <h3>Ready to export</h3>

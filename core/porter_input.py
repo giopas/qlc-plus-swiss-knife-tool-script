@@ -154,6 +154,34 @@ def _copy_input(src_iom: ET.Element, su: str, tgt_root: ET.Element, tu: str) -> 
             tu_el.set(k, su_el.get(k))
 
 
+def summary(src_root: Optional[ET.Element], tgt_root: Optional[ET.Element]) -> dict:
+    """For the Porter UI: source universes that VC bindings use (with their
+    device and binding count) and every target universe with its device.
+    ``{"source": [{universe, name, device, profile, bindings}], "target": [...],
+    "keys": <number of key bindings in the source VC>}``."""
+    out = {"source": [], "target": [], "keys": 0}
+    if src_root is not None:
+        patch = read_patch(src_root)
+        counts: Dict[str, int] = {}
+        vc = src_root.find("VirtualConsole")
+        if vc is not None:
+            for el in vc.iter():
+                k = binding_key(el) if _local(el.tag) in BINDING_TAGS else None
+                if k and k[0] == "input" and k[2]:
+                    counts[k[1]] = counts.get(k[1], 0) + 1
+                elif k and k[0] == "key":
+                    out["keys"] += 1
+        for u in sorted(counts, key=lambda x: int(x) if x.isdigit() else 0):
+            p = patch.get(u, {})
+            out["source"].append({"universe": u, "name": p.get("name") or f"Universe {int(u) + 1}",
+                                  "device": p.get("device", ""), "profile": p.get("profile", ""),
+                                  "bindings": counts[u]})
+    if tgt_root is not None:
+        for u, p in sorted(read_patch(tgt_root).items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else 0):
+            out["target"].append({"universe": u, "name": p["name"], "device": p["device"]})
+    return out
+
+
 # ── bindings ─────────────────────────────────────────────────────────────────
 
 def binding_key(el: ET.Element):

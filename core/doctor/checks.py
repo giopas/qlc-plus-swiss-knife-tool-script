@@ -177,8 +177,9 @@ class _Workspace:
     @staticmethod
     def _function_refs(f: ET.Element):
         """Yield ``(kind, function_id)`` for every function *f* references."""
-        for step in f.findall("Step"):
-            yield "step", (step.text or "").strip()
+        if f.get("Type") != "Sequence":       # Sequence steps hold values, not IDs
+            for step in f.findall("Step"):
+                yield "step", (step.text or "").strip()
         for el in f.iter():
             if el is not f and el.get("BoundScene"):
                 yield "bound", el.get("BoundScene")

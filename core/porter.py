@@ -364,6 +364,9 @@ def _collect_refs(fn_el: ET.Element, fn_type: str,
         text = (step.text or "").strip()
         if text and text.isdigit():
             func_ids.append(text)
+        elif fn_type == "Sequence":
+            for fid, _vals in _parse_seq_step(text):
+                fix_ids.add(fid)
 
     # ── BoundScene (Sequence) ─────────────────────────────────────────────
     bound = fn_el.get("BoundScene", "")
@@ -686,6 +689,19 @@ def _translators(src_infos: dict[str, dict], tgt_infos: dict[str, dict],
             sd, td = d(si), d(ti)
             if can_translate(sd, si["mode"]) and can_translate(td, ti["mode"]):
                 out[(s, t)] = (sd, si["mode"], td, ti["mode"])
+    return out
+
+
+def _efx_fit(tgt_infos: dict[str, dict], defs: dict) -> dict[str, set]:
+    """``target id → EFX modes it supports`` for targets whose definition is
+    known (``capability_map.efx_modes``)."""
+    from core.capability_map import efx_modes
+    out = {}
+    for t, inf in tgt_infos.items():
+        m = efx_modes(defs.get((inf["manufacturer"].strip().lower(),
+                                inf["model"].strip().lower())), inf["mode"])
+        if m is not None:
+            out[t] = m
     return out
 
 
@@ -1141,6 +1157,7 @@ def _build(plan: dict) -> dict:
                              blocks, defs)
                  if plan.get("translate_types", True) else {})
     translated: list[dict] = []
+    efx_fit = _efx_fit(_fixture_infos(_tgt["root"]), defs)
 
     # ── 2. Allocate new function IDs in the target (max + 1) ──────────────
     max_id = _max_id_in(tgt_root)
@@ -1180,7 +1197,7 @@ def _build(plan: dict) -> dict:
         before, after = _remap_fixture_refs(new_fn, blocks, mirror_fixtures,
                                             pan_channel_map, intensity, neutral,
                                             translate, plan.get("strobe", "keep"),
-                                            translated)
+                                            translated, efx_fit)
         if new_fn.get("Type") == "RGBMatrix":
             gid = (new_fn.findtext("FixtureGroup") or "").strip()
             if gid not in group_map:
@@ -1435,6 +1452,17 @@ def _remap_func_refs(fn_el: ET.Element, id_map: dict[str, str]):
         _remap_func_refs(child, id_map)
 
 
+def _parse_seq_step(text: str) -> list[tuple[str, str]]:
+    """Sequence step text ``"fid:ch,val,…:fid:ch,val,…"`` → [(fid, "ch,val,…")]."""
+    parts = (text or "").strip().split(":")
+    out = []
+    for i in range(0, len(parts) - 1, 2):
+        fid = parts[i].strip()
+        if fid.isdigit():
+            out.append((fid, parts[i + 1].strip()))
+    return out
+
+
 def _remap_fixture_refs(fn_el: ET.Element,
                         blocks: dict[str, list[str]],
                         mirror_fixtures: set[str],
@@ -1443,23 +1471,79 @@ def _remap_fixture_refs(fn_el: ET.Element,
                         neutral: dict[str, dict[int, int]] | None = None,
                         translate: dict[tuple, tuple] | None = None,
                         strobe: str = "keep",
-                        log: list | None = None) -> tuple[int, int]:
+                        log: list | None = None,
+                        efx_fit: dict[str, set] | None = None) -> tuple[int, int]:
     """
-    Remap fixture IDs in a Scene (``FixtureVal``) or EFX (``Fixture``).
+    Remap fixture IDs in a Scene (``FixtureVal``), a Sequence (``FixtureVal``
+    and the ``fid:ch,val,…`` values of every ``Step``) or an EFX (``Fixture``).
 
     Each target gets the values of one source of its block: the first one
-    that is lit in this scene, else the first one the scene declares.
+    that is lit in this scene/step, else the first one it declares.
     Values of sources that feed no target are left out.  Output order
     follows the source order.  With *neutral* (target fixture → neutral
-    values) scene values are completed so every channel is declared
-    (no LTP bleed, WORKPLAN principle 5).  With *translate* (see
+    values) values are completed so every channel is declared (no LTP
+    bleed, WORKPLAN principle 5).  With *translate* (see
     :func:`_translators`) the values of a different fixture type are
-    translated by capability; notes go to *log*.
+    translated by capability; notes go to *log*.  With *efx_fit* (target
+    → EFX modes it supports, ``capability_map.efx_modes``) an EFX drops the
+    targets that can't run its mode (a movement EFX on a PAR), noted in
+    *log*.
 
     Returns ``(fixtures before, fixtures after)``.
     """
     intensity = intensity or {}
     fn_type = fn_el.get("Type", "")
+    fname = fn_el.get("Name", "")
+
+    def values_for(s: str, t: str, text: str) -> str:
+        """Values of source *s* as target *t* sees them."""
+        if translate and (s, t) in translate:
+            from core.capability_map import translate_text
+            sd, sm, td, tm = translate[(s, t)]
+            out, notes = translate_text(sd, sm, td, tm, text or "", strobe=strobe)
+            if log is not None:
+                log.append({"function": fname, "source": s, "target": t, "notes": notes})
+            return out
+        if t in mirror_fixtures and s in pan_channel_map and (text or "").strip():
+            pan = pan_channel_map[s]
+            text = mirror_pan_values(text.strip(), pan["coarse"], pan.get("fine"))
+        if neutral and t in neutral:
+            text = _complete(text or "", neutral[t])
+        return text
+
+    def feeds_for(by_src: dict[str, str | None], lit_check: bool) -> dict[str, list[str]]:
+        feeds: dict[str, list[str]] = defaultdict(list)   # rep src → [targets]
+        for t in _id_sorted(blocks):
+            declared = [s for s in blocks[t] if s in by_src]
+            if not declared:
+                continue
+            rep = declared[0]
+            if lit_check:
+                rep = next((s for s in declared
+                            if _is_lit(by_src[s], intensity.get(s))), declared[0])
+            feeds[rep].append(t)
+        return feeds
+
+    # ── Sequence steps: "fid:ch,val,…:fid:…" ──────────────────────────────
+    step_before: set[str] = set()
+    step_after: set[str] = set()
+    if fn_type == "Sequence":
+        for step in fn_el.findall("Step"):
+            items = _parse_seq_step(step.text or "")
+            if not items:
+                continue
+            by_src: dict[str, str] = {}
+            for fid, vals in items:
+                by_src.setdefault(fid, vals)
+            step_before.update(by_src)
+            feeds = feeds_for(by_src, True)
+            out = []
+            for fid in by_src:
+                for t in feeds.get(fid, []):
+                    out.append((t, values_for(fid, t, by_src[fid])))
+            step_after.update(t for t, _ in out)
+            step.text = ":".join(f"{t}:{v}" for t, v in out)
+            step.set("Values", str(sum(len(_pairs(v)) for _, v in out)))
 
     if fn_type in ("Scene", "Sequence"):
         old = fn_el.findall("FixtureVal")
@@ -1468,27 +1552,17 @@ def _remap_fixture_refs(fn_el: ET.Element,
     else:
         return 0, 0
     if not old:
-        return 0, 0
+        return len(step_before), len(step_after)
 
     def src_of(el):
         if fn_type == "EFX":
             return (el.findtext("ID") or "").strip()
         return el.get("ID", "")
 
-    by_src = {}
+    by_el = {}
     for el in old:
-        by_src.setdefault(src_of(el), el)
-
-    feeds: dict[str, list[str]] = defaultdict(list)   # rep src → [targets]
-    for t in _id_sorted(blocks):
-        declared = [s for s in blocks[t] if s in by_src]
-        if not declared:
-            continue
-        rep = declared[0]
-        if fn_type != "EFX":
-            rep = next((s for s in declared
-                        if _is_lit(by_src[s].text, intensity.get(s))), declared[0])
-        feeds[rep].append(t)
+        by_el.setdefault(src_of(el), el)
+    feeds = feeds_for({s: el.text for s, el in by_el.items()}, fn_type != "EFX")
 
     # position of the first old element, so the new ones land in the same place
     first = list(fn_el).index(old[0])
@@ -1504,28 +1578,24 @@ def _remap_fixture_refs(fn_el: ET.Element,
         for t in feeds.get(s, []):
             dup = copy.deepcopy(el)
             if fn_type == "EFX":
+                mode = (el.findtext("Mode") or "0").strip()
+                fit = (efx_fit or {}).get(t)
+                need = {"0": "position", "1": "dimmer", "2": "rgb"}.get(mode, "position")
+                if fit is not None and need not in fit:
+                    if log is not None:
+                        log.append({"function": fname, "source": s, "target": t,
+                                    "efx": True,
+                                    "notes": [f"EFX needs {need}; target has none — left out"]})
+                    continue
                 dup.find("ID").text = t
             else:
                 dup.set("ID", t)
-                if translate and (s, t) in translate and fn_type == "Scene":
-                    from core.capability_map import translate_text
-                    sd, sm, td, tm = translate[(s, t)]
-                    dup.text, notes = translate_text(sd, sm, td, tm, dup.text or "",
-                                                     strobe=strobe)
-                    if log is not None:
-                        log.append({"function": fn_el.get("Name", ""), "source": s,
-                                    "target": t, "notes": notes})
-                    new.append(dup)
-                    continue
-                if t in mirror_fixtures and s in pan_channel_map and (dup.text or "").strip():
-                    pan = pan_channel_map[s]
-                    dup.text = mirror_pan_values(dup.text.strip(), pan["coarse"], pan.get("fine"))
-                if neutral and t in neutral and fn_type == "Scene":
-                    dup.text = _complete(dup.text or "", neutral[t])
+                dup.text = values_for(s, t, dup.text or "")
             new.append(dup)
     for n, el in enumerate(new):
         fn_el.insert(first + n, el)
-    return len(by_src), len(new)
+    return len(set(by_el) | step_before), len({e.get("ID") or e.findtext("ID") for e in new}
+                                              | step_after)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1607,8 +1677,8 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
             lines.append("")
         if result.get("translated"):
             tr = result["translated"]
-            lines.append(f"── TRANSLATED BETWEEN FIXTURE TYPES ({len(tr)} scene value set(s)) ──")
-            pairs = sorted({(x["source"], x["target"]) for x in tr},
+            lines.append(f"── TRANSLATED BETWEEN FIXTURE TYPES ({len(tr)} value set(s)) ──")
+            pairs = sorted({(x["source"], x["target"]) for x in tr if not x.get("efx")},
                            key=lambda p: (_id_sorted([p[0]])[0], _id_sorted([p[1]])[0]))
             for sp, tp in pairs:
                 lines.append(f"  • source {sp} → target {tp}: by capability")

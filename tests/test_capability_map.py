@@ -186,3 +186,109 @@ class TestPorterDifferentTypes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPorterEfxAndSequence(unittest.TestCase):
+    """EFX and Sequence steps on different fixture types (1.5 part 2).
+
+    An EFX and a Sequence are added to Festival_14fix (the corpus has none):
+    * EFX 9001: fixture 0 (spot, Position), 6 (PAR, Position), 7 (PAR, Dimmer)
+    * Sequence 9002 bound to scene 100, two steps on fixtures 0 and 6.
+    Ported into QuickStart_club (Spot 110 ×2 + SlimPAR 56 ×4)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        from xml.etree import ElementTree as ET
+        from core import qxw_io
+        ns = "{" + qxw_io.QLC_NS_URI + "}"
+        tree = qxw_io.load_qxw(os.path.join(CORPUS, "Festival_14fix.qxw"))
+        eng = tree.getroot().find(ns + "Engine")
+
+        def sub(parent, tag, text=None, **attrs):
+            el = ET.SubElement(parent, ns + tag, attrs)
+            if text is not None:
+                el.text = text
+            return el
+        efx = sub(eng, "Function", ID="9001", Type="EFX", Name="Test EFX")
+        sub(efx, "Algorithm", "Circle")
+        for fid, mode in (("0", "0"), ("6", "0"), ("7", "1")):
+            fx = sub(efx, "Fixture")
+            sub(fx, "ID", fid)
+            sub(fx, "Head", "0")
+            sub(fx, "Mode", mode)
+        seq = sub(eng, "Function", ID="9002", Type="Sequence", Name="Test Seq", BoundScene="100")
+        sub(seq, "Step", "0:0,255,2,255:6:0,255,1,255", Number="0", Values="4")
+        sub(seq, "Step", "0:0,0:6:0,255,3,255", Number="1", Values="3")
+        cls.tmp = tempfile.mkdtemp()
+        src = os.path.join(cls.tmp, "Festival_efx.qxw")
+        qxw_io.write_qxw(tree.getroot(), src)
+
+        porter.load_source(src)
+        porter.load_target(os.path.join(CORPUS, "QuickStart_club.qxw"))
+        cl = porter.resolve_closure(["9001", "9002"])
+        q = [CORPUS, FIXT]
+        cls.mapping = porter.auto_map(cl["fixture_ids"], "fan_in", q)
+        cls.plan = dict(closure=cl, fixture_mapping=cls.mapping, fanout_mode="fan_in",
+                        drop_unmapped=True, qxf_paths=q)
+        cls.res = porter.port(cls.plan)
+        cls.xml = cls.res["bytes"].decode("utf-8")
+
+    def _fn(self, name):
+        m = re.search(r'<Function [^>]*Name="%s"[^>]*>(.*?)</Function>' % name, self.xml, re.S)
+        self.assertIsNotNone(m, name)
+        return m.group(1)
+
+    def test_sequence_fixture_collected(self):
+        self.assertIn("6", self.plan["closure"]["fixture_ids"])
+
+    def test_efx_drops_position_on_par(self):
+        body = self._fn("Test EFX")
+        ids = re.findall(r"<Fixture>\s*<ID>(\d+)</ID>\s*<Head>0</Head>\s*<Mode>(\d)</Mode>", body)
+        self.assertIn((self.mapping["0"][0], "0"), ids)       # spot keeps the movement
+        self.assertIn((self.mapping["7"][0], "1"), ids)       # PAR keeps the dimmer EFX
+        self.assertNotIn((self.mapping["6"][0], "0"), ids)    # PAR can't move
+        self.assertTrue(any(x.get("efx") for x in self.res["translated"]))
+        self.assertIn("EFX needs position", self.res["report"])
+
+    def test_sequence_steps_remapped_and_translated(self):
+        body = self._fn("Test Seq")
+        steps = re.findall(r'<Step Number="(\d)"[^>]*Values="(\d+)"[^>]*>([^<]*)</Step>', body)
+        self.assertEqual(len(steps), 2)
+        spot, par = self.mapping["0"][0], self.mapping["6"][0]
+        for _n, count, text in steps:
+            parts = text.split(":")
+            fids = parts[0::2]
+            # the one spot source fans out to both spots; the PAR feeds its SlimPAR
+            self.assertEqual(fids, self.mapping["0"] + [par])
+            self.assertEqual(int(count), sum(len(cm._pairs(v)) for v in parts[1::2]))
+        first = dict(zip(steps[0][2].split(":")[0::2], steps[0][2].split(":")[1::2]))
+        self.assertEqual(sorted(cm._pairs(first[par])), list(range(7)))   # SlimPAR 7-Ch
+        self.assertEqual(cm._pairs(first[par])[0], 255)                   # red stays red
+        self.assertEqual(cm._pairs(first[spot])[2], 32)                   # Eurolite ch 2 = red → red slot
+
+    def test_doctor_clean(self):
+        self.assertEqual(self.res["doctor"]["errors"], [])
+
+    def test_byte_identical(self):
+        self.assertEqual(self.res["bytes"], porter.port(self.plan)["bytes"])
+
+
+class TestGobo(unittest.TestCase):
+    def test_same_slot_number(self):
+        # Spot 110 gobo wheel: Open 0, Gobo 1 = 32 …; 375Z: Open 0, Gobo 1 = 8, Gobo 2 = 16 …
+        out, notes = tr(SPOT, "6 Channel", SPOT375, "9 channel", "4,255,5,64")   # Gobo 2
+        self.assertEqual(cm._pairs(out)[3], 16)
+        self.assertEqual(notes, [])
+
+    def test_open_stays_open(self):
+        out, _ = tr(SPOT, "6 Channel", SPOT375, "9 channel", "4,255,5,0")
+        self.assertEqual(cm._pairs(out)[3], 0)
+
+    def test_gobo_dropped_on_par(self):
+        _, notes = tr(SPOT, "6 Channel", SLIM, "7-Ch", "4,255,5,64")
+        self.assertIn("target has no gobo wheel; gobo dropped", notes)
+
+    def test_rotation_channel_is_not_a_wheel(self):
+        chdef = SPOT375["channel_defs"]["Gobo Rotation"]
+        self.assertEqual(cm._gobo_slots(chdef), [])

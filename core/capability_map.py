@@ -32,7 +32,9 @@ Rules (deterministic — same input, same output):
   value (or intensity 0 when it has none), *strobe* → the same relative
   speed inside the target's first strobe range, or dropped with
   ``strobe="drop"`` (then open).
-* **Everything else** (gobo, prism, macros, programs, speeds, zoom …) →
+* **Gobo** — the same slot number on the target's gobo wheel (*Open*
+  stays open; wraps round on a smaller wheel, noted); dropped if it has none.
+* **Everything else** (prism, macros, programs, speeds, zoom …) →
   the target's capability-aware neutral value (``channel_model``).
 
 Every channel of the target mode is declared (no LTP bleed).
@@ -85,6 +87,7 @@ class LookState:
     tilt_is_deg: bool = False
     shutter: Optional[str] = None          # "open" | "closed" | "strobe"
     strobe_speed: float = 0.0              # 0..1 inside the strobe range
+    gobo: Optional[int] = None             # 0 = open, n = n-th gobo slot (None = no wheel)
     notes: List[str] = field(default_factory=list)
 
 
@@ -141,6 +144,20 @@ def cap_colour(cap: dict) -> Optional[RGB]:
 def _is_wheel(chdef: dict) -> bool:
     return (chdef.get("group") == "Colour"
             and any(cap_colour(c) is not None for c in chdef.get("capabilities") or []))
+
+
+def _gobo_slots(chdef: dict) -> List[dict]:
+    """Slots of a gobo wheel, in wheel order ([] if *chdef* isn't one):
+    capabilities with preset GoboMacro, or labelled *Open* / *Gobo N*."""
+    if (chdef.get("group") or "") != "Gobo":
+        return []
+    return [c for c in chdef.get("capabilities") or []
+            if c.get("preset") == "GoboMacro"
+            or re.match(r"^\s*(open|gobo\s*\d+)\b", c.get("label") or "", re.I)]
+
+
+def _is_open_slot(cap: dict) -> bool:
+    return bool(re.search(r"\bopen\b", cap.get("label") or "", re.I))
 
 
 def _shutter_kind(cap: Optional[dict]) -> Optional[str]:
@@ -206,6 +223,12 @@ def decode(defn: dict, mode: str, values: Dict[int, int]) -> LookState:
             wheel = cap_colour(cap) if cap else None
             if wheel is None:
                 st.notes.append(f"colour wheel value {v} has no known colour")
+        elif _gobo_slots(cd) and st.gobo is None:
+            slots = _gobo_slots(cd)
+            cap = _cap_at(cd, v)
+            if cap in slots:
+                gobos = [c for c in slots if not _is_open_slot(c)]
+                st.gobo = 0 if _is_open_slot(cap) else gobos.index(cap) + 1
         elif grp == "Shutter":
             kind = _shutter_kind(_cap_at(cd, v))
             if kind:
@@ -352,6 +375,18 @@ def encode(defn: dict, mode: str, st: LookState,
             for i in coarse:
                 out[i] = _dmx(frac)
 
+    # gobo: same slot number (open stays open; wraps on a smaller wheel)
+    if st.gobo:
+        wheel = next(((i, _gobo_slots(cd)) for i, _, cd in lay if _gobo_slots(cd)), None)
+        gobos = [c for c in wheel[1] if not _is_open_slot(c)] if wheel else []
+        if gobos:
+            k = (st.gobo - 1) % len(gobos)
+            out[wheel[0]] = int(gobos[k].get("min", 0))
+            if k != st.gobo - 1:
+                notes.append(f"gobo {st.gobo} → gobo {k + 1} (smaller wheel)")
+        else:
+            notes.append("target has no gobo wheel; gobo dropped")
+
     # shutter
     for i, _, cd in lay:
         if cd.get("group") != "Shutter":
@@ -420,3 +455,22 @@ def kind(defn: Optional[dict], mode: str) -> str:
     if all(r in roles for r in _MIX_ROLES) or any(_is_wheel(cd) for _, _, cd in lay):
         return "colour"
     return "dimmer"
+
+
+def efx_modes(defn: Optional[dict], mode: str) -> Optional[set]:
+    """EFX modes a fixture can run (QLC+ EFX fixture ``<Mode>``: 0 position,
+    1 dimmer, 2 RGB) as ``{"position", "dimmer", "rgb"}``; None when the
+    definition is unknown (then nothing is dropped)."""
+    if not can_translate(defn, mode):
+        return None
+    lay = _layout(defn, mode)  # type: ignore[arg-type]
+    out = set()
+    groups = {(cd.get("group") or "") for _, _, cd in lay}
+    if "Pan" in groups or "Tilt" in groups:
+        out.add("position")
+    roles = {_role(cd) for _, _, cd in lay}
+    if all(r in roles for r in _MIX_ROLES):
+        out.add("rgb")
+    if roles - {None}:
+        out.add("dimmer")
+    return out

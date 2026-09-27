@@ -4,6 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (27 Sep, evening — Phase 1.3 done):**
+- **1.3 Show Book — done** on branch `feat/showbook` (stacked on `feat/porter-midi` @ `6a5bd84`; local commit `67cbd1f` + docs; wiki `c276e17` *Show Book* page). Built in a separate git worktree (`.wt-showbook/`, git-excluded) so giopas could test 1.5/1.6 in the main folder at the same time — remove it with `git worktree remove .wt-showbook` after pushing. 443 tests green; preview browser-checked; PDF pages checked as images.
+- Next: **1.4 release v1.4.0** (after giopas's tests of 1.5 / 1.6 and merges).
+
 **Status (27 Sep, later — Phase 1.6 done):**
 - **1.6 Port MIDI / input control — done** on new branch `feat/porter-midi` (stacked on `feat/quickstart-porter` @ `4a234b8`; local commits `0f5275d` engine + tests, `5df21f2` step 4 UI, + docs; wiki `ab21a18`). New `core/porter_input.py`; input patch copied, universe mapping, policy *source wins*, bindings-only copy, report section INPUT / MIDI, step 4 Key / MIDI panel (browser-checked). 420 tests green. Waiting for giopas: push both branches, try with the real BarShow → SmallShow case (§8).
 - Next: **1.3 Show Book**, then 1.4 release v1.4.0.
@@ -221,10 +225,12 @@ Found and fixed along the way (all in the CHANGELOG):
 - Found and fixed along the way: non-deterministic function IDs (closure ordered by a set); EFX fixtures and percent-encoded script commands not recognised in real QLC+ files; values of unmapped fixtures left in scenes (dangling refs); RGB matrices pointing at a group missing in the target; ported looks surviving the target's PANIC RESET (live check).
 - Commits: `feat(porter): port VC widgets with functions`, `test(porter): Festival_14fix→Pub_6fix fan-in case`
 
-**1.3 Show Book**
-- [ ] Test suite: section builders, DMX decoding against the corpus QXFs, CSV zip contents, and the PDF text layer.
-- [ ] The VC Layout section matches the Pub_6fix pages and frames.
-- [ ] Add an optional Doctor summary section.
+**1.3 Show Book** — ✅ *done 27 Sep, branch `feat/showbook` (`67cbd1f`)*
+- [x] Test suite `tests/test_showbook.py` (24): section builders on Pub_6fix (summary 6 fixtures / 207 functions / 98 widgets on 2 pages, patch sorted, function index, chaser times), DMX decoding against the corpus QXFs (`78% (200)`, `No flash (0)`, `DMX Mode …`, Eurolite RGBW names, Spot 110 pan `268.9° (127)` with `qxf_dir`, raw when no definition), CSV zip contents (11 files, row counts, summary.txt), PDF text layer (own Flate/`Tj` extractor: patch names, `Page: 1. SETLIST`, emoji dropped, `» »` depth), deterministic zip + PDF.
+- [x] **VC Layout** rebuilt from the VC XML (`_build_vc_layout(root, state)` → `{pages: [{id, type, caption, size, widgets}], widget_count}`): widgets in document order with ID (was always empty: `widget_id` vs `id`), frame path inside the page, depth, X/Y/W/H, function (or *(stop all functions)* / *(blackout)*), key/MIDI bindings with slot (`Next: key Space, Prev: key Backspace, Stop: key Esc`, `MIDI U2 ch 40`). Matches Pub_6fix: pages *1. SETLIST* / *2. EFFECTS* 1650×884, *AS · Emerald City* in `◆ SHOW — one look at a time › ◼ LOOKS` at depth 2. Preview: one table per page, frames indented; PDF: per-page sub-tables (`» ` per depth); CSV: page + frame path + geometry + bindings.
+- [x] **Doctor summary** section `doctor` (in `ALL_SECTIONS`, can be unticked): counts of errors / warnings / info + every error and warning; preview, PDF, `doctor.csv`, summary.txt.
+- [x] Also: shows/scripts in PDF + CSV; definitions next to the workspace and from the installed QLC+ library loaded automatically; patch model without the manufacturer prefix; PDF text cleaned (emoji dropped, `—`→`-`, `›`→`>`); title/table overlap fixed; empty sections left out of the PDF; `generate(date=…)` + fixed zip timestamps → byte-identical exports.
+- Commit: `feat(showbook): VC layout by page with bindings, Doctor section, tests`
 - Commit: `test(showbook): coverage for sections, decoding, exports`
 
 **1.4 Release v1.4.0**
@@ -434,9 +440,19 @@ cd wiki && git push origin master && cd ..
 ```
 Try in the app: Porter, source BarShow_v14, target SmallShow, step 2 tick *1. SETLIST*, step 4 open *Key / MIDI input* (SINCO, universe 2 → *same device already patched*), policy *Source wins* → export; the report's INPUT / MIDI section lists the 3 bindings moved from STROBE BLIND / the CueList. Then merge `feat/porter-midi` into `main` (it contains `feat/quickstart-porter`).
 
+**giopas, before the next session (Phase 1.3):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git -C .wt-showbook log --oneline -2                 # feat/showbook
+git push -u origin feat/showbook
+cd wiki && git push origin master && cd ..
+git worktree remove .wt-showbook                      # the branch stays
+```
+Try: open a show → Show Book → Generate Preview → VC Layout (pages, indented frames, Key / MIDI column) and Doctor summary → Export PDF. Merge order into `main`: `feat/quickstart-porter` → `feat/porter-midi` → `feat/showbook` (each contains the previous; merging `feat/showbook` alone brings all three).
+
 **Next Cowork session:**
-1. Results of giopas's QLC+ checks (1.5 translated file, 1.6 real MIDI case); fix what they show.
-2. Phase 1.3 Show Book, then 1.4 release v1.4.0.
+1. Results of giopas's tests (1.5 translated file in QLC+, 1.6 real MIDI case, 1.3 Show Book); fix what they show.
+2. Phase 1.4 release v1.4.0 (Alpha badges, wiki pages for Quick Start / Porter / Show Book / Doctor, VERSION, CHANGELOG, tag, forum post).
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.

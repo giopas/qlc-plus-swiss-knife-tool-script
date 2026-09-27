@@ -286,15 +286,39 @@ def _used_bindings(vc: Optional[ET.Element]) -> set:
     return used
 
 
-def _filter_bindings(unit: ET.Element, mode: str, used: set) -> Tuple[int, int]:
-    """Apply the binding policy to *unit*. Returns (kept, dropped)."""
+def _filter_bindings(unit: ET.Element, mode: str, used: set,
+                     tgt_owners: Optional[dict] = None, stolen: Optional[dict] = None,
+                     log: Optional[list] = None) -> Tuple[int, int]:
+    """Apply the binding policy to *unit*. Returns (kept, dropped).
+
+    *used*: binding keys already taken (target + earlier ported units).
+    *tgt_owners*: key → target widgets using it (for the log and
+    ``source_wins``); keys the ported widgets take over go to *stolen*.
+    """
+    from core import porter_input
+    tgt_owners = tgt_owners or {}
     kept = dropped = 0
-    for p in list(unit.iter()):
-        for c in list(p):
+    for w in [x for x in unit.iter() if _is_widget(x)]:
+        for _slot, p, c in porter_input.widget_bindings(w):
             k = _binding_key(c)
-            if k is None and _local(c.tag) != "KeySequence":
-                continue
-            drop = mode == "drop" or (mode == "keep_free" and k in used)
+            entry = {"widget": porter_input.widget_label(w),
+                     "binding": porter_input.describe(k) if k else "key sequence"}
+            owners = tgt_owners.get(k, []) if k else []
+            if mode == "drop":
+                drop, entry["action"] = True, "dropped (policy: drop all)"
+            elif mode == "source_wins" and owners:
+                drop = False
+                if stolen is not None:
+                    stolen.setdefault(k, owners)
+                entry["action"] = ("kept; removed from the target's "
+                                   + ", ".join(porter_input.widget_label(o) for o in owners))
+            elif mode == "keep_free" and k in used:
+                drop = True
+                entry["action"] = ("dropped: already used by the target's "
+                                   + ", ".join(porter_input.widget_label(o) for o in owners)
+                                   if owners else "dropped: already used by another ported widget")
+            else:
+                drop, entry["action"] = False, "kept"
             if drop:
                 p.remove(c)
                 dropped += 1
@@ -302,6 +326,12 @@ def _filter_bindings(unit: ET.Element, mode: str, used: set) -> Tuple[int, int]:
                 kept += 1
                 if k is not None:
                     used.add(k)
+            if log is not None:
+                log.append(entry)
+        for c in list(w):
+            if _local(c.tag) == "KeySequence" and mode == "drop":
+                w.remove(c)
+                dropped += 1
     for p in list(unit.iter()):
         for c in list(p):
             if (_local(c.tag) in {"Next", "Previous", "Stop", "Playback", "CrossFade"}
@@ -381,7 +411,8 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
     *blocks*  target fixture ID → [source fixture IDs] (from the Porter)
     *opts*    ``scope`` (list of widget keys, or empty for auto),
               ``target_page`` (target page ID, or empty for a new page),
-              ``page_caption``, ``bindings`` (keep_free | keep | drop)
+              ``page_caption``, ``bindings`` (keep_free | keep | source_wins | drop),
+              ``universe_map`` ({source universe ID: target universe ID})
 
     Returns a summary dict (``summary`` lines, ``dropped`` list, counts, pages).
     """
@@ -450,6 +481,13 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
         tgt_vc = ET.SubElement(tgt_root, "VirtualConsole")
     used = _used_bindings(tgt_vc)
     mode = opts.get("bindings") or "keep_free"
+    from core import porter_input
+    umap = {str(k): str(v) for k, v in (opts.get("universe_map") or {}).items()}
+    tgt_owners = porter_input.target_binding_owners(tgt_vc)
+    stolen: Dict[tuple, list] = {}
+    binding_log: List[dict] = []
+    input_used: Dict[str, str] = {}
+    remapped = 0
     caption = (opts.get("page_caption") or "").strip() or f"Ported from {src_name}"
     page_el = None
     if opts.get("target_page") not in (None, ""):
@@ -471,7 +509,12 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
     n_widgets = kept_b = dropped_b = 0
     for unit, _pg in ready:
         nid, _mapping = vc_ops._renumber(unit, nid)
-        k, d = _filter_bindings(unit, mode, used)
+        orig_u = {el: el.get("Universe") for el in unit.iter("Input")}
+        remapped += porter_input.remap_universes(unit, umap)
+        k, d = _filter_bindings(unit, mode, used, tgt_owners, stolen, binding_log)
+        for el in unit.iter("Input"):
+            if el.get("Universe") is not None and el.get("Channel") is not None:
+                input_used[orig_u.get(el, el.get("Universe"))] = el.get("Universe")
         kept_b += k
         dropped_b += d
         _, _, w, h = _rect(unit)
@@ -490,16 +533,24 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
         page.add(unit, *spot)
         n_widgets += sum(1 for x in unit.iter() if _is_widget(x))
 
+    moved = 0
+    for key, owners in stolen.items():
+        for w in owners:
+            moved += porter_input.remove_binding(w, key)
+
     target_caps = [p.get("Caption", "") for p in created] or [page_el.get("Caption", "")]
     summary.insert(0, f"{n_widgets} widget(s) in {len(ready)} unit(s) placed on page(s): "
                    + ", ".join(f"'{c}'" for c in target_caps)
                    + (" (new)" if created else ""))
     if kept_b or dropped_b:
-        summary.append(f"Key/MIDI bindings: {kept_b} kept, {dropped_b} dropped ({mode}).")
+        summary.append(f"Key/MIDI bindings: {kept_b} kept, {dropped_b} dropped ({mode})"
+                       + (f", {moved} removed from target widgets (source wins)" if moved else "")
+                       + (f", {remapped} moved to another universe" if remapped else "") + ".")
     if pruner.levels_reset:
         summary.append(f"{pruner.levels_reset} Level slider(s) set to their low limit.")
     if pruner.dropped:
         summary.append(f"{len(pruner.dropped)} widget(s) left out (function or fixtures not ported).")
     return {"summary": summary, "dropped": pruner.dropped, "widgets": n_widgets,
             "units": len(ready), "pages": [p.get("ID") for p in created],
-            "bindings_kept": kept_b, "bindings_dropped": dropped_b}
+            "bindings_kept": kept_b, "bindings_dropped": dropped_b,
+            "bindings_moved": moved, "binding_log": binding_log, "input_used": input_used}

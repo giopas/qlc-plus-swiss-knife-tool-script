@@ -1309,10 +1309,31 @@ def _build(plan: dict) -> dict:
         # space is reused.  Keys index the target as loaded (same order).
         from core import porter_vc
         removed_vc = porter_vc.remove_widgets(tgt_root, vc_opts["remove"])
+    input_used: dict[str, str] = {}
+    copied_bindings = None
+    if vc_opts.get("bindings_only"):
+        # 1.6: copy key/MIDI bindings onto matching (existing) target widgets
+        from core import porter_input, porter_vc
+        src_ws = None
+        if vc_opts.get("scope"):
+            keys = porter_vc.widget_keys(src_root)
+            src_ws = []
+            for k in vc_opts["scope"]:
+                el = keys.get(str(k))
+                if el is not None:
+                    src_ws += [w for w in el.iter() if porter_vc._is_widget(w) and w not in src_ws]
+        copied_bindings = porter_input.copy_bindings(src_root, tgt_root, kept_map, vc_opts, src_ws)
+        input_used.update(copied_bindings["used"])
     if vc_opts.get("enabled"):
         from core import porter_vc
         vc_result = porter_vc.port_vc(src_root, tgt_root, kept_map, blocks, vc_opts,
                                       src_name=_src["name"] or "source")
+        input_used.update(vc_result.get("input_used") or {})
+    input_patch = []
+    if input_used:
+        from core import porter_input
+        input_patch = porter_input.apply_patch(src_root, tgt_root, input_used,
+                                               vc_opts.get("copy_input", True))
 
     # ── 7. Serialize (indented like QLC+'s own files) ─────────────────────
     ET.indent(tgt_root, space=" ")
@@ -1329,6 +1350,8 @@ def _build(plan: dict) -> dict:
         "panic": panic,
         "removed_vc": removed_vc,
         "translated": translated,
+        "input_patch": input_patch,
+        "copied_bindings": (copied_bindings or {}).get("log", []),
         "_defs": defs,
     }
 
@@ -1764,6 +1787,22 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
                 lines.append(f"  - {r}")
             lines.append("")
         vc = result.get("vc")
+        blog = (vc or {}).get("binding_log") or []
+        if blog or result.get("input_patch") or result.get("copied_bindings"):
+            lines.append("── INPUT / MIDI ──")
+            for e in result.get("input_patch") or []:
+                mark = "⚠" if e["action"] in ("other_device", "none", "skipped") else "•"
+                lines.append(f"  {mark} {e['message']}")
+            for e in blog:
+                if e["action"] != "kept":
+                    lines.append(f"  - {e['widget']}: {e['binding']} — {e['action']}")
+            kept = sum(1 for e in blog if e["action"] == "kept")
+            if kept:
+                lines.append(f"  • {kept} binding(s) kept as they were")
+            for e in result.get("copied_bindings") or []:
+                src = f" (from {e['from']}, {e['how']})" if e.get("from") else ""
+                lines.append(f"  - {e['widget']}: {e['binding']} — {e['action']}{src}")
+            lines.append("")
         if vc:
             lines.append("── VIRTUAL CONSOLE ──")
             for ln in vc.get("summary", []):

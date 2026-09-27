@@ -3299,6 +3299,8 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 }
 
 /* Stats (Summary) */
+.sb-subhead { margin: 12px 0 4px; font-size: 13px; font-weight: 600; }
+.sb-subhead small { color: var(--text-dim); font-weight: 400; margin-left: 6px; }
 .sb-stats {
   display: flex;
   gap: 18px;

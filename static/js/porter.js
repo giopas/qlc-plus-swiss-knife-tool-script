@@ -518,6 +518,18 @@ async function _pRenderMapFixtures() {
     return;
   }
 
+  // A rig with none of the source's fixture types (e.g. a new Quick Start
+  // rig, WORKPLAN 1.5): "every exact match" would map nothing, so start
+  // with Fan-in by stage position (different types are translated).
+  const noExact = _pCandidates.source_fixtures.length
+    && _pCandidates.source_fixtures.every(f => !((_pCandidates.candidates[f.id] || {}).tier1 || []).length);
+  const stratEl = document.getElementById('porter-automap-strategy');
+  if (noExact && !Object.keys(_pFixMapping).length && stratEl && stratEl.value === 'all') {
+    stratEl.value = 'fan_in';
+    _pFanoutMode = 'fan_in';
+    _pDropUnmapped = true;
+  }
+
   // Auto-map the fixtures that have no mapping yet (others keep theirs)
   const missing = fxIds.filter(id => !(String(id) in _pFixMapping));
   if (missing.length) {

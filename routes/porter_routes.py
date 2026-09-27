@@ -131,7 +131,8 @@ def fixture_candidates():
         return jsonify({'error': 'No fixture IDs provided.'}), 400
 
     try:
-        result = porter.build_fixture_candidates(fixture_ids)
+        result = porter.build_fixture_candidates(fixture_ids,
+                                                 data.get('qxf_paths') or None)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

@@ -415,7 +415,8 @@ def _collect_refs(fn_el: ET.Element, fn_type: str,
 # Fixture compatibility
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def build_fixture_candidates(closure_fixture_ids: list[str]) -> dict:
+def build_fixture_candidates(closure_fixture_ids: list[str],
+                             qxf_paths: list[str] | None = None) -> dict:
     """
     For each source fixture referenced by the closure, find compatible
     target fixtures grouped by tier.
@@ -429,6 +430,8 @@ def build_fixture_candidates(closure_fixture_ids: list[str]) -> dict:
             tier2: [tgt fixtures],  # same model, different mode
             tier3: [tgt fixtures],  # different model (best-effort)
         }
+        tier2/tier3 entries carry ``translatable``: True when both fixture
+        definitions are known, so values are translated by capability.
     """
     if not _src["loaded"] or not _tgt["loaded"]:
         raise RuntimeError("Both source and target must be loaded.")
@@ -446,18 +449,28 @@ def build_fixture_candidates(closure_fixture_ids: list[str]) -> dict:
     # All target fixtures
     tgt_list = [_fixture_info(f) for f in tgt_engine.findall("Fixture")]
 
+    from core.capability_map import can_translate
+    defs = _load_defs({"qxf_paths": list(qxf_paths or [])})
+
+    def _def(inf):
+        return defs.get((inf["manufacturer"].strip().lower(), inf["model"].strip().lower()))
+
     candidates = {}
     for src_id, src_info in src_fixtures.items():
         tier1, tier2, tier3 = [], [], []
+        src_ok = can_translate(_def(src_info), src_info["mode"])
         for tgt in tgt_list:
             if (tgt["manufacturer"] == src_info["manufacturer"] and
                     tgt["model"] == src_info["model"]):
                 if tgt["mode"] == src_info["mode"]:
                     tier1.append(tgt)
-                else:
-                    tier2.append(tgt)
+                    continue
+                bucket = tier2
             else:
-                tier3.append(tgt)
+                bucket = tier3
+            # different type: translated by capability when both definitions are known
+            bucket.append(dict(tgt, translatable=bool(
+                src_ok and can_translate(_def(tgt), tgt["mode"]))))
         candidates[src_id] = {"tier1": tier1, "tier2": tier2, "tier3": tier3}
 
     return {
@@ -690,6 +703,59 @@ def _translators(src_infos: dict[str, dict], tgt_infos: dict[str, dict],
             if can_translate(sd, si["mode"]) and can_translate(td, ti["mode"]):
                 out[(s, t)] = (sd, si["mode"], td, ti["mode"])
     return out
+
+
+def translation_preview(func_ids: list[str], blocks: dict[str, list[str]],
+                        translatable: dict[tuple, tuple], defs: dict,
+                        strobe: str = "keep") -> dict:
+    """What the translation will do, before exporting (step 4 Validate):
+    notes of the scene/sequence values translated between fixture types
+    (counted per source → target pair) and EFX targets that will be left
+    out because they can't run the EFX mode.
+
+    Returns ``{"info": [...], "warnings": [...]}``.
+    """
+    from core.capability_map import translate_text
+    src_engine = _engine(_src["root"])
+    by_id = {fn.get("ID", ""): fn for fn in src_engine.findall("Function")}
+    feeds: dict[str, list[str]] = defaultdict(list)       # source → targets
+    for t, block in blocks.items():
+        for x in block:
+            feeds[x].append(t)
+    notes: dict[tuple, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    efx_warn: list[str] = []
+    efx_fit = _efx_fit(_fixture_infos(_tgt["root"]), defs)
+    for fid in func_ids:
+        fn = by_id.get(fid)
+        if fn is None:
+            continue
+        ftype = fn.get("Type", "")
+        vals: list[tuple[str, str]] = []
+        if ftype in ("Scene", "Sequence"):
+            vals = [(fv.get("ID", ""), fv.text or "") for fv in fn.findall("FixtureVal")]
+        if ftype == "Sequence":
+            for st in fn.findall("Step"):
+                vals += _parse_seq_step(st.text or "")
+        for x, text in vals:
+            for t in _id_sorted(feeds.get(x, [])):
+                if (x, t) in translatable:
+                    sd, sm, td, tm = translatable[(x, t)]
+                    for n in translate_text(sd, sm, td, tm, text, strobe=strobe)[1]:
+                        notes[(x, t)][n] += 1
+        if ftype == "EFX":
+            for el in _efx_fixtures(fn):
+                x = (el.findtext("ID") or "").strip()
+                need = {"0": "position", "1": "dimmer", "2": "rgb"}.get(
+                    (el.findtext("Mode") or "0").strip(), "position")
+                for t in _id_sorted(feeds.get(x, [])):
+                    if t in efx_fit and need not in efx_fit[t]:
+                        efx_warn.append(f"EFX {fid} '{fn.get('Name', '')}': target fixture {t} "
+                                        f"has no {need} — it is left out of the EFX.")
+    info = []
+    for (x, t) in sorted(notes, key=lambda p: (_id_sorted([p[0]])[0], _id_sorted([p[1]])[0])):
+        parts = [f"{n} ({c}×)" for n, c in sorted(notes[(x, t)].items())]
+        info.append(f"Translation source {x} → target {t}: " + "; ".join(parts) + ".")
+    return {"info": info, "warnings": efx_warn}
 
 
 def _efx_fit(tgt_infos: dict[str, dict], defs: dict) -> dict[str, set]:
@@ -951,7 +1017,8 @@ def validate(plan: dict) -> dict:
         for c in cycles:
             warnings.append(f"Reference cycle detected: {c}")
 
-    translatable = (_translators(src_infos, tgt_infos, blocks, _load_defs(plan))
+    defs = _load_defs(plan) if _src["loaded"] and _tgt["loaded"] else {}
+    translatable = (_translators(src_infos, tgt_infos, blocks, defs)
                     if plan.get("translate_types", True) else {})
     for t, block in sorted(blocks.items(), key=lambda kv: _id_sorted([kv[0]])[0]):
         for s in block:
@@ -966,6 +1033,11 @@ def validate(plan: dict) -> dict:
                     warnings.append(
                         f"{pair}: different fixture type and no fixture definition for "
                         f"one of them, values are copied channel by channel.")
+    if _src["loaded"] and _tgt["loaded"]:
+        pv = translation_preview(func_ids, blocks, translatable, defs,
+                                 plan.get("strobe", "keep"))
+        info.extend(pv["info"])
+        warnings.extend(pv["warnings"])
 
     # Check name collisions with target
     if _tgt["loaded"] and _src["loaded"]:

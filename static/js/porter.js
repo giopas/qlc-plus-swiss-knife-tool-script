@@ -557,7 +557,6 @@ async function _pRenderMapFixtures() {
     options += _opt(cands.tier2 || [], 'Same model, different mode');
     options += _opt(cands.tier3 || [], 'Different model');
 
-    const hasTier1 = (cands.tier1 || []).length > 0;
 
     const skipped = _pSkipFx.has(String(srcId));
     html += `<tr class="porter-map-row${skipped ? ' porter-skipped' : ''}${_pHlSticky === String(srcId) ? ' porter-hl' : ''}"
@@ -577,7 +576,7 @@ async function _pRenderMapFixtures() {
                 size="${Math.min(5, (cands.tier1||[]).length + (cands.tier2||[]).length + 2)}">
           ${options || '<option disabled>No target fixtures available</option>'}
         </select>
-        ${!hasTier1 ? '<small class="porter-warn">⚠ No exact match in target</small>' : ''}
+        <span id="porter-xlate-${srcId}">${_pXlateBadge(srcId)}</span>
       </td>
       <td>
         <label><input type="checkbox" class="porter-mirror-cb" data-src-id="${srcId}"
@@ -632,9 +631,33 @@ async function _pRenderMapFixtures() {
   _pStatus(`${_pCandidates.source_fixtures.length} source fixture(s) to map.`, 'info');
 }
 
+/**
+ * Step 3 badge (WORKPLAN 1.5): how the values of this source fixture reach
+ * its chosen target(s) — copied (same type), translated by capability
+ * (different type, both definitions known) or copied channel by channel
+ * (different type, a definition missing: check the result).
+ */
+function _pXlateBadge(srcId) {
+  const cands = (_pCandidates && _pCandidates.candidates[srcId]) || {};
+  const mapped = _pFixMapping[srcId] || [];
+  const byId = {};
+  for (const t of (cands.tier2 || []).concat(cands.tier3 || [])) byId[String(t.id)] = t;
+  const other = mapped.map(String).filter(id => byId[id]);
+  if (!mapped.length) {
+    return (cands.tier1 || []).length ? '' : '<small class="porter-warn">⚠ No exact match in target</small>';
+  }
+  if (!other.length) return '';
+  if (other.every(id => byId[id].translatable)) {
+    return '<small class="porter-ok" data-tooltip="Different fixture type: intensity, colour (mix ↔ wheel), pan/tilt, shutter and gobo are translated; other channels get their neutral value. Details in step 4 and in the port report.">↔ Different type — values translated by capability</small>';
+  }
+  return '<small class="porter-warn" data-tooltip="A fixture definition (.qxf) is missing for this pair, so values are copied by channel number. Put the .qxf next to the workspace or install it in QLC+.">⚠ Different type, definition missing — values copied channel by channel</small>';
+}
+
 function porterUpdateMapping(srcId, selectEl) {
   const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
   _pFixMapping[srcId] = selected;
+  const b = document.getElementById('porter-xlate-' + srcId);
+  if (b) b.innerHTML = _pXlateBadge(srcId);
   _pDrawPlans();
 }
 

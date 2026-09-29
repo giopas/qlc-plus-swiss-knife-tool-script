@@ -132,6 +132,10 @@
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Show Book</span>
     </button>
+    <button class="sn-item" id="sn-doctor" data-tip="Workspace Doctor" data-desc="Check the open workspace for broken references, LTP bleed, strobe left on, a PANIC RESET that can't reset… and fix what you tick into a new file." onclick="go('doctor')">
+      <svg class="ic"><use href="/static/icons.svg#check-square"/></svg>
+      <span>Workspace Doctor</span>
+    </button>
 
   </div>
 
@@ -1690,6 +1694,46 @@
   </section>
 
   <!-- ======================================================================
+       WORKSPACE DOCTOR (WORKPLAN 2.1)
+  ====================================================================== -->
+  <section class="screen" id="scr-doctor">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#check-square"/></svg></div>
+      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the open workspace and fix what you tick — the fixed copy is saved as a new file.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <button class="btn btn-surface" onclick="doctorCheck()">🔍 Check</button>
+      <span id="doc-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <label class="doc-opt"><input type="checkbox" id="doc-show-info" onchange="doctorRender()"> Show info</label>
+      <button class="btn btn-surface btn-sm" onclick="doctorSelect('default')" data-tooltip="Tick every fix that doesn't delete functions">✓ Recommended</button>
+      <button class="btn btn-surface btn-sm" onclick="doctorSelect('all')" data-tooltip="Tick every fixable finding, removals included">✓ All</button>
+      <button class="btn btn-surface btn-sm" onclick="doctorSelect('none')">✗ None</button>
+    </div>
+
+    <div id="doc-list" class="doc-list">
+      <div class="porter-placeholder">Open a workspace and press 🔍 Check.</div>
+    </div>
+
+    <div id="doc-result" class="porter-summary-box" hidden></div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> + fix report — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="doctorCopyReport()">📋 Copy Report</button>
+      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorFix()" disabled>💾 Fix selected → new file…</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        QUICK START QXW WIZARD
   ====================================================================== -->
   <section class="screen" id="scr-quickstart">
@@ -2024,6 +2068,7 @@
 <script src="/static/js/merger.js?v={{ asset_v }}"></script>
 <script src="/static/js/porter.js?v={{ asset_v }}"></script>
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
+<script src="/static/js/doctor.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>
 <script src="/static/js/session.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>

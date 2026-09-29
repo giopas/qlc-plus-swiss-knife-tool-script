@@ -279,7 +279,10 @@ core/
   pdf.py                 ← Pure-Python PDF builder (no reportlab)
   porter.py              ← Function Porter: dependency resolver, fixture remapper, fan-in, Doctor gate, report
   porter_vc.py           ← Function Porter: VC widget porting (pruning, IDs, placement, removal)
-  doctor/                ← Workspace Doctor: read-only checks + CLI (python -m core.doctor)
+  porter_input.py        ← Function Porter: input patch, key/MIDI bindings, universe remap
+  capability_map.py      ← Capability translation between fixture types
+  doctor/                ← Workspace Doctor: checks, fixes (fixes.py) + CLI (python -m core.doctor)
+  rig_reducer.py         ← Rig Reducer: remove fixtures with cascade, re-patch, Doctor diff
   quick_start/           ← Quick Start: channel model, VC generator, profiles, QXW builder
   qxw_io.py              ← the one safe QXW reader/writer (never overwrites)
   showbook.py            ← Show Book: document generator, PDF/CSV exporter
@@ -295,6 +298,8 @@ routes/
   fixture_routes.py      ← /api/fixture/*
   porter_routes.py       ← /api/porter/*
   showbook_routes.py     ← /api/showbook/*
+  doctor_routes.py       ← /api/doctor/*
+  reducer_routes.py      ← /api/reducer/*
   id_browser_routes.py   ← /api/functions, /api/vc-widgets
   session_routes.py      ← /api/session/*
   picker_routes.py       ← /api/picker/* (native OS file picker)

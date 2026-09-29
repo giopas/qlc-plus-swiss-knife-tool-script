@@ -8,6 +8,7 @@
 - v1.7.0 released by giopas (main `7d31694`, tag `v1.7.0`).
 - giopas's mesh sample (`mesh test.qxw` + `Bassist.obj` + `cube.obj`, QLC+ 5.2.2) + QLC+ source (`mainview3d.cpp`, `monitorproperties.cpp`, `StageSimple.qml`) → format and placement formula recorded in the wiki page *Stage and Meshes*. His request: fix mesh positions so "on the floor" really is 0 (his bassist needed Y −755 by eye).
 - **2.5 Stage and Meshes — done** on branch `feat/stage-meshes` (from `main`; commit `7053f07` + docs/release commit; wiki *Stage and Meshes* page). **v1.8.0 prepared** on the same branch. 517 tests green; tab browser-checked on Festival_14fix (plan/front views, drag, put all on the floor, add from library). **Open: confirm in QLC+ that the Simple ground floor is at 0.1 m** (read from `StageSimple.qml`: 0.2 m slab centred on 0; his eyeballed values sit 45–55 mm above it) — see §8.
+- giopas's check: Simple ground floor at 0.1 m confirmed in QLC+ ("It works!"). His request: place one or several meshes with one click → `stage3d.arrange()` + *Place* card: to the stage edges / centre (group, gap to the edge), floor / ceiling (each), line up (8), space evenly between the outer two or across the stage (X/Z), nudge (buttons, arrow keys, PgUp/PgDn, Shift = fine); multi-select (Shift/⌘-click, select all/none), group drag. `tests/test_stage3d.py` 15 tests. 523 tests green; browser-checked.
 - Next: **2.6 Benchmark** → v2.0.0.
 
 **Status (29 Sep, later — Phase 2.4 done, v1.7.0 prepared):**
@@ -538,7 +539,7 @@ git checkout feat/stage-meshes
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q
 python3 app.py
 ```
-(expect 517 passed.) Check first: open `~/Downloads/mesh test.qxw` → Stage & Meshes → the bassist says "floats 45 mm", the cube "floats 55 mm" → ⤓ Put all on the floor → 💾 Save → open the new file in QLC+: both must stand exactly on the Simple ground (bassist Y −800, cube Y 100). Then a show on a Simple box / Rock stage (floor at 0), e.g. the Festival show meshes → put all on the floor → QLC+. Then:
+(expect 523 passed.) Check first: open `~/Downloads/mesh test.qxw` → Stage & Meshes → the bassist says "floats 45 mm", the cube "floats 55 mm" → ⤓ Put all on the floor → 💾 Save → open the new file in QLC+: both must stand exactly on the Simple ground (bassist Y −800, cube Y 100). Then a show on a Simple box / Rock stage (floor at 0), e.g. the Festival show meshes → put all on the floor → QLC+. Then:
 ```bash
 git push -u origin feat/stage-meshes
 git checkout main && git pull --ff-only

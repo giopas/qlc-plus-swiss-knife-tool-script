@@ -29,6 +29,16 @@ def main(argv=None) -> int:
                     help="list every finding (text mode shows 10 per check)")
     ap.add_argument("--min-severity", choices=SEVERITIES, default="info",
                     help="hide less severe findings in text mode")
+    ap.add_argument("--fix", action="store_true",
+                    help="write a fixed copy <name>_v<N+1>.qxw (+ _fix_report.txt); "
+                         "the original is never changed")
+    ap.add_argument("--codes", default="", metavar="CODES",
+                    help="with --fix: comma-separated codes to fix (default: "
+                         "D002,D003,D005,D006,D007,D008,D017 — no removals)")
+    ap.add_argument("--remove", action="store_true",
+                    help="with --fix: also remove empty (D004), unnamed unused (D015) "
+                         "and unused (D016) functions")
+    ap.add_argument("--out", metavar="PATH", help="with --fix: output file (one input only)")
     args = ap.parse_args(argv)
 
     allow = [x.strip() for x in args.allow_fx.split(",") if x.strip()]
@@ -39,6 +49,15 @@ def main(argv=None) -> int:
             print(f"error: no such file: {path}", file=sys.stderr)
             return 2
         defs = load_qxf_defs([os.path.dirname(os.path.abspath(path))] + args.qxf)
+        if args.fix:
+            from core.doctor import fixes
+            codes = ({c.strip().upper() for c in args.codes.split(",") if c.strip()}
+                     or set(fixes.DEFAULT_CODES) | (fixes.REMOVING if args.remove else set()))
+            out = fixes.fix_file(path, defs, out_path=args.out if len(args.files) == 1 else None,
+                                 codes=codes, allow_fx=allow)
+            res = out["result"]
+            print(f"{len(res.actions)} fix(es) → {out['output']}  (report: {out['report_path']})")
+            path = out["output"]
         rep = check_file(path, defs, allow_fx=allow)
         if args.json:
             out_json.append(rep.to_dict())

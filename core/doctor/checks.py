@@ -154,7 +154,9 @@ class _Workspace:
             fid = f.get("ID")
             for kind, ref in self._function_refs(f):
                 self.children[fid].append((kind, ref))
-                if ref:
+                # a script that only *stops* a function doesn't use it
+                # (a PANIC RESET script stops everything) — not a parent
+                if ref and kind != "script-stop":
                     self.parents[ref].add(fid)
 
         # virtual console
@@ -193,7 +195,8 @@ class _Workspace:
             for cmd in f.findall("Command"):
                 # QLC+ saves script commands percent-encoded ("%3A" = ":")
                 for m in SCRIPT_FUNC_RE.finditer(unquote(cmd.text or "")):
-                    yield "script", m.group(1)
+                    stop = m.group(0).lower().startswith("stop")
+                    yield ("script-stop" if stop else "script"), m.group(1)
 
     def _walk_vc(self, el: ET.Element, page: str):
         self.widgets.append((el, page))

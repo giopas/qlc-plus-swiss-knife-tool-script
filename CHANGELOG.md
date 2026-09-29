@@ -7,6 +7,21 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-09-29
+
+Phase 2.5: the meshes on the 3D stage, placed by what you see.
+
+### Added
+- **Stage & Meshes** (Phase 2.5, `core/stage3d.py`, tab under *Build the rig*):
+  - **Plan** and **front** views of the 3D stage with the fixtures and the meshes (band members, risers, truss …); drag a mesh to move it (10 mm steps).
+  - Meshes are placed by **what you see** — centre X from the left edge, centre Z from the back edge, **bottom above the floor** — and written back as QLC+'s `XPos/YPos/ZPos` (which depend on how the model was drawn: a 1.8 m character with its feet at 0 needs `YPos −900` to stand on the floor). The list flags meshes that **float** or **sink**; **⤓ On the floor** / **⤓ Put all on the floor** fixes them exactly (from the model's vertices, after rotation and scale).
+  - Rotation and scale that keep the model on its spot and on the floor; name; relink the model file; duplicate; remove.
+  - **Place one or several meshes** (Shift/⌘-click to select several; *Select all* / *None*): **to the stage edges** — left, right, back, front, centre (the selection moves as a group, keeping its spacing; optional gap to the edge); **on the floor** / **to the ceiling** (each mesh); **line up** left / centre / right edges, backs / centres / fronts, bottoms / tops; **space evenly** between the outer two (left–right, back–front) or **across the whole stage** width / depth; **nudge** by a step with buttons or the **arrow keys** (PgUp/PgDn for height, Shift = fine). Dragging one of several selected meshes moves them all. (`stage3d.arrange()`)
+  - **Add a mesh** from your folders of `.obj` models (remembered in `~/.qlc_swiss_knife/mesh_dirs.json`), or by path — centre of the stage, on the floor.
+  - **Stage** type and size, meshes kept in place.
+  - Undo, discard, and 💾 Save → new file `<name>_v<N+1>.qxw` + `<name>_v<N+1>_stage_report.txt`. API `/api/stage/*` (`op: arrange` for the placement tools).
+- Wiki page *Stage and Meshes*: how QLC+ 5 stores and places meshes (`MeshItem`, `Res` paths, the placement formula, the floor height of each stage type).
+
 ## [1.7.0] — 2026-09-29
 
 Phase 2.4: the VC Visual Editor now **builds** the Virtual Console, not only tidies it.

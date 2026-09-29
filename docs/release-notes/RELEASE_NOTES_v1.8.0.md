@@ -6,6 +6,7 @@
   - Place meshes by **what you see**: the centre on the stage and the height above the floor, instead of QLC+'s raw position numbers (which depend on how the model was drawn — that's why a bassist standing on the floor ends up at `Y −755` or `−900`).
   - The list shows which models **float** or **sink**, and by how much; **⤓ Put all on the floor** fixes them exactly.
   - Drag a mesh in either view; rotate and scale it while it stays on its spot and on the floor; duplicate, remove, relink its model file.
+  - **Place several meshes at once**: to the left, right, back, front or centre of the stage (as a group, with an optional gap to the edge), each on the floor or up to the ceiling, lined up (edges, centres, bottoms, tops), spaced evenly between the outer two or across the whole stage, nudged with buttons or the arrow keys.
   - **Add models** from your mesh folders — they arrive in the centre of the stage, standing on the floor.
   - Change the stage type and size; the meshes keep their place.
 - Wiki: how QLC+ 5 stores and places meshes, and where its floor is for each stage type.

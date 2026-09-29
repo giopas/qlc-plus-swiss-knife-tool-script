@@ -7,6 +7,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-09-29
+
+### Added
+- **Stage & Meshes — fixtures in the placement** (giopas's request): fixtures are drawn with their real body size (from the `.qxf` dimensions; 300 mm when unknown), can be selected (in the views or the new *Fixtures* list) and dragged, and take part in every placement tool. With meshes **and** fixtures selected, *Move: only the meshes / only the fixtures / everything* keeps the others where they are as the **reference**: e.g. a mesh + two fixtures, *only the meshes*, **centres ↔** → the mesh stands exactly between the fixtures; *space evenly* puts it at equal gaps; a fixture + the drummer, *only the fixtures*, centres ↔ and ↕ → the fixture right above the drummer. A single fixture can be moved by its centre and height (its tilt and pan stay). The report lists moved fixtures. (`stage3d.fixtures()`, `move_fixture()`, `arrange(move=…)`)
+
 ## [1.8.0] — 2026-09-29
 
 Phase 2.5: the meshes on the 3D stage, placed by what you see.

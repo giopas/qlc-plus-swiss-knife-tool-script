@@ -36,6 +36,7 @@ let _vceThresholds = [2, 5];     // [minor, major]
 let _vceDragStart  = null;   // {ax, ay, sx, sy, add} where the drag started
 let _vceDragRect   = null;   // {x1,y1,x2,y2} current rubber-band rect
 let _vceSuppressClick = false;  // true right after a rubber-band drag
+let _vceMoveDrag   = null;   // {ax, ay, sx, sy, ids, orig:{id:{x,y}}, snap, moved} drag-to-move
 const VCE_DRAG_PX  = 4;      // screen pixels before a press becomes a drag
 const VCE_ZOOM_MIN = 0.1, VCE_ZOOM_MAX = 4.0;
 
@@ -112,6 +113,7 @@ async function _vceLoad() {
   }
   _vceSelectPage(0);
   _vceStatus(`Loaded ${_vcePages.length} page(s) — ${Object.keys(_vceNodes).length} widgets`, 'ok');
+  if (typeof vcbLoadInfo === 'function') vcbLoadInfo();
   _vceCheckDuplicates();
 }
 
@@ -125,6 +127,8 @@ function _vceSelectPage(idx) {
   _vceFitPage();
   _vceRender();
   _vceRenderProps();
+  const pn = document.getElementById('vcb-pname');
+  if (pn && _vcePage) pn.value = _vcePage.caption || '';
 }
 
 // Build flat id→node map with absolute canvas coords
@@ -264,7 +268,8 @@ function _vceSetupCanvas() {
 
   document.addEventListener('keydown', _vceOnKey);
   // finish a box-select even if the mouse is released outside the canvas
-  document.addEventListener('mouseup', e => { if (_vceDragStart) _vceOnMouseUp(e); });
+  document.addEventListener('mouseup', e => { if (_vceDragStart || _vceMoveDrag) _vceOnMouseUp(e); });
+  if (typeof _vcbSetupCanvas === 'function') _vcbSetupCanvas(cv);
 }
 
 function _vceIsActive() {
@@ -287,6 +292,8 @@ function _vceOnKey(e) {
     _vceSel = new Set(Object.values(_vceNodes)
       .filter(n => n.type !== 'Frame' && n.type !== 'SoloFrame').map(n => n.id));
     _vceRender(); _vceRenderProps();
+  } else if (typeof _vcbOnKey === 'function' && _vcbOnKey(e, mod)) {
+    // handled by the VC Builder (Delete, ⌘D)
   } else if (e.key === 'Escape' && _vceSel.size) {
     _vceSel.clear(); _vceRender(); _vceRenderProps();
   }
@@ -496,6 +503,23 @@ function _vceHitTest(ax, ay) {
 
 function _vceOnMouseMove(e) {
   const [ax, ay] = _vceCanvasXY(e);
+  if (_vceMoveDrag) {
+    const m = _vceMoveDrag;
+    if (!m.moved && Math.hypot(e.clientX - m.sx, e.clientY - m.sy) < VCE_DRAG_PX) return;
+    if (!m.moved) { m.moved = true; _vcePush(m.before); }
+    const g = m.snap, dx = ax - m.ax, dy = ay - m.ay;
+    m.ids.forEach(id => {
+      const n = _vceNodes[id]; if (!n) return;
+      n.x = Math.max(0, Math.round((m.orig[id].x + dx) / g) * g);
+      n.y = Math.max(0, Math.round((m.orig[id].y + dy) / g) * g);
+      n._alignQ = 0;
+      Object.assign(_vceChanges[id] = _vceChanges[id] || {}, { x: n.x, y: n.y });
+    });
+    _vceRedrawPage();
+    const f = _vceNodes[m.ids[0]];
+    if (f) _vceStatus(`Moving ${m.ids.length} widget(s) — x:${f.x} y:${f.y}${g > 1 ? ` (grid ${g}px)` : ''}`, 'ok');
+    return;
+  }
   const hit = _vceHitTest(ax, ay);
   const newHov = hit ? hit.id : null;
   if (newHov !== _vceHov) { _vceHov = newHov; _vceRender(); }
@@ -524,6 +548,21 @@ function _vceOnMouseMove(e) {
 function _vceOnMouseDown(e) {
   if (e.button !== 0) return;
   const [ax, ay] = _vceCanvasXY(e);
+  // Press on an already selected widget (not the page) → drag to move the
+  // selection, snapped to the grid when "snap while dragging" is on.
+  const hit0 = _vceHitTest(ax, ay);
+  if (hit0 && _vceSel.has(hit0.id) && hit0.id !== (_vcePage && _vcePage.id) &&
+      !(e.shiftKey || e.metaKey || e.ctrlKey)) {
+    const ids = [..._vceSel].filter(id => _vceNodes[id] && id !== _vcePage.id);
+    const orig = {};
+    ids.forEach(id => { orig[id] = { x: _vceNodes[id].x, y: _vceNodes[id].y }; });
+    const snapOn = document.getElementById('vce-snap-drag')?.checked !== false;
+    const grid = parseInt(document.getElementById('vce-snap-grid')?.value) || 5;
+    _vceMoveDrag = { ax, ay, sx: e.clientX, sy: e.clientY, ids, orig,
+                     snap: snapOn ? grid : 1, moved: false, before: _vceLocalSnapshot() };
+    e.preventDefault();
+    return;
+  }
   // Any press can become a rubber-band once the mouse moves VCE_DRAG_PX —
   // pages are covered by frames, so "only on empty space" never triggered.
   _vceDragStart = { ax, ay, sx: e.clientX, sy: e.clientY,
@@ -533,6 +572,11 @@ function _vceOnMouseDown(e) {
 }
 
 function _vceOnMouseUp(e) {
+  if (_vceMoveDrag) {
+    if (_vceMoveDrag.moved) { _vceSuppressClick = true; _vceStatus(`Moved ${_vceMoveDrag.ids.length} widget(s) · not saved yet`, 'ok'); }
+    _vceMoveDrag = null;
+    return;
+  }
   if (_vceDragRect && _vceDragStart) {
     // Rubber-band selection
     const r = _vceDragRect;
@@ -588,7 +632,7 @@ function _vceRenderProps() {
     pp.innerHTML = `<div style="color:var(--text-muted);font-size:11px;padding:20px 0;text-align:center">
       Click a widget to select<br>Shift/⌘-click to add or remove<br>Drag to box-select (Shift/⌘ adds)<br>
       Pinch or ⌘/Ctrl+scroll to zoom · ⌘0 fit<br>Esc clears · ⌘A selects all<br>
-      Select widgets or frames to copy / move them to another page
+      Drag a selected widget to move it (snaps to the grid)<br>Delete removes · ⌘D duplicates<br>Drag a function from the list onto the canvas to wire or add a button<br>Select widgets or frames to copy / move them to another page
     </div>${legend}`;
     return;
   }
@@ -667,6 +711,8 @@ function _vceRenderProps() {
 
     <div class="vce-pl">Font colour</div>
     <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px">${fgSwatches}</div>
+
+    ${typeof _vcbSelectionHtml === 'function' ? _vcbSelectionHtml(selArr) : ''}
 
     ${_vceCopyMoveHtml(selArr)}
 

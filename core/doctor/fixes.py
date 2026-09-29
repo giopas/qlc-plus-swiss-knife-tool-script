@@ -200,6 +200,9 @@ def _unlink_function(root, fid: str) -> List[str]:
                 if fe.get("ID") == fid:
                     fe.set("ID", NONE_ID)
                     out.append(f"{w.tag} '{(w.get('Caption') or '').strip()}' unlinked")
+                elif fe.get("ID") is None and (fe.text or "").strip() == fid:
+                    fe.text = NONE_ID           # slider playback: <Function>id</Function>
+                    out.append(f"{w.tag} '{(w.get('Caption') or '').strip()}' unlinked")
     return out
 
 

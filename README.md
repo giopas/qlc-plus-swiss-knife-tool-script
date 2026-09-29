@@ -21,6 +21,7 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 ## What's new in v1.8.1
 
 - **Stage & Meshes**: fixtures join the placement tools — place a mesh exactly between two fixtures, a fixture right above a mesh, or move fixtures with the same buttons, drag and arrow keys.
+- **Start screen and side menu by job**, with the same 1–6 groups in both: New show · Adapt a show · Create · Run the show · Check & fix · Document.
 
 ## What's new in v1.8.0
 
@@ -111,6 +112,8 @@ Export your entire workspace as structured show paperwork — **PDF** or **CSV (
 ---
 
 ## Features
+
+The tools are grouped by job, numbered 1–6 in the side menu and on the Start screen: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter, QXW Merger, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Book, Checklist, Tech Rider).
 
 ### Setlist Manager
 Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand.

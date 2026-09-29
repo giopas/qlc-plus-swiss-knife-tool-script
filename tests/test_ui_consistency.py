@@ -40,3 +40,22 @@ def test_output_notes_present():
 def test_local_assets_are_cache_busted():
     for url in re.findall(r'(?:href|src)="(/static/(?:css|js)/[^"]+)"', HTML):
         assert "?v={{ asset_v }}" in url, url
+
+
+def test_start_cards_match_side_menu_groups():
+    """Start cards 1-6 and the side-menu groups 1-6: same numbers, names and tools."""
+    nav = HTML[HTML.index('<div class="side-nav">'):HTML.index('<!-- Files panel -->')]
+    groups = {}
+    for m in re.finditer(r'id="sn-grp-(\d)"><span class="sn-gnum">(\d)</span><span class="sn-gtxt">(.*?)</span>(.*?)(?=<div class="sn-group-label"|$)', nav, re.S):
+        assert m.group(1) == m.group(2)
+        groups[m.group(1)] = (m.group(3), re.findall(r'id="sn-(\w+)"', m.group(4)))
+    assert sorted(groups) == list("123456")
+    start = HTML[HTML.index('id="scr-start"'):]
+    start = start[:start.index('</section>')]
+    cards = re.findall(r'<div class="wf-card" data-grp="(\d)">\s*<div class="wf-head"><div class="wf-num">(\d)</div><div class="wf-title">(.*?)</div>.*?<div class="wf-chips">(.*?)</div>', start, re.S)
+    assert len(cards) == 6
+    for grp, num, title, chips in cards:
+        assert grp == num and groups[grp][0] == title, (grp, title)
+        assert re.findall(r"go\('(\w+)'\)", chips) == groups[grp][1], title
+    every = [t for _, tools in groups.values() for t in tools]
+    assert len(every) == len(set(every)) == len(re.findall(r'<button class="sn-item" id="sn-', nav))

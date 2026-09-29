@@ -4,6 +4,9 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep, later still — Start and side menu by job, added to v1.8.1):**
+- giopas's report on the v1.8.1 Start page: *"Build the rig"* opened only Fixtures although the group has more tools, and the Start cards 1–6 did not match the side menu. Fixed on branch `feat/start-sidebar` (stacked on `feat/stage-fixtures`), part of the v1.8.1 release: the side menu and the Start cards share the same **six numbered groups by job** — 1 New show (Quick Start, Fixtures) · 2 Adapt a show (Rig Reducer, Function Porter, QXW Merger, Brightness) · 3 Create (Look Builder, VC Visual Editor, Stage & Meshes) · 4 Run the show (Setlist, Trigger Manager, Dictionary) · 5 Check & fix (Workspace Doctor, ID Browser) · 6 Document (Show Book, Checklist, Tech Rider). Each card shows its tools as buttons; hovering a card lights up those tools in the menu; the collapsed menu shows the numbers. New purpose text; the empty recent-files box hidden. Test `test_start_cards_match_side_menu_groups` keeps both in step. 527 tests green; browser-checked. Wiki Home, Sessions-and-Files and the "sidebar →" hints updated. This is the first part of the 2.6 Start/Navigation tasks (the route cards and the show-in-progress model are still to come).
+
 **Status (29 Sep, late night — v1.8.1 prepared: fixtures in the Stage placement):**
 - giopas's feedback on the mock-up: (1) a tool that changed the show in progress gets an **orange dot** in the sidebar — useful in long sessions (added to 2.6 and to the mock-up); (2) **arrange meshes along fixtures and back** (e.g. a mesh between two fixtures) → built now as **v1.8.1** on branch `feat/stage-fixtures` (stacked on `feat/ui-audit`): `stage3d.fixtures()` with body sizes from the .qxf `<Dimensions>` (300 mm default; XPos/ZPos = left/back edge, YPos = underside, from QLC+ `updateFixturePosition`), `move_fixture()`, `arrange(move=all|meshes|fixtures)` where the non-moving items are the reference; fixtures selectable/draggable in the views, *Fixtures* list, *Move* choice, fixture editor; report lists fixture moves. 526 tests green; browser-checked (bassist centred between Wing Left / Wing Right, backs aligned; fixture drag). Commands in §8.
 - Next: giopas's go on the mock-up → 2.6.
@@ -438,7 +441,7 @@ Checks (★ = included in Phase 1.0):
 - [ ] **Show in progress** (above): session model + history + header bar + Apply in every tool + one Save; tests that every tool's apply equals its old export byte for byte.
 - [ ] **Merger into the Porter**: the Porter's step 2 gains *fixtures* and *groups* (what the Merger copies) next to functions and VC widgets; the QXW Merger tab goes (wiki page redirects to the Porter).
 - [ ] **Start screen** (A1, A2): one sentence of purpose (*"Build, adapt, check and document QLC+ 5 shows — every change goes to a new file, your original is never touched"*); **"What do you want to do?"** cards by job, each opening the right tool and saying what it produces: *Start a new show* (Quick Start) · *Adapt a show to a new venue* (Rig Reducer → Function Porter → Look Builder → VC Editor → Stage & Meshes → Doctor — the Pub workflow) · *Get ready for the gig* (Setlist, Trigger Manager, Show Book) · *Check and fix a show* (Doctor); the open-file zone at the top, sessions below as "recent"; show name/date moved to where they're used (Show Book, Tech Rider); a short "what's new in this version" line.
-- [ ] **Navigation** (A3, A4, A9): sidebar grouped by job — *Start* · *New show*: Quick Start, Fixtures · *Adapt a show*: Rig Reducer, Function Porter, QXW Merger · *Create*: Look Builder, VC Editor, Stage & Meshes · *Run the show*: Setlist, Trigger Manager, Dictionary · *Check & document*: Doctor, Show Book, Checklist, Tech Rider, ID Browser · *Adjust*: Brightness. One-line "use this when…" in each tooltip for the overlapping pairs; badges reviewed (VC Editor out of Beta; Merger: keep α or fold into the Porter — decide with giopas).
+- [ ] **Navigation** (A3, A4, A9) — *first part done in v1.8.1: menu and Start cards share six numbered groups (New show · Adapt a show · Create · Run the show · Check & fix · Document); Brightness sits in Adapt a show, the Doctor and ID Browser in Check & fix, the paperwork in Document* — sidebar grouped by job — *Start* · *New show*: Quick Start, Fixtures · *Adapt a show*: Rig Reducer, Function Porter, QXW Merger · *Create*: Look Builder, VC Editor, Stage & Meshes · *Run the show*: Setlist, Trigger Manager, Dictionary · *Check & document*: Doctor, Show Book, Checklist, Tech Rider, ID Browser · *Adjust*: Brightness. One-line "use this when…" in each tooltip for the overlapping pairs; badges reviewed (VC Editor out of Beta; Merger: keep α or fold into the Porter — decide with giopas).
 - [ ] **One screen pattern** (A5, A6, A8, A10): header (what it does + *?* link to its wiki page) · work area · an *inspector* on the right with **tabs when it has more than three sections** (as in the VC Editor) · footer with the single primary action and what it writes. Apply to Look Builder (tabs *Looks · Chasers · Build*), Stage & Meshes (*Selection · Place · Add · Stage*), Setlist (fewer columns: slot list + songs, functions in a drawer), Doctor / Show Book / Merger / Porter (primary action to the footer). Empty states always say the next step.
 - [ ] **Words** (A7): one verb for writers — **"💾 Save as new file…"** (Save dialog, `<name>_v<N+1>.qxw` suggested) and the same footer note everywhere; a glossary line in the wiki (*workspace = the .qxw show file*).
 - [ ] **Usability check** with giopas on a real show after each screen, and a UI consistency test (`tests/test_ui_consistency.py`: one primary per footer — exists; add: every screen has a wiki link, the same save verb, an empty-state text).
@@ -600,16 +603,16 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
-**giopas — release v1.8.1 (fixtures in the Stage placement), branch `feat/stage-fixtures`:**
+**giopas — release v1.8.1 (fixtures in the Stage placement + Start and menu by job), branch `feat/start-sidebar`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
-git checkout feat/stage-fixtures
+git checkout feat/start-sidebar
 source ~/.venvs/swissknife/bin/activate
 python -m pytest -q
-git push -u origin feat/ui-audit feat/stage-fixtures
+git push -u origin feat/ui-audit feat/stage-fixtures feat/start-sidebar
 git checkout main
 git pull --ff-only
-git merge --no-ff feat/stage-fixtures -m "Release v1.8.1"
+git merge --no-ff feat/start-sidebar -m "Release v1.8.1"
 python -m pytest -q
 git push origin main
 git tag -a v1.8.1 -m "v1.8.1"
@@ -618,7 +621,7 @@ cd wiki
 git push origin master
 cd ..
 ```
-(expect 526 passed; the branch also carries the WORKPLAN commits of `feat/ui-audit`.) GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.8.1.md`.
+(expect 527 passed; the branch also carries `feat/stage-fixtures` and the WORKPLAN commits of `feat/ui-audit`.) GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.8.1.md`.
 
 **giopas — release v1.8.0 (done 29 Sep), branch `feat/stage-meshes`:**
 ```bash

@@ -106,6 +106,8 @@ from routes.native_picker_routes import bp as picker_bp
 from routes.quick_start_routes   import bp as quickstart_bp
 from routes.porter_routes    import bp as porter_bp
 from routes.showbook_routes import bp as showbook_bp
+from routes.doctor_routes import bp as doctor_bp
+from routes.reducer_routes import bp as reducer_bp
 
 PORT = 5731
 
@@ -145,6 +147,8 @@ def create_app():
     app.register_blueprint(quickstart_bp)
     app.register_blueprint(porter_bp)
     app.register_blueprint(showbook_bp)
+    app.register_blueprint(doctor_bp)
+    app.register_blueprint(reducer_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request

@@ -109,6 +109,7 @@ from routes.showbook_routes import bp as showbook_bp
 from routes.doctor_routes import bp as doctor_bp
 from routes.reducer_routes import bp as reducer_bp
 from routes.looks_routes import bp as looks_bp
+from routes.stage_routes import bp as stage_bp
 
 PORT = 5731
 
@@ -151,6 +152,7 @@ def create_app():
     app.register_blueprint(doctor_bp)
     app.register_blueprint(reducer_bp)
     app.register_blueprint(looks_bp)
+    app.register_blueprint(stage_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request

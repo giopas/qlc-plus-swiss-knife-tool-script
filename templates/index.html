@@ -111,6 +111,10 @@
       <svg class="ic"><use href="/static/icons.svg#palette"/></svg>
       <span>Look Builder</span>
     </button>
+    <button class="sn-item" id="sn-stage" data-tip="Stage &amp; Meshes" data-desc="Place the 3D meshes (band members, risers, truss) on the stage — put them on the floor, move, rotate, scale, add from your mesh folders — into a new file." onclick="go('stage')">
+      <svg class="ic"><use href="/static/icons.svg#grid"/></svg>
+      <span>Stage &amp; Meshes</span>
+    </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
       <span>Brightness</span>
@@ -1727,6 +1731,38 @@
   </section>
 
   <!-- ======================================================================
+       STAGE & MESHES (WORKPLAN 2.5)
+  ====================================================================== -->
+  <section class="screen" id="scr-stage">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#grid"/></svg></div>
+      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models — into a new file.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <span id="st-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <button id="st-undo" class="btn btn-surface btn-sm" onclick="stageUndo()" disabled>↶ Undo</button>
+      <button class="btn btn-surface btn-sm" onclick="stageReset()">↺ Discard changes</button>
+    </div>
+
+    <div id="st-body" class="lb-body"><div class="porter-placeholder">Open a workspace to see its 3D stage.</div></div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button id="st-go" class="btn btn-accent" onclick="stageSave()" disabled>💾 Save → new file…</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        LOOK AND CHASER BUILDER (WORKPLAN 2.3)
   ====================================================================== -->
   <section class="screen" id="scr-looks">
@@ -2169,6 +2205,7 @@
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
 <script src="/static/js/reducer.js?v={{ asset_v }}"></script>
 <script src="/static/js/looks.js?v={{ asset_v }}"></script>
+<script src="/static/js/stage3d.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>
 <script src="/static/js/session.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>

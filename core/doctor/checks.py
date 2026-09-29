@@ -475,6 +475,24 @@ def _d008_panic(ws: _Workspace):
                       {"function": panic[0].get("ID")})
 
 
+def _d017_panic_scene(ws: _Workspace):
+    """A PANIC RESET that is a plain Scene can't darken a look that is still
+    running: intensity/colour channels are HTP, a scene at 0 doesn't pull
+    them down (seen on BarShow → SmallShow, 29 Sep 2026).  A Script
+    that stops every function first, then starts the reset scene, does."""
+    scripts = [f for f in ws.function_els
+               if f.get("Type") == "Script" and PANIC_RE.search(f.get("Name", ""))]
+    if scripts:
+        return
+    for f in ws.function_els:
+        if f.get("Type") == "Scene" and PANIC_RE.search(f.get("Name", "")):
+            yield Finding("D017", WARNING, ws.fn_loc(f.get("ID")),
+                          "PANIC RESET is a plain scene: it cannot darken looks that are "
+                          "still running (dimmer/colour are HTP) — a script that stops "
+                          "every function first, then starts this scene, can",
+                          {"function": f.get("ID")})
+
+
 def _d009_overlap(ws: _Workspace):
     owner: Dict[Tuple[int, int], str] = {}
     reported = set()
@@ -590,6 +608,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
     for gen in (_d002_duplicates(ws), _d003_dangling(ws), _d004_empty(ws),
                 _d005_incomplete(ws), _d006_strobe(ws, allow),
                 _d007_shared_scene(ws), _d008_panic(ws), _d009_overlap(ws),
+                _d017_panic_scene(ws),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),
                 _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws)):
         findings.extend(gen)

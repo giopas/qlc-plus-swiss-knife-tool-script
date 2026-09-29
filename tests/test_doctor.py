@@ -23,8 +23,9 @@ PAR = ("<Fixture><Manufacturer>Generic</Manufacturer><Model>7-Ch RGB LED PAR</Mo
        "<Mode>7 Channel</Mode><ID>{id}</ID><Name>PAR {id}</Name><Universe>0</Universe>"
        "<Address>{addr}</Address><Channels>7</Channels></Fixture>")
 FULL = "0,255,1,0,2,0,3,0,4,0,5,0,6,0"          # all 7 channels, strobe/mode 0
-PANIC = ('<Function ID="900" Type="Scene" Name="PANIC RESET">'
-         '<FixtureVal ID="0">' + FULL + '</FixtureVal></Function>')
+# PANIC RESET as a Script (a plain scene is D017)
+PANIC = ('<Function ID="900" Type="Script" Name="PANIC RESET">'
+         '<Command>stoponexit%3Afalse</Command></Function>')
 PANIC_BTN = '<Button Caption="PANIC" ID="900"><Function ID="900"/></Button>'
 
 
@@ -260,8 +261,21 @@ def test_corpus_matches_baseline(name):
 
 
 def test_pub_is_clean_reference():
+    """Clean except its PANIC RESET, which is a plain scene (D017, 29 Sep)."""
     rep = check_file(os.path.join(CORPUS, "Pub_6fix.qxw"), DEFS)
-    assert rep.ok and not rep.warnings
+    assert rep.ok and [f.code for f in rep.warnings] == ["D017"]
+
+
+def test_d017_panic_reset_scene():
+    root = ws(scene("1"), button(2, "1"))
+    eng = root.find(qxw_io._NS_PREFIX + "Engine")
+    panic = next(f for f in eng if f.get("Name") == "PANIC RESET")
+    panic.set("Type", "Scene")
+    for c in list(panic):
+        panic.remove(c)
+    import xml.etree.ElementTree as ET
+    ET.SubElement(panic, qxw_io._NS_PREFIX + "FixtureVal", ID="0").text = FULL
+    assert [f.code for f in check(root, DEFS).warnings] == ["D017"]
 
 
 def test_corpus_false_positives_gone():

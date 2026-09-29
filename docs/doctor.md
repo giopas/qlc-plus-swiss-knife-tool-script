@@ -2,7 +2,7 @@
 
 Health checks for QLC+ 5 workspaces. It is the test oracle for every Swiss Knife builder and gates every export (errors block, warnings are shown). From v1.5 it also **fixes** what you tick — always into a **new file** (`<name>_v<N+1>.qxw`, the same naming rule as every other tool) with a fix report next to it (`<name>_v<N+1>_fix_report.txt`). The original is never changed.
 
-In the app: **Workspace Doctor** tab (sidebar, Workspace tools) — 🔍 Check the open workspace, tick findings (recommended fixes are pre-ticked; fixes that delete functions are offered but not ticked), **💾 Fix selected → new file…**.
+In the app: **Workspace Doctor** tab (side menu, 5 · Check & fix) — 🔍 Check the open workspace, tick findings (recommended fixes are pre-ticked; fixes that delete functions are offered but not ticked), **💾 Fix selected → new file…**.
 
 ## Usage
 

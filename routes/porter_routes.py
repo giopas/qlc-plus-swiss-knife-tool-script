@@ -376,8 +376,15 @@ def _normalize_plan(data: dict) -> dict:
             'scope':        [str(k) for k in (vc.get('scope') or [])],
             'target_page':  str(vc.get('target_page') or ''),
             'page_caption': str(vc.get('page_caption') or ''),
-            'bindings':     vc.get('bindings') if vc.get('bindings') in ('keep_free', 'keep', 'drop') else 'keep_free',
+            'bindings':     (vc.get('bindings') if vc.get('bindings') in
+                             ('keep_free', 'keep', 'source_wins', 'drop') else 'keep_free'),
             'remove':       [str(k) for k in (vc.get('remove') or [])],
+            # 1.6 key/MIDI options (were dropped here: "Source wins" and the
+            # universe map never reached the Porter — giopas's test, 29 Sep)
+            'universe_map': {str(k): str(v) for k, v in (vc.get('universe_map') or {}).items()
+                             if str(k).isdigit() and str(v).isdigit()},
+            'copy_input':    bool(vc.get('copy_input', True)),
+            'bindings_only': bool(vc.get('bindings_only', False)),
         },
         'closure':         closure,
         'fixture_mapping': normalized_mapping,
@@ -386,4 +393,8 @@ def _normalize_plan(data: dict) -> dict:
         'pan_channel_map': normalized_pan,
         'name_prefix':     data.get('name_prefix', ''),
         'import_path':     data.get('import_path', ''),
+        # 1.5 options (defaults as in core.porter)
+        'translate_types': bool(data.get('translate_types', True)),
+        'strobe':          'drop' if data.get('strobe') == 'drop' else 'keep',
+        'qxf_paths':       [str(x) for x in (data.get('qxf_paths') or [])],
     }

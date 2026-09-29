@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.7.0
+# ⚡ QLC+ Swiss Knife — v1.8.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -17,6 +17,10 @@ This tool is in active development. Some features may be incomplete, behave unex
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
 
 ---
+
+## What's new in v1.8.0
+
+- **Stage & Meshes** — the 3D stage seen from above and from the front, with fixtures and meshes. Place meshes by what you see (centre, height above the floor) instead of QLC+'s raw numbers; **put them on the floor in one click**; drag, rotate, scale, add models from your folders; change the stage keeping the meshes in place. Saved as a new file.
 
 ## What's new in v1.7.0
 
@@ -147,6 +151,9 @@ Parse fixture patches, 3D stage positions, groups, and universe assignments dire
 
 ### Look & Chaser Builder
 Build looks and chasers straight into the open show. **Looks**: tick fixture groups and palette colours → one scene per group × colour; the colour is set by capability (RGB/RGBW mixing, colour wheel or dimmer) and every channel is declared. **Chasers**: pick a group, a pattern (all-hit, left/right, chase, ping-pong, build-up, seeded random), colours, timing (ms, or BPM + note length) and cut or fade; the preview shows each fixture's colour per step and plays it. Save a chaser as a **song preset** and reuse it. Optional VC page with coloured buttons; names follow your naming profile; the Workspace Doctor checks the result, which is saved as a new file with a report. See the [Look Builder wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder).
+
+### Stage & Meshes
+Place the 3D meshes of your show — band members, risers, drum kit, truss — by what you see: centre on the stage and height above the floor. The list shows which models float or sink; one click puts them on the floor, exactly. Plan and front views (drag to move), rotation and scale that keep the model in place, add models from your mesh folders, change the stage type and size. See the [Stage and Meshes wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes).
 
 ### Brightness
 Adjust the relative brightness of any fixture type across an entire show file without rebuilding anything. Select a workspace, use the per-model sliders to set a scale factor (0–200%), and export a new adjusted QXW. The Master Dimmer channel is detected automatically from QXF fixture definitions; if a QXF is not found, you can type the offset manually, upload the file, or fetch it from the QLC+ GitHub repository. Colour channel values are never touched — only the dimmer.
@@ -296,6 +303,7 @@ core/
   rig_reducer.py         ← Rig Reducer: remove fixtures with cascade, re-patch, Doctor diff
   vc_ops.py              ← VC edits: copy/move widgets, pages
   vc_builder.py          ← VC Builder: create/wire widgets, pages, label panels, screens, templates
+  stage3d.py             ← Stage & Meshes: mesh placement, on the floor, OBJ bounds, mesh library
   look_builder.py        ← Look & Chaser Builder: palette looks, pattern chasers, presets, preview
   looks/                 ← built-in palettes and song presets (JSON)
   quick_start/           ← Quick Start: channel model, VC generator, profiles, QXW builder
@@ -316,6 +324,7 @@ routes/
   doctor_routes.py       ← /api/doctor/*
   reducer_routes.py      ← /api/reducer/*
   looks_routes.py        ← /api/looks/*
+  stage_routes.py        ← /api/stage/*
   id_browser_routes.py   ← /api/functions, /api/vc-widgets
   session_routes.py      ← /api/session/*
   picker_routes.py       ← /api/picker/* (native OS file picker)

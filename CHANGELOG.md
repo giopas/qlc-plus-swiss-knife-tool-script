@@ -7,6 +7,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-09-29
+
+### Added
+- **Stage & Meshes — fixtures in the placement** (giopas's request): fixtures are drawn with their real body size (from the `.qxf` dimensions; 300 mm when unknown), can be selected (in the views or the new *Fixtures* list) and dragged, and take part in every placement tool. With meshes **and** fixtures selected, *Move: only the meshes / only the fixtures / everything* keeps the others where they are as the **reference**: e.g. a mesh + two fixtures, *only the meshes*, **centres ↔** → the mesh stands exactly between the fixtures; *space evenly* puts it at equal gaps; a fixture + the drummer, *only the fixtures*, centres ↔ and ↕ → the fixture right above the drummer. A single fixture can be moved by its centre and height (its tilt and pan stay). The report lists moved fixtures. (`stage3d.fixtures()`, `move_fixture()`, `arrange(move=…)`)
+
+### Changed
+- **Start screen and side menu use the same 1–6 groups** (giopas's report: "Build the rig" on the Start page opened only Fixtures, and the 1–6 cards didn't match the menu). The tools are now grouped by job, with the same numbers and names in both places: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter, QXW Merger, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Book, Checklist, Tech Rider). Each Start card lists all of its tools as buttons instead of opening one tool; hovering a card lights up the same tools in the menu; the collapsed menu shows the group numbers. The "What is QLC+ Swiss Knife?" text now says what the app is for and that every change goes to a new file. The empty recent-files box is hidden until there are recent files.
+
 ## [1.8.0] — 2026-09-29
 
 Phase 2.5: the meshes on the 3D stage, placed by what you see.

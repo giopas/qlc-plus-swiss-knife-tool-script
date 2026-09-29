@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.4.1
+# ⚡ QLC+ Swiss Knife — v1.5.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -17,6 +17,12 @@ This tool is in active development. Some features may be incomplete, behave unex
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
 
 ---
+
+## What's new in v1.5.0
+
+- **Workspace Doctor tab** — check the open show and **fix what you tick** into a new file: broken references, scenes that don't set every channel, strobe left on, a scene shared by a button and a chaser, widgets off the page, and a **PANIC RESET that can't reset** (a plain scene can't darken a look that is still running — the fix makes it a script that stops everything first). A fix report is saved next to the new file.
+- **Rig Reducer** — keep the fixtures of a smaller rig; their values, groups, empty functions, buttons and faders are cleaned up; re-patch names and addresses; preview first, then save as a new file.
+- New Doctor checks: PANIC RESET scene, setlist page not first, widget outside its page, 0 ms chaser steps, CueList with an empty chaser.
 
 ## What's new in v1.4.1
 
@@ -123,7 +129,10 @@ Ported scenes declare every channel (neutral values for the missing ones), new I
 Export your entire workspace as structured show paperwork. Choose from **11 sections** — Summary, Patch List, Function Index, Scenes, Chasers, Collections, EFX, Shows, Scripts, VC Layout (page by page, with frames, positions and key/MIDI bindings), Doctor summary — and export as **PDF** (A4 landscape with cover page) or **CSV** (ZIP with one file per section). When QXF fixture definitions are provided, raw DMX values are decoded to human-readable labels. Generate a **live preview** in-app before exporting — tables are interactive and scenes show per-fixture channel breakdowns.
 
 ### Workspace Doctor
-Read-only health check of any `.qxw`: duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, shared latch scenes, missing PANIC RESET, dead MIDI inputs, unused functions and more (codes D001–D016). It runs before every Quick Start and Function Porter export — errors block, warnings are reported — and from the command line: `python -m core.doctor show.qxw` (`--json`, `--all`). *(Coming in v1.5, on `main`:)* the **Workspace Doctor tab** fixes what you tick — broken references, incomplete scenes, strobe left on, shared scenes, a PANIC RESET that can't reset, widgets off the page — into a **new file** with a fix report (`--fix` on the command line). See the [Workspace Doctor wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor).
+Read-only health check of any `.qxw`: duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, shared latch scenes, missing PANIC RESET, dead MIDI inputs, unused functions and more (codes D001–D016). It runs before every Quick Start and Function Porter export — errors block, warnings are reported — and from the command line: `python -m core.doctor show.qxw` (`--json`, `--all`). The **Workspace Doctor tab** fixes what you tick — broken references, incomplete scenes, strobe left on, shared scenes, a PANIC RESET that can't reset, widgets off the page — into a **new file** with a fix report (`--fix` on the command line). See the [Workspace Doctor wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor).
+
+### Rig Reducer
+Turn a big show into one for a smaller rig: untick the fixtures you won't have, re-patch the rest (name, universe, address), **Preview**, then save as a new file. Scene values, groups, EFX/matrix fixtures, 3D positions, functions left empty, their buttons and faders are cleaned up; the Workspace Doctor checks the result. See the [Rig Reducer wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer).
 
 ### Checklist
 Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.

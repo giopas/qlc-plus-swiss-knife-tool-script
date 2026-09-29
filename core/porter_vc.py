@@ -403,6 +403,7 @@ def _new_page(tgt_vc: ET.Element, caption: str, like: Optional[ET.Element],
         for c in tmpl:
             if not _is_widget(c):
                 page.append(copy.deepcopy(c))
+        vc_ops._strip_bindings(page)    # not the template page's own bindings
     else:
         ET.SubElement(page, "WindowState", {"Visible": "True", "X": "0", "Y": "0",
                                             "Width": "1920", "Height": "1080"})

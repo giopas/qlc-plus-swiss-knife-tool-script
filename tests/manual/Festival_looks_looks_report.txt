@@ -1,0 +1,26 @@
+LOOK AND CHASER BUILDER REPORT
+==============================
+Source: Festival_14fix.qxw
+Output: Festival_looks.qxw
+
+Created: 6 look(s), 5 chaser(s) with 30 step scene(s), 11 VC button(s)
+
+CHANGES
+-------
+  look 3001 'Warm White' — 14 fixture(s), #FFC98A
+  look 3002 'Amber' — 14 fixture(s), #FFB000
+  look 3003 'Red' — 14 fixture(s), #FF0000
+  look 3004 'Blue' — 14 fixture(s), #0000FF
+  look 3005 'Congo' — 14 fixture(s), #3C00FF
+  look 3006 'Cold White' — 14 fixture(s), #FFFFFF
+  chaser 3007 'Ceiling · Drive' — Chase, 8 step(s), 6 scene(s), 280 ms, cut
+  chaser 3014 'Ceiling · Sweep' — Ping-pong, 10 step(s), 6 scene(s), 250 ms (120 BPM, 1/8), cut
+  chaser 3021 'Floor · Build' — Build-up, 6 step(s), 6 scene(s), 1333 ms (90 BPM, 1/2), fade 1333 ms
+  chaser 3028 'Hit L/R' — Left/right, 2 step(s), 2 scene(s), 500 ms (120 BPM, 1/4), cut
+  chaser 3031 'Sparkle' — Random, 16 step(s), 10 scene(s), 125 ms (120 BPM, 1/16), cut
+  VC: frame 'Looks · All fixtures' with 6 button(s) on page 'Looks'
+  VC: frame 'Chasers' with 5 button(s) on page 'Looks'
+
+WORKSPACE DOCTOR
+----------------
+  Result: 1 error(s), 855 warning(s)

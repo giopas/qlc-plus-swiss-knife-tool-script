@@ -44,6 +44,7 @@ const _LAZY = {
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   doctor:     () => typeof doctorInit             === 'function' && doctorInit(),
   reducer:    () => typeof reducerInit            === 'function' && reducerInit(),
+  looks:      () => typeof looksInit              === 'function' && looksInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
   // initVcEditor() attaches the canvas mouse handlers (once); _vceLoad() re-reads the tree
   vceditor:   () => typeof vcEditorOnTabShow     === 'function' && vcEditorOnTabShow(),
@@ -542,6 +543,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateShowbook === 'function') invalidateShowbook();
   if (typeof invalidateDoctor === 'function') invalidateDoctor();
   if (typeof invalidateReducer === 'function') invalidateReducer();
+  if (typeof invalidateLooks === 'function') invalidateLooks();
   if (typeof invalidateVcEditor === 'function') invalidateVcEditor();
   // Re-load whichever screen is currently visible
   const activeScr = document.querySelector('.screen.active');
@@ -588,7 +590,7 @@ function _updateHeader(state) {
 // so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'triggers', 'dictionary', 'checklist', 'techrider',
-                     'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer'];
+                     'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks'];
 
 function _updateNeedWsBanners(loaded) {
   _WS_SCREENS.forEach(id => {

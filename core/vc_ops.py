@@ -128,7 +128,7 @@ def _strip_bindings(el: ET.Element) -> int:
     # e.g. CueList <Next><Key>Space</Key></Next> → empty <Next/>: drop it
     for p in list(el.iter()):
         for c in list(p):
-            if (_local(c.tag) in {"Next", "Previous", "Stop", "Playback", "CrossFade"}
+            if (_local(c.tag) in {"Next", "Previous", "Stop", "Playback", "CrossFade", "Enable"}
                     and len(c) == 0 and not (c.text or "").strip() and not c.attrib):
                 p.remove(c)
     return removed
@@ -317,6 +317,7 @@ def new_page(root: ET.Element, caption: str) -> dict:
         for c in tmpl:                  # copy the page's own settings, not its widgets
             if not _is_widget(c):
                 page.append(copy.deepcopy(c))
+        _strip_bindings(page)           # nor its key/MIDI bindings (page enable …)
     else:
         ET.SubElement(page, q("WindowState"), {"Visible": "True", "X": "0", "Y": "0",
                                                "Width": "1920", "Height": "1080"})

@@ -210,7 +210,7 @@ class _Workspace:
         if w.tag == "CueList":
             refs.append((w.findtext("Chaser") or NONE_ID).strip())
             return refs
-        for el in list(w) + list(w.findall("Playback")):
+        for el in list(w) + [c for pb in w.findall("Playback") for c in pb]:   # slider playback
             if el.tag == "Function":
                 fid = el.get("ID") or (el.text or "").strip()
                 if fid and fid != NONE_ID:

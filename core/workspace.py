@@ -29,7 +29,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "1.6.0"  # single source of truth — must match CHANGELOG
+VERSION = "1.7.0"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -1467,6 +1467,7 @@ def _build_vc_node(node: ET.Element, parent_id: str | None = None) -> dict | Non
         'font_size':   font_size,
         'font_bold':   font_bold,
         'func_id':     fid,
+        'action':      (node.findtext('q:Action', '', NS) or '').strip(),
         'func_name':   _state['func_by_id'].get(fid, '') if fid else '',
         'children':    children,
     }
@@ -1644,9 +1645,10 @@ def vc_structural_edit(op: str, **kw) -> dict:
     from core import vc_ops
     if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded')
+    from core import vc_builder
     fn = {'copy': vc_ops.copy_widgets, 'move': vc_ops.move_widgets,
           'new_page': vc_ops.new_page, 'copy_page': vc_ops.copy_page,
-          'fix_ids': vc_ops.fix_duplicate_ids}.get(op)
+          'fix_ids': vc_ops.fix_duplicate_ids, **vc_builder.OPS}.get(op)
     if fn is None:
         raise ValueError(f'Unknown VC operation: {op}')
     vc_snapshot()

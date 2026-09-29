@@ -27,7 +27,7 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **1.4.0** ✅ | Out of Alpha | **Workspace Doctor** (read-only checks + CLI), Quick Start golden outputs and VC style cloning, Porter VC-widget porting and fan-in, **new rig from an existing show** (translation between fixture types), **MIDI/input control** porting, Show Book test suite with VC layout by page and Doctor summary |
 | **1.5.0** ✅ | Doctor fixes + Rig Reducer | Opt-in auto-fixes (always to a new file); remove fixtures with full cascade and optional re-patch |
 | **1.6.0** ✅ | Look & Chaser Builder | Fixture group × palette looks; pattern chasers (alternate, chase, ping-pong, build-up, seeded random) with BPM timing; song presets |
-| **1.7.0** | VC Builder | Create/wire widgets, pages, grid snap, screen profiles, page templates, one-click setlist CueList wiring |
+| **1.7.0** ✅ | VC Builder | Create/wire widgets, pages, grid snap, screen profiles, page templates, one-click setlist CueList wiring |
 | **1.8.0** | Stage & meshes | OBJ meshes in the 3D monitor; unified fixture + mesh placement |
 | **2.0.0** | Benchmark | The "Pub test": rebuild a 6-fixture pub show from a 14-fixture festival show using only Swiss Knife, Doctor-clean |
 

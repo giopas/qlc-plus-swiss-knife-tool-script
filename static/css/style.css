@@ -3553,5 +3553,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .lb-st.cur .lb-cell, th.lb-st.cur { outline: 2px solid var(--accent, #7c5cff); }
 .lb-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--border, rgba(128,128,128,.2)); }
 .lb-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 2px 0 4px; vertical-align: middle; }
-.lb-grid .filter-input { width: auto; min-width: 0; }
-.lb-grid .rr-num { width: 72px; }
+.lb-card .filter-input { flex: 0 1 auto; width: auto; min-width: 0; }
+.lb-card select.filter-input { max-width: 220px; }
+.lb-card .rr-num { width: 72px; }
+.lb-card #lb-cname, .lb-card #lb-pname { width: 240px; }
+.lb-card #lb-folder, .lb-card #lb-vcname { width: 160px; }
+.lb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, max-content)); }
+.lb-grid label { white-space: nowrap; }

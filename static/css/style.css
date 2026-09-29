@@ -3592,3 +3592,6 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .st-side .st-n { width: 62px; }
 .st-sec { font-size: 11px; font-weight: 600; margin: 8px 0 3px; }
 .st-side .lb-row .btn-sm[disabled] { opacity: .45; }
+.st-fx rect { fill: #f9e2af; stroke: #7a6a3a; cursor: move; }
+.st-fx.sel rect { fill: #a6e3a1; stroke: #3f7a3a; stroke-width: 2; }
+.st-k-f { display: inline-block; width: 10px; height: 10px; margin-right: 5px; }

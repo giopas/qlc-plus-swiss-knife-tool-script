@@ -31,7 +31,7 @@ def _work():
     if _w.get('key') != key:
         _w.clear()
         _w.update({'key': key, 'orig': root, 'path': path, 'name': name,
-                   'root': qxw_io.strip_ns(copy.deepcopy(root)), 'undo': []})
+                   'root': qxw_io.strip_ns(copy.deepcopy(root)), 'undo': [], 'defs': _defs(path)})
     return _w
 
 
@@ -43,7 +43,7 @@ def _state(w, **extra):
     r = w['root']
     orig = qxw_io.strip_ns(copy.deepcopy(w['orig']))
     return jsonify({'source': w['name'], 'stage': s3.stage(r), 'types': s3.STAGE_TYPES,
-                    'meshes': s3.meshes(r, w['path'], _dirs()), 'fixtures': s3.fixtures(r),
+                    'meshes': s3.meshes(r, w['path'], _dirs()), 'fixtures': s3.fixtures(r, w['defs']),
                     'undo': len(w['undo']),
                     'dirty': qxw_io.qxw_bytes(r) != qxw_io.qxw_bytes(orig), **extra})
 
@@ -98,13 +98,18 @@ def op():
         elif o == 'arrange':
             res = s3.arrange(r, [str(i) for i in (d.get('ids') or [])], str(d.get('action', '')),
                              margin=_num(d.get('margin')) or 0, dx=_num(d.get('dx')) or 0,
-                             dz=_num(d.get('dz')) or 0, dy=_num(d.get('dy')) or 0, **kw)
-            msg = (f"{len(res['moved'])} mesh(es) placed" if res['moved'] else 'Already there')
+                             dz=_num(d.get('dz')) or 0, dy=_num(d.get('dy')) or 0,
+                             move=str(d.get('move') or 'all'), qxf_defs=w['defs'], **kw)
+            msg = (f"{len(res['moved'])} item(s) placed" if res['moved'] else 'Already there')
             if res['skipped']:
                 msg += f"; {len(res['skipped'])} skipped (model file not found)"
             if res['outside']:
                 msg += f" — {len(res['outside'])} now reach(es) past the stage edge"
             msg += '.'
+        elif o == 'move_fixture':
+            res = s3.move_fixture(r, str(d.get('id', '')), x=_num(d.get('x')), z=_num(d.get('z')),
+                                  bottom=_num(d.get('bottom')), qxf_defs=w['defs'])
+            msg = 'Fixture moved.'
         elif o == 'duplicate':
             res = s3.duplicate_mesh(r, mid, **kw)
             msg = 'Mesh duplicated (0.5 m to the right).'

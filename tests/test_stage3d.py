@@ -281,5 +281,64 @@ def test_api_arrange(show, tmp_path, monkeypatch):
     c = app.create_app().test_client()
     assert c.post("/api/load", json={"path": path}).status_code == 200
     s = c.post("/api/stage/op", json={"op": "arrange", "ids": ["0", "1"], "action": "left", "margin": 50}).get_json()
-    assert "placed" in s["message"] and min(m["place"]["x0"] for m in s["meshes"] if m["id"] in ("0", "1")) == 50
+    assert "item(s) placed" in s["message"] and min(m["place"]["x0"] for m in s["meshes"] if m["id"] in ("0", "1")) == 50
     assert c.post("/api/stage/op", json={"op": "arrange", "ids": ["0"], "action": "align_left"}).status_code == 400
+
+
+# ── fixtures in the placement (meshes around fixtures and back) ──────────────
+
+from core.doctor import load_qxf_defs  # noqa: E402
+
+DEFS = load_qxf_defs([CORPUS])
+
+
+def _fest():
+    return qxw_io.strip_ns(qxw_io.load_qxw(FEST).getroot())
+
+
+def test_fixture_placement_from_qxf_dimensions():
+    r = _fest()
+    fx = {f["key"]: f for f in s3.fixtures(r, DEFS)}
+    p = fx["f:7"]["place"]                       # Generic 7-ch PAR, 180 × 180 × 100 mm, XPos 400 YPos 200 ZPos 2800
+    assert fx["f:7"]["size_known"] and (p["w"], p["h"], p["d"]) == (180, 180, 100)
+    assert (p["x0"], p["z0"], p["x"], p["z"], p["bottom"], p["top"]) == (400, 2800, 490, 2850, 200, 380)
+    assert not s3.fixtures(r)[0]["size_known"]                               # no .qxf → 300 mm assumed
+    s3.move_fixture(r, "7", x=1000, z=1000, bottom=0, qxf_defs=DEFS)
+    el = next(e for e in r.iter("FxItem") if e.get("ID") == "7")
+    assert (el.get("XPos"), el.get("YPos"), el.get("ZPos")) == ("910", "0", "950")
+    assert el.get("XRot") == "238"                                           # tilt untouched
+    with pytest.raises(s3.StageError):
+        s3.move_fixture(r, "99", x=0, qxf_defs=DEFS)
+
+
+def test_mesh_between_two_fixtures():
+    r = _fest()
+    res = s3.arrange(r, ["23", "f:7", "f:8"], "align_centre_x", move="meshes", qxf_defs=DEFS, qxw_path=FEST)
+    assert res["moved"] == ["23"]
+    fx = {f["key"]: f["place"] for f in s3.fixtures(r, DEFS)}
+    mid = (fx["f:7"]["x0"] + fx["f:8"]["x0"] + fx["f:8"]["w"]) / 2
+    assert _p(r, FEST)["23"]["x"] == mid
+    assert (fx["f:7"]["x0"], fx["f:8"]["x0"]) == (400, 5600)                  # the references didn't move
+    s3.arrange(r, ["23", "f:7", "f:8"], "align_back", move="meshes", qxf_defs=DEFS, qxw_path=FEST)
+    assert _p(r, FEST)["23"]["z0"] == 2800
+
+
+def test_fixture_over_a_mesh_and_spacing_with_references():
+    r = _fest()
+    s3.arrange(r, ["f:13", "23"], "align_centre_x", move="fixtures", qxf_defs=DEFS, qxw_path=FEST)
+    s3.arrange(r, ["f:13", "23"], "align_centre_z", move="fixtures", qxf_defs=DEFS, qxw_path=FEST)
+    fx = {f["key"]: f["place"] for f in s3.fixtures(r, DEFS)}
+    m = _p(r, FEST)["23"]
+    assert (fx["f:13"]["x"], fx["f:13"]["z"]) == (m["x"], m["z"])            # right above/below the mesh
+    # two fixtures and a mesh: the mesh evenly between them
+    s3.arrange(r, ["f:7", "24", "f:8"], "distribute_x", move="meshes", qxf_defs=DEFS, qxw_path=FEST)
+    fx = {f["key"]: f["place"] for f in s3.fixtures(r, DEFS)}
+    m = _p(r, FEST)["24"]
+    left_gap = m["x0"] - (fx["f:7"]["x0"] + fx["f:7"]["w"])
+    right_gap = fx["f:8"]["x0"] - (m["x0"] + m["w"])
+    assert abs(left_gap - right_gap) <= 1
+    with pytest.raises(s3.StageError):
+        s3.arrange(r, ["f:7", "f:8"], "left", move="meshes", qxf_defs=DEFS, qxw_path=FEST)
+    s3.arrange(r, ["f:7", "f:8"], "nudge", dy=500, qxf_defs=DEFS, qxw_path=FEST)
+    assert {f["key"]: f["place"]["bottom"] for f in s3.fixtures(r, DEFS)}["f:7"] == 700
+    assert "Fixture 7 'Wing Left'" in s3.report(_fest(), r, "a", "b", FEST)

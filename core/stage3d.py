@@ -244,18 +244,68 @@ def meshes(root: ET.Element, qxw_path: str = "", mesh_dirs=()) -> List[dict]:
     return out
 
 
-def fixtures(root: ET.Element) -> List[dict]:
-    """Fixtures on the 3D stage (FxItem positions, mm) for the plan view."""
+DEFAULT_FX_SIZE = (300.0, 300.0, 300.0)       # mm, when the .qxf has no dimensions
+
+
+def _fx_size(fx_el: Optional[ET.Element], qxf_defs) -> Tuple[Tuple[float, float, float], bool]:
+    """Fixture body size (W, H, D mm) from its .qxf ``<Dimensions>``."""
+    if fx_el is not None and qxf_defs:
+        key = ((fx_el.findtext("Manufacturer") or "").strip().lower(),
+               (fx_el.findtext("Model") or "").strip().lower())
+        ph = ((qxf_defs.get(key) or {}).get("physical") or {})
+        dims = tuple(float(ph.get(k) or 0) for k in ("width", "height", "depth"))
+        if all(d > 0 for d in dims):
+            return dims, True
+    return DEFAULT_FX_SIZE, False
+
+
+def fixtures(root: ET.Element, qxf_defs=None) -> List[dict]:
+    """Fixtures on the 3D stage with their placement (mm), like meshes.
+
+    QLC+ puts a fixture's (centred) model at ``pos/1000 − stage/2 + size/2``
+    (``mainview3d.cpp`` updateFixturePosition), so ``XPos`` / ``ZPos`` are
+    its left / back edge and ``YPos`` its underside above y = 0.  The size
+    is the .qxf's ``<Dimensions>`` (300 mm cube when unknown); rotation
+    (tilt) is ignored for the box."""
     eng = root.find("Engine")
-    names = {(f.findtext("ID") or "").strip(): (f.findtext("Name") or "").strip()
-             for f in eng.findall("Fixture")} if eng is not None else {}
+    els = {(f.findtext("ID") or "").strip(): f for f in eng.findall("Fixture")} if eng is not None else {}
+    st = stage(root)
     mon = _monitor(root)
     out = []
     for el in (mon.findall("FxItem") if mon is not None else []):
         fid = el.get("ID", "")
-        out.append({"id": fid, "name": names.get(fid, f"Fixture {fid}"),
-                    "x": _f(el, "XPos"), "y": _f(el, "YPos"), "z": _f(el, "ZPos")})
+        fx = els.get(fid)
+        (w, h, d), known = _fx_size(fx, qxf_defs)
+        x, y, z = _f(el, "XPos"), _f(el, "YPos"), _f(el, "ZPos")
+        bottom = round(y - st["floor"] * 1000)
+        out.append({"id": fid, "key": f"f:{fid}",
+                    "name": (fx.findtext("Name") or "").strip() if fx is not None else f"Fixture {fid}",
+                    "x": x, "y": y, "z": z, "size_known": known,
+                    "place": {"x": round(x + w / 2), "z": round(z + d / 2), "bottom": bottom,
+                              "top": round(bottom + h), "w": round(w), "h": round(h), "d": round(d),
+                              "x0": round(x), "z0": round(z)}})
     return out
+
+
+def move_fixture(root, fid: str, *, x: Optional[float] = None, z: Optional[float] = None,
+                 bottom: Optional[float] = None, qxf_defs=None) -> dict:
+    """Place a fixture by its centre (*x* from the left, *z* from the back)
+    and the height of its underside above the floor (mm)."""
+    mon = _monitor(root)
+    el = next((e for e in (mon.findall("FxItem") if mon is not None else []) if e.get("ID") == str(fid)), None)
+    if el is None:
+        raise StageError(f"Fixture {fid} is not on the 3D stage.")
+    before = next(f for f in fixtures(root, qxf_defs) if f["id"] == str(fid))["place"]
+    w, d = before["w"], before["d"]
+    st = stage(root)
+    if x is not None:
+        el.set("XPos", _num(round(float(x) - w / 2, 1)))
+    if z is not None:
+        el.set("ZPos", _num(round(float(z) - d / 2, 1)))
+    if bottom is not None:
+        el.set("YPos", _num(round(float(bottom) + st["floor"] * 1000, 1)))
+    after = next(f for f in fixtures(root, qxf_defs) if f["id"] == str(fid))["place"]
+    return {"id": f"f:{fid}", "before": before, "after": after}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -453,8 +503,9 @@ SPREADS = ("distribute_x", "distribute_z", "spread_x", "spread_z")
 ARRANGE = EDGES + ALIGNS + SPREADS + ("nudge",)
 
 
-def _placed(root, ids, qxw_path, mesh_dirs) -> Tuple[List[Tuple[str, dict]], List[str]]:
-    st = stage(root)
+def _placed(root, ids, qxw_path, mesh_dirs, qxf_defs=None) -> Tuple[List[Tuple[str, dict]], List[str]]:
+    """Placements of the selected items: mesh ids as they are, fixtures as
+    ``f:<id>``."""
     want = [str(i) for i in ids]
     got, skipped = {}, []
     for m in meshes(root, qxw_path, mesh_dirs):
@@ -463,14 +514,18 @@ def _placed(root, ids, qxw_path, mesh_dirs) -> Tuple[List[Tuple[str, dict]], Lis
                 got[m["id"]] = m["place"]
             else:
                 skipped.append(m["id"])
+    if any(i.startswith("f:") for i in want):
+        for f in fixtures(root, qxf_defs):
+            if f["key"] in want:
+                got[f["key"]] = f["place"]
     missing = [i for i in want if i not in got and i not in skipped]
     if missing:
-        raise StageError(f"Mesh {', '.join(missing)} not found.")
+        raise StageError(f"{', '.join(missing)} not found.")
     return [(i, got[i]) for i in want if i in got], skipped
 
 
 def arrange(root, ids, action: str, *, margin: float = 0, dx: float = 0, dz: float = 0, dy: float = 0,
-            qxw_path: str = "", mesh_dirs=()) -> dict:
+            move: str = "all", qxf_defs=None, qxw_path: str = "", mesh_dirs=()) -> dict:
     """Place one or several meshes (all in mm, what you see):
 
     * stage edges — ``left``/``right``/``back``/``front``/``centre``/
@@ -486,101 +541,113 @@ def arrange(root, ids, action: str, *, margin: float = 0, dx: float = 0, dz: flo
       meshes, the outer two stay; ``spread_x`` / ``spread_z`` (1+): equal
       gaps across the whole stage width / depth (inside *margin*);
     * ``nudge``: move by *dx* (right +), *dz* (front +), *dy* (up +).
+
+    Fixtures take part too (ids ``f:<id>``, placed by their body from the
+    .qxf dimensions).  *move* = ``"meshes"`` or ``"fixtures"`` keeps the
+    others of the selection where they are, as **references**: they count
+    for lining up and spacing but don't move — e.g. a mesh and two fixtures,
+    *move meshes*, ``align_centre_x`` → the mesh sits between the fixtures.
     """
     if action not in ARRANGE:
         raise StageError(f"Unknown placement: {action}")
-    items, skipped = _placed(root, ids, qxw_path, mesh_dirs)
+    items, skipped = _placed(root, ids, qxw_path, mesh_dirs, qxf_defs)
     if not items:
         raise StageError("Select at least one mesh whose model file is found.")
+    if move not in ("all", "meshes", "fixtures"):
+        raise StageError(f"Unknown choice: move {move}")
+
+    def moving(i: str) -> bool:
+        return move == "all" or (move == "fixtures") == i.startswith("f:")
+    if not any(moving(i) for i, _ in items):
+        raise StageError(f"Nothing to move: the selection has no {move}.")
     need = 3 if action in ("distribute_x", "distribute_z") else 2 if action.startswith("align_") else 1
     if len(items) < need:
-        raise StageError(f"Select at least {need} meshes for this.")
+        raise StageError(f"Select at least {need} items for this.")
+    mov = [(i, p) for i, p in items if moving(i)]
+    anchors = [(i, p) for i, p in items if not moving(i)]
+    ref = anchors or items            # what the line-up is measured on
     st = stage(root)
     W, D, H = st["w"] * 1000, st["d"] * 1000, st["h"] * 1000
     mg = float(margin or 0)
-    x0 = min(p["x0"] for _, p in items)
-    x1 = max(p["x0"] + p["w"] for _, p in items)
-    z0 = min(p["z0"] for _, p in items)
-    z1 = max(p["z0"] + p["d"] for _, p in items)
+
+    def box(group):
+        return (min(p["x0"] for _, p in group), max(p["x0"] + p["w"] for _, p in group),
+                min(p["z0"] for _, p in group), max(p["z0"] + p["d"] for _, p in group))
     moves: Dict[str, dict] = {}                       # id → {x, z, bottom} targets
 
-    def group(ddx=0.0, ddz=0.0):
-        for i, p in items:
+    def shift(ddx=0.0, ddz=0.0):
+        for i, p in mov:
             moves[i] = {"x": p["x"] + ddx, "z": p["z"] + ddz}
 
-    if action == "left":
-        group(ddx=mg - x0)
-    elif action == "right":
-        group(ddx=W - mg - x1)
-    elif action == "back":
-        group(ddz=mg - z0)
-    elif action == "front":
-        group(ddz=D - mg - z1)
-    elif action in ("centre", "centre_x", "centre_z"):
-        group(ddx=(W / 2 - (x0 + x1) / 2) if action != "centre_z" else 0,
-              ddz=(D / 2 - (z0 + z1) / 2) if action != "centre_x" else 0)
+    if action in ("left", "right", "back", "front", "centre", "centre_x", "centre_z"):
+        x0, x1, z0, z1 = box(mov)
+        if action == "left":
+            shift(ddx=mg - x0)
+        elif action == "right":
+            shift(ddx=W - mg - x1)
+        elif action == "back":
+            shift(ddz=mg - z0)
+        elif action == "front":
+            shift(ddz=D - mg - z1)
+        else:
+            shift(ddx=(W / 2 - (x0 + x1) / 2) if action != "centre_z" else 0,
+                  ddz=(D / 2 - (z0 + z1) / 2) if action != "centre_x" else 0)
     elif action == "floor":
-        for i, p in items:
+        for i, p in mov:
             moves[i] = {"bottom": 0}
     elif action == "ceiling":
-        for i, p in items:
+        for i, p in mov:
             moves[i] = {"bottom": H - mg - p["h"]}
-    elif action == "align_left":
-        for i, p in items:
-            moves[i] = {"x": x0 + p["w"] / 2}
-    elif action == "align_right":
-        for i, p in items:
-            moves[i] = {"x": x1 - p["w"] / 2}
-    elif action == "align_centre_x":
-        for i, p in items:
-            moves[i] = {"x": (x0 + x1) / 2}
-    elif action == "align_back":
-        for i, p in items:
-            moves[i] = {"z": z0 + p["d"] / 2}
-    elif action == "align_front":
-        for i, p in items:
-            moves[i] = {"z": z1 - p["d"] / 2}
-    elif action == "align_centre_z":
-        for i, p in items:
-            moves[i] = {"z": (z0 + z1) / 2}
-    elif action == "align_bottom":
-        lo = min(p["bottom"] for _, p in items)
-        for i, p in items:
-            moves[i] = {"bottom": lo}
-    elif action == "align_top":
-        hi = max(p["top"] for _, p in items)
-        for i, p in items:
-            moves[i] = {"bottom": hi - p["h"]}
+    elif action.startswith("align_"):
+        x0, x1, z0, z1 = box(ref)
+        for i, p in mov:
+            moves[i] = {
+                "align_left": {"x": x0 + p["w"] / 2}, "align_right": {"x": x1 - p["w"] / 2},
+                "align_centre_x": {"x": (x0 + x1) / 2},
+                "align_back": {"z": z0 + p["d"] / 2}, "align_front": {"z": z1 - p["d"] / 2},
+                "align_centre_z": {"z": (z0 + z1) / 2},
+                "align_bottom": {"bottom": min(q["bottom"] for _, q in ref)},
+                "align_top": {"bottom": max(q["top"] for _, q in ref) - p["h"]},
+            }[action]
     elif action in SPREADS:
         ax, size, lo_key = ("x", "w", "x0") if action.endswith("_x") else ("z", "d", "z0")
-        order = sorted(items, key=lambda ip: (ip[1][ax], ip[0]))
-        total = sum(p[size] for _, p in order)
         if action.startswith("spread"):
+            order = sorted(mov, key=lambda ip: (ip[1][ax], ip[0]))
+            total = sum(p[size] for _, p in order)
             start, end = mg, (W if ax == "x" else D) - mg
             gap = (end - start - total) / (len(order) + 1)
             pos = start + gap
         else:
+            # between the outer two of the whole selection (references included)
+            order = sorted(items, key=lambda ip: (ip[1][ax], ip[0]))
+            total = sum(p[size] for _, p in order)
             start = order[0][1][lo_key]
             end = order[-1][1][lo_key] + order[-1][1][size]
             gap = (end - start - total) / (len(order) - 1)
             pos = start
         for i, p in order:
-            moves[i] = {ax: pos + p[size] / 2}
+            if moving(i):
+                moves[i] = {ax: pos + p[size] / 2}
             pos += p[size] + gap
     elif action == "nudge":
-        for i, p in items:
+        for i, p in mov:
             moves[i] = {"x": p["x"] + float(dx or 0), "z": p["z"] + float(dz or 0),
                         "bottom": p["bottom"] + float(dy or 0)}
     moved = []
     for i, t in moves.items():
-        r = move_to(root, i, x=t.get("x"), z=t.get("z"), bottom=t.get("bottom"),
-                    qxw_path=qxw_path, mesh_dirs=mesh_dirs)
+        if i.startswith("f:"):
+            r = move_fixture(root, i[2:], x=t.get("x"), z=t.get("z"), bottom=t.get("bottom"),
+                             qxf_defs=qxf_defs)
+        else:
+            r = move_to(root, i, x=t.get("x"), z=t.get("z"), bottom=t.get("bottom"),
+                        qxw_path=qxw_path, mesh_dirs=mesh_dirs)
         if r["before"] != r["after"]:
             moved.append(i)
-    outside = [m["id"] for m in meshes(root, qxw_path, mesh_dirs)
-               if m["id"] in moves and m["place"] and (m["place"]["x0"] < -1 or m["place"]["z0"] < -1
-                                                       or m["place"]["x0"] + m["place"]["w"] > W + 1
-                                                       or m["place"]["z0"] + m["place"]["d"] > D + 1)]
+    placed = {m["id"]: m["place"] for m in meshes(root, qxw_path, mesh_dirs) if m["place"]}
+    placed.update({f["key"]: f["place"] for f in fixtures(root, qxf_defs)})
+    outside = [i for i in moves if i in placed and (
+        placed[i]["x0"] < -1 or placed[i]["z0"] < -1
+        or placed[i]["x0"] + placed[i]["w"] > W + 1 or placed[i]["z0"] + placed[i]["d"] > D + 1)]
     return {"moved": moved, "skipped": skipped, "outside": outside}
 
 
@@ -669,6 +736,12 @@ def report(orig: ET.Element, new: ET.Element, source: str, output: str,
                 ch.append(f"name '{pa['name']}' → '{pb['name']}'")
             if ch:
                 lines.append(f"Mesh {mid} '{pb['label']}': " + "; ".join(ch))
+    fa = {f["id"]: f for f in fixtures(orig)}
+    for f in fixtures(new):
+        o = fa.get(f["id"])
+        if o and (o["x"], o["y"], o["z"]) != (f["x"], f["y"], f["z"]):
+            lines.append(f"Fixture {f['id']} '{f['name']}': X/Y/Z {o['x']:g}/{o['y']:g}/{o['z']:g} → "
+                         f"{f['x']:g}/{f['y']:g}/{f['z']:g} mm")
     if len(lines) == 5:
         lines.append("(no changes)")
     missing = [m["label"] for m in b.values() if not m["found"]]

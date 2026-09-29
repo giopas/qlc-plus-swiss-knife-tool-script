@@ -4,9 +4,14 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep, night — Phase 2.3 done, v1.6.0 prepared):**
+- v1.5.0 released by giopas (main `4abaef8`, tag `v1.5.0`); his tests: Doctor D017 fix on the real show works, Rig Reducer works.
+- **2.3 Look and Chaser Builder — done** on branch `feat/look-builder` (from `main`; commit `d0ab5c2` + docs/release commit; wiki *Look Builder* page). **v1.6.0 prepared** on the same branch (VERSION, CHANGELOG `[1.6.0]`, README, ROADMAP ✅, release notes + forum post). 497 tests green; tab browser-checked on Festival_14fix. Found and fixed on the way: a new VC page copied the first page's *Enable* MIDI input (`vc_ops.new_page`, `porter_vc._new_page`). Waiting for giopas: open `tests/manual/Festival_looks.qxw` in QLC+ (§6 open-check), try the tab on a real show, push, merge, tag (commands in §8).
+- Next: **2.4 VC Builder** → v1.7.0.
+
 **Status (29 Sep, evening — Phase 2.2 done, v1.5.0 prepared):**
 - **2.2 Rig Reducer — done** on branch `feat/rig-reducer` (stacked on `feat/doctor-fixes`; commit `35c4dd6` + release commit; wiki `f87b867` *Rig Reducer* page). **v1.5.0 prepared** on the same branch (VERSION, CHANGELOG `[1.5.0]`, README, ROADMAP ✅, release notes + forum post). 476 tests green; both tabs browser-checked. Waiting for giopas: test on the Mac, push, merge, tag (commands in §8).
-- Next: **2.3 Look and Chaser Builder** → v1.6.0.
+- Next: **2.3 Look and Chaser Builder** → v1.6.0. *(done — see above)*
 
 **Status (29 Sep, later — Phase 2.1 done):**
 - v1.4.1 released by giopas (main `61cdcb9`, tag `v1.4.1`).
@@ -354,18 +359,14 @@ Checks (★ = included in Phase 1.0):
 - [x] Tests `tests/test_rig_reducer.py` (7): Festival keep-the-PARs (counts, nothing new for Doctor, deterministic, input untouched, pre-empty chasers kept), synthetic cascade (EFX, matrix, sequence, bound scene, slider, CueList, buttons), re-patch + D009, `reduce_file` never overwrites, API, rename not a new finding.
 - Commit: `feat: Rig Reducer with cascading clean-up`
 
-**2.3 Look and Chaser Builder → v1.6.0**
-- [ ] **Looks**: fixture group × palette. Palettes are warm, cold, scenic and custom (with RGB pickers). Every channel is declared. Names follow the nomenclature profile.
-- [ ] **Chaser patterns**:
-  - all-hit;
-  - left/right alternation;
-  - chase across a group;
-  - ping-pong;
-  - build-up;
-  - random (seeded, so it stays deterministic).
-- [ ] Chaser options: cut vs fade, and step time entered in ms or as BPM plus note length.
-- [ ] Song presets (e.g. "Take Me Out Drive": 8 steps, 280 ms, hard cut) are saved in a profile and reusable.
-- [ ] Simulated DMX preview: a per-step colour strip for each fixture.
+**2.3 Look and Chaser Builder → v1.6.0** — ✅ *done 29 Sep, branch `feat/look-builder` (`d0ab5c2`)*
+- [x] **Looks**: fixture group × palette. Palettes are warm, cold, scenic and custom (with RGB pickers). Every channel is declared. Names follow the nomenclature profile. *(`core/look_builder.py`; palettes in `core/looks/palettes.json`; colour written by `capability_map.encode` — RGB(W) mix / nearest wheel slot / dimmer; "All fixtures" + the workspace's fixture groups, head order row by row; plain names `Group · Colour`, TheBand `AS · Amber`; duplicates get ` (2)`; level 5–100 %)*
+- [x] **Chaser patterns**: all-hit; left/right alternation (halves or odd/even); chase across a group; ping-pong; build-up; random (seeded, *n* per step, never the same set twice in a row). *(`pattern_states()`; colours per step or per fixture; off = dark or a background colour/level; identical steps share one scene; steps in folder `Look Builder/Chasers/<name>`)*
+- [x] Chaser options: cut vs fade (a % of the step, fade in = fade out, Common speed modes), and step time entered in ms or as BPM plus note length (1/1 … 1/16, a quarter = one beat).
+- [x] Song presets are saved in a profile and reusable. *(built-in `core/looks/presets.json` — "Drive — 8 steps, 280 ms, cut" and 4 more; yours in `~/.qlc_swiss_knife/look_presets.json` / `$QSK_LOOK_PRESETS`; built-in names reserved)*
+- [x] Simulated DMX preview: a per-step colour strip for each fixture. *(values decoded back with `capability_map.decode`; ▶ Play at the step time; look preview too)*
+- [x] Extra: optional new VC page (solo frame of coloured toggle buttons per look group + one for chasers); an existing PANIC RESET script gets `stopfunction` for every new look/chaser; Doctor gate (new errors block); new file + `_looks_report.txt`; **Look Builder tab** + `/api/looks/*`; `tests/test_look_builder.py` (21); `tests/manual/Festival_looks.qxw`.
+- [ ] Not built: D013 fix with a timing choice (the chaser timing UI could offer it) → backlog; moving-head *position* in looks (pan/tilt are centred) → 2.4/backlog.
 - Commits: `feat: look builder (group × palette)`, `feat: chaser pattern builder with BPM timing`
 
 **2.4 VC Builder → v1.7.0** (extends the existing VC Visual Editor)
@@ -414,6 +415,7 @@ Checks (★ = included in Phase 1.0):
 - **Command-line pipeline**: `swissknife build profile.json → show.qxw`, fully scripted and reproducible.
 - **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
 - **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
+- **Look Builder follow-ups** (from 2.3): Doctor D013 fix using the chaser timing choice (ms / BPM); chasers in QLC+ *beats* tempo (tap/BPM sync) instead of fixed ms; looks with a moving-head position (pan/tilt presets instead of centre); save your own palettes; RGB-matrix patterns for pixel bars.
 - **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
 - **Audio triggers** helper (DMX-mode pitfalls documented).
 - Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
@@ -514,7 +516,23 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
-**giopas — release v1.5.0 (2.1 Doctor fixes + 2.2 Rig Reducer), branch `feat/rig-reducer`:**
+**giopas — release v1.6.0 (2.3 Look & Chaser Builder), branch `feat/look-builder`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/look-builder
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 497 passed
+python3 app.py                                                        # restart the app → Look Builder
+git push -u origin feat/look-builder
+git checkout main && git pull --ff-only
+git merge --no-ff feat/look-builder -m "Release v1.6.0"
+python -m pytest -q && git push origin main
+git tag -a v1.6.0 -m "v1.6.0" && git push origin v1.6.0
+cd wiki && git push origin master && cd ..
+```
+GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.6.0.md`; forum: `docs/release-notes/FORUM_v1.6.0.bbcode`.
+Try first: open `tests/manual/Festival_looks.qxw` in QLC+ (functions in the *Look Builder* folder, page *Looks*, the chasers run at 280 ms / 250 ms …); then on a real show: looks for a group, a chaser from the *Drive* preset, 💾 Build, open in QLC+.
+
+**giopas — release v1.5.0 (done 29 Sep), branch `feat/rig-reducer`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
 git checkout feat/rig-reducer
@@ -542,7 +560,8 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. Results of giopas's v1.5.0 tests; then Phase 2.3 Look and Chaser Builder → v1.6.0.
+1. Results of giopas's v1.6.0 tests (QLC+ open-check of `tests/manual/Festival_looks.qxw`); then Phase 2.4 VC Builder → v1.7.0.
+1c. (done) v1.5.0 tests; Phase 2.3 Look and Chaser Builder.
 2. (done) Phase 2.1 Workspace Doctor fixes.
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).

@@ -1,0 +1,35 @@
+{
+ "palettes": {
+  "warm": {
+   "label": "Warm",
+   "colours": [
+    {"name": "Warm White", "hex": "#FFC98A", "white": 0.7},
+    {"name": "Amber", "hex": "#FFB000"},
+    {"name": "Orange", "hex": "#FF6A00"},
+    {"name": "Red", "hex": "#FF0000"},
+    {"name": "Pink", "hex": "#FF3C82"}
+   ]
+  },
+  "cold": {
+   "label": "Cold",
+   "colours": [
+    {"name": "Cold White", "hex": "#FFFFFF", "white": 1.0},
+    {"name": "Light Blue", "hex": "#64B4FF"},
+    {"name": "Cyan", "hex": "#00FFFF"},
+    {"name": "Blue", "hex": "#0000FF"},
+    {"name": "Lavender", "hex": "#9678FF"}
+   ]
+  },
+  "scenic": {
+   "label": "Scenic",
+   "colours": [
+    {"name": "Congo", "hex": "#3C00FF"},
+    {"name": "Magenta", "hex": "#FF00FF"},
+    {"name": "Purple", "hex": "#9600FF"},
+    {"name": "Green", "hex": "#00FF00"},
+    {"name": "Teal", "hex": "#00FF96"},
+    {"name": "Yellow", "hex": "#FFFF00"}
+   ]
+  }
+ }
+}

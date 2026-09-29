@@ -107,6 +107,10 @@
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Rig Reducer</span>
     </button>
+    <button class="sn-item" id="sn-looks" data-tip="Look Builder" data-desc="Build looks (fixture group × palette) and chasers (chase, ping-pong, build-up, random…) with BPM timing and a DMX preview, into a new file." onclick="go('looks')">
+      <svg class="ic"><use href="/static/icons.svg#palette"/></svg>
+      <span>Look Builder</span>
+    </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
       <span>Brightness</span>
@@ -1698,6 +1702,35 @@
   </section>
 
   <!-- ======================================================================
+       LOOK AND CHASER BUILDER (WORKPLAN 2.3)
+  ====================================================================== -->
+  <section class="screen" id="scr-looks">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
+      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Looks for your fixture groups from a palette, and chasers from a pattern — with BPM timing and a preview — into a new file.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <span id="lb-summary" class="doc-summary"></span>
+    </div>
+
+    <div id="lb-body" class="lb-body"><div class="porter-placeholder">Open a workspace to build looks and chasers for its fixture groups.</div></div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button id="lb-go" class="btn btn-accent" onclick="looksBuild()" disabled>💾 Build → new file…</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        RIG REDUCER (WORKPLAN 2.2)
   ====================================================================== -->
   <section class="screen" id="scr-reducer">
@@ -2110,6 +2143,7 @@
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
 <script src="/static/js/reducer.js?v={{ asset_v }}"></script>
+<script src="/static/js/looks.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>
 <script src="/static/js/session.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>

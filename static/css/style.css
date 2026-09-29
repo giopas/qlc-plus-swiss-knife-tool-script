@@ -3560,3 +3560,4 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .lb-card #lb-folder, .lb-card #lb-vcname { width: 160px; }
 .lb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, max-content)); }
 .lb-grid label { white-space: nowrap; }
+.lb-right .lb-grid { grid-template-columns: 1fr; }

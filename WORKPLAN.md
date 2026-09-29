@@ -4,6 +4,12 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep, evening — Phase 2.5 done, v1.8.0 prepared):**
+- v1.7.0 released by giopas (main `7d31694`, tag `v1.7.0`).
+- giopas's mesh sample (`mesh test.qxw` + `Bassist.obj` + `cube.obj`, QLC+ 5.2.2) + QLC+ source (`mainview3d.cpp`, `monitorproperties.cpp`, `StageSimple.qml`) → format and placement formula recorded in the wiki page *Stage and Meshes*. His request: fix mesh positions so "on the floor" really is 0 (his bassist needed Y −755 by eye).
+- **2.5 Stage and Meshes — done** on branch `feat/stage-meshes` (from `main`; commit `7053f07` + docs/release commit; wiki *Stage and Meshes* page). **v1.8.0 prepared** on the same branch. 517 tests green; tab browser-checked on Festival_14fix (plan/front views, drag, put all on the floor, add from library). **Open: confirm in QLC+ that the Simple ground floor is at 0.1 m** (read from `StageSimple.qml`: 0.2 m slab centred on 0; his eyeballed values sit 45–55 mm above it) — see §8.
+- Next: **2.6 Benchmark** → v2.0.0.
+
 **Status (29 Sep, later — Phase 2.4 done, v1.7.0 prepared):**
 - v1.6.0 released by giopas (main `e62a6ee`, tag `v1.6.0`); his QLC+ open-check of `Festival_looks.qxw`: folders, *Looks* page, buttons and chaser timings all as intended.
 - **2.4 VC Builder — done** on branch `feat/vc-builder` (from `main`; commit `9eafddb` + docs/release commit; wiki *VC Visual Editor* page updated). **v1.7.0 prepared** on the same branch. 508 tests green; editor browser-checked on Festival_14fix (add, wire, drop a function, drag-move with snap, label panel, template save/apply, page first, setlist CueList, Delete key). Found and fixed on the way: Doctor ignored a slider's playback function. Waiting for giopas: QLC+ open-check of `tests/manual/Festival_vc_builder.qxw` (page *Built*: solo frame of 4 looks, playback slider, label, legend panel, setlist CueList), try the editor on a real show, push, merge, tag (commands in §8).
@@ -387,10 +393,10 @@ Checks (★ = included in Phase 1.0):
 - [ ] Not built: resize by dragging handles; widget types beyond the six (knob, XY pad, speed dial, clock…); templates with key/MIDI bindings.
 - Commits: `feat(vc): create/delete/wire widgets`, `feat(vc): pages, grid snap, screen profiles`, `feat(vc): page templates`
 
-**2.5 Stage and Meshes → v1.8.0**
-- [ ] Work out how QLC+ 5 stores meshes: add an OBJ in QLC+, save, and diff the files. Record the findings in the wiki.
-- [ ] Import OBJ meshes (band members, risers, truss) with position, rotation and scale. Build a small reusable mesh library.
-- [ ] Unified 3D placement for fixtures and meshes, reusing the tilt logic from §3.
+**2.5 Stage and Meshes → v1.8.0** — ✅ *done 29 Sep, branch `feat/stage-meshes` (`7053f07`)*
+- [x] Work out how QLC+ 5 stores meshes: add an OBJ in QLC+, save, and diff the files. Record the findings in the wiki. *(`<Monitor>`: `Grid` (m/ft), `StageItem` 0–3, `MeshItem ID XPos YPos ZPos` always, `XRot..` only ≠ 0, `XScale..` only ≠ 1, `Name`, `Hidden`, `Res` absolute / QLC+ mesh dir (`generic/cube.obj`) / workspace-relative. Placement: model origin at (XPos/1000 − W/2 + extX/2, YPos/1000 + extY/2, ZPos/1000 − D/2 + extZ/2), unscaled extents, then S then R = Rx·Ry·Rz. Floor top: Simple ground 0.1 m (slab centred on 0), box/rock/theatre 0. Z towards the audience. Wiki *Stage and Meshes*.)*
+- [x] Import OBJ meshes (band members, risers, truss) with position, rotation and scale. Build a small reusable mesh library. *(`core/stage3d.py`: OBJ bounds from every vertex (cached, sampled > 20 k); placement shown as centre X/Z + bottom above the floor; `on_floor` exact after rotation/scale; `move_to`; rotate/scale keeping spot and height; add (centre, on the floor), duplicate, remove, relink; stage type/size keeping meshes; library = folders of .obj in `~/.qlc_swiss_knife/mesh_dirs.json` (default `~/Documents/QLC+/Meshes`); built-in cube bounds. Tab *Stage & Meshes* with plan/front SVG views, drag with 10 mm snap, undo/discard, save → new file + `_stage_report.txt`. `tests/test_stage3d.py` (9).)*
+- [~] Unified 3D placement for fixtures and meshes, reusing the tilt logic from §3. *(Fixtures shown in both views for reference; editing fixture positions/tilt there → backlog — they're placed by the Fixture Configurator / Quick Start.)*
 - Commit: `feat: stage meshes in 3D monitor`
 
 **2.6 Benchmark → v2.0.0**
@@ -424,6 +430,7 @@ Checks (★ = included in Phase 1.0):
 - **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
 - **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
 - **Look Builder follow-ups** (from 2.3): Doctor D013 fix using the chaser timing choice (ms / BPM); chasers in QLC+ *beats* tempo (tap/BPM sync) instead of fixed ms; looks with a moving-head position (pan/tilt presets instead of centre); save your own palettes; RGB-matrix patterns for pixel bars.
+- **Stage follow-ups** (from 2.5): edit fixture positions and tilt in the same plan/front views (reuse `qxw_builder.default_x_rot`); mesh thumbnails in the library; hide/show meshes (`Hidden`); copy meshes between shows (Porter); rotated footprints in the plan view (now the axis-aligned box).
 - **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
 - **Audio triggers** helper (DMX-mode pitfalls documented).
 - Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
@@ -524,7 +531,25 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
-**giopas — release v1.7.0 (2.4 VC Builder), branch `feat/vc-builder`:**
+**giopas — release v1.8.0 (2.5 Stage & Meshes), branch `feat/stage-meshes`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/stage-meshes
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q
+python3 app.py
+```
+(expect 517 passed.) Check first: open `~/Downloads/mesh test.qxw` → Stage & Meshes → the bassist says "floats 45 mm", the cube "floats 55 mm" → ⤓ Put all on the floor → 💾 Save → open the new file in QLC+: both must stand exactly on the Simple ground (bassist Y −800, cube Y 100). Then a show on a Simple box / Rock stage (floor at 0), e.g. the Festival show meshes → put all on the floor → QLC+. Then:
+```bash
+git push -u origin feat/stage-meshes
+git checkout main && git pull --ff-only
+git merge --no-ff feat/stage-meshes -m "Release v1.8.0"
+python -m pytest -q && git push origin main
+git tag -a v1.8.0 -m "v1.8.0" && git push origin v1.8.0
+cd wiki && git push origin master && cd ..
+```
+GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.8.0.md`; forum: `docs/release-notes/FORUM_v1.8.0.bbcode`.
+
+**giopas — release v1.7.0 (done 29 Sep), branch `feat/vc-builder`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
 git checkout feat/vc-builder
@@ -584,7 +609,8 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. Results of giopas's v1.7.0 tests (QLC+ open-check of `tests/manual/Festival_vc_builder.qxw`); then Phase 2.5 Stage and Meshes → v1.8.0 (needs a QLC+ file with an OBJ mesh added in QLC+, saved — for the diff).
+1. Results of giopas's v1.8.0 check (Simple ground floor at 0.1 m — if QLC+ shows the models slightly in the air or sunk, adjust `stage3d.FLOOR_M`); then Phase 2.6 Benchmark → v2.0.0.
+1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.
 1d. (done) v1.6.0 tests; Phase 2.4 VC Builder.
 1c. (done) v1.5.0 tests; Phase 2.3 Look and Chaser Builder.
 2. (done) Phase 2.1 Workspace Doctor fixes.

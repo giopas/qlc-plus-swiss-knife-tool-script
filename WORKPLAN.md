@@ -4,6 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep, late night — v1.8.1 prepared: fixtures in the Stage placement):**
+- giopas's feedback on the mock-up: (1) a tool that changed the show in progress gets an **orange dot** in the sidebar — useful in long sessions (added to 2.6 and to the mock-up); (2) **arrange meshes along fixtures and back** (e.g. a mesh between two fixtures) → built now as **v1.8.1** on branch `feat/stage-fixtures` (stacked on `feat/ui-audit`): `stage3d.fixtures()` with body sizes from the .qxf `<Dimensions>` (300 mm default; XPos/ZPos = left/back edge, YPos = underside, from QLC+ `updateFixturePosition`), `move_fixture()`, `arrange(move=all|meshes|fixtures)` where the non-moving items are the reference; fixtures selectable/draggable in the views, *Fixtures* list, *Move* choice, fixture editor; report lists fixture moves. 526 tests green; browser-checked (bassist centred between Wing Left / Wing Right, backs aligned; fixture drag). Commands in §8.
+- Next: giopas's go on the mock-up → 2.6.
+
 **Status (29 Sep, night — v1.8.0 released; plan for 2.6 UI audit and 2.7 Pub test):**
 - **v1.8.0 released** by giopas (main `874f72a`, tag `v1.8.0`): Stage & Meshes with the placement tools.
 - giopas asked for a **usability audit of the whole UI** (align the logic across screens, fix crowded screens) and a **Start screen that explains what the app is for** — before the benchmark, because the benchmark tutorial walks through the UI. Audit done on all 19 screens (screenshots, Festival_14fix loaded); findings and tasks in **Phase 2.6 UI audit → v1.9.0**. The benchmark becomes **2.7 Pub test → v2.0.0**, now with measurable pass criteria and the tool it needs (a functional *Compare* of two workspaces).
@@ -424,7 +428,7 @@ Checks (★ = included in Phase 1.0):
 
 *Decision (giopas, 29 Sep): one **show in progress** for every tool.* Moving a show to a new venue takes many adjustments across tools, back and forth; today each tool writes its own new file and the next tool starts from the open (old) workspace — so you save, re-open, and lose the thread. Instead:
 - **The show in progress** — opening a `.qxw` makes a working copy in memory; *every* tool reads it and its primary action becomes **"Apply to the show"** (no file written). The header shows it all the time: its name, the file it came from, *N changes, not saved*, the Doctor status (errors / warnings, click → Doctor), ↶ Undo, **History**, **💾 Save as new file…**.
-- **History** — each apply is a step (tool, summary, Doctor after it); click a step to reopen that tool; *undo this step* / go back to any step; save a **checkpoint** file at any step; the saved file gets one report with every step. Sidebar items show how many changes each tool made.
+- **History** — each apply is a step (tool, summary, Doctor after it); click a step to reopen that tool; *undo this step* / go back to any step; save a **checkpoint** file at any step; the saved file gets one report with every step. Sidebar items that changed the show get an **orange dot** (with the count on hover) — giopas, 29 Sep: useful in long sessions; the dot goes when the steps are undone or the show is saved.
 - **Routes** — the Start screen's jobs (e.g. *Adapt a show*: Reducer → Doctor → Groups → Looks → VC → Stage → Setlist → final check) show as a strip of steps above the tool; any step, any order; done steps ticked.
 - **Two-file tools** — the Function Porter (with the QXW Merger folded in, giopas 29 Sep) takes the *other* show as its source and the show in progress as its target; Compare compares the show in progress with another file.
 - **What changes in the code**: a `core/session_show.py` holding the working root + step snapshots (the VC Editor and Stage & Meshes already keep a working copy with undo — generalise that); each tool's "export" route gains an `apply` variant returning the new root to the session instead of bytes; tools that read `workspace._state` read the show in progress; writers that save next to the file (Trigger Manager, Setlist, Dictionary) apply too; one save route (Save dialog, `<name>_v<N+1>.qxw` + `_report.txt`). Existing "→ new file" buttons stay available as *Export a copy* during the transition.
@@ -495,7 +499,7 @@ Checks (★ = included in Phase 1.0):
 - **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
 - **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
 - **Look Builder follow-ups** (from 2.3): Doctor D013 fix using the chaser timing choice (ms / BPM); chasers in QLC+ *beats* tempo (tap/BPM sync) instead of fixed ms; looks with a moving-head position (pan/tilt presets instead of centre); save your own palettes; RGB-matrix patterns for pixel bars.
-- **Stage follow-ups** (from 2.5): edit fixture positions and tilt in the same plan/front views (reuse `qxw_builder.default_x_rot`); mesh thumbnails in the library; hide/show meshes (`Hidden`); copy meshes between shows (Porter); rotated footprints in the plan view (now the axis-aligned box).
+- **Stage follow-ups** (from 2.5): ~~edit fixture positions in the same views~~ (done 1.8.1); fixture tilt aiming at a point / a mesh (reuse `qxw_builder.default_x_rot`); mesh thumbnails in the library; hide/show meshes (`Hidden`); copy meshes between shows (Porter); rotated footprints in the plan view (now the axis-aligned box).
 - **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
 - **Audio triggers** helper (DMX-mode pitfalls documented).
 - Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
@@ -596,7 +600,27 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
-**giopas — release v1.8.0 (2.5 Stage & Meshes), branch `feat/stage-meshes`:**
+**giopas — release v1.8.1 (fixtures in the Stage placement), branch `feat/stage-fixtures`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/stage-fixtures
+source ~/.venvs/swissknife/bin/activate
+python -m pytest -q
+git push -u origin feat/ui-audit feat/stage-fixtures
+git checkout main
+git pull --ff-only
+git merge --no-ff feat/stage-fixtures -m "Release v1.8.1"
+python -m pytest -q
+git push origin main
+git tag -a v1.8.1 -m "v1.8.1"
+git push origin v1.8.1
+cd wiki
+git push origin master
+cd ..
+```
+(expect 526 passed; the branch also carries the WORKPLAN commits of `feat/ui-audit`.) GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.8.1.md`.
+
+**giopas — release v1.8.0 (done 29 Sep), branch `feat/stage-meshes`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
 git checkout feat/stage-meshes

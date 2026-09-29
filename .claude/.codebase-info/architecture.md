@@ -1,6 +1,6 @@
 # Architecture
 
-*Last Updated: 2026-09-25*
+*Last Updated: 2026-09-27*
 
 ## Summary
 
@@ -35,6 +35,8 @@ All state lives in module-level Python dicts (singletons). There is no database 
 │  core/merger.py     — QXW merge engine                │
 │  core/porter.py     — cross-workspace function import │
 │  core/porter_vc.py  — VC widget porting for porter    │
+│  core/porter_input.py — key/MIDI input porting         │
+│  core/capability_map.py — fixture-type value translation│
 │  core/vc_ops.py     — VC Visual Editor operations     │
 │  core/doctor/       — read-only workspace checker     │
 │  core/showbook.py   — show doc generator (PDF/CSV)    │

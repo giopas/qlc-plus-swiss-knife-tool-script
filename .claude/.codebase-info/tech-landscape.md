@@ -1,13 +1,13 @@
 # Technology Landscape
 
-*Last Updated: 2026-09-25*
+*Last Updated: 2026-09-27*
 
 ## Source-of-Truth Files
 
 | Information | File |
 |-------------|------|
 | Dependencies | `requirements.txt` |
-| Version | `core/workspace.py` (`VERSION = "1.3.2"`) and `app.py` context processor |
+| Version | `core/workspace.py` (`VERSION = "1.4.0"`) and `app.py` context processor |
 | App config | `app.py` (`PORT = 5731`, CSP headers, CSRF) |
 | Git ignores | `.gitignore` |
 | Launcher scripts | `run.sh` (Unix), `launchers/QLC_Swiss_Knife.bat` (Windows), `launchers/create-macos-app.sh`, `launchers/qlc-swiss-knife.desktop` (Linux) |

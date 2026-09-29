@@ -180,3 +180,106 @@ def test_api(show, tmp_path, monkeypatch):
     assert open(path, "rb").read() == before
     s = c.post("/api/stage/op", json={"op": "reset"}).get_json()
     assert not s["dirty"] and s["undo"] == 0
+
+
+# ── arrange (edges, align, distribute, nudge) ────────────────────────────────
+
+def _band(show, stage=1):
+    """Box stage 5 × 5 m; three people + a cube riser, all on the floor."""
+    path, r = show(stage)
+    s3.remove_mesh(r, "2")
+    s3.add_mesh(r, os.path.join(os.path.dirname(path), "person.obj"), x=3500, z=1000, qxw_path=path)
+    s3.on_floor(r, qxw_path=path)
+    s3.set_transform(r, "1", scale=[0.25, 0.25, 0.25], qxw_path=path)   # a 500 mm cube
+    return path, r
+
+
+def _p(r, path):
+    return {m["id"]: m["place"] for m in s3.meshes(r, path)}
+
+
+def test_arrange_edges_group_and_margin(show):
+    path, r = _band(show)
+    before = _p(r, path)
+    res = s3.arrange(r, ["0", "2"], "left", margin=100, qxw_path=path)
+    after = _p(r, path)
+    assert min(after[i]["x0"] for i in ("0", "2")) == 100
+    # moved together: the spacing between them is kept
+    assert after["2"]["x"] - after["0"]["x"] == before["2"]["x"] - before["0"]["x"]
+    assert sorted(res["moved"]) == ["0", "2"] and res["outside"] == []
+    s3.arrange(r, ["0", "2"], "right", qxw_path=path)
+    assert max(p["x0"] + p["w"] for i, p in _p(r, path).items() if i in ("0", "2")) == 5000
+    s3.arrange(r, ["1"], "back", qxw_path=path)
+    assert _p(r, path)["1"]["z0"] == 0
+    s3.arrange(r, ["1"], "front", margin=200, qxw_path=path)
+    assert _p(r, path)["1"]["z0"] + _p(r, path)["1"]["d"] == 4800
+    s3.arrange(r, ["1"], "centre", qxw_path=path)
+    assert (_p(r, path)["1"]["x"], _p(r, path)["1"]["z"]) == (2500, 2500)
+
+
+def test_arrange_floor_ceiling(show):
+    path, r = _band(show)
+    s3.arrange(r, ["0", "1"], "ceiling", qxw_path=path)             # stage height 3 m
+    p = _p(r, path)
+    assert p["0"]["top"] == 3000 and p["1"]["top"] == 3000 and p["1"]["bottom"] == 2500
+    s3.arrange(r, ["0", "1"], "floor", qxw_path=path)
+    assert _p(r, path)["0"]["bottom"] == 0 == _p(r, path)["1"]["bottom"]
+
+
+def test_arrange_align(show):
+    path, r = _band(show)
+    s3.arrange(r, ["0", "1", "2"], "align_back", qxw_path=path)
+    p = _p(r, path)
+    assert p["0"]["z0"] == p["1"]["z0"] == p["2"]["z0"]
+    s3.arrange(r, ["0", "1"], "align_centre_x", qxw_path=path)
+    p = _p(r, path)
+    assert abs(p["0"]["x"] - p["1"]["x"]) <= 1
+    s3.move_to(r, "1", bottom=400, qxw_path=path)
+    s3.arrange(r, ["0", "1"], "align_top", qxw_path=path)
+    p = _p(r, path)
+    assert p["0"]["top"] == p["1"]["top"] == 1800
+    with pytest.raises(s3.StageError):
+        s3.arrange(r, ["0"], "align_left", qxw_path=path)
+    with pytest.raises(s3.StageError):
+        s3.arrange(r, ["0"], "sideways", qxw_path=path)
+
+
+def test_arrange_distribute_and_spread(show):
+    path, r = _band(show)
+    s3.add_mesh(r, os.path.join(os.path.dirname(path), "person.obj"), x=1500, z=3000, qxw_path=path)   # id 3
+    ids = ["0", "1", "2", "3"]
+    s3.arrange(r, ids, "spread_x", margin=0, qxw_path=path)
+    p = _p(r, path)
+    order = sorted(ids, key=lambda i: p[i]["x"])
+    edges = [0] + [x for i in order for x in (p[i]["x0"], p[i]["x0"] + p[i]["w"])] + [5000]
+    gaps = [edges[k + 1] - edges[k] for k in range(0, len(edges), 2)]
+    assert max(gaps) - min(gaps) <= 2                                # equal gaps, edges included
+    s3.move_to(r, order[1], x=p[order[1]]["x"] - 300, qxw_path=path)
+    s3.arrange(r, ids, "distribute_x", qxw_path=path)
+    q = _p(r, path)
+    assert q[order[0]]["x0"] == p[order[0]]["x0"] and q[order[-1]]["x0"] == p[order[-1]]["x0"]   # outer two stay
+    inner = [q[order[k + 1]]["x0"] - (q[order[k]]["x0"] + q[order[k]]["w"]) for k in range(3)]
+    assert max(inner) - min(inner) <= 2
+    with pytest.raises(s3.StageError):
+        s3.arrange(r, ["0", "1"], "distribute_z", qxw_path=path)
+
+
+def test_arrange_nudge_and_skip_missing(show):
+    path, r = show(1)
+    before = _p(r, path)["0"]
+    res = s3.arrange(r, ["0", "2"], "nudge", dx=100, dz=-50, dy=20, qxw_path=path)
+    p = _p(r, path)["0"]
+    assert (p["x"], p["z"], p["bottom"]) == (before["x"] + 100, before["z"] - 50, before["bottom"] + 20)
+    assert res["skipped"] == ["2"]
+    with pytest.raises(s3.StageError):
+        s3.arrange(r, ["2"], "left", qxw_path=path)
+
+
+def test_api_arrange(show, tmp_path, monkeypatch):
+    monkeypatch.setenv("QSK_MESH_DIRS", str(tmp_path / "dirs.json"))
+    path, _ = show(1)
+    c = app.create_app().test_client()
+    assert c.post("/api/load", json={"path": path}).status_code == 200
+    s = c.post("/api/stage/op", json={"op": "arrange", "ids": ["0", "1"], "action": "left", "margin": 50}).get_json()
+    assert "placed" in s["message"] and min(m["place"]["x0"] for m in s["meshes"] if m["id"] in ("0", "1")) == 50
+    assert c.post("/api/stage/op", json={"op": "arrange", "ids": ["0"], "action": "align_left"}).status_code == 400

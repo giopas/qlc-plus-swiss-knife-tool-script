@@ -3590,3 +3590,5 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .st-side .filter-input { flex: 0 1 auto; width: auto; min-width: 0; }
 .st-side .rr-num { width: 76px; }
 .st-side .st-n { width: 62px; }
+.st-sec { font-size: 11px; font-weight: 600; margin: 8px 0 3px; }
+.st-side .lb-row .btn-sm[disabled] { opacity: .45; }

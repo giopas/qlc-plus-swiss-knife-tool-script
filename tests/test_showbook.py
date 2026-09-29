@@ -178,7 +178,8 @@ class TestVcLayout(unittest.TestCase):
 class TestDoctorSection(unittest.TestCase):
     def test_clean_file(self):
         d = book("Pub_6fix.qxw", ["doctor"])["sections"]["doctor"]
-        self.assertEqual((d["errors"], d["warnings"], d["findings"]), (0, 0, []))
+        self.assertEqual((d["errors"], d["warnings"]), (0, 1))
+        self.assertEqual([f["code"] for f in d["findings"]], ["D017"])   # PANIC RESET scene
 
     def test_file_with_errors(self):
         d = book("Festival_14fix.qxw", ["doctor"])["sections"]["doctor"]
@@ -207,7 +208,7 @@ class TestExports(unittest.TestCase):
             self.assertEqual(len(patch), 7)
             summ = z.read("summary.txt").decode("utf-8")
             self.assertIn("VC Widgets: 98 on 2 page(s)", summ)
-            self.assertIn("Doctor: 0 error(s), 0 warning(s)", summ)
+            self.assertIn("Doctor: 0 error(s), 1 warning(s)", summ)
 
     def test_zip_deterministic(self):
         self.assertEqual(self.zip, showbook.export_csv(self.doc))
@@ -217,7 +218,7 @@ class TestExports(unittest.TestCase):
         t = pdf_text(self.pdf)
         for s in ("Pub_6fix", "Fixture Patch List", "FLS: Front Left (Singer)",
                   "Page: 1. SETLIST", "Page: 2. EFFECTS", "PANIC / BLACKOUT",
-                  "Workspace Doctor", "0 error(s), 0 warning(s)", DATE):
+                  "Workspace Doctor", "0 error(s), 1 warning(s)", DATE):
             self.assertIn(s, t)
         self.assertNotIn("?", "".join(re.findall(r"^.*PANIC.*$", t, re.M)))   # emoji dropped, not "?"
         self.assertIn("(stop all functions)", t)

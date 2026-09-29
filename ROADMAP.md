@@ -29,6 +29,7 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **1.6.0** ✅ | Look & Chaser Builder | Fixture group × palette looks; pattern chasers (alternate, chase, ping-pong, build-up, seeded random) with BPM timing; song presets |
 | **1.7.0** ✅ | VC Builder | Create/wire widgets, pages, grid snap, screen profiles, page templates, one-click setlist CueList wiring |
 | **1.8.0** ✅ | Stage & meshes | OBJ meshes placed by what you see (centre, height above the floor), on the floor in one click; plan/front views with fixtures; mesh library |
+| **1.9.0** | UI audit | Start screen that explains the app, sidebar by job, one screen pattern (inspector tabs, primary action in the footer), one save verb |
 | **2.0.0** | Benchmark | The "Pub test": rebuild a 6-fixture pub show from a 14-fixture festival show using only Swiss Knife, Doctor-clean |
 
 ## After 2.0

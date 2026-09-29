@@ -201,3 +201,68 @@ class TestHelpers(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestValidationPreview(_Base):
+    """Step 4 says which bindings clash with the target, per policy."""
+
+    def _plan(self, **vc):
+        porter.load_source(self.src)
+        porter.load_target(self.tgt_b)
+        keys = porter_vc.list_source_vc(porter.source_root())
+        scope = [w["key"] for w in keys if w["caption"] == "1. SETLIST"]
+        cl = porter.resolve_closure(porter_vc.seeds_from_widgets(porter.source_root(), scope))
+        opts = dict(enabled=True, scope=scope)
+        opts.update(vc)
+        return dict(closure=cl, fixture_mapping=porter.auto_map(cl["fixture_ids"], "fan_in"),
+                    fanout_mode="fan_in", drop_unmapped=True, qxf_paths=[CORPUS], vc=opts)
+
+    def test_keep_free_warns(self):
+        w = porter.validate(self._plan())["warnings"]
+        hit = [x for x in w if "will be DROPPED" in x]
+        self.assertEqual(len(hit), 1)
+        self.assertIn("MIDI/input U2 ch 40 on Button '🚨 PANIC RESET'", hit[0])
+        self.assertIn("target: Button 'ALL ON'", hit[0])
+        self.assertIn("Source wins", hit[0])
+
+    def test_source_wins_is_info(self):
+        v = porter.validate(self._plan(bindings="source_wins"))
+        self.assertFalse(any("DROPPED" in x for x in v["warnings"]))
+        self.assertTrue(any("move from the target widgets" in x for x in v["info"]))
+
+    def test_no_conflict_on_other_universe(self):
+        w = porter.validate(self._plan(universe_map={"1": "3"}))["warnings"]
+        self.assertFalse(any("DROPPED" in x for x in w))
+
+
+class TestThroughTheApi(_Base):
+    """The same options through the Flask routes the UI uses — the route
+    used to drop 'source_wins', the universe map, copy_input and
+    bindings_only (giopas's test on the real show, 29 Sep)."""
+
+    def _post(self, client, url, body):
+        r = client.post(url, json=body)
+        self.assertLess(r.status_code, 300, r.get_data(as_text=True)[:300])
+        return r
+
+    def test_source_wins_and_universe_map_reach_the_porter(self):
+        import app
+        c = app.create_app().test_client()
+        self._post(c, "/api/porter/source/load", {"path": self.src})
+        self._post(c, "/api/porter/target/load", {"path": self.tgt_b})
+        keys = porter_vc.list_source_vc(porter.source_root())
+        scope = [w["key"] for w in keys if w["caption"] == "1. SETLIST"]
+        cl = porter.resolve_closure(porter_vc.seeds_from_widgets(porter.source_root(), scope))
+        plan = dict(closure=cl, fixture_mapping=porter.auto_map(cl["fixture_ids"], "fan_in"),
+                    fanout_mode="fan_in", drop_unmapped=True,
+                    vc=dict(enabled=True, scope=scope, bindings="source_wins",
+                            universe_map={}, copy_input=True, bindings_only=False))
+        self._post(c, "/api/porter/execute", plan)
+        res = c.get("/api/porter/last-result").get_json()
+        self.assertEqual(res["vc"]["bindings_moved"], 1)
+        self.assertTrue(any("removed from the target's Button 'ALL ON'" in e["action"]
+                            for e in res["vc"]["binding_log"]))
+        plan["vc"].update(bindings="keep_free", universe_map={"1": "2"})
+        r = self._post(c, "/api/porter/execute", plan)
+        root = qxw_io.strip_ns(ET.fromstring(r.data))
+        self.assertEqual(porter_input.read_patch(root)["2"]["device"], "SINCO")

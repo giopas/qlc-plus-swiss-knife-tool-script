@@ -364,3 +364,52 @@ def copy_bindings(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, st
                 used[src_u] = k[1]
             log.append(entry)
     return {"log": log, "used": used}
+
+
+# ── preview for step 4 ───────────────────────────────────────────────────────
+
+def binding_conflicts(src_root: ET.Element, tgt_root: ET.Element, scope: List[str],
+                      func_ids: Iterable[str], umap: Dict[str, str],
+                      removed: Iterable[str] = ()) -> List[dict]:
+    """Bindings of the widgets that will be ported which the target already
+    uses (after the universe map, ignoring target items that will be
+    removed): ``[{binding, widget, owners: [labels]}]`` in document order.
+
+    Widgets that will be ported: everything inside the step 2 *scope*
+    (widget keys), else every widget whose functions are all in *func_ids*.
+    """
+    from core import porter_vc
+    umap = {str(k): str(v) for k, v in (umap or {}).items()}
+    src_vc, tgt_vc = src_root.find("VirtualConsole"), tgt_root.find("VirtualConsole")
+    if src_vc is None or tgt_vc is None:
+        return []
+    if scope:
+        keys = porter_vc.widget_keys(src_root)
+        widgets = []
+        for k in scope:
+            el = keys.get(str(k))
+            if el is not None:
+                widgets += [w for w in el.iter() if _is_widget(w) and w not in widgets]
+    else:
+        fset = set(func_ids)
+        widgets = [w for w in src_vc.iter() if w is not src_vc and _is_widget(w)
+                   and porter_vc.widget_function_refs(w)
+                   and set(porter_vc.widget_function_refs(w)) <= fset]
+    gone = set()
+    tkeys = porter_vc.widget_keys(tgt_root)
+    for k in removed or ():
+        el = tkeys.get(str(k))
+        if el is not None:
+            gone |= {id(x) for x in el.iter()}
+    owners = {k: [w for w in ws if id(w) not in gone]
+              for k, ws in target_binding_owners(tgt_vc).items()}
+    out = []
+    for w in widgets:
+        for _slot, _p, el in widget_bindings(w):
+            k = binding_key(el)
+            if k and k[0] == "input" and k[1] in umap:
+                k = ("input", umap[k[1]], k[2])
+            if k and owners.get(k):
+                out.append({"binding": describe(k), "widget": widget_label(w),
+                            "owners": [widget_label(o) for o in owners[k]]})
+    return out

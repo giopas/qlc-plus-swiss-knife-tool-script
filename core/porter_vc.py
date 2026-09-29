@@ -23,7 +23,10 @@ Rules
   document order (deterministic).
 * **Bindings.** ``bindings="keep_free"`` (default) keeps a key or MIDI binding
   unless the target already uses it; ``"keep"`` keeps all, ``"drop"`` none.
-* **Placement.** Units keep their size and inner layout.  They are placed on
+* **Placement.** Units keep their size and inner layout.  When everything
+  comes from one source page and goes onto a new page, each unit keeps its
+  source position when it fits (the page looks like the source page).
+  Otherwise they are placed on
   the chosen page (default: a new page) at the first free spot, top to
   bottom then left to right, never overlapping existing widgets; when the
   page is full, a continuation page is created.
@@ -357,6 +360,13 @@ def _overlaps(a, b) -> bool:
                 ay + ah + GAP <= by or by + bh + GAP <= ay)
 
 
+def _intersects(a, b) -> bool:
+    """Rectangles overlap (touching edges don't count; no gap required)."""
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
+
+
 class _Page:
     def __init__(self, el: ET.Element, top: Optional[int] = None):
         self.el = el
@@ -507,6 +517,17 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
 
     # 4. renumber, bindings, place
     n_widgets = kept_b = dropped_b = 0
+    # Everything from one source page onto a new page: keep the source
+    # layout where it fits (giopas's test, 29 Sep: a first-fit placement
+    # split *1. SETLIST* over two pages)
+    keep_layout = bool(created) and len({id(pg) for _u, pg in ready}) == 1
+    if keep_layout:                    # only when *every* unit fits where it was
+        orig = [_rect(u) for u, _pg in ready]
+        keep_layout = all(x >= 0 and y >= 0 and x + w <= page.w and y + h <= page.h
+                          for x, y, w, h in orig) and not any(
+            _intersects(a, b) for i, a in enumerate(orig) for b in orig[i + 1:])
+    first_page = page
+    kept_layout = 0
     for unit, _pg in ready:
         nid, _mapping = vc_ops._renumber(unit, nid)
         orig_u = {el: el.get("Universe") for el in unit.iter("Input")}
@@ -517,8 +538,13 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
                 input_used[orig_u.get(el, el.get("Universe"))] = el.get("Universe")
         kept_b += k
         dropped_b += d
-        _, _, w, h = _rect(unit)
-        spot = page.find_spot(w, h)
+        ox, oy, w, h = _rect(unit)
+        spot = None
+        if keep_layout and page is first_page:
+            spot = (ox, oy)
+            kept_layout += 1
+        if spot is None:
+            spot = page.find_spot(w, h)
         if spot is None and page.rects:           # page full: continuation page
             cont = _new_page(tgt_vc, f"{caption} ({len(created) + 1})" if created else caption,
                              ready[0][1], nid)
@@ -533,6 +559,8 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
         page.add(unit, *spot)
         n_widgets += sum(1 for x in unit.iter() if _is_widget(x))
 
+    if kept_layout:
+        summary.append(f"{kept_layout} unit(s) kept their position from the source page.")
     moved = 0
     for key, owners in stolen.items():
         for w in owners:

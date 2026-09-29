@@ -1084,6 +1084,28 @@ def validate(plan: dict) -> dict:
             f"{len(unassigned)} target fixture(s) left unassigned by "
             f"{fanout_mode} fan-out: IDs {', '.join(_id_sorted(unassigned))}.")
 
+    # Key/MIDI bindings the target already uses (1.6, after giopas's test)
+    vc_opts = plan.get("vc") or {}
+    if _src["loaded"] and _tgt["loaded"] and vc_opts.get("enabled"):
+        from core import porter_input
+        conf = porter_input.binding_conflicts(
+            _src["root"], _tgt["root"], [str(k) for k in vc_opts.get("scope") or []],
+            func_ids, vc_opts.get("universe_map") or {}, vc_opts.get("remove") or [])
+        if conf:
+            mode = vc_opts.get("bindings") or "keep_free"
+            lst = "; ".join(f"{c['binding']} on {c['widget']} (target: {', '.join(c['owners'])})"
+                            for c in conf[:8]) + (f"; … {len(conf) - 8} more" if len(conf) > 8 else "")
+            if mode == "keep_free":
+                warnings.append(f"{len(conf)} key/MIDI binding(s) of the ported widgets are already "
+                                f"used in the target and will be DROPPED: {lst}. Choose "
+                                f"'Source wins' to move them to the ported widgets.")
+            elif mode == "source_wins":
+                info.append(f"{len(conf)} key/MIDI binding(s) move from the target widgets to "
+                            f"the ported ones (source wins): {lst}.")
+            elif mode == "keep":
+                warnings.append(f"{len(conf)} key/MIDI binding(s) will be on two widgets "
+                                f"(both react): {lst}.")
+
     # ── Info ──────────────────────────────────────────────────────────────
     n_seed = len(seed_ids)
     n_dep  = len(func_ids) - n_seed

@@ -1,6 +1,6 @@
 # Key Modules
 
-*Last Updated: 2026-09-25*
+*Last Updated: 2026-09-27*
 
 ## Core Layer (`core/`)
 
@@ -30,16 +30,28 @@
 - **Key exports:** `load_src()`, `load_dst()`, `copy_elements()`, `export_dst()`
 - **State:** Own `_src` / `_dst` dicts — independent of `workspace._state`
 
-### core/porter.py (943 lines)
+### core/porter.py (1828 lines)
 - **Purpose:** Cross-workspace function import with dependency resolution, ID rebasing, fixture remapping.
 - **Key exports:** `load_source()`, `load_target()`, `resolve_closure()`, `execute()`
 - **State:** Own `_src` / `_tgt` dicts
 - **See also:** `porter_vc.py` for Virtual Console widget porting
 
-### core/porter_vc.py (505 lines)
+### core/porter_vc.py (556 lines)
 - **Purpose:** Virtual Console porting for the Function Porter. Brings VC widgets of ported functions into the target workspace with ID remapping, pruning, and automatic placement.
 - **Key exports:** VC widget copy/remap logic integrated with porter execution
 - **Depends on:** `core.vc_ops`, `core.qxw_io`
+
+### core/capability_map.py (477 lines)
+- **Purpose:** Translates scene values between **different fixture types** by capability, not channel index. Decodes source values into an abstract `LookState` (dimmer, colour, pan/tilt, shutter, gobo) and encodes that onto the target's channels.
+- **Key exports:** `translate_scene()`, `LookState`, capability matching logic
+- **Rules:** Intensity via dimmer or RGB scaling; colour by mixing emitters or nearest wheel slot; pan/tilt centre-relative degrees (clamped to target range); shutter open/closed/strobe speed; gobo by slot number; everything else → neutral value.
+- **Depends on:** `core.qxf_parser`, `core.quick_start.channel_model`
+
+### core/porter_input.py (366 lines)
+- **Purpose:** Key/MIDI input control porting for the Function Porter. Copies the controller setup (input patches, bindings) that ported VC widgets depend on.
+- **Key exports:** `apply_patch()`, `remap_universes()`, `copy_bindings()`
+- **Features:** Input patch copying (plugin + UID/device per universe), universe mapping (rebind to different target universe), "source wins" binding policy, "bindings only" mode (copy bindings to matching target widgets without porting functions).
+- **Depends on:** `core.vc_ops`
 
 ### core/qxw_io.py (179 lines)
 - **Purpose:** Single centralised QXW reader/writer. ALL workspace file I/O goes through here.
@@ -53,10 +65,10 @@
 - **Rules:** Copies get fresh widget IDs (deterministic), moves keep IDs. Refuses when duplicate widget IDs exist (points to Doctor D002).
 - **Depends on:** `core.qxw_io`
 
-### core/showbook.py (1142 lines)
-- **Purpose:** Show Book document generator. Produces structured show documentation (patch lists, function details, chaser timings, VC layout, stats). Exports as PDF or CSV ZIP.
+### core/showbook.py (1423 lines)
+- **Purpose:** Show Book document generator. Produces structured show documentation (patch lists, function details, chaser timings, VC layout by page with key/MIDI bindings, stats, optional Doctor summary). Exports as PDF or CSV ZIP.
 - **Key exports:** `generate()`, `export_pdf()`, `export_csv()`
-- **Depends on:** `core.workspace`, `core.fixture`, `core.qxf_parser`, `core.pdf`
+- **Depends on:** `core.workspace`, `core.fixture`, `core.qxf_parser`, `core.pdf`, `core.doctor`
 
 ### core/pdf.py (556 lines)
 - **Purpose:** Raw PDF builder using only stdlib (`zlib`, `datetime`). No external PDF library.

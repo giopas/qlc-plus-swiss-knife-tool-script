@@ -128,7 +128,13 @@ class TestFanInFestivalToQuickStart(unittest.TestCase):
             self.assertLessEqual(a[0] + a[2], pw)
             self.assertLessEqual(a[1] + a[3], ph)
             for b in rects[i + 1:]:
-                self.assertFalse(porter_vc._overlaps(a, b), (a, b))
+                # the three frames keep their source positions (one source
+                # page onto a new page), so only real overlap is checked
+                self.assertFalse(porter_vc._intersects(a, b), (a, b))
+
+    def test_source_page_layout_kept(self):
+        self.assertIn("3 unit(s) kept their position from the source page.",
+                      self.res["vc"]["summary"])
 
     def test_buttons_point_at_ported_functions(self):
         new_ids = set(self.res["func_id_map"].values())

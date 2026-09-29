@@ -1,6 +1,6 @@
 # Patterns
 
-*Last Updated: 2026-09-25*
+*Last Updated: 2026-09-27*
 
 ## XML Handling
 
@@ -38,7 +38,7 @@ When copying elements between workspaces, IDs must be remapped to avoid collisio
 - Find the maximum existing ID in the target workspace.
 - Rebase all source IDs by adding the max + 1 offset.
 - Update all internal cross-references (fixture refs in functions, function refs in collections/chasers).
-- Pattern used in `core/merger.py`, `core/porter.py`, and `core/porter_vc.py`.
+- Pattern used in `core/merger.py`, `core/porter.py`, `core/porter_vc.py`, and `core/porter_input.py`.
 - **Porter VC porting:** `porter_vc.py` extends the pattern for Virtual Console widgets — copies widget units, remaps function and fixture IDs, prunes widgets whose functions weren't ported, and places units on the target page without overlapping existing widgets.
 
 ## PDF Generation
@@ -47,6 +47,15 @@ When copying elements between workspaces, IDs must be remapped to avoid collisio
 1. Build page content as a list of PDF stream operations (text positioning, fonts, lines).
 2. `assemble_pdf(pages, W, H)` wraps them in a valid PDF structure with cross-reference table.
 3. Uses `zlib.compress()` for stream compression.
+
+## Capability-Based Value Translation
+
+`core/capability_map.py` translates scene values between **different fixture types** (e.g. RGB PAR → moving head with colour wheel):
+- Source values are decoded into an abstract `LookState` (dimmer level, colour, pan/tilt degrees, shutter state, gobo slot).
+- The `LookState` is re-encoded onto the target fixture's channels using its QXF definition and selected mode.
+- Colour matching: RGB mixing emitters → RGB, or nearest colour-wheel slot by normalised colour distance.
+- Pan/tilt: centre-relative degrees via QXF `PanMax`/`TiltMax`, clamped to target range; 16-bit when the mode has fine channels.
+- Unmapped capabilities (prism, macros, zoom) → neutral values from `channel_model`.
 
 ## Workspace Doctor
 
@@ -61,7 +70,7 @@ When copying elements between workspaces, IDs must be remapped to avoid collisio
 
 - **Framework:** pytest
 - **CI:** GitHub Actions runs pytest on push and PR (Python 3.11 + 3.12).
-- **Test suite:** 17 test files under `tests/` covering porter, porter fan-in, qxf_parser, quick_start (golden output, modes, profiles), doctor, vc_ops, qxw_io, session tools, triggers, corpus baselines, UI consistency, and live QLC+ checks.
+- **Test suite:** 20 test files under `tests/` covering porter, porter fan-in, qxf_parser, quick_start (golden output, modes, profiles), doctor, vc_ops, qxw_io, session tools, triggers, corpus baselines, UI consistency, and live QLC+ checks.
 - **Test corpus:** `tests/corpus/` contains real-show QXW/QXF files with `expected_baseline.json` for regression testing.
 - **Sample fixtures:** `tests/fixtures/` (Chauvet and generic QXF files).
 - **Developer tools:** `tools/qlc_check.py` — opens a generated QXW in a live QLC+ instance and checks it responds (used in test_qlc_live.py).
@@ -70,6 +79,6 @@ When copying elements between workspaces, IDs must be remapped to avoid collisio
 
 - **No .env files.** Configuration is minimal and hardcoded:
   - `PORT = 5731` in `app.py`
-  - `VERSION = "1.3.2"` in `core/workspace.py`
+  - `VERSION = "1.4.0"` in `core/workspace.py`
 - **User settings:** `settings.json` (gitignored) stores `user_name` only.
 - **Session persistence:** `.qsk` JSON files store which workspace + companion files were loaded.

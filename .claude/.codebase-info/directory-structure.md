@@ -1,6 +1,6 @@
 # Directory Structure
 
-*Last Updated: 2026-09-25*
+*Last Updated: 2026-09-27*
 
 ## Root Layout
 
@@ -12,8 +12,8 @@ qlc-plus-swiss-knife-tool-script/
 ├── core/                     # Pure logic layer (no Flask imports)
 │   ├── __init__.py
 │   ├── workspace.py          # Central state singleton + QXW parser (1673 lines)
-│   ├── showbook.py           # Show Book document generator
-│   ├── porter.py             # Cross-workspace function import engine
+│   ├── showbook.py           # Show Book document generator (1423 lines)
+│   ├── porter.py             # Cross-workspace function import engine (1828 lines)
 │   ├── brightness.py         # Per-fixture dimmer scaling
 │   ├── fixture.py            # Fixture configurator + QXW generation
 │   ├── qxf_parser.py         # Deep QXF fixture definition parser
@@ -26,7 +26,9 @@ qlc-plus-swiss-knife-tool-script/
 │   │   ├── __main__.py       # CLI entry point (python -m core.doctor)
 │   │   ├── checks.py         # Read-only check engine (627 lines)
 │   │   └── report.py         # Finding/Report data classes
-│   ├── porter_vc.py          # VC widget porting for Function Porter (505 lines)
+│   ├── porter_vc.py          # VC widget porting for Function Porter (556 lines)
+│   ├── porter_input.py       # Key/MIDI input control porting (366 lines)
+│   ├── capability_map.py     # Value translation between fixture types (477 lines)
 │   ├── qxw_io.py             # Centralised QXW reader/writer (DOCTYPE, overwrite protection)
 │   ├── vc_ops.py             # VC Visual Editor structural operations (358 lines)
 │   └── quick_start/          # Quick Start wizard sub-package

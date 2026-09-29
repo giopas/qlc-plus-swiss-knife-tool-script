@@ -969,7 +969,11 @@ function porterVcOpt() {
     bindings_only: !!document.getElementById('porter-midi-only')?.checked,
   };
   _pRenderMidiStatus();
+  // re-check the plan so the key/MIDI conflict warning follows the policy
+  clearTimeout(_pVcOptTimer);
+  _pVcOptTimer = setTimeout(() => { if (_pStep === 4) _pRenderValidation(); }, 300);
 }
+let _pVcOptTimer = null;
 
 // ── Key / MIDI input (step 4, WORKPLAN 1.6) ─────────────────────────────────
 

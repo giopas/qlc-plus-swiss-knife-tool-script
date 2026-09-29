@@ -4,6 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep — v1.4.1 prepared):**
+- v1.4.0 was released by giopas (main `ed80607`, tag `v1.4.0`). His real-show test (BarShow_v14 *1. SETLIST* → SmallShow, *Source wins*) found: (1) the ported CueList had no MIDI and the target kept its bindings — **bug**: `routes/porter_routes._normalize_plan` whitelisted `bindings` to keep_free/keep/drop and dropped `universe_map`, `copy_input`, `bindings_only`, so every app export used *keep unless used* (the core tests called `porter.port()` directly and never went through the route); (2) *1. SETLIST* split over two pages; (3) PANIC RESET "doesn't work" — **not a Porter bug**: in BarShow it is a *Scene* at 0 (kill auto modes), which can't pull down HTP dimmer/RGB of a running look (same as in the source show); use PANIC / BLACKOUT (Stop all) first, as in BarShow. Backlog item added.
+- **Fixed on branch `fix/porter-midi-feedback`** (from `main`, worktree `.wt-fix/`): route passes all 1.5/1.6 options + API-level regression test; step 4 warns about key/MIDI clashes per policy (re-validates on change); a page ported onto a new page keeps its source layout when every unit fits. VERSION 1.4.1, CHANGELOG, README, release notes. 448 tests green; UI checked in a browser with a rebuilt SmallShow target (warning → *Source wins* → 4 bindings moved, one page).
+
 **Status (27 Sep, night — Phase 1.4 release prepared):**
 - **v1.4.0 prepared** on branch `chore/release-1.4.0` (stacked on `feat/showbook` @ `88bae82`; worktree `.wt-release/`): VERSION 1.4.0, CHANGELOG `[1.4.0] — 2026-09-27`, README *What's new in v1.4.0* + Workspace Doctor feature section, Alpha badges removed (Quick Start, Function Porter, Show Book — QXW Merger stays α, VC Visual Editor β), new screenshots 13 (Porter) + 14 (Show Book) — the README referenced them but they were missing — release notes `docs/release-notes/RELEASE_NOTES_v1.4.0.md`, forum post `docs/release-notes/FORUM_v1.4.0.bbcode`, ROADMAP. Wiki `f78d1ed`: *Workspace Doctor* page, "(Alpha)" removed. 443 tests green. **giopas:** merge, tag, GitHub Release, forum post — commands in §8. Waits for his tests of 1.5 / 1.6 / 1.3 (any fix goes on `chore/release-1.4.0` before tagging).
 
@@ -387,6 +391,7 @@ Checks (★ = included in Phase 1.0):
 - **Show Profile**: one JSON describing rig, conventions, palettes, VC screen and templates, so a new show starts from the profile. This is the base for sharing with other users.
 - **Command-line pipeline**: `swissknife build profile.json → show.qxw`, fully scripted and reproducible.
 - **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
+- **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
 - **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
 - **Audio triggers** helper (DMX-mode pitfalls documented).
 - Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
@@ -455,7 +460,24 @@ git worktree remove .wt-showbook                      # the branch stays
 ```
 Try: open a show → Show Book → Generate Preview → VC Layout (pages, indented frames, Key / MIDI column) and Doctor summary → Export PDF. Merge order into `main`: `feat/quickstart-porter` → `feat/porter-midi` → `feat/showbook` (each contains the previous; merging `feat/showbook` alone brings all three).
 
-**giopas — release v1.4.0 (after your tests of 1.5 / 1.6 / 1.3 pass):**
+**giopas — v1.4.1 (Porter MIDI fixes):**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git worktree remove .wt-fix                           # branch fix/porter-midi-feedback stays
+git checkout fix/porter-midi-feedback
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q   # expect 448 passed
+# restart the app (python3 app.py) — a running app keeps the old code
+```
+Re-test: BarShow_v14 → SmallShow, tick *1. SETLIST*; step 4 now shows the "will be DROPPED" warning; choose *Source wins* (the warning becomes info) → export → the ported CueList has MIDI Next ch 20 / Previous ch 10 (QLC+ shows them as 21 / 11), STROBE BLIND! and *Setlist Cue* lost them; everything on one page. Then:
+```bash
+git push -u origin fix/porter-midi-feedback
+git checkout main && git merge --no-ff fix/porter-midi-feedback -m "Release v1.4.1"
+python -m pytest -q && git push origin main
+git tag -a v1.4.1 -m "v1.4.1" && git push origin v1.4.1
+```
+GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.4.1.md`.
+
+**giopas — release v1.4.0 (done 28 Sep):**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
 git worktree remove .wt-release                       # branch chore/release-1.4.0 stays

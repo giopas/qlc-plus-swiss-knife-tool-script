@@ -481,7 +481,7 @@ def _d008_panic(ws: _Workspace):
 def _d017_panic_scene(ws: _Workspace):
     """A PANIC RESET that is a plain Scene can't darken a look that is still
     running: intensity/colour channels are HTP, a scene at 0 doesn't pull
-    them down (seen on BarShow → SmallShow, 29 Sep 2026).  A Script
+    them down (seen porting a real show, 29 Sep 2026).  A Script
     that stops every function first, then starts the reset scene, does."""
     scripts = [f for f in ws.function_els
                if f.get("Type") == "Script" and PANIC_RE.search(f.get("Name", ""))]

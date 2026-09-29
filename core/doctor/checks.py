@@ -496,6 +496,102 @@ def _d017_panic_scene(ws: _Workspace):
                           {"function": f.get("ID")})
 
 
+INFINITE = 4294967294            # QLC+ "infinite" time
+
+
+def _geom(el: ET.Element):
+    w = el.find("WindowState")
+    if w is None:
+        return None
+    return (_int(w.get("X"), 0), _int(w.get("Y"), 0),
+            _int(w.get("Width"), 0), _int(w.get("Height"), 0))
+
+
+def _d010_setlist_page(ws: _Workspace):
+    """The only page with a CueList (the setlist) should be the first page:
+    QLC+ opens the Virtual Console on the first page."""
+    with_cl = [p for p in ws.pages if p.find(".//CueList") is not None]
+    if len(with_cl) == 1 and ws.pages and with_cl[0] is not ws.pages[0]:
+        yield Finding("D010", INFO, f"VC page '{with_cl[0].get('Caption', '')}'",
+                      f"the setlist page is page {ws.pages.index(with_cl[0]) + 1}; QLC+ "
+                      f"opens on page 1 '{ws.pages[0].get('Caption', '')}'",
+                      {"page": with_cl[0].get("ID")})
+
+
+OVERFLOW_TOLERANCE = 8          # px: a border cut by a few pixels isn't worth a warning
+
+
+def _d011_overflow(ws: _Workspace):
+    """Widgets that stick out of their page / frame by more than
+    ``OVERFLOW_TOLERANCE`` px (partly hidden or cut)."""
+    if ws.vc is None:
+        return
+
+    def walk(parent, pg, page_cap):
+        pw, ph = pg[2], pg[3]
+        for c in parent:
+            if c.tag not in VC_WIDGET_TAGS:
+                continue
+            g = _geom(c)
+            if g is None:
+                continue
+            x, y, w, h = g
+            t = OVERFLOW_TOLERANCE
+            if pw > 0 and ph > 0 and (x < -t or y < -t or x + w > pw + t or y + h > ph + t):
+                yield Finding("D011", WARNING, ws.widget_loc(c, page_cap),
+                              f"at {x},{y} size {w}×{h} goes outside its "
+                              f"{'page' if parent in ws.pages else 'frame'} ({pw}×{ph})",
+                              {"widget": c.get("ID")})
+            if c.tag in CONTAINER_TAGS:
+                yield from walk(c, g, page_cap)
+
+    for p in ws.pages:
+        g = _geom(p)
+        if g is not None:
+            yield from walk(p, g, p.get("Caption", ""))
+
+
+def _d013_chaser_timing(ws: _Workspace):
+    """Chaser steps that last 0 ms: the chaser flashes through them."""
+    for f in ws.function_els:
+        if f.get("Type") != "Chaser":
+            continue
+        steps = f.findall("Step")
+        if not steps:
+            continue
+        sm = f.find("SpeedModes")
+        dmode = (sm.get("Duration") if sm is not None else "Default") or "Default"
+        sp = f.find("Speed")
+        zero = []
+        if dmode == "PerStep":
+            for i, st in enumerate(steps):
+                hold, fin = _int(st.get("Hold"), 0), _int(st.get("FadeIn"), 0)
+                if hold == 0 and fin == 0:
+                    zero.append(i + 1)
+        elif sp is not None and _int(sp.get("Duration"), 0) == 0 \
+                and _int(sp.get("FadeIn"), 0) == 0 and dmode == "Common":
+            zero = list(range(1, len(steps) + 1))
+        if zero:
+            yield Finding("D013", WARNING, ws.fn_loc(f.get("ID")),
+                          f"{'all' if len(zero) == len(steps) else len(zero)} step(s) "
+                          f"last 0 ms ({dmode} duration) — the chaser flashes through them",
+                          {"function": f.get("ID"), "steps": zero})
+
+
+def _d014_cuelist_empty_chaser(ws: _Workspace):
+    """A CueList running a chaser with no steps does nothing on stage."""
+    for w, page in ws.widgets:
+        if w.tag != "CueList":
+            continue
+        c = (w.findtext("Chaser") or NONE_ID).strip()
+        f = ws.functions.get(c)
+        if f is not None and f.get("Type") == "Chaser" and not [
+                s for s in f.findall("Step") if (s.text or "").strip()]:
+            yield Finding("D014", WARNING, ws.widget_loc(w, page),
+                          f"runs chaser {c} '{f.get('Name', '')}', which has no steps",
+                          {"widget": w.get("ID"), "function": c})
+
+
 def _d009_overlap(ws: _Workspace):
     owner: Dict[Tuple[int, int], str] = {}
     reported = set()
@@ -611,7 +707,8 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
     for gen in (_d002_duplicates(ws), _d003_dangling(ws), _d004_empty(ws),
                 _d005_incomplete(ws), _d006_strobe(ws, allow),
                 _d007_shared_scene(ws), _d008_panic(ws), _d009_overlap(ws),
-                _d017_panic_scene(ws),
+                _d010_setlist_page(ws), _d011_overflow(ws), _d013_chaser_timing(ws),
+                _d014_cuelist_empty_chaser(ws), _d017_panic_scene(ws),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),
                 _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws)):
         findings.extend(gen)

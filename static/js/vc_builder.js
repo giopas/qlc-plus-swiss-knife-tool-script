@@ -44,31 +44,32 @@ function _vcbSelectionHtml(selArr) {
   if (!selArr.length || !_vcbInfo) return '';
   const first = selArr[0];
   const single = selArr.length === 1;
-  const isPage = single && _vcePage && first.id === _vcePage.id;
+  const isPage = single && _vcePage && first.id === _vcePage.id && !first.parent_id;
   let html = '';
   if (single && first.type === 'Button' && ['StopAll', 'Blackout'].includes(first.action)) {
-    html += `<div class="vce-pl">Function</div><div style="font-size:10px;margin-bottom:6px">${first.action === 'StopAll'
-      ? 'Stop all functions' : 'Blackout'} button — it needs no function</div>`;
+    html += `<div class="vce-sec">Function</div><div class="vce-hint" style="margin-bottom:4px">${first.action === 'StopAll'
+      ? 'Stop all functions' : 'Blackout'} button — it needs no function.</div>`;
   } else if (single && _VCB_WIRABLE.has(first.type)) {
     const fns = _vcbInfo.functions.filter(f => first.type !== 'CueList' || f.type === 'Chaser');
-    html += `<div class="vce-pl">Function</div>
-      <div style="font-size:10px;margin-bottom:3px">${first.func_id
-        ? `→ ${_esc(first.func_name || '?')} <span style="color:var(--text-muted)">[${_esc(first.func_id)}]</span>`
-        : '<span style="color:var(--text-muted)">not wired — pick one, or drag a function from the list below onto it</span>'}</div>
-      <div style="display:flex;gap:4px;margin-bottom:6px">
-        <select id="vcb-wire-sel" class="vce-pi" style="width:230px">${fns.map(f =>
+    html += `<div class="vce-sec">Function <span class="vce-hint">what this ${first.type === 'CueList' ? 'CueList plays (a chaser)' : first.type === 'Slider' ? 'slider plays' : 'button runs'}</span></div>
+      <div style="font-size:11px;margin-bottom:4px">${first.func_id
+        ? `→ <b>${_esc(first.func_name || '?')}</b> <span class="vce-hint">[${_esc(first.func_id)}]</span>`
+        : '<span style="color:#f9e2af">not wired</span> <span class="vce-hint">— pick one here, or drag one from ＋ Add &amp; wire onto it</span>'}</div>
+      <div class="vce-row">
+        <select id="vcb-wire-sel" class="vce-pi" style="flex:1;min-width:0">${first.func_id ? '' : '<option value="">— choose —</option>'}${fns.map(f =>
           `<option value="${_esc(f.id)}" ${f.id === first.func_id ? 'selected' : ''}>${_esc(f.name)} · ${_esc(f.type)}</option>`).join('')}</select>
         <button class="vce-ab" onclick="vcbWire(document.getElementById('vcb-wire-sel').value)">Wire</button>
         ${first.func_id ? `<button class="vce-ab" onclick="vcbWire('')" title="Unwire">✕</button>` : ''}
       </div>`;
   }
   if (!isPage) {
-    html += `<div style="display:flex;gap:4px;margin-bottom:6px">
-      <button class="vce-ab" onclick="vcbDuplicate()" title="⌘D — copies next to the originals (key/MIDI not copied)">⧉ Duplicate</button>
-      <button class="vce-ab" onclick="vcbDelete()" title="Delete / Backspace">🗑 Delete</button>
-      ${single && (first.type === 'Frame' || first.type === 'SoloFrame') ? `
-        <button class="vce-ab" onclick="vcbAutoArrange('${_esc(first.id)}')" title="One row per nomenclature group (the name prefix), in the profile's order">⇶ Arrange by name group</button>` : ''}
-    </div>`;
+    html += `<div class="vce-sec">Edit</div>
+      <div class="vce-row">
+        <button class="vce-ab" onclick="vcbDuplicate()" title="⌘D — copies next to the originals (key/MIDI not copied)">⧉ Duplicate</button>
+        <button class="vce-ab" onclick="vcbDelete()" title="Delete / Backspace">🗑 Delete</button>
+        ${single && (first.type === 'Frame' || first.type === 'SoloFrame') ? `
+          <button class="vce-ab" onclick="vcbAutoArrange('${_esc(first.id)}')" title="One row per naming group (the name prefix), in the profile's order — profile chosen in ＋ Add &amp; wire">⇶ Arrange buttons by name group</button>` : ''}
+      </div>`;
   }
   return html;
 }
@@ -131,85 +132,119 @@ function vcbDragFn(e, fid) {
 }
 
 // ── the Builder panel ────────────────────────────────────────────────────────
-function _vcbRenderPanel() {
-  const el = document.getElementById('vcb-panel');
-  if (!el || !_vcbInfo) return;
-  const I = _vcbInfo;
-  const moreOpen = !!el.querySelector('details.vcb-more')?.open;
-  const opt = (v, t, sel) => `<option value="${_esc(v)}" ${sel ? 'selected' : ''}>${_esc(t)}</option>`;
-  el.innerHTML = `
-    <div class="vce-pl" style="margin-top:0">Build</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-      <select id="vcb-kind" class="vce-pi" style="width:90px">${I.kinds.map(k => opt(k, k)).join('')}</select>
-      <input id="vcb-caption" class="vce-pi" style="width:130px" placeholder="Caption">
-      <button class="vce-ab" onclick="vcbCreate()" title="Into the selected frame, or the page">＋ Add</button>
-    </div>
-    <div style="font-size:9px;color:var(--text-muted);margin-bottom:6px">Goes into the selected frame (or the page) at the first free spot. Drag a function from the list onto the canvas: onto a button/CueList/slider = wire it; onto a frame or the page = a new button there (⌥ Alt: a CueList for a chaser).</div>
+function _vcbTargetLabel() {
+  const id = _vcbTarget();
+  const n = id && _vceNodes[id];
+  if (!n) return '—';
+  return _vcePage && id === _vcePage.id ? `the page “${_esc(n.caption || 'page')}”` : `the frame “${_esc(n.caption || n.type)}”`;
+}
 
-    <div class="vce-pl">Functions</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-      <select id="vcb-prof" class="vce-pi" style="width:120px" onchange="vcbSetProfile(this.value)" title="Naming profile">${
-        I.profiles.map(p => opt(p.id, p.label, p.id === _vcbProfile)).join('')}</select>
-      <input id="vcb-q" class="vce-pi" style="width:110px" placeholder="search" oninput="_vcbRenderFnList()">
-      <select id="vcb-type" class="vce-pi" style="width:80px" onchange="_vcbRenderFnList()">
+function _vcbRenderPanel() {
+  const add = document.getElementById('vcb-add');
+  const pages = document.getElementById('vcb-pages');
+  if (!add || !pages || !_vcbInfo) return;
+  const I = _vcbInfo;
+  const opt = (v, t, sel) => `<option value="${_esc(v)}" ${sel ? 'selected' : ''}>${_esc(t)}</option>`;
+  const q = s => _esc(s).replace(/'/g, "\\'");
+
+  add.innerHTML = `
+    <div class="vce-intro">Put new widgets on the page and connect them to your functions. Everything is undoable and saved with 💾 Apply &amp; Save.</div>
+
+    <div class="vce-sec"><span class="vce-step">1</span>New widget</div>
+    <div class="vce-row">
+      <select id="vcb-kind" class="vce-pi" style="width:92px">${I.kinds.map(k => opt(k, k)).join('')}</select>
+      <input id="vcb-caption" class="vce-pi" style="flex:1;min-width:80px" placeholder="caption">
+      <button class="vce-ab" onclick="vcbCreate()">＋ Add</button>
+    </div>
+    <div class="vce-hint">goes into <span id="vcb-target">${_vcbTargetLabel()}</span> at the first free spot — select a frame first to put it there</div>
+
+    <div class="vce-sec"><span class="vce-step">2</span>Wire to a function</div>
+    <div class="vce-hint" style="margin-bottom:5px">
+      <b>Drag</b> a function onto a button, CueList or slider to wire it — onto a frame or empty page to add a new button for it (⌥ Alt: a CueList).
+      <b>Double-click</b> wires the selected widget.</div>
+    <div class="vce-row">
+      <input id="vcb-q" class="vce-pi" style="flex:1;min-width:80px" placeholder="search functions" oninput="_vcbRenderFnList()">
+      <select id="vcb-type" class="vce-pi" style="width:92px" onchange="_vcbRenderFnList()">
         <option value="">all types</option>${[...new Set(I.functions.map(f => f.type))].sort().map(t => opt(t, t)).join('')}</select>
+    </div>
+    <div class="vce-row">
+      <label class="vce-lb">names
+        <select id="vcb-prof" class="vce-pi" style="width:130px" onchange="vcbSetProfile(this.value)" title="Naming profile: filters by group/effect letters and drives 'Arrange by name group'">${
+          I.profiles.map(p => opt(p.id, p.label, p.id === _vcbProfile)).join('')}</select></label>
       ${Object.keys(I.groups).length ? `
-      <select id="vcb-grp" class="vce-pi" style="width:110px" onchange="_vcbRenderFnList()">
+      <select id="vcb-grp" class="vce-pi" style="width:100px" onchange="_vcbRenderFnList()">
         <option value="">all groups</option>${Object.entries(I.groups).map(([k, v]) => opt(k, `${k} · ${v}`)).join('')}</select>
-      <select id="vcb-eff" class="vce-pi" style="width:110px" onchange="_vcbRenderFnList()">
+      <select id="vcb-eff" class="vce-pi" style="width:100px" onchange="_vcbRenderFnList()">
         <option value="">all effects</option>${Object.entries(I.effects).map(([k, v]) => opt(k, `${k} · ${v}`)).join('')}</select>` : ''}
     </div>
     <div id="vcb-fnlist" class="vcb-fnlist"></div>
 
-    <div class="vce-pl">Page</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-      <input id="vcb-pname" class="vce-pi" style="width:120px" value="${_esc(_vcePage ? _vcePage.caption : '')}">
-      <button class="vce-ab" onclick="vcbRenamePage()">✎ Rename</button>
-      <button class="vce-ab" onclick="vcbMovePage(-1)" title="Move left">◀</button>
-      <button class="vce-ab" onclick="vcbMovePage(1)" title="Move right">▶</button>
-      <button class="vce-ab" onclick="vcbMovePage(0, true)" title="Make it page 1 — QLC+ opens on it">★ First</button>
-      <button class="vce-ab" onclick="vcbDeletePage()">🗑</button>
-    </div>
-
-    <details class="vcb-more"><summary class="vce-pl" style="cursor:pointer">Label panel · screen · templates · setlist</summary>
-    <div class="vce-pl">Label panel</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-      <select id="vcb-lsrc" class="vce-pi" style="width:150px" onchange="document.getElementById('vcb-ltext').style.display=this.value==='custom'?'':'none'">
-        ${I.legend.length ? opt('legend', 'Naming legend') : ''}${opt('custom', 'My text (one per line)')}</select>
-      <input id="vcb-ltitle" class="vce-pi" style="width:90px" value="Legend">
-      <label style="font-size:10px;color:var(--text-muted)">cols</label>
-      <input id="vcb-lcols" type="number" min="1" max="8" value="2" class="vce-pi" style="width:44px">
-      <button class="vce-ab" onclick="vcbLabelPanel()">＋ Panel</button>
-    </div>
-    <textarea id="vcb-ltext" class="vce-pi" rows="3" style="${I.legend.length ? 'display:none;' : ''}margin-bottom:4px" placeholder="one label per line"></textarea>
-
-    <div class="vce-pl">Screen</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
-      <select id="vcb-screen" class="vce-pi" style="width:150px">${I.screens.map(s => opt(s.id, s.label)).join('')}</select>
-      <select id="vcb-sall" class="vce-pi" style="width:90px">${opt('page', 'this page')}${opt('all', 'all pages')}</select>
-      <label style="font-size:10px;color:var(--text-muted)" title="Move and resize every widget in proportion"><input type="checkbox" id="vcb-scale"> scale</label>
-      <button class="vce-ab" onclick="vcbScreen()">Apply</button>
-    </div>
-
-    <div class="vce-pl">Templates</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-      <input id="vcb-tname" class="vce-pi" style="width:140px" placeholder="Template name">
-      <button class="vce-ab" onclick="vcbSaveTemplate()" title="This page's layout, colours and function names — no key/MIDI">💾 Save page</button>
-    </div>
-    <div style="margin-bottom:6px">${I.templates.length ? I.templates.map(t => `
-      <div style="display:flex;gap:4px;align-items:center;font-size:10px;margin-bottom:2px">
-        <span style="flex:1">${_esc(t.name)} <span style="color:var(--text-muted)">${t.widgets} widgets · ${t.functions} functions</span></span>
-        <button class="vce-ab" onclick="vcbApplyTemplate('${_esc(t.name).replace(/'/g, "\\'")}')" title="Add as a new page; functions matched by name">＋ Page</button>
-        <button class="vce-ab" onclick="vcbDeleteTemplate('${_esc(t.name).replace(/'/g, "\\'")}')">🗑</button>
-      </div>`).join('') : '<span style="font-size:10px;color:var(--text-muted)">none saved yet</span>'}</div>
-
-    <div class="vce-pl">Setlist CueList</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-      <select id="vcb-chaser" class="vce-pi" style="width:200px">${I.chasers.map(c => opt(c.id, c.name)).join('')}</select>
-      <button class="vce-ab" onclick="vcbSetlist()" title="Wires the selected CueList, or adds a new CueList on this page">▶ CueList</button>
-    </div>
+    <div class="vce-sec"><span class="vce-step">3</span>Ready-made blocks</div>
+    <details class="vce-sub"><summary>🏷 Label panel — your naming legend, or any text, as labels in columns</summary>
+      <div class="vce-row">
+        <select id="vcb-lsrc" class="vce-pi" style="width:150px" onchange="document.getElementById('vcb-ltext').style.display=this.value==='custom'?'':'none'">
+          ${I.legend.length ? opt('legend', 'Naming legend') : ''}${opt('custom', 'My text (one per line)')}</select>
+        <label class="vce-lb">title <input id="vcb-ltitle" class="vce-pi" style="width:80px" value="Legend"></label>
+        <label class="vce-lb">cols <input id="vcb-lcols" type="number" min="1" max="8" value="2" class="vce-pi vce-n"></label>
+      </div>
+      <textarea id="vcb-ltext" class="vce-pi" rows="3" style="${I.legend.length ? 'display:none;' : ''}margin-bottom:4px" placeholder="one label per line"></textarea>
+      <div class="vce-row"><button class="vce-ab" onclick="vcbLabelPanel()">＋ Add label panel</button></div>
+    </details>
+    <details class="vce-sub"><summary>▶ Setlist CueList — play a setlist chaser from a CueList</summary>
+      <div class="vce-row">
+        <select id="vcb-chaser" class="vce-pi" style="flex:1;min-width:0">${I.chasers.map(c => opt(c.id, c.name)).join('')}</select>
+        <button class="vce-ab" onclick="vcbSetlist()" title="Wires the selected CueList, or adds a new CueList on this page">Wire / add CueList</button>
+      </div>
+      <div class="vce-hint">A selected CueList is re-wired; otherwise a new CueList is added on this page.</div>
     </details>`;
-  if (moreOpen) el.querySelector('details.vcb-more').open = true;
+
+  pages.innerHTML = `
+    <div class="vce-intro">Pages are the tabs of the Virtual Console; QLC+ opens on the first one.</div>
+
+    <div class="vce-sec">This page</div>
+    <div class="vce-row">
+      <input id="vcb-pname" class="vce-pi" style="flex:1;min-width:80px" value="${_esc(_vcePage ? _vcePage.caption : '')}">
+      <button class="vce-ab" onclick="vcbRenamePage()">✎ Rename</button>
+    </div>
+    <div class="vce-row">
+      <button class="vce-ab" onclick="vcbMovePage(-1)">◀ Move left</button>
+      <button class="vce-ab" onclick="vcbMovePage(1)">Move right ▶</button>
+      <button class="vce-ab" onclick="vcbMovePage(0, true)" title="QLC+ opens on the first page">★ Make first</button>
+      <button class="vce-ab" onclick="vcbDeletePage()">🗑 Delete page</button>
+    </div>
+
+    <div class="vce-sec">New page</div>
+    <div class="vce-row">
+      <input id="vce-page-name" class="vce-pi" style="flex:1;min-width:80px" placeholder="name (optional)">
+    </div>
+    <div class="vce-row">
+      <button class="vce-ab" onclick="vceNewPage()">＋ Empty page</button>
+      <button class="vce-ab" onclick="vceDuplicatePage()" title="Copy this page with all its widgets (new IDs)">⧉ Copy of this page</button>
+      <label class="vce-lb"><input type="checkbox" id="vce-page-keep"> keep key/MIDI</label>
+    </div>
+
+    <div class="vce-sec">Screen size</div>
+    <div class="vce-row">
+      <select id="vcb-screen" class="vce-pi" style="width:160px">${I.screens.map(s => opt(s.id, s.label)).join('')}</select>
+      <select id="vcb-sall" class="vce-pi" style="width:90px">${opt('page', 'this page')}${opt('all', 'all pages')}</select>
+    </div>
+    <div class="vce-row">
+      <label class="vce-lb" title="Move and resize every widget in proportion"><input type="checkbox" id="vcb-scale"> scale the widgets too</label>
+      <button class="vce-ab" onclick="vcbScreen()">Apply size</button>
+    </div>
+
+    <div class="vce-sec">Templates <span class="vce-hint">reuse a page in another show</span></div>
+    <div class="vce-row">
+      <input id="vcb-tname" class="vce-pi" style="flex:1;min-width:80px" placeholder="template name">
+      <button class="vce-ab" onclick="vcbSaveTemplate()" title="Layout, colours and function names — no key/MIDI">💾 Save this page</button>
+    </div>
+    <div class="vce-hint" style="margin-bottom:4px">Saved templates — ＋ adds one as a new page; its buttons find their functions by name:</div>
+    ${I.templates.length ? I.templates.map(t => `
+      <div class="vce-row" style="justify-content:space-between">
+        <span>${_esc(t.name)} <span class="vce-hint">${t.widgets} widgets · ${t.functions} functions</span></span>
+        <span><button class="vce-ab" onclick="vcbApplyTemplate('${q(t.name)}')">＋ Add as page</button>
+              <button class="vce-ab" onclick="vcbDeleteTemplate('${q(t.name)}')" title="Delete template">🗑</button></span>
+      </div>`).join('') : '<div class="vce-hint">none yet</div>'}`;
   _vcbRenderFnList();
 }
 

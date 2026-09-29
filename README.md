@@ -20,7 +20,7 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ## What's new in v1.7.0
 
-- **VC Builder** in the VC Visual Editor — add buttons, frames, sliders, labels and CueLists; **drag a function onto the canvas** to wire a widget or add a button; drag widgets to move them with grid snap; rename, reorder and delete pages; a **label panel** with your naming legend; **arrange buttons by name group**; **screen profiles** (MacBook, Full HD, tablet, iPad); **page templates** you can reuse in the next show; the **setlist CueList** in one click. All undoable, saved as a new file.
+- **VC Builder** in the VC Visual Editor, with a clearer right panel in three tabs (Selection · Add & wire · Pages) — add buttons, frames, sliders, labels and CueLists; **drag a function onto the canvas** to wire a widget or add a button; drag widgets to move them with grid snap; rename, reorder and delete pages; a **label panel** with your naming legend; **arrange buttons by name group**; **screen profiles** (MacBook, Full HD, tablet, iPad); **page templates** you can reuse in the next show; the **setlist CueList** in one click. All undoable, saved as a new file.
 
 ## What's new in v1.6.0
 

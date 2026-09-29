@@ -1108,6 +1108,27 @@
                 background:var(--surface-0); border:0.5px solid var(--border);
                 border-radius:4px; cursor:pointer; color:var(--text-primary); white-space:nowrap; }
       .vce-ab:hover { background:var(--surface-1); border-color:var(--border-strong); }
+      .vce-tabs { display:flex; gap:2px; padding:6px 8px 0; background:var(--surface-1);
+                  border-bottom:0.5px solid var(--border); position:sticky; top:0; z-index:2; }
+      .vce-tab { flex:1; font-size:11px; padding:6px 4px; background:transparent; border:0.5px solid transparent;
+                 border-bottom:none; border-radius:6px 6px 0 0; color:var(--text-muted); cursor:pointer; }
+      .vce-tab:hover { color:var(--text-primary); }
+      .vce-tab.on { background:var(--surface-0); border-color:var(--border); color:var(--text-primary); font-weight:600; }
+      .vce-tab-n { font-size:9px; color:var(--text-accent); }
+      .vce-pane { padding:8px 10px 12px; background:var(--surface-0); font-size:11px; }
+      .vce-pane[hidden] { display:none; }
+      .vce-intro { font-size:10.5px; color:var(--text-muted); margin-bottom:8px; line-height:1.4; }
+      .vce-sec { font-size:10px; font-weight:600; color:var(--text-primary); text-transform:uppercase;
+                 letter-spacing:.06em; margin:12px 0 5px; padding-top:8px; border-top:0.5px solid var(--border); }
+      .vce-sec:first-child { border-top:none; padding-top:0; margin-top:0; }
+      .vce-step { display:inline-block; width:15px; height:15px; line-height:15px; text-align:center; border-radius:50%;
+                  background:var(--bg-accent); color:var(--text-accent); font-size:9px; margin-right:4px; }
+      .vce-hint { font-size:9.5px; font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0; }
+      .vce-row { display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-bottom:5px; }
+      .vce-lb { font-size:10px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px; }
+      .vce-n { width:46px; }
+      .vce-sub { margin:4px 0 6px; }
+      .vce-sub > summary { cursor:pointer; font-size:10px; color:var(--text-muted); margin-bottom:4px; }
       .vcb-fnlist { max-height:180px; overflow-y:auto; border:0.5px solid var(--border); border-radius:4px;
                     background:var(--surface-0); margin-bottom:6px; }
       .vcb-fn { display:flex; justify-content:space-between; gap:6px; padding:2px 6px; font-size:10px; cursor:grab; }
@@ -1174,93 +1195,90 @@
           <canvas id="vce-canvas"></canvas>
         </div>
 
-        <!-- Right panel (props + actions) -->
+        <!-- Right panel: three tabs — Selection · Add & wire · Pages (WORKPLAN 2.4) -->
         <div id="vce-right" class="open">
           <!-- Duplicate widget-ID warning (filled by _vceCheckDuplicates) -->
           <div id="vce-dup-warn" style="display:none;font-size:11px;color:#f9e2af;padding:8px;
                border-bottom:0.5px solid var(--border);background:var(--surface-0)"></div>
-          <!-- Properties -->
-          <div id="vce-props">
-            <div style="color:var(--text-muted);padding:20px 0;text-align:center">
-              Click a widget to select
+
+          <div class="vce-tabs">
+            <button class="vce-tab on" data-tab="sel" onclick="vceTab('sel')" title="Change what you selected on the canvas">✥ Selection <span id="vce-tab-count" class="vce-tab-n"></span></button>
+            <button class="vce-tab" data-tab="add" onclick="vceTab('add')" title="Add widgets and wire them to functions">＋ Add &amp; wire</button>
+            <button class="vce-tab" data-tab="pages" onclick="vceTab('pages')" title="Pages, screen size, templates">▤ Pages</button>
+          </div>
+
+          <!-- ① Selection -->
+          <div class="vce-pane" id="vce-pane-sel">
+            <div id="vce-props"></div>
+
+            <div id="vce-layout-tools">
+              <div class="vce-sec">Line up <span class="vce-hint">2 or more widgets</span></div>
+              <div class="vce-row">
+                <button class="vce-ab" onclick="vceAlign('left')" title="Align left edges">⇤ left</button>
+                <button class="vce-ab" onclick="vceAlign('centerH')" title="Centre horizontally">↔ centre</button>
+                <button class="vce-ab" onclick="vceAlign('right')" title="Align right edges">⇥ right</button>
+                <button class="vce-ab" onclick="vceAlign('top')" title="Align top edges">⤒ top</button>
+                <button class="vce-ab" onclick="vceAlign('centerV')" title="Centre vertically">↕ middle</button>
+                <button class="vce-ab" onclick="vceAlign('bottom')" title="Align bottom edges">⤓ bottom</button>
+              </div>
+              <div class="vce-row">
+                <button class="vce-ab" onclick="vceDistribute('h')" title="Equal horizontal spacing">⇹ space evenly H</button>
+                <button class="vce-ab" onclick="vceDistribute('v')" title="Equal vertical spacing">⇳ space evenly V</button>
+              </div>
+
+              <div class="vce-sec">Size</div>
+              <div class="vce-row">
+                <button class="vce-ab" onclick="vceSameSize('w')" title="Match the width of the first selected">same width</button>
+                <button class="vce-ab" onclick="vceSameSize('h')" title="Match the height of the first selected">same height</button>
+                <button class="vce-ab" onclick="vceFitText()" title="Fit width to caption text">fit to text</button>
+              </div>
+
+              <div class="vce-sec">Grid <span class="vce-hint">place the selection in rows</span></div>
+              <div class="vce-row">
+                <label class="vce-lb">cols <input id="vce-grid-cols" type="number" min="1" max="20" value="6" class="vce-pi vce-n"></label>
+                <label class="vce-lb">gap X <input id="vce-grid-gapx" type="number" min="0" max="100" value="5" class="vce-pi vce-n"></label>
+                <label class="vce-lb">gap Y <input id="vce-grid-gapy" type="number" min="0" max="100" value="5" class="vce-pi vce-n"></label>
+              </div>
+              <div class="vce-row">
+                <label class="vce-lb">order
+                  <select id="vce-grid-sort" class="vce-pi" style="width:100px">
+                    <option value="pos">position</option>
+                    <option value="alpha">A–Z</option>
+                    <option value="num">natural #</option>
+                    <option value="color">colour hue</option>
+                    <option value="id">widget ID</option>
+                  </select></label>
+                <button class="vce-ab" onclick="vceArrangeGrid()">▦ Arrange in grid</button>
+              </div>
+              <div class="vce-row">
+                <label class="vce-lb">swap places, keep slots
+                  <select id="vce-sort-by" class="vce-pi" style="width:100px">
+                    <option value="alpha">A–Z</option>
+                    <option value="num">natural #</option>
+                    <option value="color">colour hue</option>
+                    <option value="id">widget ID</option>
+                  </select></label>
+                <button class="vce-ab" onclick="vceSortSiblings()">↕ Sort</button>
+              </div>
+
+              <div class="vce-sec">Snap to grid</div>
+              <div class="vce-row">
+                <input id="vce-snap-grid" type="number" min="1" max="50" value="5" class="vce-pi vce-n">
+                <span class="vce-lb">px</span>
+                <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap selection</button>
+                <label class="vce-lb" title="Drag a selected widget to move it; positions snap to this grid"><input type="checkbox" id="vce-snap-drag" checked> while dragging</label>
+              </div>
             </div>
           </div>
 
-          <!-- Actions -->
-          <div id="vce-actions-panel">
-            <div id="vcb-panel"></div>
-            <div class="vce-pl" style="margin-top:0">Align</div>
-            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
-              <button class="vce-ab" onclick="vceAlign('left')" title="Align left edges">← left</button>
-              <button class="vce-ab" onclick="vceAlign('centerH')" title="Centre horizontally">— H ctr</button>
-              <button class="vce-ab" onclick="vceAlign('right')" title="Align right edges">→ right</button>
-              <button class="vce-ab" onclick="vceAlign('top')" title="Align top edges">↑ top</button>
-              <button class="vce-ab" onclick="vceAlign('centerV')" title="Centre vertically">| V ctr</button>
-              <button class="vce-ab" onclick="vceAlign('bottom')" title="Align bottom edges">↓ bottom</button>
-            </div>
+          <!-- ② Add & wire -->
+          <div class="vce-pane" id="vce-pane-add" hidden>
+            <div id="vcb-add"><div class="vce-hint" style="padding:12px 0">Open a workspace first.</div></div>
+          </div>
 
-            <div class="vce-pl">Distribute &amp; size</div>
-            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
-              <button class="vce-ab" onclick="vceDistribute('h')" title="Equal horizontal spacing">↔ distr H</button>
-              <button class="vce-ab" onclick="vceDistribute('v')" title="Equal vertical spacing">↕ distr V</button>
-              <button class="vce-ab" onclick="vceSameSize('w')" title="Match width to first selected">= W</button>
-              <button class="vce-ab" onclick="vceSameSize('h')" title="Match height to first selected">= H</button>
-              <button class="vce-ab" onclick="vceFitText()" title="Fit width to caption text">fit text</button>
-            </div>
-
-            <div class="vce-pl">Grid arrange</div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <label style="font-size:10px;color:var(--text-muted)">Cols</label>
-              <input id="vce-grid-cols" type="number" min="1" max="20" value="6"
-                     class="vce-pi" style="width:44px">
-              <label style="font-size:10px;color:var(--text-muted)">Gap X</label>
-              <input id="vce-grid-gapx" type="number" min="0" max="100" value="5"
-                     class="vce-pi" style="width:44px">
-              <label style="font-size:10px;color:var(--text-muted)">Gap Y</label>
-              <input id="vce-grid-gapy" type="number" min="0" max="100" value="5"
-                     class="vce-pi" style="width:44px">
-            </div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <label style="font-size:10px;color:var(--text-muted)">Order by</label>
-              <select id="vce-grid-sort" class="vce-pi" style="width:100px">
-                <option value="pos">Position</option>
-                <option value="alpha">A–Z</option>
-                <option value="num">Natural #</option>
-                <option value="color">Colour hue</option>
-                <option value="id">Widget ID</option>
-              </select>
-              <button class="vce-ab" onclick="vceArrangeGrid()">▦ Arrange</button>
-            </div>
-
-            <div class="vce-pl">Sort in place (same parent)</div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <select id="vce-sort-by" class="vce-pi" style="width:100px">
-                <option value="alpha">A–Z</option>
-                <option value="num">Natural #</option>
-                <option value="color">Colour hue</option>
-                <option value="id">Widget ID</option>
-              </select>
-              <button class="vce-ab" onclick="vceSortSiblings()">↕ Sort</button>
-            </div>
-
-            <div class="vce-pl">Pages</div>
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-              <input id="vce-page-name" class="vce-pi" style="width:150px" placeholder="Name (optional)">
-              <button class="vce-ab" onclick="vceNewPage()" title="Add an empty page">＋ New page</button>
-              <button class="vce-ab" onclick="vceDuplicatePage()" title="Copy the current page with all its widgets (new IDs)">⧉ Duplicate page</button>
-            </div>
-            <div style="margin-bottom:6px">
-              <label style="font-size:10px;color:var(--text-muted)"><input type="checkbox" id="vce-page-keep"> keep key/MIDI bindings when duplicating</label>
-            </div>
-
-            <div class="vce-pl">Snap to grid</div>
-            <div style="display:flex;gap:4px;align-items:center;margin-bottom:2px">
-              <input id="vce-snap-grid" type="number" min="1" max="50" value="5"
-                     class="vce-pi" style="width:50px">
-              <label style="font-size:10px;color:var(--text-muted)">px</label>
-              <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap</button>
-              <label style="font-size:10px;color:var(--text-muted)" title="Drag a selected widget to move it; positions snap to this grid"><input type="checkbox" id="vce-snap-drag" checked> while dragging</label>
-            </div>
+          <!-- ③ Pages -->
+          <div class="vce-pane" id="vce-pane-pages" hidden>
+            <div id="vcb-pages"><div class="vce-hint" style="padding:12px 0">Open a workspace first.</div></div>
           </div>
         </div>
 

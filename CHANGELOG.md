@@ -7,7 +7,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-29
+
+Phase 2 starts: the Workspace Doctor **fixes** what it finds, and the **Rig Reducer** turns a big show into one for a smaller rig — both always into a new file.
+
 ### Added
+- **Rig Reducer** (Phase 2.2, `core/rig_reducer.py`, tab under *Build the rig*): keep some fixtures, remove the others with cascade — scene / sequence values, EFX entries, group heads (empty groups removed), 3D monitor items, functions left without fixtures or that lost all their steps (with the steps, script commands, show items, buttons, CueLists and sequences that used them), Level slider channels. Optional **re-patch** of the kept fixtures (name, universe, address — 1-based as in QLC+). **🔍 Preview** lists every change and only the *new* Doctor findings (renames don't count); the export is blocked on new Doctor errors; new file `<name>_v<N+1>.qxw` + `<name>_v<N+1>_reduce_report.txt`. API `/api/reducer/fixtures`, `/preview`, `/reduce`, `/save-report`. Festival_14fix → its 8 PARs: 6 fixtures, 3 groups, 11 functions, 6 VC widgets, 672 value sets removed, nothing new for the Doctor.
 - **Workspace Doctor fixes** (Phase 2.1, `core/doctor/fixes.py`): opt-in fixes for D002, D003, D004, D005, D006, D007, D008, D010, D011, D015, D016 and D017, always written to a **new file** `<name>_v<N+1>.qxw` with `<name>_v<N+1>_fix_report.txt` next to it (changes, not fixed, still open); the original is never changed. Recommended fixes are the default; fixes that delete functions (D004, D015, D016) must be asked for. Deterministic. CLI: `python -m core.doctor show.qxw --fix [--remove] [--codes …] [--out …]`.
 - **Workspace Doctor tab** (sidebar → Workspace tools): check the open workspace, findings grouped by code with the fix each one gets, tick boxes per finding and per group (✓ Recommended / ✓ All / ✗ None, *Show info*), **💾 Fix selected → new file…** with a Save dialog, the fix report saved next to it, before/after counts. API `/api/doctor/check`, `/fix`, `/save-report`, `/last-result`.
 - **New checks**: **D017** PANIC RESET is a plain scene (it can't darken looks that are still running — the BarShow → SmallShow case; the fix wraps it in a script that stops everything first); **D010** the setlist page is not page 1 (info); **D011** widget outside its page or frame (> 8 px); **D013** chaser steps that last 0 ms; **D014** CueList runs a chaser with no steps.

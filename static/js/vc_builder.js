@@ -46,7 +46,10 @@ function _vcbSelectionHtml(selArr) {
   const single = selArr.length === 1;
   const isPage = single && _vcePage && first.id === _vcePage.id;
   let html = '';
-  if (single && _VCB_WIRABLE.has(first.type)) {
+  if (single && first.type === 'Button' && ['StopAll', 'Blackout'].includes(first.action)) {
+    html += `<div class="vce-pl">Function</div><div style="font-size:10px;margin-bottom:6px">${first.action === 'StopAll'
+      ? 'Stop all functions' : 'Blackout'} button — it needs no function</div>`;
+  } else if (single && _VCB_WIRABLE.has(first.type)) {
     const fns = _vcbInfo.functions.filter(f => first.type !== 'CueList' || f.type === 'Chaser');
     html += `<div class="vce-pl">Function</div>
       <div style="font-size:10px;margin-bottom:3px">${first.func_id

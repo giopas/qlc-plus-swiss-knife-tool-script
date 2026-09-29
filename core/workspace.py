@@ -1467,6 +1467,7 @@ def _build_vc_node(node: ET.Element, parent_id: str | None = None) -> dict | Non
         'font_size':   font_size,
         'font_bold':   font_bold,
         'func_id':     fid,
+        'action':      (node.findtext('q:Action', '', NS) or '').strip(),
         'func_name':   _state['func_by_id'].get(fid, '') if fid else '',
         'children':    children,
     }

@@ -29,6 +29,9 @@ D008    no PANIC RESET: creates *Reset: neutral state* (every fixture
         neutral, intensity 0) and a *PANIC RESET* script (stop every
         function, start the reset scene), with a button on the first page.
         PANIC RESET not on a button: adds the button.
+D010    the setlist page (the only page with a CueList) moved to page 1.
+D011    a widget sticking out of its page / frame moved back inside (not
+        when it is larger than its page / frame).
 D015    unnamed function removed when nothing uses it.
 D016    unreferenced function removed.
 D017    PANIC RESET scene → wrapped in a *PANIC RESET* script (stop every
@@ -55,9 +58,10 @@ from core.doctor.report import Finding, Report
 
 # Fixes that delete functions: offered, but not selected by default
 REMOVING = {"D004", "D015", "D016"}
-DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D017"}
+DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017"}
 
-FIX_ORDER = ["D002", "D003", "D004", "D005", "D006", "D007", "D015", "D016", "D017", "D008"]
+FIX_ORDER = ["D002", "D003", "D004", "D005", "D006", "D007", "D010", "D011",
+             "D015", "D016", "D017", "D008"]
 
 
 @dataclass
@@ -97,7 +101,7 @@ def fixable(f: Finding) -> bool:
         return True
     if f.code == "D004":
         return "degenerate" not in f.message
-    if f.code in ("D005", "D006", "D007", "D016", "D017"):
+    if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017"):
         return True
     if f.code == "D008":
         return True
@@ -117,6 +121,8 @@ def fix_hint(f: Finding) -> str:
         "D007": "give the chaser its own copy of the scene",
         "D008": ("create PANIC RESET (script + neutral scene) and its button"
                  if "no PANIC" in f.message else "add a PANIC RESET button"),
+        "D010": "move the setlist page to page 1",
+        "D011": "move it inside (when it fits)",
         "D015": "remove it if nothing uses it",
         "D016": "remove the unused function",
         "D017": "wrap the scene in a PANIC RESET script that stops everything first",
@@ -440,6 +446,38 @@ def _fix_d008(root, f: Finding, defs) -> List[str]:
             _add_button(root, "PANIC RESET", pid)]
 
 
+def _fix_d010(root, f: Finding) -> List[str]:
+    vc = root.find("VirtualConsole")
+    page = next((p for p in vc if p.tag in ("Frame", "SoloFrame") and p.get("ID") == f.ref.get("page")), None)
+    if page is None:
+        return []
+    first = next(i for i, p in enumerate(list(vc)) if p.tag in ("Frame", "SoloFrame"))
+    vc.remove(page)
+    vc.insert(first, page)
+    return [f"page '{page.get('Caption', '')}' is now page 1"]
+
+
+def _fix_d011(root, f: Finding) -> List[str]:
+    vc = root.find("VirtualConsole")
+    parent = {c: p for p in vc.iter() for c in p}
+    out = []
+    for w in [x for x in vc.iter() if vc_ops._is_widget(x) and x.get("ID") == f.ref.get("widget")]:
+        par = parent.get(w)
+        ws_, pws = w.find("WindowState"), par.find("WindowState") if par is not None else None
+        if ws_ is None or pws is None:
+            continue
+        x, y = int(ws_.get("X", 0)), int(ws_.get("Y", 0))
+        ww, hh = int(ws_.get("Width", 0)), int(ws_.get("Height", 0))
+        pw, ph = int(pws.get("Width", 0)), int(pws.get("Height", 0))
+        if ww > pw or hh > ph:
+            continue                           # can't fit: leave it
+        nx, ny = min(max(0, x), pw - ww), min(max(0, y), ph - hh)
+        if (nx, ny) != (x, y):
+            vc_ops._set_xy(w, nx, ny)
+            out.append(f"moved from {x},{y} to {nx},{ny}")
+    return out
+
+
 def _fix_d017(root, f: Finding) -> List[str]:
     sid = f.ref["function"]
     scene = _fn(root, sid)
@@ -503,6 +541,10 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
                 acts = _fix_remove(work, f)
             elif code == "D017":
                 acts = _fix_d017(work, f)
+            elif code == "D010":
+                acts = _fix_d010(work, f)
+            elif code == "D011":
+                acts = _fix_d011(work, f)
             elif code == "D008":
                 acts = _fix_d008(work, f, defs)
             else:
@@ -512,6 +554,9 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
             elif code == "D015":
                 skipped.append({"code": f.code, "location": f.location,
                                 "reason": "still used — give it a name in QLC+"})
+            elif code == "D011":
+                skipped.append({"code": f.code, "location": f.location,
+                                "reason": "larger than its page / frame — resize it in QLC+"})
             elif code not in ("D002",):
                 skipped.append({"code": f.code, "location": f.location,
                                 "reason": "nothing left to change (fixed by an earlier fix)"})

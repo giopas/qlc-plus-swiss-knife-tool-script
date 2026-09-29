@@ -130,6 +130,8 @@ def vc_op():
         elif op == 'copy_page':
             kw = {'page_id': str(d.get('page_id', '')), 'caption': d.get('caption', ''),
                   'keep_bindings': bool(d.get('keep_bindings'))}
+        elif op in _BUILDER_ARGS:
+            kw = _builder_kw(op, d)
         else:
             return jsonify({'error': f'Unknown operation: {op}'}), 400
         return jsonify({'ok': True, **ws.vc_structural_edit(op, **kw)})
@@ -137,6 +139,97 @@ def vc_op():
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)[:300]}), 500
+
+
+# VC Builder (WORKPLAN 2.4) — whitelisted arguments per operation
+_BUILDER_ARGS = {
+    'create':          {'parent_id': str, 'kind': str, 'caption': str, 'x': int, 'y': int,
+                        'w': int, 'h': int, 'func_id': str, 'bg_color': str},
+    'delete':          {'ids': list},
+    'duplicate':       {'ids': list, 'keep_bindings': bool},
+    'wire':            {'widget_id': str, 'func_id': str},
+    'rename_page':     {'page_id': str, 'caption': str},
+    'move_page':       {'page_id': str, 'index': int},
+    'delete_page':     {'page_id': str},
+    'label_panel':     {'parent_id': str, 'lines': list, 'columns': int, 'title': str,
+                        'label_w': int, 'label_h': int},
+    'auto_arrange':    {'frame_id': str, 'profile': str, 'columns': int},
+    'screen':          {'profile_id': str, 'page_ids': list, 'scale': bool},
+    'apply_template':  {'name': str, 'caption': str},
+    'setlist_cuelist': {'chaser_id': str, 'cuelist_id': str, 'page_id': str},
+}
+
+
+def _builder_kw(op: str, d: dict) -> dict:
+    kw = {}
+    for k, t in _BUILDER_ARGS[op].items():
+        v = d.get(k)
+        if v is None or v == '':
+            continue
+        if t is list:
+            kw[k] = [str(x) for x in v] if k != 'lines' else [str(x) for x in v]
+        elif t is bool:
+            kw[k] = bool(v)
+        else:
+            kw[k] = t(v)
+    if op == 'auto_arrange':
+        from core.quick_start import nomenclature
+        ref = kw.pop('profile', None)
+        try:
+            kw['profile'] = nomenclature.load_profile(os.path.basename(ref)) if ref else None
+        except ValueError:
+            kw['profile'] = None
+    return kw
+
+
+@bp.route('/vc/builder-info')
+def vc_builder_info():
+    """Functions (with nomenclature prefix), kinds, screens, templates, profiles."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import vc_builder
+    from core.quick_start import nomenclature
+    ref = request.args.get('profile') or 'plain'
+    try:
+        prof = nomenclature.load_profile(os.path.basename(ref))
+    except ValueError:
+        prof = nomenclature.load_profile('plain')
+    fns = vc_builder.functions(ws._state['qxw_root'])
+    items = []
+    for fid, f in sorted(fns.items(), key=lambda kv: (kv[1]['name'].lower(), kv[0])):
+        pre = prof.prefix_of(f['name'])
+        letters = [c for c in pre if c.isalnum() or c == '*']
+        items.append({'id': fid, 'name': f['name'], 'type': f['type'],
+                      'group': letters[0] if letters else '',
+                      'effect': letters[1] if len(letters) > 1 else ''})
+    setlist = [i for i in items if i['type'] == 'Chaser']
+    setlist.sort(key=lambda i: (not i['name'].lower().startswith('setlist'), i['name'].lower()))
+    return jsonify({'functions': items, 'kinds': list(vc_builder.KINDS),
+                    'screens': [{'id': k, **v} for k, v in vc_builder.SCREENS.items()],
+                    'templates': vc_builder.list_templates(),
+                    'profiles': nomenclature.list_profiles(),
+                    'legend': vc_builder.legend_lines(prof),
+                    'groups': prof.groups, 'effects': prof.effects,
+                    'chasers': setlist})
+
+
+@bp.route('/vc/template', methods=['POST'])
+def vc_template():
+    """{"action": "save", "page_id", "name"} | {"action": "delete", "name"}"""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import vc_builder, vc_ops
+    d = request.get_json(force=True) or {}
+    try:
+        if d.get('action') == 'delete':
+            ok = vc_builder.delete_template(str(d.get('name', '')))
+            return (jsonify({'ok': True, 'templates': vc_builder.list_templates()}) if ok
+                    else (jsonify({'error': 'Template not found.'}), 404))
+        res = vc_builder.save_template(ws._state['qxw_root'], str(d.get('page_id', '')),
+                                       str(d.get('name', '')))
+        return jsonify({'ok': True, **res, 'templates': vc_builder.list_templates()})
+    except vc_ops.VcOpError as e:
+        return jsonify({'error': str(e)}), 400
 
 
 @bp.route('/vc/export-qxw', methods=['POST'])

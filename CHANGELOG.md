@@ -7,6 +7,22 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-09-29
+
+Phase 2.3: build **looks** and **chasers** straight into a show — by palette and pattern, with BPM timing and a preview — into a new file.
+
+### Added
+- **Look & Chaser Builder** (Phase 2.3, `core/look_builder.py`, tab *Look Builder* under *Build the rig*):
+  - **Looks** — fixture group × palette colour, one scene each. Palettes *warm*, *cold*, *scenic* (`core/looks/palettes.json`) and your own colours (colour picker). The colour is written by capability (`capability_map.encode`): RGB(W) mixing, the nearest colour-wheel slot, or dimmer only, so one "Amber" works on PARs and moving heads. **Every channel is declared** (shutter open, pan/tilt centred, the rest neutral). Level 5–100 %.
+  - **Chasers** — patterns *all-hit*, *left/right* (halves or odd/even), *chase*, *ping-pong*, *build-up*, *random* (seeded: same seed, same chaser; *n* fixtures per step); colours per step or per fixture; off fixtures dark or a background colour; step time in **ms** or **BPM + note length** (1/1 … 1/16); **cut** or **fade** (a % of the step). Identical steps share one scene; step scenes live in the chaser's function folder.
+  - **Song presets** — a chaser recipe saved by name: five built-in (`core/looks/presets.json`, e.g. *Drive — 8 steps, 280 ms, cut*) and your own (`~/.qlc_swiss_knife/look_presets.json`, or `$QSK_LOOK_PRESETS`).
+  - **Simulated DMX preview** — the values written for each fixture decoded back into the colour they make: one strip per fixture, one cell per step, **▶ Play** at the step time.
+  - Names follow the naming profile (*plain* → `Ceiling · Amber`; *TheBand* → `AS · Amber`, `CD · Drive`); functions go into the folder *Look Builder/Looks* and *Look Builder/Chasers/…*; optional **new VC page** with a solo frame of coloured toggle buttons per group and one for the chasers; an existing **PANIC RESET script** also stops the new functions. 🔍 Check shows the changes and the new Doctor findings; new Doctor errors block the export; new file `<name>_v<N+1>.qxw` + `<name>_v<N+1>_looks_report.txt`. API `/api/looks/*`.
+- `tests/manual/Festival_looks.qxw` — 6 looks and 5 chasers on the festival corpus show, for the QLC+ open-check.
+
+### Fixed
+- A new VC page (VC Visual Editor *New page*, Function Porter *new page*) copied the key/MIDI bindings of the first page (e.g. its *Enable* input) — the copy now keeps only the page's look.
+
 ## [1.5.0] — 2026-09-29
 
 Phase 2 starts: the Workspace Doctor **fixes** what it finds, and the **Rig Reducer** turns a big show into one for a smaller rig — both always into a new file.

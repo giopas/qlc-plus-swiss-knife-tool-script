@@ -4,6 +4,15 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep, evening — Phase 2.2 done, v1.5.0 prepared):**
+- **2.2 Rig Reducer — done** on branch `feat/rig-reducer` (stacked on `feat/doctor-fixes`; commit `35c4dd6` + release commit; wiki `f87b867` *Rig Reducer* page). **v1.5.0 prepared** on the same branch (VERSION, CHANGELOG `[1.5.0]`, README, ROADMAP ✅, release notes + forum post). 476 tests green; both tabs browser-checked. Waiting for giopas: test on the Mac, push, merge, tag (commands in §8).
+- Next: **2.3 Look and Chaser Builder** → v1.6.0.
+
+**Status (29 Sep, later — Phase 2.1 done):**
+- v1.4.1 released by giopas (main `61cdcb9`, tag `v1.4.1`).
+- **2.1 Workspace Doctor fixes — done** on branch `feat/doctor-fixes` (from `main`; commits `27bc592` D017, `9c4ba6c` fix engine + CLI, `df1c0ec` Doctor tab, `72efd7c` D010/D011/D013/D014, `9a012ac` docs; wiki `e3157e3`). 469 tests green; tab browser-checked (Festival_14fix: 1 error / 855 warnings → 0 / 53 with the recommended fixes). Not released: v1.5.0 = 2.1 + 2.2 Rig Reducer.
+- Next: **2.2 Rig Reducer**.
+
 **Status (29 Sep — v1.4.1 prepared):**
 - **Re-test by giopas (29 Sep, v1.4.1 branch): works.** BarShow_v14 *1. SETLIST* → SmallShow, *Source wins*: one page, layout kept; ported CueList has MIDI Next ch 20 / Previous ch 10 + Space, PANIC / BLACKOUT has ch 40; STROBE BLIND!, *Setlist Cue* and BLACKOUT lost exactly those. *Setlist Cue* keeps MIDI Stop ch 30 (BarShow's CueList has no MIDI Stop, so nothing clashed) — expected; to drop the old setlist entirely, tick it under "Remove existing items" in step 4. PANIC RESET = BarShow's scene (see backlog), works as in the source; PANIC / BLACKOUT is the one that stops everything. Idea (not planned): option "replace" — when a ported widget takes over a target widget's bindings, move *all* of that widget's bindings.
 - v1.4.0 was released by giopas (main `ed80607`, tag `v1.4.0`). His real-show test (BarShow_v14 *1. SETLIST* → SmallShow, *Source wins*) found: (1) the ported CueList had no MIDI and the target kept its bindings — **bug**: `routes/porter_routes._normalize_plan` whitelisted `bindings` to keep_free/keep/drop and dropped `universe_map`, `copy_input`, `bindings_only`, so every app export used *keep unless used* (the core tests called `porter.port()` directly and never went through the route); (2) *1. SETLIST* split over two pages; (3) PANIC RESET "doesn't work" — **not a Porter bug**: in BarShow it is a *Scene* at 0 (kill auto modes), which can't pull down HTP dimmer/RGB of a running look (same as in the source show); use PANIC / BLACKOUT (Stop all) first, as in BarShow. Backlog item added.
@@ -294,9 +303,19 @@ Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy
 
 ### Phase 2 — Show-building toolkit (replaces manual/AI XML patching)
 
-**2.1 Workspace Doctor: fixes → v1.5.0**
+**2.1 Workspace Doctor: fixes → v1.5.0** — ✅ *done 29 Sep, branch `feat/doctor-fixes`*
 
 Doctor is a UI tab plus the CLI. Every fix is opt-in per finding, and the output always goes to a new file with a fix report.
+
+*As built (29 Sep):*
+- [x] `core/doctor/fixes.py`: `fix(root, defs, keys=…, codes=…)` → `FixResult(root, before, after, actions, skipped)` on a copy; `fixable()`, `fix_hint()`, `finding_key()` (`code|location|message`), `DEFAULT_CODES` (no removals) and `REMOVING` (D004/D015/D016); `format_report()`; `fix_file()` writes `<name>_v<N+1>.qxw` (protects the source) + `<name>_v<N+1>_fix_report.txt`. **Naming:** follows the 23 Sep one-naming-rule decision (`_v<N+1>`), not the older `<name>_doctor.qxw` of §2 principle 1.
+- [x] Fixes per code: table below and `docs/doctor.md` → *Fixes*. D008 and D017 use the Quick Start PANIC RESET recipe (script: `stoponexit:false`, stop every function, start the reset scene, `wait:100ms`, stop itself).
+- [x] CLI: `--fix`, `--remove`, `--codes`, `--out`.
+- [x] **Workspace Doctor tab** (`routes/doctor_routes.py`, `static/js/doctor.js`, sidebar → Workspace tools): check the open workspace (definitions next to it + installed QLC+ library), groups per code with tick boxes (a group tick covers all its findings, also those beyond the 150 shown), ✓ Recommended / ✓ All / ✗ None, Show info, Save dialog, fix report next to the saved file, before/after summary, 📋 Copy Report; messages in the app's status bar.
+- [x] New checks: **D017** PANIC RESET is a plain scene (from giopas's BarShow → SmallShow test), D010 (info), D011 (8 px tolerance — the Festival sub-frames overflow by 4 px), D013, D014 (built as "CueList runs an empty chaser": "setlist chaser ≠ CueList chaser" is too ambiguous in real files — Festival has empty *Setlist: Band A* chasers next to the *(Auto)* ones its CueLists use).
+- [x] Doctor: script `stopfunction` commands no longer count as a use (else a PANIC RESET script hides every D016).
+- [ ] Not built: D002 fixture/group renumbering, D003 CueList / matrix / bound-scene repairs, D004 degenerate chasers, D012 (→ backlog MIDI manager), D013 fix (needs a timing choice → 2.3), D015 name suggestions.
+- [ ] giopas: try the tab on a real show; open a fixed file in QLC+ (PANIC RESET script from D017 on BarShow / Pub).
 
 Checks (★ = included in Phase 1.0):
 
@@ -321,16 +340,18 @@ Checks (★ = included in Phase 1.0):
 
 - Commits: `feat(doctor): auto-fix engine, always writes new file`, `feat(doctor): UI tab with per-finding fixes`
 
-**2.2 Rig Reducer → v1.5.0**
-- [ ] Choose the fixtures to keep. Everything else is removed, with cascade:
-  - channel values in scenes;
-  - EFX and RGB Matrix fixture lists;
-  - fixture groups;
-  - 3D monitor items;
-  - functions that become empty;
-  - VC buttons for functions that no longer exist.
-- [ ] Optional re-patch of the kept fixtures (DMX addresses, renames), e.g. FLS/FRS/FLB/FRB/DR/LG.
-- [ ] Doctor runs automatically, and the result is saved as a new version.
+**2.2 Rig Reducer → v1.5.0** — ✅ *done 29 Sep, branch `feat/rig-reducer` (`35c4dd6`)*
+- [x] Choose the fixtures to keep. Everything else is removed, with cascade *(`core/rig_reducer.reduce()`)*:
+  - channel values in scenes; *(and Sequence step values; `Values` updated)*
+  - EFX and RGB Matrix fixture lists; *(EFX left empty and matrices without group removed)*
+  - fixture groups; *(heads removed; empty groups removed)*
+  - 3D monitor items; *(`FxItem`; meshes kept)*
+  - functions that become empty; *(scenes/sequences/EFX that had fixtures and have none; chasers/collections that **lost** all their steps — already-empty ones are left alone; sequences whose bound scene is removed; their steps, script commands, show items are removed via `doctor.fixes._unlink_function`)*
+  - VC buttons for functions that no longer exist. *(buttons and CueLists that pointed at a removed function are removed; Level sliders lose the channels of removed fixtures and go when empty; frames stay)*
+- [x] Optional re-patch of the kept fixtures (DMX addresses, renames), e.g. FLS/FRS/FLB/FRB/DR/LG. *(`{id: {name, universe, address}}`, 1-based as QLC+ shows them)*
+- [x] Doctor runs automatically, and the result is saved as a new version. *(`run()`: only new findings vs the original renamed the same way; new errors block the export; `reduce_file()` / tab → `<name>_v<N+1>.qxw` + `_reduce_report.txt`)*
+- [x] **Rig Reducer tab** (sidebar → Build the rig; `routes/reducer_routes.py`, `static/js/reducer.js`): fixture table with Keep / name / universe / address, ✓ Keep all / ✗ Keep none, 🔍 Preview (counts, new Doctor findings, change log), 💾 Reduce → new file… (Save dialog, report next to it). Browser-checked on Festival_14fix.
+- [x] Tests `tests/test_rig_reducer.py` (7): Festival keep-the-PARs (counts, nothing new for Doctor, deterministic, input untouched, pre-empty chasers kept), synthetic cascade (EFX, matrix, sequence, bound scene, slider, CueList, buttons), re-patch + D009, `reduce_file` never overwrites, API, rename not a new finding.
 - Commit: `feat: Rig Reducer with cascading clean-up`
 
 **2.3 Look and Chaser Builder → v1.6.0**
@@ -493,9 +514,36 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
+**giopas — release v1.5.0 (2.1 Doctor fixes + 2.2 Rig Reducer), branch `feat/rig-reducer`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/rig-reducer
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 476 passed
+python3 app.py                                                        # restart the app, try both tabs
+git push -u origin feat/doctor-fixes feat/rig-reducer
+git checkout main && git pull --ff-only
+git merge --no-ff feat/rig-reducer -m "Release v1.5.0"                # contains feat/doctor-fixes
+python -m pytest -q && git push origin main
+git tag -a v1.5.0 -m "v1.5.0" && git push origin v1.5.0
+cd wiki && git push origin master && cd ..
+```
+GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.5.0.md`; forum: `docs/release-notes/FORUM_v1.5.0.bbcode`.
+Try first: Workspace Doctor on BarShow_v14 (D017 → open the fixed file in QLC+: PANIC RESET stops a running look); Rig Reducer on BarShow_v14 → keep the 4 PARs of SmallShow's layout, re-patch, open in QLC+.
+
+**giopas — Phase 2.1 (Doctor fixes) — superseded by the v1.5.0 steps above:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/doctor-fixes
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q     # expect 469 passed
+python3 app.py                                                       # restart the app
+git push -u origin feat/doctor-fixes
+cd wiki && git push origin master && cd ..
+```
+Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
+
 **Next Cowork session:**
-1. Results of giopas's tests (1.5 translated file in QLC+, 1.6 real MIDI case, 1.3 Show Book); fixes go on `chore/release-1.4.0` if v1.4.0 isn't tagged yet, else a v1.4.1.
-2. Phase 2.1 Workspace Doctor fixes → v1.5.0 (auto-fix engine, always a new file; Doctor UI tab).
+1. Results of giopas's v1.5.0 tests; then Phase 2.3 Look and Chaser Builder → v1.6.0.
+2. (done) Phase 2.1 Workspace Doctor fixes.
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
 1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
 2. Add `FloorShow` to the corpus when available.

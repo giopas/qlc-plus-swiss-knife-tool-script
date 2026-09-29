@@ -1071,7 +1071,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
-      <div><h2>VC Visual Editor <span class="b beta">BETA</span></h2><div class="p-desc">See your Virtual Console as a canvas — select, align, distribute, resize and sort widgets.</div></div>
+      <div><h2>VC Visual Editor <span class="b beta">BETA</span></h2><div class="p-desc">See your Virtual Console as a canvas — build it (add, wire, delete widgets; pages, templates, screen sizes) and tidy it (drag, align, distribute, sort).</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1108,6 +1108,11 @@
                 background:var(--surface-0); border:0.5px solid var(--border);
                 border-radius:4px; cursor:pointer; color:var(--text-primary); white-space:nowrap; }
       .vce-ab:hover { background:var(--surface-1); border-color:var(--border-strong); }
+      .vcb-fnlist { max-height:180px; overflow-y:auto; border:0.5px solid var(--border); border-radius:4px;
+                    background:var(--surface-0); margin-bottom:6px; }
+      .vcb-fn { display:flex; justify-content:space-between; gap:6px; padding:2px 6px; font-size:10px; cursor:grab; }
+      .vcb-fn:hover { background:var(--surface-1); }
+      .vcb-t { color:var(--text-muted); font-size:9px; white-space:nowrap; }
       .vce-sep { width:0.5px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
       #vce-statusbar { padding:3px 10px; border-top:0.5px solid var(--border);
                        background:var(--surface-0); font-size:10px; font-family:var(--font-mono);
@@ -1183,6 +1188,7 @@
 
           <!-- Actions -->
           <div id="vce-actions-panel">
+            <div id="vcb-panel"></div>
             <div class="vce-pl" style="margin-top:0">Align</div>
             <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
               <button class="vce-ab" onclick="vceAlign('left')" title="Align left edges">← left</button>
@@ -1253,6 +1259,7 @@
                      class="vce-pi" style="width:50px">
               <label style="font-size:10px;color:var(--text-muted)">px</label>
               <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap</button>
+              <label style="font-size:10px;color:var(--text-muted)" title="Drag a selected widget to move it; positions snap to this grid"><input type="checkbox" id="vce-snap-drag" checked> while dragging</label>
             </div>
           </div>
         </div>
@@ -2147,6 +2154,7 @@
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>
 <script src="/static/js/session.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>
+<script src="/static/js/vc_builder.js?v={{ asset_v }}"></script>
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
 </body>
 </html>

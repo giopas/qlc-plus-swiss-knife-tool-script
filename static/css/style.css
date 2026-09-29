@@ -3513,3 +3513,12 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .doc-msg { flex: 1; }
 .doc-nobox { display: inline-block; width: 13px; }
 .doc-more { font-size: 12px; color: var(--text-dim); padding: 4px 12px 6px; }
+
+/* ── Rig Reducer tab (2.2) ─────────────────────────────────────────────── */
+.rr-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; padding: 0 12px 8px; }
+.rr-table, .rr-preview { overflow: auto; min-height: 0; }
+.rr-tbl tr.rr-gone td { opacity: .45; text-decoration: line-through; }
+.rr-tbl tr.rr-gone td:first-child { opacity: 1; text-decoration: none; }
+.rr-in { width: 100%; min-width: 120px; }
+.rr-num { width: 70px; }
+.rr-log { font-size: 12px; max-height: 360px; overflow: auto; color: var(--text-dim); }

@@ -103,6 +103,10 @@
       <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
       <span>Tech Rider</span>
     </button>
+    <button class="sn-item" id="sn-reducer" data-tip="Rig Reducer" data-desc="Keep some fixtures and remove the others — with their values, groups, empty functions and buttons — and re-patch the rest, into a new file." onclick="go('reducer')">
+      <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
+      <span>Rig Reducer</span>
+    </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
       <span>Brightness</span>
@@ -1694,6 +1698,42 @@
   </section>
 
   <!-- ======================================================================
+       RIG REDUCER (WORKPLAN 2.2)
+  ====================================================================== -->
+  <section class="screen" id="scr-reducer">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
+      <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, into a new file.</div></div>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <span id="rr-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface btn-sm" onclick="reducerKeepAll(true)">✓ Keep all</button>
+      <button class="btn btn-surface btn-sm" onclick="reducerKeepAll(false)">✗ Keep none</button>
+      <button class="btn btn-surface" onclick="reducerPreview()">🔍 Preview</button>
+    </div>
+
+    <div class="rr-body">
+      <div id="rr-table" class="rr-table"><div class="porter-placeholder">Open a workspace to list its fixtures.</div></div>
+      <div id="rr-preview" class="rr-preview"><div class="porter-placeholder">Untick the fixtures to remove, edit names / addresses if needed, then 🔍 Preview.</div></div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+      </span>
+      <div class="spacer"></div>
+      <button id="rr-go" class="btn btn-accent" onclick="reducerRun()" disabled>💾 Reduce → new file…</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        WORKSPACE DOCTOR (WORKPLAN 2.1)
   ====================================================================== -->
   <section class="screen" id="scr-doctor">
@@ -2069,6 +2109,7 @@
 <script src="/static/js/porter.js?v={{ asset_v }}"></script>
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
+<script src="/static/js/reducer.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>
 <script src="/static/js/session.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>

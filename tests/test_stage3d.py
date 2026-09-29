@@ -48,14 +48,18 @@ def _m(root, path, mid):
     return next(m for m in s3.meshes(root, path) if m["id"] == mid)
 
 
-def test_read_obj_and_resolve(tmp_path):
+def test_read_obj_and_resolve(tmp_path, monkeypatch):
     (tmp_path / "a.obj").write_text("# x\nvn 0 1 0\n" + PERSON + "f 1 2 3\n")
     info = s3.read_obj(str(tmp_path / "a.obj"))
     assert info["min"] == (-0.5, 0.0, -0.4) and info["max"] == (0.55, 1.8, 0.4) and info["count"] == 8
     assert s3.resolve("a.obj", str(tmp_path / "s.qxw")) == str(tmp_path / "a.obj")
     assert s3.resolve(str(tmp_path / "a.obj")) == str(tmp_path / "a.obj")
     assert s3.resolve("nope.obj", str(tmp_path / "s.qxw")) is None
+    # QLC+ installed here (e.g. /Applications/QLC+.app): its real cube is found and is 2 m
+    info, path = s3.mesh_info("generic/cube.obj")
+    assert info["ext"] == (2.0, 2.0, 2.0)
     # QLC+'s built-in cube is known even when its folder isn't here
+    monkeypatch.setattr(s3, "SYSTEM_MESH_DIRS", [])
     info, path = s3.mesh_info("generic/cube.obj")
     assert info["ext"] == (2.0, 2.0, 2.0) and path is None
     assert s3.mesh_info("/Users/x/QLC+/Meshes/generic/cube.obj")[0]["ext"] == (2.0, 2.0, 2.0)

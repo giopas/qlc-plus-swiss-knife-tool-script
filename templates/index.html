@@ -81,7 +81,7 @@
 
     <!-- 2 · Adapt a show -->
     <div class="sn-group-label" id="sn-grp-2"><span class="sn-gnum">2</span><span class="sn-gtxt">Adapt a show</span></div>
-    <button class="sn-item" id="sn-reducer" data-tip="Rig Reducer" data-desc="Keep some fixtures and remove the others — with their values, groups, empty functions and buttons — and re-patch the rest, into a new file." onclick="go('reducer')">
+    <button class="sn-item" id="sn-reducer" data-tip="Rig Reducer" data-desc="Keep some fixtures and remove the others — with their values, groups, empty functions and buttons — and re-patch the rest." onclick="go('reducer')">
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Rig Reducer</span>
     </button>
@@ -101,7 +101,7 @@
 
     <!-- 3 · Create -->
     <div class="sn-group-label" id="sn-grp-3"><span class="sn-gnum">3</span><span class="sn-gtxt">Create</span></div>
-    <button class="sn-item" id="sn-looks" data-tip="Look Builder" data-desc="Build looks (fixture group × palette) and chasers (chase, ping-pong, build-up, random…) with BPM timing and a DMX preview, into a new file." onclick="go('looks')">
+    <button class="sn-item" id="sn-looks" data-tip="Look Builder" data-desc="Build looks (fixture group × palette) and chasers (chase, ping-pong, build-up, random…) with BPM timing and a DMX preview." onclick="go('looks')">
       <svg class="ic"><use href="/static/icons.svg#palette"/></svg>
       <span>Look Builder</span>
     </button>
@@ -110,7 +110,7 @@
       <span>VC Visual Editor</span>
       <span class="b beta">&beta;</span>
     </button>
-    <button class="sn-item" id="sn-stage" data-tip="Stage &amp; Meshes" data-desc="Place the 3D meshes (band members, risers, truss) on the stage — put them on the floor, move, rotate, scale, add from your mesh folders — into a new file." onclick="go('stage')">
+    <button class="sn-item" id="sn-stage" data-tip="Stage &amp; Meshes" data-desc="Place the 3D meshes (band members, risers, truss) on the stage — put them on the floor, move, rotate, scale, add from your mesh folders." onclick="go('stage')">
       <svg class="ic"><use href="/static/icons.svg#grid"/></svg>
       <span>Stage &amp; Meshes</span>
     </button>
@@ -132,7 +132,7 @@
 
     <!-- 5 · Check &amp; fix -->
     <div class="sn-group-label" id="sn-grp-5"><span class="sn-gnum">5</span><span class="sn-gtxt">Check &amp; fix</span></div>
-    <button class="sn-item" id="sn-doctor" data-tip="Workspace Doctor" data-desc="Check the open workspace for broken references, LTP bleed, strobe left on, a PANIC RESET that can't reset… and fix what you tick into a new file." onclick="go('doctor')">
+    <button class="sn-item" id="sn-doctor" data-tip="Workspace Doctor" data-desc="Check the open workspace for broken references, LTP bleed, strobe left on, a PANIC RESET that can't reset… and fix what you tick." onclick="go('doctor')">
       <svg class="ic"><use href="/static/icons.svg#check-square"/></svg>
       <span>Workspace Doctor</span>
     </button>
@@ -204,16 +204,45 @@
       <span class="ms-dot"></span>
       <span id="ms-file-name">No workspace loaded</span>
     </div>
-    <div class="ms-stat"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
-    <div class="ms-stat"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
-    <div class="ms-stat"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+    <div class="ms-stat" title="Fixtures in the show"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
+    <div class="ms-stat" title="Functions in the show"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
+    <div class="ms-stat" title="Virtual Console widgets in the show"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+    <div class="show-bar" id="show-bar" hidden>
+      <span class="sb-pill" id="sb-changes" onclick="showHistoryToggle(true)">no changes yet</span>
+      <span class="sb-pill sb-doctor" id="sb-doctor" hidden onclick="go('doctor')" title="The Workspace Doctor on the show as it is now — click to open it"></span>
+    </div>
     <div class="ms-actions">
+      <button class="btn btn-surface btn-sm" id="sb-undo" onclick="showUndo()" disabled
+              data-tooltip="Undo the last change to the show (any tool)">↶ Undo</button>
+      <button class="btn btn-surface btn-sm" onclick="showHistoryToggle()"
+              data-tooltip="Every change to the show, step by step — open a tool again, go back to any step">🕘 History</button>
+      <button class="btn btn-accent btn-sm" id="sb-save" onclick="showSave()">💾 Save as new file…</button>
       <button class="btn btn-surface btn-sm" onclick="browseWorkspace()"
               data-tooltip="Open a .qxw workspace — every tool works on it">📂 Open…</button>
       <button class="btn btn-surface btn-sm" onclick="reloadFromDisk()"
-              data-tooltip="Re-read the open workspace from disk (discards unsaved edits)">↻ Reload</button>
+              data-tooltip="Re-read the open workspace from disk (discards unsaved changes)">↻<span class="ms-lbl"> Reload</span></button>
     </div>
   </div>
+
+  <!-- The show in progress: History and Save (WORKPLAN 2.6) -->
+  <aside class="show-history" id="show-history" aria-label="History of the show in progress">
+    <div class="sh-head">
+      <div>
+        <h3>History of the show in progress</h3>
+        <div class="sh-intro">Opened from <b id="sh-source"></b>. Every tool you apply adds a step: open that tool again, or go back to how the show was before any step.</div>
+      </div>
+      <button class="btn btn-surface btn-sm" onclick="showHistoryToggle(false)" title="Close">✕</button>
+    </div>
+    <ol class="sh-list" id="sh-list"></ol>
+    <div class="sh-foot">
+      <div class="sh-foot-t">Save as new file</div>
+      <div class="sh-row">
+        <input id="sh-filename" class="filter-input" oninput="this.dataset.touched=1" aria-label="File name">
+        <button class="btn btn-accent btn-sm" onclick="showSave()">💾 Save…</button>
+      </div>
+      <div class="sh-note">Next to it: <code>&lt;name&gt;_report.txt</code> with every step above. The file you opened is never touched, and you can keep working after saving.</div>
+    </div>
+  </aside>
 
 
   <!-- ══════════════════════════════════════════════════════════════════════
@@ -279,7 +308,9 @@
       <div class="start-about">
         <h3>Build, adapt, check and document your QLC+ 5 shows</h3>
         <p>QLC+ Swiss Knife reads your QLC+ workspace (<code>.qxw</code>) and does the long, fiddly jobs for you.
-           Every change is written to a <b>new file</b> next to the original (<code>name_v2.qxw</code>, with a report) — your original is never touched.
+           Open a show and it becomes the <b>show in progress</b>: every tool works on it, one after the other, as often as you need —
+           the header counts the changes, the <b>History</b> lets you go back to any step, and <b>💾 Save as new file…</b> writes it all
+           (<code>name_v2.qxw</code> + a report). Your original is never touched.
            The six groups below are the same 1–6 groups of the menu on the left.</p>
       </div>
 
@@ -508,7 +539,7 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-export-sl-pdf"
@@ -520,9 +551,12 @@
       <button class="btn btn-surface" id="btn-export-sl-xml"
               onclick="slExportXmlTxt()" disabled
               data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
-      <button class="btn btn-accent" id="btn-generate-qxw"
+      <button class="btn btn-surface btn-ghost" id="btn-generate-qxw"
               onclick="slGenerateQxw()" disabled
-              data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">💾 Generate QXW</button>
+              data-tooltip="Save a copy with the setlist chasers as a separate file">Export a copy…</button>
+      <button class="btn btn-accent" id="btn-apply-setlist"
+              onclick="slApply()" disabled
+              data-tooltip="Clone each song's base function and build the setlist chasers in the show in progress">✓ Apply to the show</button>
     </div>
 
   </section>
@@ -633,12 +667,10 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Saves a <b>&nbsp;new version&nbsp;</b> — the loaded .qxw is never overwritten
+        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b> — ↶ Undo in the header; 💾 Save as new file… keeps it
       </span>
-      <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Choose a name and folder for the new file">Save as new file…</button>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="saveTriggers()"
-              data-tooltip="Write &lt;name&gt;_v&lt;N+1&gt;.qxw next to the loaded file (path mode only)">💾 Save new version</button>
+      <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Save the show with these bindings as a separate file">Export a copy…</button>
     </div>
 
   </section>
@@ -985,12 +1017,14 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
       </span>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="brtGenerateQxw()"
-              title="Apply brightness scaling to all scenes and download a new .qxw">
-        💾 Generate QXW
+      <button class="btn btn-surface btn-ghost" onclick="brtGenerateQxw()"
+              data-tooltip="Save a scaled copy as a separate file; the show in progress stays as it is">Export a copy…</button>
+      <button class="btn btn-accent" onclick="brtApply()"
+              title="Scale the brightness of every scene in the show in progress">
+        ✓ Apply to the show
       </button>
     </div>
 
@@ -1309,11 +1343,13 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
       </span>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="vceApplyAndExport()"
-              data-tooltip="Apply all edits and save them as a new .qxw">💾 Apply &amp; Save QXW…</button>
+      <button class="btn btn-surface btn-ghost" onclick="vceApplyAndExport()"
+              data-tooltip="Save the show with these edits as a separate file">Export a copy…</button>
+      <button class="btn btn-accent" onclick="vceApply()"
+              data-tooltip="Put the moved / resized / recoloured widgets into the show (pages, new widgets and wiring are in it already)">✓ Apply to the show</button>
     </div>
 
   </section>
@@ -1745,7 +1781,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#grid"/></svg></div>
-      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models — into a new file.</div></div>
+      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models. Every edit goes into the show in progress.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1762,10 +1798,11 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b> — ↶ Undo here or in the header
       </span>
       <div class="spacer"></div>
-      <button id="st-go" class="btn btn-accent" onclick="stageSave()" disabled>💾 Save → new file…</button>
+      <button id="st-go" class="btn btn-surface btn-ghost" onclick="stageSave()" disabled
+              data-tooltip="Save the show with this stage as a separate file, with a stage report">Export a copy…</button>
     </div>
 
   </section>
@@ -1777,7 +1814,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
-      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Looks for your fixture groups from a palette, and chasers from a pattern — with BPM timing and a preview — into a new file.</div></div>
+      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Looks for your fixture groups from a palette, and chasers from a pattern — with BPM timing and a preview — added to the show in progress.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1791,10 +1828,12 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+        Adds to the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
       </span>
       <div class="spacer"></div>
-      <button id="lb-go" class="btn btn-accent" onclick="looksBuild()" disabled>💾 Build → new file…</button>
+      <button id="lb-export" class="btn btn-surface btn-ghost" onclick="looksBuild()" disabled
+              data-tooltip="Save a copy with the looks as a separate file; the show in progress stays as it is">Export a copy…</button>
+      <button id="lb-go" class="btn btn-accent" onclick="looksApply()" disabled>✓ Add to the show</button>
     </div>
 
   </section>
@@ -1806,7 +1845,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
-      <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, into a new file.</div></div>
+      <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, in the show in progress.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1827,10 +1866,12 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
       </span>
       <div class="spacer"></div>
-      <button id="rr-go" class="btn btn-accent" onclick="reducerRun()" disabled>💾 Reduce → new file…</button>
+      <button id="rr-export" class="btn btn-surface btn-ghost" onclick="reducerRun()" disabled
+              data-tooltip="Save a reduced copy as a separate file; the show in progress stays as it is">Export a copy…</button>
+      <button id="rr-go" class="btn btn-accent" onclick="reducerApply()" disabled>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -1842,7 +1883,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#check-square"/></svg></div>
-      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the open workspace and fix what you tick — the fixed copy is saved as a new file.</div></div>
+      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the show in progress and fix what you tick — the Doctor in the header follows every change.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1866,11 +1907,13 @@
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + fix report — original untouched
+        Fixes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()">📋 Copy Report</button>
-      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorFix()" disabled>💾 Fix selected → new file…</button>
+      <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
+              data-tooltip="Fix only a copy: save it as a separate file, the show in progress stays as it is">Export a fixed copy…</button>
+      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled>✓ Fix selected in the show</button>
     </div>
 
   </section>
@@ -2219,5 +2262,6 @@
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_builder.js?v={{ asset_v }}"></script>
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
+<script src="/static/js/show.js?v={{ asset_v }}"></script>
 </body>
 </html>

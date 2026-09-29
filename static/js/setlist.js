@@ -148,7 +148,7 @@ function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
    'btn-import-slot-txt','btn-export-slot-txt','btn-auto-match','btn-clear-assign','btn-clear-all',
    'btn-purge-clones', 'btn-delete-ws-clones',
-   'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
+   'sl-chaser-select','btn-generate-qxw','btn-apply-setlist','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = !on;

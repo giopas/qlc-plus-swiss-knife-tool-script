@@ -4,12 +4,27 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep — decision: Show Paperwork):**
+- giopas asked whether Show Book, Checklist and Tech Rider should be one modular report. Yes: they differ by reader, not by data. Decided to do it **with the 2.6 audit (v1.9.0)** — task *Show Book, Checklist and Tech Rider → one tool* in 2.6.
+
+**Status (29 Sep, later still — Start and side menu by job, added to v1.8.1):**
+- giopas's report on the v1.8.1 Start page: *"Build the rig"* opened only Fixtures although the group has more tools, and the Start cards 1–6 did not match the side menu. Fixed on branch `feat/start-sidebar` (stacked on `feat/stage-fixtures`), part of the v1.8.1 release: the side menu and the Start cards share the same **six numbered groups by job** — 1 New show (Quick Start, Fixtures) · 2 Adapt a show (Rig Reducer, Function Porter, QXW Merger, Brightness) · 3 Create (Look Builder, VC Visual Editor, Stage & Meshes) · 4 Run the show (Setlist, Trigger Manager, Dictionary) · 5 Check & fix (Workspace Doctor, ID Browser) · 6 Document (Show Book, Checklist, Tech Rider). Each card shows its tools as buttons; hovering a card lights up those tools in the menu; the collapsed menu shows the numbers. New purpose text; the empty recent-files box hidden. Test `test_start_cards_match_side_menu_groups` keeps both in step. 527 tests green; browser-checked. Wiki Home, Sessions-and-Files and the "sidebar →" hints updated. This is the first part of the 2.6 Start/Navigation tasks (the route cards and the show-in-progress model are still to come).
+
+**Status (29 Sep, late night — v1.8.1 prepared: fixtures in the Stage placement):**
+- giopas's feedback on the mock-up: (1) a tool that changed the show in progress gets an **orange dot** in the sidebar — useful in long sessions (added to 2.6 and to the mock-up); (2) **arrange meshes along fixtures and back** (e.g. a mesh between two fixtures) → built now as **v1.8.1** on branch `feat/stage-fixtures` (stacked on `feat/ui-audit`): `stage3d.fixtures()` with body sizes from the .qxf `<Dimensions>` (300 mm default; XPos/ZPos = left/back edge, YPos = underside, from QLC+ `updateFixturePosition`), `move_fixture()`, `arrange(move=all|meshes|fixtures)` where the non-moving items are the reference; fixtures selectable/draggable in the views, *Fixtures* list, *Move* choice, fixture editor; report lists fixture moves. 526 tests green; browser-checked (bassist centred between Wing Left / Wing Right, backs aligned; fixture drag). Commands in §8.
+- Next: giopas's go on the mock-up → 2.6.
+
+**Status (29 Sep, night — v1.8.0 released; plan for 2.6 UI audit and 2.7 Pub test):**
+- **v1.8.0 released** by giopas (main `874f72a`, tag `v1.8.0`): Stage & Meshes with the placement tools.
+- giopas asked for a **usability audit of the whole UI** (align the logic across screens, fix crowded screens) and a **Start screen that explains what the app is for** — before the benchmark, because the benchmark tutorial walks through the UI. Audit done on all 19 screens (screenshots, Festival_14fix loaded); findings and tasks in **Phase 2.6 UI audit → v1.9.0**. The benchmark becomes **2.7 Pub test → v2.0.0**, now with measurable pass criteria and the tool it needs (a functional *Compare* of two workspaces).
+- Next: **2.6** (Start screen first, then navigation, then the shared screen pattern, screen by screen).
+
 **Status (29 Sep, evening — Phase 2.5 done, v1.8.0 prepared):**
 - v1.7.0 released by giopas (main `7d31694`, tag `v1.7.0`).
 - giopas's mesh sample (`mesh test.qxw` + `Bassist.obj` + `cube.obj`, QLC+ 5.2.2) + QLC+ source (`mainview3d.cpp`, `monitorproperties.cpp`, `StageSimple.qml`) → format and placement formula recorded in the wiki page *Stage and Meshes*. His request: fix mesh positions so "on the floor" really is 0 (his bassist needed Y −755 by eye).
 - **2.5 Stage and Meshes — done** on branch `feat/stage-meshes` (from `main`; commit `7053f07` + docs/release commit; wiki *Stage and Meshes* page). **v1.8.0 prepared** on the same branch. 517 tests green; tab browser-checked on Festival_14fix (plan/front views, drag, put all on the floor, add from library). **Open: confirm in QLC+ that the Simple ground floor is at 0.1 m** (read from `StageSimple.qml`: 0.2 m slab centred on 0; his eyeballed values sit 45–55 mm above it) — see §8.
 - giopas's check: Simple ground floor at 0.1 m confirmed in QLC+ ("It works!"). His request: place one or several meshes with one click → `stage3d.arrange()` + *Place* card: to the stage edges / centre (group, gap to the edge), floor / ceiling (each), line up (8), space evenly between the outer two or across the stage (X/Z), nudge (buttons, arrow keys, PgUp/PgDn, Shift = fine); multi-select (Shift/⌘-click, select all/none), group drag. `tests/test_stage3d.py` 15 tests. 523 tests green; browser-checked.
-- Next: **2.6 Benchmark** → v2.0.0.
+- Next: **2.6 UI audit → v1.9.0**, then **2.7 Pub test → v2.0.0** (see the status above).
 
 **Status (29 Sep, later — Phase 2.4 done, v1.7.0 prepared):**
 - v1.6.0 released by giopas (main `e62a6ee`, tag `v1.6.0`); his QLC+ open-check of `Festival_looks.qxw`: folders, *Looks* page, buttons and chaser timings all as intended.
@@ -93,7 +108,7 @@ Rebuild `Pub_6fix.qxw` starting from `Festival_14fix.qxw` using **only Swiss Kni
 4. Build the two-page VC and wire the setlist CueList.
 5. Run Doctor.
 
-The result must pass Doctor with zero errors, and a Doctor diff against v14 must show no functional regressions. When this passes, the goal is met.
+The result must pass Doctor with zero errors and, compared with the hand-made `Pub_6fix.qxw`, show no functional regressions (same patch and groups, the same looks, chasers, VC pages and setlist). When this passes, the goal is met. The route, the measurable pass criteria and the tools still missing are in **Phase 2.7**.
 
 ---
 
@@ -400,9 +415,69 @@ Checks (★ = included in Phase 1.0):
 - [~] Unified 3D placement for fixtures and meshes, reusing the tilt logic from §3. *(Fixtures shown in both views for reference; editing fixture positions/tilt there → backlog — they're placed by the Fixture Configurator / Quick Start.)*
 - Commit: `feat: stage meshes in 3D monitor`
 
-**2.6 Benchmark → v2.0.0**
-- [ ] Run the Pub test (§1) end-to-end.
-- [ ] Document it as a tutorial ("From a big-venue show to a pub show in 30 minutes").
+**2.6 UI audit → v1.9.0** (asked by giopas, 29 Sep)
+
+*Audit of the 19 screens (v1.8.0, Festival_14fix loaded).* What works: every tool has the same header, the same footer (one primary action on the right, an "original untouched" note), the metrics strip and the Open/Reload buttons. What doesn't:
+
+| # | Finding | Where |
+|---|---|---|
+| A1 | **The Start screen undersells the app.** "What is QLC+ Swiss Knife?" still says *build setlists, manage triggers, configure fixtures, browse IDs*; the six cards are the v1.3 tools. Nothing mentions Doctor, Rig Reducer, Look Builder, VC Builder, Stage & Meshes, or the main idea — *build and adapt shows with the tool, safely, into new files*. An empty full-width bar and the show-name / date / path fields sit between the drop zone and the explanation. | Start |
+| A2 | **Three ways to open a file** (header *Open…*, Start drop zone + *Open Workspace* + path field, *Files* panel) and Sessions in the middle of the Start screen. | Start, header, sidebar |
+| A3 | **Sidebar groups don't match jobs**: *Quick Start* is a group of one; *Build the rig* has 8 items mixing rig tools, paperwork (Checklist, Tech Rider) and Brightness; *Workspace tools* mixes the Porter, Show Book, Doctor, ID Browser and Merger. | Sidebar |
+| A4 | **Overlapping tools** with no hint which to use: Quick Start vs Fixtures (both build a rig from fixtures); Function Porter vs QXW Merger (α); Checklist / Tech Rider vs Show Book. | Sidebar, Start |
+| A5 | **Four interaction models** for similar work: numbered steps (Quick Start, Porter), a right panel with tabs (VC Editor), stacked cards (Look Builder, Stage & Meshes), multi-column desks (Setlist, Triggers). Crowded right columns in Look Builder and Stage & Meshes (VC Editor was fixed with tabs in 1.7). | Looks, Stage, Setlist |
+| A6 | **The primary action moves**: footer (most), toolbar (Doctor *Check*, Show Book *Export PDF*), middle of the page (Merger *Copy*, Porter *Next*). | Doctor, Show Book, Merger, Porter |
+| A7 | **Different words for the same thing**: *Generate QXW*, *Save new version*, *Save → new file…*, *Build → new file…*, *Fix selected → new file…*, *Apply & Save QXW…*; "workspace / show / QXW / file"; some tools write next to the file, others open a Save dialog. | all writers |
+| A8 | **Empty states** are inconsistent: some explain the next step ("Open a workspace and press 🔍 Check"), others are blank (ID Browser before a tab is clicked, Merger panes). | ID Browser, Merger |
+| A9 | **Maturity badges** out of date: VC Editor still *Beta* after the 1.7 builder; Merger *Alpha* next to a Porter that does more. | Sidebar |
+| A10 | **Long inline help** in some screens (Brightness paragraph) vs a wiki link elsewhere; no consistent "?" to the wiki page. | Brightness, all |
+
+*Decision (giopas, 29 Sep): one **show in progress** for every tool.* Moving a show to a new venue takes many adjustments across tools, back and forth; today each tool writes its own new file and the next tool starts from the open (old) workspace — so you save, re-open, and lose the thread. Instead:
+- **The show in progress** — opening a `.qxw` makes a working copy in memory; *every* tool reads it and its primary action becomes **"Apply to the show"** (no file written). The header shows it all the time: its name, the file it came from, *N changes, not saved*, the Doctor status (errors / warnings, click → Doctor), ↶ Undo, **History**, **💾 Save as new file…**.
+- **History** — each apply is a step (tool, summary, Doctor after it); click a step to reopen that tool; *undo this step* / go back to any step; save a **checkpoint** file at any step; the saved file gets one report with every step. Sidebar items that changed the show get an **orange dot** (with the count on hover) — giopas, 29 Sep: useful in long sessions; the dot goes when the steps are undone or the show is saved.
+- **Routes** — the Start screen's jobs (e.g. *Adapt a show*: Reducer → Doctor → Groups → Looks → VC → Stage → Setlist → final check) show as a strip of steps above the tool; any step, any order; done steps ticked.
+- **Two-file tools** — the Function Porter (with the QXW Merger folded in, giopas 29 Sep) takes the *other* show as its source and the show in progress as its target; Compare compares the show in progress with another file.
+- **What changes in the code**: a `core/session_show.py` holding the working root + step snapshots (the VC Editor and Stage & Meshes already keep a working copy with undo — generalise that); each tool's "export" route gains an `apply` variant returning the new root to the session instead of bytes; tools that read `workspace._state` read the show in progress; writers that save next to the file (Trigger Manager, Setlist, Dictionary) apply too; one save route (Save dialog, `<name>_v<N+1>.qxw` + `_report.txt`). Existing "→ new file" buttons stay available as *Export a copy* during the transition.
+- **Mock-up** (Start by job · a tool inside the show in progress with the route strip and the inspector tabs · History and Save): design canvas *Swiss Knife 1.9 mock-up* (Claude artifact, 29 Sep) — to be agreed with giopas before building.
+
+*Tasks* (each one: commit, wiki, CHANGELOG; browser-check at 1440 × 900 and 1280 × 800):
+- [ ] **Show in progress** (above): session model + history + header bar + Apply in every tool + one Save; tests that every tool's apply equals its old export byte for byte.
+- [ ] **Merger into the Porter**: the Porter's step 2 gains *fixtures* and *groups* (what the Merger copies) next to functions and VC widgets; the QXW Merger tab goes (wiki page redirects to the Porter).
+- [ ] **Show Book, Checklist and Tech Rider → one tool, *Show Paperwork*** (giopas, 29 Sep: "not quite the same? merge into one, modular report" — decided: together with the audit, v1.9.0). The three overlap (Checklist ≈ the Show Book *patch* section; Rider = a grouped count of the same fixtures); what differs is the **reader**. `core/showbook.generate(sections)` is already section-based → add sections `rider` (types/counts/modes by make and model, universes, power if known), `stage_plan` (the Checklist blueprint), `patch` gains a tick-box column and 3D positions, `checklist_txt` output. **Presets by reader**, each editable: *Tech rider (venue)* · *Crew checklist (load-in)* · *Operator show book* · *Custom*; several presets in one PDF (e.g. rider + checklist for a festival advance). **Rule, not a tick box:** the *Tech rider* preset never includes function names, MIDI/key maps, VC or the Doctor summary — it leaves your hands. Exports unchanged: PDF, CSV, TXT (and the blueprint PDF). Menu **6 · Document** becomes one entry; the old routes `checklist` / `techrider` open *Show Paperwork* with their preset, so habits, wiki links and `/api/checklist/*`, `/api/techrider/*` keep working (kept as thin wrappers, tests unchanged). Wiki: *Show Book*, *Setup Checklist*, *Tech Rider* → one page *Show Paperwork* with the old pages as short redirects. Tests: each preset's section list; the rider preset contains no function/VC/MIDI data; old endpoints still answer.
+- [ ] **Start screen** (A1, A2): one sentence of purpose (*"Build, adapt, check and document QLC+ 5 shows — every change goes to a new file, your original is never touched"*); **"What do you want to do?"** cards by job, each opening the right tool and saying what it produces: *Start a new show* (Quick Start) · *Adapt a show to a new venue* (Rig Reducer → Function Porter → Look Builder → VC Editor → Stage & Meshes → Doctor — the Pub workflow) · *Get ready for the gig* (Setlist, Trigger Manager, Show Book) · *Check and fix a show* (Doctor); the open-file zone at the top, sessions below as "recent"; show name/date moved to where they're used (Show Book, Tech Rider); a short "what's new in this version" line.
+- [ ] **Navigation** (A3, A4, A9) — *first part done in v1.8.1: menu and Start cards share six numbered groups (New show · Adapt a show · Create · Run the show · Check & fix · Document); Brightness sits in Adapt a show, the Doctor and ID Browser in Check & fix, the paperwork in Document* — sidebar grouped by job — *Start* · *New show*: Quick Start, Fixtures · *Adapt a show*: Rig Reducer, Function Porter, QXW Merger · *Create*: Look Builder, VC Editor, Stage & Meshes · *Run the show*: Setlist, Trigger Manager, Dictionary · *Check & document*: Doctor, Show Book, Checklist, Tech Rider, ID Browser · *Adjust*: Brightness. One-line "use this when…" in each tooltip for the overlapping pairs; badges reviewed (VC Editor out of Beta; Merger: keep α or fold into the Porter — decide with giopas).
+- [ ] **One screen pattern** (A5, A6, A8, A10): header (what it does + *?* link to its wiki page) · work area · an *inspector* on the right with **tabs when it has more than three sections** (as in the VC Editor) · footer with the single primary action and what it writes. Apply to Look Builder (tabs *Looks · Chasers · Build*), Stage & Meshes (*Selection · Place · Add · Stage*), Setlist (fewer columns: slot list + songs, functions in a drawer), Doctor / Show Book / Merger / Porter (primary action to the footer). Empty states always say the next step.
+- [ ] **Words** (A7): one verb for writers — **"💾 Save as new file…"** (Save dialog, `<name>_v<N+1>.qxw` suggested) and the same footer note everywhere; a glossary line in the wiki (*workspace = the .qxw show file*).
+- [ ] **Usability check** with giopas on a real show after each screen, and a UI consistency test (`tests/test_ui_consistency.py`: one primary per footer — exists; add: every screen has a wiki link, the same save verb, an empty-state text).
+- Commits: `feat(ui): start screen by job`, `feat(ui): sidebar by job`, `refactor(ui): shared tool layout …` (one per screen), `docs: ui audit`.
+
+**2.7 Pub test (benchmark) → v2.0.0**
+
+*The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
+
+*The route* (each step a Swiss Knife tool, each output a new file checked by the Doctor):
+1. **Rig Reducer** — keep the 6 PARs, remove the ceiling spots and 2 PARs with cascade, rename to DR/FLB/FRB/LG/FRS/FLS, re-patch.
+2. **Workspace Doctor** — fix what the festival show carries (duplicate widget IDs, incomplete scenes, degenerate setlist chasers, PANIC RESET).
+3. **Fixture groups** for the pub (*Singer Pair*, *Band Pair*, *Front Band*, *Logo*) — **gap: no tool creates fixture groups yet** (Quick Start does it only for new rigs) → add *groups* to the Rig Reducer or the Fixtures tool.
+4. **Look Builder** — the pub looks and chasers per group (palette + patterns, TheBand names).
+5. **Function Porter** — only if looks must come from another show (the festival's own looks survive step 1 for the kept PARs).
+6. **VC Editor** — page *1. SETLIST* first with the setlist CueList (one click), page *2. EFFECTS* from a template / the Look Builder page, label legend.
+7. **Stage & Meshes** — pub stage size, band meshes on the floor, lined up.
+8. **Setlist** — songs → slots → the setlist chaser.
+9. **Doctor** — final check.
+
+*Pass criteria* (to be measured, not eyeballed):
+- [ ] Doctor on the result: **0 errors**, and no warning the reference doesn't have.
+- [ ] **Compare with `Pub_6fix.qxw`** — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
+- [ ] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks.
+- [ ] **Time**: under 30 minutes for someone who knows the show.
+- [ ] **Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file — first brick of the *Show Profile / CLI pipeline* in §7.
+
+*Tasks*:
+- [ ] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report).
+- [ ] Fixture group editor (step 3 gap).
+- [ ] Run the route on the corpus, fix what gets in the way (each fix: test + commit).
+- [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
 - [ ] Release **v2.0.0**, with a forum post and a video or GIF.
 
 ---
@@ -431,7 +506,7 @@ Checks (★ = included in Phase 1.0):
 - **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
 - **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
 - **Look Builder follow-ups** (from 2.3): Doctor D013 fix using the chaser timing choice (ms / BPM); chasers in QLC+ *beats* tempo (tap/BPM sync) instead of fixed ms; looks with a moving-head position (pan/tilt presets instead of centre); save your own palettes; RGB-matrix patterns for pixel bars.
-- **Stage follow-ups** (from 2.5): edit fixture positions and tilt in the same plan/front views (reuse `qxw_builder.default_x_rot`); mesh thumbnails in the library; hide/show meshes (`Hidden`); copy meshes between shows (Porter); rotated footprints in the plan view (now the axis-aligned box).
+- **Stage follow-ups** (from 2.5): ~~edit fixture positions in the same views~~ (done 1.8.1); fixture tilt aiming at a point / a mesh (reuse `qxw_builder.default_x_rot`); mesh thumbnails in the library; hide/show meshes (`Hidden`); copy meshes between shows (Porter); rotated footprints in the plan view (now the axis-aligned box).
 - **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
 - **Audio triggers** helper (DMX-mode pitfalls documented).
 - Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
@@ -532,7 +607,27 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
-**giopas — release v1.8.0 (2.5 Stage & Meshes), branch `feat/stage-meshes`:**
+**giopas — release v1.8.1 (fixtures in the Stage placement + Start and menu by job), branch `feat/start-sidebar`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/start-sidebar
+source ~/.venvs/swissknife/bin/activate
+python -m pytest -q
+git push -u origin feat/ui-audit feat/stage-fixtures feat/start-sidebar
+git checkout main
+git pull --ff-only
+git merge --no-ff feat/start-sidebar -m "Release v1.8.1"
+python -m pytest -q
+git push origin main
+git tag -a v1.8.1 -m "v1.8.1"
+git push origin v1.8.1
+cd wiki
+git push origin master
+cd ..
+```
+(expect 527 passed; the branch also carries `feat/stage-fixtures` and the WORKPLAN commits of `feat/ui-audit`.) GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.8.1.md`.
+
+**giopas — release v1.8.0 (done 29 Sep), branch `feat/stage-meshes`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
 git checkout feat/stage-meshes
@@ -610,7 +705,8 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. Results of giopas's v1.8.0 check (Simple ground floor at 0.1 m — if QLC+ shows the models slightly in the air or sunk, adjust `stage3d.FLOOR_M`); then Phase 2.6 Benchmark → v2.0.0.
+1. Phase **2.6 UI audit → v1.9.0**: giopas's feedback on the mock-up (Start by job, show in progress + history + route strip, inspector tabs); then build the show-in-progress model first (everything else sits on it), then Start + sidebar, Merger into the Porter, then screen by screen. Then **2.7 Pub test → v2.0.0** (Compare tool, group editor, the run, the tutorial).
+1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.
 1d. (done) v1.6.0 tests; Phase 2.4 VC Builder.
 1c. (done) v1.5.0 tests; Phase 2.3 Look and Chaser Builder.

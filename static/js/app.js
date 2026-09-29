@@ -1043,3 +1043,16 @@ function getShowfileBase() {
   // Load show info
   _loadShowInfo();
 })();
+
+// Start cards 1–6 ↔ side-menu groups 1–6: hovering a card lights up its tools in the menu.
+function _grpTools(n) {
+  const out = [];
+  let el = document.getElementById('sn-grp-' + n);
+  while (el && (el = el.nextElementSibling) && el.classList.contains('sn-item')) out.push(el);
+  return out;
+}
+document.querySelectorAll('.wf-card[data-grp]').forEach(card => {
+  const n = card.dataset.grp;
+  card.addEventListener('mouseenter', () => _grpTools(n).forEach(b => b.classList.add('grp-hl')));
+  card.addEventListener('mouseleave', () => _grpTools(n).forEach(b => b.classList.remove('grp-hl')));
+});

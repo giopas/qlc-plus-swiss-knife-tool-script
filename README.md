@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.8.0
+# ⚡ QLC+ Swiss Knife — v1.8.1
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -17,6 +17,11 @@ This tool is in active development. Some features may be incomplete, behave unex
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
 
 ---
+
+## What's new in v1.8.1
+
+- **Stage & Meshes**: fixtures join the placement tools — place a mesh exactly between two fixtures, a fixture right above a mesh, or move fixtures with the same buttons, drag and arrow keys.
+- **Start screen and side menu by job**, with the same 1–6 groups in both: New show · Adapt a show · Create · Run the show · Check & fix · Document.
 
 ## What's new in v1.8.0
 
@@ -108,6 +113,8 @@ Export your entire workspace as structured show paperwork — **PDF** or **CSV (
 
 ## Features
 
+The tools are grouped by job, numbered 1–6 in the side menu and on the Start screen: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter, QXW Merger, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Book, Checklist, Tech Rider).
+
 ### Setlist Manager
 Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand.
 
@@ -153,7 +160,7 @@ Parse fixture patches, 3D stage positions, groups, and universe assignments dire
 Build looks and chasers straight into the open show. **Looks**: tick fixture groups and palette colours → one scene per group × colour; the colour is set by capability (RGB/RGBW mixing, colour wheel or dimmer) and every channel is declared. **Chasers**: pick a group, a pattern (all-hit, left/right, chase, ping-pong, build-up, seeded random), colours, timing (ms, or BPM + note length) and cut or fade; the preview shows each fixture's colour per step and plays it. Save a chaser as a **song preset** and reuse it. Optional VC page with coloured buttons; names follow your naming profile; the Workspace Doctor checks the result, which is saved as a new file with a report. See the [Look Builder wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder).
 
 ### Stage & Meshes
-Place the 3D meshes of your show — band members, risers, drum kit, truss — by what you see: centre on the stage and height above the floor. The list shows which models float or sink; one click puts them on the floor, exactly. Select one or several models and push them to a stage edge, the centre, the floor or the ceiling; line them up; space them evenly between two or across the whole stage; nudge them with buttons or the arrow keys. Plan and front views (drag to move, several at once), rotation and scale that keep the model in place, add models from your mesh folders, change the stage type and size. See the [Stage and Meshes wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes).
+Place the 3D meshes of your show — band members, risers, drum kit, truss — by what you see: centre on the stage and height above the floor. The list shows which models float or sink; one click puts them on the floor, exactly. Select one or several models — and fixtures — and push them to a stage edge, the centre, the floor or the ceiling; line them up; space them evenly between two or across the whole stage; nudge them with buttons or the arrow keys; place meshes relative to fixtures (e.g. between two of them) or fixtures relative to meshes. Plan and front views (drag to move, several at once), rotation and scale that keep the model in place, add models from your mesh folders, change the stage type and size. See the [Stage and Meshes wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes).
 
 ### Brightness
 Adjust the relative brightness of any fixture type across an entire show file without rebuilding anything. Select a workspace, use the per-model sliders to set a scale factor (0–200%), and export a new adjusted QXW. The Master Dimmer channel is detected automatically from QXF fixture definitions; if a QXF is not found, you can type the offset manually, upload the file, or fetch it from the QLC+ GitHub repository. Colour channel values are never touched — only the dimmer.

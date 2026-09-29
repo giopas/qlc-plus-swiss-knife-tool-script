@@ -50,7 +50,7 @@ async function _stOp(body, quiet) {
 }
 
 function _stKeepSel() {
-  const ids = new Set((_stS?.meshes || []).map(m => m.id));
+  const ids = new Set([...(_stS?.meshes || []).map(m => m.id), ...(_stS?.fixtures || []).map(f => f.key)]);
   _stSet = new Set([..._stSet].filter(i => ids.has(i)));
   if (_stSel && !ids.has(_stSel)) _stSel = null;
   if (_stSel && !_stSet.size) _stSet.add(_stSel);
@@ -58,6 +58,18 @@ function _stKeepSel() {
 }
 
 function _stMesh(id) { return _stS && _stS.meshes.find(m => m.id === id); }
+function _stFx(key) { return _stS && _stS.fixtures.find(f => f.key === key); }
+/** A mesh (id) or a fixture ("f:<id>") as {place, label, fixture}. */
+function _stItem(id) {
+  const f = _stFx(id);
+  if (f) return { place: f.place, label: f.name, fixture: true };
+  const m = _stMesh(id);
+  return m ? { place: m.place, label: m.label, fixture: false } : null;
+}
+function _stKinds() {
+  const ids = [..._stSet];
+  return { fx: ids.filter(i => i.startsWith('f:')).length, ms: ids.filter(i => !i.startsWith('f:')).length };
+}
 const _stMm = v => (v == null ? '—' : (v / 1000).toFixed(2) + ' m');
 
 // ── layout ──────────────────────────────────────────────────────────────────
@@ -73,7 +85,7 @@ function _stRender() {
       <div class="st-vh">Front — seen from the audience <span class="vce-hint">drag a mesh sideways or up/down</span></div>
       <div id="st-front" class="st-view"></div>
       <div class="st-legend"><span class="st-k st-k-m"></span>mesh <span class="st-k st-k-s"></span>selected
-        <span class="st-k st-k-f"></span>fixture <span class="st-k st-k-x"></span>model file not found</div>
+        <span class="st-k st-k-f"></span>fixture (click to select) <span class="st-k st-k-x"></span>model file not found</div>
     </div>
     <div class="st-side">
       <div class="lb-card">
@@ -104,6 +116,12 @@ function _stRender() {
           <button class="btn btn-surface btn-sm" onclick="stageFloor(null)" title="Every mesh with its lowest point on the floor">⤓ Put all on the floor</button>
         </div>
         <div class="vce-hint">Click to select · Shift/⌘-click to select several (here or in the views)</div>
+        <details class="vce-sub" ${_stKinds().fx ? 'open' : ''}><summary>Fixtures (${_stS.fixtures.length}) — select them to place meshes around them, or to move them</summary>
+          <div class="st-list">${_stS.fixtures.map(f => `<div class="st-item ${_stSet.has(f.key) ? 'on' : ''}" onclick="stageSelect('${f.key}', event)">
+            <span><i class="st-k st-k-f"></i>${_esc(f.name)}</span>
+            <span class="vce-hint">${f.place.bottom} mm up${f.size_known ? '' : ' · size ?'}</span></div>`).join('') || '<div class="vce-hint">No fixtures on the 3D stage.</div>'}</div>
+          <div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageSelectFixtures()">Select all fixtures</button></div>
+        </details>
       </div>
 
       <div class="lb-card" id="st-place">${_stPlaceHtml()}</div>
@@ -126,7 +144,20 @@ function _stRender() {
 }
 
 function _stEditHtml() {
-  if (_stSet.size > 1) return `<h3>${_stSet.size} meshes selected</h3><div class="vce-hint">Place them together with the tools above; click one mesh to edit its position, rotation, scale or file.</div>`;
+  if (_stSet.size > 1) return `<h3>${_stSet.size} items selected</h3><div class="vce-hint">Place them together with the tools above; click one to edit it.</div>`;
+  const f = _stFx(_stSel);
+  if (f) {
+    const p = f.place;
+    return `<h3>${_esc(f.name)} <span class="p-desc">fixture ${f.id}</span></h3>
+      <div class="st-grid">
+        <label>Centre X <input id="st-x" type="number" step="10" class="filter-input rr-num" value="${p.x}"> mm</label><span class="vce-hint">from the left edge</span>
+        <label>Centre Z <input id="st-z" type="number" step="10" class="filter-input rr-num" value="${p.z}"> mm</label><span class="vce-hint">from the back edge</span>
+        <label>Bottom <input id="st-b" type="number" step="10" class="filter-input rr-num" value="${p.bottom}"> mm</label><span class="vce-hint">underside above the floor</span>
+      </div>
+      <div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageMoveFixture()">Move</button>
+        <span class="vce-hint">body ${p.w} × ${p.h} × ${p.d} mm ${f.size_known ? '(from its .qxf)' : '(assumed — no .qxf dimensions)'} · tilt and pan stay as they are</span></div>
+      <div class="vce-hint">In the file (QLC+ 3D view): X ${f.x} · Y ${f.y} · Z ${f.z} mm</div>`;
+  }
   const m = _stMesh(_stSel);
   if (!m) return `<h3>Selected mesh</h3><div class="vce-hint">Click a mesh in a view or in the list.</div>`;
   const p = m.place || {};
@@ -176,10 +207,18 @@ function _stEditHtml() {
 
 function _stPlaceHtml() {
   const n = _stSet.size;
-  if (!n) return `<h3>Place <span class="p-desc">select one or more meshes first</span></h3>
-    <div class="vce-hint">Then: push to a stage edge, centre, floor or ceiling; line up; space evenly; nudge (also with the arrow keys).</div>`;
+  if (!n) return `<h3>Place <span class="p-desc">select meshes and/or fixtures first</span></h3>
+    <div class="vce-hint">Then: push to a stage edge, centre, floor or ceiling; line up; space evenly; nudge (also with the arrow keys). Mix meshes and fixtures to place one kind around the other.</div>`;
+  const k = _stKinds();
+  const mv = _stVal('st-move') || 'meshes';
+  const mixed = k.fx && k.ms;
   const b = (a, t, tip, min = 1) => `<button class="btn btn-surface btn-sm" ${n < min ? 'disabled' : ''} title="${tip}" onclick="stageArrange('${a}')">${t}</button>`;
-  return `<h3>Place <span class="p-desc">${n} selected</span></h3>
+  return `<h3>Place <span class="p-desc">${n} selected${mixed ? ` — ${k.ms} mesh(es), ${k.fx} fixture(s)` : ''}</span></h3>
+    ${mixed ? `<div class="lb-row"><label>Move <select id="st-move" class="filter-input">
+        <option value="meshes" ${mv === 'meshes' ? 'selected' : ''}>only the meshes</option>
+        <option value="fixtures" ${mv === 'fixtures' ? 'selected' : ''}>only the fixtures</option>
+        <option value="all" ${mv === 'all' ? 'selected' : ''}>everything</option></select></label>
+      <span class="vce-hint">the others stay put as the reference: e.g. a mesh + two fixtures, only the meshes, <b>centres ↔</b> → the mesh between the fixtures</span></div>` : ''}
     <div class="st-sec">To the stage <span class="vce-hint">several meshes move together, keeping their spacing</span></div>
     <div class="lb-row">
       ${b('left', '⇤ Left', 'Against the left edge')}
@@ -227,14 +266,29 @@ function _stPlaceHtml() {
     </div>`;
 }
 
+function _stMoveMode() {
+  const k = _stKinds();
+  return (k.fx && k.ms) ? (_stVal('st-move') || 'meshes') : 'all';
+}
+
 function stageArrange(action) {
-  _stOp({ op: 'arrange', ids: [..._stSet], action, margin: +_stVal('st-margin') || 0 });
+  _stOp({ op: 'arrange', ids: [..._stSet], action, margin: +_stVal('st-margin') || 0, move: _stMoveMode() });
+}
+
+function stageSelectFixtures() {
+  _stSet = new Set(_stS.fixtures.map(f => f.key));
+  _stSel = _stSet.size ? [..._stSet][0] : null;
+  _stRender();
+}
+
+function stageMoveFixture() {
+  _stOp({ op: 'move_fixture', id: _stSel.slice(2), x: _stVal('st-x'), z: _stVal('st-z'), bottom: _stVal('st-b') });
 }
 
 function stageNudge(sx, sz, sy, div) {
   if (!_stSet.size) return;
   const step = (+_stVal('st-step') || 100) / (div || 1);
-  _stOp({ op: 'arrange', ids: [..._stSet], action: 'nudge', dx: sx * step, dz: sz * step, dy: sy * step }, true);
+  _stOp({ op: 'arrange', ids: [..._stSet], action: 'nudge', dx: sx * step, dz: sz * step, dy: sy * step, move: _stMoveMode() }, true);
 }
 
 function stageSelectAll(on) {
@@ -347,7 +401,8 @@ function _stDraw() {
     <rect x="${pad}" y="${pad}" width="${W * k}" height="${D * k}" class="st-floor"/>
     <text x="${pad + W * k / 2}" y="${pad - 6}" class="st-t" text-anchor="middle">back</text>
     <text x="${pad + W * k / 2}" y="${ph - 4}" class="st-t" text-anchor="middle">front · audience</text>
-    ${fx.map(f => `<circle cx="${pad + (f.x + 150) * k}" cy="${pad + (f.z + 150) * k}" r="4" class="st-f"><title>${_esc(f.name)}</title></circle>`).join('')}
+    ${fx.map(f => `<g class="st-fx${_stSet.has(f.key) ? ' sel' : ''}" data-id="${f.key}" onmousedown="_stDown(event,'plan','${f.key}')"><title>${_esc(f.name)}</title>
+      <rect x="${pad + f.place.x0 * k}" y="${pad + f.place.z0 * k}" width="${Math.max(6, f.place.w * k)}" height="${Math.max(6, f.place.d * k)}" rx="2"/></g>`).join('')}
     ${ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'plan','${m.id}')">
       <rect x="${pad + m.place.x0 * k}" y="${pad + m.place.z0 * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.d * k)}"/>
       <text x="${pad + m.place.x * k}" y="${pad + m.place.z * k + 4}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('')}
@@ -359,7 +414,8 @@ function _stDraw() {
     <line x1="0" x2="${W * k + 2 * pad}" y1="${floorY}" y2="${floorY}" class="st-fl"/>
     <rect x="${pad}" y="${floorY - S.h * 1000 * k}" width="${W * k}" height="${S.h * 1000 * k}" class="st-space"/>
     <text x="${pad + 4}" y="${floorY - 4}" class="st-t">floor</text>
-    ${fx.map(f => `<circle cx="${pad + (f.x + 150) * k}" cy="${floorY - (f.y + 150) * k}" r="4" class="st-f"><title>${_esc(f.name)}</title></circle>`).join('')}
+    ${fx.map(f => `<g class="st-fx${_stSet.has(f.key) ? ' sel' : ''}" data-id="${f.key}" onmousedown="_stDown(event,'front','${f.key}')"><title>${_esc(f.name)}</title>
+      <rect x="${pad + f.place.x0 * k}" y="${floorY - f.place.top * k}" width="${Math.max(6, f.place.w * k)}" height="${Math.max(6, f.place.h * k)}" rx="2"/></g>`).join('')}
     ${ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'front','${m.id}')">
       <rect x="${pad + m.place.x0 * k}" y="${floorY - m.place.top * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.h * k)}"/>
       <text x="${pad + m.place.x * k}" y="${floorY - m.place.top * k - 3}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('')}
@@ -374,7 +430,7 @@ function _stDown(e, view, id) {
   if (e.shiftKey || e.metaKey || e.ctrlKey) { stageSelect(id, e); return; }
   if (!_stSet.has(id)) { _stSet = new Set([id]); }
   _stSel = id;
-  const m = _stMesh(id);
+  const m = _stItem(id);
   const svg = e.currentTarget.ownerSVGElement;
   const gs = [..._stSet].map(i => svg.querySelector(`g[data-id="${i}"]`)).filter(Boolean);
   _stDrag = { view, id, sx: e.clientX, sy: e.clientY, p: { ...m.place }, gs, moved: false };
@@ -401,12 +457,13 @@ function _stUpEv() {
   if (!d.moved) { _stSet = new Set([d.id]); _stRender(); return; }
   if (_stSet.size > 1) {
     const ddx = d.nx - d.p.x;
-    _stOp(d.view === 'plan' ? { op: 'arrange', action: 'nudge', ids: [..._stSet], dx: ddx, dz: d.nz - d.p.z }
-                            : { op: 'arrange', action: 'nudge', ids: [..._stSet], dx: ddx, dy: d.nb - d.p.bottom });
+    _stOp(d.view === 'plan' ? { op: 'arrange', action: 'nudge', ids: [..._stSet], dx: ddx, dz: d.nz - d.p.z, move: 'all' }
+                            : { op: 'arrange', action: 'nudge', ids: [..._stSet], dx: ddx, dy: d.nb - d.p.bottom, move: 'all' });
     return;
   }
-  _stOp(d.view === 'plan' ? { op: 'move', id: d.id, x: d.nx, z: d.nz }
-                          : { op: 'move', id: d.id, x: d.nx, bottom: d.nb });
+  const isFx = d.id.startsWith('f:');
+  const base = isFx ? { op: 'move_fixture', id: d.id.slice(2) } : { op: 'move', id: d.id };
+  _stOp(d.view === 'plan' ? { ...base, x: d.nx, z: d.nz } : { ...base, x: d.nx, bottom: d.nb });
 }
 
 async function stageSave() {

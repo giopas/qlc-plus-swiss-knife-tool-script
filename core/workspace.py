@@ -71,6 +71,19 @@ _state: dict = {
 # PUBLIC API
 # =============================================================================
 
+def _show_touch(tool: str, title: str = '') -> None:
+    """Record an in-place edit as a step of the show in progress (core.show)."""
+    from core import show
+    if show.active():
+        show.touch(tool, title)
+
+
+def _show_cancel_touch() -> None:
+    from core import show
+    if show.active():
+        show.cancel_touch()
+
+
 def get_state() -> dict:
     """Return a JSON-safe snapshot of the current state."""
     # In upload mode, original_name is set and _state['path'] is a temp path.
@@ -123,6 +136,8 @@ def load_qxw(path: str) -> dict:
     _parse_triggers(root)
     _parse_cuelist_slots(root)
     _state['error'] = None
+    from core import show
+    show.reset(os.path.basename(path), path)
     return get_state()
 
 
@@ -133,6 +148,9 @@ def set_original_name(name: str):
     derived from it (not from the temp path used internally).
     """
     _state['original_name'] = name or None
+    from core import show
+    if name and show._show:
+        show._show['source_name'] = name
 
 
 def _resolve_inherited_vc(fid: str) -> str:
@@ -314,6 +332,9 @@ def update_trigger(uid: str, key: str, universe: str, channel: str) -> bool:
     d = _state['trigger_items'].get(uid)
     if d is None:
         return False
+    if (d.get('key') or '', d.get('uni') or '', d.get('ch') or '') == (key or '', universe or '', channel or ''):
+        return True                                 # no change: no step
+    _show_touch('triggers', 'key / MIDI bindings')
     node = d['_node']
 
     # Key
@@ -672,6 +693,7 @@ def purge_workspace_clones() -> dict:
             resolved[fid] = target
     redirects = resolved
 
+    _show_touch('setlist', 'Setlist clones removed')
     # Remove from XML tree
     removed = 0
     for fn_el in list(engine.findall('q:Function', NS)):
@@ -773,6 +795,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     engine = root.find('q:Engine', NS)
     if engine is None:
         raise ValueError('Template has no <Engine> element.')
+    _show_touch('setlist', 'setlist into the CueList')
 
     linked = False
     create_new = not target_chaser_id or target_chaser_id == '__new__'
@@ -1518,6 +1541,8 @@ def patch_vc_widgets(changes: list) -> dict:
     if not _state['loaded'] or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded')
 
+    if changes:
+        _show_touch('vceditor', 'Virtual Console edits')
     patched, errors = 0, []
     ns_ws  = f'{{{QLC_NS_URI}}}WindowState'
     ns_app = f'{{{QLC_NS_URI}}}Appearance'
@@ -1633,6 +1658,10 @@ def vc_undo() -> dict:
         root.remove(cur)
     root.insert(i, snap)
     reparse_after_vc_edit()
+    from core import show
+    steps = show._show.get('steps') or []
+    if show.active() and steps and steps[-1].get('open') and steps[-1]['tool'] == 'vceditor':
+        show.cancel_touch()
     return {'remaining': len(_vc_undo)}
 
 
@@ -1652,10 +1681,12 @@ def vc_structural_edit(op: str, **kw) -> dict:
     if fn is None:
         raise ValueError(f'Unknown VC operation: {op}')
     vc_snapshot()
+    _show_touch('vceditor', 'Virtual Console edits')
     try:
         result = fn(_state['qxw_root'], **kw)
     except Exception:
         _vc_undo.pop()              # nothing changed: drop the snapshot
+        _show_cancel_touch()
         raise
     reparse_after_vc_edit()
     result['undo_depth'] = len(_vc_undo)

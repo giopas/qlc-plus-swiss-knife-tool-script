@@ -140,7 +140,7 @@ function _stRender() {
   const s = document.getElementById('st-summary');
   if (s) s.innerHTML = `<span class="doc-chip">${_esc(S.type_name)} ${S.w}×${S.d} m</span>` +
     `<span class="doc-chip">${_stS.meshes.length} mesh(es)</span><span class="doc-chip">${_stS.fixtures.length} fixture(s)</span>` +
-    (_stS.dirty ? '<span class="doc-chip doc-warning">unsaved changes</span>' : '');
+    (_stS.dirty ? '<span class="doc-chip" title="These edits are in the show in progress — 💾 Save as new file… keeps them">edited</span>' : '');
 }
 
 function _stEditHtml() {
@@ -488,7 +488,7 @@ async function stageSave() {
       const d = await rr.json();
       msg += rr.ok ? ` Report: ${d.name}.` : ' Report not saved.';
     }
-    setStatus(msg + ' The open workspace is unchanged — open the new file to continue.', 'ok');
+    setStatus(msg + ' A separate copy — the show in progress already has these stage edits.', 'ok');
   } catch (e) {
     setStatus('Error: ' + e.message, 'error');
   }

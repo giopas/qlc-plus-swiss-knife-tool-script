@@ -58,6 +58,11 @@ const _LAZY = {
 
 /** Navigate to a screen.  screenId matches the suffix of scr-{id} / sn-{id}. */
 function go(screenId) {
+  // VC Editor edits not yet sent go into the show before another tool reads it
+  if (typeof showPendingEdits === 'function' && _activeScreenId() !== screenId && showPendingEdits()) {
+    showFlushPending().then(() => go(screenId));
+    return;
+  }
   // Update sidebar
   document.querySelectorAll('.sn-item').forEach(b => {
     b.classList.toggle('active', b.id === `sn-${screenId}`);
@@ -72,6 +77,11 @@ function go(screenId) {
   // Hide nav tooltip
   const tip = document.getElementById('nav-tip');
   if (tip) tip.style.display = 'none';
+}
+
+function _activeScreenId() {
+  const s = document.querySelector('.screen.active');
+  return s ? s.id.replace('scr-', '') : '';
 }
 
 /** Backward-compat alias: old code may call showTab('setlist') etc. */
@@ -257,6 +267,7 @@ async function saveFileWithPicker(blob, suggestedName, fsTypes, dialogTitle) {
 // =============================================================================
 
 async function quitApp() {
+  if (typeof showConfirmDiscard === 'function' && !showConfirmDiscard('Quitting')) return;
   // Check for unsaved session changes
   if (typeof _sess !== 'undefined' && _sess.dirty) {
     if (!confirm('You have unsaved session changes.\n\nQuit anyway?')) return;
@@ -496,6 +507,7 @@ async function reloadWorkspace() {
 }
 
 async function _doLoad(fetchOpts) {
+  if (typeof showConfirmDiscard === 'function' && !showConfirmDiscard('Opening another file')) return;
   setStatus('Loading…');
   try {
     const res  = await fetch('/api/load', fetchOpts);

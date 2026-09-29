@@ -398,6 +398,7 @@ function _lbSync() {
   const nl = _lbBatch.looks.reduce((a, l) => a + l.colours.length, 0), nc = _lbBatch.chasers.length;
   if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${nl} look(s)</span><span class="doc-chip">${nc} chaser(s)</span>` : '';
   if (b) b.disabled = !(nl || nc);
+  const x = _v('lb-export'); if (x) x.disabled = !(nl || nc);
 }
 
 function _lbPlan() {
@@ -450,7 +451,7 @@ async function looksBuild() {
       const d = await rr.json();
       msg += rr.ok ? ` Report: ${d.name}.` : ' Report not saved.';
     }
-    setStatus(msg + ' The open workspace is unchanged — open the new file to continue.', 'ok');
+    setStatus(msg + ' A separate copy — the show in progress is unchanged.', 'ok');
   } catch (e) {
     setStatus('Error: ' + e.message, 'error');
   }

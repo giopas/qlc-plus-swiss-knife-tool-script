@@ -18,6 +18,10 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ---
 
+## Coming in v1.9.0 (in progress)
+
+- **The show in progress**: open a show once and use every tool on it, in any order — the header counts the changes and shows the Doctor, **🕘 History** lets you go back to any step, orange dots mark the tools that changed it, and **💾 Save as new file…** writes it all with one report. See the wiki page *Show in Progress*.
+
 ## What's new in v1.8.1
 
 - **Stage & Meshes**: fixtures join the placement tools — place a mesh exactly between two fixtures, a fixture right above a mesh, or move fixtures with the same buttons, drag and arrow keys.

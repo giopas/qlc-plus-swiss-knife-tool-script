@@ -7,6 +7,23 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+Phase 2.6 (UI audit → 1.9.0), first part: **the show in progress**.
+
+### Added
+- **The show in progress** (giopas: "we have to allow the possibility to jump from one tab to the other"): opening a `.qxw` makes one working copy that **every tool changes**, in any order, back and forth — no more save and re-open between tools. `core/show.py`, `routes/show_routes.py` (`/api/show/status|history|undo|file|saved|save|report`), `static/js/show.js`.
+  - **Header**: *N changes, not saved*, the **Doctor** on the show as it is now (click → Doctor), **↶ Undo**, **🕘 History**, **💾 Save as new file…**.
+  - **History**: every step (tool, what it did, Doctor after it, time); *Open tool*; *↶ Undo from here* (back to before any step). In-place edits of one tool are one step until another tool acts. Keeps the last 60 steps.
+  - **Orange dots** in the side menu on the tools that changed the show since it was opened / saved (giopas's idea).
+  - **One save**: `<name>_v<N+1>.qxw` + one `<name>_v<N+1>_report.txt` with every step and each tool's report; keep working after saving. The opened file is never written (refused).
+  - Asks before *Open…*, *Reload* or *Quit* drop unsaved changes.
+- **✓ Apply to the show** in Workspace Doctor (*Fix selected in the show*), Rig Reducer, Look Builder (*Add to the show*), Brightness, Setlist, VC Editor; `POST /api/doctor|reducer|looks/apply`, `/api/brightness/apply-show`, `/api/setlist/apply-all`, `/api/setlist/<slot>/apply`. Tested: applying gives exactly the file the old export gave (byte for byte).
+- Trigger Manager, VC Editor (pages, widgets, wiring) and **Stage & Meshes** edits go straight into the show; Stage & Meshes keeps its own undo and keeps its edits when another tool changes the show.
+
+### Changed
+- Each tool's old "→ new file" button is now the secondary **Export a copy…** (the tool's result as a separate file with its report; the show in progress is left as it is). Trigger Manager's *Save new version* is gone (the header save replaces it).
+- Header fits 1280 px: the counts lose their labels (tooltips instead) and the Doctor pill shortens below 1560 px.
+- Page texts, menu tooltips and the Start screen describe the show in progress instead of "into a new file".
+
 ### Fixed
 - Test `test_read_obj_and_resolve` failed on a computer with QLC+ installed (it found the real `generic/cube.obj` — whose size matches the built-in one); the test now covers both cases. App unchanged.
 

@@ -7,6 +7,17 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-09-29
+
+Fixes from giopas's first real-show test of v1.4.0 (BarShow_v14 *1. SETLIST* → SmallShow).
+
+### Fixed
+- **Function Porter: "Source wins", the universe mapping, "Copy the input patch" and "Also copy bindings onto matching target widgets" had no effect from the app** — the server dropped these options on the way in (`_normalize_plan`), so every export used *keep unless already used*: the ported CueList lost its MIDI Next/Previous (and the Space key) and the target kept them. They now reach the Porter; a test drives the same Flask routes the UI uses (`tests/test_porter_input.py::TestThroughTheApi`). The 1.5 options `translate_types`, `strobe` and `qxf_paths` are passed through too.
+
+### Changed
+- **Porter step 4 warns about key/MIDI clashes before export**: "N key/MIDI binding(s) of the ported widgets are already used in the target and will be DROPPED: MIDI U2 ch 40 on '🚨 PANIC RESET' (target: 'STROBE BLIND!') … Choose 'Source wins' to move them" (info with *Source wins*, warning with *Keep all*); the check re-runs when you change the policy or the universe map.
+- **A page ported onto a new page keeps its layout**: when everything comes from one source page and every unit fits where it was, the widgets keep their source positions — *1. SETLIST* no longer splits over two pages (*Ported from … (2)*). Otherwise first-fit placement as before.
+
 ## [1.4.0] — 2026-09-27
 
 Phase 1 of the work plan: Quick Start, Function Porter and Show Book leave Alpha — deterministic output, Workspace Doctor on every export, tests on real show files.

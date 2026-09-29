@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.4.0
+# ⚡ QLC+ Swiss Knife — v1.4.1
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -17,6 +17,10 @@ This tool is in active development. Some features may be incomplete, behave unex
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
 
 ---
+
+## What's new in v1.4.1
+
+Fixes from the first real-show test: in the Function Porter, **Source wins** and the MIDI universe mapping now really apply (in v1.4.0 the app ignored them); step 4 warns before export which key/MIDI bindings clash with the target; a ported page keeps its layout instead of spilling onto a second page.
 
 ## What's new in v1.4.0
 

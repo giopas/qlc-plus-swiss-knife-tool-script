@@ -7,6 +7,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added
+- **Workspace Doctor fixes** (Phase 2.1, `core/doctor/fixes.py`): opt-in fixes for D002, D003, D004, D005, D006, D007, D008, D010, D011, D015, D016 and D017, always written to a **new file** `<name>_v<N+1>.qxw` with `<name>_v<N+1>_fix_report.txt` next to it (changes, not fixed, still open); the original is never changed. Recommended fixes are the default; fixes that delete functions (D004, D015, D016) must be asked for. Deterministic. CLI: `python -m core.doctor show.qxw --fix [--remove] [--codes …] [--out …]`.
+- **Workspace Doctor tab** (sidebar → Workspace tools): check the open workspace, findings grouped by code with the fix each one gets, tick boxes per finding and per group (✓ Recommended / ✓ All / ✗ None, *Show info*), **💾 Fix selected → new file…** with a Save dialog, the fix report saved next to it, before/after counts. API `/api/doctor/check`, `/fix`, `/save-report`, `/last-result`.
+- **New checks**: **D017** PANIC RESET is a plain scene (it can't darken looks that are still running — the BarShow → SmallShow case; the fix wraps it in a script that stops everything first); **D010** the setlist page is not page 1 (info); **D011** widget outside its page or frame (> 8 px); **D013** chaser steps that last 0 ms; **D014** CueList runs a chaser with no steps.
+
+### Changed
+- Doctor: a script that only *stops* a function (e.g. a PANIC RESET) no longer counts as using it — unused functions are still reported (D016) and FX detection isn't affected. Corpus baselines: Festival_14fix and Pub_6fix now have one D017 each.
+
 ## [1.4.1] — 2026-09-29
 
 Fixes from giopas's first real-show test of v1.4.0 (BarShow_v14 *1. SETLIST* → SmallShow).

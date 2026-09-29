@@ -7,6 +7,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Fixed
+- Test `test_read_obj_and_resolve` failed on a computer with QLC+ installed (it found the real `generic/cube.obj` — whose size matches the built-in one); the test now covers both cases. App unchanged.
+
 ## [1.8.1] — 2026-09-29
 
 ### Added

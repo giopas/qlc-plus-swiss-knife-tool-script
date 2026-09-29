@@ -1,0 +1,15 @@
+{
+ "presets": [
+  {"name": "Drive — 8 steps, 280 ms, cut", "pattern": "chase", "steps": 8, "step_ms": 280, "fade": "cut",
+   "colours": ["Red"], "kind": "dynamic"},
+  {"name": "Ping-pong 1/8 at 120 BPM", "pattern": "pingpong", "bpm": 120, "note": "1/8", "fade": "cut",
+   "colours": ["Cold White"], "kind": "dynamic"},
+  {"name": "Slow build — 1/2 at 90 BPM, fade", "pattern": "buildup", "bpm": 90, "note": "1/2", "fade": "fade",
+   "fade_pct": 100, "colours": ["Amber"], "kind": "pulse"},
+  {"name": "Left/right hit — 1/4, cut", "pattern": "alternate", "bpm": 120, "note": "1/4", "fade": "cut",
+   "colours": ["Blue", "Magenta"], "kind": "dynamic"},
+  {"name": "Random sparkle — 1/16", "pattern": "random", "steps": 16, "bpm": 120, "note": "1/16", "fade": "cut",
+   "colours": ["Cold White"], "seed": 1, "on_count": 1, "background": {"colour": "Blue", "level": 0.3},
+   "kind": "fx"}
+ ]
+}

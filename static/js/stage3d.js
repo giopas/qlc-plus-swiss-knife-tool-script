@@ -10,7 +10,8 @@
  */
 
 let _stS = null;          // /api/stage/state
-let _stSel = null;        // selected mesh id
+let _stSel = null;        // selected mesh id (the last one clicked)
+let _stSet = new Set();   // all selected mesh ids
 let _stLib = null;        // {dirs, items}
 let _stDrag = null;
 const ST_SNAP = 10;       // mm
@@ -18,7 +19,7 @@ const ST_SNAP = 10;       // mm
 function stageInit() { if (!_stS) _stLoad(); }
 
 function invalidateStage() {
-  _stS = null; _stSel = null;
+  _stS = null; _stSel = null; _stSet = new Set();
   const b = document.getElementById('st-body');
   if (b) b.innerHTML = '<div class="porter-placeholder">Open a workspace to see its 3D stage.</div>';
   if (document.getElementById('scr-stage')?.classList.contains('active')) _stLoad();
@@ -30,7 +31,7 @@ async function _stLoad() {
     const d = await r.json();
     if (!r.ok) return;
     _stS = d;
-    if (_stSel && !_stS.meshes.some(m => m.id === _stSel)) _stSel = null;
+    _stKeepSel();
     _stRender();
   } catch (e) { /* no workspace */ }
 }
@@ -41,11 +42,19 @@ async function _stOp(body, quiet) {
   const d = await r.json();
   if (!r.ok) { setStatus(d.error || 'Failed.', 'error'); return null; }
   _stS = d;
-  if (d.result && d.result.id && body.op !== 'remove') _stSel = d.result.id;
-  if (body.op === 'remove') _stSel = null;
+  if (d.result && d.result.id && body.op !== 'remove') { _stSel = d.result.id; _stSet = new Set([_stSel]); }
+  _stKeepSel();
   _stRender();
   if (!quiet && d.message) setStatus(d.message + ' Not saved yet.', 'ok');
   return d;
+}
+
+function _stKeepSel() {
+  const ids = new Set((_stS?.meshes || []).map(m => m.id));
+  _stSet = new Set([..._stSet].filter(i => ids.has(i)));
+  if (_stSel && !ids.has(_stSel)) _stSel = null;
+  if (_stSel && !_stSet.size) _stSet.add(_stSel);
+  if (!_stSet.has(_stSel)) _stSel = _stSet.size ? [..._stSet].pop() : null;
 }
 
 function _stMesh(id) { return _stS && _stS.meshes.find(m => m.id === id); }
@@ -85,14 +94,19 @@ function _stRender() {
         <div class="st-list">${_stS.meshes.map(m => {
           const p = m.place;
           const off = p && p.bottom !== 0;
-          return `<div class="st-item ${m.id === _stSel ? 'on' : ''}" onclick="stageSelect('${m.id}')">
+          return `<div class="st-item ${_stSet.has(m.id) ? 'on' : ''}" onclick="stageSelect('${m.id}', event)">
             <span>${m.found ? '' : '⚠ '}${_esc(m.label)}</span>
             <span class="vce-hint">${p ? `${off ? `<b style="color:#f9e2af">${p.bottom > 0 ? 'floats ' + p.bottom : 'sinks ' + (-p.bottom)} mm</b>` : 'on the floor'}` : 'file not found'}</span></div>`;
         }).join('') || '<div class="vce-hint">No meshes yet — add one below.</div>'}</div>
         <div class="lb-row">
+          <button class="btn btn-surface btn-sm" onclick="stageSelectAll(true)">Select all</button>
+          <button class="btn btn-surface btn-sm" onclick="stageSelectAll(false)">None</button>
           <button class="btn btn-surface btn-sm" onclick="stageFloor(null)" title="Every mesh with its lowest point on the floor">⤓ Put all on the floor</button>
         </div>
+        <div class="vce-hint">Click to select · Shift/⌘-click to select several (here or in the views)</div>
       </div>
+
+      <div class="lb-card" id="st-place">${_stPlaceHtml()}</div>
 
       <div class="lb-card" id="st-edit">${_stEditHtml()}</div>
 
@@ -112,6 +126,7 @@ function _stRender() {
 }
 
 function _stEditHtml() {
+  if (_stSet.size > 1) return `<h3>${_stSet.size} meshes selected</h3><div class="vce-hint">Place them together with the tools above; click one mesh to edit its position, rotation, scale or file.</div>`;
   const m = _stMesh(_stSel);
   if (!m) return `<h3>Selected mesh</h3><div class="vce-hint">Click a mesh in a view or in the list.</div>`;
   const p = m.place || {};
@@ -158,6 +173,86 @@ function _stEditHtml() {
       <div class="vce-hint">In the file (QLC+ 3D view): X ${m.pos[0]} · Y ${m.pos[1]} · Z ${m.pos[2]} mm${m.size ? ` · model ${m.size.join(' × ')} mm` : ''}</div>
     </details>`;
 }
+
+function _stPlaceHtml() {
+  const n = _stSet.size;
+  if (!n) return `<h3>Place <span class="p-desc">select one or more meshes first</span></h3>
+    <div class="vce-hint">Then: push to a stage edge, centre, floor or ceiling; line up; space evenly; nudge (also with the arrow keys).</div>`;
+  const b = (a, t, tip, min = 1) => `<button class="btn btn-surface btn-sm" ${n < min ? 'disabled' : ''} title="${tip}" onclick="stageArrange('${a}')">${t}</button>`;
+  return `<h3>Place <span class="p-desc">${n} selected</span></h3>
+    <div class="st-sec">To the stage <span class="vce-hint">several meshes move together, keeping their spacing</span></div>
+    <div class="lb-row">
+      ${b('left', '⇤ Left', 'Against the left edge')}
+      ${b('centre_x', '↔ Centre', 'In the middle, left–right')}
+      ${b('right', 'Right ⇥', 'Against the right edge')}
+      ${b('back', '⤒ Back', 'Against the back edge')}
+      ${b('centre_z', '↕ Middle', 'In the middle, back–front')}
+      ${b('front', 'Front ⤓', 'Against the front edge (audience)')}
+    </div>
+    <div class="lb-row">
+      ${b('centre', '⊕ Centre of the stage', 'In the middle of the stage')}
+      ${b('floor', '▁ On the floor', 'Each one standing on the floor')}
+      ${b('ceiling', '▔ To the ceiling', 'Each one hanging with its top at the stage height')}
+      <label class="vce-hint">gap to the edge <input id="st-margin" type="number" min="0" step="50" class="filter-input st-n" value="${_stVal('st-margin') || 0}"> mm</label>
+    </div>
+    <div class="st-sec">Line up <span class="vce-hint">2 or more</span></div>
+    <div class="lb-row">
+      ${b('align_left', 'left edges', 'Left edges in line', 2)}
+      ${b('align_centre_x', 'centres ↔', 'Centres in line (left–right)', 2)}
+      ${b('align_right', 'right edges', 'Right edges in line', 2)}
+      ${b('align_back', 'backs', 'Back edges in line', 2)}
+      ${b('align_centre_z', 'centres ↕', 'Centres in line (back–front)', 2)}
+      ${b('align_front', 'fronts', 'Front edges in line', 2)}
+      ${b('align_bottom', 'bottoms', 'Same height of the lowest point', 2)}
+      ${b('align_top', 'tops', 'Same height of the highest point', 2)}
+    </div>
+    <div class="st-sec">Space evenly</div>
+    <div class="lb-row">
+      ${b('distribute_x', '⇹ between the outer two, left–right', 'Equal gaps; the outer two stay', 3)}
+      ${b('distribute_z', '⇳ back–front', 'Equal gaps; the outer two stay', 3)}
+    </div>
+    <div class="lb-row">
+      ${b('spread_x', '⟷ across the stage width', 'Equal gaps across the whole width (inside the gap to the edge)')}
+      ${b('spread_z', '⟷ across the depth', 'Equal gaps across the whole depth')}
+    </div>
+    <div class="st-sec">Nudge <span class="vce-hint">or arrow keys (← → back/front ↑ ↓, PgUp/PgDn height; Shift = ÷10)</span></div>
+    <div class="lb-row">
+      <button class="btn btn-surface btn-sm" onclick="stageNudge(-1,0,0)" title="Left">←</button>
+      <button class="btn btn-surface btn-sm" onclick="stageNudge(1,0,0)" title="Right">→</button>
+      <button class="btn btn-surface btn-sm" onclick="stageNudge(0,-1,0)" title="Back">↑ back</button>
+      <button class="btn btn-surface btn-sm" onclick="stageNudge(0,1,0)" title="Front">↓ front</button>
+      <button class="btn btn-surface btn-sm" onclick="stageNudge(0,0,1)" title="Up">▲ up</button>
+      <button class="btn btn-surface btn-sm" onclick="stageNudge(0,0,-1)" title="Down">▼ down</button>
+      <label class="vce-hint">step <input id="st-step" type="number" min="1" step="10" class="filter-input st-n" value="${_stVal('st-step') || 100}"> mm</label>
+    </div>`;
+}
+
+function stageArrange(action) {
+  _stOp({ op: 'arrange', ids: [..._stSet], action, margin: +_stVal('st-margin') || 0 });
+}
+
+function stageNudge(sx, sz, sy, div) {
+  if (!_stSet.size) return;
+  const step = (+_stVal('st-step') || 100) / (div || 1);
+  _stOp({ op: 'arrange', ids: [..._stSet], action: 'nudge', dx: sx * step, dz: sz * step, dy: sy * step }, true);
+}
+
+function stageSelectAll(on) {
+  _stSet = new Set(on ? _stS.meshes.filter(m => m.place).map(m => m.id) : []);
+  _stSel = _stSet.size ? [..._stSet][0] : null;
+  _stRender();
+}
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('scr-stage')?.classList.contains('active') || !_stSet.size) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+  const k = { ArrowLeft: [-1, 0, 0], ArrowRight: [1, 0, 0], ArrowUp: [0, -1, 0], ArrowDown: [0, 1, 0],
+              PageUp: [0, 0, 1], PageDown: [0, 0, -1] }[e.key];
+  if (!k) return;
+  e.preventDefault();
+  stageNudge(...k, e.shiftKey ? 10 : 1);
+});
 
 function _stLockScale(inp) {
   if (!document.getElementById('st-lock')?.checked) return;
@@ -207,7 +302,15 @@ async function stageSaveDirs() {
 }
 
 // ── actions ─────────────────────────────────────────────────────────────────
-function stageSelect(id) { _stSel = id; _stRender(); }
+function stageSelect(id, ev) {
+  if (ev && (ev.shiftKey || ev.metaKey || ev.ctrlKey)) {
+    if (_stSet.has(id)) _stSet.delete(id); else _stSet.add(id);
+    _stSel = _stSet.has(id) ? id : ([..._stSet].pop() || null);
+  } else {
+    _stSel = id; _stSet = new Set([id]);
+  }
+  _stRender();
+}
 function _stVal(id) { const e = document.getElementById(id); return e ? e.value : ''; }
 
 function stageMove() {
@@ -238,7 +341,7 @@ function _stDraw() {
   const ph = D * k + 2 * pad, fh = H * k + 2 * pad;
   const fx = _stS.fixtures;
   const ms = _stS.meshes.filter(m => m.place);
-  const cls = m => 'st-m' + (m.id === _stSel ? ' sel' : '');
+  const cls = m => 'st-m' + (_stSet.has(m.id) ? ' sel' : '');
   // plan
   box.innerHTML = `<svg width="${W * k + 2 * pad}" height="${ph}" data-k="${k}">
     <rect x="${pad}" y="${pad}" width="${W * k}" height="${D * k}" class="st-floor"/>
@@ -257,7 +360,7 @@ function _stDraw() {
     <rect x="${pad}" y="${floorY - S.h * 1000 * k}" width="${W * k}" height="${S.h * 1000 * k}" class="st-space"/>
     <text x="${pad + 4}" y="${floorY - 4}" class="st-t">floor</text>
     ${fx.map(f => `<circle cx="${pad + (f.x + 150) * k}" cy="${floorY - (f.y + 150) * k}" r="4" class="st-f"><title>${_esc(f.name)}</title></circle>`).join('')}
-    ${ms.map(m => `<g class="${cls(m)}" onmousedown="_stDown(event,'front','${m.id}')">
+    ${ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'front','${m.id}')">
       <rect x="${pad + m.place.x0 * k}" y="${floorY - m.place.top * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.h * k)}"/>
       <text x="${pad + m.place.x * k}" y="${floorY - m.place.top * k - 3}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('')}
   </svg>`;
@@ -268,9 +371,13 @@ function _stDraw() {
 
 function _stDown(e, view, id) {
   e.preventDefault();
+  if (e.shiftKey || e.metaKey || e.ctrlKey) { stageSelect(id, e); return; }
+  if (!_stSet.has(id)) { _stSet = new Set([id]); }
   _stSel = id;
   const m = _stMesh(id);
-  _stDrag = { view, id, sx: e.clientX, sy: e.clientY, p: { ...m.place }, g: e.currentTarget, moved: false };
+  const svg = e.currentTarget.ownerSVGElement;
+  const gs = [..._stSet].map(i => svg.querySelector(`g[data-id="${i}"]`)).filter(Boolean);
+  _stDrag = { view, id, sx: e.clientX, sy: e.clientY, p: { ...m.place }, gs, moved: false };
   document.addEventListener('mousemove', _stMoveEv);
   document.addEventListener('mouseup', _stUpEv, { once: true });
 }
@@ -279,7 +386,7 @@ function _stMoveEv(e) {
   const d = _stDrag; if (!d) return;
   const dx = (e.clientX - d.sx), dy = (e.clientY - d.sy);
   if (Math.hypot(dx, dy) > 3) d.moved = true;
-  d.g.setAttribute('transform', `translate(${dx},${dy})`);
+  d.gs.forEach(g => g.setAttribute('transform', `translate(${dx},${dy})`));
   const k = _stS._k;
   const snap = v => Math.round(v / ST_SNAP) * ST_SNAP;
   d.nx = snap(d.p.x + dx / k);
@@ -291,7 +398,13 @@ function _stUpEv() {
   document.removeEventListener('mousemove', _stMoveEv);
   const d = _stDrag; _stDrag = null;
   if (!d) return;
-  if (!d.moved) { _stRender(); return; }
+  if (!d.moved) { _stSet = new Set([d.id]); _stRender(); return; }
+  if (_stSet.size > 1) {
+    const ddx = d.nx - d.p.x;
+    _stOp(d.view === 'plan' ? { op: 'arrange', action: 'nudge', ids: [..._stSet], dx: ddx, dz: d.nz - d.p.z }
+                            : { op: 'arrange', action: 'nudge', ids: [..._stSet], dx: ddx, dy: d.nb - d.p.bottom });
+    return;
+  }
   _stOp(d.view === 'plan' ? { op: 'move', id: d.id, x: d.nx, z: d.nz }
                           : { op: 'move', id: d.id, x: d.nx, bottom: d.nb });
 }

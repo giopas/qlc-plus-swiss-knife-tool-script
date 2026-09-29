@@ -95,6 +95,16 @@ def op():
             res = s3.add_mesh(r, str(d.get('res', '')), name=str(d.get('name', '')),
                               x=_num(d.get('x')), z=_num(d.get('z')), **kw)
             msg = 'Mesh added on the floor.'
+        elif o == 'arrange':
+            res = s3.arrange(r, [str(i) for i in (d.get('ids') or [])], str(d.get('action', '')),
+                             margin=_num(d.get('margin')) or 0, dx=_num(d.get('dx')) or 0,
+                             dz=_num(d.get('dz')) or 0, dy=_num(d.get('dy')) or 0, **kw)
+            msg = (f"{len(res['moved'])} mesh(es) placed" if res['moved'] else 'Already there')
+            if res['skipped']:
+                msg += f"; {len(res['skipped'])} skipped (model file not found)"
+            if res['outside']:
+                msg += f" — {len(res['outside'])} now reach(es) past the stage edge"
+            msg += '.'
         elif o == 'duplicate':
             res = s3.duplicate_mesh(r, mid, **kw)
             msg = 'Mesh duplicated (0.5 m to the right).'

@@ -443,6 +443,148 @@ def set_stage(root, *, type: Optional[int] = None, w=None, h=None, d=None,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# arrange: stage edges, align, distribute, nudge (one or several meshes)
+# ─────────────────────────────────────────────────────────────────────────────
+
+EDGES = ("left", "right", "back", "front", "centre", "centre_x", "centre_z", "floor", "ceiling")
+ALIGNS = ("align_left", "align_centre_x", "align_right", "align_back", "align_centre_z",
+          "align_front", "align_bottom", "align_top")
+SPREADS = ("distribute_x", "distribute_z", "spread_x", "spread_z")
+ARRANGE = EDGES + ALIGNS + SPREADS + ("nudge",)
+
+
+def _placed(root, ids, qxw_path, mesh_dirs) -> Tuple[List[Tuple[str, dict]], List[str]]:
+    st = stage(root)
+    want = [str(i) for i in ids]
+    got, skipped = {}, []
+    for m in meshes(root, qxw_path, mesh_dirs):
+        if m["id"] in want:
+            if m["place"]:
+                got[m["id"]] = m["place"]
+            else:
+                skipped.append(m["id"])
+    missing = [i for i in want if i not in got and i not in skipped]
+    if missing:
+        raise StageError(f"Mesh {', '.join(missing)} not found.")
+    return [(i, got[i]) for i in want if i in got], skipped
+
+
+def arrange(root, ids, action: str, *, margin: float = 0, dx: float = 0, dz: float = 0, dy: float = 0,
+            qxw_path: str = "", mesh_dirs=()) -> dict:
+    """Place one or several meshes (all in mm, what you see):
+
+    * stage edges — ``left``/``right``/``back``/``front``/``centre``/
+      ``centre_x``/``centre_z`` move the selection **as a group** (the
+      meshes keep their spacing) so that it touches that edge (+ *margin*)
+      or sits in the middle; ``floor`` / ``ceiling`` act on **each** mesh
+      (standing on the floor / hanging with its top at the stage height
+      − *margin*);
+    * ``align_*`` (2+): left / centre / right edges, back / centre / front,
+      bottoms / tops — lined up on the selection's outermost one (centre:
+      the selection's centre);
+    * ``distribute_x`` / ``distribute_z`` (3+): equal gaps between the
+      meshes, the outer two stay; ``spread_x`` / ``spread_z`` (1+): equal
+      gaps across the whole stage width / depth (inside *margin*);
+    * ``nudge``: move by *dx* (right +), *dz* (front +), *dy* (up +).
+    """
+    if action not in ARRANGE:
+        raise StageError(f"Unknown placement: {action}")
+    items, skipped = _placed(root, ids, qxw_path, mesh_dirs)
+    if not items:
+        raise StageError("Select at least one mesh whose model file is found.")
+    need = 3 if action in ("distribute_x", "distribute_z") else 2 if action.startswith("align_") else 1
+    if len(items) < need:
+        raise StageError(f"Select at least {need} meshes for this.")
+    st = stage(root)
+    W, D, H = st["w"] * 1000, st["d"] * 1000, st["h"] * 1000
+    mg = float(margin or 0)
+    x0 = min(p["x0"] for _, p in items)
+    x1 = max(p["x0"] + p["w"] for _, p in items)
+    z0 = min(p["z0"] for _, p in items)
+    z1 = max(p["z0"] + p["d"] for _, p in items)
+    moves: Dict[str, dict] = {}                       # id → {x, z, bottom} targets
+
+    def group(ddx=0.0, ddz=0.0):
+        for i, p in items:
+            moves[i] = {"x": p["x"] + ddx, "z": p["z"] + ddz}
+
+    if action == "left":
+        group(ddx=mg - x0)
+    elif action == "right":
+        group(ddx=W - mg - x1)
+    elif action == "back":
+        group(ddz=mg - z0)
+    elif action == "front":
+        group(ddz=D - mg - z1)
+    elif action in ("centre", "centre_x", "centre_z"):
+        group(ddx=(W / 2 - (x0 + x1) / 2) if action != "centre_z" else 0,
+              ddz=(D / 2 - (z0 + z1) / 2) if action != "centre_x" else 0)
+    elif action == "floor":
+        for i, p in items:
+            moves[i] = {"bottom": 0}
+    elif action == "ceiling":
+        for i, p in items:
+            moves[i] = {"bottom": H - mg - p["h"]}
+    elif action == "align_left":
+        for i, p in items:
+            moves[i] = {"x": x0 + p["w"] / 2}
+    elif action == "align_right":
+        for i, p in items:
+            moves[i] = {"x": x1 - p["w"] / 2}
+    elif action == "align_centre_x":
+        for i, p in items:
+            moves[i] = {"x": (x0 + x1) / 2}
+    elif action == "align_back":
+        for i, p in items:
+            moves[i] = {"z": z0 + p["d"] / 2}
+    elif action == "align_front":
+        for i, p in items:
+            moves[i] = {"z": z1 - p["d"] / 2}
+    elif action == "align_centre_z":
+        for i, p in items:
+            moves[i] = {"z": (z0 + z1) / 2}
+    elif action == "align_bottom":
+        lo = min(p["bottom"] for _, p in items)
+        for i, p in items:
+            moves[i] = {"bottom": lo}
+    elif action == "align_top":
+        hi = max(p["top"] for _, p in items)
+        for i, p in items:
+            moves[i] = {"bottom": hi - p["h"]}
+    elif action in SPREADS:
+        ax, size, lo_key = ("x", "w", "x0") if action.endswith("_x") else ("z", "d", "z0")
+        order = sorted(items, key=lambda ip: (ip[1][ax], ip[0]))
+        total = sum(p[size] for _, p in order)
+        if action.startswith("spread"):
+            start, end = mg, (W if ax == "x" else D) - mg
+            gap = (end - start - total) / (len(order) + 1)
+            pos = start + gap
+        else:
+            start = order[0][1][lo_key]
+            end = order[-1][1][lo_key] + order[-1][1][size]
+            gap = (end - start - total) / (len(order) - 1)
+            pos = start
+        for i, p in order:
+            moves[i] = {ax: pos + p[size] / 2}
+            pos += p[size] + gap
+    elif action == "nudge":
+        for i, p in items:
+            moves[i] = {"x": p["x"] + float(dx or 0), "z": p["z"] + float(dz or 0),
+                        "bottom": p["bottom"] + float(dy or 0)}
+    moved = []
+    for i, t in moves.items():
+        r = move_to(root, i, x=t.get("x"), z=t.get("z"), bottom=t.get("bottom"),
+                    qxw_path=qxw_path, mesh_dirs=mesh_dirs)
+        if r["before"] != r["after"]:
+            moved.append(i)
+    outside = [m["id"] for m in meshes(root, qxw_path, mesh_dirs)
+               if m["id"] in moves and m["place"] and (m["place"]["x0"] < -1 or m["place"]["z0"] < -1
+                                                       or m["place"]["x0"] + m["place"]["w"] > W + 1
+                                                       or m["place"]["z0"] + m["place"]["d"] > D + 1)]
+    return {"moved": moved, "skipped": skipped, "outside": outside}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # mesh library (folders of .obj files)
 # ─────────────────────────────────────────────────────────────────────────────
 

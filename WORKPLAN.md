@@ -7,6 +7,7 @@
 **Status (29 Sep, later — Phase 2.4 done, v1.7.0 prepared):**
 - v1.6.0 released by giopas (main `e62a6ee`, tag `v1.6.0`); his QLC+ open-check of `Festival_looks.qxw`: folders, *Looks* page, buttons and chaser timings all as intended.
 - **2.4 VC Builder — done** on branch `feat/vc-builder` (from `main`; commit `9eafddb` + docs/release commit; wiki *VC Visual Editor* page updated). **v1.7.0 prepared** on the same branch. 508 tests green; editor browser-checked on Festival_14fix (add, wire, drop a function, drag-move with snap, label panel, template save/apply, page first, setlist CueList, Delete key). Found and fixed on the way: Doctor ignored a slider's playback function. Waiting for giopas: QLC+ open-check of `tests/manual/Festival_vc_builder.qxw` (page *Built*: solo frame of 4 looks, playback slider, label, legend panel, setlist CueList), try the editor on a real show, push, merge, tag (commands in §8).
+- giopas's test: `Festival_vc_builder.qxw` fine in QLC+; templates fine on a real show. His feedback "too many options, unclear" → right panel reorganised in three tabs (**✥ Selection** · **＋ Add & wire** ① new widget ② wire ③ ready-made blocks · **▤ Pages**), commit `894929b`; Stop all / Blackout buttons no longer shown as "not wired" (`af2c97d`).
 - Next: **2.5 Stage and Meshes** → v1.8.0.
 
 **Status (29 Sep, night — Phase 2.3 done, v1.6.0 prepared):**

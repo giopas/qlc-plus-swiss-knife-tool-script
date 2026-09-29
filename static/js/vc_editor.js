@@ -615,24 +615,54 @@ function _vceOnClick(e) {
 
 // ── Properties panel ─────────────────────────────────────────────────────────
 
+/** Right-panel tabs: 'sel' (selection) · 'add' (add & wire) · 'pages'. */
+function vceTab(t) {
+  document.querySelectorAll('#vce-right .vce-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  ['sel', 'add', 'pages'].forEach(x => {
+    const pane = document.getElementById('vce-pane-' + x);
+    if (pane) pane.hidden = x !== t;
+  });
+}
+
+let _vcePrevSel = 0;
+function _vceSyncSelTab(n) {
+  const tl = document.getElementById('vcb-target');
+  if (tl && typeof _vcbTargetLabel === 'function') tl.innerHTML = _vcbTargetLabel();
+  const c = document.getElementById('vce-tab-count');
+  if (c) c.textContent = n ? `· ${n}` : '';
+  const lt = document.getElementById('vce-layout-tools');
+  if (lt) lt.style.display = n ? '' : 'none';
+  // a new selection made while on "Pages" jumps to the Selection tab
+  // ("Add & wire" stays: its function list works on the selection)
+  if (n && !_vcePrevSel && !document.getElementById('vce-pane-pages')?.hidden) vceTab('sel');
+  _vcePrevSel = n;
+}
+
 function _vceRenderProps() {
   const pp = document.getElementById('vce-props');
   if (!pp) return;
 
   const selArr = [..._vceSel].map(id => _vceNodes[id]).filter(Boolean);
+  _vceSyncSelTab(selArr.length);
   if (!selArr.length) {
     const legend = _vceMode === 'mask'
-      ? `<div class="vce-pl" style="margin-top:12px">Mask legend</div>
+      ? `<div class="vce-sec">Mask legend</div>
          ${_VCE_AQ_COLOR.map((c,i) => `
            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
              <div style="width:12px;height:12px;border-radius:2px;background:${c}"></div>
              <span style="font-size:10px">${_VCE_AQ_LABEL[i]}</span>
            </div>`).join('')}`
       : '';
-    pp.innerHTML = `<div style="color:var(--text-muted);font-size:11px;padding:20px 0;text-align:center">
-      Click a widget to select<br>Shift/⌘-click to add or remove<br>Drag to box-select (Shift/⌘ adds)<br>
-      Pinch or ⌘/Ctrl+scroll to zoom · ⌘0 fit<br>Esc clears · ⌘A selects all<br>
-      Drag a selected widget to move it (snaps to the grid)<br>Delete removes · ⌘D duplicates<br>Drag a function from the list onto the canvas to wire or add a button<br>Select widgets or frames to copy / move them to another page
+    pp.innerHTML = `<div class="vce-intro" style="padding:6px 0 2px">
+      <b>Nothing selected.</b> Click a widget on the canvas to change it here:
+      its <b>function</b>, position, size and colours; duplicate, delete, copy or move it; line up several.
+      <ul style="margin:6px 0 0 14px;padding:0">
+        <li>Shift/⌘-click adds · drag on empty space box-selects · ⌘A all · Esc clears</li>
+        <li>Drag a <i>selected</i> widget to move it (snaps to the grid)</li>
+        <li>Delete removes · ⌘D duplicates · ⌘Z undoes</li>
+        <li>Pinch or ⌘-scroll zooms · ⌘0 fits the page</li>
+      </ul>
+      <div style="margin-top:6px">To add widgets or wire functions → <b>＋ Add &amp; wire</b>. Pages, screen size, templates → <b>▤ Pages</b>.</div>
     </div>${legend}`;
     return;
   }
@@ -676,55 +706,43 @@ function _vceRenderProps() {
       <span style="font-size:11px">${_VCE_AQ_LABEL[first._alignQ||0]}</span>
     </div>` : '';
 
+  const isPage = !multi && _vcePage && first.id === _vcePage.id && !first.parent_id;
   pp.innerHTML = `
     ${multi
-      ? `<div style="font-size:11px;font-weight:500;margin-bottom:4px">${selArr.length} widgets selected</div>`
-      : `<div style="font-size:11px;font-weight:500;margin-bottom:1px">${_esc(first.caption || first.type)}</div>
-         <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${first.type}  ID:${first.id}</div>`
+      ? `<div style="font-size:12px;font-weight:600;margin-bottom:2px">${selArr.length} widgets selected</div>
+         <div class="vce-hint" style="margin-bottom:4px">Changes below apply to all of them.</div>`
+      : `<div style="font-size:12px;font-weight:600;margin-bottom:1px">${_esc(first.caption || first.type)}</div>
+         <div class="vce-hint" style="margin-bottom:4px">${isPage ? 'Page' : first.type} · ID ${first.id}${isPage ? ' — page settings are in ▤ Pages' : ''}</div>`
     }
 
-    <div class="vce-pl">Position &amp; size</div>
+    ${typeof _vcbSelectionHtml === 'function' ? _vcbSelectionHtml(selArr) : ''}
+
+    <div class="vce-sec">Position &amp; size</div>
     <div class="vce-pr4" style="margin-bottom:6px">
-      <div><span style="font-size:9px;color:var(--text-muted)">X</span>
+      <div><span class="vce-lb">X</span>
         <input class="vce-pi" type="number" value="${xv}" placeholder="${xSet.size>1?'multi':''}"
           onchange="vceApplyProp('x',+this.value)"></div>
-      <div><span style="font-size:9px;color:var(--text-muted)">Y</span>
+      <div><span class="vce-lb">Y</span>
         <input class="vce-pi" type="number" value="${yv}" placeholder="${ySet.size>1?'multi':''}"
           onchange="vceApplyProp('y',+this.value)"></div>
-      <div><span style="font-size:9px;color:var(--text-muted)">W</span>
+      <div><span class="vce-lb">W</span>
         <input class="vce-pi" type="number" value="${wv}" placeholder="${wSet.size>1?'multi':''}"
           onchange="vceApplyProp('w',+this.value)"></div>
-      <div><span style="font-size:9px;color:var(--text-muted)">H</span>
+      <div><span class="vce-lb">H</span>
         <input class="vce-pi" type="number" value="${hv}" placeholder="${hSet.size>1?'multi':''}"
           onchange="vceApplyProp('h',+this.value)"></div>
     </div>
 
-    <div class="vce-pl">Font size (px)</div>
-    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">${fsBtns}</div>
-    <div style="display:flex;gap:4px;margin-bottom:6px">
+    <div class="vce-sec">Look</div>
+    <div class="vce-row"><span class="vce-lb" style="width:62px">font size</span>${fsBtns}
       <button class="vce-ab" style="${first.font_bold!==false?'border-color:var(--text-accent)':''}"
-        onclick="vceApplyProp('font_bold',!${first.font_bold!==false})">B Bold</button>
-    </div>
+        onclick="vceApplyProp('font_bold',!${first.font_bold!==false})">B</button></div>
+    <div class="vce-row"><span class="vce-lb" style="width:62px">background</span>${bgSwatches}</div>
+    <div class="vce-row"><span class="vce-lb" style="width:62px">text</span>${fgSwatches}</div>
 
-    <div class="vce-pl">Button background</div>
-    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px">${bgSwatches}</div>
-
-    <div class="vce-pl">Font colour</div>
-    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px">${fgSwatches}</div>
-
-    ${typeof _vcbSelectionHtml === 'function' ? _vcbSelectionHtml(selArr) : ''}
-
-    ${_vceCopyMoveHtml(selArr)}
+    ${isPage ? '' : `<div class="vce-sec">Copy / move to another page or frame</div>${_vceCopyMoveHtml(selArr)}`}
 
     ${aqSection}
-
-    ${_vceMode === 'mask' ? `
-    <div class="vce-pl" style="margin-top:6px">Mask legend</div>
-    ${_VCE_AQ_COLOR.map((c,i) => `
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-        <div style="width:10px;height:10px;border-radius:2px;background:${c}"></div>
-        <span style="font-size:10px">${_VCE_AQ_LABEL[i]}</span>
-      </div>`).join('')}` : ''}
   `;
 }
 
@@ -1060,7 +1078,6 @@ function _vceCopyMoveHtml(selArr) {
      </optgroup>`).join('');
   const onlyPage = selArr.length === 1 && selArr[0].id === (_vcePage && _vcePage.id);
   return `
-    <div class="vce-pl">Copy / move to</div>
     <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
       <select id="vce-cm-target" class="vce-pi" style="width:220px"
               onchange="document.getElementById('vce-cm-newname').style.display = this.value==='__new__' ? '' : 'none'">

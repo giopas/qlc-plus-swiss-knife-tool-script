@@ -12,8 +12,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 Phase 2.4: the VC Visual Editor now **builds** the Virtual Console, not only tidies it.
 
 ### Added
-- **VC Builder** (Phase 2.4, `core/vc_builder.py`, in the VC Visual Editor's right panel):
+- **VC Builder** (Phase 2.4, `core/vc_builder.py`, in the VC Visual Editor). The right panel now has three tabs — **✥ Selection** (what you clicked: function, edit, position & size, look, copy/move; line up / size / grid / snap for several), **＋ Add & wire** (① new widget, ② wire to a function, ③ ready-made blocks) and **▤ Pages** (this page, new page, screen size, templates); with nothing selected it lists the shortcuts:
   - **Create** buttons, frames, solo frames, sliders, labels and CueLists in the selected frame (or the page) at the first free spot; **delete** (Delete key) and **duplicate** (⌘D, next to the originals, key/MIDI not copied).
+  - **Stop all / Blackout** buttons are shown as such (they need no function).
   - **Wire** a button, a CueList (chasers only) or a slider (playback) to a function: from the selection panel, by double-clicking a function in the **function list** (search, type, and the naming profile's **group / effect letters**), or by **dragging a function onto the canvas** — onto a widget wires it, onto a frame or the page adds a button there (⌥ Alt: a CueList for a chaser).
   - **Drag to move**: drag a selected widget; positions snap to the grid (*while dragging*, on by default).
   - **Pages**: rename, move left / right, **★ First** (the page QLC+ opens on), delete.

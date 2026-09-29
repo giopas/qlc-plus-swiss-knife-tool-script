@@ -7,6 +7,27 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-09-29
+
+Phase 2.4: the VC Visual Editor now **builds** the Virtual Console, not only tidies it.
+
+### Added
+- **VC Builder** (Phase 2.4, `core/vc_builder.py`, in the VC Visual Editor's right panel):
+  - **Create** buttons, frames, solo frames, sliders, labels and CueLists in the selected frame (or the page) at the first free spot; **delete** (Delete key) and **duplicate** (⌘D, next to the originals, key/MIDI not copied).
+  - **Wire** a button, a CueList (chasers only) or a slider (playback) to a function: from the selection panel, by double-clicking a function in the **function list** (search, type, and the naming profile's **group / effect letters**), or by **dragging a function onto the canvas** — onto a widget wires it, onto a frame or the page adds a button there (⌥ Alt: a CueList for a chaser).
+  - **Drag to move**: drag a selected widget; positions snap to the grid (*while dragging*, on by default).
+  - **Pages**: rename, move left / right, **★ First** (the page QLC+ opens on), delete.
+  - **Label panel**: a frame of labels in columns — the naming profile's legend or your own lines.
+  - **Arrange by name group**: a frame's buttons in one row per nomenclature group (the name prefix, e.g. `AS ·`), in the profile's order; without a profile, by function type.
+  - **Screen profiles**: MacBook 1650 × 884, Full HD 1920 × 1080, tablet 1280 × 800, iPad 1024 × 768 — this page or all; optionally **scale** every widget in proportion.
+  - **Page templates**: save a page (layout, colours, function *names*; no key/MIDI) and add it to another show as a new page — functions matched by name and type, the ones not found listed and left unwired (`~/.qlc_swiss_knife/vc_templates/`, or `$QSK_VC_TEMPLATES`).
+  - **Setlist CueList**: wire a setlist chaser to the selected CueList, or add a new CueList for it on the page (Doctor D014 checks the chaser has steps).
+  - Every change is undoable (↶ Undo) and saved with *💾 Apply & Save QXW…* as a new file. API: `/api/vc/op` (new operations), `/api/vc/builder-info`, `/api/vc/template`.
+- `tests/manual/Festival_vc_builder.qxw` — a page built with the VC Builder, for the QLC+ open-check.
+
+### Fixed
+- Workspace Doctor didn't see the function of a slider in *playback* mode (`<Playback><Function>id</Function>`), so it could report that function as unused (D016) or miss a broken reference; removing a function (Doctor fixes, Rig Reducer) now also unlinks such sliders.
+
 ## [1.6.0] — 2026-09-29
 
 Phase 2.3: build **looks** and **chasers** straight into a show — by palette and pattern, with BPM timing and a preview — into a new file.

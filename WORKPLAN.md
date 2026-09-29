@@ -4,6 +4,11 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (29 Sep, later — Phase 2.4 done, v1.7.0 prepared):**
+- v1.6.0 released by giopas (main `e62a6ee`, tag `v1.6.0`); his QLC+ open-check of `Festival_looks.qxw`: folders, *Looks* page, buttons and chaser timings all as intended.
+- **2.4 VC Builder — done** on branch `feat/vc-builder` (from `main`; commit `9eafddb` + docs/release commit; wiki *VC Visual Editor* page updated). **v1.7.0 prepared** on the same branch. 508 tests green; editor browser-checked on Festival_14fix (add, wire, drop a function, drag-move with snap, label panel, template save/apply, page first, setlist CueList, Delete key). Found and fixed on the way: Doctor ignored a slider's playback function. Waiting for giopas: QLC+ open-check of `tests/manual/Festival_vc_builder.qxw` (page *Built*: solo frame of 4 looks, playback slider, label, legend panel, setlist CueList), try the editor on a real show, push, merge, tag (commands in §8).
+- Next: **2.5 Stage and Meshes** → v1.8.0.
+
 **Status (29 Sep, night — Phase 2.3 done, v1.6.0 prepared):**
 - v1.5.0 released by giopas (main `4abaef8`, tag `v1.5.0`); his tests: Doctor D017 fix on the real show works, Rig Reducer works.
 - **2.3 Look and Chaser Builder — done** on branch `feat/look-builder` (from `main`; commit `d0ab5c2` + docs/release commit; wiki *Look Builder* page). **v1.6.0 prepared** on the same branch (VERSION, CHANGELOG `[1.6.0]`, README, ROADMAP ✅, release notes + forum post). 497 tests green; tab browser-checked on Festival_14fix. Found and fixed on the way: a new VC page copied the first page's *Enable* MIDI input (`vc_ops.new_page`, `porter_vc._new_page`). Waiting for giopas: open `tests/manual/Festival_looks.qxw` in QLC+ (§6 open-check), try the tab on a real show, push, merge, tag (commands in §8).
@@ -369,14 +374,16 @@ Checks (★ = included in Phase 1.0):
 - [ ] Not built: D013 fix with a timing choice (the chaser timing UI could offer it) → backlog; moving-head *position* in looks (pan/tilt are centred) → 2.4/backlog.
 - Commits: `feat: look builder (group × palette)`, `feat: chaser pattern builder with BPM timing`
 
-**2.4 VC Builder → v1.7.0** (extends the existing VC Visual Editor)
-- [ ] Create, delete and duplicate widgets: frames, SoloFrames, buttons, sliders, labels, CueList. *(Copy/move of widgets and frames between pages shipped early in v1.3.2 — `core/vc_ops.py`.)*
-- [ ] Wire widgets to functions: a picker filtered by nomenclature, and drag a function from the list onto a button.
-- [ ] Pages (top-level frames): add, rename, reorder, set the default page. *(Add and duplicate shipped in v1.3.2.)*
-- [ ] Layout tools: grid snap, multi-column label panels (e.g. the nomenclature legend), auto-arrange buttons by nomenclature group.
-- [ ] Screen profiles (1650×884 MacBook, 1920×1080, tablet).
-- [ ] VC templates: save any page as a template and apply it to another workspace.
-- [ ] Setlist integration: wire the setlist chaser to the CueList widget in one click; Doctor D014 checks it.
+**2.4 VC Builder → v1.7.0** (extends the existing VC Visual Editor) — ✅ *done 29 Sep, branch `feat/vc-builder` (`9eafddb`)*
+- [x] Create, delete and duplicate widgets: frames, SoloFrames, buttons, sliders, labels, CueList. *(`core/vc_builder.py` `create_widget` at the first free spot of the selected frame/page (full → top-left); `delete_widgets` (pages refused → delete page); `duplicate_widgets` = copy to the same frame +20/+20 without key/MIDI; Delete key, ⌘D)*
+- [x] Wire widgets to functions: a picker filtered by nomenclature, and drag a function from the list onto a button. *(`wire`: Button `<Function ID>`, CueList `<Chaser>` chasers only, Slider → Playback `<Playback><Function>id</Function>` / unwire → Submaster; function list filtered by search, type, profile group/effect letters; drop on a widget = wire, on a frame/page = new button there, ⌥ = CueList)*
+- [x] Pages (top-level frames): add, rename, reorder, set the default page. *(`rename_page`, `move_page`, ★ First = index 0 — QLC+ opens on the first page, D010; `delete_page` keeps at least one)*
+- [x] Layout tools: grid snap, multi-column label panels (e.g. the nomenclature legend), auto-arrange buttons by nomenclature group. *(drag-to-move with grid snap in the canvas; `label_panel` column-major, `legend_lines(profile)`; `auto_arrange`: one row per group letter in the profile's group/effect order, no prefix → last by type)*
+- [x] Screen profiles (1650×884 MacBook, 1920×1080, tablet). *(+ iPad 1024×768; this page / all; optional proportional scale; count of widgets left outside)*
+- [x] VC templates: save any page as a template and apply it to another workspace. *(JSON in `~/.qlc_swiss_knife/vc_templates/` / `$QSK_VC_TEMPLATES`: page XML without bindings + function names; apply = new page, functions matched by name + type, missing listed and unwired, widget IDs renumbered)*
+- [x] Setlist integration: wire the setlist chaser to the CueList widget in one click; Doctor D014 checks it. *(`setlist_cuelist`: selected CueList or a new one on the page; setlist chasers listed first)*
+- [x] All via `/api/vc/op` (undoable, `vc_structural_edit`) + `/api/vc/builder-info`, `/api/vc/template`; `static/js/vc_builder.js`; `tests/test_vc_builder.py` (10); `tests/manual/Festival_vc_builder.qxw`.
+- [ ] Not built: resize by dragging handles; widget types beyond the six (knob, XY pad, speed dial, clock…); templates with key/MIDI bindings.
 - Commits: `feat(vc): create/delete/wire widgets`, `feat(vc): pages, grid snap, screen profiles`, `feat(vc): page templates`
 
 **2.5 Stage and Meshes → v1.8.0**
@@ -516,7 +523,23 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
-**giopas — release v1.6.0 (2.3 Look & Chaser Builder), branch `feat/look-builder`:**
+**giopas — release v1.7.0 (2.4 VC Builder), branch `feat/vc-builder`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/vc-builder
+source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 508 passed
+python3 app.py                                                        # restart the app → VC Visual Editor
+git push -u origin feat/vc-builder
+git checkout main && git pull --ff-only
+git merge --no-ff feat/vc-builder -m "Release v1.7.0"
+python -m pytest -q && git push origin main
+git tag -a v1.7.0 -m "v1.7.0" && git push origin v1.7.0
+cd wiki && git push origin master && cd ..
+```
+GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.7.0.md`; forum: `docs/release-notes/FORUM_v1.7.0.bbcode`.
+Try first: open `tests/manual/Festival_vc_builder.qxw` in QLC+ → page 2 *Built*: the 4 look buttons (solo frame), the *Chaser fader* slider runs the setlist chaser, the label, the *Legend* frame, the CueList plays the setlist chaser. Then in Swiss Knife on a real show: drag a function onto a page, build a page, save it as a template, add it to another show, Apply & Save, open in QLC+.
+
+**giopas — release v1.6.0 (done 29 Sep), branch `feat/look-builder`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
 git checkout feat/look-builder
@@ -560,7 +583,8 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. Results of giopas's v1.6.0 tests (QLC+ open-check of `tests/manual/Festival_looks.qxw`); then Phase 2.4 VC Builder → v1.7.0.
+1. Results of giopas's v1.7.0 tests (QLC+ open-check of `tests/manual/Festival_vc_builder.qxw`); then Phase 2.5 Stage and Meshes → v1.8.0 (needs a QLC+ file with an OBJ mesh added in QLC+, saved — for the diff).
+1d. (done) v1.6.0 tests; Phase 2.4 VC Builder.
 1c. (done) v1.5.0 tests; Phase 2.3 Look and Chaser Builder.
 2. (done) Phase 2.1 Workspace Doctor fixes.
 1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).

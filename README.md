@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.6.0
+# ⚡ QLC+ Swiss Knife — v1.7.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -17,6 +17,10 @@ This tool is in active development. Some features may be incomplete, behave unex
 All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
 
 ---
+
+## What's new in v1.7.0
+
+- **VC Builder** in the VC Visual Editor — add buttons, frames, sliders, labels and CueLists; **drag a function onto the canvas** to wire a widget or add a button; drag widgets to move them with grid snap; rename, reorder and delete pages; a **label panel** with your naming legend; **arrange buttons by name group**; **screen profiles** (MacBook, Full HD, tablet, iPad); **page templates** you can reuse in the next show; the **setlist CueList** in one click. All undoable, saved as a new file.
 
 ## What's new in v1.6.0
 
@@ -151,7 +155,7 @@ Adjust the relative brightness of any fixture type across an entire show file wi
 Inspect every function and Virtual Console widget in sortable, filterable Grid.js tables. Live filtering, click-to-sort column headers, and **Export CSV** for both the Functions and VC Widgets sub-tabs.
 
 ### VC Visual Editor *(Beta)*
-See your Virtual Console as a canvas — select, align, distribute, resize, and sort widgets visually. **Copy or move** buttons and frames to another page or frame, **duplicate a page**, or add a new one. Pinch or ⌘-scroll to zoom, drag a box or ⌘-click to multi-select. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
+See your Virtual Console as a canvas — **build it** and tidy it. **Build**: add buttons, frames, sliders, labels and CueLists; wire them to functions from a list filtered by your naming groups, or **drag a function onto the canvas**; delete and duplicate; rename, reorder and delete pages; label panels (your naming legend); arrange a frame's buttons by name group; screen profiles (MacBook 1650 × 884, Full HD, tablet, iPad); page templates reusable in other shows; one-click setlist CueList. **Tidy**: drag selected widgets with grid snap, select, align, distribute, resize, and sort widgets visually. **Copy or move** buttons and frames to another page or frame, **duplicate a page**, or add a new one. Pinch or ⌘-scroll to zoom, drag a box or ⌘-click to multi-select. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
 
 ### QXW Merger *(Alpha)*
 Load any two `.qxw` files independently. Browse **Fixtures**, **Fixture Groups**, and **Functions** (filterable by type and name) from the source. Tick what you want, click **Copy →**, and the selected elements are inserted into the destination with IDs remapped above the highest existing ID. Export the merged result via the native OS Save dialog.
@@ -290,6 +294,8 @@ core/
   capability_map.py      ← Capability translation between fixture types
   doctor/                ← Workspace Doctor: checks, fixes (fixes.py) + CLI (python -m core.doctor)
   rig_reducer.py         ← Rig Reducer: remove fixtures with cascade, re-patch, Doctor diff
+  vc_ops.py              ← VC edits: copy/move widgets, pages
+  vc_builder.py          ← VC Builder: create/wire widgets, pages, label panels, screens, templates
   look_builder.py        ← Look & Chaser Builder: palette looks, pattern chasers, presets, preview
   looks/                 ← built-in palettes and song presets (JSON)
   quick_start/           ← Quick Start: channel model, VC generator, profiles, QXW builder

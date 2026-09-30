@@ -286,7 +286,15 @@ function _pRenderStep() {
   if (srcH) srcH.textContent = _pSrcLoaded ? _pSrcName : '— not loaded —';
   if (tgtH) tgtH.textContent = _pTgtLoaded ? (_pTgtShow ? `the show in progress (${_pTgtName})` : _pTgtName) : '— not loaded —';
   const tb = document.getElementById('porter-tgt-show-btn');
-  if (tb) tb.className = 'btn ' + (_pTgtShow ? 'btn-surface' : 'btn-accent');
+  if (tb) {
+    // chosen: the button itself says so (no second "the show in progress" chip)
+    tb.className = 'btn ' + (_pTgtShow ? 'btn-surface porter-chosen' : 'btn-accent');
+    tb.textContent = _pTgtShow ? '✓ The show in progress' : '🎛 The show in progress';
+  }
+  const tc = document.getElementById('porter-tgt-chip');
+  if (tc) tc.hidden = _pTgtShow || !_pTgtLoaded;
+  const sc = document.getElementById('porter-src-chip');
+  if (sc) sc.hidden = !_pSrcLoaded;
 
   // Render the active panel
   if (_pStep === 1 || _pStep === 3) setTimeout(_pDrawPlans, 0);
@@ -1147,7 +1155,7 @@ async function _pRenderValidation() {
 
     if (d.ok) {
       html += '<div class="porter-val-ok">✓ Plan is valid — ready to export.</div>';
-      _pStatus('Plan is valid — click Next: Export.', 'ok');
+      _pStatus('Plan is valid — click Next: Apply (bottom right).', 'ok');
     } else {
       _pStatus('Validation failed. Fix errors before exporting.', 'error');
     }

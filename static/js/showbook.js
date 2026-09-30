@@ -661,10 +661,8 @@ async function sbExportCsv() {
 // ── Status ──────────────────────────────────────────────────────────────────
 
 function _sbStatus(msg, level) {
-  const el = document.getElementById('sb-status');
-  if (!el) return;
-  el.textContent = msg;
-  el.className = 'status-bar ' + (level === 'error' ? 'status-error' : level === 'warn' ? 'status-warn' : 'status-info');
+  // the app's status line at the bottom, like every other tool
+  if (typeof setStatus === 'function') setStatus(msg, level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'ok');
 }
 
 

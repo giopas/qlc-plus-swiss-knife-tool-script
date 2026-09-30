@@ -102,6 +102,8 @@ import threading
 import webbrowser
 from flask import Flask, request, jsonify
 
+WIKI_URL = "https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/"
+
 from routes.workspace_routes  import bp as workspace_bp
 from routes.id_browser_routes import bp as id_browser_bp
 from routes.setlist_routes    import bp as setlist_bp
@@ -227,6 +229,24 @@ def create_app():
             except Exception:
                 pass
         return jsonify({'user_name': name})
+
+    # ── Help: open a wiki page in the system browser ─────────────────────────
+    @app.route('/api/help', methods=['POST'])
+    def api_help():
+        """Open the tool's wiki page. Only page names (letters, digits, '-')
+        under the project wiki are accepted."""
+        import re
+        page = str((request.get_json(silent=True) or {}).get('page') or 'Home')
+        if not re.fullmatch(r'[A-Za-z0-9-]{1,60}', page):
+            return jsonify({'ok': False, 'error': 'bad page'}), 400
+        url = WIKI_URL + page
+        if app.config.get('TESTING'):
+            return jsonify({'ok': True, 'url': url})
+        try:
+            ok = bool(webbrowser.open(url))
+        except Exception:
+            ok = False
+        return jsonify({'ok': ok, 'url': url})
 
     # ── Quit endpoint ────────────────────────────────────────────────────────
     app._webview_window = None  # set by __main__ when running in webview mode

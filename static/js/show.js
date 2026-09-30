@@ -47,6 +47,7 @@ async function showRefresh() {
   _show = st;
   _renderShowBar();
   _renderSideChanges();
+  if (typeof routeSync === 'function') routeSync(st.changed_tools);
   if (changed) _showChangedElsewhere();
   if (document.getElementById('show-history')?.classList.contains('open')) showHistoryRender();
 }

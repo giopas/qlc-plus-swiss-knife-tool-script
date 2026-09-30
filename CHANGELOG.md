@@ -7,9 +7,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
-Phase 2.6 (UI audit → 1.9.0), first part: **the show in progress**.
+## [1.9.0] — 2026-10-01
+
+Phase 2.6 — UI audit: **the show in progress** for every tool, the Merger in the Function Porter, **Show Paperwork**, guided routes, and one screen pattern.
 
 ### Added
+- **Guided routes** (2.6, the "route strip"): *▶ Guided route* on the Start cards *Adapt a show* (Rig Reducer → Doctor → Function Porter → Look Builder → VC Editor → Stage → Setlist → final check) and *Run the show* (Setlist → Trigger Manager → Doctor → Show Paperwork) puts a strip of numbered steps above the tools: click a step to open its tool, a step is ticked when its tool changes the show (or by hand), *Done, next ›*, ✕ closes it. Any step, any order; it only guides. `static/js/route.js`.
+- **A "?" on every tool** (next to the theme button) opens the tool's wiki page in the system browser, also from the desktop window (`POST /api/help`, wiki page names only).
+- **Quick Start → 🎛 Open it as the show**: after saving, the new show becomes the show in progress (asks first if the open one has unsaved changes).
+- **ID Browser works offline**: without the table library (no internet at the venue) it shows plain sortable tables; before a show is open it says what to do.
 - **The show in progress** (giopas: "we have to allow the possibility to jump from one tab to the other"): opening a `.qxw` makes one working copy that **every tool changes**, in any order, back and forth — no more save and re-open between tools. `core/show.py`, `routes/show_routes.py` (`/api/show/status|history|undo|file|saved|save|report`), `static/js/show.js`.
   - **Header**: *N changes, not saved*, the **Doctor** on the show as it is now (click → Doctor), **↶ Undo**, **🕘 History**, **💾 Save as new file…**.
   - **History**: every step (tool, what it did, Doctor after it, time); *Open tool*; *↶ Undo from here* (back to before any step). In-place edits of one tool are one step until another tool acts. Keeps the last 60 steps.
@@ -38,8 +44,18 @@ Phase 2.6 (UI audit → 1.9.0), first part: **the show in progress**.
 - Header fits 1280 px: the counts lose their labels (tooltips instead) and the Doctor pill shortens below 1560 px.
 - Footer notes shortened to "Changes the show in progress" (the rest in the tooltip) — they wrapped over three lines next to three buttons.
 - Page texts, menu tooltips and the Start screen describe the show in progress instead of "into a new file".
+- **One screen pattern** (2.6 audit A5–A10): every tool has its purpose line and **?** at the top and its main action bottom right.
+  - **Look Builder**: *🎨 Looks · 🔁 Chasers* tabs on the left, *To build* always visible on the right.
+  - **Stage & Meshes**: the crowded right column is four tabs — *Selection* (meshes, fixtures, the selected item) · *Place* · *Add* · *Stage*.
+  - **Function Porter**: Back / Next / Apply sit in the footer of each step, with the note on what it changes; the chosen target says *✓ The show in progress* (no second chip); step 4 → *Next: Apply*.
+  - **Show Paperwork**: *Export PDF…*, *Export CSV…* and the paper size in the footer; *🔍 Preview* and expand / collapse on one line with the **show name and date** (moved here from the Start screen — they only feed the paperwork and the session); messages in the app's status line.
+  - **Brightness**: the long help is a one-line *How it works* you can open.
+- **Start screen** (A1, A2): one sentence on what the app is for, *New in 1.9*, a smaller *Open a show* box, *What do you want to do?* with the six job cards, sessions below; the "?" opens the wiki.
+- **Words** (A7): writers of a new file say **💾 Save as new file…** (Quick Start, Fixtures — was *Generate QXW*); tool messages point to *✓ Apply to the show* and the header save.
+- **Side menu**: tooltips say when to use Quick Start vs Fixtures; the VC Visual Editor is out of Beta; in short windows the menu tightens so all six groups stay in view.
 
 ### Fixed
+- Show Paperwork: stray closing tags left from the removed Checklist / Tech Rider screens (their status line showed as bare text under the preview).
 - Test `test_read_obj_and_resolve` failed on a computer with QLC+ installed (it found the real `generic/cube.obj` — whose size matches the built-in one); the test now covers both cases. App unchanged.
 
 ## [1.8.1] — 2026-09-29

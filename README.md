@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.8.1
+# ⚡ QLC+ Swiss Knife — v1.9.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -14,15 +14,19 @@
 This tool is in active development. Some features may be incomplete, behave unexpectedly, or not yet work at all. **Please test it and report any issues on the [Issues page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/issues)** — every bug report helps.
 
 **Your show files are safe to experiment with:**
-All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file* — your original `.qxw` is never overwritten. Tools that edit a workspace write `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) or let you pick a new name in a Save dialog.
+Opening a `.qxw` makes a working copy — the **show in progress** — that every tool changes; **💾 Save as new file…** writes it as `<name>_v<N+1>.qxw` (e.g. `Show_v41.qxw` → `Show_v42.qxw`) with one report of every change. Your original `.qxw` is never overwritten, and every step can be undone before you save.
 
 ---
 
-## Coming in v1.9.0 (in progress)
+## What's new in v1.9.0
 
-- **Show Paperwork**: the Show Book, Checklist and Tech Rider in one tool, with presets by reader (the tech rider never carries show internals); combine them in one PDF.
-- **Function Porter on the show in progress**, with the **QXW Merger folded in** (copy fixtures and groups from another show).
-- **The show in progress**: open a show once and use every tool on it, in any order — the header counts the changes and shows the Doctor, **🕘 History** lets you go back to any step, orange dots mark the tools that changed it, and **💾 Save as new file…** writes it all with one report. See the wiki page *Show in Progress*.
+A usability release: one show, every tool, back and forth — and every screen laid out the same way.
+
+- **The show in progress**: open a show once and use every tool on it, in any order. Each tool's main button is **✓ Apply to the show**; the header counts the changes and shows the Doctor; **🕘 History** (and *Changes* on the left) goes back to any step, with **↷ Redo**; orange dots mark the tools that changed it; **💾 Save as new file…** writes it all with one report.
+- **Function Porter on the show in progress**, with the **QXW Merger folded in**: copy fixtures and groups from another show (free addresses, 3D positions, copies always play their own looks), then port functions and buttons onto them. Step 3 has a tick-box picker for the targets.
+- **Show Paperwork**: the Show Book, Checklist and Tech Rider in one tool, with **presets by reader** — tech rider for the venue (never carries show internals), crew checklist for load-in, show book for you — combined in one PDF if you like, with a **stage plot**; A4, A3 or US Letter.
+- **Guided routes**: *Adapt a show to a new venue* and *Get ready for the gig* put a strip of steps above the tools — any step, any order, ticked as you go.
+- **Every screen the same**: what it does and a **?** to its wiki page at the top, the main action bottom right; tabs in Look Builder (*Looks · Chasers*) and Stage & Meshes (*Selection · Place · Add · Stage*); a Start screen that says what the app is for; one verb for new files (*💾 Save as new file…*); Quick Start can **open the new show** straight away; the ID Browser works offline.
 
 ## What's new in v1.8.1
 
@@ -104,16 +108,16 @@ Export your entire workspace as structured show paperwork — **PDF** or **CSV (
 
 | | | |
 |---|---|---|
-| ![Start Screen](screenshots/01-start-screen.png) | ![Setlist Manager](screenshots/02-setlist-manager.png) | ![Trigger Manager](screenshots/03-trigger-manager.png) |
-| Start Screen | Setlist Manager | Trigger Manager |
-| ![Dictionary](screenshots/04-dictionary.png) | ![Fixture Configurator](screenshots/05-fixture-configurator.png) | ![Quick Start](screenshots/06-quick-start.png) |
-| Dictionary | Fixture Configurator | Quick Start |
-| ![Setup Checklist](screenshots/07-setup-checklist.png) | ![Brightness](screenshots/08-brightness.png) | ![ID Browser](screenshots/09-id-browser.png) |
-| Setup Checklist | Brightness | ID Browser |
-| ![VC Visual Editor](screenshots/10-vc-visual-editor.png) | ![QXW Merger](screenshots/11-qxw-merger.png) | ![Tech Rider](screenshots/12-tech-rider.png) |
-| VC Visual Editor *(Beta)* | QXW Merger *(Alpha)* | Tech Rider |
-| ![Function Porter](screenshots/13-function-porter.png) | ![Show Book](screenshots/14-show-book.png) | |
-| Function Porter | Show Book | |
+| ![Start Screen](screenshots/01-start-screen.png) | ![Workspace Doctor](screenshots/15-workspace-doctor.png) | ![Function Porter](screenshots/13-function-porter.png) |
+| Start Screen | Workspace Doctor | Function Porter |
+| ![Look Builder](screenshots/16-look-builder.png) | ![Stage & Meshes](screenshots/17-stage-meshes.png) | ![VC Visual Editor](screenshots/10-vc-visual-editor.png) |
+| Look Builder | Stage & Meshes | VC Visual Editor |
+| ![Setlist Manager](screenshots/02-setlist-manager.png) | ![Trigger Manager](screenshots/03-trigger-manager.png) | ![Show Paperwork](screenshots/14-show-paperwork.png) |
+| Setlist Manager | Trigger Manager | Show Paperwork |
+| ![Quick Start](screenshots/06-quick-start.png) | ![Fixture Configurator](screenshots/05-fixture-configurator.png) | ![Brightness](screenshots/08-brightness.png) |
+| Quick Start | Fixtures | Brightness |
+| ![Dictionary](screenshots/04-dictionary.png) | ![ID Browser](screenshots/09-id-browser.png) | |
+| Dictionary | ID Browser | |
 
 ---
 
@@ -146,35 +150,34 @@ Port looks, chasers and effects from one show (**source**) into another rig (**t
 2. **Select** pages, frames or buttons of the source VC (ticking a frame ticks everything inside) and/or single functions; everything they need (chaser steps, collection members, matrix groups) is added automatically.
 3. **Map** source fixtures to target fixtures: every exact match, same fixture ID (a reduced rig) or **fan-in by stage position** (14 → 6: each target takes the first *lit* source of its block, so chases still move and colours never mix). The stage plans are coloured by the mapping; hover a row to see the fixture; untick **Port this fixture** for what you don't need.
 4. **Validate**: warnings and summary; choose where the widgets go (a new page by default), the key/MIDI binding policy, and optionally **remove existing pages/buttons** from the result.
-5. **Export** a new `<target>_v<N+1>.qxw` plus a **port report** next to it. Doctor checks it first; the source and target files are never changed.
+5. **Apply** to the show in progress (one step in its History, undoable) — or *Export a copy…* as a new `<target>_v<N+1>.qxw` with a **port report**. Doctor checks it first; the source file is never changed.
+
+Step 2 can also **copy fixtures and fixture groups** from the source (what the QXW Merger did): free addresses are checked, 3D positions come along, and the ported functions play on the copies.
 
 Ported scenes declare every channel (neutral values for the missing ones), new IDs are allocated deterministically, a Quick Start PANIC RESET in the target also stops the ported functions, and Level sliders start at 0. The target can use **different fixture types**: values are translated by capability (dimmer, RGB mixing ↔ colour wheel, pan/tilt angles, strobe, gobo), and Sequences and EFX follow. **Key / MIDI bindings** come along with the controller's input patch; choose the target universe, and *Source wins* moves a binding the target already used. From Quick Start, **➜ Port from an existing show** opens the Porter with the new rig as the target. See the [Function Porter wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter).
 
-### Show Book
-Export your entire workspace as structured show paperwork. Choose from **11 sections** — Summary, Patch List, Function Index, Scenes, Chasers, Collections, EFX, Shows, Scripts, VC Layout (page by page, with frames, positions and key/MIDI bindings), Doctor summary — and export as **PDF** (A4 landscape with cover page) or **CSV** (ZIP with one file per section). When QXF fixture definitions are provided, raw DMX values are decoded to human-readable labels. Generate a **live preview** in-app before exporting — tables are interactive and scenes show per-fixture channel breakdowns.
+### Show Paperwork
+The paper for each reader, from the show in progress, in one tool. **Presets**: 🎟 *Tech rider* for the venue (fixture types and counts, patch, stage plot — and, by rule, never function names, key/MIDI maps, the VC or the Doctor), ✅ *Crew checklist* for load-in (tick boxes, patch, 3D positions, stage plot), 📖 *Show book* for you at the desk (summary, patch, every function with decoded DMX values, VC layout page by page with key/MIDI bindings, Doctor summary), ⚙ *Custom*. ⇧-click combines presets in one PDF (e.g. rider + checklist for a festival advance). Sections grouped as *The rig · The show · Console & checks*; **PDF** in A4, A3 or US Letter, landscape or portrait, or **CSV** (ZIP). See the [Show Paperwork wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork).
 
 ### Workspace Doctor
-Read-only health check of any `.qxw`: duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, shared latch scenes, missing PANIC RESET, dead MIDI inputs, unused functions and more (codes D001–D016). It runs before every Quick Start and Function Porter export — errors block, warnings are reported — and from the command line: `python -m core.doctor show.qxw` (`--json`, `--all`). The **Workspace Doctor tab** fixes what you tick — broken references, incomplete scenes, strobe left on, shared scenes, a PANIC RESET that can't reset, widgets off the page — into a **new file** with a fix report (`--fix` on the command line). See the [Workspace Doctor wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor).
+Read-only health check of any `.qxw`: duplicate IDs, dangling references, LTP bleed, strobe/program channels left on, shared latch scenes, missing PANIC RESET, dead MIDI inputs, unused functions and more (codes D001–D016). It runs before every Quick Start and Function Porter export — errors block, warnings are reported — and from the command line: `python -m core.doctor show.qxw` (`--json`, `--all`). The **Workspace Doctor tab** fixes what you tick — broken references, incomplete scenes, strobe left on, shared scenes, a PANIC RESET that can't reset, widgets off the page — in the **show in progress**, with a fix report (`--fix` on the command line). See the [Workspace Doctor wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor).
 
 ### Rig Reducer
-Turn a big show into one for a smaller rig: untick the fixtures you won't have, re-patch the rest (name, universe, address), **Preview**, then save as a new file. Scene values, groups, EFX/matrix fixtures, 3D positions, functions left empty, their buttons and faders are cleaned up; the Workspace Doctor checks the result. See the [Rig Reducer wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer).
-
-### Checklist
-Parse fixture patches, 3D stage positions, groups, and universe assignments directly from the workspace. Export **printable blueprint PDFs** (top-down + front view) and TXT checklists — ideal for pre-show setup or handing off to crew.
+Turn a big show into one for a smaller rig: untick the fixtures you won't have, re-patch the rest (name, universe, address), **Preview**, then **✓ Apply to the show**. Scene values, groups, EFX/matrix fixtures, 3D positions, functions left empty, their buttons and faders are cleaned up; the Workspace Doctor checks the result. See the [Rig Reducer wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer).
 
 ### Look & Chaser Builder
-Build looks and chasers straight into the open show. **Looks**: tick fixture groups and palette colours → one scene per group × colour; the colour is set by capability (RGB/RGBW mixing, colour wheel or dimmer) and every channel is declared. **Chasers**: pick a group, a pattern (all-hit, left/right, chase, ping-pong, build-up, seeded random), colours, timing (ms, or BPM + note length) and cut or fade; the preview shows each fixture's colour per step and plays it. Save a chaser as a **song preset** and reuse it. Optional VC page with coloured buttons; names follow your naming profile; the Workspace Doctor checks the result, which is saved as a new file with a report. See the [Look Builder wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder).
+Build looks and chasers straight into the open show. **Looks**: tick fixture groups and palette colours → one scene per group × colour; the colour is set by capability (RGB/RGBW mixing, colour wheel or dimmer) and every channel is declared. **Chasers**: pick a group, a pattern (all-hit, left/right, chase, ping-pong, build-up, seeded random), colours, timing (ms, or BPM + note length) and cut or fade; the preview shows each fixture's colour per step and plays it. Save a chaser as a **song preset** and reuse it. Looks and chasers are two tabs; optional VC page with coloured buttons; names follow your naming profile; the Workspace Doctor checks the result, which is added to the show in progress. See the [Look Builder wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder).
 
 ### Stage & Meshes
 Place the 3D meshes of your show — band members, risers, drum kit, truss — by what you see: centre on the stage and height above the floor. The list shows which models float or sink; one click puts them on the floor, exactly. Select one or several models — and fixtures — and push them to a stage edge, the centre, the floor or the ceiling; line them up; space them evenly between two or across the whole stage; nudge them with buttons or the arrow keys; place meshes relative to fixtures (e.g. between two of them) or fixtures relative to meshes. Plan and front views (drag to move, several at once), rotation and scale that keep the model in place, add models from your mesh folders, change the stage type and size. See the [Stage and Meshes wiki page](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes).
 
 ### Brightness
-Adjust the relative brightness of any fixture type across an entire show file without rebuilding anything. Select a workspace, use the per-model sliders to set a scale factor (0–200%), and export a new adjusted QXW. The Master Dimmer channel is detected automatically from QXF fixture definitions; if a QXF is not found, you can type the offset manually, upload the file, or fetch it from the QLC+ GitHub repository. Colour channel values are never touched — only the dimmer.
+Adjust the relative brightness of any fixture type across an entire show file without rebuilding anything. Use the per-model sliders to set a scale factor (0–200%), then **✓ Apply to the show**. The Master Dimmer channel is detected automatically from QXF fixture definitions; if a QXF is not found, you can type the offset manually, upload the file, or fetch it from the QLC+ GitHub repository. Colour channel values are never touched — only the dimmer.
 
 ### ID Browser
-Inspect every function and Virtual Console widget in sortable, filterable Grid.js tables. Live filtering, click-to-sort column headers, and **Export CSV** for both the Functions and VC Widgets sub-tabs.
+Inspect every function and Virtual Console widget in sortable, filterable tables (plain tables when offline). Live filtering, click-to-sort column headers, and **Export CSV** for both the Functions and VC Widgets sub-tabs.
 
-### VC Visual Editor *(Beta)*
+### VC Visual Editor
 See your Virtual Console as a canvas — **build it** and tidy it. **Build**: add buttons, frames, sliders, labels and CueLists; wire them to functions from a list filtered by your naming groups, or **drag a function onto the canvas**; delete and duplicate; rename, reorder and delete pages; label panels (your naming legend); arrange a frame's buttons by name group; screen profiles (MacBook 1650 × 884, Full HD, tablet, iPad); page templates reusable in other shows; one-click setlist CueList. **Tidy**: drag selected widgets with grid snap, select, align, distribute, resize, and sort widgets visually. **Copy or move** buttons and frames to another page or frame, **duplicate a page**, or add a new one. Pinch or ⌘-scroll to zoom, drag a box or ⌘-click to multi-select. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
 
 ### QXW Merger → part of the Function Porter (1.9)
@@ -267,7 +270,7 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the
 ### Loading a workspace
 
 - **Start screen** — drag a `.qxw` file anywhere onto the window, or use the **Open Workspace** / **Open Session** buttons.
-- **Path mode** — expand "Advanced: paste a file path…" on the Start screen, paste the full path to your `.qxw` file, and click **Load**.
+- **📂 Open…** in the header, from any tool. In a plain browser without a native file dialog, paste the full path in the Start screen's path field and click **Load**.
 - **Recent files** — previously opened workspaces appear in the Start screen's recents panel.
 
 ---

@@ -1563,6 +1563,11 @@
         <button class="btn btn-surface" onclick="sbGenerate()">🔍 Generate Preview</button>
         <div class="spacer"></div>
         <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)</button>
+        <select id="sb-paper" class="filter-input" style="flex:0 0 170px" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
+          <option>A4 Landscape</option><option>A4 Portrait</option>
+          <option>A3 Landscape</option><option>A3 Portrait</option>
+          <option>US Letter Landscape</option><option>US Letter Portrait</option>
+        </select>
         <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF</button>
       </div>
     </div>

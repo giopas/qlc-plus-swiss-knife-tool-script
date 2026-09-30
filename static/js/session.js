@@ -324,7 +324,7 @@ function _collectToolState() {
       sections: Array.from(document.querySelectorAll('#sb-section-checks input[type=checkbox]:checked'))
                      .map(c => c.value),
     },
-    paper: { fixtures: val('fix-pdf-paper') },
+    paper: { fixtures: val('fix-pdf-paper'), paperwork: val('sb-paper') },
   };
   if (typeof _brtScales !== 'undefined' && Object.keys(_brtScales).length) {
     tools.brightness = { scales: _brtScales, manual: _brtManual, linked: _brtLinked };
@@ -478,7 +478,7 @@ async function _restoreToolState(t) {
   }
   // PDF paper sizes
   const pp = t.paper || {};
-  setVal('fix-pdf-paper', pp.fixtures);
+  setVal('fix-pdf-paper', pp.fixtures); setVal('sb-paper', pp.paperwork || pp.checklist || pp.techrider);
   // Brightness sliders: applied when the Brightness tab (re)loads its fixtures
   window._brtPendingRestore = t.brightness || null;
   // Two-file tools: reload their files from disk

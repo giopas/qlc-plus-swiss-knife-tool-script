@@ -79,6 +79,7 @@ function _sbBody(extra) {
     qxf_dir: (document.getElementById('sb-qxf-path')?.value || '').trim() || null,
     show_name: typeof getShowName === 'function' ? (getShowName() || null) : null,
     date: typeof getEventDate === 'function' ? (getEventDate() || null) : null,
+    paper: document.getElementById('sb-paper')?.value || 'A4 Landscape',
   }, extra || {});
 }
 

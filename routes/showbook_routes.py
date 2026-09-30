@@ -58,7 +58,7 @@ def export_pdf():
 
     try:
         doc = showbook.generate(**_args(data))
-        pdf_bytes = showbook.export_pdf(doc)
+        pdf_bytes = showbook.export_pdf(doc, data.get('paper') or showbook.DEFAULT_PAPER)
 
         if not filename:
             safe_name = re.sub(r'[^\w\s-]', '', doc.get('show_name', 'showbook'))
@@ -126,4 +126,5 @@ def list_sections():
 def list_presets():
     """Presets by reader, and the sections a venue document may carry."""
     return jsonify({'presets': showbook.PRESETS, 'venue_safe': sorted(showbook.VENUE_SAFE),
+                    'papers': list(showbook.PAPERS), 'default_paper': showbook.DEFAULT_PAPER,
                     'sections': list(showbook.ALL_SECTIONS)})

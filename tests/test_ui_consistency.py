@@ -56,6 +56,6 @@ def test_start_cards_match_side_menu_groups():
     assert len(cards) == 6
     for grp, num, title, chips in cards:
         assert grp == num and groups[grp][0] == title, (grp, title)
-        assert re.findall(r"go\('(\w+)'\)", chips) == groups[grp][1], title
+        assert list(dict.fromkeys(re.findall(r"go\('(\w+)'\)", chips))) == groups[grp][1], title
     every = [t for _, tools in groups.values() for t in tools]
     assert len(every) == len(set(every)) == len(re.findall(r'<button class="sn-item" id="sn-', nav))

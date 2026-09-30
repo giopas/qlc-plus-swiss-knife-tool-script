@@ -138,17 +138,9 @@
 
     <!-- 6 · Document -->
     <div class="sn-group-label" id="sn-grp-6"><span class="sn-gnum">6</span><span class="sn-gtxt">Document</span></div>
-    <button class="sn-item" id="sn-showbook" data-tip="Show Book" data-desc="Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values." onclick="go('showbook')">
+    <button class="sn-item" id="sn-showbook" data-tip="Show Paperwork" data-desc="Tech rider for the venue, crew checklist for load-in, show book for you — one tool, one PDF or CSV (the Checklist and Tech Rider are part of it)." onclick="go('showbook')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
-      <span>Show Book</span>
-    </button>
-    <button class="sn-item" id="sn-checklist" data-tip="Checklist" data-desc="Every fixture with universe, address, mode and channels." onclick="go('checklist')">
-      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
-      <span>Checklist</span>
-    </button>
-    <button class="sn-item" id="sn-techrider" data-tip="Tech Rider" data-desc="Generate a tech rider from the fixture list." onclick="go('techrider')">
-      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
-      <span>Tech Rider</span>
+      <span>Show Paperwork</span>
     </button>
 
   </div>
@@ -349,8 +341,8 @@
         </div>
         <div class="wf-card" data-grp="6">
           <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
-          <div class="wf-desc">The paperwork: show book (PDF/CSV) with decoded DMX values, patch checklist, tech rider.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook')">Show Book</button><button class="wf-chip" onclick="go('checklist')">Checklist</button><button class="wf-chip" onclick="go('techrider')">Tech Rider</button></div>
+          <div class="wf-desc">The paper for each reader, in one tool: tech rider for the venue, crew checklist for load-in, show book with decoded DMX values for you — PDF or CSV.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
         </div>
       </div>
 
@@ -921,47 +913,7 @@
 
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       CHECKLIST
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section class="screen" id="scr-checklist">
-
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
-      <div><h2>Checklist</h2><div class="p-desc">Every fixture with universe, address, mode and channels — ready to print for load-in.</div></div>
-      <div class="spacer"></div>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
-    </div>
-
-    <div class="tab-toolbar">
-      <input id="chk-filter" class="filter-input" type="text"
-             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
-    </div>
-
-    <div id="chk-table-wrap"></div>
-
-    <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Exports <b>&nbsp;TXT / PDF&nbsp;</b> — workspace untouched
-      </span>
-      <div class="spacer"></div>
-      <button class="btn btn-surface" onclick="exportChecklistTxt()"
-              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
-      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
-        <option value="A3 Landscape">A3 Landscape</option>
-        <option value="A4 Landscape">A4 Landscape</option>
-        <option value="A4 Portrait">A4 Portrait</option>
-        <option value="US Letter Landscape">US Letter Landscape</option>
-        <option value="US Letter Portrait">US Letter Portrait</option>
-      </select>
-      <button class="btn btn-surface" onclick="exportChecklistPdf()"
-              data-tooltip="Export the fixture checklist table as a formatted PDF">📄 Checklist PDF</button>
-      <button class="btn btn-surface" onclick="exportBlueprintPdf()"
-              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
-    </div>
-
-  </section>
+  
 
   <!-- ══════════════════════════════════════════════════════════════════════
        BRIGHTNESS
@@ -1083,38 +1035,7 @@
 
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       TECH RIDER
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section class="screen" id="scr-techrider">
-
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
-      <div><h2>Tech Rider</h2><div class="p-desc">Fixture type summary grouped by manufacturer, model and mode — ready for production planning.</div></div>
-      <div class="spacer"></div>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
-    </div>
-
-    <div id="tr-table-wrap"></div>
-
-    <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Exports a <b>&nbsp;PDF&nbsp;</b> — workspace untouched
-      </span>
-      <div class="spacer"></div>
-      <select id="tr-pdf-paper" class="filter-input" style="width:160px">
-        <option value="A3 Landscape">A3 Landscape</option>
-        <option value="A4 Landscape">A4 Landscape</option>
-        <option value="A4 Portrait">A4 Portrait</option>
-        <option value="US Letter Landscape">US Letter Landscape</option>
-        <option value="US Letter Portrait">US Letter Portrait</option>
-      </select>
-      <button class="btn btn-surface" onclick="exportTechRiderPdf()"
-              data-tooltip="Export the tech rider as a formatted PDF">📄 Tech Rider PDF</button>
-    </div>
-
-  </section>
+  
 
   <!-- ══════════════════════════════════════════════════════════════════════
        VC VISUAL EDITOR
@@ -1602,13 +1523,22 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Show Book</h2><div class="p-desc">Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values.</div></div>
+      <div><h2>Show Paperwork</h2><div class="p-desc">The paper for each reader, from the show in progress — tech rider for the venue, crew checklist for load-in, show book for you — as PDF or CSV.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
     <!-- Controls bar -->
     <div class="sb-controls">
+      <div class="sb-presets">
+        <span class="sb-label">Who is it for?</span>
+        <button class="sb-preset" data-p="rider" onclick="sbPreset('rider', event)">🎟 Tech rider <small>for the venue</small></button>
+        <button class="sb-preset" data-p="checklist" onclick="sbPreset('checklist', event)">✅ Crew checklist <small>for load-in</small></button>
+        <button class="sb-preset active" data-p="operator" onclick="sbPreset('operator', event)">📖 Show book <small>for you at the desk</small></button>
+        <button class="sb-preset" data-p="custom" onclick="sbPreset('custom', event)">⚙ Custom <small>tick the sections</small></button>
+        <span class="sb-optional">⇧-click to combine (e.g. rider + checklist for a festival advance) — one PDF</span>
+      </div>
+      <div id="sb-venue-note" class="sb-venue-note" hidden>🔒 This paper leaves your hands: whatever is ticked, it never carries function names, key / MIDI maps, the Virtual Console or the Doctor — only the rig, its patch and the stage plot.</div>
       <div class="sb-ctrl-row">
         <div class="sb-ctrl-col">
           <label class="sb-label">Sections to include:</label>
@@ -1645,11 +1575,11 @@
 
     <!-- Preview area -->
     <div id="sb-preview" class="sb-preview">
-      <div class="porter-placeholder">Generate a preview to see your Show Book here.</div>
+      <div class="porter-placeholder">Pick who it is for, then 🔍 Generate Preview.</div>
     </div>
 
     <!-- Status bar -->
-    <div id="sb-status" class="status-bar status-info">Load a workspace, then generate your Show Book.</div>
+    <div id="sb-status" class="status-bar status-info">Pick who it is for, then generate the preview. Show name and date come from the Start screen.</div>
 
     <div class="out-footer">
       <span class="out-note new">
@@ -2137,8 +2067,6 @@
 <script src="/static/js/app.js?v={{ asset_v }}"></script>
 <script src="/static/js/setlist.js?v={{ asset_v }}"></script>
 <script src="/static/js/dictionary.js?v={{ asset_v }}"></script>
-<script src="/static/js/checklist.js?v={{ asset_v }}"></script>
-<script src="/static/js/techrider.js?v={{ asset_v }}"></script>
 <script src="/static/js/triggers.js?v={{ asset_v }}"></script>
 <script src="/static/js/fixture.js?v={{ asset_v }}"></script>
 <script src="/static/js/porter.js?v={{ asset_v }}"></script>

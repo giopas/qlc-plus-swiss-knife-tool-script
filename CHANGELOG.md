@@ -17,11 +17,15 @@ Phase 2.6 (UI audit → 1.9.0), first part: **the show in progress**.
   - **One save**: `<name>_v<N+1>.qxw` + one `<name>_v<N+1>_report.txt` with every step and each tool's report; keep working after saving. The opened file is never written (refused).
   - Asks before *Open…*, *Reload* or *Quit* drop unsaved changes.
 - **✓ Apply to the show** in Workspace Doctor (*Fix selected in the show*), Rig Reducer, Look Builder (*Add to the show*), Brightness, Setlist, VC Editor; `POST /api/doctor|reducer|looks/apply`, `/api/brightness/apply-show`, `/api/setlist/apply-all`, `/api/setlist/<slot>/apply`. Tested: applying gives exactly the file the old export gave (byte for byte).
+- **Changes on the left** (giopas's test, 30 Sep: "a history log and a revert button on the left side"): under the menu, the last steps of the show, each with **↶** to undo it (asks first when it undoes several), click a line to open its tool, *All ›* for the full History.
+- **↷ Redo** after an undo (side list and History), until the show changes again; `POST /api/show/redo`.
+- The Workspace Doctor checks the show in progress as soon as you open it.
 - Trigger Manager, VC Editor (pages, widgets, wiring) and **Stage & Meshes** edits go straight into the show; Stage & Meshes keeps its own undo and keeps its edits when another tool changes the show.
 
 ### Changed
 - Each tool's old "→ new file" button is now the secondary **Export a copy…** (the tool's result as a separate file with its report; the show in progress is left as it is). Trigger Manager's *Save new version* is gone (the header save replaces it).
 - Header fits 1280 px: the counts lose their labels (tooltips instead) and the Doctor pill shortens below 1560 px.
+- Footer notes shortened to "Changes the show in progress" (the rest in the tooltip) — they wrapped over three lines next to three buttons.
 - Page texts, menu tooltips and the Start screen describe the show in progress instead of "into a new file".
 
 ### Fixed

@@ -46,6 +46,7 @@ async function showRefresh() {
   const changed = st.active && _show.active && st.version !== _show.version;
   _show = st;
   _renderShowBar();
+  _renderSideChanges();
   if (changed) _showChangedElsewhere();
   if (document.getElementById('show-history')?.classList.contains('open')) showHistoryRender();
 }
@@ -123,10 +124,60 @@ async function showUndo(n) {
   });
   const d = await r.json();
   if (!r.ok || d.error) { setStatus(d.error || 'Undo failed.', 'error'); return; }
-  setStatus(n ? `Back to how the show was before step ${n}.` : 'Last change undone.');
+  const k = (d.show && d.show.redo) || 0;
+  setStatus((n ? `Back to how the show was before step ${n}.` : 'Last change undone.') +
+    (k ? ` ↷ Redo brings ${k === 1 ? 'it' : 'them'} back.` : ''));
   _show.version = -2;                  // everything (this screen too) starts again
   await _refreshAfterLoad();
   await showRefresh();
+}
+
+async function showRedo() {
+  const r = await _origFetch('/api/show/redo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const d = await r.json();
+  if (!r.ok || d.error) { setStatus(d.error || 'Nothing to redo.', 'error'); return; }
+  setStatus('Redone — the undone steps are back.');
+  _show.version = -2;
+  await _refreshAfterLoad();
+  await showRefresh();
+}
+
+/** Undo from the side list: more than the last step asks first. */
+function showUndoFromSide(n) {
+  const last = _show.steps || 0;
+  if (n < last && !confirm(`Undo steps ${n}–${last}? (↷ Redo brings them back until you change the show again.)`)) return;
+  showUndo(n);
+}
+
+// ── The changes list on the left (under the menu) ────────────────────────────
+
+let _sideVersion = null;
+async function _renderSideChanges() {
+  const box = document.getElementById('side-changes');
+  if (!box) return;
+  box.hidden = !_show.active;
+  if (!_show.active) return;
+  const rb = document.getElementById('sc-redo');
+  if (rb) { rb.hidden = !_show.redo; rb.title = `Redo ${_show.redo} undone step(s)`; }
+  if (_sideVersion === _show.version) return;
+  _sideVersion = _show.version;
+  let steps = [];
+  try { steps = (await (await _origFetch('/api/show/history')).json()).steps || []; } catch { return; }
+  const list = document.getElementById('sc-list');
+  const cnt = document.getElementById('sc-count');
+  if (cnt) cnt.textContent = steps.length ? `(${steps.length})` : '';
+  if (!steps.length) {
+    list.innerHTML = '<li class="sc-empty">No changes yet — each tool you apply adds a line here.</li>';
+    return;
+  }
+  const SHOW = 5;
+  const more = steps.length - SHOW;
+  list.innerHTML = (more > 0 ? `<li class="sc-more" onclick="showHistoryToggle(true)">+ ${more} earlier…</li>` : '') +
+    steps.slice(-SHOW).map(s => `<li class="sc-row${s.saved ? ' sc-saved' : ''}" title="${_esc(s.tool_title + ' — ' + s.title + (s.detail ? '\n' + s.detail : ''))}">
+      <span class="sc-n">${s.n}</span>
+      <span class="sc-t" onclick="go('${s.tool}')"><b>${_esc(s.tool_title)}</b> ${_esc(s.title)}</span>
+      ${s.undoable ? `<button class="sc-undo" title="Undo this step${s.n < steps.length ? ' and the ones after it' : ''}" onclick="showUndoFromSide(${s.n})">↶</button>` : ''}
+    </li>`).join('');
 }
 
 async function showHistoryToggle(open) {
@@ -147,6 +198,8 @@ async function showHistoryRender() {
   const fn = document.getElementById('sh-filename');
   if (fn && !fn.dataset.touched) fn.value = st.suggested_name || '';
   const steps = d.steps || [];
+  const rd = document.getElementById('sh-redo');
+  if (rd) rd.hidden = !st.redo;
   const time = t => new Date(t * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   let html = `<li class="sh-step sh-start"><span class="sh-n">0</span><div class="sh-body">
       <div class="sh-title">Opened ${_esc(st.source_name || '')}</div>

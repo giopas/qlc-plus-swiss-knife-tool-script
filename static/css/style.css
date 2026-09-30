@@ -3688,3 +3688,24 @@ body.nav-min .sn-dot { position: absolute; top: 6px; right: 8px; margin: 0; }
   .sb-short { display: inline; }
   .ms-lbl { display: none; }
 }
+
+/* Changes list in the side panel (giopas, 30 Sep: history + revert on the left) */
+.side-changes { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.sc-head { display: flex; justify-content: space-between; align-items: center; }
+.sc-acts { display: flex; gap: 6px; }
+.sc-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 9.5px; letter-spacing: .06em; cursor: pointer; }
+.sc-link[hidden] { display: none; }
+.sc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sc-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); border-radius: 6px; padding: 2px 4px; }
+.sc-row:hover { background: var(--surface-1); }
+.sc-row.sc-saved { opacity: .6; }
+.sc-n { font-family: var(--mono); color: var(--text-faint); width: 14px; flex-shrink: 0; }
+.sc-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.sc-t b { color: var(--text); font-weight: 600; }
+.sc-undo { background: none; border: 1px solid transparent; border-radius: 5px; color: var(--text-dim); cursor: pointer; font-size: 12px; padding: 0 5px; line-height: 18px; }
+.sc-undo:hover { border-color: var(--border); color: #f5a524; }
+.sc-empty, .sc-more { font-size: 10.5px; color: var(--text-faint); padding: 2px 4px; }
+.sc-more { cursor: pointer; }
+.sh-redo { padding: 0 18px 8px; }
+.sh-redo[hidden] { display: none; }
+body.nav-min .side-changes { display: none; }

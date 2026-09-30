@@ -4,6 +4,8 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (30 Sep, late — giopas's tests of Porter copies and Show Paperwork):** v12 port report showed copied Ceilings tiled onto the floor PARs by *pattern repeat* → copies pinned 1:1 (`plan_blocks`); a thread race in `_with_copies` (candidates + preview in parallel) could leave the copies in the target / copy twice → `_COPIES_LOCK`; step 3 target picker = drop-down with tick boxes; Show Paperwork preview draws the stage plot, sections grouped (rig / show / console & checks). JS parse test added. 555 tests.
+
 **Status (30 Sep, night — Show Paperwork built):** one tool for the three papers, on `feat/show-in-progress`; 548 tests; browser-checked (Start chip *Tech rider* → preset, ⇧ + *Crew checklist* → one PDF with rider, checklist, stage plot). Next in 2.6: the screen pattern (inspector tabs for Look Builder / Stage & Meshes, primary action in the footer everywhere), the route strip, words; then **v1.9.0**.
 
 **Status (30 Sep, evening — giopas's Porter test):** FloorShow_v11 ← BigShow_v41 *Ceiling* group, applied, saved v12: works; three points fixed — copies had no 3D position (QLC+ stacked them top-left: now source position scaled to the target stage, `_copy_positions`), step 3 did not show the copies in the target (now drawn green, `target_preview`), and "where is Save?" (button on the finish screen + "top right" in messages). Also: no spurious "unassigned" warning for copies, re-copy flagged. 542 tests.

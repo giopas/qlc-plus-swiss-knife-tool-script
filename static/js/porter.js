@@ -564,7 +564,8 @@ async function _pRenderMapFixtures() {
     const r = await fetch('/api/porter/fixture-candidates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fixture_ids: _pClosure.fixture_ids }),
+      body: JSON.stringify({ fixture_ids: _pClosure.fixture_ids,
+                             copy_fixtures: [..._pCopyFx], copy_groups: [..._pCopyGrp] }),
     });
     const d = await r.json();
     if (!r.ok) { _pStatus('Error: ' + d.error, 'error'); return; }
@@ -593,7 +594,8 @@ async function _pRenderMapFixtures() {
       const r = await fetch('/api/porter/auto-map', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fixture_ids: _pClosure.fixture_ids, strategy: _pStrategy() }),
+        body: JSON.stringify({ fixture_ids: _pClosure.fixture_ids, strategy: _pStrategy(),
+                               copy_fixtures: [..._pCopyFx], copy_groups: [..._pCopyGrp] }),
       });
       if (r.ok) {
         const auto = await r.json();
@@ -602,6 +604,8 @@ async function _pRenderMapFixtures() {
     } catch (e) { /* best-effort */ }
   }
   for (const id of _pSkipFx) _pFixMapping[id] = [];
+  const copiedTo = _pCandidates.copied || {};          // src → its copy (pinned 1:1)
+  for (const [s, n] of Object.entries(copiedTo)) _pFixMapping[s] = [String(n)];
 
   // Render mapping table
   let html = '<table class="porter-map-table"><thead><tr>'
@@ -627,6 +631,17 @@ async function _pRenderMapFixtures() {
 
 
     const skipped = _pSkipFx.has(String(srcId));
+    if (copiedTo[srcId] !== undefined) {           // copied in step 2: plays on its copy
+      html += `<tr class="porter-map-row porter-pinned" data-src-id="${srcId}"
+                   onmouseenter="porterHighlight('${srcId}')" onmouseleave="porterHighlight(null)">
+        <td><strong>${_esc(srcFix.name)}</strong> [${srcId}]<br>
+          <small>${_esc(srcFix.manufacturer)} ${_esc(srcFix.model)} · ${srcFix.mode} · ${srcFix.channels}ch</small></td>
+        <td class="porter-arrow">→</td>
+        <td><span class="porter-copy-chip">✚ its copy [${copiedTo[srcId]}]</span>
+          <small class="porter-row-sub">copied in step 2 — always 1:1, whatever the fan-out mode</small></td>
+        <td></td></tr>`;
+      continue;
+    }
     html += `<tr class="porter-map-row${skipped ? ' porter-skipped' : ''}${_pHlSticky === String(srcId) ? ' porter-hl' : ''}"
                  data-src-id="${srcId}" onmouseenter="porterHighlight('${srcId}')"
                  onmouseleave="porterHighlight(null)" onclick="porterPinHighlight('${srcId}', event)">
@@ -639,11 +654,7 @@ async function _pRenderMapFixtures() {
       </td>
       <td class="porter-arrow">→</td>
       <td>
-        <select multiple class="porter-tgt-select" data-src-id="${srcId}" ${skipped ? 'disabled' : ''}
-                onchange="porterUpdateMapping('${srcId}', this)"
-                size="${Math.min(5, (cands.tier1||[]).length + (cands.tier2||[]).length + 2)}">
-          ${options || '<option disabled>No target fixtures available</option>'}
-        </select>
+        ${_pTargetPicker(srcId, cands, mapped, skipped)}
         <span id="porter-xlate-${srcId}">${_pXlateBadge(srcId)}</span>
       </td>
       <td>
@@ -1434,3 +1445,73 @@ async function porterApply() {
   }
   await porterUseShowTgt(true);
 }
+
+
+// ── Step 3 target picker (giopas, 30 Sep: the multi-select list was hard to
+//    use) — a drop-down with a tick box per target fixture ──────────────────
+
+function _pCandLabel(cands, id) {
+  const all = [].concat(cands.tier1 || [], cands.tier2 || [], cands.tier3 || []);
+  const t = all.find(x => String(x.id) === String(id));
+  return t ? `${t.name} [${t.id}]` : `[${id}]`;
+}
+
+function _pTargetPicker(srcId, cands, mapped, skipped) {
+  const copies = new Set(Object.values((_pCandidates && _pCandidates.copied) || {}).map(String));
+  const group = (list, label) => !list.length ? '' : `<div class="porter-pick-h">${label}</div>` +
+    list.map(t => `<label class="porter-pick-row"><input type="checkbox" value="${t.id}"
+        ${mapped.map(String).includes(String(t.id)) ? 'checked' : ''}
+        onchange="porterPickToggle('${srcId}', '${t.id}', this.checked)">
+        <span>${copies.has(String(t.id)) ? '✚ ' : ''}${_esc(t.name)} [${t.id}]</span>
+        <small>${_esc(t.mode)}</small></label>`).join('');
+  const body = group(cands.tier1 || [], 'Exact match (model + mode)')
+    + group(cands.tier2 || [], 'Same model, different mode')
+    + group(cands.tier3 || [], 'Different model — values translated');
+  const chips = mapped.length
+    ? mapped.map(id => `<span class="porter-tgt-chip">${_esc(_pCandLabel(cands, id))}</span>`).join('')
+    : '<span class="porter-row-sub">no target — click to choose</span>';
+  return `<details class="porter-pick" id="porter-pick-${srcId}" ${skipped ? 'data-off="1"' : ''}
+            onclick="event.stopPropagation()">
+    <summary>${chips}<span class="porter-pick-caret">▾</span></summary>
+    <div class="porter-pick-menu">
+      <div class="porter-pick-tools">
+        <button class="btn btn-surface btn-xs" onclick="porterPickSet('${srcId}', 'exact')">All exact matches</button>
+        <button class="btn btn-surface btn-xs" onclick="porterPickSet('${srcId}', 'none')">None</button>
+      </div>
+      ${body || '<div class="porter-row-sub">No target fixtures available.</div>'}
+    </div></details>`;
+}
+
+function _pPickChanged(srcId) {
+  const cands = (_pCandidates && _pCandidates.candidates[srcId]) || {};
+  const d = document.getElementById('porter-pick-' + srcId);
+  const mapped = _pFixMapping[srcId] || [];
+  if (d) {
+    d.querySelector('summary').innerHTML = (mapped.length
+      ? mapped.map(id => `<span class="porter-tgt-chip">${_esc(_pCandLabel(cands, id))}</span>`).join('')
+      : '<span class="porter-row-sub">no target — click to choose</span>') + '<span class="porter-pick-caret">▾</span>';
+    d.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = mapped.map(String).includes(cb.value); });
+  }
+  const b = document.getElementById('porter-xlate-' + srcId);
+  if (b) b.innerHTML = _pXlateBadge(srcId);
+  _pValidation = null;
+  _pDrawPlans();
+}
+
+function porterPickToggle(srcId, tgtId, on) {
+  const cur = new Set((_pFixMapping[srcId] || []).map(String));
+  on ? cur.add(String(tgtId)) : cur.delete(String(tgtId));
+  _pFixMapping[srcId] = [...cur];
+  _pPickChanged(srcId);
+}
+
+function porterPickSet(srcId, what) {
+  const cands = (_pCandidates && _pCandidates.candidates[srcId]) || {};
+  _pFixMapping[srcId] = what === 'exact' ? (cands.tier1 || []).map(t => String(t.id)) : [];
+  _pPickChanged(srcId);
+}
+
+// close an open picker when clicking elsewhere
+document.addEventListener('click', e => {
+  document.querySelectorAll('details.porter-pick[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+});

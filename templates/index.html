@@ -1539,24 +1539,21 @@
         <span class="sb-optional">⇧-click to combine (e.g. rider + checklist for a festival advance) — one PDF</span>
       </div>
       <div id="sb-venue-note" class="sb-venue-note" hidden>🔒 This paper leaves your hands: whatever is ticked, it never carries function names, key / MIDI maps, the Virtual Console or the Doctor — only the rig, its patch and the stage plot.</div>
-      <div class="sb-ctrl-row">
-        <div class="sb-ctrl-col">
-          <label class="sb-label">Sections to include:</label>
-          <div id="sb-section-checks" class="sb-checks"></div>
-          <div class="sb-check-btns">
-            <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">✓ All</button>
-            <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">✗ None</button>
-          </div>
-        </div>
+      <div class="sb-sections-head">
+        <span class="sb-label">What goes in</span>
+        <span class="sb-optional">— set by the preset above; change the ticks to make it your own</span>
+        <div class="spacer"></div>
+        <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">✓ All</button>
+        <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">✗ None</button>
+      </div>
+      <div id="sb-section-checks" class="sb-groups"></div>
 
-        <div class="sb-ctrl-col sb-qxf-col">
-          <label class="sb-label">QXF fixture definitions folder <span class="sb-optional">(optional — for DMX decoding)</span>:</label>
-          <div class="merger-load-row">
-            <input id="sb-qxf-path" type="hidden">
-            <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
-            <button class="btn btn-surface" onclick="sbBrowseQxf()">📂 Browse folder…</button>
-          </div>
-        </div>
+      <div class="sb-options">
+        <span class="sb-label">Decode DMX values with the definitions in</span>
+        <input id="sb-qxf-path" type="hidden">
+        <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
+        <button class="btn btn-surface btn-sm" onclick="sbBrowseQxf()">📂 Folder…</button>
+        <span class="sb-optional">optional — definitions next to the show and the QLC+ library are used anyway</span>
       </div>
 
       <div class="sb-action-bar">

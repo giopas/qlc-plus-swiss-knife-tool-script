@@ -152,3 +152,58 @@ def test_copied_fixtures_keep_their_place_on_the_stage(c):
     _ok(c.post("/api/porter/target/show", json={}))
     v = _ok(c.post("/api/porter/validate", json=plan)).get_json()
     assert any("copied before" in w for w in v["warnings"])
+
+
+def test_copies_are_pinned_whatever_the_fan_out(c):
+    """giopas's test (30 Sep): with 'pattern repeat' the copied Ceiling
+    fixtures' looks were tiled onto other targets (the drums…).  Copies are
+    now always 1:1; the other sources share out the other targets."""
+    _ok(c.post("/api/load", json={"path": str(c.tmp / "Pub_6fix.qxw")}))
+    _ok(c.post("/api/porter/source/load", json={"path": str(c.tmp / "Festival_14fix.qxw")}))
+    _ok(c.post("/api/porter/target/show", json={}))
+    before = {f["id"] for f in porter.list_target_fixtures()}
+    g = next(x for x in c.get("/api/porter/source/groups").get_json() if x["name"] == "Ceiling")
+    fns = [f for f in porter.list_source_functions() if f["type"] == "Scene"]
+    fn = next(f for f in fns if set(g["fixtures"]) & set(
+        porter.resolve_closure([f["id"]])["fixture_ids"]))
+    cl = porter.resolve_closure([fn["id"]])
+    cand = _ok(c.post("/api/porter/fixture-candidates", json={
+        "fixture_ids": cl["fixture_ids"], "copy_fixtures": g["fixtures"]})).get_json()
+    assert set(cand["copied"]) == set(g["fixtures"])
+    m = _ok(c.post("/api/porter/auto-map", json={"fixture_ids": cl["fixture_ids"], "strategy": "all",
+                                                 "copy_fixtures": g["fixtures"]})).get_json()
+    assert all(m[s] == [cand["copied"][s]] for s in g["fixtures"] if s in m)
+    plan = dict(closure=cl, fixture_mapping={s: sorted(before) for s in cl["fixture_ids"]},
+                fanout_mode="pattern_repeat", drop_unmapped=True, copy_fixtures=g["fixtures"])
+    _ok(c.post("/api/porter/apply", json=plan))
+    root = qxw_io.strip_ns(qxw_io.loads_qxw(c.get("/api/show/file").data))
+    new_fn = root.find("Engine").findall("Function")[-1]
+    lit = {v.get("ID") for v in new_fn.findall("FixtureVal")}
+    src_ceiling = {s for s in cl["fixture_ids"] if s in g["fixtures"]}
+    assert {cand["copied"][s] for s in src_ceiling} <= lit        # the copies play
+    if set(cl["fixture_ids"]) <= set(g["fixtures"]):
+        assert not (lit & before)                                   # nothing tiled onto the rig
+
+
+def test_copies_preview_is_thread_safe(c):
+    """Step 3 fires the candidates and the preview plan at once; the target
+    must never be left with the copies in it, nor copy them twice."""
+    import threading
+    _ok(c.post("/api/load", json={"path": str(c.tmp / "Pub_6fix.qxw")}))
+    _ok(c.post("/api/porter/source/load", json={"path": str(c.tmp / "Festival_14fix.qxw")}))
+    _ok(c.post("/api/porter/target/show", json={}))
+    n0 = len(porter.list_target_fixtures())
+    g = c.get("/api/porter/source/groups").get_json()[0]
+    q = "?copy_fixtures=" + ",".join(g["fixtures"])
+    errors = []
+
+    def hit():
+        cl = app.create_app().test_client()
+        for _ in range(10):
+            d = cl.get("/api/porter/stage/target" + q).get_json()
+            if len(d["copied"]) != len(g["fixtures"]):
+                errors.append(d["copied"])
+    ts = [threading.Thread(target=hit) for _ in range(4)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert not errors and len(porter.list_target_fixtures()) == n0

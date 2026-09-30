@@ -145,6 +145,13 @@ def resolve_closure():
 
 # ── Fixture compatibility ────────────────────────────────────────────────────
 
+def _copies_of(data: dict) -> dict:
+    """The step 2 copies in a request, as a plan fragment for _with_copies."""
+    return {'copy_fixtures': [str(x) for x in (data.get('copy_fixtures') or [])],
+            'copy_groups': [str(x) for x in (data.get('copy_groups') or [])],
+            'fixture_mapping': {}}
+
+
 @bp.route('/fixture-candidates', methods=['POST'])
 def fixture_candidates():
     """
@@ -157,8 +164,10 @@ def fixture_candidates():
         return jsonify({'error': 'No fixture IDs provided.'}), 400
 
     try:
-        result = porter.build_fixture_candidates(fixture_ids,
-                                                 data.get('qxf_paths') or None)
+        with porter._with_copies(_copies_of(data)) as (_p, copies):
+            result = porter.build_fixture_candidates(fixture_ids,
+                                                     data.get('qxf_paths') or None)
+        result['copied'] = (copies or {}).get('map', {})   # src → its copy (pinned)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
@@ -179,8 +188,11 @@ def auto_map():
         return jsonify({'error': f'Unknown strategy {strategy!r}.'}), 400
 
     try:
-        result = porter.auto_map(fixture_ids, strategy,
-                                 data.get('qxf_paths') or None)
+        with porter._with_copies(_copies_of(data)) as (_p, copies):
+            result = porter.auto_map(fixture_ids, strategy,
+                                     data.get('qxf_paths') or None)
+        for s, n in ((copies or {}).get('map') or {}).items():
+            result[s] = [n]                                  # copies are pinned 1:1
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

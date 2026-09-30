@@ -397,7 +397,13 @@ def _build_stage_plan(state: dict) -> dict:
                    "y": info.get("y_mm", 0), "z": info.get("z_mm", 0),
                    "in_3d": bool(info.get("in_3d"))})
     fx.sort(key=lambda f: int(f["id"]) if str(f["id"]).isdigit() else 0)
-    return {"fixtures": fx, "placed": sum(1 for f in fx if f["in_3d"])}
+    from core import fixture as fixture_mod
+    try:
+        view = fixture_mod.stage_plan(state["qxw_root"])       # stage size for the preview
+        stage = view.get("stage") or {}
+    except Exception:  # noqa: BLE001 — the plot works without it
+        stage = {}
+    return {"fixtures": fx, "placed": sum(1 for f in fx if f["in_3d"]), "stage": stage}
 
 
 def _build_checklist(state: dict) -> list[dict]:

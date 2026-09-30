@@ -59,3 +59,18 @@ def test_start_cards_match_side_menu_groups():
         assert list(dict.fromkeys(re.findall(r"go\('(\w+)'\)", chips))) == groups[grp][1], title
     every = [t for _, tools in groups.values() for t in tools]
     assert len(every) == len(set(every)) == len(re.findall(r'<button class="sn-item" id="sn-', nav))
+
+
+def test_javascript_parses():
+    """A syntax error in one file silently kills a whole tool (30 Sep: a name
+    clash in porter.js) — every static JS file must parse."""
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        import pytest
+        pytest.skip("node not installed")
+    js = Path(os.path.dirname(HERE), "static", "js")
+    for f in sorted(js.glob("*.js")):
+        r = subprocess.run([node, "--check", str(f)], capture_output=True, text=True)
+        assert r.returncode == 0, f"{f.name}: {r.stderr[:300]}"

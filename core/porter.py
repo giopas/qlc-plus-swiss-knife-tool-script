@@ -679,6 +679,23 @@ def compute_blocks(src_fixture_ids: list[str], fixture_mapping: dict[str, list[s
     return {t: [s] for t, s in compute_fanout(src_fixture_ids, fixture_mapping, mode).items()}
 
 
+def plan_blocks(order: list[str], fixture_mapping: dict[str, list[str]], mode: str,
+                copied: dict[str, str] | None = None) -> dict[str, list[str]]:
+    """:func:`compute_blocks`, with copied fixtures pinned 1:1 to their copy
+    whatever the fan-out mode (giopas's test, 30 Sep: *pattern repeat*
+    tiled the copies onto other targets, so "Ceiling 1" played on the drums).
+    The other sources share out the remaining targets as before."""
+    copied = copied or {}
+    pinned = {n: [s] for s, n in copied.items() if s in order}
+    taken = set(pinned)
+    rest = [s for s in order if s not in copied]
+    mapping = {s: [t for t in ts if t not in taken] for s, ts in fixture_mapping.items()
+               if s not in copied}
+    blocks = compute_blocks(rest, mapping, mode)
+    blocks.update(pinned)
+    return blocks
+
+
 def _intensity_channels(infos: dict[str, dict], defs: dict) -> dict[str, set]:
     """``fixture_id → {channel indices in the Intensity group}`` (dimmer and
     colour), for fixtures whose definition is known."""
@@ -1026,9 +1043,12 @@ def validate(plan: dict) -> dict:
                 errors.append(f"Target fixture ID {t} does not exist in the target.")
 
     order = stage_order(_src["root"], fix_ids) if _src["loaded"] else list(fix_ids)
-    blocks = compute_blocks(order, fixture_mapping, fanout_mode)
-    fanout = compute_fanout(fix_ids, fixture_mapping, fanout_mode) \
-        if fanout_mode != "fan_in" else {t: b[0] for t, b in blocks.items()}
+    copied = plan.get("_copied") or {}
+    blocks = plan_blocks(order, fixture_mapping, fanout_mode, copied)
+    if fanout_mode == "fan_in" or copied:
+        fanout = {t: b[0] for t, b in blocks.items()}
+    else:
+        fanout = compute_fanout(fix_ids, fixture_mapping, fanout_mode)
 
     # Double assignment (ambiguous values) — expected, and resolved, in fan-in
     if fanout_mode != "fan_in":
@@ -1382,8 +1402,24 @@ def _copy_positions(src_root: ET.Element, tgt_root: ET.Element, out: dict) -> No
                           + " — fine-tune them in Stage & Meshes")
 
 
+import threading
+
+# _with_copies swaps _tgt["root"] for the duration of a call; the web server
+# is threaded (step 3 asks for candidates and the preview plan at once), so
+# two swaps must never overlap — they did on 30 Sep: the preview drew the
+# copies twice and the target could stay swapped.
+_COPIES_LOCK = threading.RLock()
+
+
 @contextmanager
 def _with_copies(plan: dict):
+    with _COPIES_LOCK:
+        with _with_copies_unlocked(plan) as out:
+            yield out
+
+
+@contextmanager
+def _with_copies_unlocked(plan: dict):
     """Run validate/_build on a target that already has the fixtures and
     groups the plan copies from the source; copied fixtures are mapped to
     themselves.  Yields ``(plan, copies)`` (copies is None when none)."""
@@ -1510,7 +1546,7 @@ def _build(plan: dict) -> dict:
 
     # ── 1. Who feeds which target ─────────────────────────────────────────
     order = stage_order(src_root, fix_ids)
-    blocks = compute_blocks(order, fixture_mapping, fanout_mode)
+    blocks = plan_blocks(order, fixture_mapping, fanout_mode, plan.get("_copied"))
     translate = (_translators(_fixture_infos(src_root), _fixture_infos(_tgt["root"]),
                              blocks, defs)
                  if plan.get("translate_types", True) else {})

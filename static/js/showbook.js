@@ -92,16 +92,29 @@ function invalidateShowbook() {
 
 // ── Section picker ──────────────────────────────────────────────────────────
 
+// The sections in three groups (giopas, 30 Sep: the flat list was chaotic)
+const _SB_GROUPS = [
+  { title: 'The rig', hint: 'what the venue and the crew need',
+    ids: ['rider', 'patch', 'checklist', 'stage_plan'] },
+  { title: 'The show', hint: 'for you — stays with you',
+    ids: ['summary', 'functions', 'scenes', 'chasers', 'collections', 'efx', 'shows', 'scripts'] },
+  { title: 'Console & checks', hint: 'for you — stays with you',
+    ids: ['vc_layout', 'doctor'] },
+];
+
 function _sbBuildSectionPicker() {
   const wrap = document.getElementById('sb-section-checks');
   if (!wrap || wrap.childElementCount > 0) return;
-
-  wrap.innerHTML = _SB_SECTIONS.map(s =>
-    `<label class="sb-check-label">
-       <input type="checkbox" value="${s.id}" checked>
-       <span>${s.icon} ${s.label}</span>
-     </label>`
-  ).join('');
+  const byId = Object.fromEntries(_SB_SECTIONS.map(s => [s.id, s]));
+  wrap.innerHTML = _SB_GROUPS.map(g => `
+    <fieldset class="sb-group">
+      <legend>${g.title} <small>${g.hint}</small></legend>
+      ${g.ids.map(id => byId[id]).filter(Boolean).map(s => `
+        <label class="sb-check-label">
+          <input type="checkbox" value="${s.id}" checked>
+          <span>${s.icon} ${s.label}</span>
+        </label>`).join('')}
+    </fieldset>`).join('');
 }
 
 function _sbSelectedSections() {
@@ -200,8 +213,9 @@ function _sbRenderPreview(doc) {
   if (secs.stage_plan) {
     const sp = secs.stage_plan;
     parts.push(`<div class="sb-section" id="sb-sec-stage"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🗺 Stage plot <span class="sb-toggle-icon">▾</span></h3>
-      <div class="sb-section-body"><div class="sb-stats"><span>${sp.placed} of ${sp.fixtures.length} fixture(s) have a 3D position —
-      the PDF draws them from above and from the front, on a page of its own.</span></div>
+      <div class="sb-section-body"><div class="sb-stats"><span>${sp.placed} of ${sp.fixtures.length} fixture(s) placed —
+      the same two views are a page of their own in the PDF.</span></div>
+      ${_sbStagePlot(sp)}
       ${sp.placed < sp.fixtures.length ? '<div class="sb-optional">Fixtures without a position are left out: place them in <a href="#" onclick="go(\'stage\');return false">Stage &amp; Meshes</a>.</div>' : ''}</div></div>`);
   }
 
@@ -651,4 +665,32 @@ function _sbStatus(msg, level) {
   if (!el) return;
   el.textContent = msg;
   el.className = 'status-bar ' + (level === 'error' ? 'status-error' : level === 'warn' ? 'status-warn' : 'status-info');
+}
+
+
+// ── Stage plot preview: from above and from the audience (like the PDF page) ──
+function _sbStagePlot(sp) {
+  const fx = (sp.fixtures || []).filter(f => f.in_3d);
+  if (!fx.length) return '';
+  const st = sp.stage || {};
+  const W = Math.max(st.w_mm || 0, ...fx.map(f => f.x + 300), 1000);
+  const D = Math.max(st.d_mm || 0, ...fx.map(f => f.z + 300), 1000);
+  const H = Math.max(st.h_mm || 0, ...fx.map(f => f.y + 300), 1000);
+  const view = (title, w, h, pos, bandTop, bandBottom) => {
+    const vw = 520, vh = Math.max(160, Math.min(320, vw * h / w));
+    const sx = v => 20 + v / w * (vw - 40), sy = v => 26 + v / h * (vh - 50);
+    const dots = fx.map(f => { const [a, b] = pos(f); return `
+      <circle cx="${sx(a).toFixed(1)}" cy="${sy(b).toFixed(1)}" r="6" fill="${_esc(f.color || '#89b4fa')}" stroke="#000" stroke-opacity=".35"/>
+      <text x="${(sx(a) + 8).toFixed(1)}" y="${(sy(b) + 3).toFixed(1)}" class="sb-plot-lbl">${_esc((f.name || '').slice(0, 16))} ${_esc(f.patch || '')}</text>`; }).join('');
+    return `<figure class="sb-plot"><figcaption>${title}</figcaption>
+      <svg viewBox="0 0 ${vw} ${vh}" role="img" aria-label="${title}">
+        <rect x="20" y="26" width="${vw - 40}" height="${vh - 50}" class="sb-plot-stage"/>
+        <text x="${vw / 2}" y="18" class="sb-plot-band" text-anchor="middle">${bandTop}</text>
+        <text x="${vw / 2}" y="${vh - 8}" class="sb-plot-band" text-anchor="middle">${bandBottom}</text>
+        ${dots}</svg></figure>`;
+  };
+  return `<div class="sb-plots">
+    ${view('From above', W, D, f => [f.x, f.z], 'UPSTAGE / BACK', 'AUDIENCE')}
+    ${view('From the audience', W, H, f => [f.x, H - f.y], 'CEILING', 'FLOOR')}
+  </div>`;
 }

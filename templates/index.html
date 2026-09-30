@@ -70,11 +70,11 @@
 
     <!-- 1 · New show -->
     <div class="sn-group-label" id="sn-grp-1"><span class="sn-gnum">1</span><span class="sn-gtxt">New show</span></div>
-    <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes." onclick="go('quickstart')">
+    <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="A new show from your fixtures: looks, effects, PANIC RESET and a Virtual Console, ready to run. Use this when you start from nothing; Fixtures when you only need the rig placed and patched." onclick="go('quickstart')">
       <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
       <span>Quick Start</span>
     </button>
-    <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace." onclick="go('fixtures')">
+    <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, blueprint PDF or a rig-only workspace. Use this for the rig alone; Quick Start for a whole show." onclick="go('fixtures')">
       <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
       <span>Fixtures</span>
     </button>
@@ -100,10 +100,9 @@
       <svg class="ic"><use href="/static/icons.svg#palette"/></svg>
       <span>Look Builder</span>
     </button>
-    <button class="sn-item" id="sn-vceditor" data-tip="VC Visual Editor" data-desc="See your Virtual Console as a canvas." onclick="go('vceditor')">
+    <button class="sn-item" id="sn-vceditor" data-tip="VC Visual Editor" data-desc="The Virtual Console as a canvas: move, resize, add buttons, sliders and pages; build a page from a template." onclick="go('vceditor')">
       <svg class="ic"><use href="/static/icons.svg#layout"/></svg>
       <span>VC Visual Editor</span>
-      <span class="b beta">&beta;</span>
     </button>
     <button class="sn-item" id="sn-stage" data-tip="Stage &amp; Meshes" data-desc="Place the 3D meshes (band members, risers, truss) on the stage — put them on the floor, move, rotate, scale, add from your mesh folders." onclick="go('stage')">
       <svg class="ic"><use href="/static/icons.svg#grid"/></svg>
@@ -112,7 +111,7 @@
 
     <!-- 4 · Run the show -->
     <div class="sn-group-label" id="sn-grp-4"><span class="sn-gnum">4</span><span class="sn-gtxt">Run the show</span></div>
-    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Match songs to functions, set fade timings, generate a cuelist chaser." onclick="go('setlist')">
+    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Tonight’s songs matched to functions, with fade timings, into the setlist CueList." onclick="go('setlist')">
       <svg class="ic"><use href="/static/icons.svg#music"/></svg>
       <span>Setlist</span>
     </button>
@@ -120,7 +119,7 @@
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Trigger Manager</span>
     </button>
-    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does." onclick="go('dictionary')">
+    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does — the descriptions show in the Setlist and the Show Paperwork." onclick="go('dictionary')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Dictionary</span>
     </button>
@@ -221,6 +220,9 @@
     </div>
   </div>
 
+  <!-- Guided route (Start: "Guided route: …"): steps above the tools -->
+  <nav class="route-strip" id="route-strip" hidden aria-label="Guided route"></nav>
+
   <!-- The show in progress: History and Save (WORKPLAN 2.6) -->
   <aside class="show-history" id="show-history" aria-label="History of the show in progress">
     <div class="sh-head">
@@ -250,33 +252,27 @@
 
     <div class="start-body">
 
-      <h1 id="greeting">Welcome 👋</h1>
+      <div class="start-top">
+        <div>
+          <h1 id="greeting">Welcome 👋</h1>
+          <p class="start-purpose">Build, adapt, check and document <b>QLC+ 5</b> shows. Open a show and it becomes the
+            <b>show in progress</b>: every tool works on it, the <b>History</b> keeps every step (undo any of them),
+            and <b>💾 Save as new file…</b> writes it with a report — the file you opened is never touched.</p>
+          <p class="start-new"><b>New in 1.9:</b> the show in progress with its History · Function Porter with fixtures and groups (the Merger is part of it) ·
+            Show Paperwork (rider, crew checklist, show book in one tool) · guided routes · a <b>?</b> on every tool for its wiki page.</p>
+        </div>
+        <div class="spacer"></div>
+        <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained">?</button>
+      </div>
 
       <div class="start-drop-zone" id="start-drop-zone">
-        <div class="start-drop-icon">
-          <svg class="ic" style="width:48px;height:48px"><use href="/static/icons.svg#upload"/></svg>
-        </div>
-        <p>Drag a <b>.qxw</b> workspace here, or</p>
+        <p><b>Open a show</b> — drag a <b>.qxw</b> workspace here, or</p>
         <div class="start-drop-btns">
-          <button class="btn btn-accent" onclick="browseWorkspace()">📂 Open Workspace</button>
-          <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session</button>
+          <button class="btn btn-accent" onclick="browseWorkspace()">📂 Open Workspace…</button>
+          <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session…</button>
           <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()" disabled
                   data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
         </div>
-      </div>
-
-      <!-- Show info (used in PDF headers & export filenames) -->
-      <div class="start-show-info"
-           data-tooltip="Used in PDF headers, export filenames and session files. Leave blank to auto-derive from the workspace filename.">
-        <label class="field-label" for="show-name-input">Show Name</label>
-        <input id="show-name-input" type="text" class="filter-input"
-               placeholder="e.g. My Show" spellcheck="false"
-               onchange="updateShowInfo()">
-        <label class="field-label" for="event-date-input">Date</label>
-        <input id="event-date-input" type="date" class="filter-input"
-               onchange="updateShowInfo()">
-      </div>
-
       <!-- Path of the open workspace (set by 📂 Open…, used by sessions / reload) -->
       <input id="path-input" type="hidden">
       <!-- Plain browser without a native dialog only: paste a path -->
@@ -286,32 +282,12 @@
         <button class="btn btn-surface btn-sm" onclick="document.getElementById('path-input').value=document.getElementById('path-input-fallback').value;loadFromPath()">Load</button>
       </div>
 
+      </div>
+
       <!-- Recents -->
       <div id="recent-list" class="recents"></div>
 
-      <!-- Sessions -->
-      <div class="session-panel" id="session-panel">
-        <div class="session-panel-header">
-          <h3>Sessions</h3>
-          <div class="session-panel-actions">
-            <button class="btn btn-accent btn-sm" onclick="sessionNew()" title="Start a blank session">+ New Session</button>
-            <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Open the session modal">📋 Manage</button>
-            <button class="btn btn-surface btn-sm" onclick="sessionBrowseFile()" title="Open a .qsk file from disk">📂 Open .qsk</button>
-          </div>
-        </div>
-        <div id="session-list" class="session-list"></div>
-      </div>
-
-      <!-- About -->
-      <div class="start-about">
-        <h3>Build, adapt, check and document your QLC+ 5 shows</h3>
-        <p>QLC+ Swiss Knife reads your QLC+ workspace (<code>.qxw</code>) and does the long, fiddly jobs for you.
-           Open a show and it becomes the <b>show in progress</b>: every tool works on it, one after the other, as often as you need —
-           the header counts the changes, the <b>History</b> lets you go back to any step, and <b>💾 Save as new file…</b> writes it all
-           (<code>name_v2.qxw</code> + a report). Your original is never touched.
-           The six groups below are the same 1–6 groups of the menu on the left.</p>
-      </div>
-
+      <h3 class="start-h">What do you want to do?</h3>
       <!-- Workflow cards: the numbers match the groups of the side menu -->
       <div class="start-workflow">
         <div class="wf-card" data-grp="1">
@@ -323,6 +299,7 @@
           <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
           <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
           <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
+          <button class="wf-route" onclick="routeStart('adapt')" title="A strip of steps above the tools: Rig Reducer → Doctor → Function Porter → Look Builder → VC Editor → Stage → Setlist → final check. Any step, any order.">▶ Guided route: adapt a show to a new venue</button>
         </div>
         <div class="wf-card" data-grp="3">
           <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
@@ -333,6 +310,7 @@
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function.</div>
           <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button></div>
+          <button class="wf-route" onclick="routeStart('gig')" title="A strip of steps above the tools: Setlist → Trigger Manager → Doctor → Show Paperwork.">▶ Guided route: get ready for the gig</button>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -345,6 +323,20 @@
           <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
         </div>
       </div>
+
+      <!-- Sessions -->
+      <div class="session-panel" id="session-panel">
+        <div class="session-panel-header">
+          <h3>Sessions <small class="sb-optional">— save where you are (show, songs, choices in each tool) and come back later</small></h3>
+          <div class="session-panel-actions">
+            <button class="btn btn-accent btn-sm" onclick="sessionNew()" title="Start a blank session">+ New Session</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Open the session modal">📋 Manage</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionBrowseFile()" title="Open a .qsk file from disk">📂 Open .qsk</button>
+          </div>
+        </div>
+        <div id="session-list" class="session-list"></div>
+      </div>
+
 
       <!-- Footer links -->
       <div class="start-footer">
@@ -366,6 +358,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
       <div><h2>Setlist</h2><div class="p-desc">Match songs to functions, set fade timings, generate a cuelist chaser.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Setlist-Manager')" title="How this tool works — opens the Setlist Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -464,12 +457,12 @@
           <div class="fb-group-label">Workspace</div>
           <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
                   onclick="slDeleteWorkspaceClones()" disabled
-                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Use Generate QXW afterwards to save the clean file.">🗑 Delete Clones from WS</button>
+                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Then ✓ Apply to the show (bottom right) and 💾 Save as new file….">🗑 Delete Clones from WS</button>
 
           <div class="fb-sep"></div>
 
           <!-- Generate -->
-          <div class="fb-group-label">Generate QXW</div>
+          <div class="fb-group-label">Setlist chaser in the show</div>
           <span class="hint-text" style="font-size:9px;line-height:1.3">
             Target chaser in workspace:
           </span>
@@ -568,6 +561,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
       <div><h2>Trigger Manager</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Trigger-Manager')" title="How this tool works — opens the Trigger Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -688,6 +682,7 @@
       </button>
       <input id="dict-path" type="hidden">
       <span id="dict-path-name" class="file-chip" title="">no dictionary loaded</span>
+      <button class="help-btn" onclick="openHelp('Dictionary-Manager')" title="How this tool works — opens the Dictionary Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -752,6 +747,7 @@
       <span id="fix-qxf-name" class="file-chip">no QXF loaded</span>
       <button class="btn btn-surface" onclick="fixBrowseQxf()"
               data-tooltip="Choose a QLC+ fixture definition file (.qxf) as the fixture template">📂 Browse QXF…</button>
+      <button class="help-btn" onclick="openHelp('Fixture-Configurator')" title="How this tool works — opens the Fixture Configurator page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -908,7 +904,7 @@
       <button class="btn btn-surface" onclick="fixExportPdf()"
               data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
       <button class="btn btn-accent" onclick="fixGenerateQxw()"
-              data-tooltip="Generate a QXW workspace with the current rig configuration">💾 Generate QXW</button>
+              data-tooltip="A new .qxw with this rig (fixtures, patch, 3D positions) — nothing else">💾 Save as new file…</button>
     </div>
 
   </section>
@@ -924,11 +920,12 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sun"/></svg></div>
       <div><h2>Brightness</h2><div class="p-desc">Scale the master dimmer of each fixture group across every scene. Colour ratios untouched.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Brightness')" title="How this tool works — opens the Brightness page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
     <div class="tab-toolbar brt-toolbar">
-      <span id="brt-preview" class="brt-preview-count">—</span>
+      <span id="brt-preview" class="brt-preview-count"></span>
       <button class="btn btn-surface" onclick="brtResetAll()"
               title="Reset all fixtures to 100%">↺ Reset All</button>
 
@@ -955,8 +952,8 @@
     </div>
 
     <!-- Help banner -->
-    <div class="brt-help">
-      <strong>How it works:</strong>
+    <details class="brt-help">
+      <summary><strong>How it works</strong> — sliders scale each fixture's master dimmer in every scene; colours stay as they are</summary>
       Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
       across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
       untouched.  Use <strong>Link group</strong> to move all fixtures of the same model together.
@@ -965,7 +962,7 @@
       or use <strong class="brt-internet-label">🌐 Fetch from GitHub</strong>
       to download it from the official QLC+ repository
       <em>(requires internet — you will be asked to confirm before any connection is made)</em>.
-    </div>
+    </details>
 
     <!-- Fixture groups -->
     <div id="brt-fixture-wrap" class="brt-fixture-wrap">
@@ -997,6 +994,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#search"/></svg></div>
       <div><h2>ID Browser</h2><div class="p-desc">Sortable, filterable tables of every function and VC widget in the workspace.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('ID-Browser')" title="How this tool works — opens the ID Browser page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1046,6 +1044,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
       <div><h2>VC Visual Editor <span class="b beta">BETA</span></h2><div class="p-desc">See your Virtual Console as a canvas — build it (add, wire, delete widgets; pages, templates, screen sizes) and tidy it (drag, align, distribute, sort).</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('VC-Visual-Editor')" title="How this tool works — opens the VC Visual Editor page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1293,6 +1292,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
       <div><h2>Function Porter</h2><div class="p-desc">Bring looks, chasers, effects and their buttons — and, if you like, fixtures and groups — from another show into the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Function-Porter')" title="How this tool works — opens the Function Porter page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1342,8 +1342,12 @@
         <div class="porter-plan"><canvas id="porter-plan-target-1"></canvas></div>
       </div>
 
-      <div class="porter-nav-bar">
-        <div class="spacer"></div>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(2)">Next: Select Functions →</button>
       </div>
     </div>
@@ -1405,8 +1409,12 @@
       <div id="porter-closure-summary"></div>
       </div>
 
-      <div class="porter-nav-bar">
-        <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterNextFromSelect()">Next: Map Fixtures →</button>
       </div>
@@ -1423,8 +1431,12 @@
         <div class="porter-placeholder">Loading fixture mapping...</div>
       </div>
 
-      <div class="porter-nav-bar">
-        <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
         <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
                 data-tooltip="How Auto-Map pairs source and target fixtures">
           <option value="all">Every exact match (fan-out)</option>
@@ -1480,11 +1492,15 @@
         <div class="porter-placeholder">Validating...</div>
       </div>
 
-      <div class="porter-nav-bar">
-        <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Export →</button>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Apply →</button>
       </div>
     </div>
 
@@ -1495,8 +1511,12 @@
           <p>Complete the previous steps first.</p>
         </div>
       </div>
-      <div class="porter-nav-bar" id="porter-export-nav">
-        <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
+      <div class="porter-nav-bar out-footer" id="porter-export-nav">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
         <button id="porter-export-go" class="btn btn-surface" onclick="porterExecute()" data-tooltip="Save the result as a separate file; the show in progress stays as it is">Export a copy…</button>
@@ -1507,12 +1527,6 @@
     <!-- Status bar -->
     <div id="porter-status" class="status-bar status-info" hidden></div>
 
-    <div class="out-footer">
-      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
-      </span>
-    </div>
 
   </section>
 
@@ -1525,6 +1539,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
       <div><h2>Show Paperwork</h2><div class="p-desc">The paper for each reader, from the show in progress — tech rider for the venue, crew checklist for load-in, show book for you — as PDF or CSV.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Show-Paperwork')" title="How this tool works — opens the Show Paperwork page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1557,42 +1572,38 @@
       </div>
 
       <div class="sb-action-bar">
-        <button class="btn btn-surface" onclick="sbGenerate()">🔍 Generate Preview</button>
+        <span class="sb-label">For the header</span>
+        <label class="field-label" for="show-name-input">Show name</label>
+        <input id="show-name-input" type="text" class="filter-input" style="flex:0 0 200px"
+               placeholder="from the file name" spellcheck="false" onchange="updateShowInfo()"
+               data-tooltip="Printed on every page and used in the file names; blank = the workspace file name. Also kept in the session.">
+        <label class="field-label" for="event-date-input">Date</label>
+        <input id="event-date-input" type="date" class="filter-input" style="flex:0 0 150px" onchange="updateShowInfo()">
         <div class="spacer"></div>
-        <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)</button>
-        <select id="sb-paper" class="filter-input" style="flex:0 0 170px" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
-          <option>A4 Landscape</option><option>A4 Portrait</option>
-          <option>A3 Landscape</option><option>A3 Portrait</option>
-          <option>US Letter Landscape</option><option>US Letter Portrait</option>
-        </select>
-        <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF</button>
+        <button class="btn btn-surface btn-xs" onclick="sbExpandAll()">▾ Expand all</button>
+        <button class="btn btn-surface btn-xs" onclick="sbCollapseAll()">▸ Collapse all</button>
+        <button class="btn btn-surface" onclick="sbGenerate()">🔍 Preview</button>
       </div>
-    </div>
-
-    <!-- View controls -->
-    <div class="sb-view-controls">
-      <button onclick="sbExpandAll()">▾ Expand All</button>
-      <button onclick="sbCollapseAll()">▸ Collapse All</button>
     </div>
 
     <!-- Preview area -->
     <div id="sb-preview" class="sb-preview">
-      <div class="porter-placeholder">Pick who it is for, then 🔍 Generate Preview.</div>
+      <div class="porter-placeholder">Pick who it is for, then 🔍 Preview — or go straight to 📄 Export PDF… below.</div>
     </div>
-
-    <!-- Status bar -->
-    <div id="sb-status" class="status-bar status-info">Pick who it is for, then generate the preview. Show name and date come from the Start screen.</div>
 
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Read-only — your workspace is <b>&nbsp;never modified</b>
+        Read-only — the show is <b>&nbsp;never modified</b>
       </span>
-    </div>
-
-  </section>
-
-      </span>
+      <div class="spacer"></div>
+      <select id="sb-paper" class="filter-input" style="flex:0 0 170px" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
+        <option>A4 Landscape</option><option>A4 Portrait</option>
+        <option>A3 Landscape</option><option>A3 Portrait</option>
+        <option>US Letter Landscape</option><option>US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)…</button>
+      <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF…</button>
     </div>
 
   </section>
@@ -1606,6 +1617,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#grid"/></svg></div>
       <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models. Every edit goes into the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Stage-and-Meshes')" title="How this tool works — opens the Stage and Meshes page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1639,6 +1651,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
       <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Looks for your fixture groups from a palette, and chasers from a pattern — with BPM timing and a preview — added to the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Look-Builder')" title="How this tool works — opens the Look Builder page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1670,6 +1683,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
       <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, in the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Rig-Reducer')" title="How this tool works — opens the Rig Reducer page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1708,6 +1722,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#check-square"/></svg></div>
       <div><h2>Workspace Doctor</h2><div class="p-desc">Check the show in progress and fix what you tick — the Doctor in the header follows every change.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Workspace-Doctor')" title="How this tool works — opens the Workspace Doctor page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1754,6 +1769,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
       <div><h2>Quick Start</h2><div class="p-desc">Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Quick-Start')" title="How this tool works — opens the Quick Start page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1974,10 +1990,12 @@
     <div class="out-footer">
       <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">← Back</button>
       <div class="spacer"></div>
+      <button id="qs-btn-open" class="btn btn-surface" onclick="qsOpenAsShow()" style="display:none"
+              title="Open the file you just saved: it becomes the show in progress, and every tool (Look Builder, VC Editor, Stage, Setlist…) works on it">🎛 Open it as the show</button>
       <button id="qs-btn-port" class="btn btn-surface" onclick="qsPortFromShow()" style="display:none"
               title="Open the Function Porter with this new rig as the target, then pick an existing show as the source: looks, effects and their VC buttons are ported, translated by capability when the fixture types differ.">➜ Port from an existing show</button>
       <button id="qs-btn-next" class="btn btn-accent" onclick="qsNext()">Next →</button>
-      <button id="qs-btn-export" class="btn btn-accent" onclick="qsExport()" style="display:none">💾 Generate QXW</button>
+      <button id="qs-btn-export" class="btn btn-accent" onclick="qsExport()" style="display:none" title="Writes a new .qxw (and any fixture definitions QLC+ lacks next to it)">💾 Save as new file…</button>
     </div>
 
     <!-- GitHub Fixture Browser Modal -->
@@ -2083,5 +2101,6 @@
 <script src="/static/js/vc_builder.js?v={{ asset_v }}"></script>
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
 <script src="/static/js/show.js?v={{ asset_v }}"></script>
+<script src="/static/js/route.js?v={{ asset_v }}"></script>
 </body>
 </html>

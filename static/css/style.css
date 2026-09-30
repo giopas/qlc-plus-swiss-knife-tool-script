@@ -102,7 +102,7 @@ aside {
   color: var(--text-dim);
   font-size: 12.5px;
   font-weight: 500;
-  padding: 7px 9px;
+  padding: 6px 9px;
   border-radius: var(--radius-sm);
   text-align: left;
   white-space: nowrap;
@@ -539,6 +539,12 @@ body.no-native-picker .path-fallback { display: flex !important; }
   cursor: pointer;
 }
 .theme-btn svg { width: 15px; height: 15px; }
+.help-btn {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 50%;
+  color: var(--text-dim); width: 30px; height: 30px; font-weight: 700; font-size: 14px;
+  cursor: pointer; margin-right: 6px;
+}
+.help-btn:hover, .theme-btn:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ── Spacer ────────────────────────────────────────────────────────────────── */
 .spacer { flex: 1; }
@@ -805,6 +811,20 @@ table.mock td b { color: var(--text); font-weight: 600; }
 }
 .start-drop-zone:hover { border-color: var(--accent); }
 .start-drop-icon svg { color: var(--text-faint); }
+.start-drop-zone { padding: 16px 20px; gap: 8px; }
+.start-drop-zone p { font-size: 13px; }
+.start-top { display: flex; align-items: flex-start; gap: 12px; max-width: 980px; margin-bottom: 14px; }
+.start-top h1 { margin-bottom: 6px; }
+.start-purpose { font-size: 13px; color: var(--text); line-height: 1.55; max-width: 860px; }
+.start-new { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+.start-new b { color: var(--accent); }
+.start-h { font-size: 13px; font-weight: 700; margin: 4px 0 10px; }
+.wf-route {
+  margin-top: 10px; background: var(--accent-soft); color: var(--accent);
+  border: 1px solid transparent; border-radius: var(--radius-sm); font: inherit; font-size: 11.5px;
+  padding: 5px 9px; cursor: pointer; text-align: left;
+}
+.wf-route:hover { border-color: var(--accent); }
 .start-drop-btns { display: flex; gap: 10px; margin-top: 2px; }
 .start-show-info {
   display: flex; gap: 8px; align-items: center; margin-top: 12px;
@@ -2346,6 +2366,8 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 }
 .brt-help strong { color: var(--text-dim); }
 .brt-help em     { color: var(--accent); font-style: normal; font-weight: 600; }
+.brt-help summary { cursor: pointer; }
+.brt-help:not([open]) { padding-top: 6px; padding-bottom: 6px; }
 
 /* Fixture wrap — scrollable list */
 .brt-fixture-wrap {
@@ -3174,7 +3196,7 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .porter-vc-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .porter-vc-row label { display: flex; gap: 6px; align-items: center; }
 
-/* Navigation bar (bottom of each step) */
+/* Navigation bar (bottom of each step) — it is the screen's footer (2.6) */
 .porter-nav-bar {
   display: flex;
   align-items: center;
@@ -3183,6 +3205,9 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   border-top: 1px solid var(--border);
   margin-top: auto;
 }
+.porter-nav-bar.out-footer { padding: 11px 22px; margin-left: -1px; }
+.porter-nav-bar.out-footer .out-note { margin-right: auto; }
+.porter-chosen { border-color: var(--accent) !important; color: var(--accent) !important; }
 
 /* Side info under load bars */
 .porter-side-info {
@@ -3563,6 +3588,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 /* ── Look & Chaser Builder (WORKPLAN 2.3) ─────────────────────────────── */
 .lb-body { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }
 .lb-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }
+.lb-tabs { display: flex; align-items: center; gap: 4px; margin: 0 0 8px; border-bottom: 1px solid var(--border); }
+.lb-tabs .subtab-btn { margin-bottom: -1px; }
+.lb-tabs-note { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+.lb-card[hidden] { display: none; }
 .lb-card { background: var(--surface-1); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
 .lb-card h3 { margin: 0 0 8px; font-size: 14px; }
 .lb-card h3 .p-desc { font-weight: 400; margin-left: 6px; }
@@ -3766,3 +3795,50 @@ body.nav-min .side-changes { display: none; }
 .sb-plot-band { font-size: 9px; fill: var(--text-faint); letter-spacing: .08em; }
 .sb-plot-lbl { font-size: 8.5px; fill: var(--text-dim); }
 @media (max-width: 1100px) { .sb-groups { grid-template-columns: 1fr; } }
+
+/* ── Guided route strip (2.6) ─────────────────────────────────────────────── */
+.route-strip {
+  display: flex; align-items: center; gap: 10px; padding: 6px 16px;
+  background: var(--surface-0); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.route-strip[hidden] { display: none; }
+.rs-title { font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.rs-title small { color: var(--text-dim); font-weight: 500; margin-left: 4px; }
+.rs-steps { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; flex: 1; flex-wrap: wrap; }
+.rs-step {
+  display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 999px; font-size: 11.5px; color: var(--text-dim);
+  background: var(--surface-1);
+}
+.rs-step:hover { border-color: var(--accent); color: var(--text); }
+.rs-step.cur { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+.rs-tick {
+  width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; background: var(--surface-0); border: 1px solid var(--border);
+}
+.rs-step.done .rs-tick { background: var(--green); color: var(--accent-contrast); border-color: var(--green); }
+.rs-step.done .rs-lbl { text-decoration: line-through; text-decoration-color: var(--text-faint); }
+.rs-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; }
+.rs-close:hover { color: var(--red); }
+
+/* ID Browser without the grid library (offline) */
+.plain-table-wrap { overflow: auto; height: calc(100% - 26px); }
+.plain-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.plain-table th { position: sticky; top: 0; background: var(--surface-1); text-align: left; padding: 6px 8px; cursor: pointer; font-weight: 600; color: var(--text-dim); }
+.plain-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+.plain-table-sum { font-size: 11px; color: var(--text-dim); padding: 4px 8px; }
+
+.file-chip[hidden] { display: none; }
+/* Short windows: all six groups stay in view (the Changes / Files block shrinks) */
+@media (max-height: 940px) {
+  .sn-item { padding: 5px 9px; }
+  .sn-label, .sn-group-label { padding: 5px 8px 3px; }
+  .files-panel { padding: 8px 14px; }
+  .sc-empty { display: none; }
+  .files-panel .fp-title + .fp-row, .files-panel .fp-row { line-height: 1.3; }
+}
+/* Very short windows: the workspace is named in the header already */
+@media (max-height: 860px) {
+  .files-panel > .fp-title:not(.sc-head), #fp-workspace, #fp-dictionary, #fp-qxf { display: none; }
+  .fp-session { margin-top: 4px; }
+}

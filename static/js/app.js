@@ -77,6 +77,7 @@ function go(screenId) {
   // Hide nav tooltip
   const tip = document.getElementById('nav-tip');
   if (tip) tip.style.display = 'none';
+  if (typeof routeRender === 'function') routeRender();
 }
 
 function _activeScreenId() {
@@ -156,6 +157,16 @@ function _initNavTooltips() {
 // =============================================================================
 
 const _THEMES = ['dark', 'grey', 'light'];
+
+// The "?" in each tool header: the tool's page of the wiki, in the system browser
+// (the server opens it, so it works in the desktop window too).
+function openHelp(page) {
+  fetch('/api/help', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({page})})
+    .then(r => r.json()).then(d => { if (!d.ok && d.url) window.open(d.url, '_blank'); })
+    .catch(() => window.open(WIKI_URL + page, '_blank'));
+}
+const WIKI_URL = 'https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/';
 
 function cycleTheme() {
   const html    = document.documentElement;
@@ -695,6 +706,7 @@ function _renderFnTable(data) {
   const h     = wrap ? Math.max(200, wrap.clientHeight - 44) : 500;
 
   if (_fnGrid) { _fnGrid.destroy(); _fnGrid = null; }
+  if (typeof gridjs === 'undefined') { _plainTable(wrap, FN_COLS, rows); return; }
 
   _fnGrid = new gridjs.Grid({
     columns: FN_COLS.map(c => ({
@@ -767,6 +779,7 @@ function _renderVcTable(data) {
   const h     = wrap ? Math.max(200, wrap.clientHeight - 44) : 500;
 
   if (_vcGrid) { _vcGrid.destroy(); _vcGrid = null; }
+  if (typeof gridjs === 'undefined') { _plainTable(wrap, VC_COLS, rows); return; }
 
   _vcGrid = new gridjs.Grid({
     columns: VC_COLS.map(c => ({
@@ -799,12 +812,43 @@ function filterVcWidgets(q) {
 // ── Shared ID Browser helpers ─────────────────────────────────────────────────
 let _idBrowserLoaded = false;
 
+/** Without the table library (offline, e.g. at the venue): a plain table,
+ *  sortable by clicking a header.  Cells are the same HTML the grid shows. */
+function _plainTable(wrap, cols, rows) {
+  if (!wrap) return;
+  let key = -1, dir = 1;
+  const draw = () => {
+    const r = key < 0 ? rows : rows.slice().sort((a, b) => {
+      const x = String(a[key]).replace(/<[^>]+>/g, ''), y = String(b[key]).replace(/<[^>]+>/g, '');
+      const nx = parseFloat(x), ny = parseFloat(y);
+      return dir * (!isNaN(nx) && !isNaN(ny) ? nx - ny : x.localeCompare(y));
+    });
+    const esc = v => (/^<(span|svg|i)\b/.test(String(v)) ? String(v)
+      : String(v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])));
+    wrap.innerHTML = `<div class="plain-table-wrap"><table class="plain-table"><thead><tr>${cols.map((c, i) =>
+      `<th data-i="${i}" style="width:${c.width || 'auto'}">${c.name}${i === key ? (dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead>
+      <tbody>${r.map(row => `<tr>${row.map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="plain-table-sum">${rows.length} row(s)</div>`;
+    wrap.querySelectorAll('th').forEach(th => th.onclick = () => {
+      const i = +th.dataset.i; if (cols[i].sort === false) return;
+      dir = key === i ? -dir : 1; key = i; draw();
+    });
+  };
+  draw();
+}
+
 function _invalidateIdBrowser() { _idBrowserLoaded = false; }
 
 async function _ensureIdBrowserLoaded() {
   if (_idBrowserLoaded) return;
   const state = await _apiJson('/api/status');
-  if (!state.loaded) return;
+  if (!state.loaded) {
+    ['fn-table-wrap', 'vc-table-wrap'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace (📂 Open… top right) to list its functions and Virtual Console widgets.</div>';
+    });
+    return;
+  }
   _idBrowserLoaded = true;
   await Promise.all([_loadFunctions(), _loadVcWidgets()]);
   _attachIdBrowserResizeObserver();

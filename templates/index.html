@@ -85,14 +85,9 @@
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Rig Reducer</span>
     </button>
-    <button class="sn-item" id="sn-porter" data-tip="Function Porter" data-desc="Import functions from one workspace into another with dependency resolution and fixture remapping." onclick="go('porter')">
+    <button class="sn-item" id="sn-porter" data-tip="Function Porter" data-desc="Bring functions with their buttons, fixtures and groups from another show into the show in progress (the QXW Merger is part of it now)." onclick="go('porter')">
       <svg class="ic"><use href="/static/icons.svg#upload"/></svg>
       <span>Function Porter</span>
-    </button>
-    <button class="sn-item" id="sn-merger" data-tip="QXW Merger" data-desc="Copy functions, fixtures and groups from one workspace into another." onclick="go('merger')">
-      <svg class="ic"><use href="/static/icons.svg#merge"/></svg>
-      <span>QXW Merger</span>
-      <span class="b alpha">&alpha;</span>
     </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
@@ -335,7 +330,7 @@
         <div class="wf-card" data-grp="2">
           <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
           <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('merger')">QXW Merger</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
         </div>
         <div class="wf-card" data-grp="3">
           <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
@@ -1365,133 +1360,7 @@
 
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       QXW MERGER
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section class="screen" id="scr-merger">
-
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
-      <div><h2>QXW Merger <span class="b alpha">ALPHA</span></h2><div class="p-desc">Copy functions, fixtures and groups from one workspace into another.</div></div>
-      <div class="spacer"></div>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
-    </div>
-
-    <!-- Top load bar -->
-    <div class="merger-load-bar">
-
-      <!-- Source -->
-      <div class="merger-load-col">
-        <label class="merger-load-label">📂 Source QXW</label>
-        <div class="merger-load-row">
-          <input id="merger-src-path" type="hidden">
-          <span id="merger-src-chip" class="file-chip">no file</span>
-          <button class="btn btn-surface" onclick="mergerBrowseSrc()"
-                  data-tooltip="Browse for source .qxw file">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="mergerUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-          <input id="merger-src-file" type="file" accept=".qxw" style="display:none"
-                 onchange="mergerSrcFileChosen()">
-        </div>
-      </div>
-
-      <!-- Arrow -->
-      <div class="merger-arrow">→</div>
-
-      <!-- Destination -->
-      <div class="merger-load-col">
-        <label class="merger-load-label">📥 Destination QXW</label>
-        <div class="merger-load-row">
-          <input id="merger-dst-path" type="hidden">
-          <span id="merger-dst-chip" class="file-chip">no file</span>
-          <button class="btn btn-surface" onclick="mergerBrowseDst()"
-                  data-tooltip="Browse for destination .qxw file">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="mergerUseOpenDst()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-          <input id="merger-dst-file" type="file" accept=".qxw" style="display:none"
-                 onchange="mergerDstFileChosen()">
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Category + search toolbar -->
-    <div class="tab-toolbar merger-toolbar">
-      <div class="merger-cat-tabs">
-        <button id="merger-cat-functions" class="btn btn-surface active"
-                onclick="mergerSetCategory('functions')">⚙ Functions</button>
-        <button id="merger-cat-fixtures"  class="btn btn-surface"
-                onclick="mergerSetCategory('fixtures')">💡 Fixtures</button>
-        <button id="merger-cat-groups"    class="btn btn-surface"
-                onclick="mergerSetCategory('groups')">📦 Groups</button>
-      </div>
-      <input type="text" class="filter-input" placeholder="Search source…" style="flex:1"
-             oninput="mergerSrcSearch(this.value)">
-      <select class="filter-input" style="flex:0 0 140px" onchange="mergerFnTypeFilter(this.value)">
-        <option value="">All types</option>
-        <option value="Scene">Scene</option>
-        <option value="Chaser">Chaser</option>
-        <option value="Sequence">Sequence</option>
-        <option value="EFX">EFX</option>
-        <option value="Collection">Collection</option>
-        <option value="Show">Show</option>
-        <option value="Audio">Audio</option>
-        <option value="Script">Script</option>
-        <option value="RGBMatrix">RGBMatrix</option>
-      </select>
-      <button class="btn btn-surface" onclick="mergerSelectAll()"
-              data-tooltip="Select all visible items">✓ All</button>
-      <button class="btn btn-surface" onclick="mergerSelectNone()"
-              data-tooltip="Deselect all">✗ None</button>
-    </div>
-
-    <!-- Two-column browser -->
-    <div class="merger-split">
-
-      <!-- Source list -->
-      <div class="merger-panel">
-        <div class="pane-header">
-          Source: <span id="merger-src-name" class="merger-ws-name">— not loaded —</span>
-        </div>
-        <div id="merger-src-list" class="merger-list">
-          <div class="merger-placeholder">Load a source .qxw file above</div>
-        </div>
-      </div>
-
-      <!-- Middle action column -->
-      <div class="merger-actions">
-        <button id="merger-copy-btn" class="btn btn-accent merger-copy-btn"
-                onclick="mergerCopy()" disabled
-                data-tooltip="Copy selected items into the destination (in memory)">
-          Copy →
-        </button>
-      </div>
-
-      <!-- Destination list -->
-      <div class="merger-panel">
-        <div class="pane-header">
-          Destination: <span id="merger-dst-name" class="merger-ws-name">— not loaded —</span>
-        </div>
-        <div id="merger-dst-list" class="merger-list">
-          <div class="merger-placeholder">Load a destination .qxw file above</div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Status bar for this tab -->
-    <div id="merger-status" class="status-bar status-info">Load two .qxw files to begin.</div>
-
-    <div class="out-footer">
-      <span class="out-note new">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
-      </span>
-      <div class="spacer"></div>
-      <button id="merger-export-btn" class="btn btn-accent"
-              onclick="mergerExport()" disabled
-              data-tooltip="Save the merged destination as a new .qxw file">💾 Save merged QXW…</button>
-    </div>
-
-  </section>
+  
 
 
   <!-- ======================================================================
@@ -1501,7 +1370,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
-      <div><h2>Function Porter</h2><div class="p-desc">Import functions from one workspace into another with dependency resolution and fixture remapping.</div></div>
+      <div><h2>Function Porter</h2><div class="p-desc">Bring looks, chasers, effects and their buttons — and, if you like, fixtures and groups — from another show into the show in progress.</div></div>
       <div class="spacer"></div>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
@@ -1512,7 +1381,7 @@
       <button id="porter-step-2" class="porter-step" onclick="porterGoStep(2)">2. Select</button>
       <button id="porter-step-3" class="porter-step" onclick="porterGoStep(3)">3. Map</button>
       <button id="porter-step-4" class="porter-step" onclick="porterGoStep(4)">4. Validate</button>
-      <button id="porter-step-5" class="porter-step" onclick="porterGoStep(5)">5. Export</button>
+      <button id="porter-step-5" class="porter-step" onclick="porterGoStep(5)">5. Apply</button>
     </div>
 
     <!-- Step 1: Load files -->
@@ -1524,7 +1393,7 @@
             <input id="porter-src-path" type="hidden">
           <span id="porter-src-chip" class="file-chip">no file</span>
             <button class="btn btn-surface" onclick="porterBrowseSrc()">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="porterUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
+          <button class="btn btn-surface" onclick="porterUseOpenSrc()" data-tooltip="The file the show in progress was opened from (as saved on disk)">⤵ Opened file</button>
             <input id="porter-src-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterSrcFileChosen()">
           </div>
@@ -1534,12 +1403,12 @@
         <div class="merger-arrow">→</div>
 
         <div class="merger-load-col">
-          <label class="merger-load-label">📥 Target QXW (import INTO)</label>
+          <label class="merger-load-label">📥 Target (import INTO)</label>
           <div class="merger-load-row">
             <input id="porter-tgt-path" type="hidden">
           <span id="porter-tgt-chip" class="file-chip">no file</span>
-            <button class="btn btn-surface" onclick="porterBrowseTgt()">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="porterUseOpenTgt()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
+          <button class="btn btn-accent" id="porter-tgt-show-btn" onclick="porterUseShowTgt()" data-tooltip="Port into the show in progress — the result is a step you can undo">🎛 The show in progress</button>
+            <button class="btn btn-surface" onclick="porterBrowseTgt()" data-tooltip="Port into another file instead (export a copy)">📂 Another file…</button>
             <input id="porter-tgt-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterTgtFileChosen()">
           </div>
@@ -1574,6 +1443,16 @@
         </div>
         <div id="porter-vc-tree" class="porter-list porter-vc-tree">
           <div class="porter-placeholder">Loading...</div>
+        </div>
+      </details>
+
+      <details id="porter-copy-pick" class="porter-vc-pick">
+        <summary>Fixtures and groups to copy into the target <span class="porter-row-sub">(what the QXW Merger did)</span></summary>
+        <p class="porter-hint">Ticked fixtures are <b>added</b> to the target with a new ID (their address is kept when it is free, otherwise the first free one) and the ported functions play on them.
+          A ticked group is rebuilt on the copied (or mapped) fixtures — ticking a group ticks its fixtures.</p>
+        <div class="porter-copy-cols">
+          <div><div class="porter-copy-h">Groups</div><div id="porter-copy-groups" class="porter-list porter-copy-list"></div></div>
+          <div><div class="porter-copy-h">Fixtures</div><div id="porter-copy-fixtures" class="porter-list porter-copy-list"></div></div>
         </div>
       </details>
 
@@ -1699,7 +1578,8 @@
         <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-go" class="btn btn-accent" onclick="porterExecute()">💾 Export new QXW…</button>
+        <button id="porter-export-go" class="btn btn-surface" onclick="porterExecute()" data-tooltip="Save the result as a separate file; the show in progress stays as it is">Export a copy…</button>
+        <button id="porter-apply-go" class="btn btn-accent" onclick="porterApply()">✓ Apply to the show</button>
       </div>
     </div>
 
@@ -1707,9 +1587,9 @@
     <div id="porter-status" class="status-bar status-info" hidden></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
       </span>
     </div>
 
@@ -2261,7 +2141,6 @@
 <script src="/static/js/techrider.js?v={{ asset_v }}"></script>
 <script src="/static/js/triggers.js?v={{ asset_v }}"></script>
 <script src="/static/js/fixture.js?v={{ asset_v }}"></script>
-<script src="/static/js/merger.js?v={{ asset_v }}"></script>
 <script src="/static/js/porter.js?v={{ asset_v }}"></script>
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>

@@ -92,6 +92,32 @@ def source_fixtures():
     return jsonify(porter.list_source_fixtures())
 
 
+@bp.route('/source/groups')
+def source_groups():
+    return jsonify(porter.list_source_groups())
+
+
+def _show_as_target():
+    """Load the show in progress as the Porter's target (fresh copy)."""
+    from core import show, workspace
+    st = workspace._state
+    if not st.get('loaded') or not show.active():
+        return None
+    name = os.path.splitext(show._show.get('saved_name') or show._show.get('source_name')
+                            or 'show')[0]
+    return porter.load_target_root(st['qxw_root'], st.get('path') or '', name, from_show=True)
+
+
+@bp.route('/target/show', methods=['POST'])
+def target_show():
+    """Target = the show in progress (the Porter adds to it)."""
+    summary = _show_as_target()
+    if summary is None:
+        return jsonify({'error': 'No show open — open one first (📂 Open…).'}), 400
+    return jsonify({'ok': True, 'summary': summary, 'name': porter.get_state()['tgt_name'],
+                    'show': True})
+
+
 @bp.route('/target/fixtures')
 def target_fixtures():
     return jsonify(porter.list_target_fixtures())
@@ -235,7 +261,7 @@ def validate():
     plan = _normalize_plan(data)
 
     try:
-        result = porter.validate(plan)
+        result = porter.check_plan(plan)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
@@ -265,7 +291,7 @@ def execute():
                             'findings': b.result['doctor']['errors'],
                             'report': b.result.get('report', '')}), 422
 
-        _last_result = {k: v for k, v in res.items() if k != 'bytes'}
+        _last_result = {k: v for k, v in res.items() if k not in ('bytes', 'root')}
         fname, xml_bytes = res['filename'], res['bytes']
         return Response(
             xml_bytes,
@@ -281,6 +307,47 @@ def execute():
 
 
 _last_result: dict = {}
+
+
+@bp.route('/apply', methods=['POST'])
+def apply():
+    """Port into the show in progress (a step in its history).  The target is
+    re-read from the show first, so a change made meanwhile in another tool
+    is kept."""
+    global _last_result
+    if not porter.target_is_show():
+        return jsonify({'error': 'The target is a file — choose "the show in progress" '
+                                 'as the target to apply, or export a copy.'}), 400
+    if _show_as_target() is None:
+        return jsonify({'error': 'No show open.'}), 400
+    plan = _normalize_plan(request.get_json(force=True) or {})
+    try:
+        res = porter.port(plan)
+    except porter.PorterBlocked as e:
+        r = e.result or {}
+        if 'validation' in r and 'doctor' not in r:
+            return jsonify({'error': str(e), 'validation': r['validation']}), 400
+        return jsonify({'error': str(e), 'findings': (r.get('doctor') or {}).get('errors', []),
+                        'report': r.get('report', '')}), 422
+    except Exception as e:  # noqa: BLE001
+        return jsonify({'error': _safe_err(e)}), 500
+    _last_result = {k: v for k, v in res.items() if k not in ('bytes', 'root')}
+    from routes.show_routes import applied
+    n = len(res.get('func_id_map') or {})
+    cp = res.get('copied') or {}
+    bits = []
+    if n:
+        bits.append(f'{n} function{"s" if n != 1 else ""}')
+    if cp.get('map'):
+        bits.append(f'{len(cp["map"])} fixture{"s" if len(cp["map"]) != 1 else ""}')
+    if cp.get('groups'):
+        bits.append(f'{len(cp["groups"])} group{"s" if len(cp["groups"]) != 1 else ""}')
+    vc = res.get('vc') or {}
+    if vc.get('widgets'):
+        bits.append(f'{len(vc["widgets"])} VC widgets')
+    src = porter.get_state()['src_name'] or 'the source'
+    return applied('porter', (', '.join(bits) or 'nothing') + f' from {src}', res['root'],
+                   res.get('report', ''), '')
 
 
 @bp.route('/last-result')
@@ -397,4 +464,7 @@ def _normalize_plan(data: dict) -> dict:
         'translate_types': bool(data.get('translate_types', True)),
         'strobe':          'drop' if data.get('strobe') == 'drop' else 'keep',
         'qxf_paths':       [str(x) for x in (data.get('qxf_paths') or [])],
+        # 1.9: the QXW Merger folded in — copy source fixtures / groups
+        'copy_fixtures':   [str(x) for x in (data.get('copy_fixtures') or [])],
+        'copy_groups':     [str(x) for x in (data.get('copy_groups') or [])],
     }

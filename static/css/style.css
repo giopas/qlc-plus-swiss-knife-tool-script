@@ -3709,3 +3709,9 @@ body.nav-min .sn-dot { position: absolute; top: 6px; right: 8px; margin: 0; }
 .sh-redo { padding: 0 18px 8px; }
 .sh-redo[hidden] { display: none; }
 body.nav-min .side-changes { display: none; }
+
+/* Porter: copy fixtures & groups (the QXW Merger, folded in) */
+.porter-copy-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; }
+.porter-copy-h { font-size: 11px; font-weight: 600; color: var(--text-dim); margin: 4px 0; }
+.porter-copy-list { max-height: 220px; overflow-y: auto; }
+.porter-copy-note { margin-bottom: 8px; }

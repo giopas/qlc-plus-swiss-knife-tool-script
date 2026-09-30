@@ -20,6 +20,7 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ## Coming in v1.9.0 (in progress)
 
+- **Function Porter on the show in progress**, with the **QXW Merger folded in** (copy fixtures and groups from another show).
 - **The show in progress**: open a show once and use every tool on it, in any order — the header counts the changes and shows the Doctor, **🕘 History** lets you go back to any step, orange dots mark the tools that changed it, and **💾 Save as new file…** writes it all with one report. See the wiki page *Show in Progress*.
 
 ## What's new in v1.8.1
@@ -117,7 +118,7 @@ Export your entire workspace as structured show paperwork — **PDF** or **CSV (
 
 ## Features
 
-The tools are grouped by job, numbered 1–6 in the side menu and on the Start screen: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter, QXW Merger, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Book, Checklist, Tech Rider).
+The tools are grouped by job, numbered 1–6 in the side menu and on the Start screen: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter — with the old QXW Merger —, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Book, Checklist, Tech Rider).
 
 ### Setlist Manager
 Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand.
@@ -175,8 +176,8 @@ Inspect every function and Virtual Console widget in sortable, filterable Grid.j
 ### VC Visual Editor *(Beta)*
 See your Virtual Console as a canvas — **build it** and tidy it. **Build**: add buttons, frames, sliders, labels and CueLists; wire them to functions from a list filtered by your naming groups, or **drag a function onto the canvas**; delete and duplicate; rename, reorder and delete pages; label panels (your naming legend); arrange a frame's buttons by name group; screen profiles (MacBook 1650 × 884, Full HD, tablet, iPad); page templates reusable in other shows; one-click setlist CueList. **Tidy**: drag selected widgets with grid snap, select, align, distribute, resize, and sort widgets visually. **Copy or move** buttons and frames to another page or frame, **duplicate a page**, or add a new one. Pinch or ⌘-scroll to zoom, drag a box or ⌘-click to multi-select. Quick-action buttons handle alignment, equal distribution, same-size, fit-to-text, grid arrange with configurable columns/gaps and sort order, sort-in-place for siblings, and snap-to-grid. **Alignment mask** mode colour-codes every widget by how far it deviates from its neighbours.
 
-### QXW Merger *(Alpha)*
-Load any two `.qxw` files independently. Browse **Fixtures**, **Fixture Groups**, and **Functions** (filterable by type and name) from the source. Tick what you want, click **Copy →**, and the selected elements are inserted into the destination with IDs remapped above the highest existing ID. Export the merged result via the native OS Save dialog.
+### QXW Merger → part of the Function Porter (1.9)
+Copying fixtures, fixture groups and functions from another workspace is now step 2 of the **Function Porter** (*Fixtures and groups to copy into the target*), with free-address checks, groups rebuilt on the copies, the Doctor check and undo.
 
 ---
 

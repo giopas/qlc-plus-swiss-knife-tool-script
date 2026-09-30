@@ -15,7 +15,9 @@ let _docOpen = new Set();     // expanded codes
 const _DOC_SHOW = 150;        // rows shown per code (the rest follow the group tick)
 
 function doctorInit() {
-  if (!_docData) _docRenderEmpty();
+  if (_docData) return;
+  // a show is open: check it straight away (the list follows the show in progress)
+  if (typeof _show !== 'undefined' && _show.active) doctorCheck(); else _docRenderEmpty();
 }
 
 function _docStatus(msg, level) {

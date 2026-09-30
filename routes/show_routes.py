@@ -82,6 +82,16 @@ def undo():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/redo', methods=['POST'])
+def redo():
+    if not show.active():
+        return jsonify({'error': 'No show open.'}), 400
+    try:
+        return jsonify({'ok': True, 'show': show.redo()})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @bp.route('/file')
 def file():
     if not show.active():

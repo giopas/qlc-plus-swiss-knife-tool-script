@@ -160,6 +160,16 @@
 
   <!-- Files panel -->
   <div class="files-panel">
+    <div class="side-changes" id="side-changes" hidden>
+      <div class="fp-title sc-head">
+        <span>Changes <span id="sc-count"></span></span>
+        <span class="sc-acts">
+          <button class="sc-link" id="sc-redo" hidden onclick="showRedo()">↷ Redo</button>
+          <button class="sc-link" onclick="showHistoryToggle(true)" title="The whole History, and Save as new file">All ›</button>
+        </span>
+      </div>
+      <ol class="sc-list" id="sc-list"></ol>
+    </div>
     <div class="fp-title">Files</div>
     <div class="fp-item" id="fp-workspace">
       <span class="fp-label">Workspace</span>
@@ -234,6 +244,7 @@
       <button class="btn btn-surface btn-sm" onclick="showHistoryToggle(false)" title="Close">✕</button>
     </div>
     <ol class="sh-list" id="sh-list"></ol>
+    <div class="sh-redo" id="sh-redo" hidden><button class="btn btn-surface btn-sm" onclick="showRedo()">↷ Redo the undone steps</button></div>
     <div class="sh-foot">
       <div class="sh-foot-t">Save as new file</div>
       <div class="sh-row">
@@ -537,9 +548,9 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-export-sl-pdf"
@@ -665,9 +676,9 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b> — ↶ Undo in the header; 💾 Save as new file… keeps it
+        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Save the show with these bindings as a separate file">Export a copy…</button>
@@ -1015,9 +1026,9 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="brtGenerateQxw()"
@@ -1341,9 +1352,9 @@
     </div><!-- end #vce-wrap -->
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="vceApplyAndExport()"
@@ -1796,9 +1807,9 @@
     <div id="st-body" class="lb-body"><div class="porter-placeholder">Open a workspace to see its 3D stage.</div></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b> — ↶ Undo here or in the header
+        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button id="st-go" class="btn btn-surface btn-ghost" onclick="stageSave()" disabled
@@ -1826,9 +1837,9 @@
     <div id="lb-body" class="lb-body"><div class="porter-placeholder">Open a workspace to build looks and chasers for its fixture groups.</div></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Adds to the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
+        Adds to the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button id="lb-export" class="btn btn-surface btn-ghost" onclick="looksBuild()" disabled
@@ -1864,9 +1875,9 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button id="rr-export" class="btn btn-surface btn-ghost" onclick="reducerRun()" disabled
@@ -1905,9 +1916,9 @@
     <div id="doc-result" class="porter-summary-box" hidden></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Fixes the <b>&nbsp;show in progress&nbsp;</b> — 💾 Save as new file… keeps it; the original is never touched
+        Fixes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()">📋 Copy Report</button>

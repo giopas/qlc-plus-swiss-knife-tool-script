@@ -97,6 +97,7 @@ def _close_open_steps(except_tool: str = '') -> None:
 
 
 def _push(step: dict) -> dict:
+    _show['redo'] = None                    # a new change ends what redo could bring back
     steps = _show['steps']
     step['n'] = len(steps) + 1
     step['time'] = time.time()
@@ -127,6 +128,7 @@ def touch(tool: str, title: str = '', detail: str = '') -> dict:
     steps = _show['steps']
     last = steps[-1] if steps else None
     if last and last.get('open') and last['tool'] == tool and len(steps) > _show['saved_upto']:
+        _show['redo'] = None
         last['edits'] += 1
         if title:
             last['title'] = title
@@ -168,9 +170,28 @@ def undo_to(n: int) -> dict:
     if snap is None:
         raise ValueError('This step is too old to undo (the history keeps '
                          f'the last {MAX_STEPS} steps).')
+    _show['redo'] = {'steps': steps[n - 1:], 'after': _snapshot(),
+                     'saved_upto': _show['saved_upto']}
     _set_root(qxw_io.loads_qxw(snap))
     del steps[n - 1:]
+    for s in steps:
+        s['open'] = False
     _show['saved_upto'] = min(_show['saved_upto'], len(steps))
+    _show['version'] += 1
+    return status()
+
+
+def redo() -> dict:
+    """Put back the steps the last undo took away (until the show changes again)."""
+    r = _show.get('redo')
+    if not r:
+        raise ValueError('Nothing to redo.')
+    _set_root(qxw_io.loads_qxw(r['after']))
+    _show['steps'].extend(r['steps'])
+    for s in _show['steps']:
+        s['open'] = False
+    _show['saved_upto'] = r['saved_upto']
+    _show['redo'] = None
     _show['version'] += 1
     return status()
 
@@ -212,6 +233,7 @@ def status() -> dict:
         'changed_tools': changed_tools(),
         'version': _show['version'],
         'suggested_name': suggested_name(),
+        'redo': len((_show.get('redo') or {}).get('steps') or []),
     }
 
 
@@ -280,6 +302,7 @@ def mark_saved(qxw_path: str) -> dict:
         qxw_io.write_bytes(report(out_name).encode('utf-8'), rp,
                            protect=[_show.get('source_path')])
     _show['saved_upto'] = len(_show['steps'])
+    _show['redo'] = None                    # the saved file is the new reference
     _show['saved_name'] = out_name
     _show['saved_path'] = qxw_path or ''
     _close_open_steps()

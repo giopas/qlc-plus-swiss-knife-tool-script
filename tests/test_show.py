@@ -203,3 +203,19 @@ def test_live_edits_become_steps(client):
 def _items(c):
     items = c.get("/api/triggers/").get_json()
     return items if isinstance(items, list) else items.get("items", items.get("triggers", []))
+
+
+def test_redo_brings_back_what_undo_took(client):
+    c, _ = client
+    c.post("/api/doctor/apply", json={"keys": _doctor_keys(c)})
+    c.post("/api/looks/apply", json=LOOKS)
+    full = _file(c)
+    st = c.post("/api/show/undo", json={"n": 1}).get_json()["show"]
+    assert st["steps"] == 0 and st["redo"] == 2
+    st = c.post("/api/show/redo", json={}).get_json()["show"]
+    assert st["steps"] == 2 and st["redo"] == 0 and _file(c) == full
+    assert c.post("/api/show/redo", json={}).status_code == 400
+    c.post("/api/show/undo", json={})
+    c.post("/api/brightness/apply-show", json={"scales": {"1": 0.8}})     # a new change
+    assert c.get("/api/show/status?doctor=0").get_json()["redo"] == 0
+    assert c.post("/api/show/redo", json={}).status_code == 400

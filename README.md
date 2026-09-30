@@ -20,6 +20,7 @@ All generated outputs (new QXW workspaces, PDFs, CSVs) are saved to a *new file*
 
 ## Coming in v1.9.0 (in progress)
 
+- **Show Paperwork**: the Show Book, Checklist and Tech Rider in one tool, with presets by reader (the tech rider never carries show internals); combine them in one PDF.
 - **Function Porter on the show in progress**, with the **QXW Merger folded in** (copy fixtures and groups from another show).
 - **The show in progress**: open a show once and use every tool on it, in any order — the header counts the changes and shows the Doctor, **🕘 History** lets you go back to any step, orange dots mark the tools that changed it, and **💾 Save as new file…** writes it all with one report. See the wiki page *Show in Progress*.
 
@@ -118,7 +119,7 @@ Export your entire workspace as structured show paperwork — **PDF** or **CSV (
 
 ## Features
 
-The tools are grouped by job, numbered 1–6 in the side menu and on the Start screen: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter — with the old QXW Merger —, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Book, Checklist, Tech Rider).
+The tools are grouped by job, numbered 1–6 in the side menu and on the Start screen: **1 New show** (Quick Start, Fixtures) · **2 Adapt a show** (Rig Reducer, Function Porter — with the old QXW Merger —, Brightness) · **3 Create** (Look Builder, VC Visual Editor, Stage & Meshes) · **4 Run the show** (Setlist, Trigger Manager, Dictionary) · **5 Check & fix** (Workspace Doctor, ID Browser) · **6 Document** (Show Paperwork: tech rider, crew checklist, show book).
 
 ### Setlist Manager
 Build complete show cue lists from a plain-text setlist. The **multi-slot architecture** gives each QLC+ CueList its own tab. Map songs to QLC+ functions with a four-stage fuzzy matcher (exact → substring → token → fuzzy), generate pristine cloned cue sequences, and export per-slot **PDFs** — all without touching the XML by hand.

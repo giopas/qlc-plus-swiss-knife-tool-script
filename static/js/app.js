@@ -35,8 +35,8 @@ const _LAZY = {
   idbrowser:  () => _ensureIdBrowserLoaded(),
   setlist:    () => typeof ensureSetlistLoaded    === 'function' && ensureSetlistLoaded(),
   dictionary: () => typeof ensureDictionaryLoaded === 'function' && ensureDictionaryLoaded(),
-  checklist:  () => typeof ensureChecklistLoaded  === 'function' && ensureChecklistLoaded(),
-  techrider:  () => typeof ensureTechRiderLoaded === 'function' && ensureTechRiderLoaded(),
+  checklist:  () => { go('showbook'); sbPreset('checklist'); },   // 1.9: part of Show Paperwork
+  techrider:  () => { go('showbook'); sbPreset('rider'); },       // 1.9: part of Show Paperwork
   triggers:   () => typeof ensureTriggersLoaded   === 'function' && ensureTriggersLoaded(),
   fixtures:   () => typeof ensureFixturesLoaded   === 'function' && ensureFixturesLoaded(),
   merger:     () => go('porter'),   // 1.9: the QXW Merger is part of the Function Porter
@@ -604,7 +604,7 @@ function _updateHeader(state) {
 // Tools that work on the open workspace show the same banner when none is open,
 // so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
-const _WS_SCREENS = ['setlist', 'triggers', 'dictionary', 'checklist', 'techrider',
+const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage'];
 
 function _updateNeedWsBanners(loaded) {

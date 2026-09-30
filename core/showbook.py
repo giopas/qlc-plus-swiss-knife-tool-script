@@ -39,6 +39,9 @@ QLC_NS_URI = workspace.QLC_NS_URI
 NS = workspace.NS
 
 ALL_SECTIONS = [
+    "rider",
+    "stage_plan",
+    "checklist",
     "summary",
     "patch",
     "functions",
@@ -51,6 +54,41 @@ ALL_SECTIONS = [
     "vc_layout",
     "doctor",
 ]
+
+# ── Show Paperwork (WORKPLAN 2.6): presets by reader ────────────────────────
+# The Show Book, the Checklist and the Tech Rider are one tool now; what
+# differs is who reads the paper.
+PRESETS = {
+    "rider":     {"label": "Tech rider", "reader": "for the venue",
+                  "title": "Tech Rider", "sections": ["rider", "stage_plan"]},
+    "checklist": {"label": "Crew checklist", "reader": "for load-in",
+                  "title": "Crew Checklist", "sections": ["checklist", "stage_plan"]},
+    "operator":  {"label": "Operator show book", "reader": "for you at the desk",
+                  "title": "Show Book",
+                  "sections": ["summary", "patch", "functions", "scenes", "chasers",
+                               "collections", "efx", "shows", "scripts", "vc_layout",
+                               "doctor"]},
+}
+# What may leave your hands: a document made only of the venue / crew presets
+# never carries function names, key / MIDI maps, the Virtual Console or the
+# Doctor — a rule, not a tick box.
+VENUE_SAFE = {"rider", "stage_plan", "checklist", "patch"}
+
+
+def resolve_sections(presets: list[str] | None, sections: list[str] | None) -> tuple[list[str], str]:
+    """Sections to build and the document title.  *sections* (what is ticked)
+    wins over the presets' own lists; with only venue presets (rider, crew
+    checklist) only VENUE_SAFE sections are ever built."""
+    presets = [p for p in (presets or []) if p in PRESETS]
+    from_presets = [x for p in presets for x in PRESETS[p]["sections"]]
+    chosen = [x for x in (sections or []) if x in ALL_SECTIONS] or from_presets \
+        or list(PRESETS["operator"]["sections"])
+    if presets and all(p in ("rider", "checklist") for p in presets):
+        chosen = [x for x in chosen if x in VENUE_SAFE] or from_presets
+    order = [x for x in ALL_SECTIONS if x in set(chosen)]
+    title = " + ".join(PRESETS[p]["title"] for p in presets) if presets else "Show Paperwork"
+    return order, title
+
 
 # Buttons without a function
 _ACTION_LABELS = {"StopAll": "(stop all functions)", "Blackout": "(blackout)"}
@@ -66,7 +104,9 @@ _SLOT_LABELS = {"Next": "Next", "Previous": "Prev", "Stop": "Stop", "Playback": 
 
 def generate(sections: list[str] | None = None,
              qxf_dir: str | None = None,
-             date: str | None = None) -> dict:
+             date: str | None = None,
+             presets: list[str] | None = None,
+             show_name: str | None = None) -> dict:
     """Build a structured document from the loaded workspace.
 
     Parameters
@@ -94,8 +134,11 @@ def generate(sections: list[str] | None = None,
         raise RuntimeError("No workspace loaded")
 
     root = state["qxw_root"]
-    if sections is None or len(sections) == 0:
-        sections = list(ALL_SECTIONS)
+    title = "Show Book"
+    if presets:
+        sections, title = resolve_sections(presets, sections)
+    elif sections is None or len(sections) == 0:
+        sections = [x for x in ALL_SECTIONS if x in PRESETS["operator"]["sections"]]
 
     # Load QXF definitions if a directory is provided
     if qxf_dir and os.path.isdir(qxf_dir):
@@ -107,15 +150,27 @@ def generate(sections: list[str] | None = None,
     qxf_lookup = _build_qxf_lookup()
 
     # Derive show name from filename
-    show_name = state.get("original_name") or os.path.basename(state.get("path", "Untitled"))
-    if show_name.endswith(".qxw"):
-        show_name = show_name[:-4]
+    if not show_name:
+        show_name = state.get("original_name") or os.path.basename(state.get("path", "Untitled"))
+        if show_name.endswith(".qxw"):
+            show_name = show_name[:-4]
 
     doc = {
         "show_name": show_name,
         "date": date or datetime.date.today().isoformat(),
+        "title": title,
+        "presets": [p for p in (presets or []) if p in PRESETS],
         "sections": {},
     }
+
+    if "rider" in sections:
+        doc["sections"]["rider"] = _build_rider(state, root)
+
+    if "stage_plan" in sections:
+        doc["sections"]["stage_plan"] = _build_stage_plan(state)
+
+    if "checklist" in sections:
+        doc["sections"]["checklist"] = _build_checklist(state)
 
     if "summary" in sections:
         doc["sections"]["summary"] = _build_summary(state, root)
@@ -291,6 +346,69 @@ def _build_patch(state: dict) -> list[dict]:
             "groups": info.get("groups", ""),
         })
     rows.sort(key=lambda r: (r["universe"], r["address"]))
+    return rows
+
+
+def _fixture_channels(root: ET.Element) -> dict:
+    """fixture id → number of DMX channels (from the workspace)."""
+    out = {}
+    for el in root.iter():
+        if isinstance(el.tag, str) and el.tag.endswith("Fixture") and el.find("./*") is not None:
+            fid = next((c.text for c in el if c.tag.endswith("ID")), None)
+            ch = next((c.text for c in el if c.tag.endswith("Channels")), None)
+            if fid is not None:
+                try:
+                    out[fid.strip()] = int(ch or 0)
+                except ValueError:
+                    out[fid.strip()] = 0
+    return out
+
+
+def _build_rider(state: dict, root: ET.Element) -> dict:
+    """Fixture types for the venue: make, model, mode, how many, channels,
+    patch range, universes; totals.  No function, VC or binding data."""
+    chans = _fixture_channels(root)
+    groups: dict = {}
+    for fid, info in state.get("fixture_map", {}).items():
+        key = (info.get("manufacturer", "") or "Unknown", _model_only(info) or "Unknown",
+               info.get("mode", "") or "Default")
+        groups.setdefault(key, []).append((fid, info))
+    types, total_ch, unis = [], 0, set()
+    for (mfg, model, mode), fxs in sorted(groups.items()):
+        patches = sorted(f[1].get("patch", "") for f in fxs)
+        u = sorted({f[1].get("universe", 0) for f in fxs})
+        unis.update(u)
+        ch = max((chans.get(f[0], 0) for f in fxs), default=0)
+        total_ch += sum(chans.get(f[0], 0) for f in fxs)
+        types.append({"manufacturer": mfg, "model": model, "mode": mode, "quantity": len(fxs),
+                      "channels": ch,
+                      "patch_range": patches[0] if len(set(patches)) == 1 else f"{patches[0]} - {patches[-1]}",
+                      "universes": u})
+    return {"types": types, "total_fixtures": sum(t["quantity"] for t in types),
+            "total_channels": total_ch, "universes": sorted(unis)}
+
+
+def _build_stage_plan(state: dict) -> dict:
+    """3D positions for the stage plot (top and front view)."""
+    fx = []
+    for fid, info in state.get("fixture_map", {}).items():
+        fx.append({"id": fid, "name": info.get("name", ""), "patch": info.get("patch", ""),
+                   "color": info.get("color", "#888888"), "x": info.get("x_mm", 0),
+                   "y": info.get("y_mm", 0), "z": info.get("z_mm", 0),
+                   "in_3d": bool(info.get("in_3d"))})
+    fx.sort(key=lambda f: int(f["id"]) if str(f["id"]).isdigit() else 0)
+    return {"fixtures": fx, "placed": sum(1 for f in fx if f["in_3d"])}
+
+
+def _build_checklist(state: dict) -> list[dict]:
+    """Load-in checklist: every fixture with its patch, groups and 3D place,
+    a box to tick.  Sorted by universe and address."""
+    rows = []
+    for p in _build_patch(state):
+        info = state["fixture_map"].get(p["id"], {})
+        pos = (f"{info.get('x_mm', 0) / 1000:.2f} / {info.get('y_mm', 0) / 1000:.2f} / "
+               f"{info.get('z_mm', 0) / 1000:.2f} m") if info.get("in_3d") else ""
+        rows.append({**p, "position": pos})
     return rows
 
 
@@ -749,6 +867,22 @@ def export_csv(document: dict) -> bytes:
 
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr = _fixed_time_writestr(zf)       # same input → same bytes
+        if "rider" in sections:
+            zf.writestr("rider.csv", _csv_write(
+                [[t["manufacturer"], t["model"], t["mode"], t["quantity"], t["channels"],
+                  t["patch_range"], " ".join(str(u) for u in t["universes"])]
+                 for t in sections["rider"]["types"]],
+                ["Manufacturer", "Model", "Mode", "Qty", "Channels", "Patch range", "Universes"]))
+        if "stage_plan" in sections:
+            zf.writestr("stage_plan.csv", _csv_write(
+                [[f["id"], f["name"], f["patch"], f["x"], f["y"], f["z"]]
+                 for f in sections["stage_plan"]["fixtures"] if f["in_3d"]],
+                ["ID", "Name", "Patch", "X mm", "Y mm", "Z mm"]))
+        if "checklist" in sections:
+            zf.writestr("checklist.csv", _csv_write(
+                [["", c["id"], c["name"], c["model"], c["mode"], c["patch"], c["groups"],
+                  c["position"]] for c in sections["checklist"]],
+                ["Done", "ID", "Name", "Model", "Mode", "Patch", "Groups", "3D position"]))
         if "patch" in sections:
             zf.writestr("patch.csv", _csv_patch(sections["patch"]))
 
@@ -1125,8 +1259,16 @@ def export_pdf(document: dict) -> bytes:
     date = document.get("date", "")
     sections = document.get("sections", {})
 
-    pdf = _PdfBuilder("Show Book", show_name, date)
+    pdf = _PdfBuilder(document.get("title") or "Show Book", show_name, date)
     pdf.new_page()
+
+    # ── Tech rider / stage plot / crew checklist (Show Paperwork) ─────────
+    if "rider" in sections:
+        _pdf_rider(pdf, sections["rider"], show_name, date)
+    if "checklist" in sections:
+        _pdf_checklist(pdf, sections["checklist"])
+    if "stage_plan" in sections:
+        _pdf_stage_plan(pdf, sections["stage_plan"], show_name, date)
 
     # ── Cover / Summary ───────────────────────────────────────────────────
     if "summary" in sections:
@@ -1171,6 +1313,56 @@ def export_pdf(document: dict) -> bytes:
         _pdf_doctor(pdf, sections["doctor"])
 
     return pdf.build()
+
+
+def _pdf_rider(pdf: _PdfBuilder, rider: dict, show_name: str, date: str):
+    """Tech rider: fixture types and totals (nothing about the show itself)."""
+    pdf.section_heading("Lighting - fixtures we bring / need")
+    headers = ["Manufacturer", "Model", "Mode", "Qty", "Ch", "Patch range", "Universe(s)"]
+    col_w = _auto_col_widths(headers, {"Qty": 35, "Ch": 35, "Universe(s)": 70, "Patch range": 110})
+    pdf.table_header(headers, col_w)
+    for i, t in enumerate(rider["types"]):
+        pdf.table_row([t["manufacturer"], t["model"], t["mode"], t["quantity"], t["channels"] or "",
+                       t["patch_range"], ", ".join(str(u) for u in t["universes"])], col_w, i)
+    pdf.spacer(10)
+    pdf.ensure_space(20)
+    pdf.fc(*_COL_DARK)
+    pdf.txt(_PAD, pdf.cy - 10,
+            f"Total: {rider['total_fixtures']} fixture(s), {rider['total_channels']} DMX channel(s), "
+            f"{len(rider['universes'])} universe(s).", sz=9, bold=True)
+    pdf.cy -= 20
+
+
+def _pdf_checklist(pdf: _PdfBuilder, rows: list[dict]):
+    """Crew checklist: a box to tick per fixture."""
+    pdf.section_heading("Load-in checklist")
+    headers = ["Done", "ID", "Name", "Model", "Mode", "Patch", "Groups", "3D position"]
+    col_w = _auto_col_widths(headers, {"Done": 34, "ID": 30, "Patch": 55, "Mode": 70,
+                                       "3D position": 110})
+    pdf.table_header(headers, col_w)
+    for i, c in enumerate(rows):
+        pdf.table_row(["[ ]", c["id"], c["name"], c["model"], c["mode"], c["patch"],
+                       c["groups"], c["position"]], col_w, i)
+
+
+def _pdf_stage_plan(pdf: _PdfBuilder, plan: dict, show_name: str, date: str):
+    """Stage plot on a page of its own (top and front view)."""
+    from core.pdf import blueprint_stream
+    stream = blueprint_stream(plan["fixtures"], show_name=show_name, doc_date=date, W=_W, H=_H)
+    if stream is None:
+        pdf.section_heading("Stage plot")
+        pdf.fc(*_COL_DARK)
+        pdf.txt(_PAD, pdf.cy - 12, "No fixture has a 3D position in this show - place them in "
+                "QLC+'s 3D view or in Stage & Meshes.", sz=9)
+        pdf.cy -= 20
+        return
+    if pdf.cy >= _H - _TITLE_H - 6:          # only the header on this page: drop it
+        pdf.ops.clear()
+        pdf.page_num -= 1
+    pdf.finish_page()
+    pdf.pages.append(stream)
+    pdf.page_num += 1
+    pdf.cy = 0                               # whatever follows starts a new page
 
 
 def _pdf_summary(pdf: _PdfBuilder, summary: dict, show_name: str, date: str):

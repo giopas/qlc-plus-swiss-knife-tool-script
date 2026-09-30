@@ -1079,8 +1079,19 @@ def _txt_summary(document: dict) -> str:
 from core.pdf import assemble_pdf, _pdf_str
 
 # Page dimensions (points)
-_W = 842.0  # A4 landscape width
-_H = 595.0  # A4 landscape height
+_W = 842.0  # page width  (A4 landscape by default; export_pdf(paper=…) sets it)
+_H = 595.0  # page height
+
+# Paper sizes in PDF points (the old Checklist / Tech Rider choices, 1.9)
+PAPERS = {
+    "A4 Landscape":        (842.0, 595.0),
+    "A4 Portrait":         (595.0, 842.0),
+    "A3 Landscape":        (1190.0, 842.0),
+    "A3 Portrait":         (842.0, 1190.0),
+    "US Letter Landscape": (792.0, 612.0),
+    "US Letter Portrait":  (612.0, 792.0),
+}
+DEFAULT_PAPER = "A4 Landscape"
 _PAD = 14
 _TITLE_H = 34
 _ROW_H = 14
@@ -1174,7 +1185,9 @@ class _PdfBuilder:
         self.rfill(0, _H - _TITLE_H, _W, _TITLE_H, _COL_DARK)
         self.fc(1, 1, 1)
         self.txt(_PAD, _H - _TITLE_H + 12, self.show_name, sz=11, bold=True)
-        self.txt(_W / 2 - 40, _H - _TITLE_H + 12, self.title, sz=9)
+        tx = max(_PAD + 160, _W / 2 - 40)            # never over the date (portrait pages)
+        self.fc(1, 1, 1)
+        self.txt_trunc(tx, _H - _TITLE_H + 12, self.title, 9, (_W - 190) - tx)
         self.txt(_W - 180, _H - _TITLE_H + 18, f"Date: {self.date}", sz=8)
         self.txt(_W - 180, _H - _TITLE_H + 8, f"Page {self.page_num}", sz=8)
         self.cy = _H - _TITLE_H - 6
@@ -1250,11 +1263,19 @@ def _auto_col_widths(headers: list[str], fixed: dict[str, float] = None) -> list
     return widths
 
 
-def export_pdf(document: dict) -> bytes:
-    """Export the document as a multi-page PDF.
+def export_pdf(document: dict, paper: str = DEFAULT_PAPER) -> bytes:
+    """Export the document as a multi-page PDF on *paper* (see PAPERS;
+    unknown names fall back to A4 landscape).  Returns raw PDF bytes."""
+    global _W, _H
+    saved = (_W, _H)
+    _W, _H = PAPERS.get(paper or DEFAULT_PAPER, PAPERS[DEFAULT_PAPER])
+    try:
+        return _export_pdf(document)
+    finally:
+        _W, _H = saved
 
-    Returns raw PDF bytes.
-    """
+
+def _export_pdf(document: dict) -> bytes:
     show_name = document.get("show_name", "Untitled")
     date = document.get("date", "")
     sections = document.get("sections", {})

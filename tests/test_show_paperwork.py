@@ -95,3 +95,16 @@ def test_operator_book_unchanged(c):
     b = showbook.export_pdf(showbook.generate(date="2026-09-30"))
     assert len(a) > 10000 and a.replace(b"Show Book", b"") == b.replace(b"Show Book", b"")
     assert c.get("/api/showbook/presets").get_json()["venue_safe"] == ["checklist", "patch", "rider", "stage_plan"]
+
+
+@pytest.mark.parametrize("paper,size", [("A3 Landscape", b"1190 842"), ("US Letter Portrait", b"612 792"),
+                                        ("A4 Landscape", b"842 595"), ("nonsense", b"842 595")])
+def test_paper_sizes(c, paper, size):
+    r = c.post("/api/showbook/export/pdf", json={"presets": ["rider", "checklist"], "paper": paper})
+    assert r.status_code == 200
+    import re
+    boxes = set(re.findall(rb"/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]", r.data))
+    w, h = size.split()
+    assert boxes == {(w, h)} or {(float(a), float(b)) for a, b in boxes} == {(float(w), float(h))}
+    # the module default is back afterwards
+    assert (showbook._W, showbook._H) == (842.0, 595.0)

@@ -207,8 +207,15 @@ def stage(side):
     if not st['src_loaded' if side == 'source' else 'tgt_loaded']:
         return jsonify({'stage': None, 'fixtures': [], 'has_positions': False})
     root = porter.source_root() if side == 'source' else porter.target_root()
+    copies = {}
+    cf = [x for x in (request.args.get('copy_fixtures') or '').split(',') if x]
+    if side == 'target' and cf:           # step 3: show the copied fixtures in place
+        cg = [x for x in (request.args.get('copy_groups') or '').split(',') if x]
+        root, copies = porter.target_preview(cf, cg)
     try:
-        return jsonify(fx.stage_plan(qxw_io.qualify_ns(copy.deepcopy(root))))
+        plan = fx.stage_plan(qxw_io.qualify_ns(copy.deepcopy(root)))
+        plan['copied'] = sorted(copies.values(), key=lambda x: int(x) if x.isdigit() else 0)
+        return jsonify(plan)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
 
@@ -360,7 +367,8 @@ def last_result():
                     'vc': r.get('vc'), 'pruned': r.get('pruned', []),
                     'groups': r.get('groups', []), 'panic': r.get('panic', []),
                     'removed_vc': r.get('removed_vc', []),
-                    'functions': len(r.get('func_id_map', {}))})
+                    'functions': len(r.get('func_id_map', {})),
+                    'copied': r.get('copied')})
 
 
 @bp.route('/save-report', methods=['POST'])

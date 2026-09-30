@@ -1110,6 +1110,19 @@ def validate(plan: dict) -> dict:
         all_tgt_ids.update(targets)
     assigned_tgt_ids = set(fanout.keys())
     unassigned = all_tgt_ids - assigned_tgt_ids
+    copied_to = set((plan.get("_copied") or {}).values())
+    unassigned -= {t for t in unassigned if t in copied_to and not any(
+        t in fixture_mapping.get(s, []) for s in fix_ids)}      # copies no function uses
+    if plan.get("_copied"):
+        names = {}
+        for f in (_engine(_src["root"]).findall("Fixture") if _src["loaded"] else []):
+            names[(f.findtext("ID") or "").strip()] = f.findtext("Name") or ""
+        orig = set(plan.get("_target_names") or [])
+        again = [names[s] for s in plan["_copied"] if names.get(s) in orig]
+        if again:
+            warnings.append(f"The target already has {len(again)} fixture(s) with these names "
+                            f"({', '.join(again[:4])}{'…' if len(again) > 4 else ''}) — "
+                            "copied before? The copies get “(2)”.")
     if unassigned:
         warnings.append(
             f"{len(unassigned)} target fixture(s) left unassigned by "
@@ -1293,6 +1306,7 @@ def copy_fixtures_into(src_root: ET.Element, tgt_root: ET.Element,
         out["log"].append(f"fixture {sid} '{el.findtext('Name') or ''}' → {nid} '{name}', "
                           f"universe {int(uni) + 1 if uni.isdigit() else uni}, "
                           f"address {addr + 1}{note}")
+    _copy_positions(src_root, tgt_root, out)
     if group_ids:
         blocks: dict[str, list[str]] = defaultdict(list)
         for s, ts in (mapping or {}).items():
@@ -1321,6 +1335,53 @@ def copy_fixtures_into(src_root: ET.Element, tgt_root: ET.Element,
     return out
 
 
+def _grid(root: ET.Element) -> tuple[float, float, float]:
+    g = root.find("Engine/Monitor/Grid")
+    try:
+        return (float(g.get("Width", 5)), float(g.get("Height", 3)), float(g.get("Depth", 5))) \
+            if g is not None else (5.0, 3.0, 5.0)
+    except ValueError:
+        return (5.0, 3.0, 5.0)
+
+
+def _copy_positions(src_root: ET.Element, tgt_root: ET.Element, out: dict) -> None:
+    """Give each copied fixture its place on the 3D stage: the source position
+    (and rotation), scaled to the target stage when the sizes differ, so the
+    copies keep their layout (giopas's test, 30 Sep: without it QLC+ put
+    them all in the top-left corner).  Fine-tune in Stage & Meshes."""
+    smon, tmon = src_root.find("Engine/Monitor"), tgt_root.find("Engine/Monitor")
+    if smon is None or tmon is None or not out["map"]:
+        return
+    sw, sh, sd = _grid(src_root)
+    tw, th, td = _grid(tgt_root)
+    items = {i.get("ID", ""): i for i in smon.findall("FxItem")}
+    last = max([n for n, c in enumerate(list(tmon)) if c.tag == "FxItem"],
+               default=max([n for n, c in enumerate(list(tmon)) if c.tag == "Grid"], default=-1))
+    placed = 0
+    for sid, nid in out["map"].items():
+        it = items.get(sid)
+        if it is None:
+            continue
+        new = copy.deepcopy(it)
+        new.set("ID", nid)
+        for attr, k, lim in (("XPos", tw / sw if sw else 1, tw), ("YPos", 1.0, th),
+                             ("ZPos", td / sd if sd else 1, td)):
+            try:
+                v = float(new.get(attr, 0)) * k
+            except ValueError:
+                continue
+            v = max(0.0, min(v, lim * 1000))
+            new.set(attr, f"{v:g}" if v != int(v) else str(int(v)))
+        last += 1
+        tmon.insert(last, new)
+        placed += 1
+    if placed:
+        scaled = (sw, sd) != (tw, td)
+        out["log"].append(f"3D positions: {placed} fixture(s) placed as in the source"
+                          + (f" (scaled from a {sw:g}×{sd:g} m to a {tw:g}×{td:g} m stage)" if scaled else "")
+                          + " — fine-tune them in Stage & Meshes")
+
+
 @contextmanager
 def _with_copies(plan: dict):
     """Run validate/_build on a target that already has the fixtures and
@@ -1331,13 +1392,15 @@ def _with_copies(plan: dict):
         yield plan, None
         return
     orig = _tgt["root"]
+    names = [f.findtext("Name") or "" for f in (_engine(orig).findall("Fixture") if _engine(orig) is not None else [])]
     aug = copy.deepcopy(orig)
     copies = copy_fixtures_into(_src["root"], aug, cf, cg, plan.get("fixture_mapping") or {})
     mapping = {**(plan.get("fixture_mapping") or {}),
                **{s: [n] for s, n in copies["map"].items()}}
     _tgt["root"] = aug
     try:
-        yield {**plan, "fixture_mapping": mapping}, copies
+        yield {**plan, "fixture_mapping": mapping, "_copied": copies["map"],
+           "_target_names": names}, copies
     finally:
         _tgt["root"] = orig
 
@@ -1350,6 +1413,14 @@ def check_plan(plan: dict) -> dict:
         v["info"] = [f"Copied from the source: {len(copies['map'])} fixture(s), "
                      f"{len(copies['groups'])} group(s)."] + [f"  {x}" for x in copies["log"]] + v["info"]
     return v
+
+
+def target_preview(copy_fixtures: list[str], copy_groups: list[str] = ()):
+    """The target with the plan's copies in it (for the step 3 plan), and
+    ``{src_id: new_id}`` of the copies."""
+    with _with_copies({"copy_fixtures": copy_fixtures, "copy_groups": list(copy_groups),
+                       "fixture_mapping": {}}) as (_p, copies):
+        return copy.deepcopy(_tgt["root"]), (copies or {}).get("map", {})
 
 
 def execute(plan: dict) -> tuple[str, bytes]:

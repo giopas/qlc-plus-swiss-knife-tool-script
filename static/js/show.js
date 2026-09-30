@@ -272,7 +272,7 @@ async function showApply(url, body, busy = 'Applying…') {
     }
     const s = d.step || {};
     const doc = d.show && d.show.doctor ? ` Doctor: ${d.show.doctor.error || 0} errors, ${d.show.doctor.warning || 0} warnings.` : '';
-    setStatus(`✓ Applied to the show — step ${s.n}: ${s.title}.${doc} 💾 Save as new file… when you're ready.`, 'ok');
+    setStatus(`✓ Applied to the show — step ${s.n}: ${s.title}.${doc} 💾 Save as new file… (top right) when you're ready.`, 'ok');
     await showRefresh();
     return d;
   } catch (e) {
@@ -312,7 +312,7 @@ async function vceApply() {
   const n = Object.keys(_vceChanges || {}).length;
   if (!n) { _vceStatus('Every edit is already in the show.', 'ok'); return; }
   if (!(await _vceFlush())) return;
-  _vceStatus(`✓ ${n} widget change(s) applied to the show — 💾 Save as new file… when you're ready.`, 'ok');
+  _vceStatus(`✓ ${n} widget change(s) applied to the show — 💾 Save as new file… (top right) when you're ready.`, 'ok');
 }
 
 async function slApply() {

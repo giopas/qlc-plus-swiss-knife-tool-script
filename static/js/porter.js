@@ -64,13 +64,46 @@ let _pFnSearch = '';
 let _pFnTypeFilter = '';
 
 let _pInited = false;
+// 1.9: the show in progress as the target; the QXW Merger folded in
+let _pTgtShow   = false;          // target = the show in progress
+let _pTgtStale  = false;          // the show changed since it was read as the target
+let _pSrcGroups = [];             // /api/porter/source/groups
+let _pCopyFx    = new Set();      // source fixtures to copy into the target
+let _pCopyGrp   = new Set();      // source groups to copy
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 async function porterInit() {
-  if (_pInited) return;
+  if (_pInited) {
+    if (_pTgtShow && _pTgtStale) await porterUseShowTgt(true);
+    return;
+  }
   _pInited = true;
   await _pRefreshState();
+  // A show is open: it is the natural target (port INTO the show in progress)
+  if (!_pTgtLoaded && typeof _show !== 'undefined' && _show.active) await porterUseShowTgt(true);
+}
+
+/** The show changed in another tool (or was undone): read it again as the
+ *  target the next time the Porter is shown. */
+function invalidatePorter() {
+  if (_pTgtShow) {
+    _pTgtStale = true;
+    if (document.getElementById('scr-porter')?.classList.contains('active')) porterUseShowTgt(true);
+  }
+}
+
+async function porterUseShowTgt(quiet = false) {
+  const r = await fetch('/api/porter/target/show', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const d = await r.json();
+  if (!r.ok) { if (!quiet) _pStatus(d.error || 'No show open.', 'error'); return false; }
+  _pTgtLoaded = true; _pTgtShow = true; _pTgtStale = false; _pTgtName = d.name;
+  const p = document.getElementById('porter-tgt-path'); if (p) p.value = '';
+  setFileChip('porter-tgt-chip', '🎛 the show in progress');
+  await _pFetchTargetData();
+  if (!quiet) _pStatus(`Target: the show in progress (${d.summary.fixtures} fixtures, ${d.summary.functions} functions).`, 'ok');
+  _pRenderStep();
+  return true;
 }
 
 // Messages go to the app's one status bar (bottom of the window), so an old
@@ -104,6 +137,7 @@ async function _pRefreshState() {
     _pTgtLoaded = s.tgt_loaded;
     _pSrcName   = s.src_name || '';
     _pTgtName   = s.tgt_name || '';
+    _pTgtShow   = !!s.tgt_show;
     if (_pSrcLoaded) await _pFetchSourceData();
     if (_pTgtLoaded) await _pFetchTargetData();
     _pRenderStep();
@@ -148,7 +182,7 @@ async function _pLoadSide(side, pathInputId, fileInputId) {
       setFileChip('porter-src-chip', file ? file.name : document.getElementById(pathInputId).value);
       await _pFetchSourceData();
     } else {
-      _pTgtLoaded = true; _pTgtName = d.name;
+      _pTgtLoaded = true; _pTgtName = d.name; _pTgtShow = false;
       if (file) document.getElementById(pathInputId).value = file.name;
       setFileChip('porter-tgt-chip', file ? file.name : document.getElementById(pathInputId).value);
       await _pFetchTargetData();
@@ -186,10 +220,13 @@ function porterTgtFileChosen() {
 }
 
 async function _pFetchSourceData() {
-  const [fnR, fxR] = await Promise.all([
+  const [fnR, fxR, grR] = await Promise.all([
     fetch('/api/porter/source/functions'),
     fetch('/api/porter/source/fixtures'),
+    fetch('/api/porter/source/groups'),
   ]);
+  _pSrcGroups = grR.ok ? await grR.json() : [];
+  _pCopyFx = new Set(); _pCopyGrp = new Set();
   await _pFetchPlan('source');
   _pSrcFunctions = fnR.ok ? await fnR.json() : [];
   _pSrcFixtures  = fxR.ok ? await fxR.json() : [];
@@ -247,12 +284,14 @@ function _pRenderStep() {
   const srcH = document.getElementById('porter-src-info');
   const tgtH = document.getElementById('porter-tgt-info');
   if (srcH) srcH.textContent = _pSrcLoaded ? _pSrcName : '— not loaded —';
-  if (tgtH) tgtH.textContent = _pTgtLoaded ? _pTgtName : '— not loaded —';
+  if (tgtH) tgtH.textContent = _pTgtLoaded ? (_pTgtShow ? `the show in progress (${_pTgtName})` : _pTgtName) : '— not loaded —';
+  const tb = document.getElementById('porter-tgt-show-btn');
+  if (tb) tb.className = 'btn ' + (_pTgtShow ? 'btn-surface' : 'btn-accent');
 
   // Render the active panel
   if (_pStep === 1 || _pStep === 3) setTimeout(_pDrawPlans, 0);
   if (_pStep === 2) _pRenderSelectFunctions();
-  if (_pStep === 3) _pRenderMapFixtures();
+  if (_pStep === 3) Promise.resolve(_pRenderMapFixtures()).then(_pCopyNote);
   if (_pStep === 4) { _pRenderVcOptions(); _pRenderValidation(); }
   if (_pStep === 5 && !_pExported) _pRenderExportReady();
 }
@@ -389,6 +428,7 @@ async function porterNextFromSelect() {
 }
 
 function _pRenderSelectFunctions() {
+  _pRenderCopyPick();
   _pRenderVcTree();
   _pRenderFnList();
   _pRenderClosureSummary();
@@ -425,6 +465,13 @@ function _pRenderFnList() {
 async function porterResolve(quiet = false) {
   const seedIds = _pSeedIds();
   const key = seedIds.join(',');
+  if (!seedIds.length && (_pCopyFx.size || _pCopyGrp.size)) {
+    // copying fixtures / groups only (what the QXW Merger did): no functions
+    _pClosure = { seed_ids: [], function_ids: [], fixture_ids: [], cycles: [], unresolved: [] };
+    _pClosureKey = 'copy-only';
+    _pRenderClosureSummary();
+    return true;
+  }
   if (!seedIds.length) {
     _pClosure = null;
     _pClosureKey = '';
@@ -1157,10 +1204,14 @@ function _pRenderExportReady() {
   if (!el) return;
   const go = document.getElementById('porter-export-go');
   if (go) go.style.display = '';
+  const ap = document.getElementById('porter-apply-go');
+  if (ap) { ap.style.display = _pTgtShow ? '' : 'none'; }
+  if (go) go.className = 'btn ' + (_pTgtShow ? 'btn-surface' : 'btn-accent');
   const c = _pClosure || { function_ids: [], fixture_ids: [] };
   const skipped = [..._pSkipFx];
   const li = [];
-  li.push(`<b>${c.function_ids.length}</b> function(s) from <b>${_esc(_pSrcName)}</b> into a copy of <b>${_esc(_pTgtName)}</b>`);
+  li.push(`<b>${c.function_ids.length}</b> function(s) from <b>${_esc(_pSrcName)}</b> into ${_pTgtShow ? '<b>the show in progress</b>' : `a copy of <b>${_esc(_pTgtName)}</b>`}`);
+  if (_pCopyFx.size || _pCopyGrp.size) li.push(`copied from the source: <b>${_pCopyFx.size}</b> fixture(s), <b>${_pCopyGrp.size}</b> group(s)`);
   li.push(`fixtures: ${c.fixture_ids.length} source fixture(s) mapped with <b>${_esc(_pFanoutMode)}</b>`
           + (skipped.length ? `; not ported: ${skipped.join(', ')}` : ''));
   if (_pVc.enabled) {
@@ -1181,7 +1232,12 @@ function _pRenderExportReady() {
             + (_pVc.bindings_only ? '; bindings also copied onto matching target widgets' : ''));
   }
   if (_pValidation && _pValidation.warnings.length) li.push(`${_pValidation.warnings.length} warning(s) — see step 4`);
-  el.innerHTML = `
+  el.innerHTML = _pTgtShow ? `
+    <h3>Ready</h3>
+    <p><b>✓ Apply to the show</b> adds all this to the show in progress as one step (undo it from the History or the
+       Changes list on the left); the Doctor checks the result first — new errors stop it. <b>Export a copy…</b> writes a
+       separate file instead and leaves the show as it is.</p>
+    <ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>` : `
     <h3>Ready to export</h3>
     <p>Export writes a <b>new workspace</b> (<code>${_esc(_pTgtName)}_v&lt;N+1&gt;.qxw</code>, you choose the folder) and the
        <b>port report</b> next to it. The source and target files are not changed. Doctor checks the result first; new errors stop the export.</p>
@@ -1191,6 +1247,8 @@ function _pRenderExportReady() {
 function _pRenderDone(filename, summary, reportName, folder) {
   const go = document.getElementById('porter-export-go');
   if (go) go.style.display = 'none';
+  const ap = document.getElementById('porter-apply-go');
+  if (ap) ap.style.display = 'none';
   const el = document.getElementById('porter-export-body');
   if (!el) return;
   summary = summary || {};
@@ -1250,6 +1308,7 @@ function porterReset() {
   _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };
   _pHlFx = _pHlSticky = null;
   _pRmScope = [];
+  _pCopyFx = new Set(); _pCopyGrp = new Set();
   _pStep = 1;
   _pStatus('Ready for a new port.', 'info');
   _pRenderStep();
@@ -1269,6 +1328,8 @@ function _pBuildPlan() {
     drop_unmapped:   _pDropUnmapped,
     complete_channels: _pCompleteCh,
     vc: Object.assign({}, _pVc, { scope: _pVcScope, remove: _pRmScope }),
+    copy_fixtures:   [..._pCopyFx],
+    copy_groups:     [..._pCopyGrp],
   };
 }
 
@@ -1278,4 +1339,81 @@ function _esc(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 1.9 — copy fixtures and groups (the QXW Merger, folded in) · Apply to the show
+// ═════════════════════════════════════════════════════════════════════════════
+
+function _pRenderCopyPick() {
+  const gEl = document.getElementById('porter-copy-groups');
+  const fEl = document.getElementById('porter-copy-fixtures');
+  if (!gEl || !fEl) return;
+  const det = document.getElementById('porter-copy-pick');
+  if (det && (_pCopyFx.size || _pCopyGrp.size)) det.open = true;
+  gEl.innerHTML = _pSrcGroups.length ? _pSrcGroups.map(g => `
+    <label class="porter-row"><input type="checkbox" class="porter-check" value="${_esc(g.id)}"
+      ${_pCopyGrp.has(String(g.id)) ? 'checked' : ''} onchange="porterCopyGroup(this)">
+      <span>${_esc(g.name || 'Group ' + g.id)}</span>
+      <span class="porter-row-sub">${g.fixtures.length} fixture(s), ${g.heads} head(s)</span></label>`).join('')
+    : '<div class="porter-placeholder">No fixture groups in the source.</div>';
+  const tgtNames = new Set(_pTgtFixtures.map(f => f.name));
+  fEl.innerHTML = _pSrcFixtures.length ? _pSrcFixtures.map(f => `
+    <label class="porter-row"><input type="checkbox" class="porter-check" value="${_esc(f.id)}"
+      ${_pCopyFx.has(String(f.id)) ? 'checked' : ''} onchange="porterCopyFixture(this)">
+      <span>${_esc(f.name)}${tgtNames.has(f.name) ? ' <span class="porter-row-sub" title="The target has a fixture with this name; the copy gets (2)">⚠ name taken</span>' : ''}</span>
+      <span class="porter-row-sub">${_esc(f.manufacturer)} ${_esc(f.model)} · U${(+f.universe || 0) + 1} @${(+f.address || 0) + 1}</span></label>`).join('')
+    : '<div class="porter-placeholder">No fixtures in the source.</div>';
+}
+
+function porterCopyFixture(cb) {
+  if (cb.checked) _pCopyFx.add(cb.value); else _pCopyFx.delete(cb.value);
+  _pCopyChanged();
+}
+
+function porterCopyGroup(cb) {
+  const g = _pSrcGroups.find(x => String(x.id) === cb.value);
+  if (cb.checked) { _pCopyGrp.add(cb.value); (g ? g.fixtures : []).forEach(f => _pCopyFx.add(String(f))); }
+  else _pCopyGrp.delete(cb.value);
+  _pCopyChanged();
+}
+
+function _pCopyChanged() {
+  _pValidation = null;
+  if (_pClosureKey === 'copy-only') { _pClosure = null; _pClosureKey = ''; }
+  _pRenderCopyPick();
+  _pRenderClosureSummary();
+}
+
+/** Step 3: copied fixtures play their own functions — their mapping is not used. */
+function _pCopyNote() {
+  const box = document.getElementById('porter-fixture-map');
+  if (!box || !_pCopyFx.size) return;
+  const n = document.createElement('div');
+  n.className = 'porter-hint porter-copy-note';
+  n.innerHTML = `<b>${_pCopyFx.size}</b> source fixture(s) are <b>copied</b> into the target (step 2): the functions that use them play on the copies, so their mapping below is not used.`;
+  box.prepend(n);
+}
+
+async function porterApply() {
+  if (!_pTgtShow) { _pStatus('The target is a file — use Export a copy…, or pick "The show in progress" in step 1.', 'error'); return; }
+  if (!_pValidation?.ok) { _pStatus('Check the plan in step 4 first.', 'error'); return; }
+  const d = await showApply('/api/porter/apply', _pBuildPlan(), 'Porting into the show…');
+  if (!d) return;
+  _pExported = true;
+  let summary = {};
+  try { const rs = await fetch('/api/porter/last-result'); summary = rs.ok ? await rs.json() : {}; } catch (e) { /* ignore */ }
+  _pRenderDone('', summary, '', '');
+  const el = document.getElementById('porter-export-body');
+  if (el) {
+    const h = el.querySelector('h3'); if (h) h.textContent = `Applied to the show — step ${d.step.n}`;
+    const p = el.querySelector('p'); if (p) p.innerHTML = `${_esc(d.step.title)}. The port report is part of the show's report when you 💾 Save as new file…`;
+    el.querySelectorAll('.porter-warn').forEach(x => x.remove());
+    if (!(summary.functions || 0)) {            // fixtures / groups only: no function lines
+      el.querySelectorAll('p').forEach(x => { if (/function\(s\) ported/.test(x.textContent)) x.remove(); });
+      el.querySelectorAll('ul').forEach(x => x.remove());
+    }
+  }
+  await porterUseShowTgt(true);
 }

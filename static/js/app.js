@@ -39,7 +39,7 @@ const _LAZY = {
   techrider:  () => typeof ensureTechRiderLoaded === 'function' && ensureTechRiderLoaded(),
   triggers:   () => typeof ensureTriggersLoaded   === 'function' && ensureTriggersLoaded(),
   fixtures:   () => typeof ensureFixturesLoaded   === 'function' && ensureFixturesLoaded(),
-  merger:     () => typeof mergerInit             === 'function' && mergerInit(),
+  merger:     () => go('porter'),   // 1.9: the QXW Merger is part of the Function Porter
   porter:     () => typeof porterInit             === 'function' && porterInit(),
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   doctor:     () => typeof doctorInit             === 'function' && doctorInit(),
@@ -559,6 +559,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateLooks === 'function') invalidateLooks();
   if (typeof invalidateStage === 'function') invalidateStage();
   if (typeof invalidateVcEditor === 'function') invalidateVcEditor();
+  if (typeof invalidatePorter === 'function') invalidatePorter();
   // Re-load whichever screen is currently visible
   const activeScr = document.querySelector('.screen.active');
   if (activeScr) {

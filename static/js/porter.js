@@ -291,7 +291,13 @@ function _pRenderStep() {
   // Render the active panel
   if (_pStep === 1 || _pStep === 3) setTimeout(_pDrawPlans, 0);
   if (_pStep === 2) _pRenderSelectFunctions();
-  if (_pStep === 3) Promise.resolve(_pRenderMapFixtures()).then(_pCopyNote);
+  if (_pStep === 3) {
+    Promise.resolve(_pRenderMapFixtures()).then(_pCopyNote);
+    // the target plan with the copied fixtures in place (giopas's test, 30 Sep)
+    _pFetchPlan('target', true).then(() => setTimeout(_pDrawPlans, 0));
+  } else if (_pStep === 1 && _pPlans.target && (_pPlans.target.copied || []).length) {
+    _pFetchPlan('target').then(() => setTimeout(_pDrawPlans, 0));
+  }
   if (_pStep === 4) { _pRenderVcOptions(); _pRenderValidation(); }
   if (_pStep === 5 && !_pExported) _pRenderExportReady();
 }
@@ -544,7 +550,8 @@ async function _pRenderMapFixtures() {
 
   const fxIds = _pClosure ? _pClosure.fixture_ids : [];
   if (!fxIds.length && !_pSkipFx.size) {
-    container.innerHTML = '<div class="porter-placeholder">No fixtures to map (functions have no fixture references)</div>';
+    container.innerHTML = `<div class="porter-placeholder">${_pCopyFx.size && !(_pClosure && _pClosure.function_ids.length)
+      ? 'Nothing to map — only fixtures and groups are copied.' : 'No fixtures to map (functions have no fixture references)'}</div>`;
     _pDrawPlans();
     return;
   }
@@ -823,9 +830,11 @@ function porterPinHighlight(srcId, ev) {
 
 // ── Stage plans (top view, drawn with the Fixtures tab's drawStageTopView) ──
 
-async function _pFetchPlan(side) {
+async function _pFetchPlan(side, withCopies = false) {
   try {
-    const r = await fetch('/api/porter/stage/' + side);
+    const q = side === 'target' && withCopies && _pCopyFx.size
+      ? `?copy_fixtures=${[..._pCopyFx].join(',')}&copy_groups=${[..._pCopyGrp].join(',')}` : '';
+    const r = await fetch('/api/porter/stage/' + side + q);
     _pPlans[side] = r.ok ? await r.json() : null;
   } catch (e) { _pPlans[side] = null; }
 }
@@ -868,9 +877,15 @@ function _pDrawPlans() {
       continue;
     }
     let rig = plan.fixtures;
+    const copied = new Set((plan.copied || []).map(String));
+    const copiedSrc = new Set([..._pCopyFx].map(String));
     if (colors) {
       const map = side === 'source' ? colors.src : colors.tgt;
       rig = rig.map(f => Object.assign({}, f, { color: map[String(f.id)] || '#585b70' }));
+    }
+    if (step === 3) {       // copies: green, in the source and (new) in the target
+      rig = rig.map(f => ((side === 'target' ? copied : copiedSrc).has(String(f.id))
+        ? Object.assign({}, f, { color: '#a6e3a1', name: (side === 'target' ? '+ ' : '') + (f.name || '') }) : f));
     }
     // Step 3: ring the highlighted source fixture and its target(s)
     const hl = step === 3 ? (_pHlFx || _pHlSticky) : null;
@@ -1392,7 +1407,7 @@ function _pCopyNote() {
   if (!box || !_pCopyFx.size) return;
   const n = document.createElement('div');
   n.className = 'porter-hint porter-copy-note';
-  n.innerHTML = `<b>${_pCopyFx.size}</b> source fixture(s) are <b>copied</b> into the target (step 2): the functions that use them play on the copies, so their mapping below is not used.`;
+  n.innerHTML = `<b>${_pCopyFx.size}</b> source fixture(s) are <b>copied</b> into the target (step 2) — <span style="color:#a6e3a1">green</span> on both plans, placed as in the source (scaled to this stage; fine-tune them later in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>). The functions that use them play on the copies, so their mapping below is not used.`;
   box.prepend(n);
 }
 
@@ -1408,7 +1423,9 @@ async function porterApply() {
   const el = document.getElementById('porter-export-body');
   if (el) {
     const h = el.querySelector('h3'); if (h) h.textContent = `Applied to the show — step ${d.step.n}`;
-    const p = el.querySelector('p'); if (p) p.innerHTML = `${_esc(d.step.title)}. The port report is part of the show's report when you 💾 Save as new file…`;
+    const p = el.querySelector('p'); if (p) p.innerHTML = `${_esc(d.step.title)}. Nothing is written yet: keep working in any tool, then
+      <button class="btn btn-accent btn-sm" onclick="showSave()">💾 Save as new file…</button> (also top right) writes the show and one report with every step.
+      ${(summary.copied && summary.copied.map && Object.keys(summary.copied.map).length) ? `<br>The copied fixtures stand where they were in the source (scaled to this stage) — adjust them in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>.` : ''}`;
     el.querySelectorAll('.porter-warn').forEach(x => x.remove());
     if (!(summary.functions || 0)) {            // fixtures / groups only: no function lines
       el.querySelectorAll('p').forEach(x => { if (/function\(s\) ported/.test(x.textContent)) x.remove(); });

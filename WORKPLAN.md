@@ -4,6 +4,8 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (30 Sep, evening — giopas's Porter test):** FloorShow_v11 ← BigShow_v41 *Ceiling* group, applied, saved v12: works; three points fixed — copies had no 3D position (QLC+ stacked them top-left: now source position scaled to the target stage, `_copy_positions`), step 3 did not show the copies in the target (now drawn green, `target_preview`), and "where is Save?" (button on the finish screen + "top right" in messages). Also: no spurious "unassigned" warning for copies, re-copy flagged. 542 tests.
+
 **Status (30 Sep, later — Porter on the show in progress, Merger folded in):**
 - giopas checked the saved file of his test against v40: identical byte for byte to a Doctor-only run here (the undone Reducer step left nothing behind).
 - Built: the Porter's target is the show in progress by default (`load_target_root`, `/target/show`), **Apply to the show** (`/apply`, re-reads the show first), and the **QXW Merger folded in** (step 2 copy fixtures / groups: `copy_fixtures_into`, `_with_copies`, `check_plan`). The old Merger bugs are not carried over (shared ID map, `FixtureGroupMember`, `FixtureVal@Fixture`). Tests `tests/test_porter_show.py` (5). 541 green; browser-checked (group copy into Pub → 12 fixtures, step 1).

@@ -122,3 +122,33 @@ def test_copy_fixtures_then_port_functions_onto_them(c):
     ported = [f for f in eng.findall("Function") if f.get("Type") == "Scene"][-2:]
     used = {v.get("ID") for f in ported for v in f.findall("FixtureVal")}
     assert used and used <= copied            # the looks play on the copied fixtures
+
+
+def test_copied_fixtures_keep_their_place_on_the_stage(c):
+    """giopas's test (30 Sep): the copies had no 3D position, QLC+ stacked
+    them top-left.  Now they get the source position, scaled to the stage."""
+    _ok(c.post("/api/load", json={"path": str(c.tmp / "Pub_6fix.qxw")}))
+    _ok(c.post("/api/porter/source/load", json={"path": str(c.tmp / "Festival_14fix.qxw")}))
+    _ok(c.post("/api/porter/target/show", json={}))
+    src = porter.source_root()
+    before_ids = {f["id"] for f in porter.list_target_fixtures()}
+    sgrid = src.find("Engine/Monitor/Grid")
+    g = c.get("/api/porter/source/groups").get_json()[0]
+    plan = {"copy_fixtures": g["fixtures"], "copy_groups": [g["id"]], "closure": {}, "fixture_mapping": {}}
+    prev = c.get("/api/porter/stage/target?copy_fixtures=" + ",".join(g["fixtures"])).get_json()
+    assert len(prev["copied"]) == len(g["fixtures"])
+    _ok(c.post("/api/porter/apply", json=plan))
+    root = qxw_io.strip_ns(qxw_io.loads_qxw(c.get("/api/show/file").data))
+    tgrid = root.find("Engine/Monitor/Grid")
+    items = {i.get("ID"): i for i in root.find("Engine/Monitor").findall("FxItem")}
+    sitems = {i.get("ID"): i for i in src.find("Engine/Monitor").findall("FxItem")}
+    new_ids = sorted(set(items) - before_ids, key=int)
+    assert len(new_ids) == len(g["fixtures"])
+    kx = float(tgrid.get("Width")) / float(sgrid.get("Width"))
+    for sid, nid in zip(g["fixtures"], new_ids):
+        assert abs(float(items[nid].get("XPos")) - float(sitems[sid].get("XPos")) * kx) < 1
+    assert "3D positions:" in c.get("/api/show/report").get_data(as_text=True)
+    # copying the same fixtures again is flagged
+    _ok(c.post("/api/porter/target/show", json={}))
+    v = _ok(c.post("/api/porter/validate", json=plan)).get_json()
+    assert any("copied before" in w for w in v["warnings"])

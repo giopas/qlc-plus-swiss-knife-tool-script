@@ -25,13 +25,24 @@ def _try_bootstrap():
     """Re-exec under the project's .venv Python if flask is missing."""
     here   = os.path.dirname(os.path.abspath(__file__))
     # Common venv bin locations
-    candidates = [
+    # Same lookup order as run.sh: $SWK_VENV, ~/.venvs/swissknife, then local
+    shared = []
+    if os.environ.get('SWK_VENV'):
+        shared += [os.path.join(os.environ['SWK_VENV'], 'bin', 'python3'),
+                   os.path.join(os.environ['SWK_VENV'], 'Scripts', 'python.exe')]
+    home_venv = os.path.join(os.path.expanduser('~'), '.venvs', 'swissknife')
+    shared += [os.path.join(home_venv, 'bin', 'python3'),
+               os.path.join(home_venv, 'Scripts', 'python.exe')]
+    candidates = shared + [
         os.path.join(here, '.venv', 'bin',      'python3'),   # macOS / Linux
         os.path.join(here, '.venv', 'bin',      'python'),    # macOS / Linux alt
         os.path.join(here, '.venv', 'Scripts',  'python.exe'),# Windows
         os.path.join(here, 'venv',  'bin',      'python3'),   # alternate name
         os.path.join(here, 'venv',  'Scripts',  'python.exe'),# alternate name Win
     ]
+    if os.environ.get('_SWK_REEXEC'):      # already re-exec'd once: don't loop
+        return False
+    os.environ['_SWK_REEXEC'] = '1'
     for py in candidates:
         if os.path.isfile(py):
             # Only re-exec if we're not already in this venv (avoid infinite loop)

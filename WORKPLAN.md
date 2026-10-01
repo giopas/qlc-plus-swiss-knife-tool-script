@@ -559,7 +559,8 @@ Checks (★ = included in Phase 1.0):
   - **Group names**: spaces, quotes and a trailing `:` `;` `,` `.` are trimmed.
   - 593 tests.
 - Compare after the fixes (his file vs Pub_6fix): fixtures 6 same; groups 8 same + the festival's own; setlist 1 same; looks mostly *different* by design — the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and is built from different functions (*AC:*, *PUB:*, *CP:* looks). Matching those is not the goal of a 12-minute route; the criterion becomes "patch, groups, setlist and a working Looks / Effects page", with the look differences listed in the report.
-- Next: QLC+ open-check of his file (setlist, PANIC RESET, a few looks), then the tutorial, README / GIF, the forum post, **v2.0.0**.
+- **QLC+ open-check** (giopas, 2 Oct): all good, except *Song 12* all black. Cause: in the festival show *Song 12* is a chaser with **no steps** (already dark there, cue 12 of *Band C*); the route carried it as it was. The Doctor only said "degenerate chaser (0 steps)" among 52 warnings → new check **D018 — setlist song that lights nothing** (on the CueList, with the cue number); not auto-fixed. In the pub show Song 12 plays *All Apologies Murk*.
+- Next: the tutorial, README / GIF, the forum post, **v2.0.0**.
 
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
@@ -577,7 +578,7 @@ Checks (★ = included in Phase 1.0):
 *Pass criteria* (to be measured, not eyeballed):
 - [x] Doctor on the result: **0 errors**, and no warning the reference doesn't have. *(0 errors, 52 warnings — mostly the festival's unused functions, which the Doctor can remove)*
 - [ ] **Compare with `Pub_6fix.qxw`** — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
-- [ ] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks.
+- [x] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks. *(giopas, 2 Oct: all good; Song 12 dark → D018)*
 - [x] **Time**: under 30 minutes for someone who knows the show. *(12 min, giopas, 2 Oct)*
 - [ ] ~~**Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file~~ — moved after v2.0 (giopas, 2 Oct): first item of §7 with the *Show Profile / CLI pipeline*.
 

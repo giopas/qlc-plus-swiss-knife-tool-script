@@ -33,6 +33,9 @@ Phase 2.8 — the Pub test, first part: the two tools it needs.
 - **Compare** pairs a look that is a Scene in one show and a Collection in the other.
 - **Fixture groups**: names are trimmed of spaces, quotes and a trailing `:` `;` `,` `.`.
 
+### Added — Workspace Doctor
+- **D018 — setlist song that lights nothing** (warning, on the CueList): a cue whose function is an empty scene, or a chaser / collection with no steps (or only such steps) — the stage goes dark on that song. Found in the Pub-test QLC+ check: the festival show's *Song 12* is a chaser with no steps (cue 31 of the pub setlist, cue 12 of *Band C*). Not fixed automatically: only you know what the song should look like.
+
 
 ## [1.10.0] — 2026-10-01
 

@@ -592,6 +592,45 @@ def _d014_cuelist_empty_chaser(ws: _Workspace):
                           {"widget": w.get("ID"), "function": c})
 
 
+def _lights_nothing(ws: _Workspace, fid: str, seen=None) -> bool:
+    """True when the function can't light anything: an empty scene, a chaser
+    or collection with no steps, or whose steps all light nothing."""
+    seen = set() if seen is None else seen
+    if fid in seen:
+        return False
+    seen.add(fid)
+    f = ws.functions.get(fid)
+    if f is None:
+        return True
+    t = f.get("Type")
+    if t == "Scene":
+        return not any((v.text or "").strip() for v in f.findall("FixtureVal"))
+    if t in ("Chaser", "Collection"):
+        steps = [(s.text or "").strip() for s in f.findall("Step") if (s.text or "").strip()]
+        return all(_lights_nothing(ws, x, seen) for x in steps)
+    return False
+
+
+def _d018_setlist_dark_song(ws: _Workspace):
+    """A song in the setlist (a step of the chaser a CueList runs) that
+    lights nothing: the stage goes dark on that cue."""
+    for w, page in ws.widgets:
+        if w.tag != "CueList":
+            continue
+        c = ws.functions.get((w.findtext("Chaser") or NONE_ID).strip())
+        if c is None or c.get("Type") != "Chaser":
+            continue
+        for n, st in enumerate(c.findall("Step"), 1):
+            sid = (st.text or "").strip()
+            if sid and _lights_nothing(ws, sid):
+                f = ws.functions.get(sid)
+                name = f.get("Name", "") if f is not None else sid
+                yield Finding("D018", WARNING, ws.widget_loc(w, page),
+                              f"cue {n} '{name}' lights nothing (no steps or empty scene) — "
+                              "the stage goes dark on that song",
+                              {"widget": w.get("ID"), "function": sid, "cue": n})
+
+
 def _d009_overlap(ws: _Workspace):
     owner: Dict[Tuple[int, int], str] = {}
     reported = set()
@@ -708,7 +747,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
                 _d005_incomplete(ws), _d006_strobe(ws, allow),
                 _d007_shared_scene(ws), _d008_panic(ws), _d009_overlap(ws),
                 _d010_setlist_page(ws), _d011_overflow(ws), _d013_chaser_timing(ws),
-                _d014_cuelist_empty_chaser(ws), _d017_panic_scene(ws),
+                _d014_cuelist_empty_chaser(ws), _d017_panic_scene(ws), _d018_setlist_dark_song(ws),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),
                 _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws)):
         findings.extend(gen)

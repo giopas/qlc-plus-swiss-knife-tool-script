@@ -45,6 +45,7 @@ rep.ok, rep.counts(), rep.errors, rep.to_json()
 | D015 | info | Unnamed function (`[NNN] Scene - Unassigned`) |
 | D016 | warning | Function not used by any function or VC widget (a script that only *stops* it doesn't count) |
 | D017 | warning | PANIC RESET is a plain Scene: a scene at 0 can't darken looks that are still running (dimmer/colour are HTP) |
+| D018 | warning | A song in the setlist (a cue of the chaser a CueList runs) lights nothing — an empty scene, or a chaser / collection with no steps or only such steps: the stage goes dark on that cue |
 | I001 | info | Button with no function (label use) — StopAll/Blackout buttons excluded |
 | I002 | info | VC pages in order |
 | I003 | info | No fixture definition loaded — channel checks skipped |

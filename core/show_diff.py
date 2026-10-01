@@ -77,6 +77,9 @@ def summarise(before: ET.Element, after: ET.Element) -> list[str]:
     three("Fixture groups", ga, gb, lambda e: e.findtext("Name") or "")
     three("Functions", na, nb, lambda e: e.get("Name") or "")
     three("Virtual Console pages", va, vb, lambda e: (e.get("Caption") or "").strip() or "(no caption)")
+    if [k for k in va if k in vb] != [k for k in vb if k in va]:
+        out.append("Virtual Console page order now: " + _names(
+            (vb[k].get("Caption") or "").strip() or "(no caption)" for k in vb))
     wadd = [f"{_wname(w)} on '{(p.get('Caption') or '').strip()}'" for k, (p, w) in wb.items() if k not in wa]
     wrem = [f"{_wname(w)} on '{(p.get('Caption') or '').strip()}'" for k, (p, w) in wa.items()
             if k not in wb and k[0] in vb]

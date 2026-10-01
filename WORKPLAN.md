@@ -560,7 +560,8 @@ Checks (★ = included in Phase 1.0):
   - 593 tests.
 - Compare after the fixes (his file vs Pub_6fix): fixtures 6 same; groups 8 same + the festival's own; setlist 1 same; looks mostly *different* by design — the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and is built from different functions (*AC:*, *PUB:*, *CP:* looks). Matching those is not the goal of a 12-minute route; the criterion becomes "patch, groups, setlist and a working Looks / Effects page", with the look differences listed in the report.
 - **QLC+ open-check** (giopas, 2 Oct): all good, except *Song 12* all black. Cause: in the festival show *Song 12* is a chaser with **no steps** (already dark there, cue 12 of *Band C*); the route carried it as it was. The Doctor only said "degenerate chaser (0 steps)" among 52 warnings → new check **D018 — setlist song that lights nothing** (on the CueList, with the cue number); not auto-fixed. In the pub show Song 12 plays *All Apologies Murk*.
-- Next: the tutorial, README / GIF, the forum post, **v2.0.0**.
+- **Tutorial written (2 Oct)** — wiki *Tutorial — from a big-venue show to a pub show in 30 minutes*, made by running the guided route in the app (Playwright) on Festival_14fix with 9 screenshots (`screenshots/tutorial/`; raw links on `main`, live after the v2.0 merge). Doing it found and fixed: the route had no *Groups* step (added, 9 steps); the Groups list hid new groups below a short scroll (taller, new group highlighted); the Rig Reducer called renames "re-patched"; the Setlist didn't show a dark song (orange dot + warning); the report didn't say a page moved. 597 tests.
+- Next: README / GIF, the forum post, **v2.0.0** (retake the tutorial screenshots with the version bumped — the scripts are kept in the session scratchpad).
 
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
@@ -586,7 +587,7 @@ Checks (★ = included in Phase 1.0):
 - [x] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report). *(2 Oct)*
 - [x] Fixture group editor (step 3 gap; moved back from 2.7) — Stage & Meshes › Groups. *(2 Oct)*
 - [x] Run the route on the corpus, fix what gets in the way (each fix: test + commit). *(2 Oct: giopas, 12 min; Compare setlist pairing, unused functions, show-report detail for in-place steps, group-name trim.)*
-- [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
+- [x] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF. *(2 Oct, 9 screenshots)*
 - [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
 - [ ] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:
   - what Swiss Knife is, and the change of logic (*the show in progress*: open once, every tool, History, one save, the original never touched);

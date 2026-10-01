@@ -12,6 +12,7 @@ const ROUTES = {
       { tool: 'reducer',  label: 'Keep the rig',  hint: 'Rig Reducer — keep the fixtures the venue has, re-patch' },
       { tool: 'doctor',   label: 'Clean up',      hint: 'Workspace Doctor — fix what the old show carries' },
       { tool: 'porter',   label: 'Bring functions', hint: 'Function Porter — looks, chasers, fixtures or groups from another show (skip if not needed)' },
+      { tool: 'stage',    label: 'Groups', tab: 'groups', hint: 'Stage & Meshes › Groups — the fixture groups the looks are built on' },
       { tool: 'looks',    label: 'Looks',         hint: 'Look Builder — looks and chasers for the new groups' },
       { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — pages, buttons, the setlist CueList' },
       { tool: 'stage',    label: 'Stage',         hint: 'Stage & Meshes — the venue stage, band and set pieces' },
@@ -63,7 +64,12 @@ function routeGo(i) {
   if (!_route) return;
   _route.cur = i;
   _routeSave();
-  go(ROUTES[_route.id].steps[i].tool);
+  const s = ROUTES[_route.id].steps[i];
+  go(s.tool);
+  if (s.tab && s.tool === 'stage' && typeof stageTab === 'function') {
+    stageTab(s.tab);
+    setTimeout(() => stageTab(s.tab), 400);     // after the screen has loaded its state
+  }
 }
 
 function routeToggle(i, ev) {

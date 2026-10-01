@@ -167,10 +167,12 @@ function _renderSongList() {
   list.innerHTML = _songRows.map((row, i) => {
     const sel       = _selectedSongs.has(i) ? ' fb-song-active' : '';
     const hasAssign = !!row.qxw_id;
-    const dotClass  = hasAssign ? 'fb-assign-dot fb-assign-dot-ok' : 'fb-assign-dot';
-    const dotTitle  = hasAssign ? `Assigned: ${row.qxw_name || row.qxw_id}` : 'Not assigned';
     // Look up extra details (VC button, description) from the function pool
     const fn = hasAssign ? _functions.find(f => f.id === row.qxw_id) : null;
+    const dark = !!(fn && fn.dark);
+    const dotClass  = dark ? 'fb-assign-dot fb-assign-dot-dark' : (hasAssign ? 'fb-assign-dot fb-assign-dot-ok' : 'fb-assign-dot');
+    const dotTitle  = dark ? 'Lights nothing — the stage goes dark on this song'
+                           : (hasAssign ? `Assigned: ${row.qxw_name || row.qxw_id}` : 'Not assigned');
     // If assigned function is a generated clone, find its parent base function
     let parentHtml = '';
     let parent = null;
@@ -211,6 +213,7 @@ function _renderSongList() {
         + parentHtml
         + originHtml
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
+        + (dark ? `<div class="fb-song-dark">⚠ lights nothing (no steps or an empty scene) — the stage goes dark on this song; assign another look or give it one in the Look Builder</div>` : '')
       : '';
     return `
       <div class="fb-song-item${sel}" data-idx="${i}" onclick="slSelectRow(${i}, event)">

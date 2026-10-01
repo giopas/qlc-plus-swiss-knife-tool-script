@@ -3842,3 +3842,12 @@ body.nav-min .side-changes { display: none; }
   .files-panel > .fp-title:not(.sc-head), #fp-workspace, #fp-dictionary, #fp-qxf { display: none; }
   .fp-session { margin-top: 4px; }
 }
+
+/* 2.7 — copies in the show's own looks (Porter step 3) */
+.porter-wire { margin: 8px 0; }
+.porter-wire-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; margin-bottom: 6px; }
+.porter-wire-head .porter-row-sub { flex: 1 1 100%; order: 3; white-space: normal; }
+.porter-wire-acts { display: flex; gap: 6px; }
+.porter-wire-tbl { border-collapse: collapse; margin: 4px 0 6px; }
+.porter-wire-tbl td { padding: 3px 8px 3px 0; font-size: 12px; vertical-align: middle; }
+.porter-wire-tbl select { max-width: 420px; }

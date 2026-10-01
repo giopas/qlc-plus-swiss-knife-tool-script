@@ -494,6 +494,11 @@ Checks (★ = included in Phase 1.0):
 
 **2.7 Grow a rig — wire new fixtures into the show → v1.10.0** *(asked by giopas, 1 Oct)*
 
+*Status (1 Oct, night) — built for the Porter, waiting for giopas's test:*
+- Decisions (giopas, 1 Oct): default *plays like* = the nearest fixture **at the same level, same side** (ceiling spots follow *CL: Ceiling Left / Right*); **matrices stay on their groups** (reported, not changed); wiring **in the Function Porter only** — the Rig Editor (rename + add fixtures + group editor) is not built now; the fixture group editor moves back to 2.8 (Pub test step 3).
+- Built: `core/rig_grow.py`, plan key `wire`, `/api/porter/wire/options`, step 3 card *The copies in the show's own looks*, step 4 + report lines, 10 tests. On giopas's real files (FloorShow v11 ← BigShow v41 *Ceiling* group): Ceiling 1–3 → CL Left, 4–6 → CL Right, each added to 150 scenes; the 5 matrices on *Floor_All* reported; Doctor 0 errors (220 warnings, as before).
+- Next: giopas tests in the app and in QLC+ (press a few looks: the spots light in the same colour as the ceiling PARs), then release v1.10.0.
+
 *The problem.* Copying fixtures into a show (e.g. the 6 ceiling spots of BigShow into FloorShow, Porter step 2) gives them only the **ported** functions. The show's own scenes, chasers, RGB matrices, EFX and buttons don't know them: press *Red Pulse* and the ceilings stay dark. Today nothing says so. giopas: "ensure I can wire them on existing scenes / matrices… if not, it is well explained (or add new scenes / buttons?)".
 
 *How the show uses a fixture* (what wiring must touch):
@@ -524,11 +529,11 @@ Checks (★ = included in Phase 1.0):
 - `core/rig_grow.py`: `wire(root, new_ids, plan) → (root, report)`; pure, deterministic, Doctor-checked like the other tools.
 
 *Tasks*:
-- [ ] Design check with giopas on his case (FloorShow + BigShow ceilings): which defaults he expects for *plays like* and for the groups.
-- [ ] `core/rig_grow.py` — scenes by template (with translation), groups (grid placement), EFX, PANIC RESET, the "not wired" list. Tests on the corpus (Pub_6fix + Festival ceilings): every scene with the template gets the new fixture and nothing else changes (diff); chasers play it; the matrix group grows; the Doctor finds no new errors; idempotent; undo works.
-- [ ] Porter step 3/4: *Plays like* + summary; Apply = one History step.
-- [ ] Rig Editor: rename + add fixtures + group editor + wiring panel.
-- [ ] Wiki: *Rig Editor* (the old *Rig Reducer* page redirects), *Function Porter* (wiring), and a how-to "Add ceiling lights to a floor show".
+- [x] Design check with giopas on his case (FloorShow + BigShow ceilings): which defaults he expects for *plays like* and for the groups. *(1 Oct, decisions above)*
+- [x] `core/rig_grow.py` — scenes and sequence steps by template (with translation), EFX, PANIC RESET (a scene like the others), the "not wired" list (matrices stay on their groups — decided). Tests on the corpus (Pub_6fix + Festival ceilings): every scene with the template gets the new fixture and nothing else changes; colour and level kept through the translation; the Doctor finds no new errors; idempotent; only the show's own functions.
+- [x] Porter step 3/4: *Plays like* + summary; Apply = one History step.
+- [ ] ~~Rig Editor: rename + add fixtures + group editor + wiring panel.~~ Not now (giopas, 1 Oct: wiring in the Porter only); the group editor goes to 2.8.
+- [x] Wiki: *Function Porter* — *The copies in the show's own looks*, with the how-to "Add ceiling lights to a floor show".
 - [ ] Corpus: a sanitised `FloorShow` (wanted since Phase 1) — giopas's real case.
 - [ ] Release **v1.10.0**.
 
@@ -539,7 +544,7 @@ Checks (★ = included in Phase 1.0):
 *The route* (each step a Swiss Knife tool, each output a new file checked by the Doctor):
 1. **Rig Reducer** — keep the 6 PARs, remove the ceiling spots and 2 PARs with cascade, rename to DR/FLB/FRB/LG/FRS/FLS, re-patch.
 2. **Workspace Doctor** — fix what the festival show carries (duplicate widget IDs, incomplete scenes, degenerate setlist chasers, PANIC RESET).
-3. **Fixture groups** for the pub (*Singer Pair*, *Band Pair*, *Front Band*, *Logo*) — with the group editor of the Rig Editor (built in 2.7).
+3. **Fixture groups** for the pub (*Singer Pair*, *Band Pair*, *Front Band*, *Logo*) — **gap: no tool creates fixture groups yet** → a fixture group editor (task below).
 4. **Look Builder** — the pub looks and chasers per group (palette + patterns, two-letter prefix names).
 5. **Function Porter** — only if looks must come from another show (the festival's own looks survive step 1 for the kept PARs).
 6. **VC Editor** — page *1. SETLIST* first with the setlist CueList (one click), page *2. EFFECTS* from a template / the Look Builder page, label legend.
@@ -556,6 +561,7 @@ Checks (★ = included in Phase 1.0):
 
 *Tasks*:
 - [ ] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report).
+- [ ] Fixture group editor (step 3 gap; moved back from 2.7).
 - [ ] Run the route on the corpus, fix what gets in the way (each fix: test + commit).
 - [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
 - [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
@@ -844,7 +850,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. Phase **2.7 Grow a rig → v1.10.0** (wire copied / added fixtures into the show; the Rig Editor with the group editor), then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. giopas tests 2.7 (Porter: the copies in the show's own looks) → release **v1.10.0**; then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

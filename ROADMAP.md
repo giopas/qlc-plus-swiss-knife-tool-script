@@ -31,9 +31,9 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **1.8.0** ✅ | Stage & meshes | OBJ meshes placed by what you see (centre, height above the floor), on the floor in one click; plan/front views with fixtures; mesh library |
 | **1.9.0** ✅ | One show, every tool | The show in progress with History; Function Porter with the Merger folded in; Show Paperwork; guided routes; one screen pattern |
 | **1.10.0** ✅ | Grow a rig | Copied fixtures join the show's own looks ("plays like"): scenes, sequence steps and EFX, translated between fixture types; what can't be wired is listed |
-| **2.0.0** ✅ | Benchmark | The "Pub test" passed: a 14-fixture festival show rebuilt as the 6-fixture pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors; fixture group editor; Compare; tutorial |
+| **2.0.0** ✅ | Benchmark | The "Pub test" passed: a 14-fixture festival show rebuilt as the 6-fixture pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors; fixture group editor; Compare; tutorial; the *recipe* — every change replayed by the command line to the same file |
 | **2.1.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
 
 ## After 2.0
 
-First the *recipe*: every History step's options saved as JSON and replayed by the command line to the same file. Then Show Profiles (one JSON per show), a command-line build pipeline, an MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.
+Show Profiles (one JSON per show, built on the recipe), a command-line build pipeline, an MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.

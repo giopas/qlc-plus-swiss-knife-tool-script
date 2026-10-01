@@ -152,6 +152,38 @@ def _copies_of(data: dict) -> dict:
             'fixture_mapping': {}}
 
 
+@bp.route('/wire/options', methods=['POST'])
+def wire_options():
+    """2.7 — for each fixture copied in step 2: which existing target fixture
+    it should play like in the show's own looks (suggested), and the choices.
+    Body: { copy_fixtures, copy_groups }."""
+    data = request.get_json(force=True) or {}
+    try:
+        from core import rig_grow
+        with porter._with_copies(_copies_of(data)) as (_p, copies):
+            cmap = (copies or {}).get('map', {})
+            root = porter._tgt['root']
+            infos = porter._fixture_infos(root)
+            sug = rig_grow.suggest(root, list(cmap.values()))
+            uses = rig_grow.usage(root)
+            # values can only be translated between types whose .qxf is found
+            _m, problems = rig_grow._value_maker(
+                root, {n: v['template'] for n, v in sug.items() if v['template']},
+                porter._load_defs({}))
+        new = set(cmap.values())
+        rows = [{'src': s, 'new': n, 'name': infos.get(n, {}).get('name', n),
+                 'model': infos.get(n, {}).get('model', ''),
+                 'template': sug.get(n, {}).get('template', ''),
+                 'why': sug.get(n, {}).get('why', ''),
+                 'problem': problems.get(n, '')} for s, n in cmap.items()]
+        targets = [{'id': i, 'name': inf['name'], 'model': inf['model'],
+                    'uses': uses.get(i, 0)}
+                   for i, inf in infos.items() if i not in new]
+        return jsonify({'rows': rows, 'targets': targets})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 @bp.route('/fixture-candidates', methods=['POST'])
 def fixture_candidates():
     """
@@ -487,4 +519,7 @@ def _normalize_plan(data: dict) -> dict:
         # 1.9: the QXW Merger folded in — copy source fixtures / groups
         'copy_fixtures':   [str(x) for x in (data.get('copy_fixtures') or [])],
         'copy_groups':     [str(x) for x in (data.get('copy_groups') or [])],
+        # 2.7: copied fixture (source id) → existing target fixture it plays like
+        'wire':            {str(k): str(v) for k, v in (data.get('wire') or {}).items()
+                            if str(k).isdigit() and str(v).isdigit()},
     }

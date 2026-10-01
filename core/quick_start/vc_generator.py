@@ -270,7 +270,7 @@ def _vc_slider(wid: int, caption: str, x: int, y: int,
     _sub(app, "FrameStyle", "Sunken")
     if slider_mode == "Submaster":
         # Submaster scales every function started from widgets in the same
-        # frame (as in the TheBand shows); it never *sets* a channel.
+        # frame (a common VC layout); it never *sets* a channel.
         _sub(sl, "SliderMode", slider_mode, ValueDisplayStyle="Percentage")
     else:
         _sub(sl, "SliderMode", slider_mode,

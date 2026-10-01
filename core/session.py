@@ -16,7 +16,7 @@ Format (version 1):
   "workspace": "/abs/path/to/showfile.qxw",
   "dictionary": "/abs/path/to/descriptions.txt",
   "slot_paths": {
-    "4001": "/abs/path/to/slot_prefix_setlist.txt",
+    "4001": "/abs/path/to/slot_setlist.txt",
     "4101": "/abs/path/to/slot_unread_setlist.txt"
   },
   "brightness_forced": {

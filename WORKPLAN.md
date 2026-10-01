@@ -4,6 +4,8 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (1 Oct, evening — anonymised):** giopas asked that the public repo carry no real names: author references are now *giopas*, show / band / venue names replaced (FloorShow, BigShow, BarShow, SmallShow; corpus already neutral), the naming profile is `prefix`, LICENSE says *giopas*. Commits from here on: `giopas <giopas@users.noreply.github.com>`. Older commits still carry the real name in their author field — rewriting history is optional (instructions given, giopas decides).
+
 **Status (1 Oct, later — v1.9.0 released by giopas; his five points before 2.7):**
 - Decided with giopas:
   1. **Wiring copied fixtures into the existing show** gets its own phase, **2.7 Grow a rig → v1.10.0**, before the Pub test (now **2.8 → v2.0.0**).
@@ -135,7 +137,7 @@ The result must be:
 
 - **Deterministic:** same input gives byte-identical output.
 - **Accurate:** QLC+ opens it cleanly and it behaves on stage.
-- **Useful to other QLC+ users too:** conventions are configurable, not hard-coded to TheBand.
+- **Useful to other QLC+ users too:** conventions are configurable, not hard-coded to one band's habits.
 
 ### Acceptance benchmark (the "Pub test")
 
@@ -169,7 +171,7 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
    - always include a PANIC RESET.
    - VC buttons and chaser steps never share a scene (latch conflict).
 6. **QLC+ is the reference.** Every generator has a manual *QLC+ open-check* (§6) before release.
-7. **Conventions are data, not code.** Nomenclature, palettes, VC screen size and templates live in JSON *profiles* that users can share. The TheBand profile is just the first one.
+7. **Conventions are data, not code.** Nomenclature, palettes, VC screen size and templates live in JSON *profiles* that users can share. The two-letter prefix profile is just the first one.
 8. **Tests and CI green before merge.** No feature merges without tests; CI runs on every push.
 
 ---
@@ -189,11 +191,11 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
 | 2026-09-23 | Doctor severities: D001–D003 errors; D004–D009, D012, D016 warnings; D015 and I-codes info. D005 is a warning (not an error) so porting from older shows is not blocked before auto-fix exists. |
 | 2026-09-23 | VC copy/move (added to v1.3.2 at giopas's request): copies get new widget IDs (`max+1`) and **drop key/MIDI bindings by default** (opt-in to keep); moves keep IDs and bindings; operations refuse duplicated widget IDs (D002). The Triggers tab is renamed **Trigger Manager**. The venv lives in `~/.venvs/swissknife` (iCloud duplicates break pywebview). |
 | 2026-09-23 | **Quick Start channel model:** channel indices come from the selected **mode**; unused channels get a capability-aware **neutral** value (ShutterOpen preset or an *Open / No function / White / Off* capability, never a *Closed/Blackout* one; Pan/Tilt coarse 127, fine 0; otherwise 0). BLACKOUT additionally closes the shutter on fixtures with no dimmer channel. PANIC RESET = neutral + intensity 0, on its own Toggle button. |
-| 2026-09-23 | **TheBand naming profile** taken from the legend on the Pub_6fix EFFECTS page: format `{group}{effect} · {name}`; groups A F S B R D L X (all, front four, singer pair, band pair, rear two, drums floor, logo, split/spatial); effects S D P M \* (static, dynamic, pulse, movement, special FX). Quick Start only knows "all" (A); anything the profile can't map (utility functions, per-type group scenes) gets **no prefix** rather than a wrong one. Buttons carry the prefix too (`prefix_captions`). |
+| 2026-09-23 | **Two-letter prefix naming profile** taken from the legend on the Pub_6fix EFFECTS page: format `{group}{effect} · {name}`; groups A F S B R D L X (all, front four, singer pair, band pair, rear two, drums floor, logo, split/spatial); effects S D P M \* (static, dynamic, pulse, movement, special FX). Quick Start only knows "all" (A); anything the profile can't map (utility functions, per-type group scenes) gets **no prefix** rather than a wrong one. Buttons carry the prefix too (`prefix_captions`). |
 | 2026-09-23 | **VC style cloning** copies geometry and fonts only (button size = most common ≥30 px tall, gap = median horizontal gap, header = smallest child Y in headed frames, page = most common top-level frame size). Colours stay semantic. |
 | 2026-09-23 | Doctor D006: a value of **0** on a capability with no preset and no "active" words (strobe, program, auto, macro, sound, pulse, chase …) is safe — it is the fixture's plain operating mode (SlimPAR 56 `Mode = 0 (RGB)`). Corpus baselines unchanged. |
 | 2026-09-24 | **Quick Start VC = one page.** Whole-rig LOOKS + EFFECTS share one SoloFrame (plain sub-frames pass the solo signal up in QLC+ 5): one at a time. **Each group is its own SoloFrame** (one at a time inside a group, groups combine — giopas, 24 Sep). Only PANIC / BLACKOUT and PANIC RESET are outside. Page size = style page (default 1650 × 884). Sliders carry `InvertedAppearance="false"` (QLC+ 5 default is inverted). **Audio React** = fixture's own sound-active capability (Sound/Audio/Music label, middle of range), only if present. |
-| 2026-09-24 | **Fixture groups** are user-defined in step 3 (default: one per fixture name). Each group: frame with a **submaster** (group dimmer), looks (On, Red, Blue, Green, Warm), effects (Pulse, Color Fade, Chase). Group scenes declare only the group's fixtures. MASTER is a page-level submaster. RED/GREEN/BLUE Level sliders and the *Color Fixtures* button are dropped. TheBand names: group letter = first letter of the group name unless mapped. |
+| 2026-09-24 | **Fixture groups** are user-defined in step 3 (default: one per fixture name). Each group: frame with a **submaster** (group dimmer), looks (On, Red, Blue, Green, Warm), effects (Pulse, Color Fade, Chase). Group scenes declare only the group's fixtures. MASTER is a page-level submaster. RED/GREEN/BLUE Level sliders and the *Color Fixtures* button are dropped. two-letter prefix names: group letter = first letter of the group name unless mapped. |
 | 2026-09-24 | **RGB-matrix buttons run a Collection** (scene opening the master dimmers + the matrix): QLC+ ignores *DimmerControl* in RGB mode (`rgbmatrix.cpp`). Only scripts that exist in QLC+ 4 and 5: One By One, Even/Odd, Gradient, Plasma, Waves, Stripes. |
 | 2026-09-24 | **Generated XML is indented** like QLC+'s own (QLC+ 5.2.2 `VCSlider::loadXMLLevel` reads one token too many after an empty `<Level/>`; on a one-line file that drops every later widget). **Fixture definitions QLC+ lacks are saved next to the workspace** as `<Manufacturer>-<Model>.qxf` (QLC+'s fallback path in `Fixture::loader`), else unknown fixtures load as plain dimmers. Stock fixtures (found in the installed QLC+ library or user folder, `qlc_library.py`) get no file; if the installed definition lacks the chosen mode → warning (QLC+ prefers its own definition). |
 | 2026-09-24 | Real show files in the public repo are **renamed and scrubbed** (`Festival_14fix`, `Pub_6fix`; bands/songs/venue → neutral names). Git history still contains the originals — purge only if needed (needs a force-push). |
@@ -288,7 +290,7 @@ Found and fixed along the way (all in the CHANGELOG):
 - [x] **1.1b after giopas's test (24 Sep):** full-width page; one SHOW solo frame (one button at a time); fixture groups (step 3 editor, per-group frame + submaster + looks + effects); MASTER submaster; RGB matrices lit (Collection); `.qxf` next to the `.qxw`; indented XML.
 - [x] Safe defaults baked in: PANIC RESET, strobe and program channels at 0, full channel declaration. *(Plus mode-aware channel indices and capability-aware neutral values — `core/quick_start/channel_model.py`.)*
 - [x] **Clone VC style from a reference QXW**: button size, gaps, header, fonts, page size (`core/quick_start/vc_style.py`). Built-in `compact` style extracted from `Pub_6fix`; *From a reference .qxw…* in step 4. *(Frame layout/page structure cloning → Phase 2.4 VC templates.)*
-- [x] Nomenclature profile (JSON): `plain` and `prefix` in `core/quick_start/profiles/nomenclature/`. The TheBand profile:
+- [x] Nomenclature profile (JSON): `plain` and `prefix` (two-letter prefix; renamed 1 Oct) in `core/quick_start/profiles/nomenclature/`. The two-letter prefix profile:
   - First letter, fixture group: A = all, F = front four, S = singer pair, B = band pair, R = rear two, D = drums floor, L = logo, X = split/spatial.
   - Second letter, effect type: S = static, D = dynamic, P = pulse, M = movement, \* = special FX.
 - Commits: `test(quickstart): golden outputs`, `feat(quickstart): clone VC style from reference`, `feat: nomenclature profiles`
@@ -427,7 +429,7 @@ Checks (★ = included in Phase 1.0):
 - Commit: `feat: Rig Reducer with cascading clean-up`
 
 **2.3 Look and Chaser Builder → v1.6.0** — ✅ *done 29 Sep, branch `feat/look-builder` (`d0ab5c2`)*
-- [x] **Looks**: fixture group × palette. Palettes are warm, cold, scenic and custom (with RGB pickers). Every channel is declared. Names follow the nomenclature profile. *(`core/look_builder.py`; palettes in `core/looks/palettes.json`; colour written by `capability_map.encode` — RGB(W) mix / nearest wheel slot / dimmer; "All fixtures" + the workspace's fixture groups, head order row by row; plain names `Group · Colour`, TheBand `AS · Amber`; duplicates get ` (2)`; level 5–100 %)*
+- [x] **Looks**: fixture group × palette. Palettes are warm, cold, scenic and custom (with RGB pickers). Every channel is declared. Names follow the nomenclature profile. *(`core/look_builder.py`; palettes in `core/looks/palettes.json`; colour written by `capability_map.encode` — RGB(W) mix / nearest wheel slot / dimmer; "All fixtures" + the workspace's fixture groups, head order row by row; plain names `Group · Colour`, two-letter prefix `AS · Amber`; duplicates get ` (2)`; level 5–100 %)*
 - [x] **Chaser patterns**: all-hit; left/right alternation (halves or odd/even); chase across a group; ping-pong; build-up; random (seeded, *n* per step, never the same set twice in a row). *(`pattern_states()`; colours per step or per fixture; off = dark or a background colour/level; identical steps share one scene; steps in folder `Look Builder/Chasers/<name>`)*
 - [x] Chaser options: cut vs fade (a % of the step, fade in = fade out, Common speed modes), and step time entered in ms or as BPM plus note length (1/1 … 1/16, a quarter = one beat).
 - [x] Song presets are saved in a profile and reusable. *(built-in `core/looks/presets.json` — "Drive — 8 steps, 280 ms, cut" and 4 more; yours in `~/.qlc_swiss_knife/look_presets.json` / `$QSK_LOOK_PRESETS`; built-in names reserved)*
@@ -538,7 +540,7 @@ Checks (★ = included in Phase 1.0):
 1. **Rig Reducer** — keep the 6 PARs, remove the ceiling spots and 2 PARs with cascade, rename to DR/FLB/FRB/LG/FRS/FLS, re-patch.
 2. **Workspace Doctor** — fix what the festival show carries (duplicate widget IDs, incomplete scenes, degenerate setlist chasers, PANIC RESET).
 3. **Fixture groups** for the pub (*Singer Pair*, *Band Pair*, *Front Band*, *Logo*) — with the group editor of the Rig Editor (built in 2.7).
-4. **Look Builder** — the pub looks and chasers per group (palette + patterns, TheBand names).
+4. **Look Builder** — the pub looks and chasers per group (palette + patterns, two-letter prefix names).
 5. **Function Porter** — only if looks must come from another show (the festival's own looks survive step 1 for the kept PARs).
 6. **VC Editor** — page *1. SETLIST* first with the setlist CueList (one click), page *2. EFFECTS* from a template / the Look Builder page, label legend.
 7. **Stage & Meshes** — pub stage size, band meshes on the floor, lined up.

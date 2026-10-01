@@ -7,7 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
-Phase 2.8 — the Pub test, first part: the two tools it needs.
+
+## [2.0.0] — 2026-10-01
+
+**The Pub test passed.** A real festival show rebuilt as the pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors, played in QLC+ (WORKPLAN 2.8). The two tools it needed, what the run showed, and a tutorial.
 
 ### Added
 - **Fixture groups** in Stage & Meshes, new tab **Groups**.

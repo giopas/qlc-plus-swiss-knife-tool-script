@@ -1,7 +1,7 @@
 {
   "id": "prefix",
-  "label": "TheBand (two-letter prefix)",
-  "description": "Two-letter prefix, as in the TheBand shows: first letter = fixture group, second = effect type (\"AS · Red\", \"AD · Color Fade\", \"A* · Strobe Fast\"). Whole-rig functions use A; your Quick Start groups use the first letter of their name (\"Front\" → F) unless you map them in category_group.",
+  "label": "Two-letter prefix (group + effect)",
+  "description": "Two-letter prefix: first letter = fixture group, second = effect type (\"AS · Red\", \"AD · Color Fade\", \"A* · Strobe Fast\"). Whole-rig functions use A; your Quick Start groups use the first letter of their name (\"Front\" → F) unless you map them in category_group.",
   "format": "{group}{effect} · {name}",
   "groups": {
     "A": "all fixtures",

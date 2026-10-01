@@ -11,8 +11,8 @@ Real QLC+ 5 show files used as the **oracle** for Doctor, Porter, Rig Reducer, S
 | `Festival_14fix.qxw` | 14-fixture festival show:<br>• 6 × Eurolite LED 4C-12 (9 ch) on the ceiling<br>• 8 × Generic 7-Ch RGB PAR on the floor<br>• 286 functions<br>• 4 VC pages (Master + 3 bands) | Source for Rig Reducer and Porter; a "dirty" reference for Doctor. |
 | `Pub_6fix.qxw` | 6-fixture pub show derived from v41:<br>• 207 functions<br>• 2 VC pages (setlist first)<br>• CueList wired to the setlist chaser | Target of the Pub benchmark; a "clean" reference for Doctor. |
 | `QuickStart_6fix.qxw` | Quick Start output: 2 × Eurolite LED 4C-12 on the truss, 4 × Generic PAR on the floor, 36 functions. Plain names, default VC style. | Golden files for Quick Start determinism (`tests/test_quickstart_golden.py`); each must pass Doctor with 0 errors and 0 warnings. |
-| `QuickStart_club.qxw` | Quick Start output: 2 × Chauvet Intimidator Spot 110 in **6-channel mode** (mode order ≠ definition order) + 4 × SlimPAR 56. TheBand names, built-in Compact VC style. QXFs in `tests/fixtures/`. | Same. Pins mode-aware channel indices. |
-| `QuickStart_multiuni.qxw` | Quick Start output: 8 × Intimidator Spot 375Z (15 ch, **shutter closed at 0**) + 60 × SlimPAR 56 → two universes. TheBand names, VC style cloned from `Pub_6fix.qxw`. | Same. Pins capability-aware neutral values (shutter open = 4), universe roll-over and style cloning. |
+| `QuickStart_club.qxw` | Quick Start output: 2 × Chauvet Intimidator Spot 110 in **6-channel mode** (mode order ≠ definition order) + 4 × SlimPAR 56. two-letter prefix names, built-in Compact VC style. QXFs in `tests/fixtures/`. | Same. Pins mode-aware channel indices. |
+| `QuickStart_multiuni.qxw` | Quick Start output: 8 × Intimidator Spot 375Z (15 ch, **shutter closed at 0**) + 60 × SlimPAR 56 → two universes. two-letter prefix names, VC style cloned from `Pub_6fix.qxw`. | Same. Pins capability-aware neutral values (shutter open = 4), universe roll-over and style cloning. |
 
 All three are **generated** by `tools/make_quickstart_sample.py`; regenerate them when Quick Start output changes on purpose.
 | `Generic-7Ch-RGB-PAR.qxf` | Floor PAR definition (7 ch: dimmer, R, G, B, strobe, mode, mode speed) | Channel decoding, D005/D006. |
@@ -20,7 +20,7 @@ All three are **generated** by `tools/make_quickstart_sample.py`; regenerate the
 
 **Sanitisation:** `<Author>` changed to `Swiss Knife test corpus`; band, venue and song names replaced by neutral ones (*Band A/B/C*, *Pub*, *Festival*, *Song 01*…); the DMX interface serial number zeroed. Structure, IDs, channel values and VC layout are unchanged, so Doctor counts are the same as on the originals.
 
-**Still wanted:** `FloorShow` (8-fixture floor-only show) as a third, mid-size case.
+**Still wanted:** a mid-size floor-only show (8 fixtures) as a third case.
 
 ## Baseline findings (23 Sep 2026)
 

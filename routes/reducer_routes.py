@@ -102,8 +102,11 @@ def run_apply():
         _last = {'report': res['report'], 'removed': res['removed'],
                  'doctor': res['doctor'], 'filename': ''}
         rem = ', '.join(f'{v} {k}' for k, v in (res['removed'] or {}).items() if v)
+        ren = sum(1 for e in rp.values() if 'name' in e)
+        pat = sum(1 for e in rp.values() if 'universe' in e or 'address' in e)
         return applied('reducer', f'kept {len(keep)} fixtures'
-                       + (f', re-patched {len(rp)}' if rp else ''), res['root'],
+                       + (f', renamed {ren}' if ren else '')
+                       + (f', re-patched {pat}' if pat else ''), res['root'],
                        res['report'], f'removed: {rem}' if rem else '')
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

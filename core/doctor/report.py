@@ -31,6 +31,7 @@ TITLES = {
     "D015": "Unnamed function",
     "D016": "Unreferenced function",
     "D017": "PANIC RESET is a plain scene (cannot darken running looks)",
+    "D018": "Setlist song that lights nothing",
     "I001": "Caption-only button (used as a label)",
     "I002": "Virtual Console pages",
     "I003": "No fixture definition — channel checks skipped",

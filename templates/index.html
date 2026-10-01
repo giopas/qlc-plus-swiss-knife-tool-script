@@ -134,6 +134,10 @@
       <svg class="ic"><use href="/static/icons.svg#search"/></svg>
       <span>ID Browser</span>
     </button>
+    <button class="sn-item" id="sn-compare" data-tip="Compare" data-desc="The show in progress next to another show, by what they do: fixtures and patch, groups, looks (decoded colour and level), chasers, VC pages, setlist." onclick="go('compare')">
+      <svg class="ic"><use href="/static/icons.svg#merge"/></svg>
+      <span>Compare</span>
+    </button>
 
     <!-- 6 · Document -->
     <div class="sn-group-label" id="sn-grp-6"><span class="sn-gnum">6</span><span class="sn-gtxt">Document</span></div>
@@ -315,7 +319,7 @@
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
           <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; every ID in a table.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
         </div>
         <div class="wf-card" data-grp="6">
           <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
@@ -345,6 +349,49 @@
         <a href="https://www.qlcplus.org/" target="_blank" rel="noopener">QLC+</a>
       </div>
 
+    </div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       COMPARE (WORKPLAN 2.8)
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-compare">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
+      <div><h2>Compare</h2><div class="p-desc">The show in progress next to another show, by what they do — fixtures and patch, groups, looks (decoded colour and level), chasers, Virtual Console, setlist.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Compare')" title="How this tool works — opens the Compare page of the wiki">?</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tab-toolbar">
+      <span class="sb-label">Compare with</span>
+      <input id="cmp-path" type="hidden">
+      <span id="cmp-chip" class="file-chip">no file</span>
+      <button class="btn btn-surface" onclick="compareBrowse()">📂 Other show…</button>
+      <span class="path-fallback"><input id="cmp-path-typed" class="search" placeholder="…or paste the .qxw path" style="width:260px"
+        onkeydown="if(event.key==='Enter'){compareSetPath(this.value)}"></span>
+      <button class="btn btn-surface" onclick="compareOpened()" data-tooltip="The file the show in progress was opened from — what changed since you opened it">⤵ Opened file</button>
+      <div class="spacer"></div>
+      <span id="cmp-total" class="cmp-total"></span>
+    </div>
+
+    <div id="cmp-body" class="cmp-body">
+      <div class="porter-placeholder">Pick the other show (📂 Other show…): e.g. the hand-made version of this show, or the file you started from (⤵ Opened file).</div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note ro">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Read-only — <b>&nbsp;nothing is changed</b>
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="compareCopy()">📋 Copy report</button>
+      <button class="btn btn-surface" onclick="compareSaveReport()">💾 Save report…</button>
+      <button class="btn btn-accent" onclick="compareRun()">⇄ Compare</button>
     </div>
 
   </section>
@@ -2102,5 +2149,6 @@
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
 <script src="/static/js/show.js?v={{ asset_v }}"></script>
 <script src="/static/js/route.js?v={{ asset_v }}"></script>
+<script src="/static/js/compare.js?v={{ asset_v }}"></script>
 </body>
 </html>

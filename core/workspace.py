@@ -29,7 +29,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "1.10.0"  # single source of truth — must match CHANGELOG
+VERSION = "2.0.0"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -189,6 +189,7 @@ def get_functions() -> list:
     """Return func_detailed as a sorted list of dicts (by int ID), enriched with VC button and description."""
     # Pre-build set of base IDs that have at least one clone
     cloned_base_ids = set(_state['clone_base_map'].values())
+    dark = _dark_functions()
 
     rows = []
     for fid, info in _state['func_detailed'].items():
@@ -211,9 +212,26 @@ def get_functions() -> list:
             'is_clone':  is_clone,
             'base_id':   base_id,
             'has_clone': has_clone,
+            'dark':      fid in dark,
         })
     rows.sort(key=lambda r: _int(r['id']))
     return rows
+
+
+def _dark_functions() -> set:
+    """IDs of the functions that light nothing (an empty scene, a chaser or
+    collection with no steps, or only such steps) — the Doctor's D018 test,
+    shown in the Setlist so a dark song is seen before the gig."""
+    root = _state.get('qxw_root')
+    if root is None:
+        return set()
+    try:
+        from core import qxw_io
+        from core.doctor.checks import _Workspace, _lights_nothing
+        w = _Workspace(qxw_io.strip_ns(copy.deepcopy(root)), {})
+        return {f.get('ID') for f in w.function_els if _lights_nothing(w, f.get('ID'))}
+    except Exception:  # noqa: BLE001 — a hint only
+        return set()
 
 
 def _is_generated_clone(name: str, fid: str = None) -> bool:

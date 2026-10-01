@@ -124,6 +124,7 @@ from routes.reducer_routes import bp as reducer_bp
 from routes.looks_routes import bp as looks_bp
 from routes.stage_routes import bp as stage_bp
 from routes.show_routes import bp as show_bp
+from routes.compare_routes import bp as compare_bp
 
 PORT = 5731
 
@@ -150,6 +151,7 @@ def create_app():
 
     app.register_blueprint(workspace_bp)
     app.register_blueprint(show_bp)
+    app.register_blueprint(compare_bp)
     app.register_blueprint(id_browser_bp)
     app.register_blueprint(setlist_bp)
     app.register_blueprint(dictionary_bp)
@@ -188,6 +190,18 @@ def create_app():
         origin_host = origin.replace('http://', '').replace('https://', '').rstrip('/')
         if origin_host not in _ALLOWED_HOSTS:
             return jsonify({'error': 'Forbidden'}), 403
+
+    # ── The recipe (WORKPLAN 2.9): every change to the show, for the replay ──
+    @app.after_request
+    def _record_recipe(response):
+        try:
+            from core import recipe
+            if recipe.active() and recipe.recordable(request.method, request.path):
+                recipe.record(request.method, request.path,
+                              request.get_json(silent=True), response.status_code)
+        except Exception:  # noqa: BLE001 — recording never breaks a request
+            pass
+        return response
 
     # ── Security: response headers ────────────────────────────────────────────
     @app.after_request

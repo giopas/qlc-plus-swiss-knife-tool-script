@@ -74,7 +74,13 @@ function _rrSync() {
   const gone = _rrFx.length - _rrKeep.size;
   if (s) s.innerHTML = `<span class="doc-chip">${_rrKeep.size} kept</span>` +
     `<span class="doc-chip doc-warning">${gone} removed</span>` +
-    (Object.keys(_rrEdit).length ? `<span class="doc-chip">${Object.keys(_rrEdit).length} re-patched</span>` : '');
+    (() => {
+      const ed = Object.entries(_rrEdit).filter(([id]) => _rrKeep.has(id)).map(([, e]) => e);
+      const ren = ed.filter(e => 'name' in e).length;
+      const pat = ed.filter(e => 'universe' in e || 'address' in e).length;
+      return (ren ? `<span class="doc-chip">${ren} renamed</span>` : '') +
+             (pat ? `<span class="doc-chip">${pat} re-patched</span>` : '');
+    })();
   if (b) b.disabled = !_rrKeep.size || (!gone && !Object.keys(_rrEdit).length);
   const x = document.getElementById('rr-export'); if (x) x.disabled = b ? b.disabled : true;
 }

@@ -51,6 +51,8 @@ def _ws():
 def reset(source_name: str = '', source_path: str = '') -> None:
     """A show was opened: it becomes the show in progress, with no steps."""
     _show.clear()
+    from core import recipe
+    recipe.reset(source_path)
     _show.update({
         'source_name': source_name or 'workspace.qxw',
         'source_path': source_path or '',
@@ -260,6 +262,21 @@ def show_bytes() -> bytes:
     return qxw_io.qxw_bytes(root)
 
 
+def _changes(step: dict, nxt: Optional[dict]) -> list:
+    """What an in-place step changed: its snapshot against the next step's
+    (or the show now)."""
+    from core import show_diff
+    try:
+        if not step.get('before'):
+            return []
+        after = nxt.get('before') if nxt else _snapshot()
+        if not after:
+            return []
+        return show_diff.summarise(qxw_io.loads_qxw(step['before']), qxw_io.loads_qxw(after))
+    except Exception:  # noqa: BLE001 — the report is best-effort here
+        return []
+
+
 def report_path(qxw_path: str) -> str:
     return os.path.splitext(qxw_path)[0] + '_report.txt'
 
@@ -274,13 +291,15 @@ def report(out_name: str = '') -> str:
     steps = _show.get('steps', [])
     if not steps:
         lines.append('No changes.')
-    for s in steps:
+    for i, s in enumerate(steps):
         head = f'Step {s["n"]} — {TOOL_TITLES.get(s["tool"], s["tool"])}: {s["title"]}'
         if s.get('edits', 1) > 1:
             head += f' ({s["edits"]} edits)'
         lines += [head, '-' * min(len(head), 78)]
         if s.get('detail'):
             lines.append(s['detail'])
+        if not s.get('report'):
+            lines += _changes(s, steps[i + 1] if i + 1 < len(steps) else None)
         if s.get('doctor'):
             d = s['doctor']
             lines.append(f'Doctor after this step: {d.get("error", 0)} errors, '
@@ -301,13 +320,21 @@ def mark_saved(qxw_path: str) -> dict:
         rp = report_path(os.path.abspath(qxw_path))
         qxw_io.write_bytes(report(out_name).encode('utf-8'), rp,
                            protect=[_show.get('source_path')])
+    rc = ''
+    if qxw_path and os.path.isfile(qxw_path):
+        try:
+            from core import recipe
+            rc = recipe.write_next_to(os.path.abspath(qxw_path))
+        except Exception:  # noqa: BLE001 — the recipe is a bonus, the save stands
+            rc = ''
     _show['saved_upto'] = len(_show['steps'])
     _show['redo'] = None                    # the saved file is the new reference
     _show['saved_name'] = out_name
     _show['saved_path'] = qxw_path or ''
     _close_open_steps()
     _show['version'] += 1
-    return {'report_path': rp, 'report_name': os.path.basename(rp) if rp else ''}
+    return {'report_path': rp, 'report_name': os.path.basename(rp) if rp else '',
+            'recipe_path': rc, 'recipe_name': os.path.basename(rc) if rc else ''}
 
 
 def save(path: str) -> dict:

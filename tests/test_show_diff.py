@@ -36,3 +36,16 @@ def test_functions_groups_pages_widgets():
     assert "Functions removed (1)" in lines and "Functions renamed (1)" in lines and "→ 'Renamed Look'" in lines
     assert "Fixture groups renamed (1)" in lines
     assert "Widgets changed (1): 'New caption on" in lines
+
+
+def test_page_order():
+    a = _pub()
+    b = copy.deepcopy(a)
+    vc = b.find("VirtualConsole")
+    holder = next(f for f in [vc, *vc.iter("Frame")]
+                  if len([c for c in f if c.tag in ("Frame", "SoloFrame") and c.get("Caption")]) >= 2)
+    pages = [c for c in holder if c.tag in ("Frame", "SoloFrame") and c.get("Caption")]
+    holder.remove(pages[-1])
+    holder.insert(list(holder).index(pages[0]), pages[-1])
+    lines = show_diff.summarise(a, b)
+    assert any(l.startswith("Virtual Console page order now: '" + pages[-1].get("Caption").strip()) for l in lines)

@@ -323,3 +323,16 @@ def test_d018_setlist_song_that_lights_nothing():
     got = [(x.ref["cue"], x.ref["function"]) for x in rep.by_code("D018")]
     assert got == [(2, "3"), (3, "4"), (4, "2")]
     assert "cue 2 'Song 12' lights nothing" in rep.by_code("D018")[0].message
+
+
+def test_d018_setlist_screen_marks_dark_functions(tmp_path):
+    """The Setlist shows a dark song before the gig: /api/functions 'dark'."""
+    import shutil
+    import app
+    p = tmp_path / "Fest.qxw"
+    shutil.copy(os.path.join(CORPUS, "Festival_14fix.qxw"), p)
+    c = app.create_app().test_client()
+    assert c.post("/api/load", json={"path": str(p)}).status_code == 200
+    fns = {f["id"]: f for f in c.get("/api/functions").get_json()}
+    assert fns["2373"]["name"] == "Song 12" and fns["2373"]["dark"] is True
+    assert fns["2349"]["dark"] is False                      # Song 11, a scene

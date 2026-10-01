@@ -137,3 +137,19 @@ def test_rename_is_not_a_new_finding():
     keep = [f["id"] for f in rr.fixtures(root) if "Slim Spot" not in f["model"]]
     res = rr.run(root, keep, {"13": {"name": "Front Fill"}}, DEFS)
     assert res["doctor"]["new_warnings"] == [] and res["doctor"]["new_errors"] == []
+
+
+def test_apply_title_tells_renamed_from_repatched(tmp_path):
+    """Pub-test run: renaming 6 fixtures was reported as '6 re-patched'."""
+    import shutil
+    import app
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "corpus", "Pub_6fix.qxw")
+    p = tmp_path / "Pub.qxw"
+    shutil.copy(src, p)
+    c = app.create_app().test_client()
+    assert c.post("/api/load", json={"path": str(p)}).status_code == 200
+    r = c.post("/api/reducer/apply", json={"keep": ["6", "7", "8", "9", "11"],
+                                            "repatch": {"6": {"name": "Drums"}, "7": {"address": 200}}})
+    assert r.status_code == 200, r.get_json()
+    steps = c.get("/api/show/history").get_json()["steps"]
+    assert steps[-1]["title"] == "kept 5 fixtures, renamed 1, re-patched 1"

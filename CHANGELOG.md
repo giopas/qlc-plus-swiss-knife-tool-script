@@ -33,8 +33,18 @@ Phase 2.8 — the Pub test, first part: the two tools it needs.
 - **Compare** pairs a look that is a Scene in one show and a Collection in the other.
 - **Fixture groups**: names are trimmed of spaces, quotes and a trailing `:` `;` `,` `.`.
 
+### Changed — while writing the tutorial
+- **Guided route *Adapt a show to a new venue*** has a **Groups** step (Stage & Meshes › Groups) before *Looks* — the Look Builder makes looks per group. Nine steps.
+- **Stage & Meshes › Groups**: the list is taller, and a group you create or save is highlighted and scrolled into view (new groups went to the bottom of a short list, out of sight).
+- **Rig Reducer** says *renamed* and *re-patched* apart (renaming 6 fixtures read "6 re-patched"), on screen and in the History.
+- **Show report**: a VC Editor step also says when the page order changed.
+
+### Added — tutorial
+- Wiki **Tutorial — from a big-venue show to a pub show in 30 minutes**: the guided route step by step on the festival show, with screenshots (`screenshots/tutorial/`).
+
 ### Added — Workspace Doctor
 - **D018 — setlist song that lights nothing** (warning, on the CueList): a cue whose function is an empty scene, or a chaser / collection with no steps (or only such steps) — the stage goes dark on that song. Found in the Pub-test QLC+ check: the festival show's *Song 12* is a chaser with no steps (cue 31 of the pub setlist, cue 12 of *Band C*). Not fixed automatically: only you know what the song should look like.
+- **Setlist**: a song that lights nothing gets an orange dot and a warning in the song list (`/api/functions` → `dark`).
 
 
 ## [1.10.0] — 2026-10-01

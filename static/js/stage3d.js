@@ -85,12 +85,13 @@ function stageTab(t) {
 // RGB matrices, the Look Builder and the VC use groups.
 let _stGrpEdit = null;            // id of the group in the form, or null (= new)
 let _stGrpPick = new Set();       // fixture ids ticked in the form
+let _stGrpFlash = '';             // name of the group just made / saved: shown and scrolled to
 
 function _stGroupsHtml() {
   const G = _stS.groups || [], F = _stS.all_fixtures || [];
   const nm = Object.fromEntries(F.map(f => [f.id, f.name]));
   const editing = G.find(g => g.id === _stGrpEdit);
-  const list = G.length ? G.map(g => `<div class="st-item ${g.id === _stGrpEdit ? 'on' : ''}">
+  const list = G.length ? G.map(g => `<div class="st-item ${g.id === _stGrpEdit || g.name === _stGrpFlash ? 'on' : ''}"${g.name === _stGrpFlash ? ' data-grpflash="1"' : ''}>
       <span><b>${_esc(g.name)}</b> <span class="vce-hint">${g.fixtures.length} · ${_esc(g.fixtures.map(i => nm[i] || i).join(', '))}</span>
         ${g.used_by.length ? `<span class="vce-hint" title="${_esc(g.used_by.join(', '))}"> · ${g.used_by.length} matrix(es)</span>` : ''}</span>
       <span class="st-grp-acts"><button class="btn btn-surface btn-xs" onclick="stageGroupShow('${g.id}')" title="Select its fixtures in the views">Show</button>
@@ -99,7 +100,7 @@ function _stGroupsHtml() {
   const picks = F.map(f => `<label class="st-grp-fx"><input type="checkbox" ${_stGrpPick.has(f.id) ? 'checked' : ''}
       onchange="stageGroupPick('${f.id}', this.checked)"> ${_esc(f.name)}</label>`).join('');
   return `<h3>Fixture groups <span class="p-desc">used by RGB matrices, the Look Builder and the VC</span></h3>
-    <div class="st-list">${list}</div>
+    <div class="st-list st-grp-list">${list}</div>
     <h3 style="margin-top:10px">${editing ? `Edit '${_esc(editing.name)}'` : 'New group'}</h3>
     <div class="lb-row"><label>Name <input id="st-grp-name" class="filter-input" style="width:200px" value="${_esc(editing ? editing.name : '')}" placeholder="e.g. Singer Pair"></label>
       <button class="btn btn-surface btn-sm" onclick="stageGroupFromSel()" title="Tick the fixtures selected in the views (click / Shift-click them)">⬚ From the selection</button>
@@ -150,13 +151,18 @@ async function stageGroupSave() {
   const d = _stGrpEdit
     ? await _stOp({ op: 'group_update', gid: _stGrpEdit, name, fixtures, order })
     : await _stOp({ op: 'group_new', name, fixtures, order });
-  if (d) { _stGrpEdit = null; _stGrpPick = new Set(); _stRender(); }
+  if (d) {
+    _stGrpEdit = null; _stGrpPick = new Set(); _stGrpFlash = name.replace(/\s+/g, ' ').replace(/^["']+|["']+$/g, '').replace(/[:;,.]+$/, '').trim();
+    _stRender();
+    const el = document.querySelector('#st-body [data-grpflash]');
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }
 }
 async function stageGroupDelete() {
   const g = (_stS.groups || []).find(x => x.id === _stGrpEdit);
   if (!g || !confirm(`Delete the group '${g.name}'?`)) return;
   const d = await _stOp({ op: 'group_delete', gid: _stGrpEdit });
-  if (d) { _stGrpEdit = null; _stGrpPick = new Set(); _stRender(); }
+  if (d) { _stGrpEdit = null; _stGrpPick = new Set(); _stGrpFlash = ''; _stRender(); }
 }
 
 // ── layout ──────────────────────────────────────────────────────────────────

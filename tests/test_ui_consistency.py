@@ -165,3 +165,7 @@ def test_route_steps_open_real_tools():
     assert set(tools) <= screens, set(tools) - screens
     for rid in re.findall(r"routeStart\('(\w+)'\)", HTML):
         assert f"\n  {rid}: {{" in js, rid
+
+
+def test_no_beta_badge_left_on_the_vc_editor():
+    assert 'class="b beta"' not in HTML

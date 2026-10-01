@@ -7,6 +7,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Changed
+- **README** is now a presentation of the project only (what it is, how it works, the tools, screenshots, install, links); the version history stays here. All **screenshots retaken** (16, in menu order). The forum drafts (`docs/release-notes/FORUM_*.bbcode`) are removed. Security details moved to DEVELOPMENT.md; ROADMAP updated (1.10 Grow a rig, 2.1 packages).
+
+### Fixed
+- VC Visual Editor: the page title still said *BETA*.
+
 ## [1.9.0] — 2026-10-01
 
 Phase 2.6 — UI audit: **the show in progress** for every tool, the Merger in the Function Porter, **Show Paperwork**, guided routes, and one screen pattern.

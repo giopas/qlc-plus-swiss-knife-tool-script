@@ -4,13 +4,22 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (1 Oct, later — v1.9.0 released by giopas; his five points before 2.7):**
+- Decided with giopas:
+  1. **Wiring copied fixtures into the existing show** gets its own phase, **2.7 Grow a rig → v1.10.0**, before the Pub test (now **2.8 → v2.0.0**).
+  2. **README = presentation only** (what it is, how it works, the tools, screenshots, install, docs links); the history lives in the CHANGELOG. Done after the 1.9.0 release (branch `docs/readme-and-plan`).
+  3. **All screenshots retaken** (16, named in menu order, `screenshots/01-start.png` … `16-show-in-progress.png`). Done (same branch).
+  4. **Forum**: no post per release; the BBCode drafts are deleted from the repo. One complete post (every tool + the show-in-progress logic) is written at v2.0.0 (task in 2.8).
+  5. **Installable packages with an update check** → **Phase 3 → v2.1.0**, after v2.0. Running from sources stays.
+- Also fixed on the way: the VC Editor page title still said *BETA*; the README's security details moved to DEVELOPMENT.md. 563 tests.
+
 **Status (1 Oct — 2.6 finished, v1.9.0 ready to release):** the rest of the audit built on `feat/show-in-progress`, 562 tests, browser-checked at 1440 × 900 and 1280 × 800.
 - **Screen pattern**: a **?** in every tool header opens its wiki page (`POST /api/help`, system browser, also from the desktop window); Look Builder tabs *Looks · Chasers*; Stage & Meshes tabs *Selection · Place · Add · Stage*; Porter's Back / Next / Apply in each step's footer (no second target chip); Show Paperwork exports and paper in the footer, show name / date moved there from Start; Brightness help folded; ID Browser empty state + plain sortable tables when Grid.js can't load (offline at the venue); stray closing tags from the removed Checklist / Tech Rider screens removed.
 - **Start** (A1, A2): purpose sentence, *New in 1.9*, compact *Open a show*, *What do you want to do?* cards, sessions below.
 - **Route strip** (`static/js/route.js`): *Adapt a show to a new venue* and *Get ready for the gig* from Start cards 2 and 4; steps ticked by the tool's change to the show or by hand; *Done, next ›*.
 - **Words / navigation**: *💾 Save as new file…* for Quick Start and Fixtures (was *Generate QXW*); Quick Start **🎛 Open it as the show**; VC Editor out of Beta; use-this-when tooltips; menu fits short windows.
-- Tests: `test_ui_consistency.py` + 7 (help button per tool, `/api/help` whitelist, one save verb, Porter footers, empty states, inspector tabs, routes open real tools).
-- Release: VERSION 1.9.0, CHANGELOG, README (what's new, screenshots 01/13/14/15/16/17, sections), release notes + forum post, wiki (18 pages).
+- Tests: `test_ui_consistency.py` + 8 (help button per tool, `/api/help` whitelist, one save verb, Porter footers, empty states, inspector tabs, routes open real tools).
+- Release: VERSION 1.9.0, CHANGELOG, README, release notes, wiki (18 pages).
 - Left for later (§7): Setlist in fewer columns (functions in a drawer); `/api/checklist|techrider` as thin wrappers and `core/merger.py` retired; Fixtures "open it as the show".
 
 **Status (30 Sep, late — giopas's tests of Porter copies and Show Paperwork):** v12 port report showed copied Ceilings tiled onto the floor PARs by *pattern repeat* → copies pinned 1:1 (`plan_blocks`); a thread race in `_with_copies` (candidates + preview in parallel) could leave the copies in the target / copy twice → `_COPIES_LOCK`; step 3 target picker = drop-down with tick boxes; Show Paperwork preview draws the stage plot, sections grouped (rig / show / console & checks). JS parse test added. 555 tests.
@@ -138,7 +147,7 @@ Rebuild `Pub_6fix.qxw` starting from `Festival_14fix.qxw` using **only Swiss Kni
 4. Build the two-page VC and wire the setlist CueList.
 5. Run Doctor.
 
-The result must pass Doctor with zero errors and, compared with the hand-made `Pub_6fix.qxw`, show no functional regressions (same patch and groups, the same looks, chasers, VC pages and setlist). When this passes, the goal is met. The route, the measurable pass criteria and the tools still missing are in **Phase 2.7**.
+The result must pass Doctor with zero errors and, compared with the hand-made `Pub_6fix.qxw`, show no functional regressions (same patch and groups, the same looks, chasers, VC pages and setlist). When this passes, the goal is met. The route, the measurable pass criteria and the tools still missing are in **Phase 2.8** (renumbered 1 Oct: 2.7 is now *Grow a rig*).
 
 ---
 
@@ -217,10 +226,10 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
 **Per release**
 - [ ] Bump `VERSION` in `core/workspace.py`. The single source of truth; check that it matches the CHANGELOG.
 - [ ] Move `[Unreleased]` to `[X.Y.Z] — date`.
-- [ ] README *What's new* updated; screenshots refreshed if the UI changed.
+- [ ] README stays a presentation (no *What's new* sections — the CHANGELOG has them); screenshots retaken where a screen changed.
 - [ ] Wiki page for each new or changed tool (usage, limits, examples).
 - [ ] `git tag vX.Y.Z` and a GitHub Release, with notes copied from the CHANGELOG.
-- [ ] Forum post (BBCode) on the QLC+ forum for minor and major releases.
+- [ ] Forum: no post per release (giopas, 1 Oct). One complete post at v2.0.0, then only for major releases; drafts are not kept in the repo.
 
 **Push:** Cowork's sandbox cannot reach GitHub, so Cowork commits locally and giopas pushes.
 
@@ -471,7 +480,7 @@ Checks (★ = included in Phase 1.0):
 - **Mock-up** (Start by job · a tool inside the show in progress with the route strip and the inspector tabs · History and Save): design canvas *Swiss Knife 1.9 mock-up* (Claude artifact, 29 Sep) — to be agreed with giopas before building.
 
 *Tasks* (each one: commit, wiki, CHANGELOG; browser-check at 1440 × 900 and 1280 × 800):
-- [x] **Show in progress** (above): session model + history + header bar + Apply in every tool + one Save; tests that every tool's apply equals its old export byte for byte. *Done 29 Sep on `feat/show-in-progress` — Doctor, Reducer, Looks, Brightness, Setlist, VC Editor, Triggers, Stage; then (30 Sep) the Function Porter with the Merger fold-in; (1 Oct) the route strip (`route.js`) and Quick Start *Open it as the show*; still to do: Compare (2.7), Fixtures "open the result as the show".*
+- [x] **Show in progress** (above): session model + history + header bar + Apply in every tool + one Save; tests that every tool's apply equals its old export byte for byte. *Done 29 Sep on `feat/show-in-progress` — Doctor, Reducer, Looks, Brightness, Setlist, VC Editor, Triggers, Stage; then (30 Sep) the Function Porter with the Merger fold-in; (1 Oct) the route strip (`route.js`) and Quick Start *Open it as the show*; still to do: Compare (2.8), Fixtures "open the result as the show".*
 - [x] **Merger into the Porter** *(done 30 Sep, with the Porter on the show in progress — copy fixtures (free-address check) and groups in step 2, Apply to the show; Merger tab removed, core/routes kept for now)*: the Porter's step 2 gains *fixtures* and *groups* (what the Merger copies) next to functions and VC widgets; the QXW Merger tab goes (wiki page redirects to the Porter).
 - [x] **Show Book, Checklist and Tech Rider → one tool, *Show Paperwork*** *(done 30 Sep: presets rider / crew checklist / operator / custom, combine with ⇧; venue rule enforced server-side; stage plot page via `pdf.blueprint_stream`; old routes kept as they were — not yet thin wrappers; paper sizes added the same evening: A4 / A3 / US Letter, landscape or portrait)* (giopas, 29 Sep: "not quite the same? merge into one, modular report" — decided: together with the audit, v1.9.0). The three overlap (Checklist ≈ the Show Book *patch* section; Rider = a grouped count of the same fixtures); what differs is the **reader**. `core/showbook.generate(sections)` is already section-based → add sections `rider` (types/counts/modes by make and model, universes, power if known), `stage_plan` (the Checklist blueprint), `patch` gains a tick-box column and 3D positions, `checklist_txt` output. **Presets by reader**, each editable: *Tech rider (venue)* · *Crew checklist (load-in)* · *Operator show book* · *Custom*; several presets in one PDF (e.g. rider + checklist for a festival advance). **Rule, not a tick box:** the *Tech rider* preset never includes function names, MIDI/key maps, VC or the Doctor summary — it leaves your hands. Exports unchanged: PDF, CSV, TXT (and the blueprint PDF). Menu **6 · Document** becomes one entry; the old routes `checklist` / `techrider` open *Show Paperwork* with their preset, so habits, wiki links and `/api/checklist/*`, `/api/techrider/*` keep working (kept as thin wrappers, tests unchanged). Wiki: *Show Book*, *Setup Checklist*, *Tech Rider* → one page *Show Paperwork* with the old pages as short redirects. Tests: each preset's section list; the rider preset contains no function/VC/MIDI data; old endpoints still answer.
 - [x] **Start screen** (A1, A2) *(done 1 Oct: purpose, New in 1.9, compact open box, job cards, sessions below; show name/date moved to Show Paperwork)*: one sentence of purpose (*"Build, adapt, check and document QLC+ 5 shows — every change goes to a new file, your original is never touched"*); **"What do you want to do?"** cards by job, each opening the right tool and saying what it produces: *Start a new show* (Quick Start) · *Adapt a show to a new venue* (Rig Reducer → Function Porter → Look Builder → VC Editor → Stage & Meshes → Doctor — the Pub workflow) · *Get ready for the gig* (Setlist, Trigger Manager, Show Book) · *Check and fix a show* (Doctor); the open-file zone at the top, sessions below as "recent"; show name/date moved to where they're used (Show Book, Tech Rider); a short "what's new in this version" line.
@@ -481,14 +490,54 @@ Checks (★ = included in Phase 1.0):
 - [x] **Usability check** with giopas *(his tests 29–30 Sep on real shows; UI tests extended 1 Oct)* on a real show after each screen, and a UI consistency test (`tests/test_ui_consistency.py`: one primary per footer — exists; add: every screen has a wiki link, the same save verb, an empty-state text).
 - Commits: `feat(ui): start screen by job`, `feat(ui): sidebar by job`, `refactor(ui): shared tool layout …` (one per screen), `docs: ui audit`.
 
-**2.7 Pub test (benchmark) → v2.0.0**
+**2.7 Grow a rig — wire new fixtures into the show → v1.10.0** *(asked by giopas, 1 Oct)*
+
+*The problem.* Copying fixtures into a show (e.g. the 6 ceiling spots of BigShow into FloorShow, Porter step 2) gives them only the **ported** functions. The show's own scenes, chasers, RGB matrices, EFX and buttons don't know them: press *Red Pulse* and the ceilings stay dark. Today nothing says so. giopas: "ensure I can wire them on existing scenes / matrices… if not, it is well explained (or add new scenes / buttons?)".
+
+*How the show uses a fixture* (what wiring must touch):
+- **Scenes** hold per-fixture channel values; everything else plays scenes (chasers, sequences, collections, cue lists, shows, buttons).
+- **Fixture groups** feed RGB matrices and the VC's group-based widgets.
+- **EFX** list their fixtures.
+- **Scripts** may set channels directly.
+- **VC sliders** in *Channels* mode list channels.
+- The **PANIC RESET** scene must cover every fixture.
+
+*The feature — "Wire into the show"*: one panel, used from the Porter after copying fixtures and from the Rig Editor after adding them.
+1. **Plays like** — for each new fixture (or all at once), pick a **template**:
+   - an existing fixture (e.g. Ceiling 1 plays like *FL: Drums*);
+   - "like this fixture group, by position" (the new heads take the group's heads in stage order, wrapping);
+   - or *nothing* (it stays dark outside its own functions).
+   - Proposed default: the nearest existing fixture of the most similar type on the stage plan.
+   - Every **scene** that sets the template gets the new fixture's values, **translated by capability** when the types differ (`capability_map`: RGB ↔ colour wheel, dimmer, strobe, pan/tilt; every channel declared, neutral values for the rest). Chasers, collections, cue lists and shows then play the new fixture with no change.
+   - Option: limit it to scenes in some folders, or used by some VC frames.
+2. **Groups → matrices** — add the new fixtures to chosen **existing fixture groups**, with their place in the group's grid (append a row, fill gaps, or by stage position — previewed). RGB matrices and group widgets then include them. Warn when a matrix's group changes shape (the pattern will look different), and offer *a new group + a copy of the matrix* instead.
+3. **EFX** — add the new fixture to the EFX that use its template (same direction / offset); optional.
+4. **PANIC RESET and blackout** — the new fixtures are added to the PANIC RESET scene (Doctor D005 / D017 already check it).
+5. **Or new looks and buttons** — *Build looks for the new fixtures* hands them (as a group) to the Look Builder: palette looks, chasers, a VC page of buttons. Use it when the show's existing looks should stay as they are.
+6. **What is not wired, said plainly** — on screen and in the report: scenes that don't use the template (the fixture stays dark there, by design), scripts with channel commands, *Channels* sliders, EFX not chosen, matrices whose group was not extended. Each line says what to do (e.g. "add it to group *Floor* to make *Rainbow* include it").
+
+*Where*:
+- **Function Porter**: in step 3, copied rows get a *Plays like* choice next to *✚ its copy*; step 4 shows the wiring summary; Apply does port + wiring as one step.
+- **Rig Reducer → Rig Editor** (menu 2 · Adapt a show): keep / remove (as today), re-patch, **add fixtures** (a `.qxf`, the QLC+ library, or another show), **Plays like**, and a **fixture group editor** (create, rename, add / remove heads, grid order). The group editor also closes the Pub test's step-3 gap. The Reducer's report and tests stay.
+- `core/rig_grow.py`: `wire(root, new_ids, plan) → (root, report)`; pure, deterministic, Doctor-checked like the other tools.
+
+*Tasks*:
+- [ ] Design check with giopas on his case (FloorShow + BigShow ceilings): which defaults he expects for *plays like* and for the groups.
+- [ ] `core/rig_grow.py` — scenes by template (with translation), groups (grid placement), EFX, PANIC RESET, the "not wired" list. Tests on the corpus (Pub_6fix + Festival ceilings): every scene with the template gets the new fixture and nothing else changes (diff); chasers play it; the matrix group grows; the Doctor finds no new errors; idempotent; undo works.
+- [ ] Porter step 3/4: *Plays like* + summary; Apply = one History step.
+- [ ] Rig Editor: rename + add fixtures + group editor + wiring panel.
+- [ ] Wiki: *Rig Editor* (the old *Rig Reducer* page redirects), *Function Porter* (wiring), and a how-to "Add ceiling lights to a floor show".
+- [ ] Corpus: a sanitised `FloorShow` (wanted since Phase 1) — giopas's real case.
+- [ ] Release **v1.10.0**.
+
+**2.8 Pub test (benchmark) → v2.0.0**
 
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
 *The route* (each step a Swiss Knife tool, each output a new file checked by the Doctor):
 1. **Rig Reducer** — keep the 6 PARs, remove the ceiling spots and 2 PARs with cascade, rename to DR/FLB/FRB/LG/FRS/FLS, re-patch.
 2. **Workspace Doctor** — fix what the festival show carries (duplicate widget IDs, incomplete scenes, degenerate setlist chasers, PANIC RESET).
-3. **Fixture groups** for the pub (*Singer Pair*, *Band Pair*, *Front Band*, *Logo*) — **gap: no tool creates fixture groups yet** (Quick Start does it only for new rigs) → add *groups* to the Rig Reducer or the Fixtures tool.
+3. **Fixture groups** for the pub (*Singer Pair*, *Band Pair*, *Front Band*, *Logo*) — with the group editor of the Rig Editor (built in 2.7).
 4. **Look Builder** — the pub looks and chasers per group (palette + patterns, TheBand names).
 5. **Function Porter** — only if looks must come from another show (the festival's own looks survive step 1 for the kept PARs).
 6. **VC Editor** — page *1. SETLIST* first with the setlist CueList (one click), page *2. EFFECTS* from a template / the Look Builder page, label legend.
@@ -505,10 +554,40 @@ Checks (★ = included in Phase 1.0):
 
 *Tasks*:
 - [ ] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report).
-- [ ] Fixture group editor (step 3 gap).
 - [ ] Run the route on the corpus, fix what gets in the way (each fix: test + commit).
 - [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
-- [ ] Release **v2.0.0**, with a forum post and a video or GIF.
+- [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
+- [ ] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:
+  - what Swiss Knife is, and the change of logic (*the show in progress*: open once, every tool, History, one save, the original never touched);
+  - every tool by job (1–6), one or two lines each, and the guided routes;
+  - the Pub test as the worked example (festival → pub in under 30 minutes);
+  - safety (local only, never overwrites), how to install, links (wiki, releases, issues).
+  Drafted as a project document, not in the repo; giopas posts it.
+- [ ] Release **v2.0.0** (GitHub Release with the notes; the forum post above).
+
+---
+
+### Phase 3 — Install like an app → **v2.1.0** *(asked by giopas, 1 Oct; after v2.0)*
+
+*Goal*: download, double-click, run — on macOS, Windows and Linux — and be told when a new version is out. As simple as StemDeck (github.com/stemdeckapp/stemdeck: a Tauri shell + bundled Python, a DMG per Mac architecture, a Windows ZIP with a self-contained `.exe`, a first-run note for unsigned apps; StemDeck itself has no auto-update). **Running from sources stays** exactly as today.
+
+*Plan*:
+- **Build**: PyInstaller (one-folder) around `app.py` with Flask, pywebview and the static files. Per-OS bundles are built by **GitHub Actions on each tag** (macOS arm64 + x86_64, Windows x64, Linux x64) and attached to the GitHub Release with a `SHA256SUMS` file. Alternative to weigh: Briefcase. Tauri would mean a Rust shell around the Python server — more moving parts for no gain here.
+- **Formats**: macOS `.app` in a `.dmg` (arm64 and Intel); Windows `.zip` with `QLC Swiss Knife.exe` (an installer later if wanted); Linux `.AppImage` (+ `.tar.gz`).
+- **Update check**:
+  - At start (opt-out in the settings), the app asks the GitHub Releases API for the latest tag. This is the only network call besides the optional fixture-library fetch.
+  - If there is a newer version: a header badge *v2.x available*, with the release notes and **Download** (opens the right asset).
+  - Then **Update and restart** for the packaged app: download the asset for this OS, verify the SHA-256, swap the app folder / `.app` / AppImage on exit via a small helper, restart.
+  - Run from sources: the badge says `git pull` and links the release.
+- **Signing**: the first releases are unsigned, with first-run instructions (macOS: right-click → Open, or `xattr -dr com.apple.quarantine`; Windows SmartScreen: *More info → Run anyway*). Apple Developer ID / notarisation and a Windows certificate later, if giopas wants them (they cost money).
+- **User data** stays in `~/.qlc_swiss_knife/` (settings, presets, recent files, sessions), untouched by updates.
+
+*Tasks*:
+- [ ] PyInstaller spec + a local build on the Mac (size, start time, native window, QLC+ library path detection, file dialogs).
+- [ ] GitHub Actions release workflow (matrix build, smoke test: start, `GET /`, quit; upload the assets + `SHA256SUMS`).
+- [ ] Update check (`/api/update/check`, setting, header badge) and *Update and restart* per OS; tests with a fake release feed.
+- [ ] README *Install*: download first, sources second; wiki *Installing and updating*.
+- [ ] Release **v2.1.0**.
 
 ---
 
@@ -523,6 +602,8 @@ Checks (★ = included in Phase 1.0):
 ---
 
 ## 7. Backlog / next steps (after v2.0)
+
+*The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
 
 **Left over from 2.6 (1 Oct):**
 - Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).
@@ -661,7 +742,7 @@ cd wiki
 git push origin master
 cd ..
 ```
-(expect 562 passed.) GitHub Release: tag v1.9.0, title "v1.9.0 — one show, every tool", body `docs/release-notes/RELEASE_NOTES_v1.9.0.md`; forum: `docs/release-notes/FORUM_v1.9.0.bbcode`. Try first: Start → *▶ Guided route: adapt a show to a new venue* on a real show, a "?" on any tool, Look Builder / Stage tabs, Porter footer, Show Paperwork export from the footer.
+(expect 563 passed.) GitHub Release: tag v1.9.0, title "v1.9.0 — one show, every tool", body `docs/release-notes/RELEASE_NOTES_v1.9.0.md` (no forum post: one complete post at v2.0). Try first: Start → *▶ Guided route: adapt a show to a new venue* on a real show, a "?" on any tool, Look Builder / Stage tabs, Porter footer, Show Paperwork export from the footer.
 
 **giopas — release v1.8.1 (fixtures in the Stage placement + Start and menu by job), branch `feat/start-sidebar`:**
 ```bash
@@ -761,7 +842,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. Phase **2.7 Pub test → v2.0.0**: `core/compare.py` + Compare tab, the fixture group editor, the run on the corpus, the tutorial. (Leftovers of 2.6 in §7.)
+1. Phase **2.7 Grow a rig → v1.10.0** (wire copied / added fixtures into the show; the Rig Editor with the group editor), then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

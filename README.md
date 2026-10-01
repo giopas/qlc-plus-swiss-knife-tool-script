@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.10.0
+# ⚡ QLC+ Swiss Knife — v2.0.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -6,7 +6,9 @@
 
 > ⚠️ **Independent project** — not affiliated with, endorsed by, or connected to the QLC+ project or its team. All credit for QLC+ goes to the [QLC+ team](https://www.qlcplus.org/). Swiss Knife works *on top of* QLC+ workspace files.
 
-![Swiss Knife — Start screen](screenshots/01-start.png)
+![A festival show becomes a pub show — the guided route in Swiss Knife](screenshots/route.gif)
+
+*A real festival show rebuilt for a small pub — 6 PARs, tonight's 34 songs — in 12 minutes, with the guided route. Step by step: [the tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub).*
 
 ---
 
@@ -17,7 +19,7 @@
 3. **Go back** to any step in the **History** (undo, redo).
 4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change. **The file you opened is never overwritten.**
 
-For jobs that take several tools, *guided routes* (e.g. *adapt a show to a new venue*) show the steps above the tools. Every tool has a **?** that opens its page of the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
+For jobs that take several tools, *guided routes* (e.g. *adapt a show to a new venue*) show the steps above the tools — see the [tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub). Every tool has a **?** that opens its page of the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
 
 ---
 
@@ -59,6 +61,8 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | Trigger Manager | Dictionary | Workspace Doctor |
 | ![ID Browser](screenshots/14-id-browser.png) | ![Show Paperwork](screenshots/15-show-paperwork.png) | ![History](screenshots/16-show-in-progress.png) |
 | ID Browser | Show Paperwork — tech rider with stage plot | The show in progress and its History |
+| ![Start](screenshots/01-start.png) | ![Compare](screenshots/17-compare.png) | |
+| Start — what do you want to do? | Compare — the rebuilt show next to the hand-made one | |
 
 ---
 

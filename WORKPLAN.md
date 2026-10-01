@@ -561,7 +561,7 @@ Checks (★ = included in Phase 1.0):
 - Compare after the fixes (his file vs Pub_6fix): fixtures 6 same; groups 8 same + the festival's own; setlist 1 same; looks mostly *different* by design — the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and is built from different functions (*AC:*, *PUB:*, *CP:* looks). Matching those is not the goal of a 12-minute route; the criterion becomes "patch, groups, setlist and a working Looks / Effects page", with the look differences listed in the report.
 - **QLC+ open-check** (giopas, 2 Oct): all good, except *Song 12* all black. Cause: in the festival show *Song 12* is a chaser with **no steps** (already dark there, cue 12 of *Band C*); the route carried it as it was. The Doctor only said "degenerate chaser (0 steps)" among 52 warnings → new check **D018 — setlist song that lights nothing** (on the CueList, with the cue number); not auto-fixed. In the pub show Song 12 plays *All Apologies Murk*.
 - **Tutorial written (2 Oct)** — wiki *Tutorial — from a big-venue show to a pub show in 30 minutes*, made by running the guided route in the app (Playwright) on Festival_14fix with 9 screenshots (`screenshots/tutorial/`; raw links on `main`, live after the v2.0 merge). Doing it found and fixed: the route had no *Groups* step (added, 9 steps); the Groups list hid new groups below a short scroll (taller, new group highlighted); the Rig Reducer called renames "re-patched"; the Setlist didn't show a dark song (orange dot + warning); the report didn't say a page moved. 597 tests.
-- Next: README / GIF, the forum post, **v2.0.0** (retake the tutorial screenshots with the version bumped — the scripts are kept in the session scratchpad).
+- **v2.0.0 prepared (2 Oct)**: VERSION 2.0.0, CHANGELOG [2.0.0], release notes, ROADMAP; the README opens with a **GIF of the route** (`screenshots/route.gif`, 12 frames, 1 MB, made from the same Playwright run as the tutorial screenshots, which were retaken with the v2.0.0 badge) and gains *Start* and *Compare* screenshots; the **forum post** drafted as a project document (`claude/FORUM_POST_v2.0.0.md`, BBCode). giopas merges, tags, publishes the GitHub Release and posts.
 
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
@@ -588,14 +588,14 @@ Checks (★ = included in Phase 1.0):
 - [x] Fixture group editor (step 3 gap; moved back from 2.7) — Stage & Meshes › Groups. *(2 Oct)*
 - [x] Run the route on the corpus, fix what gets in the way (each fix: test + commit). *(2 Oct: giopas, 12 min; Compare setlist pairing, unused functions, show-report detail for in-place steps, group-name trim.)*
 - [x] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF. *(2 Oct, 9 screenshots)*
-- [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
-- [ ] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:
+- [x] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README. *(2 Oct: route GIF, tutorial screenshots, Start + Compare added)*
+- [x] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:
   - what Swiss Knife is, and the change of logic (*the show in progress*: open once, every tool, History, one save, the original never touched);
   - every tool by job (1–6), one or two lines each, and the guided routes;
   - the Pub test as the worked example (festival → pub in under 30 minutes);
   - safety (local only, never overwrites), how to install, links (wiki, releases, issues).
-  Drafted as a project document, not in the repo; giopas posts it.
-- [ ] Release **v2.0.0** (GitHub Release with the notes; the forum post above).
+  Drafted as a project document, not in the repo; giopas posts it. *(2 Oct: `claude/FORUM_POST_v2.0.0.md`)*
+- [x] Release **v2.0.0** (GitHub Release with the notes; the forum post above). *Prepared 2 Oct; giopas tags and publishes.*
 
 ---
 
@@ -758,6 +758,26 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
+**giopas — release v2.0.0 (the Pub test), branch `feat/pub-test`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/pub-test
+source ~/.venvs/swissknife/bin/activate
+python -m pytest -q
+git push -u origin feat/pub-test
+git checkout main
+git pull --ff-only
+git merge --no-ff feat/pub-test -m "Release v2.0.0"
+python -m pytest -q
+git push origin main
+git tag -a v2.0.0 -m "v2.0.0"
+git push origin v2.0.0
+cd wiki
+git push origin master
+cd ..
+```
+(expect 597 passed.) GitHub Release: tag v2.0.0, title "v2.0.0 — the Pub test", body `docs/release-notes/RELEASE_NOTES_v2.0.0.md`. Then the forum post (`claude/FORUM_POST_v2.0.0.md` in the project). `feat/pub-test` can be deleted after the merge.
+
 **giopas — release v1.10.0 (Grow a rig), branch `feat/grow-rig`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
@@ -896,7 +916,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. (done) v1.10.0 released. Now **2.8**: giopas runs the Pub route in the app (see the 2.8 status), then tutorial, README, forum post, v2.0.0; then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. (done) v2.0.0 prepared — the Pub test passed. Next: the **recipe** (§7, first after v2.0), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

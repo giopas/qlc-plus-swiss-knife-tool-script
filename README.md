@@ -17,7 +17,7 @@
 1. **Open a show** — it becomes the **show in progress**, a working copy in memory.
 2. **Use any tool, in any order, as often as you need.** Each tool's main button is **✓ Apply to the show**; the header counts the changes and shows the Workspace Doctor's verdict on the show as it is now.
 3. **Go back** to any step in the **History** (undo, redo).
-4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change. **The file you opened is never overwritten.**
+4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change, and a *recipe* that the command line can replay to the same file. **The file you opened is never overwritten.**
 
 For jobs that take several tools, *guided routes* (e.g. *adapt a show to a new venue*) show the steps above the tools — see the [tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub). Every tool has a **?** that opens its page of the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
 

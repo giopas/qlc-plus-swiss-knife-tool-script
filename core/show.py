@@ -51,6 +51,8 @@ def _ws():
 def reset(source_name: str = '', source_path: str = '') -> None:
     """A show was opened: it becomes the show in progress, with no steps."""
     _show.clear()
+    from core import recipe
+    recipe.reset(source_path)
     _show.update({
         'source_name': source_name or 'workspace.qxw',
         'source_path': source_path or '',
@@ -318,13 +320,21 @@ def mark_saved(qxw_path: str) -> dict:
         rp = report_path(os.path.abspath(qxw_path))
         qxw_io.write_bytes(report(out_name).encode('utf-8'), rp,
                            protect=[_show.get('source_path')])
+    rc = ''
+    if qxw_path and os.path.isfile(qxw_path):
+        try:
+            from core import recipe
+            rc = recipe.write_next_to(os.path.abspath(qxw_path))
+        except Exception:  # noqa: BLE001 — the recipe is a bonus, the save stands
+            rc = ''
     _show['saved_upto'] = len(_show['steps'])
     _show['redo'] = None                    # the saved file is the new reference
     _show['saved_name'] = out_name
     _show['saved_path'] = qxw_path or ''
     _close_open_steps()
     _show['version'] += 1
-    return {'report_path': rp, 'report_name': os.path.basename(rp) if rp else ''}
+    return {'report_path': rp, 'report_name': os.path.basename(rp) if rp else '',
+            'recipe_path': rc, 'recipe_name': os.path.basename(rc) if rc else ''}
 
 
 def save(path: str) -> dict:

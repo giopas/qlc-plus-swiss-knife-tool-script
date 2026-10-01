@@ -191,6 +191,18 @@ def create_app():
         if origin_host not in _ALLOWED_HOSTS:
             return jsonify({'error': 'Forbidden'}), 403
 
+    # ── The recipe (WORKPLAN 2.9): every change to the show, for the replay ──
+    @app.after_request
+    def _record_recipe(response):
+        try:
+            from core import recipe
+            if recipe.active() and recipe.recordable(request.method, request.path):
+                recipe.record(request.method, request.path,
+                              request.get_json(silent=True), response.status_code)
+        except Exception:  # noqa: BLE001 — recording never breaks a request
+            pass
+        return response
+
     # ── Security: response headers ────────────────────────────────────────────
     @app.after_request
     def _security_headers(response):

@@ -15,6 +15,7 @@ const _SHOW_INVALIDATE = {
   fixtures: 'invalidateFixtures', brightness: 'invalidateBrightness', showbook: 'invalidateShowbook',
   doctor: 'invalidateDoctor', reducer: 'invalidateReducer', looks: 'invalidateLooks',
   stage: 'invalidateStage', vceditor: 'invalidateVcEditor', porter: 'invalidatePorter',
+  compare: 'invalidateCompare',
 };
 
 function _activeScreen() {

@@ -300,7 +300,7 @@ function _pRenderStep() {
   if (_pStep === 1 || _pStep === 3) setTimeout(_pDrawPlans, 0);
   if (_pStep === 2) _pRenderSelectFunctions();
   if (_pStep === 3) {
-    Promise.resolve(_pRenderMapFixtures()).then(_pCopyNote);
+    Promise.resolve(_pRenderMapFixtures()).then(_pCopyNote).then(_pRenderWire);
     // the target plan with the copied fixtures in place (giopas's test, 30 Sep)
     _pFetchPlan('target', true).then(() => setTimeout(_pDrawPlans, 0));
   } else if (_pStep === 1 && _pPlans.target && (_pPlans.target.copied || []).length) {
@@ -1154,7 +1154,7 @@ async function _pRenderValidation() {
     if (exportBtn) exportBtn.disabled = !d.ok;
 
     if (d.ok) {
-      html += '<div class="porter-val-ok">✓ Plan is valid — ready to export.</div>';
+      html += '<div class="porter-val-ok">✓ Plan is valid — Next: Apply (bottom right).</div>';
       _pStatus('Plan is valid — click Next: Apply (bottom right).', 'ok');
     } else {
       _pStatus('Validation failed. Fix errors before exporting.', 'error');
@@ -1364,6 +1364,7 @@ function _pBuildPlan() {
     vc: Object.assign({}, _pVc, { scope: _pVcScope, remove: _pRmScope }),
     copy_fixtures:   [..._pCopyFx],
     copy_groups:     [..._pCopyGrp],
+    wire:            _pWireActive(),
   };
 }
 
@@ -1428,6 +1429,75 @@ function _pCopyNote() {
   n.className = 'porter-hint porter-copy-note';
   n.innerHTML = `<b>${_pCopyFx.size}</b> source fixture(s) are <b>copied</b> into the target (step 2) — <span style="color:#a6e3a1">green</span> on both plans, placed as in the source (scaled to this stage; fine-tune them later in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>). The functions that use them play on the copies, so their mapping below is not used.`;
   box.prepend(n);
+}
+
+// ── 2.7 Wire the copies into the show's own looks ("plays like") ──────────
+// A copied fixture plays its ported functions; in the show's OWN scenes it
+// stays dark unless it follows an existing fixture.  Default (giopas, 1 Oct):
+// the nearest existing fixture at the same level, same side of the stage.
+let _pWire = {};          // source id of a copy → target fixture it plays like ('' = stays dark)
+let _pWireKey = '';
+let _pWireOpts = null;
+
+function _pWireActive() {
+  const out = {};
+  for (const s of _pCopyFx) if (_pWire[s]) out[s] = _pWire[s];
+  return out;
+}
+
+async function _pRenderWire() {
+  const box = document.getElementById('porter-fixture-map');
+  if (!box || !_pCopyFx.size || !_pTgtLoaded) return;
+  const key = [..._pCopyFx].sort().join(',') + '|' + [..._pCopyGrp].sort().join(',');
+  if (key !== _pWireKey || !_pWireOpts) {
+    try {
+      const r = await fetch('/api/porter/wire/options', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ copy_fixtures: [..._pCopyFx], copy_groups: [..._pCopyGrp] }) });
+      const d = await r.json();
+      if (!r.ok) { _pStatus('Error: ' + d.error, 'error'); return; }
+      _pWireOpts = d;
+      if (key !== _pWireKey) {                        // new set of copies: start from the suggestions
+        _pWire = {};
+        d.rows.forEach(row => { _pWire[row.src] = row.template || ''; });
+      }
+      _pWireKey = key;
+    } catch (e) { _pStatus('Network error: ' + e.message, 'error'); return; }
+  }
+  document.getElementById('porter-wire')?.remove();
+  const d = _pWireOpts;
+  const opt = (sel) => `<option value="">— stays dark in the show's looks —</option>` +
+    d.targets.map(t => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${_esc(t.name)} · ${_esc(t.model)} — in ${t.uses} look(s)</option>`).join('');
+  const why = Object.fromEntries(d.rows.map(r => [r.src, r.template]));
+  const card = document.createElement('div');
+  card.id = 'porter-wire';
+  card.className = 'porter-summary-box porter-wire';
+  card.innerHTML = `
+    <div class="porter-wire-head"><b>The copies in the show's own looks</b>
+      <span class="porter-row-sub">A copied fixture plays the functions ported with it. In the looks the show already has (its scenes, chasers, cue lists, buttons) it stays dark — unless it <b>plays like</b> an existing fixture: then every look that lights that fixture lights this one too, in the same colour (translated when the types differ).</span>
+      <span class="porter-wire-acts"><button class="btn btn-surface btn-xs" onclick="porterWireAll(true)" title="Back to the suggestions">Suggested</button>
+      <button class="btn btn-surface btn-xs" onclick="porterWireAll(false)" title="Leave every copy out of the show's looks">None</button></span></div>
+    <table class="porter-wire-tbl">${d.rows.map(r => `<tr>
+      <td><span class="porter-copy-chip">✚ ${_esc(r.name)}</span> <span class="porter-row-sub">${_esc(r.model)}</span></td>
+      <td>plays like</td>
+      <td><select class="filter-input" onchange="porterWireSet('${r.src}', this.value)">${opt(_pWire[r.src] || '')}</select>
+        ${(_pWire[r.src] && _pWire[r.src] === why[r.src]) ? `<span class="porter-row-sub">suggested: ${_esc(r.why)}</span>` : ''}
+        ${(r.problem && _pWire[r.src] === why[r.src]) ? `<div class="porter-warn">⚠ ${_esc(r.problem)}</div>` : ''}</td></tr>`).join('')}</table>
+    <div class="porter-row-sub">RGB matrices stay on their own fixture groups (their pattern would change); step 4 lists what is not wired and what to do.</div>`;
+  const note = box.querySelector('.porter-copy-note');
+  if (note) note.after(card); else box.prepend(card);
+}
+
+function porterWireSet(src, tmpl) {
+  _pWire[src] = tmpl || '';
+  _pValidation = null;
+  _pRenderWire();
+}
+
+function porterWireAll(suggested) {
+  if (!_pWireOpts) return;
+  _pWireOpts.rows.forEach(r => { _pWire[r.src] = suggested ? (r.template || '') : ''; });
+  _pValidation = null;
+  _pRenderWire();
 }
 
 async function porterApply() {

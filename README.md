@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.9.0
+# ⚡ QLC+ Swiss Knife — v1.10.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -30,7 +30,7 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | **1 · New show** | [Quick Start](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Quick-Start) | A ready-to-run show from your fixtures: looks, effects, fixture groups, PANIC RESET and a Virtual Console, in about five minutes. |
 | | [Fixtures](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Fixture-Configurator) | Place and patch a rig on a 2D stage; blueprint PDF; a rig-only workspace. |
 | **2 · Adapt a show** | [Rig Reducer](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer) | Keep the fixtures of a smaller rig; everything that used the others is cleaned up; re-patch. |
-| | [Function Porter](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter) | Bring looks, chasers, effects and their buttons — and fixtures and groups — from another show; other fixture types translated by capability; 14 → 6 fixtures (fan-in); key/MIDI bindings come along. |
+| | [Function Porter](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter) | Bring looks, chasers, effects and their buttons — and fixtures and groups — from another show; copied fixtures can join the show's own looks (*plays like*); other fixture types translated by capability; 14 → 6 fixtures (fan-in); key/MIDI bindings come along. |
 | | [Brightness](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Brightness) | Scale the master dimmer of each fixture type across every scene; colours untouched. |
 | **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks from a palette for your fixture groups; chasers from a pattern with BPM timing, song presets and a playable preview. |
 | | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | The Virtual Console as a canvas: add and wire widgets, pages, templates, screen sizes; align, distribute, sort. |

@@ -541,6 +541,28 @@ Checks (★ = included in Phase 1.0):
 
 **2.8 Pub test (benchmark) → v2.0.0**
 
+*Status (2 Oct) — the two missing tools built, first measured run:*
+- Decisions (giopas, 2 Oct): the **group editor lives in Stage & Meshes** (tab *Groups*); the **recipe / CLI replay moves after v2.0** (§7, with Show Profiles).
+- Built: **fixture groups** (`core/fixture_groups.py`, Stage & Meshes › Groups) and **Compare** (`core/compare.py`, menu 5, `/api/compare/run`). 586 tests.
+- First run through the API (Festival_14fix → Rig Reducer keeping the 6 pub PARs renamed DR/FLB/FRB/LG/FRS/FLS → Doctor default fixes (429) → the 4 pub groups) then **Compare with Pub_6fix**: fixtures and patch **6/6 the same**; groups: the pub's 5 all present and equal (5 festival-only groups left, e.g. *Floor*, *Side_Wings* — delete or keep); scenes: the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and renamed / replaced many functions — that is the Look Builder / VC part of the route, still to do by hand with the tools.
+- Next: giopas runs the whole route in the app, timed, with Compare at the end; what gets in the way is fixed; then the tutorial, README / screenshots, the forum post, **v2.0.0**.
+
+*Status (2 Oct, evening) — giopas's timed run in the app:*
+- **12 minutes** for the whole route (Compare not counted) → the time criterion passes (< 30 min).
+- Steps in his show report: Rig Reducer (6 kept, 6 re-patched) → Doctor (429 fixes) → Stage groups (4 edits) → Look Builder (6 looks, 1 chaser, 7 buttons on a page *Looks*) → VC Editor (4 edits) → stage edits → setlist into the CueList. **Doctor at the end: 0 errors**, 52 warnings.
+- In the saved file: patch 6/6 as the pub; the pub groups are there; the CueList *Setlist: Band A* on *1. SETLIST* plays exactly the pub's 34 songs; pages *1. SETLIST*, *2. EFFECTS*, *Band C*, *Looks*.
+- Left as it was (his choice, not a tool problem): page *Band C* and its cue list not deleted; a group typed *Front Band:* (with the colon); the pub's *All 6* group not made (not in the steps given).
+- What got in the way — fixed the same evening:
+  - **Compare did not pair the setlist** (*Setlist: Band A* vs *Pub Setlist*, two cue lists in his show) → cue lists are now paired by caption, then by their songs (most in common, at least half), then the only one left on each side. His file now shows *Setlist: 1 same*.
+  - **Compare noise**: the festival's unused functions (*[1000] Collection - Unassigned* …) filled "only here" → functions nothing plays (Doctor D016) are listed per section as *unused* and **not counted**; a look that is a Scene in one show and a Collection in the other is now paired (*a Scene here, a Collection in the other*).
+  - **The show report said nothing for in-place steps** (groups, VC Editor, stage, setlist, triggers) → each such step now lists what it changed: fixtures, moved on the stage, groups, functions, VC pages and widgets — added / removed / renamed / changed (`core/show_diff.py`, snapshot against the next step).
+  - **Group names**: spaces, quotes and a trailing `:` `;` `,` `.` are trimmed.
+  - 593 tests.
+- Compare after the fixes (his file vs Pub_6fix): fixtures 6 same; groups 8 same + the festival's own; setlist 1 same; looks mostly *different* by design — the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and is built from different functions (*AC:*, *PUB:*, *CP:* looks). Matching those is not the goal of a 12-minute route; the criterion becomes "patch, groups, setlist and a working Looks / Effects page", with the look differences listed in the report.
+- **QLC+ open-check** (giopas, 2 Oct): all good, except *Song 12* all black. Cause: in the festival show *Song 12* is a chaser with **no steps** (already dark there, cue 12 of *Band C*); the route carried it as it was. The Doctor only said "degenerate chaser (0 steps)" among 52 warnings → new check **D018 — setlist song that lights nothing** (on the CueList, with the cue number); not auto-fixed. In the pub show Song 12 plays *All Apologies Murk*.
+- **Tutorial written (2 Oct)** — wiki *Tutorial — from a big-venue show to a pub show in 30 minutes*, made by running the guided route in the app (Playwright) on Festival_14fix with 9 screenshots (`screenshots/tutorial/`; raw links on `main`, live after the v2.0 merge). Doing it found and fixed: the route had no *Groups* step (added, 9 steps); the Groups list hid new groups below a short scroll (taller, new group highlighted); the Rig Reducer called renames "re-patched"; the Setlist didn't show a dark song (orange dot + warning); the report didn't say a page moved. 597 tests.
+- **v2.0.0 prepared (2 Oct; with the recipe 2.9 folded in, giopas)**: VERSION 2.0.0, CHANGELOG [2.0.0], release notes, ROADMAP; the README opens with a **GIF of the route** (`screenshots/route.gif`, 12 frames, 1 MB, made from the same Playwright run as the tutorial screenshots, which were retaken with the v2.0.0 badge) and gains *Start* and *Compare* screenshots; the **forum post** drafted as a project document (`claude/FORUM_POST_v2.0.0.md`, BBCode). giopas merges, tags, publishes the GitHub Release and posts.
+
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
 *The route* (each step a Swiss Knife tool, each output a new file checked by the Doctor):
@@ -555,27 +577,42 @@ Checks (★ = included in Phase 1.0):
 9. **Doctor** — final check.
 
 *Pass criteria* (to be measured, not eyeballed):
-- [ ] Doctor on the result: **0 errors**, and no warning the reference doesn't have.
+- [x] Doctor on the result: **0 errors**, and no warning the reference doesn't have. *(0 errors, 52 warnings — mostly the festival's unused functions, which the Doctor can remove)*
 - [ ] **Compare with `Pub_6fix.qxw`** — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
-- [ ] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks.
-- [ ] **Time**: under 30 minutes for someone who knows the show.
-- [ ] **Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file — first brick of the *Show Profile / CLI pipeline* in §7.
+- [x] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks. *(giopas, 2 Oct: all good; Song 12 dark → D018)*
+- [x] **Time**: under 30 minutes for someone who knows the show. *(12 min, giopas, 2 Oct)*
+- [ ] ~~**Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file~~ — moved after v2.0 (giopas, 2 Oct): first item of §7 with the *Show Profile / CLI pipeline*.
 
 *Tasks*:
-- [ ] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report).
-- [ ] Fixture group editor (step 3 gap; moved back from 2.7).
-- [ ] Run the route on the corpus, fix what gets in the way (each fix: test + commit).
-- [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
-- [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
-- [ ] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:
+- [x] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report). *(2 Oct)*
+- [x] Fixture group editor (step 3 gap; moved back from 2.7) — Stage & Meshes › Groups. *(2 Oct)*
+- [x] Run the route on the corpus, fix what gets in the way (each fix: test + commit). *(2 Oct: giopas, 12 min; Compare setlist pairing, unused functions, show-report detail for in-place steps, group-name trim.)*
+- [x] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF. *(2 Oct, 9 screenshots)*
+- [x] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README. *(2 Oct: route GIF, tutorial screenshots, Start + Compare added)*
+- [x] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:
   - what Swiss Knife is, and the change of logic (*the show in progress*: open once, every tool, History, one save, the original never touched);
   - every tool by job (1–6), one or two lines each, and the guided routes;
   - the Pub test as the worked example (festival → pub in under 30 minutes);
   - safety (local only, never overwrites), how to install, links (wiki, releases, issues).
-  Drafted as a project document, not in the repo; giopas posts it.
-- [ ] Release **v2.0.0** (GitHub Release with the notes; the forum post above).
+  Drafted as a project document, not in the repo; giopas posts it. *(2 Oct: `claude/FORUM_POST_v2.0.0.md`)*
+- [x] Release **v2.0.0** (GitHub Release with the notes; the forum post above). *Prepared 2 Oct; giopas tags and publishes.*
 
 ---
+
+**2.9 The recipe — every change recorded, replayed to the same file** *(first after v2.0, giopas 2 Oct; built 2 Oct while giopas was away; **released with v2.0.0** — giopas: one big release)*
+
+*Goal*: the Pub test's last criterion, *repeatable*: what was done to a show can be replayed by the command line to a **byte-identical** `.qxw`.
+
+*Decisions taken (unattended, to confirm)*:
+- **Record the calls, not the options.** Every tool already changes the show through one API call per action (Apply, a stage op, a VC op, a setlist step…). An `after_request` hook appends each successful POST / PATCH / DELETE under `/api/` to the recipe, except reads, previews, exports, desktop dialogs, sessions and the save (`recipe.SKIP`). Undo and redo are calls too, so the replay goes through the same history. No tool had to change; a new tool is recorded automatically.
+- **Where it lives**: `<name>.recipe.json` next to the saved file and its report (only when the save knows the folder: the native dialog or `/api/show/save`; a plain browser download gives no folder).
+- **Inputs**: any absolute file path a call names is listed with its SHA-256; at replay a missing one is looked up by name next to the recipe or in `--inputs`. The source show is checked by SHA-256 (a warning if it differs). *The recipe holds the full paths of the files used* — worth knowing before sharing one.
+- **Version**: the recipe records the Swiss Knife version; replaying with another version warns that the result may differ.
+- **Version number**: giopas chose (2 Oct) **one release, v2.0.0**, with the Pub test and the recipe; Phase 3 packages stay **v2.1.0**.
+
+*Status (2 Oct)*: built and tested. `core/recipe.py` (record, write, `replay`, CLI `python -m core.recipe replay|show`), hook in `app.py`, `show.reset` / `show.mark_saved` start and write it, the save message names it. The tutorial run (19 calls: Reducer, Doctor, 5 group ops, Looks, 5 VC ops, setlist load / match / details / apply, Doctor) **replays to the identical file in 1.9 s**; tests `tests/test_recipe.py` (7): Pub route with undo, Porter with another show as input, files moved to another folder, missing input named, skip list, live edits with VC and stage undo, CLI. 604 tests. Docs: wiki *Recipe*, CHANGELOG, README.
+
+*Next for the recipe (not done)*: Show Profiles on top (a profile = a recipe + parameters), a recipe from the History screen (*Save the recipe* without saving the show), replay *onto another show* (the same steps on a different source — needs IDs by meaning, like Compare).
 
 ### Phase 3 — Install like an app → **v2.1.0** *(asked by giopas, 1 Oct; after v2.0)*
 
@@ -614,6 +651,8 @@ Checks (★ = included in Phase 1.0):
 ## 7. Backlog / next steps (after v2.0)
 
 *The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
+
+**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles still to do.*
 
 **Left over from 2.6 (1 Oct):**
 - Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).
@@ -733,6 +772,26 @@ git tag -a v1.4.0 -m "v1.4.0" && git push origin v1.4.0
 cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
+
+**giopas — release v2.0.0 (the Pub test + the recipe), branch `feat/recipe`** (it contains `feat/pub-test`):
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/recipe
+source ~/.venvs/swissknife/bin/activate
+python -m pytest -q
+git push -u origin feat/recipe
+git checkout main
+git pull --ff-only
+git merge --no-ff feat/recipe -m "Release v2.0.0"
+python -m pytest -q
+git push origin main
+git tag -a v2.0.0 -m "v2.0.0"
+git push origin v2.0.0
+cd wiki
+git push origin master
+cd ..
+```
+(expect 604 passed.) GitHub Release: tag v2.0.0, title "v2.0.0 — the Pub test, and repeatable shows", body `docs/release-notes/RELEASE_NOTES_v2.0.0.md`. Then the forum post (`claude/FORUM_POST_v2.0.0.md` in the project). `feat/pub-test` and `feat/recipe` can be deleted after the merge.
 
 **giopas — release v1.10.0 (Grow a rig), branch `feat/grow-rig`:**
 ```bash
@@ -872,7 +931,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. giopas releases **v1.10.0** (commands in §8); then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. (done) v2.0.0 prepared — the Pub test (2.8) and the recipe (2.9) in one release, branch `feat/recipe`. Next: **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

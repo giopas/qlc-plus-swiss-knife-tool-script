@@ -7,6 +7,53 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.0.0] — 2026-10-01
+
+**The Pub test passed.** A real festival show rebuilt as the pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors, played in QLC+ (WORKPLAN 2.8). The two tools it needed, what the run showed, a tutorial — and the recipe, so a show can be replayed to the same file (WORKPLAN 2.9).
+
+### Added — the recipe (repeatable shows)
+- **The recipe**: *💾 Save as new file…* also writes `<name>.recipe.json` next to the file and its report — every change made to the show since you opened it, as the calls the tools made (undo and redo included), the source file and the other files used (another show for the Porter, a setlist `.txt`) with their SHA-256, and the SHA-256 of the saved `.qxw`.
+- **Replay from the command line**: `python -m core.recipe replay <name>.recipe.json` opens the source in a fresh app, replays every call and says whether the result is **byte-identical** (`--out` keeps it, `--source` / `--inputs` when the files moved; `show` lists the steps). The Pub-test run replays to the same file. `core/recipe.py`; tests `tests/test_recipe.py` (7).
+
+### Added
+- **Fixture groups** in Stage & Meshes, new tab **Groups**.
+  - **Make** a group from the fixtures you select in the views (click / Shift-click, *⬚ From the selection*) or by ticking them; heads go in one row, left → right as seen from the audience, or as listed.
+  - **Change** an existing group: rename it or set its fixtures. It keeps its ID, so matrices and VC widgets that use it keep working.
+  - **Delete** a group; refused while an RGB matrix runs on it (the matrices are named).
+  - Each group shows its fixtures and how many matrices use it; *Show* selects its fixtures in the views.
+  - Every change goes into the show in progress (History: *Stage & Meshes — fixture groups*; ↶ Undo works); the stage report lists added / changed / removed groups.
+  - The Look Builder offers new groups at once. `core/fixture_groups.py`; stage ops `group_new`, `group_update`, `group_delete`. Tests `tests/test_fixture_groups.py` (8).
+- **Compare** (menu 5 · Check & fix): the show in progress next to another `.qxw` — e.g. the hand-made version, or the file you opened (*⤵ Opened file*: what changed) — **by what they do, not by IDs**:
+  - fixtures by patch (then name);
+  - groups by name and heads;
+  - scenes per fixture, decoded to level and colour (±6 %) when the definitions are found, else channel by channel;
+  - chasers and sequences step by step, collections, EFX, RGB matrices;
+  - VC pages by their buttons and what they run;
+  - setlist cue lists by their songs.
+  - Per section: same / different (≠) / only here (+) / only in the other (−). *Copy report*, *Save report…*. `core/compare.py`, `/api/compare/run`. Tests `tests/test_compare.py` (5).
+- **The show report says what each in-place step changed** (Stage groups, stage edits, VC Editor, Setlist, Trigger Manager): fixtures, moved on the stage, groups, functions, VC pages and widgets — added / removed / renamed / changed. `core/show_diff.py`. Tests `tests/test_show_diff.py`.
+
+### Changed — after the first timed Pub-test run (12 minutes)
+- **Compare** pairs setlist cue lists by caption, then **by their songs**, then the only one left on each side (*Setlist: Band A* ↔ *Pub Setlist*).
+- **Compare** lists functions **nothing plays** (no button, not in another function — the Doctor's D016) as *unused* per section, and does not count them in the result.
+- **Compare** pairs a look that is a Scene in one show and a Collection in the other.
+- **Fixture groups**: names are trimmed of spaces, quotes and a trailing `:` `;` `,` `.`.
+
+### Changed — while writing the tutorial
+- **Guided route *Adapt a show to a new venue*** has a **Groups** step (Stage & Meshes › Groups) before *Looks* — the Look Builder makes looks per group. Nine steps.
+- **Stage & Meshes › Groups**: the list is taller, and a group you create or save is highlighted and scrolled into view (new groups went to the bottom of a short list, out of sight).
+- **Rig Reducer** says *renamed* and *re-patched* apart (renaming 6 fixtures read "6 re-patched"), on screen and in the History.
+- **Show report**: a VC Editor step also says when the page order changed.
+
+### Added — tutorial
+- Wiki **Tutorial — from a big-venue show to a pub show in 30 minutes**: the guided route step by step on the festival show, with screenshots (`screenshots/tutorial/`).
+
+### Added — Workspace Doctor
+- **D018 — setlist song that lights nothing** (warning, on the CueList): a cue whose function is an empty scene, or a chaser / collection with no steps (or only such steps) — the stage goes dark on that song. Found in the Pub-test QLC+ check: the festival show's *Song 12* is a chaser with no steps (cue 31 of the pub setlist, cue 12 of *Band C*). Not fixed automatically: only you know what the song should look like.
+- **Setlist**: a song that lights nothing gets an orange dot and a warning in the song list (`/api/functions` → `dark`).
+
+
 ## [1.10.0] — 2026-10-01
 
 Phase 2.7 — **Grow a rig**: fixtures copied into a show join the show's own looks.

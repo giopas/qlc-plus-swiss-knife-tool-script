@@ -15,6 +15,7 @@ const _SHOW_INVALIDATE = {
   fixtures: 'invalidateFixtures', brightness: 'invalidateBrightness', showbook: 'invalidateShowbook',
   doctor: 'invalidateDoctor', reducer: 'invalidateReducer', looks: 'invalidateLooks',
   stage: 'invalidateStage', vceditor: 'invalidateVcEditor', porter: 'invalidatePorter',
+  compare: 'invalidateCompare',
 };
 
 function _activeScreen() {
@@ -243,6 +244,7 @@ async function showSave() {
   })).json();
   if (fnEl) delete fnEl.dataset.touched;
   setStatus(`Saved ${saved}` + (m.report_name ? ` + ${m.report_name}` : '') +
+    (m.recipe_name ? ` + ${m.recipe_name}` : '') +
     ' — the file you opened is unchanged. You can keep working.');
   await showRefresh();
 }

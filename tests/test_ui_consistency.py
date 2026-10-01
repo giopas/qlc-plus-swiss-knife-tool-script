@@ -82,7 +82,7 @@ WIKI_PAGES = {
     "Home", "Quick-Start", "Fixture-Configurator", "Rig-Reducer", "Function-Porter",
     "Brightness", "Look-Builder", "VC-Visual-Editor", "Stage-and-Meshes",
     "Setlist-Manager", "Trigger-Manager", "Dictionary-Manager", "Workspace-Doctor",
-    "ID-Browser", "Show-Paperwork", "Show-in-Progress",
+    "ID-Browser", "Show-Paperwork", "Show-in-Progress", "Compare",
 }
 
 
@@ -154,7 +154,7 @@ def test_inspector_tabs_in_look_builder_and_stage():
     looks = (js / "looks.js").read_text(encoding="utf-8")
     stage = (js / "stage3d.js").read_text(encoding="utf-8")
     assert set(re.findall(r'data-lbpane="(\w+)"', looks)) == {"looks", "chaser"}
-    assert set(re.findall(r'data-stpane="(\w+)"', stage)) == {"select", "place", "add", "stage"}
+    assert set(re.findall(r'data-stpane="(\w+)"', stage)) == {"select", "place", "add", "stage", "groups"}
 
 
 def test_route_steps_open_real_tools():

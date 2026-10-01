@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v1.10.0
+# ⚡ QLC+ Swiss Knife — v2.0.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -6,7 +6,9 @@
 
 > ⚠️ **Independent project** — not affiliated with, endorsed by, or connected to the QLC+ project or its team. All credit for QLC+ goes to the [QLC+ team](https://www.qlcplus.org/). Swiss Knife works *on top of* QLC+ workspace files.
 
-![Swiss Knife — Start screen](screenshots/01-start.png)
+![A festival show becomes a pub show — the guided route in Swiss Knife](screenshots/route.gif)
+
+*A real festival show rebuilt for a small pub — 6 PARs, tonight's 34 songs — in 12 minutes, with the guided route. Step by step: [the tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub).*
 
 ---
 
@@ -15,9 +17,9 @@
 1. **Open a show** — it becomes the **show in progress**, a working copy in memory.
 2. **Use any tool, in any order, as often as you need.** Each tool's main button is **✓ Apply to the show**; the header counts the changes and shows the Workspace Doctor's verdict on the show as it is now.
 3. **Go back** to any step in the **History** (undo, redo).
-4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change. **The file you opened is never overwritten.**
+4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change, and a *recipe* that the command line can replay to the same file. **The file you opened is never overwritten.**
 
-For jobs that take several tools, *guided routes* (e.g. *adapt a show to a new venue*) show the steps above the tools. Every tool has a **?** that opens its page of the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
+For jobs that take several tools, *guided routes* (e.g. *adapt a show to a new venue*) show the steps above the tools — see the [tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub). Every tool has a **?** that opens its page of the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
 
 ---
 
@@ -34,11 +36,12 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | | [Brightness](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Brightness) | Scale the master dimmer of each fixture type across every scene; colours untouched. |
 | **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks from a palette for your fixture groups; chasers from a pattern with BPM timing, song presets and a playable preview. |
 | | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | The Virtual Console as a canvas: add and wire widgets, pages, templates, screen sizes; align, distribute, sort. |
-| | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage from above and from the front: put band members and set pieces on the floor, place them around the fixtures. |
+| | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage from above and from the front: put band members and set pieces on the floor, place them around the fixtures; make and edit fixture groups. |
 | **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs matched to functions, with fades, into the setlist CueList; setlist PDFs. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every keyboard and MIDI binding in one table: clashes, gaps, bulk MIDI shift. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A description for every function, shown everywhere. |
 | **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Broken references, scenes that leave channels unset, strobe left on, a PANIC RESET that can't reset… found and fixed. Also from the command line. |
+| | [Compare](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Compare) | This show next to another one, by what they do: patch, groups, looks (decoded colour and level), chasers, VC pages, setlist. |
 | | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and VC widget in sortable, filterable tables; CSV and PDF. |
 | **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: tech rider for the venue (never carries your show's internals), crew checklist for load-in, show book for you — with a stage plot; PDF or CSV. |
 
@@ -58,6 +61,8 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | Trigger Manager | Dictionary | Workspace Doctor |
 | ![ID Browser](screenshots/14-id-browser.png) | ![Show Paperwork](screenshots/15-show-paperwork.png) | ![History](screenshots/16-show-in-progress.png) |
 | ID Browser | Show Paperwork — tech rider with stage plot | The show in progress and its History |
+| ![Start](screenshots/01-start.png) | ![Compare](screenshots/17-compare.png) | |
+| Start — what do you want to do? | Compare — the rebuilt show next to the hand-made one | |
 
 ---
 

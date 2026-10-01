@@ -219,3 +219,16 @@ def test_redo_brings_back_what_undo_took(client):
     c.post("/api/brightness/apply-show", json={"scales": {"1": 0.8}})     # a new change
     assert c.get("/api/show/status?doctor=0").get_json()["redo"] == 0
     assert c.post("/api/show/redo", json={}).status_code == 400
+
+
+def test_report_says_what_in_place_steps_changed(client, tmp_path):
+    """2.8 pub-test run: touch steps (groups, stage, VC…) had no detail lines."""
+    c, _ = client
+    c.post("/api/stage/op", json={"op": "group_new", "name": "Front Band: ", "fixtures": ["1", "2"]})
+    s = c.get("/api/stage/state").get_json()
+    c.post("/api/stage/op", json={"op": "stage", "w": s["stage"]["w"] + 1000})
+    c.post("/api/looks/apply", json=LOOKS)
+    out = tmp_path / "Fest_v2.qxw"
+    assert c.post("/api/show/save", json={"path": str(out)}).get_json()["ok"]
+    rep = (tmp_path / "Fest_v2_report.txt").read_text(encoding="utf-8")
+    assert "Fixture groups added (1): 'Front Band'" in rep

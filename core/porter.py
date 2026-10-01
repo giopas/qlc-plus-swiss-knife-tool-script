@@ -1445,6 +1445,12 @@ def check_plan(plan: dict) -> dict:
     """:func:`validate` with the plan's fixture / group copies in place."""
     with _with_copies(plan) as (p, copies):
         v = validate(p)
+        wired = None
+        if copies and _wire_plan(p):
+            wired = _wire_copies(p, copy.deepcopy(_tgt["root"]), _load_defs(p))
+    if wired:
+        v["info"] = (["Wired into the show's own looks:"] + [f"  {x}" for x in wired["lines"]]
+                     + [f"  ⓘ {x}" for x in wired["not_wired"]] + v["info"])
     if copies:
         v["info"] = [f"Copied from the source: {len(copies['map'])} fixture(s), "
                      f"{len(copies['groups'])} group(s)."] + [f"  {x}" for x in copies["log"]] + v["info"]
@@ -1622,6 +1628,9 @@ def _build(plan: dict) -> dict:
     if plan.get("extend_panic", True):
         panic = _extend_panic_reset(tgt_engine, [kept_map[s] for s in func_ids if s in kept_map])
 
+    # ── 5b. Wire the copied fixtures into the show's own looks (2.7) ──────
+    wired = _wire_copies(plan, tgt_root, defs)
+
     # ── 6. Virtual Console ────────────────────────────────────────────────
     vc_result = None
     vc_opts = plan.get("vc") or {}
@@ -1674,9 +1683,33 @@ def _build(plan: dict) -> dict:
         "translated": translated,
         "input_patch": input_patch,
         "copied_bindings": (copied_bindings or {}).get("log", []),
+        "wired": wired,
         "root": tgt_root,
         "_defs": defs,
     }
+
+
+def _wire_plan(plan: dict) -> dict[str, str]:
+    """``{new fixture id: template id}`` from ``plan["wire"]`` (keys are the
+    *source* ids of copied fixtures) and the copies made for this plan."""
+    copied = plan.get("_copied") or {}
+    return {copied[s]: str(t) for s, t in (plan.get("wire") or {}).items()
+            if s in copied and t not in (None, "")}
+
+
+def _wire_copies(plan: dict, root: ET.Element, defs: dict) -> dict | None:
+    """Copied fixtures play like an existing target fixture in the target's
+    own scenes, sequences and EFX (``core.rig_grow``) — not in the functions
+    ported in the same step (those already have their own values)."""
+    wp = _wire_plan(plan)
+    if not wp:
+        return None
+    from core import rig_grow
+    own = {fn.get("ID", "") for fn in _engine(_tgt["root"]).findall("Function")}
+    rep = rig_grow.wire(root, wp, defs, functions=own)
+    names = {i: inf["name"] for i, inf in _fixture_infos(root).items()}
+    rep["lines"] = rig_grow.summary_lines(rep, names)
+    return rep
 
 
 def _max_id_in(root: ET.Element) -> int:
@@ -2054,6 +2087,14 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
     if copies and copies.get("log"):
         lines.append("── COPIED FROM THE SOURCE (fixtures / groups) ──")
         lines += [f"  {x}" for x in copies["log"]]
+        lines.append("")
+
+    wired = (result or {}).get("wired")
+    if wired:
+        lines.append("── WIRED INTO THE SHOW'S OWN LOOKS (plays like) ──")
+        lines += [f"  {x}" for x in wired.get("lines", [])]
+        for x in wired.get("not_wired", []):
+            lines.append(f"  ⓘ not wired: {x}")
         lines.append("")
 
     if validation.get("errors"):

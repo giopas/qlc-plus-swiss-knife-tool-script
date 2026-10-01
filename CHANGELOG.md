@@ -7,6 +7,20 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+Phase 2.7 — **Grow a rig**: fixtures copied into a show join the show's own looks.
+
+### Added
+- **Function Porter — the copies in the show's own looks** (giopas, 1 Oct: copied ceiling spots stayed dark in the show's existing looks). Step 3 has a new card. For each fixture copied in step 2 you choose which existing fixture it **plays like**; *— stays dark —* is also a choice.
+  - Every scene and sequence step of the show that sets that fixture then sets the copy too, translated by capability when the types differ (dimmer, RGB/W, colour wheel, strobe), with every channel declared. EFX that use it get the copy as well.
+  - Chasers, collections, cue lists, shows and buttons play those scenes, so they follow with no change. The functions ported in the same step are left as they are.
+  - **Suggested choice**: the nearest existing fixture at the same level (hanging above 1.5 m, or on the floor), on the same side of the stage, so ceiling lights follow ceiling lights. Each choice shows how many looks it joins. *Suggested* / *None* buttons.
+  - **Not wired, said plainly**, in step 4 and in the report:
+    - RGB matrices stay on their fixture group, because their pattern would change.
+    - Scripts that set channels directly.
+    - *Channels* sliders.
+    - A missing `.qxf` (then the values can't be translated, and the card says where to put the file).
+  - `core/rig_grow.py` (`suggest`, `usage`, `wire`, `not_wired`); plan key `wire`; `POST /api/porter/wire/options`; report section *WIRED INTO THE SHOW'S OWN LOOKS*. Tests `tests/test_rig_grow.py` (10).
+
 ### Changed
 - The Quick Start / Look Builder naming profile *two-letter prefix* has the id `prefix` (file `prefix.json`); pick it again in an older session. Project texts no longer name people, bands or venues.
 - **README** is now a presentation of the project only (what it is, how it works, the tools, screenshots, install, links); the version history stays here. All **screenshots retaken** (16, in menu order). The forum drafts (`docs/release-notes/FORUM_*.bbcode`) are removed. Security details moved to DEVELOPMENT.md; ROADMAP updated (1.10 Grow a rig, 2.1 packages).

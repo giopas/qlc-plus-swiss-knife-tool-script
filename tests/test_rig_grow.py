@@ -208,3 +208,6 @@ def test_porter_without_wire_leaves_the_show_looks_alone(c):
     qxw_io.strip_ns(root)
     new = {r["new"] for r in d["rows"]}
     assert not [s for s in _scenes(root) if new & set(_ids(s))]
+    # the report says so, by name
+    rep = c.get("/api/show/report").get_data(as_text=True)
+    assert "Stay dark in the show's own looks" in rep and "'Ceiling 6'" in rep

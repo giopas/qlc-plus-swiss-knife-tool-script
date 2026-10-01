@@ -12,7 +12,7 @@ A new **🎨 VC Editor** sub-tab inside the ID Browser gives you a visual, canva
 
 - Your entire VC layout is rendered as a scaled canvas, with every frame, button and slider drawn at its correct position, size and background colour read directly from the `.qxw` file.
 - Use the **mouse wheel** to zoom in and out; click **fit** to auto-scale the page to the available area.
-- A **Page** dropdown lets you switch between top-level VC pages (e.g. *MASTER SHOW*, *TheBand*, *Band B*…).
+- A **Page** dropdown lets you switch between top-level VC pages (e.g. *MASTER SHOW*, *Band A*, *Band B*…).
 - Frames are outlined rectangles (dashed for SoloFrames); buttons and sliders are filled with their actual `<Appearance>` background colour.
 
 #### Selection

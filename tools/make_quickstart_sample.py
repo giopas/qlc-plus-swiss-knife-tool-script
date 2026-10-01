@@ -6,10 +6,10 @@ Three reference rigs, driven through the real Flask routes, deterministic:
                             RGB PAR (floor). Plain names, default style.
 * ``QuickStart_club``     — 2 × Chauvet Intimidator Spot 110 (6-channel mode,
                             channel order ≠ definition order) + 4 × SlimPAR 56.
-                            TheBand names, built-in Compact style.
+                            two-letter prefix names, built-in Compact style.
 * ``QuickStart_multiuni`` — 8 × Intimidator Spot 375Z (15-ch, shutter closed
                             at 0) + 60 × SlimPAR 56 → spills into universe 2.
-                            TheBand names, style cloned from Pub_6fix.qxw.
+                            two-letter prefix names, style cloned from Pub_6fix.qxw.
 
     python3 tools/make_quickstart_sample.py            # write all three
     python3 tools/make_quickstart_sample.py club       # one rig, to corpus

@@ -242,3 +242,4 @@ def test_save_qxf_skips_github_stock_when_no_qlc(client, tmp_path, monkeypatch):
     qxw.write_bytes(client.post("/api/quickstart/generate", json={}).data)
     d = client.post("/api/quickstart/save-qxf", json={"qxw_path": str(qxw)}).get_json()
     assert d["files"] == [] and "stock" in d["skipped"][0]["reason"]
+

@@ -1446,8 +1446,9 @@ def check_plan(plan: dict) -> dict:
     with _with_copies(plan) as (p, copies):
         v = validate(p)
         wired = None
-        if copies and _wire_plan(p):
-            wired = _wire_copies(p, copy.deepcopy(_tgt["root"]), _load_defs(p))
+        if copies:
+            wired = _wire_copies(p, copy.deepcopy(_tgt["root"]),
+                                 _load_defs(p) if _wire_plan(p) else {})
     if wired:
         v["info"] = (["Wired into the show's own looks:"] + [f"  {x}" for x in wired["lines"]]
                      + [f"  ⓘ {x}" for x in wired["not_wired"]] + v["info"])
@@ -1701,14 +1702,22 @@ def _wire_copies(plan: dict, root: ET.Element, defs: dict) -> dict | None:
     """Copied fixtures play like an existing target fixture in the target's
     own scenes, sequences and EFX (``core.rig_grow``) — not in the functions
     ported in the same step (those already have their own values)."""
-    wp = _wire_plan(plan)
-    if not wp:
+    copied = plan.get("_copied") or {}
+    if not copied:
         return None
-    from core import rig_grow
-    own = {fn.get("ID", "") for fn in _engine(_tgt["root"]).findall("Function")}
-    rep = rig_grow.wire(root, wp, defs, functions=own)
+    wp = _wire_plan(plan)
     names = {i: inf["name"] for i, inf in _fixture_infos(root).items()}
+    from core import rig_grow
+    if wp:
+        own = {fn.get("ID", "") for fn in _engine(_tgt["root"]).findall("Function")}
+        rep = rig_grow.wire(root, wp, defs, functions=own)
+    else:
+        rep = {"fixtures": {}, "problems": {}, "not_wired": [], "total": 0}
     rep["lines"] = rig_grow.summary_lines(rep, names)
+    dark = [names.get(n, n) for n in copied.values() if n not in wp]
+    if dark:
+        rep["lines"].append(f"Stay dark in the show's own looks (no 'plays like' chosen in step 3): "
+                            + ", ".join(f"'{d}'" for d in dark) + " — they play only the ported functions.")
     return rep
 
 

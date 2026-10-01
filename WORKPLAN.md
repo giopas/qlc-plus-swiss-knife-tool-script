@@ -494,6 +494,8 @@ Checks (★ = included in Phase 1.0):
 
 **2.7 Grow a rig — wire new fixtures into the show → v1.10.0** *(asked by giopas, 1 Oct)*
 
+*Status (1 Oct, late) — tested by giopas, **v1.10.0 prepared**:* his run (FloorShow v11 ← BigShow v41, 8 functions + the *Ceiling* group; in step 3 he tried *None*, then set Ceiling 1 → CL: Ceiling Left): Ceiling 1 added to the 150 own scenes and the 12 ported ones; Ceilings 2–6 only in the 12 ported; level and colour match the template in all 150 (checked by decoding); Doctor 0 errors / 220 warnings (as before); matrices reported. Added after his test: the report and step 4 name the copies left dark. VERSION 1.10.0, CHANGELOG, README, release notes.
+
 *Status (1 Oct, night) — built for the Porter, waiting for giopas's test:*
 - Decisions (giopas, 1 Oct): default *plays like* = the nearest fixture **at the same level, same side** (ceiling spots follow *CL: Ceiling Left / Right*); **matrices stay on their groups** (reported, not changed); wiring **in the Function Porter only** — the Rig Editor (rename + add fixtures + group editor) is not built now; the fixture group editor moves back to 2.8 (Pub test step 3).
 - Built: `core/rig_grow.py`, plan key `wire`, `/api/porter/wire/options`, step 3 card *The copies in the show's own looks*, step 4 + report lines, 10 tests. On giopas's real files (FloorShow v11 ← BigShow v41 *Ceiling* group): Ceiling 1–3 → CL Left, 4–6 → CL Right, each added to 150 scenes; the 5 matrices on *Floor_All* reported; Doctor 0 errors (220 warnings, as before).
@@ -535,7 +537,7 @@ Checks (★ = included in Phase 1.0):
 - [ ] ~~Rig Editor: rename + add fixtures + group editor + wiring panel.~~ Not now (giopas, 1 Oct: wiring in the Porter only); the group editor goes to 2.8.
 - [x] Wiki: *Function Porter* — *The copies in the show's own looks*, with the how-to "Add ceiling lights to a floor show".
 - [ ] Corpus: a sanitised `FloorShow` (wanted since Phase 1) — giopas's real case.
-- [ ] Release **v1.10.0**.
+- [x] Release **v1.10.0** — prepared 1 Oct (giopas tags and pushes).
 
 **2.8 Pub test (benchmark) → v2.0.0**
 
@@ -732,6 +734,26 @@ cd wiki && git push origin master && cd ..
 ```
 Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0 — build the next show with the tool", body = `docs/release-notes/RELEASE_NOTES_v1.4.0.md`. Forum: paste `docs/release-notes/FORUM_v1.4.0.bbcode`. Old branches can be deleted after the merge (`feat/quickstart-porter`, `feat/porter-midi`, `feat/showbook`).
 
+**giopas — release v1.10.0 (Grow a rig), branch `feat/grow-rig`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/grow-rig
+source ~/.venvs/swissknife/bin/activate
+python -m pytest -q
+git push -u origin feat/grow-rig
+git checkout main
+git pull --ff-only
+git merge --no-ff feat/grow-rig -m "Release v1.10.0"
+python -m pytest -q
+git push origin main
+git tag -a v1.10.0 -m "v1.10.0"
+git push origin v1.10.0
+cd wiki
+git push origin master
+cd ..
+```
+(expect 573 passed.) GitHub Release: tag v1.10.0, title "v1.10.0 — new fixtures join the show", body `docs/release-notes/RELEASE_NOTES_v1.10.0.md`.
+
 **giopas — release v1.9.0 (the show in progress, UI audit 2.6), branch `feat/show-in-progress`:**
 ```bash
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
@@ -850,7 +872,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. giopas tests 2.7 (Porter: the copies in the show's own looks) → release **v1.10.0**; then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. giopas releases **v1.10.0** (commands in §8); then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

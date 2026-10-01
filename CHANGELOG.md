@@ -7,6 +7,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-10-01
+
 Phase 2.7 — **Grow a rig**: fixtures copied into a show join the show's own looks.
 
 ### Added
@@ -20,6 +22,7 @@ Phase 2.7 — **Grow a rig**: fixtures copied into a show join the show's own lo
     - *Channels* sliders.
     - A missing `.qxf` (then the values can't be translated, and the card says where to put the file).
   - `core/rig_grow.py` (`suggest`, `usage`, `wire`, `not_wired`); plan key `wire`; `POST /api/porter/wire/options`; report section *WIRED INTO THE SHOW'S OWN LOOKS*. Tests `tests/test_rig_grow.py` (10).
+  - The report (and step 4) also names the copies left dark, which then play only the ported functions.
 
 ### Changed
 - The Quick Start / Look Builder naming profile *two-letter prefix* has the id `prefix` (file `prefix.json`); pick it again in an older session. Project texts no longer name people, bands or venues.

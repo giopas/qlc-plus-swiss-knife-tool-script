@@ -742,6 +742,19 @@ def report(orig: ET.Element, new: ET.Element, source: str, output: str,
         if o and (o["x"], o["y"], o["z"]) != (f["x"], f["y"], f["z"]):
             lines.append(f"Fixture {f['id']} '{f['name']}': X/Y/Z {o['x']:g}/{o['y']:g}/{o['z']:g} → "
                          f"{f['x']:g}/{f['y']:g}/{f['z']:g} mm")
+    from core import fixture_groups as fg
+    names = {(f.findtext("ID") or "").strip(): (f.findtext("Name") or "").strip()
+             for f in (new.find("Engine").findall("Fixture") if new.find("Engine") is not None else [])}
+    ga = {g["id"]: g for g in fg.groups(orig)}
+    gb = {g["id"]: g for g in fg.groups(new)}
+    for gid in sorted(set(ga) | set(gb), key=lambda k: int(k) if k.isdigit() else 0):
+        fl = lambda g: ", ".join(names.get(i, i) for i in g["fixtures"])
+        if gid not in gb:
+            lines.append(f"Removed fixture group {gid} '{ga[gid]['name']}'")
+        elif gid not in ga:
+            lines.append(f"Added fixture group {gid} '{gb[gid]['name']}': {fl(gb[gid])}")
+        elif (ga[gid]["name"], ga[gid]["fixtures"]) != (gb[gid]["name"], gb[gid]["fixtures"]):
+            lines.append(f"Fixture group {gid} '{ga[gid]['name']}' → '{gb[gid]['name']}': {fl(gb[gid])}")
     if len(lines) == 5:
         lines.append("(no changes)")
     missing = [m["label"] for m in b.values() if not m["found"]]

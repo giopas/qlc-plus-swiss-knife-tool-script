@@ -541,6 +541,12 @@ Checks (★ = included in Phase 1.0):
 
 **2.8 Pub test (benchmark) → v2.0.0**
 
+*Status (2 Oct) — the two missing tools built, first measured run:*
+- Decisions (giopas, 2 Oct): the **group editor lives in Stage & Meshes** (tab *Groups*); the **recipe / CLI replay moves after v2.0** (§7, with Show Profiles).
+- Built: **fixture groups** (`core/fixture_groups.py`, Stage & Meshes › Groups) and **Compare** (`core/compare.py`, menu 5, `/api/compare/run`). 586 tests.
+- First run through the API (Festival_14fix → Rig Reducer keeping the 6 pub PARs renamed DR/FLB/FRB/LG/FRS/FLS → Doctor default fixes (429) → the 4 pub groups) then **Compare with Pub_6fix**: fixtures and patch **6/6 the same**; groups: the pub's 5 all present and equal (5 festival-only groups left, e.g. *Floor*, *Side_Wings* — delete or keep); scenes: the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and renamed / replaced many functions — that is the Look Builder / VC part of the route, still to do by hand with the tools.
+- Next: giopas runs the whole route in the app, timed, with Compare at the end; what gets in the way is fixed; then the tutorial, README / screenshots, the forum post, **v2.0.0**.
+
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
 *The route* (each step a Swiss Knife tool, each output a new file checked by the Doctor):
@@ -559,11 +565,11 @@ Checks (★ = included in Phase 1.0):
 - [ ] **Compare with `Pub_6fix.qxw`** — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
 - [ ] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks.
 - [ ] **Time**: under 30 minutes for someone who knows the show.
-- [ ] **Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file — first brick of the *Show Profile / CLI pipeline* in §7.
+- [ ] ~~**Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file~~ — moved after v2.0 (giopas, 2 Oct): first item of §7 with the *Show Profile / CLI pipeline*.
 
 *Tasks*:
-- [ ] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report).
-- [ ] Fixture group editor (step 3 gap; moved back from 2.7).
+- [x] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report). *(2 Oct)*
+- [x] Fixture group editor (step 3 gap; moved back from 2.7) — Stage & Meshes › Groups. *(2 Oct)*
 - [ ] Run the route on the corpus, fix what gets in the way (each fix: test + commit).
 - [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
 - [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
@@ -614,6 +620,8 @@ Checks (★ = included in Phase 1.0):
 ## 7. Backlog / next steps (after v2.0)
 
 *The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
+
+**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles.
 
 **Left over from 2.6 (1 Oct):**
 - Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).
@@ -872,7 +880,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. giopas releases **v1.10.0** (commands in §8); then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. (done) v1.10.0 released. Now **2.8**: giopas runs the Pub route in the app (see the 2.8 status), then tutorial, README, forum post, v2.0.0; then **2.8 Pub test → v2.0.0** (Compare, the run, the tutorial, README / screenshots, the forum post), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

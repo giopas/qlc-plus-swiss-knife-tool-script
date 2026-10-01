@@ -3851,3 +3851,23 @@ body.nav-min .side-changes { display: none; }
 .porter-wire-tbl { border-collapse: collapse; margin: 4px 0 6px; }
 .porter-wire-tbl td { padding: 3px 8px 3px 0; font-size: 12px; vertical-align: middle; }
 .porter-wire-tbl select { max-width: 420px; }
+
+/* Stage & Meshes — Groups tab (2.8) */
+.st-grp-acts { display: flex; gap: 4px; flex-shrink: 0; }
+.st-grp-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; max-height: 220px; overflow: auto;
+  padding: 6px 0; font-size: 12px; }
+.st-grp-fx { display: flex; gap: 6px; align-items: center; }
+
+/* Compare (2.8) */
+.cmp-body { flex: 1; min-height: 0; overflow: auto; padding: 8px 16px 12px; }
+.cmp-head { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+.cmp-total { display: flex; gap: 6px; align-items: center; }
+.cmp-sec { background: var(--surface-1); border-radius: 8px; margin-bottom: 8px; padding: 6px 12px; }
+.cmp-sec summary { cursor: pointer; display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.cmp-list { list-style: none; margin: 6px 0 4px; padding: 0; font-size: 12px; max-height: 360px; overflow: auto; }
+.cmp-list li { padding: 2px 0; display: flex; gap: 8px; }
+.cmp-m { width: 14px; text-align: center; font-weight: 700; flex-shrink: 0; }
+.cmp-d .cmp-m, .doc-chip.cmp-d { color: var(--orange); }
+.cmp-a .cmp-m, .doc-chip.cmp-a { color: var(--green); }
+.cmp-b .cmp-m, .doc-chip.cmp-b { color: var(--red); }
+.cmp-ok { color: var(--green); font-weight: 600; }

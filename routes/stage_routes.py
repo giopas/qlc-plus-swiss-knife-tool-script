@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 from flask import Blueprint, Response, jsonify, request
 
-from core import qxw_io, stage3d as s3
+from core import fixture_groups as fg, qxw_io, stage3d as s3
 from routes.doctor_routes import _defs, _open_workspace
 
 bp = Blueprint('stage', __name__, url_prefix='/api/stage')
@@ -36,7 +36,27 @@ def _work():
     return _w
 
 
-def _sync(w, undo: bool = False) -> None:
+def _sync_groups(w, live) -> None:
+    """Put the working copy's fixture groups into the show in progress (the
+    group editor, 2.8): same ids, same place in <Engine>."""
+    eng = next((c for c in live if c.tag.endswith('Engine')), None)
+    src = w['root'].find('Engine')
+    if eng is None or src is None:
+        return
+    olds = [c for c in eng if c.tag.endswith('FixtureGroup')]
+    kids = list(eng)
+    if olds:
+        idx = kids.index(olds[0])
+    else:
+        fx = [i for i, c in enumerate(kids) if c.tag.endswith('Fixture')]
+        idx = (fx[-1] + 1) if fx else 0
+    for c in olds:
+        eng.remove(c)
+    for n, g in enumerate(src.findall('FixtureGroup')):
+        eng.insert(idx + n, qxw_io.qualify_ns(copy.deepcopy(g)))
+
+
+def _sync(w, undo: bool = False, groups: bool = False) -> None:
     """Put the working copy's 3D stage (<Engine><Monitor>) into the show in
     progress — every stage edit is part of the show at once (one step in its
     history while you keep editing the stage)."""
@@ -46,12 +66,14 @@ def _sync(w, undo: bool = False) -> None:
     if undo and steps and steps[-1].get('open') and steps[-1]['tool'] == 'stage':
         show.cancel_touch()
     else:
-        workspace._show_touch('stage', 'stage edits')
+        workspace._show_touch('stage', 'fixture groups' if groups else 'stage edits')
     eng = next((c for c in live if c.tag.endswith('Engine')), None)
     src = w['root'].find('Engine')
     mon = src.find('Monitor') if src is not None else None
     if eng is None:
         return
+    if groups or undo:
+        _sync_groups(w, live)
     old = next((c for c in eng if c.tag.endswith('Monitor')), None)
     idx = list(eng).index(old) if old is not None else len(eng)
     if old is not None:
@@ -70,6 +92,9 @@ def _state(w, **extra):
     orig = w['start']
     return jsonify({'source': w['name'], 'stage': s3.stage(r), 'types': s3.STAGE_TYPES,
                     'meshes': s3.meshes(r, w['path'], _dirs()), 'fixtures': s3.fixtures(r, w['defs']),
+                    'groups': fg.groups(r),
+                    'all_fixtures': [{'id': (f.findtext('ID') or '').strip(), 'name': (f.findtext('Name') or '').strip()}
+                                     for f in (r.find('Engine').findall('Fixture') if r.find('Engine') is not None else [])],
                     'undo': len(w['undo']),
                     'dirty': qxw_io.qxw_bytes(r) != qxw_io.qxw_bytes(orig), **extra})
 
@@ -103,7 +128,7 @@ def op():
     if o == 'reset':
         w['root'] = copy.deepcopy(w['start'])
         w['undo'] = []
-        _sync(w)
+        _sync(w, groups=True)
         return _state(w, message='All stage changes discarded.')
     snap = copy.deepcopy(r)
     try:
@@ -150,6 +175,18 @@ def op():
                                h=_num(d.get('h')), d=_num(d.get('d')),
                                keep_meshes=bool(d.get('keep_meshes', True)), **kw)
             msg = 'Stage updated' + (' — meshes kept in place.' if d.get('keep_meshes', True) else '.')
+        elif o == 'group_new':
+            res = fg.create(r, str(d.get('name', '')), [str(i) for i in (d.get('fixtures') or [])],
+                            order=str(d.get('order') or 'stage'))
+            msg = f"Group '{res['name']}' created with {len(res['fixtures'])} fixture(s)."
+        elif o == 'group_update':
+            res = fg.update(r, str(d.get('gid', '')), name=d.get('name'),
+                            fixture_ids=None if d.get('fixtures') is None else [str(i) for i in d['fixtures']],
+                            order=str(d.get('order') or 'stage'))
+            msg = f"Group '{res['name']}' updated."
+        elif o == 'group_delete':
+            res = fg.delete(r, str(d.get('gid', '')))
+            msg = f"Group '{res['name']}' deleted."
         else:
             return jsonify({'error': f'Unknown operation: {o}'}), 400
     except (s3.StageError, ValueError) as e:
@@ -157,7 +194,7 @@ def op():
         return jsonify({'error': str(e)}), 400
     w['undo'].append(snap)
     del w['undo'][:-UNDO_LIMIT]
-    _sync(w)
+    _sync(w, groups=o.startswith('group_'))
     return _state(w, message=msg, result=res)
 
 

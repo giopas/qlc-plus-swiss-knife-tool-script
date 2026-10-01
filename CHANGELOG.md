@@ -7,6 +7,26 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+Phase 2.8 — the Pub test, first part: the two tools it needs.
+
+### Added
+- **Fixture groups** in Stage & Meshes, new tab **Groups**.
+  - **Make** a group from the fixtures you select in the views (click / Shift-click, *⬚ From the selection*) or by ticking them; heads go in one row, left → right as seen from the audience, or as listed.
+  - **Change** an existing group: rename it or set its fixtures. It keeps its ID, so matrices and VC widgets that use it keep working.
+  - **Delete** a group; refused while an RGB matrix runs on it (the matrices are named).
+  - Each group shows its fixtures and how many matrices use it; *Show* selects its fixtures in the views.
+  - Every change goes into the show in progress (History: *Stage & Meshes — fixture groups*; ↶ Undo works); the stage report lists added / changed / removed groups.
+  - The Look Builder offers new groups at once. `core/fixture_groups.py`; stage ops `group_new`, `group_update`, `group_delete`. Tests `tests/test_fixture_groups.py` (8).
+- **Compare** (menu 5 · Check & fix): the show in progress next to another `.qxw` — e.g. the hand-made version, or the file you opened (*⤵ Opened file*: what changed) — **by what they do, not by IDs**:
+  - fixtures by patch (then name);
+  - groups by name and heads;
+  - scenes per fixture, decoded to level and colour (±6 %) when the definitions are found, else channel by channel;
+  - chasers and sequences step by step, collections, EFX, RGB matrices;
+  - VC pages by their buttons and what they run;
+  - setlist cue lists by their songs.
+  - Per section: same / different (≠) / only here (+) / only in the other (−). *Copy report*, *Save report…*. `core/compare.py`, `/api/compare/run`. Tests `tests/test_compare.py` (5).
+
+
 ## [1.10.0] — 2026-10-01
 
 Phase 2.7 — **Grow a rig**: fixtures copied into a show join the show's own looks.

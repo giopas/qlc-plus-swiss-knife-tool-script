@@ -42,7 +42,7 @@ async function _stOp(body, quiet) {
   const d = await r.json();
   if (!r.ok) { setStatus(d.error || 'Failed.', 'error'); return null; }
   _stS = d;
-  if (d.result && d.result.id && body.op !== 'remove') { _stSel = d.result.id; _stSet = new Set([_stSel]); }
+  if (d.result && d.result.id && body.op !== 'remove' && !String(body.op).startsWith('group_')) { _stSel = d.result.id; _stSet = new Set([_stSel]); }
   _stKeepSel();
   _stRender();
   if (!quiet && d.message) setStatus(d.message + ' Not saved yet.', 'ok');
@@ -80,6 +80,85 @@ function stageTab(t) {
   document.querySelectorAll('#st-body [data-stpane]').forEach(p => { p.hidden = p.dataset.stpane !== t; });
 }
 
+// ── Fixture groups (2.8: the Pub test needs groups the show doesn't have) ──
+// A group is one row of fixtures, left → right as seen from the audience.
+// RGB matrices, the Look Builder and the VC use groups.
+let _stGrpEdit = null;            // id of the group in the form, or null (= new)
+let _stGrpPick = new Set();       // fixture ids ticked in the form
+
+function _stGroupsHtml() {
+  const G = _stS.groups || [], F = _stS.all_fixtures || [];
+  const nm = Object.fromEntries(F.map(f => [f.id, f.name]));
+  const editing = G.find(g => g.id === _stGrpEdit);
+  const list = G.length ? G.map(g => `<div class="st-item ${g.id === _stGrpEdit ? 'on' : ''}">
+      <span><b>${_esc(g.name)}</b> <span class="vce-hint">${g.fixtures.length} · ${_esc(g.fixtures.map(i => nm[i] || i).join(', '))}</span>
+        ${g.used_by.length ? `<span class="vce-hint" title="${_esc(g.used_by.join(', '))}"> · ${g.used_by.length} matrix(es)</span>` : ''}</span>
+      <span class="st-grp-acts"><button class="btn btn-surface btn-xs" onclick="stageGroupShow('${g.id}')" title="Select its fixtures in the views">Show</button>
+        <button class="btn btn-surface btn-xs" onclick="stageGroupEdit('${g.id}')">Edit</button></span></div>`).join('')
+    : '<div class="vce-hint">No fixture groups in this show yet.</div>';
+  const picks = F.map(f => `<label class="st-grp-fx"><input type="checkbox" ${_stGrpPick.has(f.id) ? 'checked' : ''}
+      onchange="stageGroupPick('${f.id}', this.checked)"> ${_esc(f.name)}</label>`).join('');
+  return `<h3>Fixture groups <span class="p-desc">used by RGB matrices, the Look Builder and the VC</span></h3>
+    <div class="st-list">${list}</div>
+    <h3 style="margin-top:10px">${editing ? `Edit '${_esc(editing.name)}'` : 'New group'}</h3>
+    <div class="lb-row"><label>Name <input id="st-grp-name" class="filter-input" style="width:200px" value="${_esc(editing ? editing.name : '')}" placeholder="e.g. Singer Pair"></label>
+      <button class="btn btn-surface btn-sm" onclick="stageGroupFromSel()" title="Tick the fixtures selected in the views (click / Shift-click them)">⬚ From the selection</button>
+      <button class="btn btn-surface btn-sm" onclick="stageGroupPickAll(false)">None</button></div>
+    <div class="st-grp-picks">${picks || '<span class="vce-hint">No fixtures in the show.</span>'}</div>
+    <div class="lb-row"><label>Order <select id="st-grp-order" class="filter-input">
+        <option value="stage">left → right on the stage</option><option value="given">as listed above</option></select></label></div>
+    <div class="lb-row">${editing
+      ? `<button class="btn btn-accent btn-sm" onclick="stageGroupSave()">✓ Save group</button>
+         <button class="btn btn-surface btn-sm" onclick="stageGroupDelete()" title="${editing.used_by.length ? 'Used by RGB matrices — change them first' : 'Delete this group'}">🗑 Delete</button>
+         <button class="btn btn-surface btn-sm" onclick="stageGroupEdit(null)">Cancel</button>`
+      : `<button class="btn btn-accent btn-sm" onclick="stageGroupSave()">＋ Create group</button>`}</div>
+    <div class="vce-hint">The group goes into the show in progress at once (↶ Undo here or in the History). Heads in one row, left → right as seen from the audience.</div>`;
+}
+
+function stageGroupPick(id, on) { if (on) _stGrpPick.add(id); else _stGrpPick.delete(id); }
+function stageGroupPickAll(on) {
+  const name = _stVal('st-grp-name');
+  _stGrpPick = new Set(on ? (_stS.all_fixtures || []).map(f => f.id) : []);
+  _stRender();
+  const n = document.getElementById('st-grp-name'); if (n) n.value = name;
+}
+function stageGroupFromSel() {
+  const ids = [..._stSet].filter(k => k.startsWith('f:')).map(k => k.slice(2));
+  if (!ids.length) { setStatus('Select fixtures in the views first (click, Shift-click to add more).', 'warn'); return; }
+  const name = _stVal('st-grp-name');
+  _stGrpPick = new Set(ids);
+  _stRender();
+  const n = document.getElementById('st-grp-name'); if (n) n.value = name;
+}
+function stageGroupShow(gid) {
+  const g = (_stS.groups || []).find(x => x.id === gid);
+  if (!g) return;
+  _stSet = new Set(g.fixtures.map(i => 'f:' + i).filter(k => _stFx(k)));
+  _stSel = _stSet.size ? [..._stSet][0] : null;
+  _stRender();
+  if (!_stSet.size) setStatus(`'${g.name}': its fixtures have no 3D position.`, 'warn');
+}
+function stageGroupEdit(gid) {
+  _stGrpEdit = gid;
+  const g = (_stS.groups || []).find(x => x.id === gid);
+  _stGrpPick = new Set(g ? g.fixtures : []);
+  _stRender();
+}
+async function stageGroupSave() {
+  const name = _stVal('st-grp-name').trim(), order = _stVal('st-grp-order') || 'stage';
+  const fixtures = (_stS.all_fixtures || []).map(f => f.id).filter(i => _stGrpPick.has(i));
+  const d = _stGrpEdit
+    ? await _stOp({ op: 'group_update', gid: _stGrpEdit, name, fixtures, order })
+    : await _stOp({ op: 'group_new', name, fixtures, order });
+  if (d) { _stGrpEdit = null; _stGrpPick = new Set(); _stRender(); }
+}
+async function stageGroupDelete() {
+  const g = (_stS.groups || []).find(x => x.id === _stGrpEdit);
+  if (!g || !confirm(`Delete the group '${g.name}'?`)) return;
+  const d = await _stOp({ op: 'group_delete', gid: _stGrpEdit });
+  if (d) { _stGrpEdit = null; _stGrpPick = new Set(); _stRender(); }
+}
+
 // ── layout ──────────────────────────────────────────────────────────────────
 function _stRender() {
   const el = document.getElementById('st-body');
@@ -101,6 +180,7 @@ function _stRender() {
         ['place', 'Place', 'Push to an edge, centre, floor or ceiling; line up; space evenly — for what is selected'],
         ['add', 'Add', 'Add a mesh from your mesh folders'],
         ['stage', 'Stage', 'The stage type and size'],
+        ['groups', `Groups${(_stS.groups || []).length ? ` (${_stS.groups.length})` : ''}`, 'Fixture groups: make one from the fixtures you select, rename, change, delete'],
       ].map(([k, l, t]) => `<button class="subtab-btn${_stTab === k ? ' active' : ''}" data-sttab="${k}" onclick="stageTab('${k}')" title="${t}">${l}</button>`).join('')}</div>
       <div class="lb-card" data-stpane="stage"${_stTab === 'stage' ? '' : ' hidden'}>
         <h3>Stage <span class="p-desc">the floor and the space around the rig</span></h3>
@@ -141,6 +221,8 @@ function _stRender() {
       <div class="lb-card" id="st-edit" data-stpane="select"${_stTab === 'select' ? '' : ' hidden'}>${_stEditHtml()}</div>
 
       <div class="lb-card" id="st-place" data-stpane="place"${_stTab === 'place' ? '' : ' hidden'}>${_stPlaceHtml()}</div>
+
+      <div class="lb-card" data-stpane="groups"${_stTab === 'groups' ? '' : ' hidden'}>${_stGroupsHtml()}</div>
 
       <div class="lb-card" data-stpane="add"${_stTab === 'add' ? '' : ' hidden'}>
         <h3>Add a mesh <span class="p-desc">from your mesh folders</span></h3>

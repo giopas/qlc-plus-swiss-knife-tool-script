@@ -56,7 +56,8 @@ class TestSections(unittest.TestCase):
         cls.S = cls.doc["sections"]
 
     def test_all_sections_present(self):
-        self.assertEqual(set(self.S), set(showbook.ALL_SECTIONS))
+        # no section chosen = the operator show book (1.9: Show Paperwork presets)
+        self.assertEqual(set(self.S), set(showbook.PRESETS["operator"]["sections"]))
         self.assertEqual(self.doc["show_name"], "Pub_6fix")
         self.assertEqual(self.doc["date"], DATE)
 

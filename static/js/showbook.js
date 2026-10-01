@@ -11,6 +11,9 @@ let _sbDoc      = null;    // last document model from /api/showbook/preview
 let _sbBusy     = false;
 
 const _SB_SECTIONS = [
+  { id: 'rider',       label: 'Tech rider (fixture types)', icon: '🎟' },
+  { id: 'stage_plan',  label: 'Stage plot',     icon: '🗺' },
+  { id: 'checklist',   label: 'Load-in checklist', icon: '✅' },
   { id: 'summary',     label: 'Summary',       icon: '📊' },
   { id: 'patch',       label: 'Patch List',     icon: '🔌' },
   { id: 'functions',   label: 'Function Index', icon: '📋' },
@@ -26,29 +29,92 @@ const _SB_SECTIONS = [
 
 // ── Init ────────────────────────────────────────────────────────────────────
 
+// Presets by reader (Show Paperwork, 1.9) — mirror of core/showbook.PRESETS
+const _SB_PRESETS = {
+  rider:     ['rider', 'stage_plan'],
+  checklist: ['checklist', 'stage_plan'],
+  operator:  ['summary', 'patch', 'functions', 'scenes', 'chasers', 'collections', 'efx',
+              'shows', 'scripts', 'vc_layout', 'doctor'],
+};
+const _SB_VENUE_SAFE = new Set(['rider', 'stage_plan', 'checklist', 'patch']);
+let _sbPresets = new Set(['operator']);
+
 function showbookInit() {
   _sbBuildSectionPicker();
+  _sbApplyPresets();
+}
+
+function _sbVenueOnly() {
+  return _sbPresets.size > 0 && [..._sbPresets].every(p => p === 'rider' || p === 'checklist');
+}
+
+/** Pick who the paper is for; ⇧-click adds / removes a preset. */
+function sbPreset(p, ev) {
+  if (p === 'custom') _sbPresets = new Set();
+  else if (ev && ev.shiftKey) { _sbPresets.has(p) ? _sbPresets.delete(p) : _sbPresets.add(p); }
+  else _sbPresets = new Set([p]);
+  _sbBuildSectionPicker();
+  _sbApplyPresets();
+  invalidateShowbook();
+}
+
+function _sbApplyPresets() {
+  document.querySelectorAll('.sb-preset').forEach(b =>
+    b.classList.toggle('active', b.dataset.p === 'custom' ? _sbPresets.size === 0 : _sbPresets.has(b.dataset.p)));
+  const venue = _sbVenueOnly();
+  const want = new Set([..._sbPresets].flatMap(p => _SB_PRESETS[p] || []));
+  document.querySelectorAll('#sb-section-checks input[type=checkbox]').forEach(c => {
+    if (_sbPresets.size) c.checked = want.has(c.value);
+    c.disabled = venue && !_SB_VENUE_SAFE.has(c.value);
+    c.closest('label')?.classList.toggle('sb-locked', c.disabled);
+  });
+  const note = document.getElementById('sb-venue-note');
+  if (note) note.hidden = !venue;
+}
+
+function _sbBody(extra) {
+  return Object.assign({
+    sections: _sbSelectedSections(),
+    presets: [..._sbPresets],
+    qxf_dir: (document.getElementById('sb-qxf-path')?.value || '').trim() || null,
+    show_name: typeof getShowName === 'function' ? (getShowName() || null) : null,
+    date: typeof getEventDate === 'function' ? (getEventDate() || null) : null,
+    paper: document.getElementById('sb-paper')?.value || 'A4 Landscape',
+  }, extra || {});
 }
 
 function invalidateShowbook() {
   _sbLoaded = false;
   _sbDoc = null;
   const preview = document.getElementById('sb-preview');
-  if (preview) preview.innerHTML = '<div class="porter-placeholder">Generate a preview to see your Show Book here.</div>';
+  if (preview) preview.innerHTML = '<div class="porter-placeholder">Pick who it is for, then 🔍 Generate Preview.</div>';
 }
 
 // ── Section picker ──────────────────────────────────────────────────────────
 
+// The sections in three groups (giopas, 30 Sep: the flat list was chaotic)
+const _SB_GROUPS = [
+  { title: 'The rig', hint: 'what the venue and the crew need',
+    ids: ['rider', 'patch', 'checklist', 'stage_plan'] },
+  { title: 'The show', hint: 'for you — stays with you',
+    ids: ['summary', 'functions', 'scenes', 'chasers', 'collections', 'efx', 'shows', 'scripts'] },
+  { title: 'Console & checks', hint: 'for you — stays with you',
+    ids: ['vc_layout', 'doctor'] },
+];
+
 function _sbBuildSectionPicker() {
   const wrap = document.getElementById('sb-section-checks');
   if (!wrap || wrap.childElementCount > 0) return;
-
-  wrap.innerHTML = _SB_SECTIONS.map(s =>
-    `<label class="sb-check-label">
-       <input type="checkbox" value="${s.id}" checked>
-       <span>${s.icon} ${s.label}</span>
-     </label>`
-  ).join('');
+  const byId = Object.fromEntries(_SB_SECTIONS.map(s => [s.id, s]));
+  wrap.innerHTML = _SB_GROUPS.map(g => `
+    <fieldset class="sb-group">
+      <legend>${g.title} <small>${g.hint}</small></legend>
+      ${g.ids.map(id => byId[id]).filter(Boolean).map(s => `
+        <label class="sb-check-label">
+          <input type="checkbox" value="${s.id}" checked>
+          <span>${s.icon} ${s.label}</span>
+        </label>`).join('')}
+    </fieldset>`).join('');
 }
 
 function _sbSelectedSections() {
@@ -102,10 +168,7 @@ async function sbGenerate() {
     const res = await fetch('/api/showbook/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sections,
-        qxf_dir: qxfDir || null,
-      }),
+      body: JSON.stringify(_sbBody()),
     });
     const data = await res.json();
 
@@ -133,6 +196,28 @@ function _sbRenderPreview(doc) {
 
   const parts = [];
   const secs = doc.sections || {};
+
+  if (secs.rider) {
+    const r = secs.rider;
+    parts.push(_sbTable('🎟 Tech rider — fixture types', r.types,
+      ['Manufacturer', 'Model', 'Mode', 'Qty', 'Ch', 'Patch range', 'Universe(s)'],
+      t => [t.manufacturer, t.model, t.mode, t.quantity, t.channels || '', t.patch_range, t.universes.join(', ')],
+      'sb-sec-rider').replace('</table>', `</table><div class="sb-stats"><span><b>Total:</b> ${r.total_fixtures} fixture(s),
+        ${r.total_channels} DMX channel(s), ${r.universes.length} universe(s)</span></div>`));
+  }
+  if (secs.checklist) {
+    parts.push(_sbTable('✅ Load-in checklist', secs.checklist,
+      ['☐', 'ID', 'Name', 'Model', 'Mode', 'Patch', 'Groups', '3D position'],
+      c => ['☐', c.id, c.name, c.model, c.mode, c.patch, c.groups, c.position], 'sb-sec-checklist'));
+  }
+  if (secs.stage_plan) {
+    const sp = secs.stage_plan;
+    parts.push(`<div class="sb-section" id="sb-sec-stage"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🗺 Stage plot <span class="sb-toggle-icon">▾</span></h3>
+      <div class="sb-section-body"><div class="sb-stats"><span>${sp.placed} of ${sp.fixtures.length} fixture(s) placed —
+      the same two views are a page of their own in the PDF.</span></div>
+      ${_sbStagePlot(sp)}
+      ${sp.placed < sp.fixtures.length ? '<div class="sb-optional">Fixtures without a position are left out: place them in <a href="#" onclick="go(\'stage\');return false">Stage &amp; Meshes</a>.</div>' : ''}</div></div>`);
+  }
 
   // Summary
   if (secs.summary) {
@@ -513,18 +598,11 @@ async function sbExportPdf() {
   _sbStatus('Generating PDF…');
 
   try {
-    const sections = _sbSelectedSections();
-    const qxfDir = (document.getElementById('sb-qxf-path')?.value || '').trim();
     const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'showbook';
-
     const res = await fetch('/api/showbook/export/pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sections,
-        qxf_dir: qxfDir || null,
-        filename: `${base}_ShowBook.pdf`,
-      }),
+      body: JSON.stringify(_sbBody()),
     });
 
     if (!res.ok) {
@@ -537,7 +615,7 @@ async function sbExportPdf() {
     const fname = res.headers.get('X-Suggested-Filename') || `${base}_ShowBook.pdf`;
     const saved = await saveFileWithPicker(blob, fname,
       [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }],
-      'Save Show Book PDF');
+      'Save the PDF');
     if (saved) _sbStatus(`Saved: ${saved}`);
     else _sbStatus('Export cancelled.');
   } catch (e) {
@@ -553,18 +631,11 @@ async function sbExportCsv() {
   _sbStatus('Generating CSV archive…');
 
   try {
-    const sections = _sbSelectedSections();
-    const qxfDir = (document.getElementById('sb-qxf-path')?.value || '').trim();
     const base = typeof getShowfileBase === 'function' ? getShowfileBase() : 'showbook';
-
     const res = await fetch('/api/showbook/export/csv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sections,
-        qxf_dir: qxfDir || null,
-        filename: `${base}_ShowBook.zip`,
-      }),
+      body: JSON.stringify(_sbBody()),
     });
 
     if (!res.ok) {
@@ -577,7 +648,7 @@ async function sbExportCsv() {
     const fname = res.headers.get('X-Suggested-Filename') || `${base}_ShowBook.zip`;
     const saved = await saveFileWithPicker(blob, fname,
       [{ description: 'ZIP Archive', accept: { 'application/zip': ['.zip'] } }],
-      'Save Show Book CSV');
+      'Save the CSV archive');
     if (saved) _sbStatus(`Saved: ${saved}`);
     else _sbStatus('Export cancelled.');
   } catch (e) {
@@ -590,8 +661,34 @@ async function sbExportCsv() {
 // ── Status ──────────────────────────────────────────────────────────────────
 
 function _sbStatus(msg, level) {
-  const el = document.getElementById('sb-status');
-  if (!el) return;
-  el.textContent = msg;
-  el.className = 'status-bar ' + (level === 'error' ? 'status-error' : level === 'warn' ? 'status-warn' : 'status-info');
+  // the app's status line at the bottom, like every other tool
+  if (typeof setStatus === 'function') setStatus(msg, level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'ok');
+}
+
+
+// ── Stage plot preview: from above and from the audience (like the PDF page) ──
+function _sbStagePlot(sp) {
+  const fx = (sp.fixtures || []).filter(f => f.in_3d);
+  if (!fx.length) return '';
+  const st = sp.stage || {};
+  const W = Math.max(st.w_mm || 0, ...fx.map(f => f.x + 300), 1000);
+  const D = Math.max(st.d_mm || 0, ...fx.map(f => f.z + 300), 1000);
+  const H = Math.max(st.h_mm || 0, ...fx.map(f => f.y + 300), 1000);
+  const view = (title, w, h, pos, bandTop, bandBottom) => {
+    const vw = 520, vh = Math.max(160, Math.min(320, vw * h / w));
+    const sx = v => 20 + v / w * (vw - 40), sy = v => 26 + v / h * (vh - 50);
+    const dots = fx.map(f => { const [a, b] = pos(f); return `
+      <circle cx="${sx(a).toFixed(1)}" cy="${sy(b).toFixed(1)}" r="6" fill="${_esc(f.color || '#89b4fa')}" stroke="#000" stroke-opacity=".35"/>
+      <text x="${(sx(a) + 8).toFixed(1)}" y="${(sy(b) + 3).toFixed(1)}" class="sb-plot-lbl">${_esc((f.name || '').slice(0, 16))} ${_esc(f.patch || '')}</text>`; }).join('');
+    return `<figure class="sb-plot"><figcaption>${title}</figcaption>
+      <svg viewBox="0 0 ${vw} ${vh}" role="img" aria-label="${title}">
+        <rect x="20" y="26" width="${vw - 40}" height="${vh - 50}" class="sb-plot-stage"/>
+        <text x="${vw / 2}" y="18" class="sb-plot-band" text-anchor="middle">${bandTop}</text>
+        <text x="${vw / 2}" y="${vh - 8}" class="sb-plot-band" text-anchor="middle">${bandBottom}</text>
+        ${dots}</svg></figure>`;
+  };
+  return `<div class="sb-plots">
+    ${view('From above', W, D, f => [f.x, f.z], 'UPSTAGE / BACK', 'AUDIENCE')}
+    ${view('From the audience', W, H, f => [f.x, H - f.y], 'CEILING', 'FLOOR')}
+  </div>`;
 }

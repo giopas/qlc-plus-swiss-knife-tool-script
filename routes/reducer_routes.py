@@ -83,6 +83,32 @@ def run_reduce():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/apply', methods=['POST'])
+def run_apply():
+    """Reduce the show in progress (a step in its history)."""
+    global _last
+    root, path, name = _open_workspace()
+    if root is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    keep, rp = _plan()
+    if not keep:
+        return jsonify({'error': 'Keep at least one fixture.'}), 400
+    try:
+        from routes.show_routes import applied
+        res = rig_reducer.run(root, keep, rp, _defs(path), name, '')
+        if res['blocked']:
+            return jsonify({'error': 'Doctor found new errors in the result; not applied.',
+                            'findings': res['doctor']['new_errors']}), 422
+        _last = {'report': res['report'], 'removed': res['removed'],
+                 'doctor': res['doctor'], 'filename': ''}
+        rem = ', '.join(f'{v} {k}' for k, v in (res['removed'] or {}).items() if v)
+        return applied('reducer', f'kept {len(keep)} fixtures'
+                       + (f', re-patched {len(rp)}' if rp else ''), res['root'],
+                       res['report'], f'removed: {rem}' if rem else '')
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 @bp.route('/last-result')
 def last_result():
     return jsonify(_last)

@@ -91,6 +91,29 @@ def apply_brightness():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/apply-show', methods=['POST'])
+def apply_to_show():
+    """Scale the brightness in the show in progress (a step in its history)."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    try:
+        from core import qxw_io
+        from routes.show_routes import applied
+        scales = {str(k): float(v) for k, v in (data.get('scales') or {}).items()}
+        manual = {str(k): int(v) for k, v in (data.get('manual_dimmer_offsets') or {}).items()}
+        _, xml_bytes, stats = br.apply_brightness_scales(scales, manual or None)
+        changed = {k: v for k, v in scales.items() if abs(v - 1.0) > 1e-9}
+        detail = ', '.join(f'fixture {k}: {round(v * 100)}%' for k, v in sorted(changed.items()))
+        return applied('brightness',
+                       f'{stats["scenes_modified"]} scenes, {stats["values_changed"]} values',
+                       qxw_io.loads_qxw(xml_bytes), '', detail)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 # ── Upload QXF (one or many) ──────────────────────────────────────────────────
 
 @bp.route('/upload-qxf', methods=['POST'])

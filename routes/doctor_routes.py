@@ -112,6 +112,31 @@ def run_fix():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/apply', methods=['POST'])
+def run_apply():
+    """Body: { keys } → fix the show in progress (a step in its history)."""
+    global _last
+    root, path, name = _open_workspace()
+    if root is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    keys = [str(k) for k in ((request.get_json(force=True) or {}).get('keys') or [])]
+    if not keys:
+        return jsonify({'error': 'Tick at least one finding to fix.'}), 400
+    try:
+        from routes.show_routes import applied
+        res = fixes.fix(root, _defs(path), keys=keys)
+        rep = fixes.format_report(res, name, '')
+        _last = {'report': rep, 'before': res.before.severity_counts(),
+                 'after': res.after.severity_counts(), 'actions': len(res.actions),
+                 'skipped': len(res.skipped), 'filename': ''}
+        a = len(res.actions)
+        return applied('doctor', f'{a} fix{"es" if a != 1 else ""}', res.root, rep,
+                       f'errors {_last["before"].get("error", 0)} → {_last["after"].get("error", 0)}, '
+                       f'warnings {_last["before"].get("warning", 0)} → {_last["after"].get("warning", 0)}')
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 @bp.route('/last-result')
 def last_result():
     return jsonify(_last)

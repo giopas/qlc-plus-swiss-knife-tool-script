@@ -70,29 +70,24 @@
 
     <!-- 1 · New show -->
     <div class="sn-group-label" id="sn-grp-1"><span class="sn-gnum">1</span><span class="sn-gtxt">New show</span></div>
-    <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes." onclick="go('quickstart')">
+    <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="A new show from your fixtures: looks, effects, PANIC RESET and a Virtual Console, ready to run. Use this when you start from nothing; Fixtures when you only need the rig placed and patched." onclick="go('quickstart')">
       <svg class="ic"><use href="/static/icons.svg#bolt"/></svg>
       <span>Quick Start</span>
     </button>
-    <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace." onclick="go('fixtures')">
+    <button class="sn-item" id="sn-fixtures" data-tip="Fixtures" data-desc="Place fixtures on a 2D stage, auto-assign DMX, blueprint PDF or a rig-only workspace. Use this for the rig alone; Quick Start for a whole show." onclick="go('fixtures')">
       <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
       <span>Fixtures</span>
     </button>
 
     <!-- 2 · Adapt a show -->
     <div class="sn-group-label" id="sn-grp-2"><span class="sn-gnum">2</span><span class="sn-gtxt">Adapt a show</span></div>
-    <button class="sn-item" id="sn-reducer" data-tip="Rig Reducer" data-desc="Keep some fixtures and remove the others — with their values, groups, empty functions and buttons — and re-patch the rest, into a new file." onclick="go('reducer')">
+    <button class="sn-item" id="sn-reducer" data-tip="Rig Reducer" data-desc="Keep some fixtures and remove the others — with their values, groups, empty functions and buttons — and re-patch the rest." onclick="go('reducer')">
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Rig Reducer</span>
     </button>
-    <button class="sn-item" id="sn-porter" data-tip="Function Porter" data-desc="Import functions from one workspace into another with dependency resolution and fixture remapping." onclick="go('porter')">
+    <button class="sn-item" id="sn-porter" data-tip="Function Porter" data-desc="Bring functions with their buttons, fixtures and groups from another show into the show in progress (the QXW Merger is part of it now)." onclick="go('porter')">
       <svg class="ic"><use href="/static/icons.svg#upload"/></svg>
       <span>Function Porter</span>
-    </button>
-    <button class="sn-item" id="sn-merger" data-tip="QXW Merger" data-desc="Copy functions, fixtures and groups from one workspace into another." onclick="go('merger')">
-      <svg class="ic"><use href="/static/icons.svg#merge"/></svg>
-      <span>QXW Merger</span>
-      <span class="b alpha">&alpha;</span>
     </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
@@ -101,23 +96,22 @@
 
     <!-- 3 · Create -->
     <div class="sn-group-label" id="sn-grp-3"><span class="sn-gnum">3</span><span class="sn-gtxt">Create</span></div>
-    <button class="sn-item" id="sn-looks" data-tip="Look Builder" data-desc="Build looks (fixture group × palette) and chasers (chase, ping-pong, build-up, random…) with BPM timing and a DMX preview, into a new file." onclick="go('looks')">
+    <button class="sn-item" id="sn-looks" data-tip="Look Builder" data-desc="Build looks (fixture group × palette) and chasers (chase, ping-pong, build-up, random…) with BPM timing and a DMX preview." onclick="go('looks')">
       <svg class="ic"><use href="/static/icons.svg#palette"/></svg>
       <span>Look Builder</span>
     </button>
-    <button class="sn-item" id="sn-vceditor" data-tip="VC Visual Editor" data-desc="See your Virtual Console as a canvas." onclick="go('vceditor')">
+    <button class="sn-item" id="sn-vceditor" data-tip="VC Visual Editor" data-desc="The Virtual Console as a canvas: move, resize, add buttons, sliders and pages; build a page from a template." onclick="go('vceditor')">
       <svg class="ic"><use href="/static/icons.svg#layout"/></svg>
       <span>VC Visual Editor</span>
-      <span class="b beta">&beta;</span>
     </button>
-    <button class="sn-item" id="sn-stage" data-tip="Stage &amp; Meshes" data-desc="Place the 3D meshes (band members, risers, truss) on the stage — put them on the floor, move, rotate, scale, add from your mesh folders — into a new file." onclick="go('stage')">
+    <button class="sn-item" id="sn-stage" data-tip="Stage &amp; Meshes" data-desc="Place the 3D meshes (band members, risers, truss) on the stage — put them on the floor, move, rotate, scale, add from your mesh folders." onclick="go('stage')">
       <svg class="ic"><use href="/static/icons.svg#grid"/></svg>
       <span>Stage &amp; Meshes</span>
     </button>
 
     <!-- 4 · Run the show -->
     <div class="sn-group-label" id="sn-grp-4"><span class="sn-gnum">4</span><span class="sn-gtxt">Run the show</span></div>
-    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Match songs to functions, set fade timings, generate a cuelist chaser." onclick="go('setlist')">
+    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Tonight’s songs matched to functions, with fade timings, into the setlist CueList." onclick="go('setlist')">
       <svg class="ic"><use href="/static/icons.svg#music"/></svg>
       <span>Setlist</span>
     </button>
@@ -125,14 +119,14 @@
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Trigger Manager</span>
     </button>
-    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does." onclick="go('dictionary')">
+    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does — the descriptions show in the Setlist and the Show Paperwork." onclick="go('dictionary')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Dictionary</span>
     </button>
 
     <!-- 5 · Check &amp; fix -->
     <div class="sn-group-label" id="sn-grp-5"><span class="sn-gnum">5</span><span class="sn-gtxt">Check &amp; fix</span></div>
-    <button class="sn-item" id="sn-doctor" data-tip="Workspace Doctor" data-desc="Check the open workspace for broken references, LTP bleed, strobe left on, a PANIC RESET that can't reset… and fix what you tick into a new file." onclick="go('doctor')">
+    <button class="sn-item" id="sn-doctor" data-tip="Workspace Doctor" data-desc="Check the open workspace for broken references, LTP bleed, strobe left on, a PANIC RESET that can't reset… and fix what you tick." onclick="go('doctor')">
       <svg class="ic"><use href="/static/icons.svg#check-square"/></svg>
       <span>Workspace Doctor</span>
     </button>
@@ -143,23 +137,25 @@
 
     <!-- 6 · Document -->
     <div class="sn-group-label" id="sn-grp-6"><span class="sn-gnum">6</span><span class="sn-gtxt">Document</span></div>
-    <button class="sn-item" id="sn-showbook" data-tip="Show Book" data-desc="Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values." onclick="go('showbook')">
+    <button class="sn-item" id="sn-showbook" data-tip="Show Paperwork" data-desc="Tech rider for the venue, crew checklist for load-in, show book for you — one tool, one PDF or CSV (the Checklist and Tech Rider are part of it)." onclick="go('showbook')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
-      <span>Show Book</span>
-    </button>
-    <button class="sn-item" id="sn-checklist" data-tip="Checklist" data-desc="Every fixture with universe, address, mode and channels." onclick="go('checklist')">
-      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
-      <span>Checklist</span>
-    </button>
-    <button class="sn-item" id="sn-techrider" data-tip="Tech Rider" data-desc="Generate a tech rider from the fixture list." onclick="go('techrider')">
-      <svg class="ic"><use href="/static/icons.svg#clipboard"/></svg>
-      <span>Tech Rider</span>
+      <span>Show Paperwork</span>
     </button>
 
   </div>
 
   <!-- Files panel -->
   <div class="files-panel">
+    <div class="side-changes" id="side-changes" hidden>
+      <div class="fp-title sc-head">
+        <span>Changes <span id="sc-count"></span></span>
+        <span class="sc-acts">
+          <button class="sc-link" id="sc-redo" hidden onclick="showRedo()">↷ Redo</button>
+          <button class="sc-link" onclick="showHistoryToggle(true)" title="The whole History, and Save as new file">All ›</button>
+        </span>
+      </div>
+      <ol class="sc-list" id="sc-list"></ol>
+    </div>
     <div class="fp-title">Files</div>
     <div class="fp-item" id="fp-workspace">
       <span class="fp-label">Workspace</span>
@@ -204,16 +200,49 @@
       <span class="ms-dot"></span>
       <span id="ms-file-name">No workspace loaded</span>
     </div>
-    <div class="ms-stat"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
-    <div class="ms-stat"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
-    <div class="ms-stat"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+    <div class="ms-stat" title="Fixtures in the show"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
+    <div class="ms-stat" title="Functions in the show"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
+    <div class="ms-stat" title="Virtual Console widgets in the show"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+    <div class="show-bar" id="show-bar" hidden>
+      <span class="sb-pill" id="sb-changes" onclick="showHistoryToggle(true)">no changes yet</span>
+      <span class="sb-pill sb-doctor" id="sb-doctor" hidden onclick="go('doctor')" title="The Workspace Doctor on the show as it is now — click to open it"></span>
+    </div>
     <div class="ms-actions">
+      <button class="btn btn-surface btn-sm" id="sb-undo" onclick="showUndo()" disabled
+              data-tooltip="Undo the last change to the show (any tool)">↶ Undo</button>
+      <button class="btn btn-surface btn-sm" onclick="showHistoryToggle()"
+              data-tooltip="Every change to the show, step by step — open a tool again, go back to any step">🕘 History</button>
+      <button class="btn btn-accent btn-sm" id="sb-save" onclick="showSave()">💾 Save as new file…</button>
       <button class="btn btn-surface btn-sm" onclick="browseWorkspace()"
               data-tooltip="Open a .qxw workspace — every tool works on it">📂 Open…</button>
       <button class="btn btn-surface btn-sm" onclick="reloadFromDisk()"
-              data-tooltip="Re-read the open workspace from disk (discards unsaved edits)">↻ Reload</button>
+              data-tooltip="Re-read the open workspace from disk (discards unsaved changes)">↻<span class="ms-lbl"> Reload</span></button>
     </div>
   </div>
+
+  <!-- Guided route (Start: "Guided route: …"): steps above the tools -->
+  <nav class="route-strip" id="route-strip" hidden aria-label="Guided route"></nav>
+
+  <!-- The show in progress: History and Save (WORKPLAN 2.6) -->
+  <aside class="show-history" id="show-history" aria-label="History of the show in progress">
+    <div class="sh-head">
+      <div>
+        <h3>History of the show in progress</h3>
+        <div class="sh-intro">Opened from <b id="sh-source"></b>. Every tool you apply adds a step: open that tool again, or go back to how the show was before any step.</div>
+      </div>
+      <button class="btn btn-surface btn-sm" onclick="showHistoryToggle(false)" title="Close">✕</button>
+    </div>
+    <ol class="sh-list" id="sh-list"></ol>
+    <div class="sh-redo" id="sh-redo" hidden><button class="btn btn-surface btn-sm" onclick="showRedo()">↷ Redo the undone steps</button></div>
+    <div class="sh-foot">
+      <div class="sh-foot-t">Save as new file</div>
+      <div class="sh-row">
+        <input id="sh-filename" class="filter-input" oninput="this.dataset.touched=1" aria-label="File name">
+        <button class="btn btn-accent btn-sm" onclick="showSave()">💾 Save…</button>
+      </div>
+      <div class="sh-note">Next to it: <code>&lt;name&gt;_report.txt</code> with every step above. The file you opened is never touched, and you can keep working after saving.</div>
+    </div>
+  </aside>
 
 
   <!-- ══════════════════════════════════════════════════════════════════════
@@ -223,33 +252,27 @@
 
     <div class="start-body">
 
-      <h1 id="greeting">Welcome 👋</h1>
+      <div class="start-top">
+        <div>
+          <h1 id="greeting">Welcome 👋</h1>
+          <p class="start-purpose">Build, adapt, check and document <b>QLC+ 5</b> shows. Open a show and it becomes the
+            <b>show in progress</b>: every tool works on it, the <b>History</b> keeps every step (undo any of them),
+            and <b>💾 Save as new file…</b> writes it with a report — the file you opened is never touched.</p>
+          <p class="start-new"><b>New in 1.9:</b> the show in progress with its History · Function Porter with fixtures and groups (the Merger is part of it) ·
+            Show Paperwork (rider, crew checklist, show book in one tool) · guided routes · a <b>?</b> on every tool for its wiki page.</p>
+        </div>
+        <div class="spacer"></div>
+        <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained">?</button>
+      </div>
 
       <div class="start-drop-zone" id="start-drop-zone">
-        <div class="start-drop-icon">
-          <svg class="ic" style="width:48px;height:48px"><use href="/static/icons.svg#upload"/></svg>
-        </div>
-        <p>Drag a <b>.qxw</b> workspace here, or</p>
+        <p><b>Open a show</b> — drag a <b>.qxw</b> workspace here, or</p>
         <div class="start-drop-btns">
-          <button class="btn btn-accent" onclick="browseWorkspace()">📂 Open Workspace</button>
-          <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session</button>
+          <button class="btn btn-accent" onclick="browseWorkspace()">📂 Open Workspace…</button>
+          <button class="btn btn-surface" onclick="sessionOpenModal()">📋 Open Session…</button>
           <button id="btn-reload" class="btn btn-surface" onclick="reloadWorkspace()" disabled
                   data-tooltip="Re-read the workspace file from disk (path mode only)">↺ Reload</button>
         </div>
-      </div>
-
-      <!-- Show info (used in PDF headers & export filenames) -->
-      <div class="start-show-info"
-           data-tooltip="Used in PDF headers, export filenames and session files. Leave blank to auto-derive from the workspace filename.">
-        <label class="field-label" for="show-name-input">Show Name</label>
-        <input id="show-name-input" type="text" class="filter-input"
-               placeholder="e.g. My Show" spellcheck="false"
-               onchange="updateShowInfo()">
-        <label class="field-label" for="event-date-input">Date</label>
-        <input id="event-date-input" type="date" class="filter-input"
-               onchange="updateShowInfo()">
-      </div>
-
       <!-- Path of the open workspace (set by 📂 Open…, used by sessions / reload) -->
       <input id="path-input" type="hidden">
       <!-- Plain browser without a native dialog only: paste a path -->
@@ -259,30 +282,12 @@
         <button class="btn btn-surface btn-sm" onclick="document.getElementById('path-input').value=document.getElementById('path-input-fallback').value;loadFromPath()">Load</button>
       </div>
 
+      </div>
+
       <!-- Recents -->
       <div id="recent-list" class="recents"></div>
 
-      <!-- Sessions -->
-      <div class="session-panel" id="session-panel">
-        <div class="session-panel-header">
-          <h3>Sessions</h3>
-          <div class="session-panel-actions">
-            <button class="btn btn-accent btn-sm" onclick="sessionNew()" title="Start a blank session">+ New Session</button>
-            <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Open the session modal">📋 Manage</button>
-            <button class="btn btn-surface btn-sm" onclick="sessionBrowseFile()" title="Open a .qsk file from disk">📂 Open .qsk</button>
-          </div>
-        </div>
-        <div id="session-list" class="session-list"></div>
-      </div>
-
-      <!-- About -->
-      <div class="start-about">
-        <h3>Build, adapt, check and document your QLC+ 5 shows</h3>
-        <p>QLC+ Swiss Knife reads your QLC+ workspace (<code>.qxw</code>) and does the long, fiddly jobs for you.
-           Every change is written to a <b>new file</b> next to the original (<code>name_v2.qxw</code>, with a report) — your original is never touched.
-           The six groups below are the same 1–6 groups of the menu on the left.</p>
-      </div>
-
+      <h3 class="start-h">What do you want to do?</h3>
       <!-- Workflow cards: the numbers match the groups of the side menu -->
       <div class="start-workflow">
         <div class="wf-card" data-grp="1">
@@ -293,7 +298,8 @@
         <div class="wf-card" data-grp="2">
           <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
           <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('merger')">QXW Merger</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
+          <button class="wf-route" onclick="routeStart('adapt')" title="A strip of steps above the tools: Rig Reducer → Doctor → Function Porter → Look Builder → VC Editor → Stage → Setlist → final check. Any step, any order.">▶ Guided route: adapt a show to a new venue</button>
         </div>
         <div class="wf-card" data-grp="3">
           <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
@@ -304,6 +310,7 @@
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function.</div>
           <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button></div>
+          <button class="wf-route" onclick="routeStart('gig')" title="A strip of steps above the tools: Setlist → Trigger Manager → Doctor → Show Paperwork.">▶ Guided route: get ready for the gig</button>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -312,10 +319,24 @@
         </div>
         <div class="wf-card" data-grp="6">
           <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
-          <div class="wf-desc">The paperwork: show book (PDF/CSV) with decoded DMX values, patch checklist, tech rider.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook')">Show Book</button><button class="wf-chip" onclick="go('checklist')">Checklist</button><button class="wf-chip" onclick="go('techrider')">Tech Rider</button></div>
+          <div class="wf-desc">The paper for each reader, in one tool: tech rider for the venue, crew checklist for load-in, show book with decoded DMX values for you — PDF or CSV.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
         </div>
       </div>
+
+      <!-- Sessions -->
+      <div class="session-panel" id="session-panel">
+        <div class="session-panel-header">
+          <h3>Sessions <small class="sb-optional">— save where you are (show, songs, choices in each tool) and come back later</small></h3>
+          <div class="session-panel-actions">
+            <button class="btn btn-accent btn-sm" onclick="sessionNew()" title="Start a blank session">+ New Session</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Open the session modal">📋 Manage</button>
+            <button class="btn btn-surface btn-sm" onclick="sessionBrowseFile()" title="Open a .qsk file from disk">📂 Open .qsk</button>
+          </div>
+        </div>
+        <div id="session-list" class="session-list"></div>
+      </div>
+
 
       <!-- Footer links -->
       <div class="start-footer">
@@ -337,6 +358,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
       <div><h2>Setlist</h2><div class="p-desc">Match songs to functions, set fade timings, generate a cuelist chaser.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Setlist-Manager')" title="How this tool works — opens the Setlist Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -435,12 +457,12 @@
           <div class="fb-group-label">Workspace</div>
           <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
                   onclick="slDeleteWorkspaceClones()" disabled
-                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Use Generate QXW afterwards to save the clean file.">🗑 Delete Clones from WS</button>
+                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Then ✓ Apply to the show (bottom right) and 💾 Save as new file….">🗑 Delete Clones from WS</button>
 
           <div class="fb-sep"></div>
 
           <!-- Generate -->
-          <div class="fb-group-label">Generate QXW</div>
+          <div class="fb-group-label">Setlist chaser in the show</div>
           <span class="hint-text" style="font-size:9px;line-height:1.3">
             Target chaser in workspace:
           </span>
@@ -506,9 +528,9 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-export-sl-pdf"
@@ -520,9 +542,12 @@
       <button class="btn btn-surface" id="btn-export-sl-xml"
               onclick="slExportXmlTxt()" disabled
               data-tooltip="Export the setlist as an XML text summary">📝 XML TXT</button>
-      <button class="btn btn-accent" id="btn-generate-qxw"
+      <button class="btn btn-surface btn-ghost" id="btn-generate-qxw"
               onclick="slGenerateQxw()" disabled
-              data-tooltip="Clone each song's base function and write a new .qxw file with the setlist chaser">💾 Generate QXW</button>
+              data-tooltip="Save a copy with the setlist chasers as a separate file">Export a copy…</button>
+      <button class="btn btn-accent" id="btn-apply-setlist"
+              onclick="slApply()" disabled
+              data-tooltip="Clone each song's base function and build the setlist chasers in the show in progress">✓ Apply to the show</button>
     </div>
 
   </section>
@@ -536,6 +561,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
       <div><h2>Trigger Manager</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Trigger-Manager')" title="How this tool works — opens the Trigger Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -631,14 +657,12 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Saves a <b>&nbsp;new version&nbsp;</b> — the loaded .qxw is never overwritten
+        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b>
       </span>
-      <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Choose a name and folder for the new file">Save as new file…</button>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="saveTriggers()"
-              data-tooltip="Write &lt;name&gt;_v&lt;N+1&gt;.qxw next to the loaded file (path mode only)">💾 Save new version</button>
+      <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Save the show with these bindings as a separate file">Export a copy…</button>
     </div>
 
   </section>
@@ -658,6 +682,7 @@
       </button>
       <input id="dict-path" type="hidden">
       <span id="dict-path-name" class="file-chip" title="">no dictionary loaded</span>
+      <button class="help-btn" onclick="openHelp('Dictionary-Manager')" title="How this tool works — opens the Dictionary Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -722,6 +747,7 @@
       <span id="fix-qxf-name" class="file-chip">no QXF loaded</span>
       <button class="btn btn-surface" onclick="fixBrowseQxf()"
               data-tooltip="Choose a QLC+ fixture definition file (.qxf) as the fixture template">📂 Browse QXF…</button>
+      <button class="help-btn" onclick="openHelp('Fixture-Configurator')" title="How this tool works — opens the Fixture Configurator page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -878,52 +904,12 @@
       <button class="btn btn-surface" onclick="fixExportPdf()"
               data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
       <button class="btn btn-accent" onclick="fixGenerateQxw()"
-              data-tooltip="Generate a QXW workspace with the current rig configuration">💾 Generate QXW</button>
+              data-tooltip="A new .qxw with this rig (fixtures, patch, 3D positions) — nothing else">💾 Save as new file…</button>
     </div>
 
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       CHECKLIST
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section class="screen" id="scr-checklist">
-
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
-      <div><h2>Checklist</h2><div class="p-desc">Every fixture with universe, address, mode and channels — ready to print for load-in.</div></div>
-      <div class="spacer"></div>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
-    </div>
-
-    <div class="tab-toolbar">
-      <input id="chk-filter" class="filter-input" type="text"
-             placeholder="Filter fixtures…" oninput="filterChecklist(this.value)">
-    </div>
-
-    <div id="chk-table-wrap"></div>
-
-    <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Exports <b>&nbsp;TXT / PDF&nbsp;</b> — workspace untouched
-      </span>
-      <div class="spacer"></div>
-      <button class="btn btn-surface" onclick="exportChecklistTxt()"
-              data-tooltip="Export the fixture checklist as a plain-text file">⬇ Export TXT</button>
-      <select id="chk-pdf-paper" class="filter-input" style="width:160px">
-        <option value="A3 Landscape">A3 Landscape</option>
-        <option value="A4 Landscape">A4 Landscape</option>
-        <option value="A4 Portrait">A4 Portrait</option>
-        <option value="US Letter Landscape">US Letter Landscape</option>
-        <option value="US Letter Portrait">US Letter Portrait</option>
-      </select>
-      <button class="btn btn-surface" onclick="exportChecklistPdf()"
-              data-tooltip="Export the fixture checklist table as a formatted PDF">📄 Checklist PDF</button>
-      <button class="btn btn-surface" onclick="exportBlueprintPdf()"
-              data-tooltip="Export the fixture rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
-    </div>
-
-  </section>
+  
 
   <!-- ══════════════════════════════════════════════════════════════════════
        BRIGHTNESS
@@ -934,11 +920,12 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sun"/></svg></div>
       <div><h2>Brightness</h2><div class="p-desc">Scale the master dimmer of each fixture group across every scene. Colour ratios untouched.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Brightness')" title="How this tool works — opens the Brightness page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
     <div class="tab-toolbar brt-toolbar">
-      <span id="brt-preview" class="brt-preview-count">—</span>
+      <span id="brt-preview" class="brt-preview-count"></span>
       <button class="btn btn-surface" onclick="brtResetAll()"
               title="Reset all fixtures to 100%">↺ Reset All</button>
 
@@ -965,8 +952,8 @@
     </div>
 
     <!-- Help banner -->
-    <div class="brt-help">
-      <strong>How it works:</strong>
+    <details class="brt-help">
+      <summary><strong>How it works</strong> — sliders scale each fixture's master dimmer in every scene; colours stay as they are</summary>
       Drag the sliders to scale the <em>Master Dimmer</em> channel of each fixture
       across every Scene in the loaded workspace.  Colour ratios (R/G/B/W) are
       untouched.  Use <strong>Link group</strong> to move all fixtures of the same model together.
@@ -975,7 +962,7 @@
       or use <strong class="brt-internet-label">🌐 Fetch from GitHub</strong>
       to download it from the official QLC+ repository
       <em>(requires internet — you will be asked to confirm before any connection is made)</em>.
-    </div>
+    </details>
 
     <!-- Fixture groups -->
     <div id="brt-fixture-wrap" class="brt-fixture-wrap">
@@ -983,14 +970,16 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="brtGenerateQxw()"
-              title="Apply brightness scaling to all scenes and download a new .qxw">
-        💾 Generate QXW
+      <button class="btn btn-surface btn-ghost" onclick="brtGenerateQxw()"
+              data-tooltip="Save a scaled copy as a separate file; the show in progress stays as it is">Export a copy…</button>
+      <button class="btn btn-accent" onclick="brtApply()"
+              title="Scale the brightness of every scene in the show in progress">
+        ✓ Apply to the show
       </button>
     </div>
 
@@ -1005,6 +994,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#search"/></svg></div>
       <div><h2>ID Browser</h2><div class="p-desc">Sortable, filterable tables of every function and VC widget in the workspace.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('ID-Browser')" title="How this tool works — opens the ID Browser page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1043,38 +1033,7 @@
 
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       TECH RIDER
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section class="screen" id="scr-techrider">
-
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#clipboard"/></svg></div>
-      <div><h2>Tech Rider</h2><div class="p-desc">Fixture type summary grouped by manufacturer, model and mode — ready for production planning.</div></div>
-      <div class="spacer"></div>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
-    </div>
-
-    <div id="tr-table-wrap"></div>
-
-    <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Exports a <b>&nbsp;PDF&nbsp;</b> — workspace untouched
-      </span>
-      <div class="spacer"></div>
-      <select id="tr-pdf-paper" class="filter-input" style="width:160px">
-        <option value="A3 Landscape">A3 Landscape</option>
-        <option value="A4 Landscape">A4 Landscape</option>
-        <option value="A4 Portrait">A4 Portrait</option>
-        <option value="US Letter Landscape">US Letter Landscape</option>
-        <option value="US Letter Portrait">US Letter Portrait</option>
-      </select>
-      <button class="btn btn-surface" onclick="exportTechRiderPdf()"
-              data-tooltip="Export the tech rider as a formatted PDF">📄 Tech Rider PDF</button>
-    </div>
-
-  </section>
+  
 
   <!-- ══════════════════════════════════════════════════════════════════════
        VC VISUAL EDITOR
@@ -1085,6 +1044,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
       <div><h2>VC Visual Editor <span class="b beta">BETA</span></h2><div class="p-desc">See your Virtual Console as a canvas — build it (add, wire, delete widgets; pages, templates, screen sizes) and tidy it (drag, align, distribute, sort).</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('VC-Visual-Editor')" title="How this tool works — opens the VC Visual Editor page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1307,144 +1267,20 @@
     </div><!-- end #vce-wrap -->
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="vceApplyAndExport()"
-              data-tooltip="Apply all edits and save them as a new .qxw">💾 Apply &amp; Save QXW…</button>
+      <button class="btn btn-surface btn-ghost" onclick="vceApplyAndExport()"
+              data-tooltip="Save the show with these edits as a separate file">Export a copy…</button>
+      <button class="btn btn-accent" onclick="vceApply()"
+              data-tooltip="Put the moved / resized / recoloured widgets into the show (pages, new widgets and wiring are in it already)">✓ Apply to the show</button>
     </div>
 
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       QXW MERGER
-  ══════════════════════════════════════════════════════════════════════ -->
-  <section class="screen" id="scr-merger">
-
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
-      <div><h2>QXW Merger <span class="b alpha">ALPHA</span></h2><div class="p-desc">Copy functions, fixtures and groups from one workspace into another.</div></div>
-      <div class="spacer"></div>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
-    </div>
-
-    <!-- Top load bar -->
-    <div class="merger-load-bar">
-
-      <!-- Source -->
-      <div class="merger-load-col">
-        <label class="merger-load-label">📂 Source QXW</label>
-        <div class="merger-load-row">
-          <input id="merger-src-path" type="hidden">
-          <span id="merger-src-chip" class="file-chip">no file</span>
-          <button class="btn btn-surface" onclick="mergerBrowseSrc()"
-                  data-tooltip="Browse for source .qxw file">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="mergerUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-          <input id="merger-src-file" type="file" accept=".qxw" style="display:none"
-                 onchange="mergerSrcFileChosen()">
-        </div>
-      </div>
-
-      <!-- Arrow -->
-      <div class="merger-arrow">→</div>
-
-      <!-- Destination -->
-      <div class="merger-load-col">
-        <label class="merger-load-label">📥 Destination QXW</label>
-        <div class="merger-load-row">
-          <input id="merger-dst-path" type="hidden">
-          <span id="merger-dst-chip" class="file-chip">no file</span>
-          <button class="btn btn-surface" onclick="mergerBrowseDst()"
-                  data-tooltip="Browse for destination .qxw file">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="mergerUseOpenDst()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
-          <input id="merger-dst-file" type="file" accept=".qxw" style="display:none"
-                 onchange="mergerDstFileChosen()">
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Category + search toolbar -->
-    <div class="tab-toolbar merger-toolbar">
-      <div class="merger-cat-tabs">
-        <button id="merger-cat-functions" class="btn btn-surface active"
-                onclick="mergerSetCategory('functions')">⚙ Functions</button>
-        <button id="merger-cat-fixtures"  class="btn btn-surface"
-                onclick="mergerSetCategory('fixtures')">💡 Fixtures</button>
-        <button id="merger-cat-groups"    class="btn btn-surface"
-                onclick="mergerSetCategory('groups')">📦 Groups</button>
-      </div>
-      <input type="text" class="filter-input" placeholder="Search source…" style="flex:1"
-             oninput="mergerSrcSearch(this.value)">
-      <select class="filter-input" style="flex:0 0 140px" onchange="mergerFnTypeFilter(this.value)">
-        <option value="">All types</option>
-        <option value="Scene">Scene</option>
-        <option value="Chaser">Chaser</option>
-        <option value="Sequence">Sequence</option>
-        <option value="EFX">EFX</option>
-        <option value="Collection">Collection</option>
-        <option value="Show">Show</option>
-        <option value="Audio">Audio</option>
-        <option value="Script">Script</option>
-        <option value="RGBMatrix">RGBMatrix</option>
-      </select>
-      <button class="btn btn-surface" onclick="mergerSelectAll()"
-              data-tooltip="Select all visible items">✓ All</button>
-      <button class="btn btn-surface" onclick="mergerSelectNone()"
-              data-tooltip="Deselect all">✗ None</button>
-    </div>
-
-    <!-- Two-column browser -->
-    <div class="merger-split">
-
-      <!-- Source list -->
-      <div class="merger-panel">
-        <div class="pane-header">
-          Source: <span id="merger-src-name" class="merger-ws-name">— not loaded —</span>
-        </div>
-        <div id="merger-src-list" class="merger-list">
-          <div class="merger-placeholder">Load a source .qxw file above</div>
-        </div>
-      </div>
-
-      <!-- Middle action column -->
-      <div class="merger-actions">
-        <button id="merger-copy-btn" class="btn btn-accent merger-copy-btn"
-                onclick="mergerCopy()" disabled
-                data-tooltip="Copy selected items into the destination (in memory)">
-          Copy →
-        </button>
-      </div>
-
-      <!-- Destination list -->
-      <div class="merger-panel">
-        <div class="pane-header">
-          Destination: <span id="merger-dst-name" class="merger-ws-name">— not loaded —</span>
-        </div>
-        <div id="merger-dst-list" class="merger-list">
-          <div class="merger-placeholder">Load a destination .qxw file above</div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Status bar for this tab -->
-    <div id="merger-status" class="status-bar status-info">Load two .qxw files to begin.</div>
-
-    <div class="out-footer">
-      <span class="out-note new">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
-      </span>
-      <div class="spacer"></div>
-      <button id="merger-export-btn" class="btn btn-accent"
-              onclick="mergerExport()" disabled
-              data-tooltip="Save the merged destination as a new .qxw file">💾 Save merged QXW…</button>
-    </div>
-
-  </section>
+  
 
 
   <!-- ======================================================================
@@ -1454,8 +1290,9 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
-      <div><h2>Function Porter</h2><div class="p-desc">Import functions from one workspace into another with dependency resolution and fixture remapping.</div></div>
+      <div><h2>Function Porter</h2><div class="p-desc">Bring looks, chasers, effects and their buttons — and, if you like, fixtures and groups — from another show into the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Function-Porter')" title="How this tool works — opens the Function Porter page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1465,7 +1302,7 @@
       <button id="porter-step-2" class="porter-step" onclick="porterGoStep(2)">2. Select</button>
       <button id="porter-step-3" class="porter-step" onclick="porterGoStep(3)">3. Map</button>
       <button id="porter-step-4" class="porter-step" onclick="porterGoStep(4)">4. Validate</button>
-      <button id="porter-step-5" class="porter-step" onclick="porterGoStep(5)">5. Export</button>
+      <button id="porter-step-5" class="porter-step" onclick="porterGoStep(5)">5. Apply</button>
     </div>
 
     <!-- Step 1: Load files -->
@@ -1477,7 +1314,7 @@
             <input id="porter-src-path" type="hidden">
           <span id="porter-src-chip" class="file-chip">no file</span>
             <button class="btn btn-surface" onclick="porterBrowseSrc()">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="porterUseOpenSrc()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
+          <button class="btn btn-surface" onclick="porterUseOpenSrc()" data-tooltip="The file the show in progress was opened from (as saved on disk)">⤵ Opened file</button>
             <input id="porter-src-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterSrcFileChosen()">
           </div>
@@ -1487,12 +1324,12 @@
         <div class="merger-arrow">→</div>
 
         <div class="merger-load-col">
-          <label class="merger-load-label">📥 Target QXW (import INTO)</label>
+          <label class="merger-load-label">📥 Target (import INTO)</label>
           <div class="merger-load-row">
             <input id="porter-tgt-path" type="hidden">
           <span id="porter-tgt-chip" class="file-chip">no file</span>
-            <button class="btn btn-surface" onclick="porterBrowseTgt()">📂 Browse…</button>
-          <button class="btn btn-surface" onclick="porterUseOpenTgt()" data-tooltip="Use the workspace open in the header">⤵ Open workspace</button>
+          <button class="btn btn-accent" id="porter-tgt-show-btn" onclick="porterUseShowTgt()" data-tooltip="Port into the show in progress — the result is a step you can undo">🎛 The show in progress</button>
+            <button class="btn btn-surface" onclick="porterBrowseTgt()" data-tooltip="Port into another file instead (export a copy)">📂 Another file…</button>
             <input id="porter-tgt-file" type="file" accept=".qxw" style="display:none"
                    onchange="porterTgtFileChosen()">
           </div>
@@ -1505,8 +1342,12 @@
         <div class="porter-plan"><canvas id="porter-plan-target-1"></canvas></div>
       </div>
 
-      <div class="porter-nav-bar">
-        <div class="spacer"></div>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(2)">Next: Select Functions →</button>
       </div>
     </div>
@@ -1527,6 +1368,16 @@
         </div>
         <div id="porter-vc-tree" class="porter-list porter-vc-tree">
           <div class="porter-placeholder">Loading...</div>
+        </div>
+      </details>
+
+      <details id="porter-copy-pick" class="porter-vc-pick">
+        <summary>Fixtures and groups to copy into the target <span class="porter-row-sub">(what the QXW Merger did)</span></summary>
+        <p class="porter-hint">Ticked fixtures are <b>added</b> to the target with a new ID (their address is kept when it is free, otherwise the first free one) and the ported functions play on them.
+          A ticked group is rebuilt on the copied (or mapped) fixtures — ticking a group ticks its fixtures.</p>
+        <div class="porter-copy-cols">
+          <div><div class="porter-copy-h">Groups</div><div id="porter-copy-groups" class="porter-list porter-copy-list"></div></div>
+          <div><div class="porter-copy-h">Fixtures</div><div id="porter-copy-fixtures" class="porter-list porter-copy-list"></div></div>
         </div>
       </details>
 
@@ -1558,8 +1409,12 @@
       <div id="porter-closure-summary"></div>
       </div>
 
-      <div class="porter-nav-bar">
-        <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterNextFromSelect()">Next: Map Fixtures →</button>
       </div>
@@ -1576,8 +1431,12 @@
         <div class="porter-placeholder">Loading fixture mapping...</div>
       </div>
 
-      <div class="porter-nav-bar">
-        <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
         <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
                 data-tooltip="How Auto-Map pairs source and target fixtures">
           <option value="all">Every exact match (fan-out)</option>
@@ -1633,11 +1492,15 @@
         <div class="porter-placeholder">Validating...</div>
       </div>
 
-      <div class="porter-nav-bar">
-        <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
+      <div class="porter-nav-bar out-footer">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Export →</button>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Apply →</button>
       </div>
     </div>
 
@@ -1648,23 +1511,22 @@
           <p>Complete the previous steps first.</p>
         </div>
       </div>
-      <div class="porter-nav-bar" id="porter-export-nav">
-        <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
+      <div class="porter-nav-bar out-footer" id="porter-export-nav">
+        <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the files you picked are never touched">
+          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
+        </span>
+                <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-go" class="btn btn-accent" onclick="porterExecute()">💾 Export new QXW…</button>
+        <button id="porter-export-go" class="btn btn-surface" onclick="porterExecute()" data-tooltip="Save the result as a separate file; the show in progress stays as it is">Export a copy…</button>
+        <button id="porter-apply-go" class="btn btn-accent" onclick="porterApply()">✓ Apply to the show</button>
       </div>
     </div>
 
     <!-- Status bar -->
     <div id="porter-status" class="status-bar status-info" hidden></div>
 
-    <div class="out-footer">
-      <span class="out-note new">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
-      </span>
-    </div>
 
   </section>
 
@@ -1675,65 +1537,73 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Show Book</h2><div class="p-desc">Export your workspace as structured show paperwork — PDF or CSV — with decoded DMX values.</div></div>
+      <div><h2>Show Paperwork</h2><div class="p-desc">The paper for each reader, from the show in progress — tech rider for the venue, crew checklist for load-in, show book for you — as PDF or CSV.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Show-Paperwork')" title="How this tool works — opens the Show Paperwork page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
     <!-- Controls bar -->
     <div class="sb-controls">
-      <div class="sb-ctrl-row">
-        <div class="sb-ctrl-col">
-          <label class="sb-label">Sections to include:</label>
-          <div id="sb-section-checks" class="sb-checks"></div>
-          <div class="sb-check-btns">
-            <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">✓ All</button>
-            <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">✗ None</button>
-          </div>
-        </div>
+      <div class="sb-presets">
+        <span class="sb-label">Who is it for?</span>
+        <button class="sb-preset" data-p="rider" onclick="sbPreset('rider', event)">🎟 Tech rider <small>for the venue</small></button>
+        <button class="sb-preset" data-p="checklist" onclick="sbPreset('checklist', event)">✅ Crew checklist <small>for load-in</small></button>
+        <button class="sb-preset active" data-p="operator" onclick="sbPreset('operator', event)">📖 Show book <small>for you at the desk</small></button>
+        <button class="sb-preset" data-p="custom" onclick="sbPreset('custom', event)">⚙ Custom <small>tick the sections</small></button>
+        <span class="sb-optional">⇧-click to combine (e.g. rider + checklist for a festival advance) — one PDF</span>
+      </div>
+      <div id="sb-venue-note" class="sb-venue-note" hidden>🔒 This paper leaves your hands: whatever is ticked, it never carries function names, key / MIDI maps, the Virtual Console or the Doctor — only the rig, its patch and the stage plot.</div>
+      <div class="sb-sections-head">
+        <span class="sb-label">What goes in</span>
+        <span class="sb-optional">— set by the preset above; change the ticks to make it your own</span>
+        <div class="spacer"></div>
+        <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">✓ All</button>
+        <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">✗ None</button>
+      </div>
+      <div id="sb-section-checks" class="sb-groups"></div>
 
-        <div class="sb-ctrl-col sb-qxf-col">
-          <label class="sb-label">QXF fixture definitions folder <span class="sb-optional">(optional — for DMX decoding)</span>:</label>
-          <div class="merger-load-row">
-            <input id="sb-qxf-path" type="hidden">
-            <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
-            <button class="btn btn-surface" onclick="sbBrowseQxf()">📂 Browse folder…</button>
-          </div>
-        </div>
+      <div class="sb-options">
+        <span class="sb-label">Decode DMX values with the definitions in</span>
+        <input id="sb-qxf-path" type="hidden">
+        <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
+        <button class="btn btn-surface btn-sm" onclick="sbBrowseQxf()">📂 Folder…</button>
+        <span class="sb-optional">optional — definitions next to the show and the QLC+ library are used anyway</span>
       </div>
 
       <div class="sb-action-bar">
-        <button class="btn btn-surface" onclick="sbGenerate()">🔍 Generate Preview</button>
+        <span class="sb-label">For the header</span>
+        <label class="field-label" for="show-name-input">Show name</label>
+        <input id="show-name-input" type="text" class="filter-input" style="flex:0 0 200px"
+               placeholder="from the file name" spellcheck="false" onchange="updateShowInfo()"
+               data-tooltip="Printed on every page and used in the file names; blank = the workspace file name. Also kept in the session.">
+        <label class="field-label" for="event-date-input">Date</label>
+        <input id="event-date-input" type="date" class="filter-input" style="flex:0 0 150px" onchange="updateShowInfo()">
         <div class="spacer"></div>
-        <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)</button>
-        <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF</button>
+        <button class="btn btn-surface btn-xs" onclick="sbExpandAll()">▾ Expand all</button>
+        <button class="btn btn-surface btn-xs" onclick="sbCollapseAll()">▸ Collapse all</button>
+        <button class="btn btn-surface" onclick="sbGenerate()">🔍 Preview</button>
       </div>
-    </div>
-
-    <!-- View controls -->
-    <div class="sb-view-controls">
-      <button onclick="sbExpandAll()">▾ Expand All</button>
-      <button onclick="sbCollapseAll()">▸ Collapse All</button>
     </div>
 
     <!-- Preview area -->
     <div id="sb-preview" class="sb-preview">
-      <div class="porter-placeholder">Generate a preview to see your Show Book here.</div>
+      <div class="porter-placeholder">Pick who it is for, then 🔍 Preview — or go straight to 📄 Export PDF… below.</div>
     </div>
-
-    <!-- Status bar -->
-    <div id="sb-status" class="status-bar status-info">Load a workspace, then generate your Show Book.</div>
 
     <div class="out-footer">
       <span class="out-note new">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Read-only — your workspace is <b>&nbsp;never modified</b>
+        Read-only — the show is <b>&nbsp;never modified</b>
       </span>
-    </div>
-
-  </section>
-
-      </span>
+      <div class="spacer"></div>
+      <select id="sb-paper" class="filter-input" style="flex:0 0 170px" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
+        <option>A4 Landscape</option><option>A4 Portrait</option>
+        <option>A3 Landscape</option><option>A3 Portrait</option>
+        <option>US Letter Landscape</option><option>US Letter Portrait</option>
+      </select>
+      <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)…</button>
+      <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF…</button>
     </div>
 
   </section>
@@ -1745,8 +1615,9 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#grid"/></svg></div>
-      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models — into a new file.</div></div>
+      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models. Every edit goes into the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Stage-and-Meshes')" title="How this tool works — opens the Stage and Meshes page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1760,12 +1631,13 @@
     <div id="st-body" class="lb-body"><div class="porter-placeholder">Open a workspace to see its 3D stage.</div></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
-      <button id="st-go" class="btn btn-accent" onclick="stageSave()" disabled>💾 Save → new file…</button>
+      <button id="st-go" class="btn btn-surface btn-ghost" onclick="stageSave()" disabled
+              data-tooltip="Save the show with this stage as a separate file, with a stage report">Export a copy…</button>
     </div>
 
   </section>
@@ -1777,8 +1649,9 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
-      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Looks for your fixture groups from a palette, and chasers from a pattern — with BPM timing and a preview — into a new file.</div></div>
+      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Looks for your fixture groups from a palette, and chasers from a pattern — with BPM timing and a preview — added to the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Look-Builder')" title="How this tool works — opens the Look Builder page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1789,12 +1662,14 @@
     <div id="lb-body" class="lb-body"><div class="porter-placeholder">Open a workspace to build looks and chasers for its fixture groups.</div></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+        Adds to the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
-      <button id="lb-go" class="btn btn-accent" onclick="looksBuild()" disabled>💾 Build → new file…</button>
+      <button id="lb-export" class="btn btn-surface btn-ghost" onclick="looksBuild()" disabled
+              data-tooltip="Save a copy with the looks as a separate file; the show in progress stays as it is">Export a copy…</button>
+      <button id="lb-go" class="btn btn-accent" onclick="looksApply()" disabled>✓ Add to the show</button>
     </div>
 
   </section>
@@ -1806,8 +1681,9 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
-      <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, into a new file.</div></div>
+      <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, in the show in progress.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Rig-Reducer')" title="How this tool works — opens the Rig Reducer page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1825,12 +1701,14 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + report — original untouched
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
-      <button id="rr-go" class="btn btn-accent" onclick="reducerRun()" disabled>💾 Reduce → new file…</button>
+      <button id="rr-export" class="btn btn-surface btn-ghost" onclick="reducerRun()" disabled
+              data-tooltip="Save a reduced copy as a separate file; the show in progress stays as it is">Export a copy…</button>
+      <button id="rr-go" class="btn btn-accent" onclick="reducerApply()" disabled>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -1842,8 +1720,9 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#check-square"/></svg></div>
-      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the open workspace and fix what you tick — the fixed copy is saved as a new file.</div></div>
+      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the show in progress and fix what you tick — the Doctor in the header follows every change.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Workspace-Doctor')" title="How this tool works — opens the Workspace Doctor page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -1864,13 +1743,15 @@
     <div id="doc-result" class="porter-summary-box" hidden></div>
 
     <div class="out-footer">
-      <span class="out-note new">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> + fix report — original untouched
+        Fixes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()">📋 Copy Report</button>
-      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorFix()" disabled>💾 Fix selected → new file…</button>
+      <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
+              data-tooltip="Fix only a copy: save it as a separate file, the show in progress stays as it is">Export a fixed copy…</button>
+      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled>✓ Fix selected in the show</button>
     </div>
 
   </section>
@@ -1888,6 +1769,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
       <div><h2>Quick Start</h2><div class="p-desc">Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes.</div></div>
       <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Quick-Start')" title="How this tool works — opens the Quick Start page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
@@ -2108,10 +1990,12 @@
     <div class="out-footer">
       <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">← Back</button>
       <div class="spacer"></div>
+      <button id="qs-btn-open" class="btn btn-surface" onclick="qsOpenAsShow()" style="display:none"
+              title="Open the file you just saved: it becomes the show in progress, and every tool (Look Builder, VC Editor, Stage, Setlist…) works on it">🎛 Open it as the show</button>
       <button id="qs-btn-port" class="btn btn-surface" onclick="qsPortFromShow()" style="display:none"
               title="Open the Function Porter with this new rig as the target, then pick an existing show as the source: looks, effects and their VC buttons are ported, translated by capability when the fixture types differ.">➜ Port from an existing show</button>
       <button id="qs-btn-next" class="btn btn-accent" onclick="qsNext()">Next →</button>
-      <button id="qs-btn-export" class="btn btn-accent" onclick="qsExport()" style="display:none">💾 Generate QXW</button>
+      <button id="qs-btn-export" class="btn btn-accent" onclick="qsExport()" style="display:none" title="Writes a new .qxw (and any fixture definitions QLC+ lacks next to it)">💾 Save as new file…</button>
     </div>
 
     <!-- GitHub Fixture Browser Modal -->
@@ -2203,11 +2087,8 @@
 <script src="/static/js/app.js?v={{ asset_v }}"></script>
 <script src="/static/js/setlist.js?v={{ asset_v }}"></script>
 <script src="/static/js/dictionary.js?v={{ asset_v }}"></script>
-<script src="/static/js/checklist.js?v={{ asset_v }}"></script>
-<script src="/static/js/techrider.js?v={{ asset_v }}"></script>
 <script src="/static/js/triggers.js?v={{ asset_v }}"></script>
 <script src="/static/js/fixture.js?v={{ asset_v }}"></script>
-<script src="/static/js/merger.js?v={{ asset_v }}"></script>
 <script src="/static/js/porter.js?v={{ asset_v }}"></script>
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
@@ -2219,5 +2100,7 @@
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_builder.js?v={{ asset_v }}"></script>
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
+<script src="/static/js/show.js?v={{ asset_v }}"></script>
+<script src="/static/js/route.js?v={{ asset_v }}"></script>
 </body>
 </html>

@@ -148,7 +148,7 @@ function _vcbRenderPanel() {
   const q = s => _esc(s).replace(/'/g, "\\'");
 
   add.innerHTML = `
-    <div class="vce-intro">Put new widgets on the page and connect them to your functions. Everything is undoable and saved with 💾 Apply &amp; Save.</div>
+    <div class="vce-intro">Put new widgets on the page and connect them to your functions. Everything is undoable, goes into the show in progress, and is kept with 💾 Save as new file….</div>
 
     <div class="vce-sec"><span class="vce-step">1</span>New widget</div>
     <div class="vce-row">

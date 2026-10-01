@@ -72,6 +72,14 @@ function _stKinds() {
 }
 const _stMm = v => (v == null ? '—' : (v / 1000).toFixed(2) + ' m');
 
+// Inspector tabs (2.6): Selection · Place · Add · Stage — one at a time
+let _stTab = 'select';
+function stageTab(t) {
+  _stTab = t;
+  document.querySelectorAll('#st-body [data-sttab]').forEach(b => b.classList.toggle('active', b.dataset.sttab === t));
+  document.querySelectorAll('#st-body [data-stpane]').forEach(p => { p.hidden = p.dataset.stpane !== t; });
+}
+
 // ── layout ──────────────────────────────────────────────────────────────────
 function _stRender() {
   const el = document.getElementById('st-body');
@@ -88,7 +96,13 @@ function _stRender() {
         <span class="st-k st-k-f"></span>fixture (click to select) <span class="st-k st-k-x"></span>model file not found</div>
     </div>
     <div class="st-side">
-      <div class="lb-card">
+      <div class="lb-tabs" role="tablist">${[
+        ['select', `Selection${_stSet.size ? ` (${_stSet.size})` : ''}`, 'The meshes and fixtures on the stage; click one to edit it'],
+        ['place', 'Place', 'Push to an edge, centre, floor or ceiling; line up; space evenly — for what is selected'],
+        ['add', 'Add', 'Add a mesh from your mesh folders'],
+        ['stage', 'Stage', 'The stage type and size'],
+      ].map(([k, l, t]) => `<button class="subtab-btn${_stTab === k ? ' active' : ''}" data-sttab="${k}" onclick="stageTab('${k}')" title="${t}">${l}</button>`).join('')}</div>
+      <div class="lb-card" data-stpane="stage"${_stTab === 'stage' ? '' : ' hidden'}>
         <h3>Stage <span class="p-desc">the floor and the space around the rig</span></h3>
         <div class="lb-row">
           <select id="st-type" class="filter-input">${_stS.types.map((t, i) =>
@@ -101,7 +115,7 @@ function _stRender() {
         <div class="vce-hint">The floor is at ${S.floor ? S.floor * 1000 + ' mm (the Simple ground slab is centred on 0)' : '0'}; meshes keep their place when the stage changes.</div>
       </div>
 
-      <div class="lb-card">
+      <div class="lb-card" data-stpane="select"${_stTab === 'select' ? '' : ' hidden'}>
         <h3>Meshes <span class="p-desc">${_stS.meshes.length} on this stage</span></h3>
         <div class="st-list">${_stS.meshes.map(m => {
           const p = m.place;
@@ -124,11 +138,11 @@ function _stRender() {
         </details>
       </div>
 
-      <div class="lb-card" id="st-place">${_stPlaceHtml()}</div>
+      <div class="lb-card" id="st-edit" data-stpane="select"${_stTab === 'select' ? '' : ' hidden'}>${_stEditHtml()}</div>
 
-      <div class="lb-card" id="st-edit">${_stEditHtml()}</div>
+      <div class="lb-card" id="st-place" data-stpane="place"${_stTab === 'place' ? '' : ' hidden'}>${_stPlaceHtml()}</div>
 
-      <div class="lb-card">
+      <div class="lb-card" data-stpane="add"${_stTab === 'add' ? '' : ' hidden'}>
         <h3>Add a mesh <span class="p-desc">from your mesh folders</span></h3>
         <div id="st-lib">${_stLibHtml()}</div>
       </div>
@@ -140,11 +154,11 @@ function _stRender() {
   const s = document.getElementById('st-summary');
   if (s) s.innerHTML = `<span class="doc-chip">${_esc(S.type_name)} ${S.w}×${S.d} m</span>` +
     `<span class="doc-chip">${_stS.meshes.length} mesh(es)</span><span class="doc-chip">${_stS.fixtures.length} fixture(s)</span>` +
-    (_stS.dirty ? '<span class="doc-chip doc-warning">unsaved changes</span>' : '');
+    (_stS.dirty ? '<span class="doc-chip" title="These edits are in the show in progress — 💾 Save as new file… keeps them">edited</span>' : '');
 }
 
 function _stEditHtml() {
-  if (_stSet.size > 1) return `<h3>${_stSet.size} items selected</h3><div class="vce-hint">Place them together with the tools above; click one to edit it.</div>`;
+  if (_stSet.size > 1) return `<h3>${_stSet.size} items selected</h3><div class="vce-hint">Place them together in the <a href="#" onclick="stageTab('place');return false">Place</a> tab; click one to edit it.</div>`;
   const f = _stFx(_stSel);
   if (f) {
     const p = f.place;
@@ -207,7 +221,7 @@ function _stEditHtml() {
 
 function _stPlaceHtml() {
   const n = _stSet.size;
-  if (!n) return `<h3>Place <span class="p-desc">select meshes and/or fixtures first</span></h3>
+  if (!n) return `<h3>Place <span class="p-desc">select meshes and/or fixtures first — in the views or the <a href="#" onclick="stageTab('select');return false">Selection</a> tab</span></h3>
     <div class="vce-hint">Then: push to a stage edge, centre, floor or ceiling; line up; space evenly; nudge (also with the arrow keys). Mix meshes and fixtures to place one kind around the other.</div>`;
   const k = _stKinds();
   const mv = _stVal('st-move') || 'meshes';
@@ -488,7 +502,7 @@ async function stageSave() {
       const d = await rr.json();
       msg += rr.ok ? ` Report: ${d.name}.` : ' Report not saved.';
     }
-    setStatus(msg + ' The open workspace is unchanged — open the new file to continue.', 'ok');
+    setStatus(msg + ' A separate copy — the show in progress already has these stage edits.', 'ok');
   } catch (e) {
     setStatus('Error: ' + e.message, 'error');
   }

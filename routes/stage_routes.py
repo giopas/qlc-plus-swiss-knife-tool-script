@@ -30,9 +30,35 @@ def _work():
     key = (id(root), path)
     if _w.get('key') != key:
         _w.clear()
-        _w.update({'key': key, 'orig': root, 'path': path, 'name': name,
-                   'root': qxw_io.strip_ns(copy.deepcopy(root)), 'undo': [], 'defs': _defs(path)})
+        start = qxw_io.strip_ns(copy.deepcopy(root))
+        _w.update({'key': key, 'orig': root, 'path': path, 'name': name, 'start': start,
+                   'root': copy.deepcopy(start), 'undo': [], 'defs': _defs(path)})
     return _w
+
+
+def _sync(w, undo: bool = False) -> None:
+    """Put the working copy's 3D stage (<Engine><Monitor>) into the show in
+    progress — every stage edit is part of the show at once (one step in its
+    history while you keep editing the stage)."""
+    from core import show, workspace
+    live = workspace._state['qxw_root']
+    steps = show._show.get('steps') or []
+    if undo and steps and steps[-1].get('open') and steps[-1]['tool'] == 'stage':
+        show.cancel_touch()
+    else:
+        workspace._show_touch('stage', 'stage edits')
+    eng = next((c for c in live if c.tag.endswith('Engine')), None)
+    src = w['root'].find('Engine')
+    mon = src.find('Monitor') if src is not None else None
+    if eng is None:
+        return
+    old = next((c for c in eng if c.tag.endswith('Monitor')), None)
+    idx = list(eng).index(old) if old is not None else len(eng)
+    if old is not None:
+        eng.remove(old)
+    if mon is not None:
+        eng.insert(idx, qxw_io.qualify_ns(copy.deepcopy(mon)))
+    workspace.reparse_after_vc_edit()
 
 
 def _dirs():
@@ -41,7 +67,7 @@ def _dirs():
 
 def _state(w, **extra):
     r = w['root']
-    orig = qxw_io.strip_ns(copy.deepcopy(w['orig']))
+    orig = w['start']
     return jsonify({'source': w['name'], 'stage': s3.stage(r), 'types': s3.STAGE_TYPES,
                     'meshes': s3.meshes(r, w['path'], _dirs()), 'fixtures': s3.fixtures(r, w['defs']),
                     'undo': len(w['undo']),
@@ -72,10 +98,12 @@ def op():
         if not w['undo']:
             return jsonify({'error': 'Nothing to undo.'}), 400
         w['root'] = w['undo'].pop()
+        _sync(w, undo=True)
         return _state(w, message='Undone.')
     if o == 'reset':
-        w['root'] = qxw_io.strip_ns(copy.deepcopy(w['orig']))
+        w['root'] = copy.deepcopy(w['start'])
         w['undo'] = []
+        _sync(w)
         return _state(w, message='All stage changes discarded.')
     snap = copy.deepcopy(r)
     try:
@@ -129,6 +157,7 @@ def op():
         return jsonify({'error': str(e)}), 400
     w['undo'].append(snap)
     del w['undo'][:-UNDO_LIMIT]
+    _sync(w)
     return _state(w, message=msg, result=res)
 
 
@@ -165,7 +194,7 @@ def save():
     from core.doctor import check
     try:
         out_name = os.path.basename(qxw_io.next_version_name(w['name']))
-        orig = qxw_io.strip_ns(copy.deepcopy(w['orig']))
+        orig = w['start']
         defs = _defs(w['path'])
         old = {(f.code, f.location, f.message) for f in check(orig, defs).errors}
         new = [f for f in check(w['root'], defs).errors if (f.code, f.location, f.message) not in old]

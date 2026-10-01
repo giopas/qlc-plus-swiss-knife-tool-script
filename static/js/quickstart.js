@@ -79,6 +79,8 @@ function _qsUpdateNav() {
   if (exp)  exp.style.display  = _qsStep === _qsTotalSteps ? '' : 'none';
   const port = document.getElementById('qs-btn-port');
   if (port) port.style.display = (_qsStep === _qsTotalSteps && _qsLastSavedPath) ? '' : 'none';
+  const opn = document.getElementById('qs-btn-open');
+  if (opn) opn.style.display = (_qsStep === _qsTotalSteps && _qsLastSavedPath) ? '' : 'none';
 
   const ind = document.getElementById('qs-step-indicator');
   if (ind) ind.textContent = `Step ${_qsStep} of ${_qsTotalSteps}`;
@@ -1414,6 +1416,15 @@ function _qsUpdateFilenamePreview() {
 // Path of the last exported workspace (Phase 1.5: hand-off to the Porter)
 let _qsLastSavedPath = null;
 
+/** The new show becomes the show in progress (asks first if the open one has
+ *  unsaved changes). */
+async function qsOpenAsShow() {
+  if (!_qsLastSavedPath) { setStatus('Save the new show first (💾 Save as new file…).', 'warn'); return; }
+  const inp = document.getElementById('path-input');
+  if (inp) inp.value = _qsLastSavedPath;
+  await loadFromPath();
+}
+
 /**
  * Quick Start × Porter (WORKPLAN 1.5): open the Function Porter with the
  * workspace just exported as the TARGET; the user then picks the source
@@ -1492,6 +1503,6 @@ async function qsExport() {
     console.error('Quick Start export failed:', err);
     setStatus('Export failed: ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Generate QXW'; }
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Save as new file…'; }
   }
 }

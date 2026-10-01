@@ -66,12 +66,17 @@ function _rrRender() {
 function _rrSync() {
   const s = document.getElementById('rr-summary');
   const b = document.getElementById('rr-go');
-  if (!_rrFx) { if (s) s.innerHTML = ''; if (b) b.disabled = true; return; }
+  if (!_rrFx) {
+    if (s) s.innerHTML = ''; if (b) b.disabled = true;
+    const x = document.getElementById('rr-export'); if (x) x.disabled = true;
+    return;
+  }
   const gone = _rrFx.length - _rrKeep.size;
   if (s) s.innerHTML = `<span class="doc-chip">${_rrKeep.size} kept</span>` +
     `<span class="doc-chip doc-warning">${gone} removed</span>` +
     (Object.keys(_rrEdit).length ? `<span class="doc-chip">${Object.keys(_rrEdit).length} re-patched</span>` : '');
   if (b) b.disabled = !_rrKeep.size || (!gone && !Object.keys(_rrEdit).length);
+  const x = document.getElementById('rr-export'); if (x) x.disabled = b ? b.disabled : true;
 }
 
 function reducerKeep(id, on) {
@@ -152,7 +157,7 @@ async function reducerRun() {
       const d = await rr.json();
       msg += rr.ok ? ` Report: ${d.name}.` : ' Report not saved.';
     }
-    setStatus(msg + ' The open workspace is unchanged — open the new file to continue.', 'ok');
+    setStatus(msg + ' A separate copy — the show in progress is unchanged.', 'ok');
   } catch (e) {
     setStatus('Error: ' + e.message, 'error');
   }

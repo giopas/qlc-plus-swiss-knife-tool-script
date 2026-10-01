@@ -7,7 +7,55 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-10-01
+
+Phase 2.6 — UI audit: **the show in progress** for every tool, the Merger in the Function Porter, **Show Paperwork**, guided routes, and one screen pattern.
+
+### Added
+- **Guided routes** (2.6, the "route strip"): *▶ Guided route* on the Start cards *Adapt a show* (Rig Reducer → Doctor → Function Porter → Look Builder → VC Editor → Stage → Setlist → final check) and *Run the show* (Setlist → Trigger Manager → Doctor → Show Paperwork) puts a strip of numbered steps above the tools: click a step to open its tool, a step is ticked when its tool changes the show (or by hand), *Done, next ›*, ✕ closes it. Any step, any order; it only guides. `static/js/route.js`.
+- **A "?" on every tool** (next to the theme button) opens the tool's wiki page in the system browser, also from the desktop window (`POST /api/help`, wiki page names only).
+- **Quick Start → 🎛 Open it as the show**: after saving, the new show becomes the show in progress (asks first if the open one has unsaved changes).
+- **ID Browser works offline**: without the table library (no internet at the venue) it shows plain sortable tables; before a show is open it says what to do.
+- **The show in progress** (giopas: "we have to allow the possibility to jump from one tab to the other"): opening a `.qxw` makes one working copy that **every tool changes**, in any order, back and forth — no more save and re-open between tools. `core/show.py`, `routes/show_routes.py` (`/api/show/status|history|undo|file|saved|save|report`), `static/js/show.js`.
+  - **Header**: *N changes, not saved*, the **Doctor** on the show as it is now (click → Doctor), **↶ Undo**, **🕘 History**, **💾 Save as new file…**.
+  - **History**: every step (tool, what it did, Doctor after it, time); *Open tool*; *↶ Undo from here* (back to before any step). In-place edits of one tool are one step until another tool acts. Keeps the last 60 steps.
+  - **Orange dots** in the side menu on the tools that changed the show since it was opened / saved (giopas's idea).
+  - **One save**: `<name>_v<N+1>.qxw` + one `<name>_v<N+1>_report.txt` with every step and each tool's report; keep working after saving. The opened file is never written (refused).
+  - Asks before *Open…*, *Reload* or *Quit* drop unsaved changes.
+- **✓ Apply to the show** in Workspace Doctor (*Fix selected in the show*), Rig Reducer, Look Builder (*Add to the show*), Brightness, Setlist, VC Editor; `POST /api/doctor|reducer|looks/apply`, `/api/brightness/apply-show`, `/api/setlist/apply-all`, `/api/setlist/<slot>/apply`. Tested: applying gives exactly the file the old export gave (byte for byte).
+- **Function Porter on the show in progress**: with a show open, the target is *🎛 The show in progress* (chosen for you; *📂 Another file…* still ports into a file); step 5 **✓ Apply to the show** adds the port as one step (the target is re-read from the show first, so changes made meanwhile are kept); *Export a copy…* as before. `POST /api/porter/target/show`, `POST /api/porter/apply`; tested equal byte for byte to the export.
+- **The QXW Merger is part of the Function Porter** (giopas, 29 Sep): step 2 *Fixtures and groups to copy into the target* — copied fixtures get the next free ID, keep their address when free or move to the first free block (reported), names made unique; groups rebuilt on the copied or mapped fixtures (an identical one is reused); works with or without functions; ported functions play on the copies. `porter.copy_fixtures_into()`, plan keys `copy_fixtures` / `copy_groups`, `GET /api/porter/source/groups`. The Merger tab is gone (menu, Start card); an old session's Merger source opens as the Porter's source; `core/merger.py` and `/api/merger/*` stay for now.
+- giopas's tests, 30 Sep (evening):
+  - **Porter — copied fixtures now always play on their copy.** With a fan-out mode like *pattern repeat* the copies were tiled onto other targets (report: "Ceiling 1 → FL: Drums"). Copies are pinned 1:1 (`porter.plan_blocks`); the other sources share out the remaining targets. Step 3 shows copied rows as *✚ its copy*, offers the copies as targets for the other sources, and candidates / auto-map know the copies.
+  - **Porter — a race could copy the fixtures twice.** Step 3 asks the server for candidates and the preview plan at the same time; the temporary "target with copies" could overlap and stay (copies drawn twice, *Ceiling 1 (2)*). Now serialised with a lock; test with 4 threads.
+  - **Porter step 3 — target picker**: the multi-select list is replaced by a drop-down with a tick box per target fixture (grouped by match), *All exact matches* / *None*, chips for the chosen ones.
+  - **Show Paperwork — the stage plot is drawn in the preview** (from above and from the audience, like the PDF page), and the **sections are grouped**: *The rig* · *The show* · *Console & checks*, with the DMX-decoding folder moved to an options line.
+  - A UI test now checks that every JavaScript file parses (a name clash had silently broken the Porter page during this work).
+- Show Paperwork **paper sizes** (giopas, 30 Sep): A4, A3, US Letter, landscape or portrait (`showbook.PAPERS`, `paper` in the export body; saved in the session, an old session's Checklist / Tech Rider paper carries over); the page header keeps the title clear of the date on portrait pages.
+- **Show Paperwork** (giopas, 29 Sep: "merge into one, modular report"): the Show Book, Setup Checklist and Tech Rider are one tool with **presets by reader** — 🎟 Tech rider (venue), ✅ Crew checklist (load-in), 📖 Show book (operator), ⚙ Custom; ⇧-click combines them in one PDF. New sections *rider* (types with channels per fixture, totals), *checklist* (tick boxes, 3D position) and *stage_plot* (the blueprint as a page of its own). **Rule, not a tick box:** with only rider / checklist presets the paper never carries function names, key/MIDI, the VC or the Doctor (locked in the UI, enforced in `showbook.resolve_sections`). Show name and date now come from the Start screen (the book used to ignore them). File names `<show>_TechRider.pdf`, `_CrewChecklist`, `_ShowBook`. `GET /api/showbook/presets`; `presets`, `show_name`, `date` in the export bodies; `pdf.blueprint_stream()`. The Checklist and Tech Rider screens are gone (menu, Start chips now open the presets); `/api/checklist/*` and `/api/techrider/*` stay for now. Tests `tests/test_show_paperwork.py`.
+- Porter copies (giopas's test, 30 Sep): copied fixtures get their **3D position** from the source (scaled to the target stage) — they were all stacked top-left in QLC+; step 3 draws them **green** on both plans (*+* in the target, preview via `GET /api/porter/stage/target?copy_fixtures=…`); no more "target fixture(s) left unassigned" warning for copies; copying the same fixtures again is flagged; the finish screen has **💾 Save as new file…** and says it is also top right; messages say "(top right)".
+- **Changes on the left** (giopas's test, 30 Sep: "a history log and a revert button on the left side"): under the menu, the last steps of the show, each with **↶** to undo it (asks first when it undoes several), click a line to open its tool, *All ›* for the full History.
+- **↷ Redo** after an undo (side list and History), until the show changes again; `POST /api/show/redo`.
+- The Workspace Doctor checks the show in progress as soon as you open it.
+- Trigger Manager, VC Editor (pages, widgets, wiring) and **Stage & Meshes** edits go straight into the show; Stage & Meshes keeps its own undo and keeps its edits when another tool changes the show.
+
+### Changed
+- Each tool's old "→ new file" button is now the secondary **Export a copy…** (the tool's result as a separate file with its report; the show in progress is left as it is). Trigger Manager's *Save new version* is gone (the header save replaces it).
+- Header fits 1280 px: the counts lose their labels (tooltips instead) and the Doctor pill shortens below 1560 px.
+- Footer notes shortened to "Changes the show in progress" (the rest in the tooltip) — they wrapped over three lines next to three buttons.
+- Page texts, menu tooltips and the Start screen describe the show in progress instead of "into a new file".
+- **One screen pattern** (2.6 audit A5–A10): every tool has its purpose line and **?** at the top and its main action bottom right.
+  - **Look Builder**: *🎨 Looks · 🔁 Chasers* tabs on the left, *To build* always visible on the right.
+  - **Stage & Meshes**: the crowded right column is four tabs — *Selection* (meshes, fixtures, the selected item) · *Place* · *Add* · *Stage*.
+  - **Function Porter**: Back / Next / Apply sit in the footer of each step, with the note on what it changes; the chosen target says *✓ The show in progress* (no second chip); step 4 → *Next: Apply*.
+  - **Show Paperwork**: *Export PDF…*, *Export CSV…* and the paper size in the footer; *🔍 Preview* and expand / collapse on one line with the **show name and date** (moved here from the Start screen — they only feed the paperwork and the session); messages in the app's status line.
+  - **Brightness**: the long help is a one-line *How it works* you can open.
+- **Start screen** (A1, A2): one sentence on what the app is for, *New in 1.9*, a smaller *Open a show* box, *What do you want to do?* with the six job cards, sessions below; the "?" opens the wiki.
+- **Words** (A7): writers of a new file say **💾 Save as new file…** (Quick Start, Fixtures — was *Generate QXW*); tool messages point to *✓ Apply to the show* and the header save.
+- **Side menu**: tooltips say when to use Quick Start vs Fixtures; the VC Visual Editor is out of Beta; in short windows the menu tightens so all six groups stay in view.
+
 ### Fixed
+- Show Paperwork: stray closing tags left from the removed Checklist / Tech Rider screens (their status line showed as bare text under the preview).
 - Test `test_read_obj_and_resolve` failed on a computer with QLC+ installed (it found the real `generic/cube.obj` — whose size matches the built-in one); the test now covers both cases. App unchanged.
 
 ## [1.8.1] — 2026-09-29

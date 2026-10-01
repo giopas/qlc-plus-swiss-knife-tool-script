@@ -599,6 +599,21 @@ Checks (★ = included in Phase 1.0):
 
 ---
 
+**2.9 The recipe — every change recorded, replayed to the same file** *(first after v2.0, giopas 2 Oct; built 2 Oct while giopas was away — version to decide)*
+
+*Goal*: the Pub test's last criterion, *repeatable*: what was done to a show can be replayed by the command line to a **byte-identical** `.qxw`.
+
+*Decisions taken (unattended, to confirm)*:
+- **Record the calls, not the options.** Every tool already changes the show through one API call per action (Apply, a stage op, a VC op, a setlist step…). An `after_request` hook appends each successful POST / PATCH / DELETE under `/api/` to the recipe, except reads, previews, exports, desktop dialogs, sessions and the save (`recipe.SKIP`). Undo and redo are calls too, so the replay goes through the same history. No tool had to change; a new tool is recorded automatically.
+- **Where it lives**: `<name>.recipe.json` next to the saved file and its report (only when the save knows the folder: the native dialog or `/api/show/save`; a plain browser download gives no folder).
+- **Inputs**: any absolute file path a call names is listed with its SHA-256; at replay a missing one is looked up by name next to the recipe or in `--inputs`. The source show is checked by SHA-256 (a warning if it differs). *The recipe holds the full paths of the files used* — worth knowing before sharing one.
+- **Version**: the recipe records the Swiss Knife version; replaying with another version warns that the result may differ.
+- **Version number**: proposed **v2.1.0** for the recipe (small, done) and Phase 3 packages → **v2.2.0**; or keep the recipe unreleased and ship it with the packages in v2.1.0 — giopas to choose.
+
+*Status (2 Oct)*: built and tested. `core/recipe.py` (record, write, `replay`, CLI `python -m core.recipe replay|show`), hook in `app.py`, `show.reset` / `show.mark_saved` start and write it, the save message names it. The tutorial run (19 calls: Reducer, Doctor, 5 group ops, Looks, 5 VC ops, setlist load / match / details / apply, Doctor) **replays to the identical file in 1.9 s**; tests `tests/test_recipe.py` (7): Pub route with undo, Porter with another show as input, files moved to another folder, missing input named, skip list, live edits with VC and stage undo, CLI. 604 tests. Docs: wiki *Recipe*, CHANGELOG, README.
+
+*Next for the recipe (not done)*: Show Profiles on top (a profile = a recipe + parameters), a recipe from the History screen (*Save the recipe* without saving the show), replay *onto another show* (the same steps on a different source — needs IDs by meaning, like Compare).
+
 ### Phase 3 — Install like an app → **v2.1.0** *(asked by giopas, 1 Oct; after v2.0)*
 
 *Goal*: download, double-click, run — on macOS, Windows and Linux — and be told when a new version is out. As simple as StemDeck (github.com/stemdeckapp/stemdeck: a Tauri shell + bundled Python, a DMG per Mac architecture, a Windows ZIP with a self-contained `.exe`, a first-run note for unsigned apps; StemDeck itself has no auto-update). **Running from sources stays** exactly as today.
@@ -637,7 +652,7 @@ Checks (★ = included in Phase 1.0):
 
 *The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
 
-**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles.
+**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles still to do.*
 
 **Left over from 2.6 (1 Oct):**
 - Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).
@@ -916,7 +931,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. (done) v2.0.0 prepared — the Pub test passed. Next: the **recipe** (§7, first after v2.0), then **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. (done) v2.0.0 prepared — the Pub test passed. (done 2 Oct, unreleased) **2.9 the recipe** — giopas: try it and choose its version. Next: **Phase 3 packages**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

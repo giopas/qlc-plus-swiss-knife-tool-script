@@ -7,6 +7,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+Phase 2.9 — the recipe (first item after v2.0).
+
+### Added
+- **The recipe**: *💾 Save as new file…* also writes `<name>.recipe.json` next to the file and its report — every change made to the show since you opened it, as the calls the tools made (undo and redo included), the source file and the other files used (another show for the Porter, a setlist `.txt`) with their SHA-256, and the SHA-256 of the saved `.qxw`.
+- **Replay from the command line**: `python -m core.recipe replay <name>.recipe.json` opens the source in a fresh app, replays every call and says whether the result is **byte-identical** (`--out` keeps it, `--source` / `--inputs` when the files moved; `show` lists the steps). The Pub-test run replays to the same file. `core/recipe.py`; tests `tests/test_recipe.py` (7).
+
 
 ## [2.0.0] — 2026-10-01
 

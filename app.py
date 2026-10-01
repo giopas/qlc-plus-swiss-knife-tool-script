@@ -25,13 +25,24 @@ def _try_bootstrap():
     """Re-exec under the project's .venv Python if flask is missing."""
     here   = os.path.dirname(os.path.abspath(__file__))
     # Common venv bin locations
-    candidates = [
+    # Same lookup order as run.sh: $SWK_VENV, ~/.venvs/swissknife, then local
+    shared = []
+    if os.environ.get('SWK_VENV'):
+        shared += [os.path.join(os.environ['SWK_VENV'], 'bin', 'python3'),
+                   os.path.join(os.environ['SWK_VENV'], 'Scripts', 'python.exe')]
+    home_venv = os.path.join(os.path.expanduser('~'), '.venvs', 'swissknife')
+    shared += [os.path.join(home_venv, 'bin', 'python3'),
+               os.path.join(home_venv, 'Scripts', 'python.exe')]
+    candidates = shared + [
         os.path.join(here, '.venv', 'bin',      'python3'),   # macOS / Linux
         os.path.join(here, '.venv', 'bin',      'python'),    # macOS / Linux alt
         os.path.join(here, '.venv', 'Scripts',  'python.exe'),# Windows
         os.path.join(here, 'venv',  'bin',      'python3'),   # alternate name
         os.path.join(here, 'venv',  'Scripts',  'python.exe'),# alternate name Win
     ]
+    if os.environ.get('_SWK_REEXEC'):      # already re-exec'd once: don't loop
+        return False
+    os.environ['_SWK_REEXEC'] = '1'
     for py in candidates:
         if os.path.isfile(py):
             # Only re-exec if we're not already in this venv (avoid infinite loop)
@@ -91,6 +102,8 @@ import threading
 import webbrowser
 from flask import Flask, request, jsonify
 
+WIKI_URL = "https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/"
+
 from routes.workspace_routes  import bp as workspace_bp
 from routes.id_browser_routes import bp as id_browser_bp
 from routes.setlist_routes    import bp as setlist_bp
@@ -110,6 +123,7 @@ from routes.doctor_routes import bp as doctor_bp
 from routes.reducer_routes import bp as reducer_bp
 from routes.looks_routes import bp as looks_bp
 from routes.stage_routes import bp as stage_bp
+from routes.show_routes import bp as show_bp
 
 PORT = 5731
 
@@ -135,6 +149,7 @@ def create_app():
     app = Flask(__name__)
 
     app.register_blueprint(workspace_bp)
+    app.register_blueprint(show_bp)
     app.register_blueprint(id_browser_bp)
     app.register_blueprint(setlist_bp)
     app.register_blueprint(dictionary_bp)
@@ -214,6 +229,24 @@ def create_app():
             except Exception:
                 pass
         return jsonify({'user_name': name})
+
+    # ── Help: open a wiki page in the system browser ─────────────────────────
+    @app.route('/api/help', methods=['POST'])
+    def api_help():
+        """Open the tool's wiki page. Only page names (letters, digits, '-')
+        under the project wiki are accepted."""
+        import re
+        page = str((request.get_json(silent=True) or {}).get('page') or 'Home')
+        if not re.fullmatch(r'[A-Za-z0-9-]{1,60}', page):
+            return jsonify({'ok': False, 'error': 'bad page'}), 400
+        url = WIKI_URL + page
+        if app.config.get('TESTING'):
+            return jsonify({'ok': True, 'url': url})
+        try:
+            ok = bool(webbrowser.open(url))
+        except Exception:
+            ok = False
+        return jsonify({'ok': ok, 'url': url})
 
     # ── Quit endpoint ────────────────────────────────────────────────────────
     app._webview_window = None  # set by __main__ when running in webview mode

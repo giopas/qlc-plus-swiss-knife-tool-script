@@ -148,7 +148,7 @@ function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
    'btn-import-slot-txt','btn-export-slot-txt','btn-auto-match','btn-clear-assign','btn-clear-all',
    'btn-purge-clones', 'btn-delete-ws-clones',
-   'sl-chaser-select','btn-generate-qxw','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
+   'sl-chaser-select','btn-generate-qxw','btn-apply-setlist','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = !on;
@@ -622,7 +622,7 @@ async function slDeleteWorkspaceClones() {
     `This removes marked SwissKnife clones AND legacy unreferenced duplicates ` +
     `left by older versions. Songs assigned to a removed clone are re-pointed ` +
     `to the surviving original whenever possible; otherwise they are unassigned.\n\n` +
-    `After this, Generate QXW will produce a clean file without the old clones.`
+    `After this, ✓ Apply to the show and 💾 Save as new file… give a clean file without the old clones.`
   )) return;
 
   const res = await _apiPost('/api/setlist/purge-workspace-clones', {});
@@ -659,7 +659,7 @@ async function slDeleteWorkspaceClones() {
   const parts = [`Deleted ${res.removed} clone(s) from workspace`];
   if (res.redirected) parts.push(`${res.redirected} song(s) re-pointed to their original function`);
   if (res.unassigned) parts.push(`${res.unassigned} song(s) unassigned`);
-  parts.push('Generate QXW to save the clean file.');
+  parts.push('✓ Apply to the show, then 💾 Save as new file….');
   setStatus(parts.join(' — '), 'ok');
 }
 

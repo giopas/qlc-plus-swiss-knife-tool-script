@@ -112,6 +112,13 @@ def assemble_pdf(pages, W, H):
 
 def build_blueprint_pdf(fixture_data, show_name="Untitled", doc_date=None,
                         W=1190.0, H=841.0):
+    """Single-page blueprint PDF (see :func:`blueprint_stream`), or None."""
+    stream = blueprint_stream(fixture_data, show_name, doc_date, W, H)
+    return None if stream is None else assemble_pdf([stream], W, H)
+
+
+def blueprint_stream(fixture_data, show_name="Untitled", doc_date=None,
+                     W=1190.0, H=841.0):
     """
     Build a single-page blueprint PDF showing top-view and front-view of
     all fixtures that have 3D position data.
@@ -264,8 +271,7 @@ def build_blueprint_pdf(fixture_data, show_name="Untitled", doc_date=None,
     # Divider between sections
     seg(0, fy(sec_h), W, fy(sec_h), stg, 2.0)
 
-    stream = zlib.compress("\n".join(ln).encode("latin-1"))
-    return assemble_pdf([stream], W, H)
+    return zlib.compress("\n".join(ln).encode("latin-1"))
 
 
 # ──────────────────────────────────────────────────────────────────────────────

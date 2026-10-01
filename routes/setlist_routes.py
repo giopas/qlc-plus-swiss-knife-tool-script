@@ -357,6 +357,40 @@ def generate_all_qxw():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/<slot_id>/apply', methods=['POST'])
+def apply_slot(slot_id):
+    """Build the slot's chaser in the show in progress (a step in its history)."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    target = (data.get('target_chaser_id') or '').strip() or None
+    try:
+        from core import show
+        ws.generate_slot_qxw_content(slot_id, target)
+        show.close_step()
+        return jsonify({'ok': True, 'show': show.status()})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/apply-all', methods=['POST'])
+def apply_all():
+    """Build every slot's chaser in the show in progress (one step)."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    try:
+        from core import show
+        ws.generate_all_slots_qxw_content()
+        show.close_step()
+        return jsonify({'ok': True, 'show': show.status()})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 # ── PDF export ────────────────────────────────────────────────────────────────
 
 @bp.route('/<slot_id>/export-pdf', methods=['POST'])

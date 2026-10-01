@@ -35,11 +35,11 @@ const _LAZY = {
   idbrowser:  () => _ensureIdBrowserLoaded(),
   setlist:    () => typeof ensureSetlistLoaded    === 'function' && ensureSetlistLoaded(),
   dictionary: () => typeof ensureDictionaryLoaded === 'function' && ensureDictionaryLoaded(),
-  checklist:  () => typeof ensureChecklistLoaded  === 'function' && ensureChecklistLoaded(),
-  techrider:  () => typeof ensureTechRiderLoaded === 'function' && ensureTechRiderLoaded(),
+  checklist:  () => { go('showbook'); sbPreset('checklist'); },   // 1.9: part of Show Paperwork
+  techrider:  () => { go('showbook'); sbPreset('rider'); },       // 1.9: part of Show Paperwork
   triggers:   () => typeof ensureTriggersLoaded   === 'function' && ensureTriggersLoaded(),
   fixtures:   () => typeof ensureFixturesLoaded   === 'function' && ensureFixturesLoaded(),
-  merger:     () => typeof mergerInit             === 'function' && mergerInit(),
+  merger:     () => go('porter'),   // 1.9: the QXW Merger is part of the Function Porter
   porter:     () => typeof porterInit             === 'function' && porterInit(),
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   doctor:     () => typeof doctorInit             === 'function' && doctorInit(),
@@ -58,6 +58,11 @@ const _LAZY = {
 
 /** Navigate to a screen.  screenId matches the suffix of scr-{id} / sn-{id}. */
 function go(screenId) {
+  // VC Editor edits not yet sent go into the show before another tool reads it
+  if (typeof showPendingEdits === 'function' && _activeScreenId() !== screenId && showPendingEdits()) {
+    showFlushPending().then(() => go(screenId));
+    return;
+  }
   // Update sidebar
   document.querySelectorAll('.sn-item').forEach(b => {
     b.classList.toggle('active', b.id === `sn-${screenId}`);
@@ -72,6 +77,12 @@ function go(screenId) {
   // Hide nav tooltip
   const tip = document.getElementById('nav-tip');
   if (tip) tip.style.display = 'none';
+  if (typeof routeRender === 'function') routeRender();
+}
+
+function _activeScreenId() {
+  const s = document.querySelector('.screen.active');
+  return s ? s.id.replace('scr-', '') : '';
 }
 
 /** Backward-compat alias: old code may call showTab('setlist') etc. */
@@ -146,6 +157,16 @@ function _initNavTooltips() {
 // =============================================================================
 
 const _THEMES = ['dark', 'grey', 'light'];
+
+// The "?" in each tool header: the tool's page of the wiki, in the system browser
+// (the server opens it, so it works in the desktop window too).
+function openHelp(page) {
+  fetch('/api/help', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({page})})
+    .then(r => r.json()).then(d => { if (!d.ok && d.url) window.open(d.url, '_blank'); })
+    .catch(() => window.open(WIKI_URL + page, '_blank'));
+}
+const WIKI_URL = 'https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/';
 
 function cycleTheme() {
   const html    = document.documentElement;
@@ -257,6 +278,7 @@ async function saveFileWithPicker(blob, suggestedName, fsTypes, dialogTitle) {
 // =============================================================================
 
 async function quitApp() {
+  if (typeof showConfirmDiscard === 'function' && !showConfirmDiscard('Quitting')) return;
   // Check for unsaved session changes
   if (typeof _sess !== 'undefined' && _sess.dirty) {
     if (!confirm('You have unsaved session changes.\n\nQuit anyway?')) return;
@@ -496,6 +518,7 @@ async function reloadWorkspace() {
 }
 
 async function _doLoad(fetchOpts) {
+  if (typeof showConfirmDiscard === 'function' && !showConfirmDiscard('Opening another file')) return;
   setStatus('Loading…');
   try {
     const res  = await fetch('/api/load', fetchOpts);
@@ -547,6 +570,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateLooks === 'function') invalidateLooks();
   if (typeof invalidateStage === 'function') invalidateStage();
   if (typeof invalidateVcEditor === 'function') invalidateVcEditor();
+  if (typeof invalidatePorter === 'function') invalidatePorter();
   // Re-load whichever screen is currently visible
   const activeScr = document.querySelector('.screen.active');
   if (activeScr) {
@@ -591,7 +615,7 @@ function _updateHeader(state) {
 // Tools that work on the open workspace show the same banner when none is open,
 // so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
-const _WS_SCREENS = ['setlist', 'triggers', 'dictionary', 'checklist', 'techrider',
+const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage'];
 
 function _updateNeedWsBanners(loaded) {
@@ -682,6 +706,7 @@ function _renderFnTable(data) {
   const h     = wrap ? Math.max(200, wrap.clientHeight - 44) : 500;
 
   if (_fnGrid) { _fnGrid.destroy(); _fnGrid = null; }
+  if (typeof gridjs === 'undefined') { _plainTable(wrap, FN_COLS, rows); return; }
 
   _fnGrid = new gridjs.Grid({
     columns: FN_COLS.map(c => ({
@@ -754,6 +779,7 @@ function _renderVcTable(data) {
   const h     = wrap ? Math.max(200, wrap.clientHeight - 44) : 500;
 
   if (_vcGrid) { _vcGrid.destroy(); _vcGrid = null; }
+  if (typeof gridjs === 'undefined') { _plainTable(wrap, VC_COLS, rows); return; }
 
   _vcGrid = new gridjs.Grid({
     columns: VC_COLS.map(c => ({
@@ -786,12 +812,43 @@ function filterVcWidgets(q) {
 // ── Shared ID Browser helpers ─────────────────────────────────────────────────
 let _idBrowserLoaded = false;
 
+/** Without the table library (offline, e.g. at the venue): a plain table,
+ *  sortable by clicking a header.  Cells are the same HTML the grid shows. */
+function _plainTable(wrap, cols, rows) {
+  if (!wrap) return;
+  let key = -1, dir = 1;
+  const draw = () => {
+    const r = key < 0 ? rows : rows.slice().sort((a, b) => {
+      const x = String(a[key]).replace(/<[^>]+>/g, ''), y = String(b[key]).replace(/<[^>]+>/g, '');
+      const nx = parseFloat(x), ny = parseFloat(y);
+      return dir * (!isNaN(nx) && !isNaN(ny) ? nx - ny : x.localeCompare(y));
+    });
+    const esc = v => (/^<(span|svg|i)\b/.test(String(v)) ? String(v)
+      : String(v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])));
+    wrap.innerHTML = `<div class="plain-table-wrap"><table class="plain-table"><thead><tr>${cols.map((c, i) =>
+      `<th data-i="${i}" style="width:${c.width || 'auto'}">${c.name}${i === key ? (dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead>
+      <tbody>${r.map(row => `<tr>${row.map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="plain-table-sum">${rows.length} row(s)</div>`;
+    wrap.querySelectorAll('th').forEach(th => th.onclick = () => {
+      const i = +th.dataset.i; if (cols[i].sort === false) return;
+      dir = key === i ? -dir : 1; key = i; draw();
+    });
+  };
+  draw();
+}
+
 function _invalidateIdBrowser() { _idBrowserLoaded = false; }
 
 async function _ensureIdBrowserLoaded() {
   if (_idBrowserLoaded) return;
   const state = await _apiJson('/api/status');
-  if (!state.loaded) return;
+  if (!state.loaded) {
+    ['fn-table-wrap', 'vc-table-wrap'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace (📂 Open… top right) to list its functions and Virtual Console widgets.</div>';
+    });
+    return;
+  }
   _idBrowserLoaded = true;
   await Promise.all([_loadFunctions(), _loadVcWidgets()]);
   _attachIdBrowserResizeObserver();

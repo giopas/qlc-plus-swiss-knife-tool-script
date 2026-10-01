@@ -129,6 +129,31 @@ def build():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/apply', methods=['POST'])
+def apply():
+    """Add the looks and chasers to the show in progress (a step in its history)."""
+    global _last
+    root, path, name, err = _need_ws()
+    if err:
+        return err
+    try:
+        from routes.show_routes import applied
+        res = _run(root, path, name, '')
+        if res['blocked']:
+            return jsonify({'error': 'Doctor found new errors in the result; not applied.',
+                            'findings': res['doctor']['new_errors']}), 422
+        _last = {'report': res['report'], 'created': res['created'], 'doctor': res['doctor'],
+                 'filename': ''}
+        c = res['created']
+        title = f'{c.get("looks", 0)} looks, {c.get("chasers", 0)} chasers'
+        detail = f'{c.get("buttons", 0)} buttons' if c.get('buttons') else ''
+        return applied('looks', title, res['root'], res['report'], detail)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 @bp.route('/last-result')
 def last_result():
     return jsonify(_last)

@@ -58,6 +58,14 @@ function _lbChip(c, on, fn) {
             onclick="${fn}('${_esc(c.name).replace(/'/g, "\\'")}')"><i></i>${_esc(c.name)}</button>`;
 }
 
+// Inspector tabs (2.6): Looks and Chasers one at a time, To build always visible
+let _lbTab = 'looks';
+function looksTab(t) {
+  _lbTab = t;
+  document.querySelectorAll('#lb-body [data-lbtab]').forEach(b => b.classList.toggle('active', b.dataset.lbtab === t));
+  document.querySelectorAll('#lb-body [data-lbpane]').forEach(p => { p.hidden = p.dataset.lbpane !== t; });
+}
+
 function _lbRender() {
   const el = document.getElementById('lb-body');
   if (!el || !_lbOpts) return;
@@ -66,7 +74,14 @@ function _lbRender() {
   el.innerHTML = `
   <div class="lb-cols">
    <div class="lb-left">
-    <div class="lb-card">
+    <div class="lb-tabs" role="tablist">
+      <button class="subtab-btn${_lbTab === 'looks' ? ' active' : ''}" data-lbtab="looks" onclick="looksTab('looks')"
+              title="A look = a fixture group in one colour: one scene each">🎨 Looks</button>
+      <button class="subtab-btn${_lbTab === 'chaser' ? ' active' : ''}" data-lbtab="chaser" onclick="looksTab('chaser')"
+              title="A chaser = a pattern across a fixture group, with BPM timing">🔁 Chasers</button>
+      <span class="lb-tabs-note">both go into <b>To build</b> on the right</span>
+    </div>
+    <div class="lb-card" data-lbpane="looks"${_lbTab === 'looks' ? '' : ' hidden'}>
       <h3>Looks <span class="p-desc">fixture group × palette — one scene each, every channel declared</span></h3>
       <div class="lb-groups">${_lbOpts.groups.map(g => `
         <label class="${g.supported ? '' : 'lb-dis'}"><input type="checkbox" class="lb-lg" value="${_esc(g.id)}"
@@ -90,7 +105,7 @@ function _lbRender() {
       <div id="lb-look-prev" class="lb-prev"></div>
     </div>
 
-    <div class="lb-card">
+    <div class="lb-card" data-lbpane="chaser"${_lbTab === 'chaser' ? '' : ' hidden'}>
       <h3>Chaser <span class="p-desc">a pattern across a fixture group</span></h3>
       <div class="lb-row">
         <label>Song preset <select id="lb-preset" class="filter-input" onchange="looksLoadPreset(this.value)">
@@ -398,6 +413,7 @@ function _lbSync() {
   const nl = _lbBatch.looks.reduce((a, l) => a + l.colours.length, 0), nc = _lbBatch.chasers.length;
   if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${nl} look(s)</span><span class="doc-chip">${nc} chaser(s)</span>` : '';
   if (b) b.disabled = !(nl || nc);
+  const x = _v('lb-export'); if (x) x.disabled = !(nl || nc);
 }
 
 function _lbPlan() {
@@ -450,7 +466,7 @@ async function looksBuild() {
       const d = await rr.json();
       msg += rr.ok ? ` Report: ${d.name}.` : ' Report not saved.';
     }
-    setStatus(msg + ' The open workspace is unchanged — open the new file to continue.', 'ok');
+    setStatus(msg + ' A separate copy — the show in progress is unchanged.', 'ok');
   } catch (e) {
     setStatus('Error: ' + e.message, 'error');
   }

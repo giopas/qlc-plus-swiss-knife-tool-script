@@ -319,13 +319,12 @@ function _collectToolState() {
   const val = id => (document.getElementById(id) || {}).value || '';
   const tools = {
     porter: { source: _absPath(val('porter-src-path')), target: _absPath(val('porter-tgt-path')) },
-    merger: { source: _absPath(val('merger-src-path')), destination: _absPath(val('merger-dst-path')) },
     showbook: {
       qxf_dir: _absPath(val('sb-qxf-path')) || _sess.showbook_qxf_dir || null,
       sections: Array.from(document.querySelectorAll('#sb-section-checks input[type=checkbox]:checked'))
                      .map(c => c.value),
     },
-    paper: { fixtures: val('fix-pdf-paper'), checklist: val('chk-pdf-paper'), techrider: val('tr-pdf-paper') },
+    paper: { fixtures: val('fix-pdf-paper'), paperwork: val('sb-paper') },
   };
   if (typeof _brtScales !== 'undefined' && Object.keys(_brtScales).length) {
     tools.brightness = { scales: _brtScales, manual: _brtManual, linked: _brtLinked };
@@ -479,7 +478,7 @@ async function _restoreToolState(t) {
   }
   // PDF paper sizes
   const pp = t.paper || {};
-  setVal('fix-pdf-paper', pp.fixtures); setVal('chk-pdf-paper', pp.checklist); setVal('tr-pdf-paper', pp.techrider);
+  setVal('fix-pdf-paper', pp.fixtures); setVal('sb-paper', pp.paperwork || pp.checklist || pp.techrider);
   // Brightness sliders: applied when the Brightness tab (re)loads its fixtures
   window._brtPendingRestore = t.brightness || null;
   // Two-file tools: reload their files from disk
@@ -491,10 +490,9 @@ async function _restoreToolState(t) {
     try { await window[fn](); } catch { /* reported in the tool's status bar */ }
   };
   const po = t.porter || {}, me = t.merger || {};
-  await load('porter-src', po.source, 'porterLoadSrc');
+  // 1.9: the QXW Merger is part of the Porter — an old session's merger source loads there
+  await load('porter-src', po.source || me.source, 'porterLoadSrc');
   await load('porter-tgt', po.target, 'porterLoadTgt');
-  await load('merger-src', me.source, 'mergerLoadSrc');
-  await load('merger-dst', me.destination, 'mergerLoadDst');
 }
 
 

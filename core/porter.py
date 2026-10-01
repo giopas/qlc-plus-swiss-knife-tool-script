@@ -47,6 +47,7 @@ import copy
 import os
 import re
 from collections import defaultdict
+from contextlib import contextmanager
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
@@ -95,6 +96,35 @@ def load_target(path: str, name: str = None) -> dict:
     return _make_summary(root)
 
 
+def load_target_root(root: ET.Element, path: str = "", name: str = None,
+                     from_show: bool = False) -> dict:
+    """Use an in-memory workspace (the show in progress) as the target.  A
+    stripped copy is kept, so the show itself is never changed here."""
+    global _tgt
+    r = qxw_io.strip_ns(copy.deepcopy(root))
+    _tgt = {"loaded": True, "path": path or None,
+            "name": name or (_short_name(path) if path else "show"),
+            "tree": ET.ElementTree(r), "root": r, "show": from_show}
+    return _make_summary(r)
+
+
+def target_is_show() -> bool:
+    return bool(_tgt.get("show"))
+
+
+def list_source_groups() -> list[dict]:
+    """Fixture groups of the source: id, name, size and member fixture IDs."""
+    if not _src["loaded"] or _engine(_src["root"]) is None:
+        return []
+    out = []
+    for g in _engine(_src["root"]).findall("FixtureGroup"):
+        fx = sorted({h.get("Fixture", "") for h in g.findall("Head")},
+                    key=lambda x: int(x) if x.isdigit() else 0)
+        out.append({"id": g.get("ID", ""), "name": g.findtext("Name", ""),
+                    "heads": len(g.findall("Head")), "fixtures": fx})
+    return out
+
+
 def clear():
     global _src, _tgt
     _src = {"loaded": False, "path": None, "name": None, "tree": None, "root": None}
@@ -117,6 +147,7 @@ def get_state() -> dict:
         "tgt_name":   _tgt["name"],
         "src_path":   _src["path"],
         "tgt_path":   _tgt["path"],
+        "tgt_show":   bool(_tgt.get("show")),
     }
 
 
@@ -648,6 +679,23 @@ def compute_blocks(src_fixture_ids: list[str], fixture_mapping: dict[str, list[s
     return {t: [s] for t, s in compute_fanout(src_fixture_ids, fixture_mapping, mode).items()}
 
 
+def plan_blocks(order: list[str], fixture_mapping: dict[str, list[str]], mode: str,
+                copied: dict[str, str] | None = None) -> dict[str, list[str]]:
+    """:func:`compute_blocks`, with copied fixtures pinned 1:1 to their copy
+    whatever the fan-out mode (giopas's test, 30 Sep: *pattern repeat*
+    tiled the copies onto other targets, so "Ceiling 1" played on the drums).
+    The other sources share out the remaining targets as before."""
+    copied = copied or {}
+    pinned = {n: [s] for s, n in copied.items() if s in order}
+    taken = set(pinned)
+    rest = [s for s in order if s not in copied]
+    mapping = {s: [t for t in ts if t not in taken] for s, ts in fixture_mapping.items()
+               if s not in copied}
+    blocks = compute_blocks(rest, mapping, mode)
+    blocks.update(pinned)
+    return blocks
+
+
 def _intensity_channels(infos: dict[str, dict], defs: dict) -> dict[str, set]:
     """``fixture_id → {channel indices in the Intensity group}`` (dimmer and
     colour), for fixtures whose definition is known."""
@@ -972,8 +1020,8 @@ def validate(plan: dict) -> dict:
         return f"{i} '{inf['name']}'" if inf else i
 
     # ── Errors ────────────────────────────────────────────────────────────
-    if not func_ids:
-        errors.append("No functions selected.")
+    if not func_ids and not (plan.get("copy_fixtures") or plan.get("copy_groups")):
+        errors.append("No functions selected (and no fixtures or groups to copy).")
 
     for fid in unresolved:
         errors.append(f"Function ID {fid} is referenced but not found in source file.")
@@ -995,9 +1043,12 @@ def validate(plan: dict) -> dict:
                 errors.append(f"Target fixture ID {t} does not exist in the target.")
 
     order = stage_order(_src["root"], fix_ids) if _src["loaded"] else list(fix_ids)
-    blocks = compute_blocks(order, fixture_mapping, fanout_mode)
-    fanout = compute_fanout(fix_ids, fixture_mapping, fanout_mode) \
-        if fanout_mode != "fan_in" else {t: b[0] for t, b in blocks.items()}
+    copied = plan.get("_copied") or {}
+    blocks = plan_blocks(order, fixture_mapping, fanout_mode, copied)
+    if fanout_mode == "fan_in" or copied:
+        fanout = {t: b[0] for t, b in blocks.items()}
+    else:
+        fanout = compute_fanout(fix_ids, fixture_mapping, fanout_mode)
 
     # Double assignment (ambiguous values) — expected, and resolved, in fan-in
     if fanout_mode != "fan_in":
@@ -1079,6 +1130,19 @@ def validate(plan: dict) -> dict:
         all_tgt_ids.update(targets)
     assigned_tgt_ids = set(fanout.keys())
     unassigned = all_tgt_ids - assigned_tgt_ids
+    copied_to = set((plan.get("_copied") or {}).values())
+    unassigned -= {t for t in unassigned if t in copied_to and not any(
+        t in fixture_mapping.get(s, []) for s in fix_ids)}      # copies no function uses
+    if plan.get("_copied"):
+        names = {}
+        for f in (_engine(_src["root"]).findall("Fixture") if _src["loaded"] else []):
+            names[(f.findtext("ID") or "").strip()] = f.findtext("Name") or ""
+        orig = set(plan.get("_target_names") or [])
+        again = [names[s] for s in plan["_copied"] if names.get(s) in orig]
+        if again:
+            warnings.append(f"The target already has {len(again)} fixture(s) with these names "
+                            f"({', '.join(again[:4])}{'…' if len(again) > 4 else ''}) — "
+                            "copied before? The copies get “(2)”.")
     if unassigned:
         warnings.append(
             f"{len(unassigned)} target fixture(s) left unassigned by "
@@ -1167,6 +1231,234 @@ def _load_defs(plan: dict) -> dict:
     return defs
 
 
+# ── Copy fixtures and groups from the source (the QXW Merger, folded in) ────
+
+def _fx_channels(el: ET.Element) -> int:
+    try:
+        return max(1, int(el.findtext("Channels") or 1))
+    except ValueError:
+        return 1
+
+
+def _used_ranges(engine: ET.Element) -> dict[str, list[tuple[int, int]]]:
+    used: dict[str, list[tuple[int, int]]] = defaultdict(list)
+    for f in engine.findall("Fixture"):
+        try:
+            a = int(f.findtext("Address") or 0)
+        except ValueError:
+            continue
+        used[(f.findtext("Universe") or "0").strip()].append((a, a + _fx_channels(f)))
+    return used
+
+
+def _free_address(ranges: list[tuple[int, int]], want: int, n: int) -> int | None:
+    """``want`` if channels want…want+n-1 are free in the universe, otherwise
+    the first free block of n channels (0-based, 512 per universe)."""
+    def free(a):
+        return a + n <= 512 and all(a + n <= s or a >= e for s, e in ranges)
+    if free(want):
+        return want
+    for a in range(0, 512 - n + 1):
+        if free(a):
+            return a
+    return None
+
+
+def copy_fixtures_into(src_root: ET.Element, tgt_root: ET.Element,
+                       fixture_ids: list[str], group_ids: list[str] = (),
+                       mapping: dict[str, list[str]] | None = None) -> dict:
+    """Copy source fixtures (and fixture groups) into *tgt_root* (stripped).
+
+    Each fixture gets the next free fixture ID; its name is kept (``(2)``…
+    when taken); its universe and address are kept when those channels are
+    free, otherwise it moves to the first free block of that universe
+    (reported).  A group is rebuilt on the target fixtures its source
+    fixtures now map to (copied ones, or the ones in *mapping*); heads with
+    no target are left out, an identical existing group is reused.
+
+    Returns ``{"map": {src_id: new_id}, "groups": [...], "log": [lines]}``."""
+    src_eng, tgt_eng = _engine(src_root), _engine(tgt_root)
+    out = {"map": {}, "groups": [], "log": []}
+    if src_eng is None or tgt_eng is None:
+        return out
+    src_fx = {(f.findtext("ID") or "").strip(): f for f in src_eng.findall("Fixture")}
+    ids = [int((f.findtext("ID") or "-1").strip()) for f in tgt_eng.findall("Fixture")
+           if (f.findtext("ID") or "").strip().lstrip("-").isdigit()]
+    next_id = max(ids, default=-1) + 1
+    names = {(f.findtext("Name") or "") for f in tgt_eng.findall("Fixture")}
+    used = _used_ranges(tgt_eng)
+    last = max([i for i, c in enumerate(list(tgt_eng)) if c.tag == "Fixture"], default=-1)
+    for sid in [str(x) for x in fixture_ids]:
+        el = src_fx.get(sid)
+        if el is None:
+            out["log"].append(f"fixture {sid}: not in the source — skipped")
+            continue
+        new = copy.deepcopy(el)
+        nid = str(next_id)
+        next_id += 1
+        new.find("ID").text = nid
+        name = new.findtext("Name") or f"Fixture {nid}"
+        base, k = name, 2
+        while name in names:
+            name, k = f"{base} ({k})", k + 1
+        if new.find("Name") is not None:
+            new.find("Name").text = name
+        names.add(name)
+        uni = (new.findtext("Universe") or "0").strip()
+        n = _fx_channels(new)
+        try:
+            want = int(new.findtext("Address") or 0)
+        except ValueError:
+            want = 0
+        addr = _free_address(used[uni], want, n)
+        note = ""
+        if addr is None:
+            addr = want
+            note = " — universe full, address kept: check the patch"
+        elif addr != want:
+            note = f" — moved from {want + 1} (those channels are taken)"
+        if new.find("Address") is not None:
+            new.find("Address").text = str(addr)
+        used[uni].append((addr, addr + n))
+        last += 1
+        tgt_eng.insert(last, new)
+        out["map"][sid] = nid
+        out["log"].append(f"fixture {sid} '{el.findtext('Name') or ''}' → {nid} '{name}', "
+                          f"universe {int(uni) + 1 if uni.isdigit() else uni}, "
+                          f"address {addr + 1}{note}")
+    _copy_positions(src_root, tgt_root, out)
+    if group_ids:
+        blocks: dict[str, list[str]] = defaultdict(list)
+        for s, ts in (mapping or {}).items():
+            for t in ts:
+                blocks[str(t)].append(str(s))
+        for s, t in out["map"].items():
+            blocks[t] = [s]
+        src_groups = {g.get("ID", ""): g for g in src_eng.findall("FixtureGroup")}
+        new_groups: list[ET.Element] = []
+        for gid in [str(g) for g in group_ids]:
+            g = src_groups.get(gid)
+            if g is None:
+                out["log"].append(f"group {gid}: not in the source — skipped")
+                continue
+            ng = _port_group(g, tgt_eng, dict(blocks), new_groups)
+            if ng is None:
+                out["log"].append(f"group {gid} '{g.findtext('Name', '')}': none of its fixtures "
+                                  "is in the target — skipped (copy or map them first)")
+            else:
+                out["groups"].append({"src": gid, "id": ng})
+                made = next((x for x in new_groups if x.get("ID") == ng), None)
+                out["log"].append(f"group {gid} '{g.findtext('Name', '')}' → "
+                                  + (f"{ng} '{made.findtext('Name', '')}'" if made is not None
+                                     else f"existing group {ng} (same heads)"))
+        _insert_groups(tgt_eng, new_groups)
+    return out
+
+
+def _grid(root: ET.Element) -> tuple[float, float, float]:
+    g = root.find("Engine/Monitor/Grid")
+    try:
+        return (float(g.get("Width", 5)), float(g.get("Height", 3)), float(g.get("Depth", 5))) \
+            if g is not None else (5.0, 3.0, 5.0)
+    except ValueError:
+        return (5.0, 3.0, 5.0)
+
+
+def _copy_positions(src_root: ET.Element, tgt_root: ET.Element, out: dict) -> None:
+    """Give each copied fixture its place on the 3D stage: the source position
+    (and rotation), scaled to the target stage when the sizes differ, so the
+    copies keep their layout (giopas's test, 30 Sep: without it QLC+ put
+    them all in the top-left corner).  Fine-tune in Stage & Meshes."""
+    smon, tmon = src_root.find("Engine/Monitor"), tgt_root.find("Engine/Monitor")
+    if smon is None or tmon is None or not out["map"]:
+        return
+    sw, sh, sd = _grid(src_root)
+    tw, th, td = _grid(tgt_root)
+    items = {i.get("ID", ""): i for i in smon.findall("FxItem")}
+    last = max([n for n, c in enumerate(list(tmon)) if c.tag == "FxItem"],
+               default=max([n for n, c in enumerate(list(tmon)) if c.tag == "Grid"], default=-1))
+    placed = 0
+    for sid, nid in out["map"].items():
+        it = items.get(sid)
+        if it is None:
+            continue
+        new = copy.deepcopy(it)
+        new.set("ID", nid)
+        for attr, k, lim in (("XPos", tw / sw if sw else 1, tw), ("YPos", 1.0, th),
+                             ("ZPos", td / sd if sd else 1, td)):
+            try:
+                v = float(new.get(attr, 0)) * k
+            except ValueError:
+                continue
+            v = max(0.0, min(v, lim * 1000))
+            new.set(attr, f"{v:g}" if v != int(v) else str(int(v)))
+        last += 1
+        tmon.insert(last, new)
+        placed += 1
+    if placed:
+        scaled = (sw, sd) != (tw, td)
+        out["log"].append(f"3D positions: {placed} fixture(s) placed as in the source"
+                          + (f" (scaled from a {sw:g}×{sd:g} m to a {tw:g}×{td:g} m stage)" if scaled else "")
+                          + " — fine-tune them in Stage & Meshes")
+
+
+import threading
+
+# _with_copies swaps _tgt["root"] for the duration of a call; the web server
+# is threaded (step 3 asks for candidates and the preview plan at once), so
+# two swaps must never overlap — they did on 30 Sep: the preview drew the
+# copies twice and the target could stay swapped.
+_COPIES_LOCK = threading.RLock()
+
+
+@contextmanager
+def _with_copies(plan: dict):
+    with _COPIES_LOCK:
+        with _with_copies_unlocked(plan) as out:
+            yield out
+
+
+@contextmanager
+def _with_copies_unlocked(plan: dict):
+    """Run validate/_build on a target that already has the fixtures and
+    groups the plan copies from the source; copied fixtures are mapped to
+    themselves.  Yields ``(plan, copies)`` (copies is None when none)."""
+    cf, cg = plan.get("copy_fixtures") or [], plan.get("copy_groups") or []
+    if not (cf or cg) or not (_src["loaded"] and _tgt["loaded"]):
+        yield plan, None
+        return
+    orig = _tgt["root"]
+    names = [f.findtext("Name") or "" for f in (_engine(orig).findall("Fixture") if _engine(orig) is not None else [])]
+    aug = copy.deepcopy(orig)
+    copies = copy_fixtures_into(_src["root"], aug, cf, cg, plan.get("fixture_mapping") or {})
+    mapping = {**(plan.get("fixture_mapping") or {}),
+               **{s: [n] for s, n in copies["map"].items()}}
+    _tgt["root"] = aug
+    try:
+        yield {**plan, "fixture_mapping": mapping, "_copied": copies["map"],
+           "_target_names": names}, copies
+    finally:
+        _tgt["root"] = orig
+
+
+def check_plan(plan: dict) -> dict:
+    """:func:`validate` with the plan's fixture / group copies in place."""
+    with _with_copies(plan) as (p, copies):
+        v = validate(p)
+    if copies:
+        v["info"] = [f"Copied from the source: {len(copies['map'])} fixture(s), "
+                     f"{len(copies['groups'])} group(s)."] + [f"  {x}" for x in copies["log"]] + v["info"]
+    return v
+
+
+def target_preview(copy_fixtures: list[str], copy_groups: list[str] = ()):
+    """The target with the plan's copies in it (for the step 3 plan), and
+    ``{src_id: new_id}`` of the copies."""
+    with _with_copies({"copy_fixtures": copy_fixtures, "copy_groups": list(copy_groups),
+                       "fixture_mapping": {}}) as (_p, copies):
+        return copy.deepcopy(_tgt["root"]), (copies or {}).get("map", {})
+
+
 def execute(plan: dict) -> tuple[str, bytes]:
     """
     Execute the import: copy functions from source into a deep copy of the
@@ -1178,7 +1470,8 @@ def execute(plan: dict) -> tuple[str, bytes]:
     -------
     (suggested_filename, xml_bytes)
     """
-    res = _build(plan)
+    with _with_copies(plan) as (p, _c):
+        res = _build(p)
     return res["filename"], res["bytes"]
 
 
@@ -1192,15 +1485,22 @@ def port(plan: dict) -> dict:
     (``errors``/``warnings`` lists of new findings, ``ok``), ``pruned``,
     ``groups``, ``vc`` (VC port summary or None), ``validation``.
     """
-    validation = validate(plan)
-    if not validation["ok"]:
-        raise PorterBlocked("Validation failed.", {"validation": validation})
-    res = _build(plan)
+    orig_root = _tgt["root"]
+    with _with_copies(plan) as (p, copies):
+        validation = validate(p)
+        if copies:
+            validation["info"] = [f"Copied from the source: {len(copies['map'])} fixture(s), "
+                                  f"{len(copies['groups'])} group(s)."] + validation["info"]
+        if not validation["ok"]:
+            raise PorterBlocked("Validation failed.", {"validation": validation})
+        res = _build(p)
+    plan = p
     res["validation"] = validation
+    res["copied"] = copies
 
     from core.doctor import check
     defs = res.pop("_defs")
-    before = check(_tgt["root"], list(defs.values()))
+    before = check(orig_root, list(defs.values()))
     after = check(qxw_io.loads_qxw(res["bytes"]), list(defs.values()))
 
     def key(f):
@@ -1223,16 +1523,16 @@ def _build(plan: dict) -> dict:
     if not _src["loaded"] or not _tgt["loaded"]:
         raise RuntimeError("Both source and target must be loaded.")
 
-    closure         = plan["closure"]
-    fixture_mapping = plan["fixture_mapping"]
+    closure         = plan.get("closure") or {}
+    fixture_mapping = plan.get("fixture_mapping") or {}
     fanout_mode     = plan.get("fanout_mode", "pattern_repeat")
     mirror_fixtures = set(plan.get("mirror_fixtures", []))
     pan_channel_map = plan.get("pan_channel_map", {})
     name_prefix     = plan.get("name_prefix", "")
     import_path     = plan.get("import_path", "")  # QLC+ Path for grouping
 
-    func_ids = closure["function_ids"]
-    fix_ids  = closure["fixture_ids"]
+    func_ids = closure.get("function_ids", [])
+    fix_ids  = closure.get("fixture_ids", [])
 
     src_root   = _src["root"]
     src_engine = _engine(src_root)
@@ -1246,7 +1546,7 @@ def _build(plan: dict) -> dict:
 
     # ── 1. Who feeds which target ─────────────────────────────────────────
     order = stage_order(src_root, fix_ids)
-    blocks = compute_blocks(order, fixture_mapping, fanout_mode)
+    blocks = plan_blocks(order, fixture_mapping, fanout_mode, plan.get("_copied"))
     translate = (_translators(_fixture_infos(src_root), _fixture_infos(_tgt["root"]),
                              blocks, defs)
                  if plan.get("translate_types", True) else {})
@@ -1374,6 +1674,7 @@ def _build(plan: dict) -> dict:
         "translated": translated,
         "input_patch": input_patch,
         "copied_bindings": (copied_bindings or {}).get("log", []),
+        "root": tgt_root,
         "_defs": defs,
     }
 
@@ -1749,6 +2050,11 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
     lines.append(f"Source fixtures referenced: {len(fix_ids)}")
     lines.append(f"Fan-out mode: {plan.get('fanout_mode', 'pattern_repeat')}")
     lines.append("")
+    copies = (result or {}).get("copied")
+    if copies and copies.get("log"):
+        lines.append("── COPIED FROM THE SOURCE (fixtures / groups) ──")
+        lines += [f"  {x}" for x in copies["log"]]
+        lines.append("")
 
     if validation.get("errors"):
         lines.append("── ERRORS (blocking) ──")

@@ -15,7 +15,9 @@ let _docOpen = new Set();     // expanded codes
 const _DOC_SHOW = 150;        // rows shown per code (the rest follow the group tick)
 
 function doctorInit() {
-  if (!_docData) _docRenderEmpty();
+  if (_docData) return;
+  // a show is open: check it straight away (the list follows the show in progress)
+  if (typeof _show !== 'undefined' && _show.active) doctorCheck(); else _docRenderEmpty();
 }
 
 function _docStatus(msg, level) {
@@ -109,8 +111,10 @@ function _docSyncButton() {
   const b = document.getElementById('doc-fix-btn');
   if (b) {
     b.disabled = _docSel.size === 0;
-    b.textContent = _docSel.size ? `💾 Fix ${_docSel.size} selected → new file…` : '💾 Fix selected → new file…';
+    b.textContent = _docSel.size ? `✓ Fix ${_docSel.size} selected in the show` : '✓ Fix selected in the show';
   }
+  const x = document.getElementById('doc-export-btn');
+  if (x) x.disabled = _docSel.size === 0;
 }
 
 function doctorToggle(code) {
@@ -171,7 +175,7 @@ async function doctorFix() {
       <p>${res.actions} fix(es) applied${res.skipped ? `, ${res.skipped} not fixed (see the report)` : ''}.
          Before: ${res.before.error} error(s), ${res.before.warning} warning(s) →
          after: <b>${res.after.error} error(s), ${res.after.warning} warning(s)</b>.</p>
-      <p>The open workspace is unchanged — open the new file (📂 Open…) to continue from it.</p>`;
+      <p>This is a separate copy: the show in progress is unchanged (use ✓ Fix selected in the show to change it).</p>`;
     _docStatus(`Saved ${full || saved}. ${reportMsg}`, 'ok');
   } catch (e) {
     _docStatus('Error: ' + e.message, 'error');

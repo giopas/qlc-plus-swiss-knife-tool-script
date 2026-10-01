@@ -260,6 +260,21 @@ def show_bytes() -> bytes:
     return qxw_io.qxw_bytes(root)
 
 
+def _changes(step: dict, nxt: Optional[dict]) -> list:
+    """What an in-place step changed: its snapshot against the next step's
+    (or the show now)."""
+    from core import show_diff
+    try:
+        if not step.get('before'):
+            return []
+        after = nxt.get('before') if nxt else _snapshot()
+        if not after:
+            return []
+        return show_diff.summarise(qxw_io.loads_qxw(step['before']), qxw_io.loads_qxw(after))
+    except Exception:  # noqa: BLE001 — the report is best-effort here
+        return []
+
+
 def report_path(qxw_path: str) -> str:
     return os.path.splitext(qxw_path)[0] + '_report.txt'
 
@@ -274,13 +289,15 @@ def report(out_name: str = '') -> str:
     steps = _show.get('steps', [])
     if not steps:
         lines.append('No changes.')
-    for s in steps:
+    for i, s in enumerate(steps):
         head = f'Step {s["n"]} — {TOOL_TITLES.get(s["tool"], s["tool"])}: {s["title"]}'
         if s.get('edits', 1) > 1:
             head += f' ({s["edits"]} edits)'
         lines += [head, '-' * min(len(head), 78)]
         if s.get('detail'):
             lines.append(s['detail'])
+        if not s.get('report'):
+            lines += _changes(s, steps[i + 1] if i + 1 < len(steps) else None)
         if s.get('doctor'):
             d = s['doctor']
             lines.append(f'Doctor after this step: {d.get("error", 0)} errors, '

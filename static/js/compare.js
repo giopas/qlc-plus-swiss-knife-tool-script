@@ -47,22 +47,26 @@ function _cmpRender() {
   const tot = document.getElementById('cmp-total');
   if (tot) tot.innerHTML = R.identical ? '<span class="cmp-ok">✓ functionally the same</span>' :
     `<span class="doc-chip">${t.same} same</span><span class="doc-chip cmp-d">${t.different} different</span>
-     <span class="doc-chip cmp-a">${t.only_a} only here</span><span class="doc-chip cmp-b">${t.only_b} only in the other</span>`;
+     <span class="doc-chip cmp-a">${t.only_a} only here</span><span class="doc-chip cmp-b">${t.only_b} only in the other</span>
+     ${(t.unused_a || t.unused_b) ? `<span class="doc-chip cmp-u" title="Functions nothing plays (no button, not in another function) — not counted">${(t.unused_a || 0) + (t.unused_b || 0)} unused, not counted</span>` : ''}`;
   const li = (arr, cls, mark) => arr.map(x => `<li class="${cls}"><span class="cmp-m">${mark}</span>${_esc(x)}</li>`).join('');
   el.innerHTML = `<div class="cmp-head"><b>This show:</b> ${_esc(_cmpRes.a)} &nbsp;·&nbsp; <b>Other:</b> ${_esc(_cmpRes.b)}</div>` +
     _cmpRes.sections.map(([k, label]) => {
       const s = R[k], n = s.different.length + s.only_a.length + s.only_b.length;
+      const ua = s.unused_a || [], ub = s.unused_b || [];
+      const unused = (arr, where) => arr.length ? `<li class="cmp-u"><span class="cmp-m">·</span>${arr.length} unused, only in ${where}: ${_esc(arr.slice(0, 12).join(', '))}${arr.length > 12 ? ' …' : ''}</li>` : '';
       return `<details class="cmp-sec" ${n && n <= 40 ? 'open' : ''}>
         <summary><b>${_esc(label)}</b>
           <span class="doc-chip">${s.same} same</span>
           ${s.different.length ? `<span class="doc-chip cmp-d">${s.different.length} different</span>` : ''}
           ${s.only_a.length ? `<span class="doc-chip cmp-a">${s.only_a.length} only here</span>` : ''}
           ${s.only_b.length ? `<span class="doc-chip cmp-b">${s.only_b.length} only in the other</span>` : ''}
+          ${(ua.length + ub.length) ? `<span class="doc-chip cmp-u">${ua.length + ub.length} unused</span>` : ''}
           ${!n ? '<span class="cmp-ok">✓</span>' : ''}</summary>
-        <ul class="cmp-list">${li(s.different, 'cmp-d', '≠')}${li(s.only_a, 'cmp-a', '+')}${li(s.only_b, 'cmp-b', '−')}</ul>
+        <ul class="cmp-list">${li(s.different, 'cmp-d', '≠')}${li(s.only_a, 'cmp-a', '+')}${li(s.only_b, 'cmp-b', '−')}${unused(ua, 'this show')}${unused(ub, 'the other file')}</ul>
       </details>`;
     }).join('') +
-    `<div class="vce-hint">≠ different · + only in this show · − only in the other file. Looks are compared by what they light (level and colour) when the fixture definitions are found, else channel by channel.</div>`;
+    `<div class="vce-hint">≠ different · + only in this show · − only in the other file · unused = functions nothing plays (no button, not in another function), listed but not counted. Looks are compared by what they light (level and colour) when the fixture definitions are found, else channel by channel.</div>`;
 }
 
 async function compareCopy() {

@@ -3870,4 +3870,5 @@ body.nav-min .side-changes { display: none; }
 .cmp-d .cmp-m, .doc-chip.cmp-d { color: var(--orange); }
 .cmp-a .cmp-m, .doc-chip.cmp-a { color: var(--green); }
 .cmp-b .cmp-m, .doc-chip.cmp-b { color: var(--red); }
+.cmp-u { color: var(--text-dim, #888); } .doc-chip.cmp-u { color: var(--text-dim, #888); opacity: .85; }
 .cmp-ok { color: var(--green); font-weight: 600; }

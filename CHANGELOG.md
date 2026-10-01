@@ -25,6 +25,13 @@ Phase 2.8 — the Pub test, first part: the two tools it needs.
   - VC pages by their buttons and what they run;
   - setlist cue lists by their songs.
   - Per section: same / different (≠) / only here (+) / only in the other (−). *Copy report*, *Save report…*. `core/compare.py`, `/api/compare/run`. Tests `tests/test_compare.py` (5).
+- **The show report says what each in-place step changed** (Stage groups, stage edits, VC Editor, Setlist, Trigger Manager): fixtures, moved on the stage, groups, functions, VC pages and widgets — added / removed / renamed / changed. `core/show_diff.py`. Tests `tests/test_show_diff.py`.
+
+### Changed — after the first timed Pub-test run (12 minutes)
+- **Compare** pairs setlist cue lists by caption, then **by their songs**, then the only one left on each side (*Setlist: Band A* ↔ *Pub Setlist*).
+- **Compare** lists functions **nothing plays** (no button, not in another function — the Doctor's D016) as *unused* per section, and does not count them in the result.
+- **Compare** pairs a look that is a Scene in one show and a Collection in the other.
+- **Fixture groups**: names are trimmed of spaces, quotes and a trailing `:` `;` `,` `.`.
 
 
 ## [1.10.0] — 2026-10-01

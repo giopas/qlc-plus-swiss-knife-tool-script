@@ -134,3 +134,10 @@ def test_saved_file_has_the_group(c, tmp_path):
     _ok(c.post("/api/show/save", json={"path": str(out)}))
     r = qxw_io.strip_ns(qxw_io.loads_qxw(out.read_bytes()))
     assert "Front Four" in {g["name"] for g in fg.groups(r)}
+
+
+def test_names_lose_stray_punctuation(root):
+    """'Front Band:' in the pub-test run was a copy-paste of a list label."""
+    assert fg.create(root, "  Singer  Duo: ", ["11", "12"])["name"] == "Singer Duo"
+    with pytest.raises(fg.GroupError):
+        fg.create(root, ":", ["11"])

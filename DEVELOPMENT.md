@@ -185,6 +185,24 @@ Each tab follows the same three-step pattern:
 
 ---
 
+## Security
+
+The app binds **only to `127.0.0.1`** (localhost) and is not accessible from other machines on your network. Additional hardening:
+
+- All state-changing API requests are validated against a localhost Origin header (CSRF protection).
+- File uploads are restricted to `.qxw` extension for workspaces and `.qxf` for fixture definitions; filenames are sanitised with `werkzeug.utils.secure_filename` before saving. XML payloads are size-capped before parsing.
+- `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, and `Referrer-Policy` headers are set on every response.
+- Exception messages sent to the browser have filesystem paths stripped.
+- The `Content-Disposition` filename value is sanitised (non-alphanumeric characters stripped) and properly quoted.
+
+### Network access
+
+The app is fully local **except** for the "Browse QLC+ Library" button in the Quick Start and Brightness tools (and the ID Browser's Grid.js table library, loaded from a CDN — offline it falls back to plain tables), which fetches fixture data from `api.github.com` and `raw.githubusercontent.com` (the official QLC+ repository). No authentication tokens are sent and no user data leaves the machine. All other features work entirely offline.
+
+---
+
+---
+
 ## API conventions
 
 All endpoints return JSON.  Error responses always include an `error` key:

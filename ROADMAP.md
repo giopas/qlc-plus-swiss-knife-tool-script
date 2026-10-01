@@ -10,7 +10,7 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 
 ## Principles
 
-- **Never overwrite.** Every tool writes a new file (`<name>_v<N+1>.qxw`, or `<name>_doctor.qxw` for Doctor fixes).
+- **Never overwrite.** Every tool changes the *show in progress*; one save writes a new file (`<name>_v<N+1>.qxw`) with a report.
 - **One writer.** All `.qxw` output goes through `core/qxw_io` — XML declaration and `<!DOCTYPE Workspace>` always present.
 - **Deterministic.** Same input, byte-identical output; golden-file tests.
 - **Doctor gates every export.** Errors block, warnings are reported.
@@ -29,9 +29,11 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **1.6.0** ✅ | Look & Chaser Builder | Fixture group × palette looks; pattern chasers (alternate, chase, ping-pong, build-up, seeded random) with BPM timing; song presets |
 | **1.7.0** ✅ | VC Builder | Create/wire widgets, pages, grid snap, screen profiles, page templates, one-click setlist CueList wiring |
 | **1.8.0** ✅ | Stage & meshes | OBJ meshes placed by what you see (centre, height above the floor), on the floor in one click; plan/front views with fixtures; mesh library |
-| **1.9.0** | UI audit | Start screen that explains the app, sidebar by job, one screen pattern (inspector tabs, primary action in the footer), one save verb |
-| **2.0.0** | Benchmark | The "Pub test": rebuild a 6-fixture pub show from a 14-fixture festival show using only Swiss Knife, Doctor-clean |
+| **1.9.0** ✅ | One show, every tool | The show in progress with History; Function Porter with the Merger folded in; Show Paperwork; guided routes; one screen pattern |
+| **1.10.0** | Grow a rig | Wire copied or added fixtures into the existing scenes, groups, matrices and EFX ("plays like"), or build new looks for them; Rig Editor with a fixture group editor |
+| **2.0.0** | Benchmark | The "Pub test": rebuild a 6-fixture pub show from a 14-fixture festival show using only Swiss Knife, Doctor-clean; Compare tool; tutorial |
+| **2.1.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
 
 ## After 2.0
 
-Show Profiles (one JSON per show), a command-line build pipeline, an MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, functional workspace diff, packaged builds for macOS/Windows, localisation (EN/IT/FR), and upstream bug reports to QLC+.
+Show Profiles (one JSON per show), a command-line build pipeline, an MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.

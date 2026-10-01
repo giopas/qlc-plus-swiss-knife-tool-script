@@ -547,6 +547,20 @@ Checks (★ = included in Phase 1.0):
 - First run through the API (Festival_14fix → Rig Reducer keeping the 6 pub PARs renamed DR/FLB/FRB/LG/FRS/FLS → Doctor default fixes (429) → the 4 pub groups) then **Compare with Pub_6fix**: fixtures and patch **6/6 the same**; groups: the pub's 5 all present and equal (5 festival-only groups left, e.g. *Floor*, *Side_Wings* — delete or keep); scenes: the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and renamed / replaced many functions — that is the Look Builder / VC part of the route, still to do by hand with the tools.
 - Next: giopas runs the whole route in the app, timed, with Compare at the end; what gets in the way is fixed; then the tutorial, README / screenshots, the forum post, **v2.0.0**.
 
+*Status (2 Oct, evening) — giopas's timed run in the app:*
+- **12 minutes** for the whole route (Compare not counted) → the time criterion passes (< 30 min).
+- Steps in his show report: Rig Reducer (6 kept, 6 re-patched) → Doctor (429 fixes) → Stage groups (4 edits) → Look Builder (6 looks, 1 chaser, 7 buttons on a page *Looks*) → VC Editor (4 edits) → stage edits → setlist into the CueList. **Doctor at the end: 0 errors**, 52 warnings.
+- In the saved file: patch 6/6 as the pub; the pub groups are there; the CueList *Setlist: Band A* on *1. SETLIST* plays exactly the pub's 34 songs; pages *1. SETLIST*, *2. EFFECTS*, *Band C*, *Looks*.
+- Left as it was (his choice, not a tool problem): page *Band C* and its cue list not deleted; a group typed *Front Band:* (with the colon); the pub's *All 6* group not made (not in the steps given).
+- What got in the way — fixed the same evening:
+  - **Compare did not pair the setlist** (*Setlist: Band A* vs *Pub Setlist*, two cue lists in his show) → cue lists are now paired by caption, then by their songs (most in common, at least half), then the only one left on each side. His file now shows *Setlist: 1 same*.
+  - **Compare noise**: the festival's unused functions (*[1000] Collection - Unassigned* …) filled "only here" → functions nothing plays (Doctor D016) are listed per section as *unused* and **not counted**; a look that is a Scene in one show and a Collection in the other is now paired (*a Scene here, a Collection in the other*).
+  - **The show report said nothing for in-place steps** (groups, VC Editor, stage, setlist, triggers) → each such step now lists what it changed: fixtures, moved on the stage, groups, functions, VC pages and widgets — added / removed / renamed / changed (`core/show_diff.py`, snapshot against the next step).
+  - **Group names**: spaces, quotes and a trailing `:` `;` `,` `.` are trimmed.
+  - 593 tests.
+- Compare after the fixes (his file vs Pub_6fix): fixtures 6 same; groups 8 same + the festival's own; setlist 1 same; looks mostly *different* by design — the hand-made pub changed the two singer PARs (FRS/FLS) in most looks and is built from different functions (*AC:*, *PUB:*, *CP:* looks). Matching those is not the goal of a 12-minute route; the criterion becomes "patch, groups, setlist and a working Looks / Effects page", with the look differences listed in the report.
+- Next: QLC+ open-check of his file (setlist, PANIC RESET, a few looks), then the tutorial, README / GIF, the forum post, **v2.0.0**.
+
 *The test* (§1): rebuild the real pub show from the real festival show **using only Swiss Knife**, and prove the result is as good as the hand-made one. Corpus: `Festival_14fix.qxw` (source: 6 ceiling Eurolite LED 4C-12 spots + 8 Generic 7-ch PARs, 286 functions, 13 groups, 4 VC pages: MASTER SHOW + 3 band setlist pages, 11 meshes) → reference `Pub_6fix.qxw` (6 PARs — the festival's PARs 6, 7, 8, 9, 11, 12 renamed **DR, FLB, FRB, LG, FRS, FLS** — 207 functions, 10 groups incl. *Singer Pair*, *Band Pair*, *Front Band*, *Logo*, 2 pages: **1. SETLIST** with the CueList wired to the setlist chaser, **2. EFFECTS** with 6 frames).
 
 *The route* (each step a Swiss Knife tool, each output a new file checked by the Doctor):
@@ -561,16 +575,16 @@ Checks (★ = included in Phase 1.0):
 9. **Doctor** — final check.
 
 *Pass criteria* (to be measured, not eyeballed):
-- [ ] Doctor on the result: **0 errors**, and no warning the reference doesn't have.
+- [x] Doctor on the result: **0 errors**, and no warning the reference doesn't have. *(0 errors, 52 warnings — mostly the festival's unused functions, which the Doctor can remove)*
 - [ ] **Compare with `Pub_6fix.qxw`** — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
 - [ ] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks.
-- [ ] **Time**: under 30 minutes for someone who knows the show.
+- [x] **Time**: under 30 minutes for someone who knows the show. *(12 min, giopas, 2 Oct)*
 - [ ] ~~**Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file~~ — moved after v2.0 (giopas, 2 Oct): first item of §7 with the *Show Profile / CLI pipeline*.
 
 *Tasks*:
 - [x] `core/compare.py` + **Compare** tab (two workspaces, functional diff, report). *(2 Oct)*
 - [x] Fixture group editor (step 3 gap; moved back from 2.7) — Stage & Meshes › Groups. *(2 Oct)*
-- [ ] Run the route on the corpus, fix what gets in the way (each fix: test + commit).
+- [x] Run the route on the corpus, fix what gets in the way (each fix: test + commit). *(2 Oct: giopas, 12 min; Compare setlist pairing, unused functions, show-report detail for in-place steps, group-name trim.)*
 - [ ] Tutorial on the wiki: *"From a big-venue show to a pub show in 30 minutes"*, with screenshots or a GIF.
 - [ ] README and screenshots: retake the screens that changed since 1.9; a short GIF of the route for the top of the README.
 - [ ] **The forum post** (giopas, 1 Oct — the last one was in March, with a short follow-up in August): one complete presentation for the QLC+ forum, in BBCode:

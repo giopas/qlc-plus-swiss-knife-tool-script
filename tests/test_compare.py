@@ -92,3 +92,42 @@ def test_route(tmp_path):
     assert not d["result"]["identical"] and "RESULT" in d["report"]
     assert c.post("/api/compare/run", json={"path": "nope.txt"}).status_code == 400
     assert c.get("/api/compare/report").get_json()["b"] == "Festival_14fix.qxw"
+
+
+def _cuelist_caption(root, old, new):
+    for cl in root.iter("CueList"):
+        if cl.get("Caption") == old:
+            cl.set("Caption", new)
+
+
+def test_setlist_pairs_cue_lists_by_their_songs(defs):
+    """Pub-test run: 'Setlist: Band A' vs 'Pub Setlist', with a second cue
+    list in this show — paired by the songs, not left as only-here."""
+    a, b = _load("Pub_6fix.qxw"), _load("Pub_6fix.qxw")
+    cap = next(cl.get("Caption") for cl in a.iter("CueList"))
+    _cuelist_caption(a, cap, "Setlist: Band A")
+    vc = a.find("VirtualConsole")
+    extra = copy.deepcopy(next(a.iter("CueList")))
+    extra.set("Caption", "Setlist: Band C")
+    extra.find("Chaser").text = "999999"
+    next(f for f in vc.iter("Frame")).append(extra)
+    s = cmp.compare(a, b, defs)["setlist"]
+    assert s["same"] == 1 and s["only_a"] == ["Setlist: Band C"] and not s["only_b"]
+
+
+def test_unused_functions_are_listed_not_counted(defs):
+    a, b = _load("Pub_6fix.qxw"), _load("Pub_6fix.qxw")
+    import xml.etree.ElementTree as ET
+    ET.SubElement(a.find("Engine"), "Function", {"ID": "88888", "Type": "Scene", "Name": "Nobody Plays Me"})
+    r = cmp.compare(a, b, defs)
+    assert r["identical"] and r["scenes"]["unused_a"] == ["Nobody Plays Me"]
+    assert r["total"]["unused_a"] == 1 and "1 unused, only in this show" in cmp.report(r)
+
+
+def test_a_look_can_be_scene_here_and_collection_there(defs):
+    a, b = _load("Pub_6fix.qxw"), _load("Pub_6fix.qxw")
+    col = next(f for f in b.find("Engine").findall("Function") if f.get("Type") == "Collection")
+    twin = next(f for f in a.find("Engine").findall("Function") if f.get("ID") == col.get("ID"))
+    twin.set("Type", "Scene")
+    r = cmp.compare(a, b, defs)
+    assert any("a Scene here, a Collection in the other" in x for x in r["scenes"]["different"])

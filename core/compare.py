@@ -96,7 +96,19 @@ def match_fixtures(a, b) -> dict[str, str]:
 
 
 def _sec():
-    return {"same": 0, "different": [], "only_a": [], "only_b": []}
+    return {"same": 0, "different": [], "only_a": [], "only_b": [], "unused_a": [], "unused_b": []}
+
+
+def _unused(root) -> set:
+    """IDs of functions nothing uses: no button, slider or cue list, and not
+    a step or member of another function (the Doctor's D016)."""
+    from core.doctor.checks import _Workspace
+    try:
+        ws = _Workspace(root, {})
+        return {f.get("ID") for f in ws.function_els
+                if not ws.parents.get(f.get("ID")) and not ws.vc_refs.get(f.get("ID"))}
+    except Exception:  # noqa: BLE001
+        return set()
 
 
 def _cmp_fixtures(a, b, fmap) -> dict:
@@ -177,6 +189,15 @@ def match_functions(a, b) -> dict[str, str]:
     out = {}
     for f in _functions(a):
         k = (f.get("Type"), _norm(f.get("Name", "")))
+        if pool.get(k):
+            out[f.get("ID")] = pool[k].pop(0)
+    # a look can be a Scene in one show and a Collection in the other
+    look = ("Scene", "Collection")
+    for f in _functions(a):
+        if f.get("ID") in out or f.get("Type") not in look:
+            continue
+        other = look[1 - look.index(f.get("Type"))]
+        k = (other, _norm(f.get("Name", "")))
         if pool.get(k):
             out[f.get("ID")] = pool[k].pop(0)
     return out
@@ -263,6 +284,7 @@ def _cmp_functions(a, b, defs) -> tuple[dict, dict]:
     gb = {g.get("ID"): (g.findtext("Name") or "") for g in (_eng(b).findall("FixtureGroup") if _eng(b) is not None else [])}
     ga = {g.get("ID"): (g.findtext("Name") or "") for g in (_eng(a).findall("FixtureGroup") if _eng(a) is not None else [])}
     secs = {k: _sec() for k in ("scenes", "chasers", "collections", "efx", "matrices", "other")}
+    ua, ub = _unused(a), _unused(b)
     kind = {"Scene": "scenes", "Chaser": "chasers", "Sequence": "chasers", "Collection": "collections",
             "EFX": "efx", "RGBMatrix": "matrices"}
     for f in _functions(a):
@@ -270,11 +292,14 @@ def _cmp_functions(a, b, defs) -> tuple[dict, dict]:
         label = f"{f.get('Name', '')}"
         j = fnmap.get(f.get("ID"))
         if j is None:
-            sec["only_a"].append(label)
+            sec["unused_a" if f.get("ID") in ua else "only_a"].append(label)
             continue
         g = fb[j]
         t = f.get("Type")
         diff = []
+        if g.get("Type") != t:
+            sec["different"].append(f"{label}: a {t} here, a {g.get('Type')} in the other")
+            continue
         if t in ("Scene", "Sequence"):
             diff = _cmp_scene(f, g, fmap, la, lb, names)
         if t in ("Chaser", "Sequence"):
@@ -313,7 +338,8 @@ def _cmp_functions(a, b, defs) -> tuple[dict, dict]:
             sec["same"] += 1
     for g in _functions(b):
         if g.get("ID") not in rev:
-            secs[kind.get(g.get("Type"), "other")]["only_b"].append(g.get("Name", ""))
+            secs[kind.get(g.get("Type"), "other")]["unused_b" if g.get("ID") in ub else "only_b"].append(
+                g.get("Name", ""))
     return secs, {"fixtures": fmap, "functions": fnmap}
 
 
@@ -383,29 +409,51 @@ def _cuelists(root) -> dict[str, list[str]]:
     return out
 
 
+def _overlap(x, y) -> float:
+    if not x or not y:
+        return 0.0
+    sx, sy = set(x), set(y)
+    return len(sx & sy) / len(sx | sy)
+
+
 def _cmp_setlist(a, b) -> dict:
+    """Pair the cue lists by caption; the rest by their songs (the most
+    songs in common, at least half), or the only one left on each side."""
     s = _sec()
     ca, cb = _cuelists(a), _cuelists(b)
     kb = {k.lower(): k for k in cb}
-    seen = set()
-    for cap, steps in ca.items():
+    pairs, left_a = {}, []
+    for cap in ca:
         k = kb.get(cap.lower())
-        if k is None and len(ca) == 1 and len(cb) == 1:
-            k = next(iter(cb))
+        if k is not None and k not in pairs.values():
+            pairs[cap] = k
+        else:
+            left_a.append(cap)
+    left_b = [k for k in cb if k not in pairs.values()]
+    cands = sorted(((_overlap(ca[x], cb[y]), x, y) for x in left_a for y in left_b), reverse=True)
+    for sc, x, y in cands:
+        if sc >= 0.5 and x in left_a and y in left_b:
+            pairs[x] = y
+            left_a.remove(x)
+            left_b.remove(y)
+    if len(left_a) == 1 and len(left_b) == 1:
+        pairs[left_a.pop()] = left_b.pop()
+    for cap, steps in ca.items():
+        k = pairs.get(cap)
         if k is None:
             s["only_a"].append(cap)
             continue
-        seen.add(k)
+        name = cap if k.lower() == cap.lower() else f"{cap}' ↔ '{k}"
         if steps is None:
-            s["different"].append(f"'{cap}': no chaser wired")
+            s["different"].append(f"'{name}': no chaser wired")
         elif cb[k] is None:
-            s["different"].append(f"'{cap}': the other has no chaser wired")
+            s["different"].append(f"'{name}': the other has no chaser wired")
         elif steps == cb[k]:
             s["same"] += 1
         else:
-            s["different"].append(f"'{cap}': {len(steps)} vs {len(cb[k])} songs"
+            s["different"].append(f"'{name}': {len(steps)} vs {len(cb[k])} songs"
                                   + ("" if len(steps) != len(cb[k]) else ", other order or songs"))
-    s["only_b"] = [k for k in cb if k not in seen]
+    s["only_b"] = list(left_b)
     return s
 
 
@@ -418,12 +466,12 @@ def compare(a: ET.Element, b: ET.Element, defs: dict | None = None) -> dict:
     funcs, maps = _cmp_functions(a, b, defs)
     res = {"fixtures": _cmp_fixtures(a, b, fmap), "groups": _cmp_groups(a, b, fmap),
            **funcs, "vc": _cmp_vc(a, b), "setlist": _cmp_setlist(a, b)}
-    tot = {"same": 0, "different": 0, "only_a": 0, "only_b": 0}
+    tot = {"same": 0, "different": 0, "only_a": 0, "only_b": 0, "unused_a": 0, "unused_b": 0}
     for k, _l in SECTIONS:
         s = res[k]
         tot["same"] += s["same"]
-        for x in ("different", "only_a", "only_b"):
-            tot[x] += len(s[x])
+        for x in ("different", "only_a", "only_b", "unused_a", "unused_b"):
+            tot[x] += len(s.get(x, []))
     res["total"] = tot
     res["identical"] = not (tot["different"] or tot["only_a"] or tot["only_b"])
     return res
@@ -447,7 +495,15 @@ def report(res: dict, a_name: str = "this show", b_name: str = "the other file")
             lines.append(f"  + {x}   (only in this show)")
         for x in s["only_b"]:
             lines.append(f"  − {x}   (only in the other file)")
+        for key, where in (("unused_a", "this show"), ("unused_b", "the other file")):
+            if s.get(key):
+                lines.append(f"  · {len(s[key])} unused, only in {where}: " + ", ".join(s[key][:12])
+                             + (" …" if len(s[key]) > 12 else ""))
         lines.append("")
+    if t.get("unused_a") or t.get("unused_b"):
+        lines.append(f"Not counted above: {t.get('unused_a', 0)} unused function(s) only in this show and "
+                     f"{t.get('unused_b', 0)} only in the other file — nothing plays them (no button, not in "
+                     "another function); the Doctor can remove them.")
     lines.append(f"Looks are compared by what they light (level and colour, ±{int(TOL * 100)} %) when the "
                  "fixture definitions are known, else channel by channel.")
     return "\n".join(lines) + "\n"

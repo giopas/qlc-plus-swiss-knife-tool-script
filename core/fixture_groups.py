@@ -19,6 +19,8 @@ un-namespaced root.
 """
 from __future__ import annotations
 
+import re
+
 import xml.etree.ElementTree as ET
 
 
@@ -98,7 +100,7 @@ def _fill(g: ET.Element, fixtures: dict, ids: list[str]) -> None:
 
 
 def _check(eng, name: str, ids, gid=None) -> tuple[str, list[str], dict]:
-    name = (name or "").strip()
+    name = re.sub(r"\s+", " ", (name or "").strip().strip('"\'').rstrip(":;,.").strip())
     if not name:
         raise GroupError("Give the group a name.")
     if any((g.findtext("Name") or "").strip().lower() == name.lower() and g.get("ID") != str(gid)

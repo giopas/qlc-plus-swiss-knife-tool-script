@@ -142,4 +142,34 @@ function routeRender() {
     `<button class="rs-close" onclick="routeClose()" title="Close the route (the show is not affected)">✕</button>`;
 }
 
-document.addEventListener('DOMContentLoaded', () => { _routeLoad(); routeRender(); });
+/** Start screen: each route card lists its steps (from ROUTES, so they never
+ *  drift apart); the profile card lists the saved profiles. */
+function routeCards() {
+  document.querySelectorAll('.rt-steps[data-route]').forEach(ol => {
+    const r = ROUTES[ol.dataset.route];
+    if (r) ol.innerHTML = r.steps.map((s, i) => `<li title="${s.hint.replace(/"/g, '&quot;')}">${i + 1}. ${s.label}</li>`).join('');
+  });
+  document.querySelectorAll('[data-route-meta]').forEach(el => {
+    const r = ROUTES[el.dataset.routeMeta];
+    if (r) el.textContent = `${r.steps.length} steps` + (el.dataset.routeMeta === 'adapt' ? ' · the Pub test took 12 minutes' : '');
+  });
+  fetch('/api/profile/list').then(r => r.json()).then(d => {
+    const ps = d.profiles || [];
+    const n = document.getElementById('rt-prof-n');
+    if (n) n.textContent = ps.length ? `${ps.length} saved profile${ps.length > 1 ? 's' : ''}` : 'no profiles yet';
+    const ol = document.getElementById('rt-prof-list');
+    if (ol) ol.innerHTML = ps.length
+      ? ps.slice(0, 4).map(p => `<li title="${(p.description || '').replace(/"/g, '&quot;')}">${p.name.replace(/</g, '&lt;')} — ${p.steps} step${p.steps === 1 ? '' : 's'}</li>`).join('')
+      : '<li>History › ★ Save as a profile… after changing a show</li>';
+  }).catch(() => {});
+}
+
+/** Start card "Do it again with a profile": the History's Do it again box. */
+async function startProfiles() {
+  if (typeof _show === 'undefined' || !_show.active) { setStatus('Open the show to apply the profile to first (📂 Open…).', 'warn'); return; }
+  await showHistoryToggle(true);
+  const d = document.getElementById('sh-again');
+  if (d) { d.open = true; d.scrollIntoView({ block: 'nearest' }); }
+}
+
+document.addEventListener('DOMContentLoaded', () => { _routeLoad(); routeRender(); routeCards(); });

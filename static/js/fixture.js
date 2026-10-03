@@ -496,6 +496,19 @@ function _drawTopView(W, H) {
  *   opts:  selectedIdx, title, label(f) → text under the dot,
  *          ring(f) → colour of an outline ring (e.g. the Porter mapping)
  */
+function _labelPlate() {
+  const t = document.documentElement.getAttribute('data-theme');
+  return t === 'light' ? 'rgba(255, 255, 255, .78)' : 'rgba(0, 0, 0, .58)';
+}
+
+function _roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+
 function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
   const _stage = stage, _rig = rig, _selectedIdx = opts.selectedIdx ?? -1;
   const drawW = W - _MARGIN_L - _MARGIN_R;
@@ -549,6 +562,7 @@ function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
   const colLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   ctx.strokeStyle = cSurface1;
   ctx.lineWidth = 0.8;
+  ctx.globalAlpha = 0.45;            // v2.2: quiet grid, the fixtures come first
   for (let c = 0; c <= _stage.cols; c++) {
     const x = ox + c * cellW;
     ctx.beginPath(); ctx.moveTo(x, oy); ctx.lineTo(x, oy + drawH); ctx.stroke();
@@ -568,6 +582,7 @@ function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
     }
   }
 
+  ctx.globalAlpha = 1;
   // Stage border
   ctx.strokeStyle = cSurface2;
   ctx.lineWidth = 1.5;
@@ -595,10 +610,14 @@ function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
       ctx.beginPath(); ctx.arc(px, py, 12, 0, 2 * Math.PI);
       ctx.strokeStyle = ring; ctx.lineWidth = 3; ctx.stroke();
     }
-    ctx.fillStyle = opts.label ? cText : fg;
     ctx.font = '9px monospace';
     const lbl = opts.label ? opts.label(f) : (f.name || '').substring(0, 10);
-    ctx.fillText(lbl, px - lbl.length * 2.8, py + 14);
+    // v2.2: the label on a small plate, readable over the grid and other dots
+    const tw = ctx.measureText(lbl).width, lx = px - tw / 2, ly = py + 14;
+    ctx.fillStyle = _labelPlate();
+    _roundRect(ctx, lx - 4, ly - 9, tw + 8, 12, 3); ctx.fill();
+    ctx.fillStyle = cText;
+    ctx.fillText(lbl, lx, ly);
     if (f.grid) {
       ctx.fillStyle = cSubtext0;
       ctx.font = '8px monospace';

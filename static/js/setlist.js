@@ -173,6 +173,7 @@ function _setEditorEnabled(on) {
 function _renderSongList() {
   const list = document.getElementById('fb-song-list');
   if (!list) return;
+  _updateSongCount();
   if (!_songRows.length) {
     list.innerHTML = '<div class="slot-empty" style="padding:16px">No songs. Click ➕ to add.</div>';
     return;
@@ -369,6 +370,15 @@ function slMoveRow(dir) {
 }
 
 function _updateSongCount() {
+  if (typeof setOutcome === 'function') {
+    const n = _songRows.length, ok = _songRows.filter(r => r.qxw_id).length;
+    const dark = _songRows.filter(r => r.qxw_id && (_functions.find(f => f.id === r.qxw_id) || {}).dark).length;
+    setOutcome('setlist', !n ? 'nothing yet — pick a slot and add songs' : [
+      `${ok} cue${ok !== 1 ? 's' : ''} in the cue list`,
+      ...(n - ok ? [{ text: `${n - ok} song${n - ok > 1 ? 's' : ''} without a function — left out`, kind: 'warn' }] : []),
+      ...(dark ? [{ text: `${dark} light${dark > 1 ? '' : 's'} nothing`, kind: 'warn' }] : []),
+    ], '', n ? 'Apply will put' : 'Apply will do');
+  }
   const el = document.getElementById('song-count');
   if (el) el.textContent = _songRows.length
     ? `${_songRows.length} song${_songRows.length !== 1 ? 's' : ''}`

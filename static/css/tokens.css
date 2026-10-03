@@ -5,6 +5,9 @@
   --radius-sm: 6px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  /* v2.2 UI polish: one spacing scale, three text levels (+ small), one elevation */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px; --sp-5: 32px; --sp-6: 48px;
+  --fs-title: 20px; --fs-section: 15px; --fs-body: 13px; --fs-small: 11px;
 }
 
 /* ── Dark (default) ───────────────────────────────────────── */
@@ -32,6 +35,11 @@
   --red: #e05c6a;
   --knob: #fff;
   --canvas: #0a0e15;
+  --success: #3ecf8e; --warning: #f5b340; --error: #ef5a6a;
+  --success-soft: rgba(62, 207, 142, .12); --warning-soft: rgba(245, 179, 64, .12); --error-soft: rgba(239, 90, 106, .12);
+  --zebra: rgba(255, 255, 255, .022); --row-hover: rgba(45, 212, 191, .07);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .25), 0 4px 12px rgba(0, 0, 0, .16);
+  --shadow-2: 0 20px 60px rgba(0, 0, 0, .55);
 }
 
 /* ── Grey ─────────────────────────────────────────────────── */
@@ -59,6 +67,11 @@
   --red: #e2687a;
   --knob: #fff;
   --canvas: #1b1e24;
+  --success: #46d698; --warning: #f5b84f; --error: #ec6c7c;
+  --success-soft: rgba(70, 214, 152, .14); --warning-soft: rgba(245, 184, 79, .14); --error-soft: rgba(236, 108, 124, .14);
+  --zebra: rgba(255, 255, 255, .025); --row-hover: rgba(58, 214, 194, .08);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .2), 0 4px 12px rgba(0, 0, 0, .14);
+  --shadow-2: 0 20px 60px rgba(0, 0, 0, .5);
 }
 
 /* ── Light ────────────────────────────────────────────────── */
@@ -86,6 +99,11 @@
   --red: #cc3d4e;
   --knob: #fff;
   --canvas: #eef1f6;
+  --success: #14966a; --warning: #b86e0a; --error: #cc3d4e;
+  --success-soft: rgba(20, 150, 106, .10); --warning-soft: rgba(217, 122, 30, .12); --error-soft: rgba(204, 61, 78, .10);
+  --zebra: rgba(20, 30, 60, .028); --row-hover: rgba(13, 148, 136, .07);
+  --shadow-1: 0 1px 2px rgba(20, 30, 60, .06), 0 4px 12px rgba(20, 30, 60, .06);
+  --shadow-2: 0 20px 60px rgba(20, 30, 60, .25);
 }
 
 /* ── Backward-compat aliases for old Catppuccin variable names ── */
@@ -113,6 +131,9 @@
   --sky: var(--accent);
   --flamingo: var(--orange);
   --font-ui: var(--font);
+  --danger: var(--error);
+  --warn: var(--warning);
+  --ok: var(--success);
   --font-mono: var(--mono);
   --border-r: var(--radius-sm);
   --btn-label: var(--accent-contrast);

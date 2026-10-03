@@ -658,6 +658,34 @@ Checks (★ = included in Phase 1.0):
 - parameters other than files are hand-written (`"@param:name"` in a step, `--param name=value`);
 - an editor for a profile's steps (drop one, reorder).
 
+**3.2 UI polish — after an outside review → before the packages** *(giopas, 4 Oct: Copilot's PDF review and Gemini's CSS brief; "tell me what you think, create a mockup and implement what makes sense")*
+
+*Assessment* — Copilot scored the UX 7.8/10: strong on structure and workflow, weak on visual hierarchy and polish ("an excellent technical tool, not yet a professional product"). Most of its points are fair. Gemini's brief is a CSS recipe, partly right and partly wrong for this tool. Each point:
+
+| Suggestion | Verdict | Done |
+|---|---|---|
+| Copilot 1, 7 — a primary action zone; "what happens if I press Apply?" | **Yes.** The footer pattern already existed, but it only said *Changes the show in progress*. | An **"Apply will …"** line next to the button (Reducer, Doctor, Looks, Brightness, Setlist). The Reducer previews as you tick. |
+| Copilot 2 — a context ribbon instead of bare numbers | **Yes.** The labels were hidden below 1560 px, so most screens showed *14 · 286 · 113* with no words. | Labelled cards; the Doctor card is red, amber or green. |
+| Copilot 3 — History always visible | **Already there** (the *Changes* list under the menu), but easy to miss. | Renamed **History**, made a card, ✓ on saved steps. Not a permanent right pane: the tools need the width. |
+| Copilot 4 — guided routes first-class | **Yes.** | Route cards first on Start, with their steps, plus *Do it again with a profile*. No invented time estimates: only the Pub test's measured 12 minutes. |
+| Copilot 5 — Porter: one thing at a time | **Partly.** The steps exist; step 3 shows both stages and the mapping at once. | Labels on plates, quieter grid. **Not done:** folding the stage maps in step 3 — next. |
+| Copilot 6, Gemini 3 — tables | **Yes**, but with **less padding** than Gemini's 10 × 12 px: Trigger Manager has 200 rows. | Zebra, hover, quiet ID, bold name, UI font for names. |
+| Copilot 8 — stronger group titles in the side menu | **Yes.** | Done. |
+| Copilot 9, Gemini 1 — tokens: type scale, 8 px spacing, softer panels, semantic colours | **Yes, as tokens.** Not a rewrite of 300 font sizes at once: the dense tools (VC Editor, Stage) would break. | `--sp-*`, `--fs-*`, `--success/--warning/--error`, `--shadow-1`, in all three themes. Hard-coded yellows, greens and reds replaced. |
+| Copilot 10 — ⌘K command palette | **Yes** — cheap and liked by power users. | Done, with profiles and routes in it. |
+| Gemini 1 — a strict dark palette | **No.** The app has dark, grey and light themes, and people use light in daylight venues. | Tokens per theme instead. |
+| Gemini 2 — Start cards with the icon on the left and clamped text | **Partly.** Clamping would hide what each job is for. | Cards tightened; routes moved above them. |
+| Gemini 4 — stage grid at 0.1 opacity, label backgrounds | **Yes** for the 2D top views. | Grid at 0.45 (0.1 hides the cells you aim at); labels on plates. |
+| Gemini 5 — desaturated, rounded VC buttons; frames as soft boxes | **No.** The VC Editor must look like QLC+ will: the colours and square buttons are what you are designing. | — |
+| Copilot "Qt-native widgets" | **Not applicable**: Swiss Knife is a web UI (Flask + pywebview). | — |
+
+*Status (4 Oct)*: built on `feat/ui-polish`. Mockup `mockups/mockup_C_ui_polish.html` (Start, Rig Reducer, palette). Browser-checked at 1440 × 900 in the dark and light themes. 650 tests; `test_ui_polish_v22` checks the routes-first Start, the outcome slots, the palette and the tokens.
+
+*Next (not done)*:
+- Porter step 3 with the stage maps folded (mapping first);
+- Look Builder and Porter footers in the same "Apply will" form;
+- consolidating the remaining odd font sizes (8–13.5 px) onto the scale, tool by tool.
+
 ### Phase 3 — Install like an app → **v2.2.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct)*
 
 *Goal*: download, double-click, run — on macOS, Windows and Linux — and be told when a new version is out. As simple as StemDeck (github.com/stemdeckapp/stemdeck: a Tauri shell + bundled Python, a DMG per Mac architecture, a Windows ZIP with a self-contained `.exe`, a first-run note for unsigned apps; StemDeck itself has no auto-update). **Running from sources stays** exactly as today.
@@ -983,6 +1011,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
+00. **UI polish (3.2)** on `feat/ui-polish` (stacked on `feat/v2.1.0`) — giopas: look at it, then decide the version (with 2.1.0, or its own release before the packages).
 0. **v2.1.0 prepared** (3.1 Show Profiles + the small items) on `feat/v2.1.0` — giopas: try it (History › ↻ Do it again; `python -m core.profile build`), then release. Next: **Phase 3 packages → v2.2.0**, then the MCP server.
 1. (done) **v2.0.0 released** — the Pub test (2.8) and the recipe (2.9); forum post published (qlcplus.org/forum/viewtopic.php?p=84132); v1.1.1 release published (giopas). v2.0.1 released 3 Oct. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).

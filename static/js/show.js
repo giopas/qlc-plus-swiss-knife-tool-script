@@ -60,18 +60,18 @@ function _renderShowBar() {
   const n = _show.unsaved || 0;
   const ch = document.getElementById('sb-changes');
   if (ch) {
-    ch.textContent = n ? `${n} change${n > 1 ? 's' : ''}, not saved`
-      : (_show.saved_name ? `saved as ${_show.saved_name}` : 'no changes yet');
-    ch.className = 'sb-pill' + (n ? ' sb-unsaved' : '');
+    ch.innerHTML = n ? `<b>${n}</b><small>unsaved change${n > 1 ? 's' : ''}</small>`
+      : (_show.saved_name ? `<b>✓</b><small title="${_esc(_show.saved_name)}">saved</small>` : '<b>0</b><small>changes</small>');
+    ch.className = 'sb-pill sb-card' + (n ? ' sb-unsaved' : '');
     ch.title = n ? 'Open the History to see every change' : '';
   }
   const d = _show.doctor, dr = document.getElementById('sb-doctor');
   if (dr) {
     if (d) {
       const e = d.error || 0, w = d.warning || 0;
-      dr.innerHTML = `<span class="sb-long">Doctor: ${e} error${e === 1 ? '' : 's'} · ${w} warning${w === 1 ? '' : 's'}</span>` +
-        `<span class="sb-short">Doctor ${e} err · ${w} warn</span>`;
-      dr.className = 'sb-pill sb-doctor ' + (e ? 'sb-bad' : w ? 'sb-warn' : 'sb-good');
+      dr.innerHTML = `<b>${e} · ${w}</b><small>Doctor err · warn</small>`;
+      dr.title = `Workspace Doctor on the show as it is now: ${e} error${e === 1 ? '' : 's'}, ${w} warning${w === 1 ? '' : 's'} — click to open it`;
+      dr.className = 'sb-pill sb-card sb-doctor ' + (e ? 'sb-bad' : w ? 'sb-warn' : 'sb-good');
       dr.hidden = false;
     } else dr.hidden = true;
   }
@@ -167,16 +167,16 @@ async function _renderSideChanges() {
   try { steps = (await (await _origFetch('/api/show/history')).json()).steps || []; } catch { return; }
   const list = document.getElementById('sc-list');
   const cnt = document.getElementById('sc-count');
-  if (cnt) cnt.textContent = steps.length ? `(${steps.length})` : '';
+  if (cnt) cnt.textContent = steps.length ? `· ${steps.length}` : '';
   if (!steps.length) {
-    list.innerHTML = '<li class="sc-empty">No changes yet — each tool you apply adds a line here.</li>';
+    list.innerHTML = '<li class="sc-empty">No changes yet — each tool you apply adds a step here.</li>';
     return;
   }
   const SHOW = 5;
   const more = steps.length - SHOW;
   list.innerHTML = (more > 0 ? `<li class="sc-more" onclick="showHistoryToggle(true)">+ ${more} earlier…</li>` : '') +
     steps.slice(-SHOW).map(s => `<li class="sc-row${s.saved ? ' sc-saved' : ''}" title="${_esc(s.tool_title + ' — ' + s.title + (s.detail ? '\n' + s.detail : ''))}">
-      <span class="sc-n">${s.n}</span>
+      <span class="sc-n" title="step ${s.n}">${s.saved ? '✓' : s.n}</span>
       <span class="sc-t" onclick="go('${s.tool}')"><b>${_esc(s.tool_title)}</b> ${_esc(s.title)}</span>
       ${s.undoable ? `<button class="sc-undo" title="Undo this step${s.n < steps.length ? ' and the ones after it' : ''}" onclick="showUndoFromSide(${s.n})">↶</button>` : ''}
     </li>`).join('');

@@ -360,8 +360,10 @@ async function _brtFetchPreview() {
 function _brtSetPreview(stats) {
   const el = document.getElementById('brt-preview');
   if (!el) return;
-  if (!stats) { el.textContent = ''; el.className = 'brt-preview-count'; return; }
+  if (!stats) { el.textContent = ''; el.className = 'brt-preview-count'; setOutcome('brightness', ''); return; }
   const { fixtures_active: f, scenes: s, values: v } = stats;
+  setOutcome('brightness', v ? [`${f} fixture${f !== 1 ? 's' : ''}`, `${s} scene${s !== 1 ? 's' : ''}`, `${v} value${v !== 1 ? 's' : ''}`]
+    : 'nothing yet — move a slider', '', v ? 'Apply will change' : 'Apply will do');
   el.textContent = `${f} fixture${f!==1?'s':''}, ${s} scene${s!==1?'s':''}, ${v} value${v!==1?'s':''} will change`;
   el.className   = `brt-preview-count ${v > 0 ? 'brt-preview-active' : ''}`;
 }

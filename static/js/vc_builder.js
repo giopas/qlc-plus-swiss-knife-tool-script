@@ -192,10 +192,10 @@ function _vcbRenderPanel() {
     </details>
     <details class="vce-sub"><summary>▶ Setlist CueList — play a setlist chaser from a CueList</summary>
       <div class="vce-row">
-        <select id="vcb-chaser" class="vce-pi" style="flex:1;min-width:0">${I.chasers.map(c => opt(c.id, c.name)).join('')}</select>
+        <select id="vcb-chaser" class="vce-pi" style="flex:1;min-width:0">${opt('__new__', '＋ a new, empty setlist chaser')}${I.chasers.map(c => opt(c.id, c.name)).join('')}</select>
         <button class="vce-ab" onclick="vcbSetlist()" title="Wires the selected CueList, or adds a new CueList on this page">Wire / add CueList</button>
       </div>
-      <div class="vce-hint">A selected CueList is re-wired; otherwise a new CueList is added on this page.</div>
+      <div class="vce-hint">A selected CueList is re-wired; otherwise a new CueList is added on this page. With <i>a new, empty setlist chaser</i>, the songs come from the <a href="#" onclick="go('setlist');return false">Setlist</a> (pick the CueList's slot there).</div>
     </details>`;
 
   pages.innerHTML = `
@@ -356,5 +356,6 @@ async function vcbSetlist() {
   const s = [..._vceSel].map(id => _vceNodes[id]).filter(Boolean);
   const cl = s.length === 1 && s[0].type === 'CueList' ? s[0].id : '';
   await _vcbRun({ op: 'setlist_cuelist', chaser_id, cuelist_id: cl, page_id: _vcePage && _vcePage.id },
-    cl || null, cl ? [cl] : null, d => d.wired);
+    cl || null, cl ? [cl] : null, d => d.wired || 'CueList added');
+  if (chaser_id === '__new__') vcbLoadInfo();
 }

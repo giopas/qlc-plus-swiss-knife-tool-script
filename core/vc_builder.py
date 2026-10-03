@@ -598,10 +598,38 @@ def setlist_cuelist(root, chaser_id: str, *, cuelist_id: Optional[str] = None,
     if not pages:
         raise VcOpError("This workspace has no pages.")
     pid = page_id or pages[0].get("ID")
+    if str(chaser_id) == NEW_SETLIST:
+        chaser_id = _new_setlist_chaser(root)
     f = functions(root).get(str(chaser_id))
     if f is None or f["type"] != "Chaser":
         raise VcOpError("Pick a chaser for the CueList.")
     return create_widget(root, pid, "CueList", f["name"], func_id=str(chaser_id))
+
+
+NEW_SETLIST = "__new__"
+
+
+def _new_setlist_chaser(root) -> str:
+    """An empty chaser for a new setlist (the Setlist tool fills it): steps
+    with their own fades, held until Next."""
+    eng = _engine(root)
+    if eng is None:
+        raise VcOpError("This workspace has no Engine.")
+    ids = [_int(fid, -1) for fid in functions(root)]
+    fid = str(max(ids + [-1]) + 1)
+    names = {f["name"] for f in functions(root).values()}
+    name, n = "Setlist", 2
+    while name in names:
+        name, n = f"Setlist {n}", n + 1
+    kids = list(eng)
+    last = max((i for i, c in enumerate(kids) if _local(c.tag) == "Function"), default=len(kids) - 1)
+    fn = ET.Element(_q("Function", eng), {"ID": fid, "Type": "Chaser", "Name": name})
+    eng.insert(last + 1, fn)
+    _sub(fn, "Speed", FadeIn="0", FadeOut="0", Duration="4294967294")
+    _sub(fn, "Direction", "Forward")
+    _sub(fn, "RunOrder", "SingleShot")
+    _sub(fn, "SpeedModes", FadeIn="PerStep", FadeOut="PerStep", Duration="PerStep")
+    return fid
 
 
 OPS = {

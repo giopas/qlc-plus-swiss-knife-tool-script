@@ -90,3 +90,28 @@ def test_reference_read_back_from_the_note():
     workspace._reset()
     workspace._parse_shared_data(root)
     assert workspace._state["clone_base_map"].get("9") == "5"
+
+
+def test_quick_start_show_gets_a_setlist(tmp_path):
+    """A Quick Start show has no CueList: the VC Editor adds one with a new,
+    empty setlist chaser; the Setlist then sees its slot and fills it."""
+    shutil.copy(os.path.join(CORPUS, "QuickStart_6fix.qxw"), tmp_path / "QS.qxw")
+    for f in os.listdir(CORPUS):
+        if f.endswith(".qxf"):
+            shutil.copy(os.path.join(CORPUS, f), tmp_path / f)
+    c = app.create_app().test_client()
+    _ok(c.post("/api/load", json={"path": str(tmp_path / "QS.qxw")}))
+    assert c.get("/api/setlist/slots").get_json() == []
+    _ok(c.post("/api/vc/op", json={"op": "setlist_cuelist", "chaser_id": "__new__"}))
+    slots = c.get("/api/setlist/slots").get_json()
+    assert len(slots) == 1 and slots[0]["chaser_name"] == "Setlist"
+    fn = {f["name"]: f for f in c.get("/api/functions").get_json()}
+    looks = [n for n, f in fn.items() if f["type"] == "Scene"][:2]
+    rows = [{"txt_name": n, "qxw_id": fn[n]["id"], "qxw_name": n} for n in looks]
+    sid, cid = slots[0]["id"], slots[0]["chaser_id"]
+    _ok(c.post(f"/api/setlist/{sid}/details", json={"rows": rows}))
+    _ok(c.post("/api/setlist/apply-all", json={}))
+    steps = _steps(c, cid)
+    assert len(steps) == 2 and all(s.get("Note", "").startswith("↪ [") for s in steps)
+    d = c.get("/api/doctor/check").get_json()
+    assert d["summary"]["error"] == 0

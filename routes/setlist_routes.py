@@ -366,9 +366,13 @@ def apply_slot(slot_id):
     target = (data.get('target_chaser_id') or '').strip() or None
     try:
         from core import show
+        ws._state['setlist_skipped'] = []
         ws.generate_slot_qxw_content(slot_id, target)
+        skipped = list(ws._state.get('setlist_skipped') or [])
+        if skipped:
+            show.set_detail('Left out (no function assigned): ' + ', '.join(skipped))
         show.close_step()
-        return jsonify({'ok': True, 'show': show.status()})
+        return jsonify({'ok': True, 'skipped': skipped, 'show': show.status()})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
@@ -382,9 +386,13 @@ def apply_all():
         return jsonify({'error': 'No workspace loaded.'}), 400
     try:
         from core import show
+        ws._state['setlist_skipped'] = []
         ws.generate_all_slots_qxw_content()
+        skipped = list(ws._state.get('setlist_skipped') or [])
+        if skipped:
+            show.set_detail('Left out (no function assigned): ' + ', '.join(skipped))
         show.close_step()
-        return jsonify({'ok': True, 'show': show.status()})
+        return jsonify({'ok': True, 'skipped': skipped, 'show': show.status()})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:

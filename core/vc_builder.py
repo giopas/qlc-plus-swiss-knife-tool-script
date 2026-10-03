@@ -32,7 +32,7 @@ NONE_ID = "4294967295"
 MARGIN, GAP = 10, 6
 KINDS = ("Button", "Frame", "SoloFrame", "Slider", "Label", "CueList")
 DEFAULT_SIZE = {"Button": (110, 55), "Frame": (400, 250), "SoloFrame": (400, 250),
-                "Slider": (60, 200), "Label": (150, 30), "CueList": (400, 500)}
+                "Slider": (60, 200), "Label": (150, 30), "CueList": (720, 420)}   # wide enough for every column, Note included
 SCREENS = {
     "macbook": {"label": "MacBook 1650 × 884", "w": 1650, "h": 884},
     "fullhd": {"label": "Full HD 1920 × 1080", "w": 1920, "h": 1080},

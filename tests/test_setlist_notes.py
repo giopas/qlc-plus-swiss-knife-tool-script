@@ -115,3 +115,21 @@ def test_quick_start_show_gets_a_setlist(tmp_path):
     assert len(steps) == 2 and all(s.get("Note", "").startswith("↪ [") for s in steps)
     d = c.get("/api/doctor/check").get_json()
     assert d["summary"]["error"] == 0
+
+
+def test_a_song_without_function_is_reported(c):
+    """giopas's test (3 Oct): 'Song 3' had no look and silently vanished."""
+    _ok(c.post("/api/load", json={"path": str(c.tmp / "Festival_14fix.qxw")}))
+    fn = _funcs(c)
+    rows = [{"txt_name": "Song 22", "qxw_id": fn["Song 22"]["id"], "qxw_name": "Song 22"},
+            {"txt_name": "New song", "qxw_id": "", "qxw_name": ""}]
+    _ok(c.post("/api/setlist/4001/details", json={"rows": rows}))
+    d = _ok(c.post("/api/setlist/4001/apply", json={"target_chaser_id": "1756"})).get_json()
+    assert d["skipped"] == ["New song"]
+    rep = c.get("/api/show/report").get_data(as_text=True)
+    assert "Left out (no function assigned): New song" in rep
+
+
+def test_new_cuelist_is_wide_enough_for_the_notes():
+    from core import vc_builder
+    assert vc_builder.DEFAULT_SIZE["CueList"][0] >= 700

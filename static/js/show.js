@@ -324,7 +324,10 @@ async function slApply() {
   const r = await fetch('/api/setlist/apply-all', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const d = await r.json();
   if (!r.ok || d.error) { setStatus(d.error || 'Failed.', 'error'); return; }
-  setStatus('✓ Setlist chasers built in the show — 💾 Save as new file… when you\'re ready.', 'ok');
+  if (d.skipped && d.skipped.length)
+    setStatus(`⚠ Setlist built, but ${d.skipped.length} song(s) have no function and are not in the cue list: ${d.skipped.join(', ')} — assign them and apply again.`, 'warn');
+  else
+    setStatus('✓ Setlist chasers built in the show — 💾 Save as new file… when you\'re ready.', 'ok');
   await showRefresh();
   if (typeof _fetchChasers === 'function') await _fetchChasers();
 }

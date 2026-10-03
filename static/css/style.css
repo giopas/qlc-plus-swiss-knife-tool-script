@@ -3737,6 +3737,19 @@ body.nav-min .sn-dot { position: absolute; top: 6px; right: 8px; margin: 0; }
 .sc-empty, .sc-more { font-size: 10.5px; color: var(--text-faint); padding: 2px 4px; }
 .sc-more { cursor: pointer; }
 .sh-redo { padding: 0 18px 8px; }
+.sh-again { border-top: 1px solid var(--border); padding: 10px 18px; }
+.sh-again > summary { cursor: pointer; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.sh-again-body { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.sh-again .sh-row { flex-wrap: wrap; }
+.sh-again select.filter-input { flex: 1 1 140px; min-width: 0; }
+.sh-prof-new { display: flex; flex-direction: column; gap: 6px; }
+.sh-prof-new[hidden] { display: none; }
+.sh-prof-result { font-size: 11.5px; line-height: 1.5; }
+.sh-prof-result ul { margin: 4px 0 0 16px; padding: 0; }
+.sh-prof-result .skip { color: var(--yellow, #f9e2af); }
+.sh-prof-result .fail { color: var(--red, #f38ba8); }
+.sh-param { display: flex; gap: 6px; align-items: center; font-size: 11.5px; }
+.sh-param input { flex: 1; min-width: 0; font-family: var(--mono, monospace); }
 .sh-redo[hidden] { display: none; }
 body.nav-min .side-changes { display: none; }
 

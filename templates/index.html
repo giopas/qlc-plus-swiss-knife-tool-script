@@ -238,13 +238,37 @@
     </div>
     <ol class="sh-list" id="sh-list"></ol>
     <div class="sh-redo" id="sh-redo" hidden><button class="btn btn-surface btn-sm" onclick="showRedo()">↷ Redo the undone steps</button></div>
+    <details class="sh-again" id="sh-again" ontoggle="if(this.open) showProfilesLoad()">
+      <summary><span class="sh-foot-t">↻ Do it again — on this show or another</span>
+        <span class="sh-note">recipe · Show Profiles</span></summary>
+      <div class="sh-again-body">
+        <div class="sh-note">These changes, kept to be done again: the <b>recipe</b> replays them on the same file; a <b>profile</b> on any show — each step finds what it changes by name, type and place.</div>
+        <div class="sh-row">
+          <button class="btn btn-surface btn-sm" onclick="showSaveRecipe()" title="The recipe so far, without saving the show (the show's Save writes it too)">📋 Save the recipe…</button>
+          <button class="btn btn-surface btn-sm" onclick="document.getElementById('sh-prof-new').hidden = false; document.getElementById('sh-prof-name').focus()">★ Save as a profile…</button>
+        </div>
+        <div class="sh-prof-new" id="sh-prof-new" hidden>
+          <input id="sh-prof-name" class="filter-input" placeholder="profile name, e.g. Pub night" aria-label="Profile name">
+          <input id="sh-prof-desc" class="filter-input" placeholder="what it does (optional)" aria-label="Profile description">
+          <button class="btn btn-accent btn-sm" onclick="showSaveProfile()">★ Save profile</button>
+        </div>
+        <div class="sh-foot-t" style="margin-top:4px">Apply a profile to this show</div>
+        <div class="sh-row">
+          <select id="sh-prof-list" class="filter-input" aria-label="Saved profiles"></select>
+          <button class="btn btn-accent btn-sm" onclick="showApplyProfile()">▶ Apply</button>
+          <button class="btn btn-surface btn-sm" onclick="showApplyProfileFile()" title="A .profile.json or .recipe.json from anywhere">From a file…</button>
+        </div>
+        <div id="sh-prof-params"></div>
+        <div id="sh-prof-result" class="sh-prof-result"></div>
+      </div>
+    </details>
     <div class="sh-foot">
       <div class="sh-foot-t">Save as new file</div>
       <div class="sh-row">
         <input id="sh-filename" class="filter-input" oninput="this.dataset.touched=1" aria-label="File name">
         <button class="btn btn-accent btn-sm" onclick="showSave()">💾 Save…</button>
       </div>
-      <div class="sh-note">Next to it: <code>&lt;name&gt;_report.txt</code> with every step above. The file you opened is never touched, and you can keep working after saving.</div>
+      <div class="sh-note">Next to it: <code>&lt;name&gt;_report.txt</code> with every step above, and <code>&lt;name&gt;.recipe.json</code>. The file you opened is never touched, and you can keep working after saving.</div>
     </div>
   </aside>
 
@@ -262,8 +286,8 @@
           <p class="start-purpose">Build, adapt, check and document <b>QLC+ 5</b> shows. Open a show and it becomes the
             <b>show in progress</b>: every tool works on it, the <b>History</b> keeps every step (undo any of them),
             and <b>💾 Save as new file…</b> writes it with a report — the file you opened is never touched.</p>
-          <p class="start-new"><b>New in 1.9:</b> the show in progress with its History · Function Porter with fixtures and groups (the Merger is part of it) ·
-            Show Paperwork (rider, crew checklist, show book in one tool) · guided routes · a <b>?</b> on every tool for its wiki page.</p>
+          <p class="start-new"><b>New in 2.1:</b> <b>Show Profiles</b> — the changes you made to a show, done again on another show
+            (History › <i>↻ Do it again</i>, or <code>python -m core.profile build</code>) · the recipe without saving · tilt buttons in Quick Start.</p>
         </div>
         <div class="spacer"></div>
         <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained">?</button>
@@ -1968,6 +1992,13 @@
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Mid')">Mid</button>
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top-Mid')">Top-Mid</button>
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top')">Top</button>
+            </div>
+            <div style="font-size:10px;color:var(--overlay0);margin:8px 0 4px" title="Tilt (XRot in the QLC+ 3D view). Auto: from the height — floor up, truss down, mid level across the stage, always toward its centre">Beam (tilt)</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('down')" title="Pointing down, like a truss light">&#x2193; Down</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('horizontal')" title="Across the stage, like a mid-height light">&#x2194; Across</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('up')" title="Pointing up, like a floor light">&#x2191; Up</button>
+              <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('auto')" title="From the fixture's height (the default)">Auto</button>
             </div>
           </div>
 

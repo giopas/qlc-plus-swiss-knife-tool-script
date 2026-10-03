@@ -8,6 +8,41 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.1.0] — 2026-10-03
+
+**Show Profiles: do it again, on another show.** The changes you made to a show — reduce the rig, fix, groups, looks, VC pages, setlist… — kept as a profile and applied to any other show, in the app or from the command line. Each step finds what it changes **by meaning** (name, type, place), not by the IDs of the show it was made on, and says what it left out.
+
+### Added — Show Profiles
+- **The recipe knows what its IDs are.** Before each recorded call, Swiss Knife notes what every ID in it *is*: the Scene "Song 22", the fixture "Drums" at 1.8, the group "Band Pair", the CueList "Setlist" on the page "1. SETLIST", the mesh "Drum riser". `core/retarget.py` (`index`, `symbolize`, `bind`; which field of which call holds which kind of ID is one table, `RULES`).
+- **Replay a recipe on another show**: `python -m core.recipe replay <recipe> --onto Other.qxw [--out …]`.
+  - Every ID is found again on the other show:
+    - by name and type;
+    - a fixture not found by name is found **by address** (said so);
+    - a VC widget not found at its place is found **elsewhere on the console**, if there is only one.
+  - Workspace Doctor fixes become *the same kinds of fixes* on the other show.
+  - A call that names something the show doesn't have is **left out**, with the reason. A call that fails is noted and the rest goes on.
+  - Recipes from 2.0.x are first replayed on their own show to learn what their IDs are.
+- **Show Profiles** (`core/profile.py`): a recipe made portable.
+  - Its steps are by meaning.
+  - The files it uses (a setlist `.txt`, another show for the Porter, a mesh) become **parameters**: give them, or put them next to the profile.
+  - The VC page templates it uses travel inside it.
+  - It holds no paths of the computer it was made on.
+  - Saved in `~/.qlc_swiss_knife/profiles/`.
+- **In the app — History › ↻ Do it again**:
+  - **📋 Save the recipe…** keeps the recipe so far, without saving the show.
+  - **★ Save as a profile…** keeps the show's changes as a profile, with a name and a description.
+  - **▶ Apply** runs a saved profile (or *From a file…*, a profile or a recipe) on the open show. Every step becomes a step of the History (undo works), and the result lists what was left out or matched by place.
+  - If the profile uses files, it asks for them.
+- **The command-line pipeline**: `python -m core.profile build <profile> --show Venue.qxw [--out …] [--param Setlist.txt=…]` opens the show, applies the profile and saves `<show>_v<n+1>.qxw` with its report and recipe. The source show is never changed, and the Doctor's verdict is printed. Also `show`, `list` and `make` (a profile from a recipe file).
+- Routes `/api/profile/recipe|list|save|apply|delete` (not recorded themselves; the calls a profile makes are). Tests `tests/test_profile.py` (10): same show → same file byte for byte, another show by meaning, what's left out, 2.0 recipes, profile from the app applied to FloorShow, files as parameters, CLI build, templates inside the profile, recipe without saving.
+
+### Changed
+- **Quick Start › Placement: tilt buttons.** *Beam (tilt)*: ↓ Down, ↔ Across, ↑ Up, or Auto (from the height, the default) for the selected fixtures or all. The function was there, without buttons.
+- **Quick Start file name follows the `_vN` rule**: `<project>_v1.qxw`, then `_v2`… after each save, instead of a timestamp.
+- **Fixtures (the configurator) keeps the tilt.** It wrote `XRot = 65` for every fixture. Now it keeps a tilt set in the show, and a new or default one follows the fixture's height and depth like Quick Start (truss down, floor up, toward the stage centre).
+- **Start**: *New in 2.1*.
+
+
 ## [2.0.1] — 2026-10-03
 
 **After the pub test: paperwork for the crew, notes in the cue list.** A patch sheet with DIP switches (and a thermal-printer ticket), each setlist cue saying which function and button it stands for, a setlist CueList in one click for a show that has none, a third real show in the test corpus — and the fixes from giopas's first test of all this.

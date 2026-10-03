@@ -224,6 +224,91 @@ async function showHistoryRender() {
   list.innerHTML = html;
 }
 
+// ── Do it again: the recipe and Show Profiles (WORKPLAN 3.1) ─────────────────
+
+async function showSaveRecipe() {
+  if (!_show.active) { setStatus('Open a show first.', 'error'); return; }
+  await showFlushPending();
+  const r = await _origFetch('/api/profile/recipe');
+  if (!r.ok) { setStatus('Could not prepare the recipe.', 'error'); return; }
+  const n = r.headers.get('X-Calls') || '0';
+  const saved = await saveFileWithPicker(await r.blob(), r.headers.get('X-Suggested-Filename') || 'show.recipe.json',
+    [{ description: 'Swiss Knife recipe', accept: { 'application/json': ['.json'] } }], 'Save the recipe');
+  if (saved) setStatus(`Recipe saved: ${saved} — ${n} change(s). Replay it: python -m core.recipe replay ${saved}` +
+    ' (add --onto <other show>.qxw to do it on another show).', 'ok');
+}
+
+let _shProfiles = [];
+async function showProfilesLoad() {
+  const d = await (await _origFetch('/api/profile/list')).json();
+  _shProfiles = d.profiles || [];
+  const sel = document.getElementById('sh-prof-list');
+  if (sel) sel.innerHTML = _shProfiles.length
+    ? _shProfiles.map(p => `<option value="${_esc(p.name)}" title="${_esc(p.description || '')}">${_esc(p.name)} — ${p.steps} step${p.steps === 1 ? '' : 's'}${p.params.length ? ' · needs ' + _esc(p.params.join(', ')) : ''}</option>`).join('')
+    : '<option value="">no profiles yet — save one above</option>';
+}
+
+async function showSaveProfile() {
+  const name = document.getElementById('sh-prof-name').value.trim();
+  if (!name) { setStatus('Give the profile a name.', 'warn'); return; }
+  await showFlushPending();
+  const r = await _origFetch('/api/profile/save', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description: document.getElementById('sh-prof-desc').value }) });
+  const d = await r.json();
+  if (!r.ok) { setStatus('✗ ' + d.error, 'error'); return; }
+  document.getElementById('sh-prof-new').hidden = true;
+  setStatus(`★ Profile '${d.name}' saved — ${d.steps} step(s)` + (d.params.length ? `, needs ${d.params.join(', ')}` : '') +
+    '. Apply it to another show from here, or: python -m core.profile build "' + d.name + '" --show <show>.qxw', 'ok');
+  await showProfilesLoad();
+  const sel = document.getElementById('sh-prof-list');
+  if (sel) sel.value = d.name;
+}
+
+async function showApplyProfileFile() {
+  const path = await nativePick('Profile or recipe', [{ label: 'Profile / recipe', exts: ['.json'] }]);
+  if (path) showApplyProfile(path);
+  else if (nativePick.unavailable) setStatus('Copy the file into the profiles folder, then pick it in the list.', 'warn');
+}
+
+async function showApplyProfile(path) {
+  if (!_show.active) { setStatus('Open a show first.', 'error'); return; }
+  const name = path ? '' : document.getElementById('sh-prof-list').value;
+  if (!name && !path) { setStatus('Save a profile first, or pick one from a file.', 'warn'); return; }
+  const params = {};
+  document.querySelectorAll('#sh-prof-params input[data-param]').forEach(i => { params[i.dataset.param] = i.value.trim(); });
+  await showFlushPending();
+  const box = document.getElementById('sh-prof-result');
+  box.textContent = 'Applying…';
+  const r = await _origFetch('/api/profile/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, path: path || '', params }) });
+  const d = await r.json();
+  if (!r.ok) {
+    box.textContent = '';
+    if (d.params && d.params.length) _showParamInputs(d.params, path);
+    setStatus('✗ ' + d.error, 'error');
+    return;
+  }
+  document.getElementById('sh-prof-params').innerHTML = '';
+  const bad = d.steps.filter(s => s.status !== 'applied');
+  const notes = d.steps.filter(s => s.status === 'applied' && s.note);
+  box.innerHTML = `<b>${_esc(d.name)}</b>: ${d.applied} applied` +
+    (d.skipped ? `, <span class="skip">${d.skipped} left out</span>` : '') + (d.failed ? `, <span class="fail">${d.failed} failed</span>` : '') +
+    (bad.length || notes.length ? '<ul>' + bad.map(s => `<li class="${s.status === 'failed' ? 'fail' : 'skip'}">${s.n}. ${_esc(s.title)} — ${_esc(s.why || '')}</li>`).join('') +
+      notes.map(s => `<li>${s.n}. ${_esc(s.title)} — ${_esc(s.note)}</li>`).join('') + '</ul>' : '');
+  setStatus(`▶ Profile '${d.name}': ${d.applied} step(s) applied` + (d.skipped + d.failed ? `, ${d.skipped + d.failed} not — see the History` : '') +
+    '. Each one is a step of the History (↶ undo works).', d.skipped + d.failed ? 'warn' : 'ok');
+  await showRefresh();
+  showHistoryRender();
+}
+
+function _showParamInputs(names, path) {
+  const el = document.getElementById('sh-prof-params');
+  el.innerHTML = '<div class="sh-note">This profile uses files — give them here (or put them next to the profile):</div>' +
+    names.map(n => `<div class="sh-param"><span>${_esc(n)}</span><input class="filter-input" data-param="${_esc(n)}" placeholder="/path/to/${_esc(n)}">
+      <button class="btn btn-surface btn-sm" onclick="(async b => { const p = await nativePick('${_esc(n)}'); if (p) b.previousElementSibling.value = p; })(this)">…</button></div>`).join('') +
+    `<button class="btn btn-accent btn-sm" onclick="showApplyProfile(${path ? `'${_esc(path).replace(/'/g, "\\'")}'` : ''})">▶ Apply with these files</button>`;
+}
+
 // ── Save ─────────────────────────────────────────────────────────────────────
 
 async function showSave() {

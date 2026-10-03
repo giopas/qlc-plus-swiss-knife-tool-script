@@ -100,7 +100,7 @@ except ModuleNotFoundError:
 # ── Normal imports (Flask is now guaranteed to be importable) ─────────────────
 import threading
 import webbrowser
-from flask import Flask, request, jsonify
+from flask import Flask, g, request, jsonify
 
 WIKI_URL = "https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/"
 
@@ -124,6 +124,7 @@ from routes.reducer_routes import bp as reducer_bp
 from routes.looks_routes import bp as looks_bp
 from routes.stage_routes import bp as stage_bp
 from routes.show_routes import bp as show_bp
+from routes.profile_routes import bp as profile_bp
 from routes.compare_routes import bp as compare_bp
 
 PORT = 5731
@@ -170,6 +171,7 @@ def create_app():
     app.register_blueprint(reducer_bp)
     app.register_blueprint(looks_bp)
     app.register_blueprint(stage_bp)
+    app.register_blueprint(profile_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request
@@ -192,13 +194,26 @@ def create_app():
             return jsonify({'error': 'Forbidden'}), 403
 
     # ── The recipe (WORKPLAN 2.9): every change to the show, for the replay ──
+    # Before the call: what the IDs it names *are*, while the show is as the
+    # call sees it (core/retarget.py) — so it can be replayed on another show.
+    @app.before_request
+    def _symbolize_for_recipe():
+        try:
+            from core import recipe
+            if recipe.active() and recipe.recordable(request.method, request.path):
+                g.recipe_sym = recipe.symbolize(request.method, request.path,
+                                                request.get_json(silent=True))
+        except Exception:  # noqa: BLE001 — recording never breaks a request
+            g.recipe_sym = None
+
     @app.after_request
     def _record_recipe(response):
         try:
             from core import recipe
             if recipe.active() and recipe.recordable(request.method, request.path):
                 recipe.record(request.method, request.path,
-                              request.get_json(silent=True), response.status_code)
+                              request.get_json(silent=True), response.status_code,
+                              sym=getattr(g, 'recipe_sym', None))
         except Exception:  # noqa: BLE001 — recording never breaks a request
             pass
         return response

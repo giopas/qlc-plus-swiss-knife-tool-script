@@ -66,3 +66,26 @@ def test_build_qxw_writes_depth_aware_xrot():
     ns = "{http://www.qlcplus.org/Workspace}"
     xr = [int(fx.get("XRot")) for fx in root.iter(f"{ns}FxItem")]
     assert xr == [45, 315, 135, 225, 315]
+
+
+def test_fixtures_tool_keeps_the_tilt_instead_of_65(tmp_path):
+    """Fixtures (core/fixture.py) wrote XRot=65 for every fixture; now the
+    show's own tilt is kept and a new or default one follows the height."""
+    import re
+    from core import fixture, qxw_io
+    root = qxw_io.load_qxw("tests/corpus/QuickStart_6fix.qxw")
+    fixture.clear_rig()
+    fixture.import_from_qxw(root)
+    rig = fixture.get_rig()
+    assert all("x_rot" not in e for e in rig)          # all defaults: automatic
+    fixture.update_fixture(0, {"x_rot": 10})
+    fixture.update_fixture(2, {"y_mm": 2900})           # floor → truss (stage 6 × 4 × 3 m)
+    out = fixture.build_qxw(root).decode()
+    rots = {m[0]: int(m[1]) for m in re.findall(r'<FxItem ID="(\d+)"[^>]*XRot="(\d+)"', out)}
+    assert rots["0"] == 10
+    assert rots["2"] == default_x_rot(2900, 3000, 3500, 4000) == 315   # follows the move
+    assert 65 not in rots.values()
+    again = qxw_io.loads_qxw(out.encode())
+    fixture.clear_rig()
+    fixture.import_from_qxw(again)
+    assert fixture.get_rig()[0].get("x_rot") == 10

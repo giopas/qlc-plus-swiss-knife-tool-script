@@ -871,10 +871,10 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     active_ids: set = set()
     for d in songs:
         bid = d.get('qxw_id', '')
-        if not bid:
-            continue
-        base = _find_by_id(engine, 'Function', bid)
+        base = _find_by_id(engine, 'Function', bid) if bid else None
         if base is None:
+            # a song with no function cannot be a cue: say so (it used to vanish)
+            _state.setdefault('setlist_skipped', []).append(d.get('txt_name') or '(no name)')
             continue
         txt_n = d.get('txt_name') or f'Step {step_count}'
         _state['highest_func_id'] += 1

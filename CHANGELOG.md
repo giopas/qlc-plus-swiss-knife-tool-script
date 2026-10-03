@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Fixed
+- **Setlist: a song with no function was dropped from the cue list without a word** (giopas's test, 3 Oct). Applying now says which songs were left out, and the show report lists them under the Setlist step.
+- **VC Editor: a new CueList is 720 × 420** (was 400 × 500), wide enough to show every column in QLC+, the *Note* included.
+
 ### Added
 - **VC Editor › Setlist CueList: *＋ a new, empty setlist chaser*.** A show without a cue list (e.g. fresh from Quick Start) gets one in a click — a CueList on the page, wired to a new empty chaser *Setlist*; the Setlist tool then shows its slot and fills it. Before, the CueList had to be wired to an existing chaser, which the Setlist would then overwrite.
 - **Test corpus: `FloorShow_8fix.qxw`**, the third real show (8 PARs, 246 functions, the ceiling PARs brought in with the Function Porter), anonymised like the others. Its Doctor baseline is pinned; it found a real slip — the static look *Soft Yellow* leaves the PARs' strobe channel at 30.

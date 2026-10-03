@@ -5,6 +5,10 @@
 Swiss Knife was organised around jobs; now the screens show it. After an outside review of the whole interface, each tool says what Apply will do before you press it, the guided routes come first, and you can go anywhere with the keyboard. No new library: CSS and a little JavaScript.
 
 ### New
+- **Cue notes for older shows.**
+  - Open a show made before 2.0.1, or by hand: every setlist cue without a note gets its reference — the original function and the button that plays it, as new cue lists have since 2.0.1.
+  - Your own notes are kept.
+  - It is a step of the History: undo it, or keep it with 💾 Save as new file….
 - **"Apply will …" next to the button** — in the Rig Reducer, Workspace Doctor, Look Builder, Brightness and Setlist:
   - *−6 fixtures · −3 groups · −11 functions · ✓ no new Doctor errors*;
   - *D005 × 801 · D017 × 1*;

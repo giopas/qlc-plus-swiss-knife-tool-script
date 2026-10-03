@@ -379,6 +379,29 @@ def apply_slot(slot_id):
         return jsonify({'error': _safe_err(e)}), 500
 
 
+@bp.route('/notes')
+def notes_missing():
+    """How many setlist cues have no note yet."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'missing': 0})
+    return jsonify({'missing': len(ws.cue_notes_missing())})
+
+
+@bp.route('/notes', methods=['POST'])
+def fill_notes():
+    """Add the reference (original function and its button) to every setlist
+    cue that has no note (a step of the show in progress)."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    try:
+        from core import show
+        res = ws.fill_cue_notes()
+        show.close_step()
+        return jsonify({'ok': True, **res, 'show': show.status()})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 @bp.route('/apply-all', methods=['POST'])
 def apply_all():
     """Build every slot's chaser in the show in progress (one step)."""

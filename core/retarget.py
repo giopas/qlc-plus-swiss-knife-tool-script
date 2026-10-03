@@ -196,7 +196,7 @@ RULES: List[Tuple[str, str, list]] = [
 _RULES = [(m, re.compile(p), r) for m, p, r in RULES]
 
 # Calls that name nothing in the show (replayed as they are).
-PLAIN = [r"^/api/show/(undo|redo)$", r"^/api/vc/undo$", r"^/api/setlist/(apply-all|auto-match|load|purge-workspace-clones)$",
+PLAIN = [r"^/api/show/(undo|redo)$", r"^/api/vc/undo$", r"^/api/setlist/(apply-all|auto-match|load|purge-workspace-clones|notes)$",
          r"^/api/porter/(source/load|target/show|target/load|clear|resolve|auto-map|fixture-candidates|vc/seeds|wire/options)$",
          r"^/api/triggers/midi-shift$", r"^/api/stage/mesh-info$", r"^/api/brightness/assign-qxf$"]
 _PLAIN = [re.compile(p) for p in PLAIN]

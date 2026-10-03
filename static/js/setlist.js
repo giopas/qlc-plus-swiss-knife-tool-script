@@ -69,6 +69,25 @@ async function slNewCueList() {
   setStatus('✓ CueList “Setlist” added on the first VC page — add your songs, then Apply.', 'ok');
 }
 
+/** Cue notes for shows made before 2.0.1 (or by hand): every setlist cue
+ *  without a note gets its reference.  *auto*: called when a show opens —
+ *  silent when there is nothing to add. */
+async function slFillCueNotes(auto) {
+  try {
+    if (auto) {
+      const m = await (await fetch('/api/setlist/notes')).json();
+      if (!m.missing) return;
+    }
+    const r = await fetch('/api/setlist/notes', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) { if (!auto) setStatus('✗ ' + (d.error || 'Could not add the notes.'), 'error'); return; }
+    if (!d.added) { if (!auto) setStatus('Every setlist cue already has a note.', 'ok'); return; }
+    setStatus(`↪ References added to ${d.added} setlist cue note${d.added > 1 ? 's' : ''} (original function and its button) — ` +
+      'notes already there are kept. A step of the History (↶ to undo); 💾 Save as new file… to keep them.', 'ok');
+    if (typeof showRefresh === 'function') showRefresh();
+  } catch (e) { if (!auto) setStatus('Network error: ' + e.message, 'error'); }
+}
+
 async function _fetchChasers() {
   const data = await _apiJson('/api/setlist/chasers');
   _chasers = Array.isArray(data) ? data : [];

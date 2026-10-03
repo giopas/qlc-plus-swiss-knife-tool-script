@@ -628,6 +628,7 @@ let _vcePrevSel = 0;
 function _vceSyncSelTab(n) {
   const tl = document.getElementById('vcb-target');
   if (tl && typeof _vcbTargetLabel === 'function') tl.innerHTML = _vcbTargetLabel();
+  if (typeof _vcbSyncSetlistBtn === 'function') _vcbSyncSetlistBtn();
   const c = document.getElementById('vce-tab-count');
   if (c) c.textContent = n ? `· ${n}` : '';
   const lt = document.getElementById('vce-layout-tools');

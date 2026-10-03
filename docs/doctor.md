@@ -35,7 +35,7 @@ rep.ok, rep.counts(), rep.errors, rep.to_json()
 | D005 | warning | Scene sets some but not all channels of a fixture (LTP bleed) |
 | D006 | warning | Strobe (Shutter) or internal-program (Effect) channel at a non-neutral value in a scene that is not intentional FX |
 | D007 | warning | Same scene on a VC button and in a chaser step (latch conflict) |
-| D008 | warning | No PANIC RESET function, or it is not on a VC button |
+| D008 | warning | No PANIC RESET function, or it is not on a VC button (a VC button with the action *Stop All* or *Blackout* counts as one) |
 | D009 | warning | DMX address overlap |
 | D010 | info | The only page with a CueList (the setlist) is not page 1 — QLC+ opens on page 1 |
 | D011 | warning | Widget sticks out of its page or frame by more than 8 px (partly hidden) |

@@ -32,6 +32,7 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **1.9.0** ✅ | One show, every tool | The show in progress with History; Function Porter with the Merger folded in; Show Paperwork; guided routes; one screen pattern |
 | **1.10.0** ✅ | Grow a rig | Copied fixtures join the show's own looks ("plays like"): scenes, sequence steps and EFX, translated between fixture types; what can't be wired is listed |
 | **2.0.0** ✅ | Benchmark | The "Pub test" passed: a 14-fixture festival show rebuilt as the 6-fixture pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors; fixture group editor; Compare; tutorial; the *recipe* — every change replayed by the command line to the same file |
+| **2.0.1** ✅ | Paperwork for the crew | Patch sheet with DIP switches (PDF, thermal ticket, CSV); each setlist cue notes its original function and button; setlist CueList in one click; FloorShow in the test corpus |
 | **2.1.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
 
 ## After 2.0

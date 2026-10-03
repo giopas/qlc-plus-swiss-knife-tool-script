@@ -468,6 +468,11 @@ def _d007_shared_scene(ws: _Workspace):
 def _d008_panic(ws: _Workspace):
     panic = [f for f in ws.function_els if PANIC_RE.search(f.get("Name", ""))]
     if not panic:
+        # a VC button whose action is Stop All (or Blackout) is a panic button too:
+        # stopping every function releases the channels (real FloorShow, 3 Oct)
+        if any(w.tag == "Button" and (w.findtext("Action") or "").strip() in ("StopAll", "Blackout")
+               for w, _page in ws.widgets):
+            return
         yield Finding("D008", WARNING, "Workspace", "no PANIC RESET function", {})
         return
     on_button = [f for f in panic

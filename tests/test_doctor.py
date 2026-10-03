@@ -279,8 +279,9 @@ def test_d017_panic_reset_scene():
 
 
 def test_corpus_false_positives_gone():
-    """expected_baseline 'D006 … 4' in Pub_6fix were all false positives."""
-    for name in BASELINE:
+    """expected_baseline 'D006 … 4' in Pub_6fix were all false positives.
+    (FloorShow's D006 are real: see test_floorshow_findings.)"""
+    for name in ("Festival_14fix.qxw", "Pub_6fix.qxw"):
         rep = check_file(os.path.join(CORPUS, name), DEFS)
         assert not rep.by_code("D006")
         assert "401" not in {f.ref.get("function") for f in rep.by_code("D006")}
@@ -336,3 +337,22 @@ def test_d018_setlist_screen_marks_dark_functions(tmp_path):
     fns = {f["id"]: f for f in c.get("/api/functions").get_json()}
     assert fns["2373"]["name"] == "Song 12" and fns["2373"]["dark"] is True
     assert fns["2349"]["dark"] is False                      # Song 11, a scene
+
+
+def test_floorshow_findings():
+    """The real floor show (3 Oct): a static look with the strobe channel left
+    at 30, the Colour Chaos scenes with strobe 255 outside an FX function, and
+    no PANIC RESET function — but a Stop All button, which is one."""
+    rep = check_file(os.path.join(CORPUS, "FloorShow_8fix.qxw"), DEFS)
+    names = {f.location for f in rep.by_code("D006")}
+    assert "Function 214 'Soft Yellow'" in names
+    assert {"Function 751 'Colour Chaos A'", "Function 752 'Colour Chaos B'"} <= names
+    assert not rep.by_code("D008") and rep.ok
+
+
+def test_stop_all_button_counts_as_panic():
+    root = ws(scene("1"), button(2, "1") + '<Button Caption="PANIC" ID="7"><Function ID="4294967295"/>'
+              '<Action>StopAll</Action></Button>')
+    eng = root.find(qxw_io._NS_PREFIX + "Engine")
+    eng.remove(next(f for f in eng if f.get("Name") == "PANIC RESET"))
+    assert not check(root, DEFS).by_code("D008")

@@ -138,3 +138,15 @@ def test_jpeg_header():
 def test_not_an_image():
     with pytest.raises(pdf_image.ImageError):
         pdf_image.load(b"GIF89a....")
+
+
+def test_floorshow_sheet(tmp_path):
+    shutil.copy(os.path.join(CORPUS, "FloorShow_8fix.qxw"), tmp_path / "F.qxw")
+    c = app.create_app().test_client()
+    assert c.post("/api/load", json={"path": str(tmp_path / "F.qxw")}).status_code == 200
+    ps = c.post("/api/showbook/preview", json={"presets": ["patch"]}).get_json()["document"]["sections"]["patch_sheet"]
+    names = [f["name"] for u in ps["universes"] for f in u["fixtures"]]
+    assert ps["total"] == 8 and "CL: Ceiling Left" in names
+    for u in ps["universes"]:
+        for f in u["fixtures"]:
+            assert sum(1 << (n - 1) for n in f["dip"]) == f["address"]

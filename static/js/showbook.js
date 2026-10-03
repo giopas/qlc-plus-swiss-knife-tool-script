@@ -318,8 +318,8 @@ function _sbRenderPreview(doc) {
     parts.push(`<div class="sb-section" id="sb-sec-patch-sheet"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🔌 Patch sheet <span class="sb-toggle-icon">▾</span></h3>
       <div class="sb-section-body"><div class="sb-stats"><span>${ps.total} fixture(s) · DIP ${ps.switches} switches, switch <i>n</i> = 2<sup>n−1</sup>, ON = up</span></div>` +
       ps.universes.map(u => `<h4 class="sb-sub">Universe ${u.universe} — channels ${u.used[0]}–${u.used[1]}</h4>
-        <table class="sb-table"><thead><tr><th>Address</th><th>Ch</th><th>Name</th><th>Fixture</th><th>Mode</th><th>DIP</th><th>ON</th></tr></thead><tbody>${
-        u.fixtures.map(f => `<tr><td><b>${String(f.address).padStart(3, '0')}${f.end !== f.address ? '–' + String(f.end).padStart(3, '0') : ''}</b></td>
+        <table class="sb-table"><thead><tr><th>ID</th><th>Address</th><th>Ch</th><th>Name</th><th>Fixture</th><th>Mode</th><th>DIP</th><th>ON</th></tr></thead><tbody>${
+        u.fixtures.map(f => `<tr><td>${_esc(f.id)}</td><td><b>${String(f.address).padStart(3, '0')}${f.end !== f.address ? '–' + String(f.end).padStart(3, '0') : ''}</b></td>
           <td>${f.channels || ''}</td><td>${_esc(f.name)}</td><td>${_esc((f.manufacturer + ' ' + f.model).trim())}</td><td>${_esc(f.mode)}</td>
           <td class="sb-dips">${f.dip_fits ? bar(f) : 'above the switches'}</td><td>${f.dip.join(' ') || 'none'}</td></tr>`).join('')
         }</tbody></table>`).join('') + `</div></div>`);

@@ -1378,11 +1378,12 @@ def _pdf_patch_sheet(pdf: _PdfBuilder, sheet: dict, event: str, logo):
         pdf.cy = top - 22
     pdf.fc(0.3, 0.3, 0.35)
     pdf.txt(_PAD, pdf.cy - 10, f"{sheet['total']} fixture(s) - DIP switches: {sheet['switches']}, "
-                               f"switch n = 2^(n-1), ON = lever up (red)", sz=8)
+                               f"switch n = 2^(n-1), ON = lever up (white)", sz=8)
     pdf.cy = min(pdf.cy - 16, top - lh - 10)
-    headers = ["Address", "Ch", "Name", "Fixture", "Mode", "DIP switches", "ON"]
+    dip_h = f"DIP 1-{sheet['switches']} (ON = up)"
+    headers = ["ID", "Address", "Ch", "Name", "Fixture", "Mode", dip_h, "ON"]
     dip_w = sheet["switches"] * 9.2 + 12
-    col_w = _auto_col_widths(headers, {"Address": 54, "Ch": 24, "DIP switches": dip_w, "ON": 66,
+    col_w = _auto_col_widths(headers, {"ID": 26, "Address": 54, "Ch": 24, dip_h: dip_w, "ON": 66,
                                        "Mode": 70})
     row_h = 22
     for u in sheet["universes"]:
@@ -1401,20 +1402,21 @@ def _pdf_patch_sheet(pdf: _PdfBuilder, sheet: dict, event: str, logo):
             pdf.fc(0, 0, 0)
             ty = pdf.cy - row_h + 8
             rng = f"{f['address']:03d}" + (f"-{f['end']:03d}" if f["end"] != f["address"] else "")
-            pdf.txt(xs[0] + 3, ty, rng, sz=9, bold=True)
-            pdf.txt(xs[1] + 3, ty, f["channels"] or "", sz=_FSIZE)
+            pdf.txt(xs[0] + 3, ty, f["id"], sz=_FSIZE)
+            pdf.txt(xs[1] + 3, ty, rng, sz=9, bold=True)
+            pdf.txt(xs[2] + 3, ty, f["channels"] or "", sz=_FSIZE)
             pdf.fc(0, 0, 0)
-            pdf.txt_trunc(xs[2] + 3, ty, f["name"], _FSIZE, col_w[2] - 6)
-            pdf.txt_trunc(xs[3] + 3, ty, f"{f['manufacturer']} {f['model']}".strip(), _FSIZE, col_w[3] - 6)
-            pdf.txt_trunc(xs[4] + 3, ty, f["mode"], _FSIZE, col_w[4] - 6)
+            pdf.txt_trunc(xs[3] + 3, ty, f["name"], _FSIZE, col_w[3] - 6)
+            pdf.txt_trunc(xs[4] + 3, ty, f"{f['manufacturer']} {f['model']}".strip(), _FSIZE, col_w[4] - 6)
+            pdf.txt_trunc(xs[5] + 3, ty, f["mode"], _FSIZE, col_w[5] - 6)
             if f["dip_fits"]:
-                ps.draw_dip(pdf._emit, xs[5] + 5, pdf.cy - row_h + 7.5, f["dip"], sheet["switches"],
+                ps.draw_dip(pdf._emit, xs[6] + 5, pdf.cy - row_h + 7.5, f["dip"], sheet["switches"],
                             sw=8.0, h=12, fsize=4.5)
                 pdf.fc(0, 0, 0)
-                pdf.txt_trunc(xs[6] + 3, ty, " ".join(map(str, f["dip"])) or "none", _FSIZE, col_w[6] - 6)
+                pdf.txt_trunc(xs[7] + 3, ty, " ".join(map(str, f["dip"])) or "none", _FSIZE, col_w[7] - 6)
             else:
                 pdf.fc(0, 0, 0)
-                pdf.txt(xs[5] + 3, ty, "above the switches", sz=_FSIZE)
+                pdf.txt(xs[6] + 3, ty, "above the switches", sz=_FSIZE)
             pdf.cy -= row_h
         pdf.spacer(6)
 

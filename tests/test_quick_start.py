@@ -677,3 +677,19 @@ class TestEndToEnd:
         xml_bytes = build_qxw(rig, functions, vc_frame)
         root = ET.fromstring(xml_bytes)
         assert "Workspace" in root.tag
+
+
+def test_generated_file_is_named_v1():
+    """The `_vN` rule (WORKPLAN §7): `<project>_v1.qxw`, no timestamp."""
+    import os
+    from app import create_app
+    c = create_app().test_client()
+    c.post("/api/quickstart/clear")
+    qxf = os.path.join(os.path.dirname(__file__), "corpus", "Generic-7Ch-RGB-PAR.qxf")
+    key = c.post("/api/quickstart/load-qxf", json={"path": qxf}).get_json()["definition"]["key"]
+    r = c.post("/api/quickstart/add-fixture", json={"key": key, "quantity": 2})
+    assert r.status_code < 300, r.get_data(as_text=True)
+    c.post("/api/quickstart/auto-dmx")
+    r = c.get("/api/quickstart/generate?project_name=Pub%20Night")
+    assert r.status_code == 200, r.get_data(as_text=True)[:300]
+    assert r.headers["Content-Disposition"].endswith("filename=Pub_Night_v1.qxw")

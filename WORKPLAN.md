@@ -4,6 +4,16 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (3 Oct, later — v2.1.0 prepared on `feat/v2.1.0`; giopas: "do 1, 2 and 5 together for the 2.1.0 release"):**
+- **Show Profiles** and the command-line build (3.1, below).
+- The recipe extras: saved from the History without saving the show, and replayed onto another show.
+- The three small items from Phase 0:
+  - the Fixtures tool keeps the tilt instead of writing 65°;
+  - Quick Start tilt buttons;
+  - Quick Start `_vN` file names.
+
+Packages move to **Phase 3 → v2.2.0**. 649 tests. Docs: CHANGELOG, README, release notes, ROADMAP, wiki (new *Show Profiles*; Recipe, Quick Start, Fixture Configurator, Show in Progress, Home), Start *New in 2.1*.
+
 **Status (3 Oct — v2.0.1 prepared on `feat/patch-sheet`):** after giopas's tests of the cue-list notes on a Quick Start show. The **setlist CueList** was hard to find (the last, folded item of *Ready-made blocks*), so it is now:
 - a highlighted **▶ Setlist cue list** box at the top of VC Editor › ＋ Add & wire, saying how many CueLists the show has, with a button that names what it does (*＋ Add a CueList on this page* / *Wire “…”*);
 - **▶ Use for a new setlist** in the Selection of a CueList;
@@ -19,7 +29,7 @@ A new setlist CueList is placed where it covers nothing (720 × 420, smaller if 
   2. **README = presentation only** (what it is, how it works, the tools, screenshots, install, docs links); the history lives in the CHANGELOG. Done after the 1.9.0 release (branch `docs/readme-and-plan`).
   3. **All screenshots retaken** (16, named in menu order, `screenshots/01-start.png` … `16-show-in-progress.png`). Done (same branch).
   4. **Forum**: no post per release; the BBCode drafts are deleted from the repo. One complete post (every tool + the show-in-progress logic) is written at v2.0.0 (task in 2.8).
-  5. **Installable packages with an update check** → **Phase 3 → v2.1.0**, after v2.0. Running from sources stays.
+  5. **Installable packages with an update check** → **Phase 3 → v2.1.0**, after v2.0. Running from sources stays. *(3 Oct: moved to v2.2.0 — Show Profiles went first as v2.1.0.)*
 - Also fixed on the way: the VC Editor page title still said *BETA*; the README's security details moved to DEVELOPMENT.md. 563 tests.
 
 **Status (1 Oct — 2.6 finished, v1.9.0 ready to release):** the rest of the audit built on `feat/show-in-progress`, 562 tests, browser-checked at 1440 × 900 and 1280 × 800.
@@ -619,9 +629,36 @@ Checks (★ = included in Phase 1.0):
 
 *Status (2 Oct)*: built and tested. `core/recipe.py` (record, write, `replay`, CLI `python -m core.recipe replay|show`), hook in `app.py`, `show.reset` / `show.mark_saved` start and write it, the save message names it. The tutorial run (19 calls: Reducer, Doctor, 5 group ops, Looks, 5 VC ops, setlist load / match / details / apply, Doctor) **replays to the identical file in 1.9 s**; tests `tests/test_recipe.py` (7): Pub route with undo, Porter with another show as input, files moved to another folder, missing input named, skip list, live edits with VC and stage undo, CLI. 604 tests. Docs: wiki *Recipe*, CHANGELOG, README.
 
-*Next for the recipe (not done)*: Show Profiles on top (a profile = a recipe + parameters), a recipe from the History screen (*Save the recipe* without saving the show), replay *onto another show* (the same steps on a different source — needs IDs by meaning, like Compare).
+*Next for the recipe*: ~~Show Profiles on top~~, ~~a recipe from the History screen~~, ~~replay onto another show~~ — all done in 3.1 (v2.1.0).
 
-### Phase 3 — Install like an app → **v2.1.0** *(asked by giopas, 1 Oct; after v2.0)*
+**3.1 Show Profiles — the changes of a show, done again on another show → v2.1.0** *(giopas, 3 Oct: "do 1, 2 and 5 together for the 2.1.0 release" — Show Profiles + CLI build, the recipe extras, the small Phase 0 items)*
+
+*Goal*: what was done to one show can be done again on **another** show (tonight's venue, next month's rig, a friend's show), in the app or from the command line, deterministically, and saying what could not be done.
+
+*Decisions taken (giopas away, to confirm)*:
+- **A profile is the recipe made portable, not a new description language.** The tools already change the show through one call per action; a profile is those calls with every ID replaced by **what it is**. No new schema per tool; a new tool works as soon as its ID fields are declared in `retarget.RULES`.
+- **Meaning, recorded before each call.** A `before_request` hook notes, while the show is as the call sees it, what each ID is (`core/retarget.symbolize`, under 1 ms on Festival). Things created by earlier calls exist by then, so they are named too. A recipe from 2.0.x has no meanings: it is first replayed on its own show (command line only — it replaces the open show).
+- **How a thing is found on the other show**:
+  - functions by type + name (+ the *n*-th of equal names);
+  - fixtures by name, else **by address** (written in the result: a different rig with the same patch works, and you see the pairing);
+  - groups and meshes by name;
+  - VC widgets by their place (page › frame › caption), else by type + caption if only one;
+  - triggers by their widget;
+  - Doctor fixes as *the same kinds* (codes) on the other show.
+- **Never guess silently.** A call naming something the show doesn't have is **left out** with the reason. Lists are not trimmed (a Rig Reducer *keep* list missing one fixture would remove it). A failing call is noted and the rest goes on. An undo after a left-out step is flagged.
+- **Files become parameters**; the VC templates a profile uses go inside it; no paths of the computer that made it.
+- **In the app**, applying a profile makes each step a History step (undo works) and adds those calls to the show's own recipe. In `~/.qlc_swiss_knife/profiles/`.
+- **Version**: this is **v2.1.0**; packages become **v2.2.0**.
+
+*Status (3 Oct)*: built. `core/retarget.py`, `core/profile.py`, `core/recipe.py` (`symbolize`, `run_calls`, `replay_onto`, `add_symbols`, `describe`, CLI `--onto`), `routes/profile_routes.py`, History › *↻ Do it again* (`static/js/show.js`). The Pub-test calls replayed onto Festival give the identical file; onto FloorShow they apply with 6 fixtures paired by address and 161 Doctor fixes of the same kinds. Tests `tests/test_profile.py` (10). Browser-checked: profile saved on Festival, applied to FloorShow from the History.
+
+*Not done / next*:
+- channel numbers inside a fixture (pan/tilt maps in the Porter) are not translated between fixture types;
+- a profile can't yet *start* a show from nothing (it applies to an open show: Quick Start first);
+- parameters other than files are hand-written (`"@param:name"` in a step, `--param name=value`);
+- an editor for a profile's steps (drop one, reorder).
+
+### Phase 3 — Install like an app → **v2.2.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct)*
 
 *Goal*: download, double-click, run — on macOS, Windows and Linux — and be told when a new version is out. As simple as StemDeck (github.com/stemdeckapp/stemdeck: a Tauri shell + bundled Python, a DMG per Mac architecture, a Windows ZIP with a self-contained `.exe`, a first-run note for unsigned apps; StemDeck itself has no auto-update). **Running from sources stays** exactly as today.
 
@@ -641,7 +678,7 @@ Checks (★ = included in Phase 1.0):
 - [ ] GitHub Actions release workflow (matrix build, smoke test: start, `GET /`, quit; upload the assets + `SHA256SUMS`).
 - [ ] Update check (`/api/update/check`, setting, header badge) and *Update and restart* per OS; tests with a fake release feed.
 - [ ] README *Install*: download first, sources second; wiki *Installing and updating*.
-- [ ] Release **v2.1.0**.
+- [ ] Release **v2.2.0**.
 
 ---
 
@@ -659,7 +696,7 @@ Checks (★ = included in Phase 1.0):
 
 *The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
 
-**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles still to do.*
+**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles built 3 Oct as 3.1 (v2.1.0).*
 
 **Proposed by giopas (3 Oct) — to schedule:**
 - **(done 3 Oct, released in v2.0.1: Patch sheet in Show Paperwork)** **Patch printouts like OH Show's tools** (inspiration: apps.fewday.go.yn.fr/QLC — *DMX Patch PDF* with DIP-switch diagrams, and a *Receipt printer* patch list; discussed in QLC+ issue #2086, where the maintainer prefers QLC+ to export and external tools to print — Swiss Knife is such a tool). Already covered by Show Paperwork: patch list (PDF/CSV), tech rider, crew checklist with stage plot. To add, in Show Paperwork:
@@ -677,14 +714,13 @@ Checks (★ = included in Phase 1.0):
 - Guided route for *New show* (Quick Start → Looks → VC → Stage → Paperwork) once Fixtures opens its result as the show.
 
 **Found during Phase 0 (small, do when touching the area):**
-- `core/fixture.py` (Fixture Configurator QXW generation) still hard-codes `XRot="65"` for every fixture; align it with `qxw_builder.default_x_rot()`.
-- Quick Start canvas: `qsSetOrientation()` exists but no UI button calls it; wire the Down/Horizontal/Up/Auto presets (now zone rules) into the Quick Start placement panel.
-- Quick Start download file name still carries a timestamp (`<project>_YYYYMMDD_HHMM.qxw`); switch to the `_vN` rule when Quick Start gets profiles.
+- ~~`core/fixture.py` hard-codes `XRot="65"`~~ — done in v2.1.0 (keeps the show's tilt, else `default_x_rot`).
+- ~~Quick Start `qsSetOrientation()` without buttons~~ — done in v2.1.0 (*Beam (tilt)*: Down / Across / Up / Auto).
+- ~~Quick Start file name with a timestamp~~ — done in v2.1.0 (`<project>_v1.qxw`, then the next free `_vN`).
 - Housekeeping: the repo folder holds SSH private keys (`ssh_github_key`, `github-giopas-ssh-hey.txt`) — git-ignored, but better moved to `~/.ssh`. `Old and tests/` is ignored and can be archived.
 
 
-- **Show Profile**: one JSON describing rig, conventions, palettes, VC screen and templates, so a new show starts from the profile. This is the base for sharing with other users.
-- **Command-line pipeline**: `swissknife build profile.json → show.qxw`, fully scripted and reproducible.
+- ~~**Show Profile**~~ and ~~**command-line pipeline**~~ — done in v2.1.0 (3.1): a profile is the recipe by meaning; `python -m core.profile build`. Still open: a profile that starts a show from nothing (Quick Start rig inside it), a step editor.
 - **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
 - **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
 - **Look Builder follow-ups** (from 2.3): Doctor D013 fix using the chaser timing choice (ms / BPM); chasers in QLC+ *beats* tempo (tap/BPM sync) instead of fixed ms; looks with a moving-head position (pan/tilt presets instead of centre); save your own palettes; RGB-matrix patterns for pixel bars.
@@ -947,7 +983,8 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. (done) **v2.0.0 released** — the Pub test (2.8) and the recipe (2.9); forum post published (qlcplus.org/forum/viewtopic.php?p=84132); v1.1.1 release published (giopas). Next: **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+0. **v2.1.0 prepared** (3.1 Show Profiles + the small items) on `feat/v2.1.0` — giopas: try it (History › ↻ Do it again; `python -m core.profile build`), then release. Next: **Phase 3 packages → v2.2.0**, then the MCP server.
+1. (done) **v2.0.0 released** — the Pub test (2.8) and the recipe (2.9); forum post published (qlcplus.org/forum/viewtopic.php?p=84132); v1.1.1 release published (giopas). v2.0.1 released 3 Oct. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

@@ -39,7 +39,7 @@ FORMAT = "qsk-recipe/1"
 # Paths never recorded: reads, previews that change nothing, exports, desktop
 # dialogs, sessions, other tools' scratch state, and the save itself.
 SKIP = [
-    r"^/api/load$", r"^/api/reload$", r"^/api/quit$", r"^/api/help$", r"^/api/output-dir$",
+    r"^/api/profile/", r"^/api/load$", r"^/api/reload$", r"^/api/quit$", r"^/api/help$", r"^/api/output-dir$",
     r"^/api/picker/", r"^/api/session/", r"^/api/show/save$", r"^/api/show/saved$",
     r"^/api/compare/", r"^/api/dictionary/", r"^/api/quickstart/", r"^/api/fixture/",
     r"^/api/merger/", r"^/api/showbook/", r"^/api/checklist/", r"^/api/techrider/",
@@ -107,11 +107,21 @@ def _scan_inputs(obj: Any) -> None:
                 pass
 
 
-def record(method: str, path: str, body: Any, status: int) -> None:
+def symbolize(method: str, path: str, body: Any) -> Optional[dict]:
+    """Called before each recorded request (app.py): the call by meaning, from
+    the show as it is now (core/retarget.py)."""
+    from core import retarget, workspace
+    return retarget.symbolize(method, path, body, workspace._state.get("qxw_root"))
+
+
+def record(method: str, path: str, body: Any, status: int, sym: Optional[dict] = None) -> None:
     """Called after each request (app.py)."""
     if not _rec or status >= 400 or not recordable(method, path):
         return
-    _rec["calls"].append({"method": method, "path": path, "body": copy.deepcopy(body)})
+    call = {"method": method, "path": path, "body": copy.deepcopy(body)}
+    if sym:
+        call["sym"] = sym
+    _rec["calls"].append(call)
     _scan_inputs(body)
 
 
@@ -124,6 +134,7 @@ def snapshot(saved_path: str = "") -> dict:
         "source": dict(_rec.get("source", {})),
         "inputs": [{"path": p, **v} for p, v in _rec.get("inputs", {}).items()],
         "calls": copy.deepcopy(_rec.get("calls", [])),
+        "symbolic": True,          # calls say what their IDs are (2.1.0+)
     }
     if saved_path and os.path.isfile(saved_path):
         out["result"] = {"name": os.path.basename(saved_path), "sha256": _sha(saved_path)}
@@ -180,6 +191,159 @@ def _swap(obj: Any, mapping: dict) -> Any:
     return obj
 
 
+_TOOLS = [("/api/reducer", "Rig Reducer"), ("/api/doctor", "Workspace Doctor"),
+          ("/api/looks", "Look Builder"), ("/api/vc", "VC Editor"), ("/api/stage", "Stage & Meshes"),
+          ("/api/setlist", "Setlist"), ("/api/brightness", "Brightness"),
+          ("/api/porter", "Function Porter"), ("/api/triggers", "Trigger Manager"),
+          ("/api/show", "History")]
+
+
+def describe(call: dict) -> str:
+    """A call in a few words: *VC Editor — new_page 'Extra'*."""
+    p = call.get("path", "")
+    tool = next((t for pre, t in _TOOLS if p.startswith(pre)), p)
+    b = call.get("body") if isinstance(call.get("body"), dict) else {}
+    what = b.get("op") or p.rstrip("/").rsplit("/", 1)[-1]
+    name = b.get("caption") or b.get("name") or ""
+    if p.startswith("/api/triggers/") and call.get("method") == "PATCH":
+        what = "key / MIDI"
+    if p.startswith("/api/doctor/apply"):
+        what = "fixes"
+    return f"{tool} — {what}" + (f" '{name}'" if isinstance(name, str) and name else "")
+
+
+def run_calls(client, calls: list, mapping: Optional[dict] = None, onto: bool = False,
+              log=None) -> list:
+    """Make the calls on the show open in *client* (in order).  With *onto*,
+    each call is first bound to this show's IDs (core/retarget.py): a call
+    naming something the show doesn't have is left out, a failing call is
+    noted, and the rest goes on.  Returns one dict per call."""
+    from core import retarget, workspace
+    say = log or (lambda *_: None)
+    mapping = mapping or {}
+    steps, gap = [], False
+
+    def findings():
+        return (client.get("/api/doctor/check").get_json(silent=True) or {}).get("findings", [])
+    for n, c in enumerate(calls, 1):
+        method, path = c["method"], c["path"]
+        body = _swap(c.get("body"), mapping)
+        step = {"n": n, "method": method, "path": path, "title": describe(c)}
+        if onto:
+            if not retarget.known(method, path):
+                step.update(status="skipped", why="this kind of change can't be replayed on another show")
+                steps.append(step)
+                gap = True
+                say(f"  {n:3d}/{len(calls)}  skipped  {step['title']} — {step['why']}")
+                continue
+            if c.get("sym"):
+                try:
+                    b = retarget.bind(method, _swap(c["sym"], mapping), workspace._state.get("qxw_root"),
+                                      doctor_findings=findings)
+                except retarget.Unbound as e:
+                    step.update(status="skipped", why=f"not in this show: {e}")
+                    steps.append(step)
+                    gap = True
+                    say(f"  {n:3d}/{len(calls)}  skipped  {step['title']} — {step['why']}")
+                    continue
+                path, body = b["path"], b["body"]
+                if b.get("note"):
+                    step["note"] = b["note"]
+            if gap and re.search(r"/(undo|redo)$", path):
+                step["note"] = "a change before it was left out: this undo / redo may act on another step"
+        r = client.open(path, method=method, json=body)
+        if r.status_code >= 400:
+            msg = (r.get_json(silent=True) or {}).get("error", r.status_code)
+            if not onto:
+                raise ReplayError(f"Call {n}/{len(calls)} {method} {c['path']} failed: {msg}")
+            step.update(status="failed", why=str(msg))
+            gap = True
+        else:
+            step["status"] = "applied"
+        steps.append(step)
+        say(f"  {n:3d}/{len(calls)}  {step['status']:8s} {step['title']}"
+            + (f" — {step.get('why') or step.get('note')}" if step.get("why") or step.get("note") else ""))
+    return steps
+
+
+def needs_symbols(recipe: dict) -> bool:
+    """A recipe from before 2.1.0: its calls don't say what their IDs are."""
+    from core import retarget
+    return not recipe.get("symbolic") and any(retarget._rules(c["method"], c["path"])
+                                              for c in recipe.get("calls", []))
+
+
+def add_symbols(recipe: dict, source: str, recipe_dir: str = "", inputs_dir: str = "") -> dict:
+    """Replay a recipe on its own source to learn what its IDs are (for
+    recipes recorded before 2.1.0).  Changes the open show: command line only."""
+    import app as app_mod
+    mapping = _resolve_inputs(recipe, recipe_dir, inputs_dir)
+    client = app_mod.create_app().test_client()
+    r = client.post("/api/load", json={"path": os.path.abspath(source)})
+    if r.status_code != 200:
+        raise ReplayError(f"Could not open {source}: {r.get_json()}")
+    rev = {v: k for k, v in mapping.items()}
+    run_calls(client, recipe.get("calls", []), mapping)
+    out = copy.deepcopy(recipe)
+    out["calls"] = _swap(copy.deepcopy(_rec.get("calls", [])), rev)
+    out["symbolic"] = True
+    return out
+
+
+def _find_source(recipe: dict, source: Optional[str], recipe_dir: str, inputs_dir: str) -> str:
+    src = recipe.get("source", {})
+    if not source:
+        cands = [src.get("path", ""), os.path.join(inputs_dir, src.get("name", "")) if inputs_dir else "",
+                 os.path.join(recipe_dir, src.get("name", "")) if recipe_dir else ""]
+        source = next((c for c in cands if c and os.path.isfile(c)), "")
+    if not source or not os.path.isfile(source):
+        raise ReplayError(f"Source show not found: {src.get('name')} — pass --source.")
+    return source
+
+
+def replay_onto(recipe: dict, target: str, out: Optional[str] = None, recipe_dir: str = "",
+                inputs_dir: str = "", source: Optional[str] = None, params: Optional[dict] = None,
+                log=None) -> dict:
+    """Replay the recipe's changes on **another show** (*target*): every ID a
+    call names is found again by what it is.  What isn't in the target is left
+    out and listed.  Saves to *out* (default: ``<target>_v<n+1>.qxw`` next to
+    it is *not* chosen for you — without *out* nothing is kept).
+    Returns ``{out, steps, applied, skipped, failed, warnings}``."""
+    import app as app_mod
+    from core import qxw_io
+    say = log or (lambda *_: None)
+    warnings = []
+    if recipe.get("format") not in (FORMAT, "qsk-profile/1"):
+        raise ReplayError(f"Not a Swiss Knife recipe ({recipe.get('format')!r}).")
+    if not os.path.isfile(target):
+        raise ReplayError(f"Show not found: {target}")
+    if recipe.get("format") == FORMAT and needs_symbols(recipe):
+        say("This recipe was recorded before Swiss Knife 2.1: replaying it on its own show first "
+            "to learn what its IDs are…")
+        recipe = add_symbols(recipe, _find_source(recipe, source, recipe_dir, inputs_dir),
+                             recipe_dir, inputs_dir)
+    mapping = _resolve_inputs(recipe, recipe_dir, inputs_dir)
+    mapping.update({f"@param:{k}": v for k, v in (params or {}).items()})
+    client = app_mod.create_app().test_client()
+    r = client.post("/api/load", json={"path": os.path.abspath(target)})
+    if r.status_code != 200:
+        raise ReplayError(f"Could not open {target}: {r.get_json()}")
+    steps = run_calls(client, recipe.get("calls") or recipe.get("steps") or [], mapping, onto=True, log=say)
+    res = {"out": "", "steps": steps, "warnings": warnings,
+           "applied": sum(s["status"] == "applied" for s in steps),
+           "skipped": sum(s["status"] == "skipped" for s in steps),
+           "failed": sum(s["status"] == "failed" for s in steps)}
+    if out:
+        out = os.path.abspath(out)
+        if os.path.abspath(target) == out:
+            out = qxw_io.next_version_path(out)
+        r = client.post("/api/show/save", json={"path": out})
+        if r.status_code != 200:
+            raise ReplayError(f"Could not save: {r.get_json()}")
+        res["out"] = out
+    return res
+
+
 def replay(recipe: dict, source: Optional[str] = None, out: Optional[str] = None,
            recipe_dir: str = "", inputs_dir: str = "", log=None) -> dict:
     """Open *source* (default: the recorded one, or one with its name next to
@@ -212,13 +376,7 @@ def replay(recipe: dict, source: Optional[str] = None, out: Optional[str] = None
     if r.status_code != 200:
         raise ReplayError(f"Could not open {source}: {r.get_json()}")
     calls = recipe.get("calls", [])
-    for n, c in enumerate(calls, 1):
-        body = _swap(c.get("body"), mapping)
-        r = client.open(c["path"], method=c["method"], json=body)
-        if r.status_code >= 400:
-            msg = (r.get_json(silent=True) or {}).get("error", r.status_code)
-            raise ReplayError(f"Call {n}/{len(calls)} {c['method']} {c['path']} failed: {msg}")
-        say(f"  {n:3d}/{len(calls)}  {c['method']} {c['path']}")
+    run_calls(client, calls, mapping, log=say)
     keep = bool(out)
     if not out:
         fd, out = tempfile.mkstemp(suffix=".qxw")
@@ -249,6 +407,8 @@ def main(argv=None) -> int:
     rp.add_argument("--source", help="the show the recipe starts from (default: as recorded)")
     rp.add_argument("--out", help="where to save the result (default: check only)")
     rp.add_argument("--inputs", default="", help="folder with the other files the recipe uses")
+    rp.add_argument("--onto", help="replay the changes on ANOTHER show: what each call names is "
+                                   "found again by what it is (name, type, place)")
     rp.add_argument("-v", "--verbose", action="store_true", help="list every call")
     sh = sub.add_parser("show", help="list the steps of a recipe")
     sh.add_argument("recipe")
@@ -266,6 +426,18 @@ def main(argv=None) -> int:
         for i in recipe.get("inputs", []):
             print(f"  input: {i['name']}")
         return 0
+    if a.onto:
+        try:
+            res = replay_onto(recipe, a.onto, a.out, os.path.dirname(os.path.abspath(a.recipe)), a.inputs,
+                              source=a.source, log=print)
+        except ReplayError as e:
+            print(f"REPLAY FAILED: {e}", file=sys.stderr)
+            return 1
+        print(f"On {os.path.basename(a.onto)}: {res['applied']} applied, {res['skipped']} left out, "
+              f"{res['failed']} failed.")
+        if res["out"]:
+            print(f"Saved: {res['out']}")
+        return 0 if not res["failed"] else 3
     try:
         res = replay(recipe, a.source, a.out, os.path.dirname(os.path.abspath(a.recipe)), a.inputs,
                      log=print if a.verbose else None)

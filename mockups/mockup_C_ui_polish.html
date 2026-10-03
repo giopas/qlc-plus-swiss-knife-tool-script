@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swiss Knife — UI polish mockup</title>
+<style>
+/* Mockup C (4 Oct): the UI/UX review (Copilot + Gemini) as Swiss Knife would do it.
+   Static, no scripts beyond the frame switcher. Tokens as in static/css/tokens.css (dark). */
+:root {
+  --bg:#0d1117; --surface-0:#131822; --surface-1:#1a2130; --surface-2:#232c3f;
+  --border:#232b3c; --border-strong:#36415c; --text:#e8ecf5; --text-dim:#98a2b8; --text-faint:#6b748a;
+  --accent:#2dd4bf; --accent-soft:rgba(45,212,191,.12); --accent-contrast:#062622;
+  --success:#3ecf8e; --warning:#f5b340; --error:#ef5a6a;
+  --success-soft:rgba(62,207,142,.12); --warning-soft:rgba(245,179,64,.12); --error-soft:rgba(239,90,106,.12);
+  --shadow-1:0 1px 2px rgba(0,0,0,.25), 0 4px 12px rgba(0,0,0,.18);
+  --fs-title:20px; --fs-section:15px; --fs-body:13px; --fs-small:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:16px; --sp-4:24px; --sp-5:32px;
+  --radius:8px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070b;color:var(--text);font:var(--fs-body)/1.5 var(--font);padding:var(--sp-3)}
+.switch{display:flex;gap:var(--sp-2);margin:0 auto var(--sp-3);max-width:1440px;align-items:center;flex-wrap:wrap}
+.switch b{font-size:var(--fs-section);margin-right:var(--sp-3)}
+.switch button{background:var(--surface-1);color:var(--text-dim);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font:inherit;cursor:pointer}
+.switch button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.app{max-width:1440px;height:860px;margin:0 auto;display:flex;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+/* sidebar */
+aside{width:220px;background:var(--surface-0);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:var(--sp-3) var(--sp-3) var(--sp-2);font-weight:700;display:flex;gap:8px;align-items:center}
+.logo i{color:var(--accent);font-style:normal}
+.ver{font:10px var(--mono);color:var(--text-faint);background:var(--surface-2);border-radius:20px;padding:1px 6px}
+nav{flex:1;overflow:auto;padding:0 var(--sp-2)}
+.grp{margin-top:var(--sp-3)}
+.grp-l{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);padding:0 8px 6px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.grp-l span{width:16px;height:16px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:9.5px}
+.it{display:block;padding:5px 10px 5px 30px;border-radius:6px;color:var(--text-dim);font-size:12.5px}
+.it.on{background:var(--accent-soft);color:var(--accent)}
+.it .dot{float:right;width:6px;height:6px;border-radius:50%;background:var(--warning);margin-top:7px}
+.hist{margin:var(--sp-2);padding:var(--sp-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-1);box-shadow:var(--shadow-1)}
+.hist h4{font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;margin-bottom:6px}
+.hist h4 a{color:var(--accent);text-transform:none;letter-spacing:0;font-weight:500}
+.hist li{list-style:none;display:flex;gap:6px;font-size:11.5px;color:var(--text-dim);padding:2px 0}
+.hist li:before{content:"✓";color:var(--success)}
+.hist li b{color:var(--text);font-weight:600}
+.hist .u{margin-left:auto;color:var(--text-faint)}
+/* main */
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+.ribbon{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--border);background:var(--surface-0)}
+.file{font-weight:600;display:flex;gap:6px;align-items:center;margin-right:var(--sp-2)}
+.file:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--success)}
+.card{display:flex;flex-direction:column;line-height:1.15;padding:3px 10px;border-radius:6px;background:var(--surface-1);border:1px solid var(--border);min-width:64px}
+.card b{font:600 13px var(--mono)}
+.card small{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+.card.warn{background:var(--warning-soft);border-color:rgba(245,179,64,.35)} .card.warn b{color:var(--warning)}
+.card.err{background:var(--error-soft);border-color:rgba(239,90,106,.35)} .card.err b{color:var(--error)}
+.card.ok b{color:var(--success)}
+.card.hist b{color:var(--warning)}
+.sp{flex:1}
+.btn{background:var(--surface-1);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 11px;font:inherit;font-size:12px}
+.btn.pri{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent);font-weight:600}
+.kbd{font:11px var(--mono);color:var(--text-faint);border:1px solid var(--border);border-radius:4px;padding:0 4px;margin-left:4px}
+.page{flex:1;overflow:auto;padding:var(--sp-4) var(--sp-5)}
+h1{font-size:var(--fs-title);margin-bottom:var(--sp-1)}
+h2{font-size:var(--fs-section);margin:var(--sp-4) 0 var(--sp-2)}
+.dim{color:var(--text-dim)}
+.panel{background:var(--surface-0);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:var(--sp-3)}
+.routes{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3)}
+.route{background:linear-gradient(180deg,var(--accent-soft),transparent 70%),var(--surface-0);border:1px solid rgba(45,212,191,.35);border-radius:var(--radius);padding:var(--sp-3);box-shadow:var(--shadow-1)}
+.route h3{font-size:var(--fs-section);margin-bottom:4px}
+.route .meta{font-size:var(--fs-small);color:var(--accent);margin-bottom:var(--sp-2)}
+.route ol{display:flex;flex-wrap:wrap;gap:4px;list-style:none;margin:var(--sp-2) 0 var(--sp-3)}
+.route ol li{font-size:10.5px;color:var(--text-dim);background:var(--surface-1);border-radius:10px;padding:1px 8px}
+.jobs{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2)}
+.job{display:flex;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);background:var(--surface-0);border:1px solid var(--border);border-radius:var(--radius)}
+.job .n{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:11px;flex-shrink:0}
+.job b{display:block}
+.job .tools{font-size:var(--fs-small);color:var(--text-dim)}
+.open{display:flex;gap:var(--sp-2);align-items:center}
+/* reducer */
+.tool{display:grid;grid-template-columns:1fr 360px;gap:var(--sp-3);height:100%}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--border-strong);position:sticky;top:0;background:var(--surface-0)}
+td{padding:6px 10px;border-bottom:1px solid var(--border);line-height:1.5}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.018)}
+tbody tr:hover td{background:var(--accent-soft)}
+td.id{width:44px;font-family:var(--mono);color:var(--text-faint)}
+td.nm{font-weight:600}
+tr.off td{color:var(--text-faint);text-decoration:line-through}
+.chg h3{font-size:var(--fs-section);margin-bottom:var(--sp-2)}
+.chg details{border-top:1px solid var(--border);padding:6px 0}
+.chg summary{cursor:pointer;display:flex;justify-content:space-between}
+.chg summary span{font:600 12px var(--mono);color:var(--text-dim)}
+.chg ul{list-style:none;max-height:120px;overflow:auto;margin-top:4px;font-size:11.5px;color:var(--text-dim)}
+.foot{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-top:1px solid var(--border);background:var(--surface-0)}
+.outcome{display:flex;gap:var(--sp-2);align-items:center;font-size:12.5px}
+.outcome .ok{color:var(--success)}
+.chip{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1px 9px;font-size:11.5px}
+.note{font-size:var(--fs-small);color:var(--text-faint)}
+/* palette */
+.pal{position:absolute;inset:0;background:rgba(5,7,11,.6);display:flex;justify-content:center;padding-top:110px}
+.pal .box{width:560px;background:var(--surface-0);border:1px solid var(--border-strong);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;height:fit-content}
+.pal input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--border);padding:14px 16px;color:var(--text);font:15px var(--font);outline:0}
+.pal li{list-style:none;display:flex;justify-content:space-between;padding:8px 16px;font-size:13px}
+.pal li.on{background:var(--accent-soft)}
+.pal li small{color:var(--text-faint)}
+.pal .sec{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:8px 16px 2px}
+.frame{display:none}.frame.on{display:flex}
+.why{max-width:1440px;margin:var(--sp-3) auto 0;color:var(--text-dim);font-size:12.5px}
+.why li{margin-left:18px}
+</style>
+</head>
+<body>
+<div class="switch">
+  <b>Mockup C — UI polish</b>
+  <button class="on" onclick="show('start',this)">Start</button>
+  <button onclick="show('reducer',this)">Rig Reducer</button>
+  <button onclick="show('palette',this)">⌘K palette</button>
+</div>
+
+<div class="app">
+  <aside>
+    <div class="logo"><i>⚡</i> SWISS KNIFE <span class="ver">v2.1.0</span></div>
+    <nav>
+      <div class="it on">Start</div>
+      <div class="grp"><div class="grp-l"><span>1</span>New show</div><div class="it">Quick Start</div><div class="it">Fixtures</div></div>
+      <div class="grp"><div class="grp-l"><span>2</span>Adapt a show</div><div class="it">Rig Reducer <i class="dot"></i></div><div class="it">Function Porter</div><div class="it">Brightness</div></div>
+      <div class="grp"><div class="grp-l"><span>3</span>Create</div><div class="it">Look Builder <i class="dot"></i></div><div class="it">VC Visual Editor</div><div class="it">Stage &amp; Meshes</div></div>
+      <div class="grp"><div class="grp-l"><span>4</span>Run the show</div><div class="it">Setlist</div><div class="it">Trigger Manager</div><div class="it">Dictionary</div></div>
+      <div class="grp"><div class="grp-l"><span>5</span>Check &amp; fix</div><div class="it">Workspace Doctor <i class="dot"></i></div><div class="it">ID Browser</div><div class="it">Compare</div></div>
+      <div class="grp"><div class="grp-l"><span>6</span>Document</div><div class="it">Show Paperwork</div></div>
+    </nav>
+    <div class="hist">
+      <h4>History · 3 <a>All ›</a></h4>
+      <li><b>Workspace Doctor</b> 803 fixes <span class="u">↶</span></li>
+      <li><b>Rig Reducer</b> kept 8 <span class="u">↶</span></li>
+      <li><b>Look Builder</b> 2 looks <span class="u">↶</span></li>
+    </div>
+  </aside>
+
+  <main>
+    <div class="ribbon">
+      <span class="file">Festival_14fix.qxw</span>
+      <span class="card"><b>14</b><small>fixtures</small></span>
+      <span class="card"><b>286</b><small>functions</small></span>
+      <span class="card"><b>113</b><small>VC widgets</small></span>
+      <span class="card warn"><b>0 · 52</b><small>Doctor err · warn</small></span>
+      <span class="card hist"><b>3</b><small>unsaved changes</small></span>
+      <span class="sp"></span>
+      <button class="btn">Go to… <span class="kbd">⌘K</span></button>
+      <button class="btn">↶ Undo</button>
+      <button class="btn">🕘 History</button>
+      <button class="btn pri">💾 Save as new file…</button>
+    </div>
+
+    <!-- START -->
+    <section class="frame on" id="f-start" style="flex-direction:column;flex:1;min-height:0">
+      <div class="page">
+        <h1>Welcome</h1>
+        <p class="dim">Open a show — every tool works on it, the History keeps every step, and the file you opened is never touched.</p>
+        <div class="panel open" style="margin-top:var(--sp-3)">
+          <button class="btn pri">📂 Open a show…</button><button class="btn">Open session…</button>
+          <span class="note">or drag a .qxw here · recent: Festival_14fix.qxw, Pub_6fix_v3.qxw</span>
+        </div>
+        <h2>Guided routes <span class="note">— the tools in order, one step at a time</span></h2>
+        <div class="routes">
+          <div class="route"><h3>Adapt a show to a new venue</h3><div class="meta">9 steps · the Pub test took 12 min</div>
+            <p class="dim">Smaller or different rig: keep fixtures, fix, groups, looks, VC, setlist.</p>
+            <ol><li>Reducer</li><li>Doctor</li><li>Groups</li><li>Looks</li><li>VC</li><li>Setlist</li><li>…</li></ol>
+            <button class="btn pri">▶ Start the route</button></div>
+          <div class="route"><h3>Get ready for the gig</h3><div class="meta">5 steps</div>
+            <p class="dim">Tonight's setlist, key/MIDI check, Doctor, paperwork for the crew.</p>
+            <ol><li>Setlist</li><li>Triggers</li><li>Doctor</li><li>Paperwork</li></ol>
+            <button class="btn pri">▶ Start the route</button></div>
+          <div class="route"><h3>Do it again with a profile</h3><div class="meta">new in 2.1 · 2 saved profiles</div>
+            <p class="dim">The changes you made to one show, done again on this one.</p>
+            <ol><li>Pub night — 5 steps</li><li>Club — 3 steps</li></ol>
+            <button class="btn pri">▶ Apply a profile…</button></div>
+        </div>
+        <h2>Or pick a tool by job</h2>
+        <div class="jobs">
+          <div class="job"><span class="n">1</span><div><b>New show</b><span class="tools">Quick Start · Fixtures</span></div></div>
+          <div class="job"><span class="n">2</span><div><b>Adapt a show</b><span class="tools">Rig Reducer · Function Porter · Brightness</span></div></div>
+          <div class="job"><span class="n">3</span><div><b>Create</b><span class="tools">Look Builder · VC Visual Editor · Stage &amp; Meshes</span></div></div>
+          <div class="job"><span class="n">4</span><div><b>Run the show</b><span class="tools">Setlist · Trigger Manager · Dictionary</span></div></div>
+          <div class="job"><span class="n">5</span><div><b>Check &amp; fix</b><span class="tools">Workspace Doctor · ID Browser · Compare</span></div></div>
+          <div class="job"><span class="n">6</span><div><b>Document</b><span class="tools">Show Paperwork</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REDUCER -->
+    <section class="frame" id="f-reducer" style="flex-direction:column;flex:1;min-height:0">
+      <div class="page" style="padding-bottom:var(--sp-3)">
+        <h1>Rig Reducer</h1>
+        <p class="dim" style="margin-bottom:var(--sp-3)">Keep the fixtures of a smaller rig — everything that used the others is cleaned up.</p>
+        <div class="tool">
+          <div class="panel" style="padding:0;overflow:auto">
+            <table><thead><tr><th>Keep</th><th>ID</th><th>Name</th><th>Fixture</th><th>Mode</th><th>Address</th></tr></thead><tbody>
+              <tr class="off"><td>☐</td><td class="id">0</td><td>Ceiling 1</td><td>Eurolite LED 4C-12</td><td>9 Ch</td><td>1.101</td></tr>
+              <tr class="off"><td>☐</td><td class="id">1</td><td>Ceiling 2</td><td>Eurolite LED 4C-12</td><td>9 Ch</td><td>1.110</td></tr>
+              <tr><td>☑</td><td class="id">6</td><td class="nm">Silhouette (Drums)</td><td>Generic 7-Ch RGB PAR</td><td>7 Ch</td><td>1.8</td></tr>
+              <tr><td>☑</td><td class="id">7</td><td class="nm">Wing Left</td><td>Generic 7-Ch RGB PAR</td><td>7 Ch</td><td>1.36</td></tr>
+              <tr><td>☑</td><td class="id">8</td><td class="nm">Wing Right</td><td>Generic 7-Ch RGB PAR</td><td>7 Ch</td><td>1.43</td></tr>
+              <tr><td>☑</td><td class="id">9</td><td class="nm">Banner Center</td><td>Generic 7-Ch RGB PAR</td><td>7 Ch</td><td>1.29</td></tr>
+              <tr><td>☑</td><td class="id">11</td><td class="nm">PA Right (High Side)</td><td>Generic 7-Ch RGB PAR</td><td>7 Ch</td><td>1.15</td></tr>
+              <tr><td>☑</td><td class="id">12</td><td class="nm">PA Left (High Side)</td><td>Generic 7-Ch RGB PAR</td><td>7 Ch</td><td>1.1</td></tr>
+            </tbody></table>
+          </div>
+          <div class="panel chg">
+            <h3>What Apply will do</h3>
+            <p class="dim" style="margin-bottom:var(--sp-2)">updated as you tick — no Preview button</p>
+            <details open><summary>Fixtures removed <span>6</span></summary><ul><li>0 Ceiling 1</li><li>1 Ceiling 2</li><li>…</li></ul></details>
+            <details><summary>Fixture groups removed <span>3</span></summary></details>
+            <details><summary>Functions removed <span>11</span></summary></details>
+            <details><summary>VC widgets removed <span>6</span></summary></details>
+            <details><summary>Scene values removed <span>672</span></summary></details>
+            <details><summary>Doctor on the result <span class="ok" style="color:var(--success)">nothing new</span></summary></details>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <span class="outcome"><b>Apply will</b><span class="chip">−6 fixtures</span><span class="chip">−11 functions</span><span class="chip">−6 widgets</span><span class="ok">✓ no new Doctor errors</span></span>
+        <span class="sp"></span>
+        <span class="note">the show in progress · undo in History</span>
+        <button class="btn">Export a copy…</button><button class="btn pri">✓ Apply to the show</button>
+      </div>
+    </section>
+
+    <!-- PALETTE -->
+    <section class="frame" id="f-palette" style="flex:1"></section>
+  </main>
+  <div class="pal" id="pal" style="display:none"><div class="box">
+    <input value="red" aria-label="Command">
+    <div class="sec">Tools</div>
+    <ul><li class="on">Rig <b>Re</b>ducer <small>2 · Adapt a show</small></li><li>T<b>r</b>igger Manag<b>e</b>r <small>4 · Run the show</small></li></ul>
+    <div class="sec">Actions</div>
+    <ul><li>↶ Undo the last change <small>⌘Z</small></li><li>▶ Apply profile “Pub night” <small>profile</small></li><li>Route: adapt a show to a new venue <small>route</small></li></ul>
+  </div></div>
+</div>
+
+<div class="why">
+  <b>What this mockup shows</b> (implemented on the real screens):
+  <ul>
+    <li>Ribbon: labelled counts and status cards (Doctor in amber/red/green, unsaved changes) instead of bare numbers.</li>
+    <li>Sidebar: groups that read as groups; the History always visible with ✓ steps and ↶.</li>
+    <li>Start: guided routes first, with their steps; the six jobs as a compact index under them.</li>
+    <li>Every tool: the footer says what <b>Apply</b> will do, next to the button; the Reducer computes it as you tick.</li>
+    <li>Tables: zebra, hover, quiet ID column, the name stands out. ⌘K / Ctrl+K: go to any tool or action.</li>
+  </ul>
+</div>
+<script>
+function show(f, b) {
+  document.querySelectorAll('.switch button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.frame').forEach(x => x.classList.remove('on'));
+  document.getElementById('pal').style.display = f === 'palette' ? 'flex' : 'none';
+  document.getElementById('f-' + (f === 'palette' ? 'start' : f)).classList.add('on');
+}
+</script>
+</body>
+</html>

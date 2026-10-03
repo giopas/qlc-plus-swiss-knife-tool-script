@@ -1283,9 +1283,9 @@ function _vceStatus(msg, type) {
   const el = document.getElementById('vce-status');
   if (!el) return;
   el.textContent = msg;
-  el.style.color = type === 'error' ? '#f38ba8'
-                 : type === 'warn'  ? '#f9e2af'
-                 : type === 'ok'    ? '#a6e3a1'
+  el.style.color = type === 'error' ? 'var(--error)'
+                 : type === 'warn'  ? 'var(--warning)'
+                 : type === 'ok'    ? 'var(--success)'
                  : 'var(--text-muted)';
 }
 

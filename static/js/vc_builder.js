@@ -54,7 +54,7 @@ function _vcbSelectionHtml(selArr) {
     html += `<div class="vce-sec">Function <span class="vce-hint">what this ${first.type === 'CueList' ? 'CueList plays (a chaser)' : first.type === 'Slider' ? 'slider plays' : 'button runs'}</span></div>
       <div style="font-size:11px;margin-bottom:4px">${first.func_id
         ? `→ <b>${_esc(first.func_name || '?')}</b> <span class="vce-hint">[${_esc(first.func_id)}]</span>`
-        : '<span style="color:#f9e2af">not wired</span> <span class="vce-hint">— pick one here, or drag one from ＋ Add &amp; wire onto it</span>'}</div>
+        : '<span style="color:var(--warning)">not wired</span> <span class="vce-hint">— pick one here, or drag one from ＋ Add &amp; wire onto it</span>'}</div>
       <div class="vce-row">
         <select id="vcb-wire-sel" class="vce-pi" style="flex:1;min-width:0">${first.func_id ? '' : '<option value="">— choose —</option>'}${fns.map(f =>
           `<option value="${_esc(f.id)}" ${f.id === first.func_id ? 'selected' : ''}>${_esc(f.name)} · ${_esc(f.type)}</option>`).join('')}</select>
@@ -264,7 +264,7 @@ function _vcbSetlistCard() {
   const cls = I.cuelists || [];
   const state = cls.length
     ? `This show has ${cls.length} CueList${cls.length > 1 ? 's' : ''}: ${cls.slice(0, 3).map(c => `<b>${_esc(c.caption || 'CueList')}</b>`).join(', ')}${cls.length > 3 ? '…' : ''}.`
-    : '<b style="color:#f9e2af">This show has no CueList yet</b> — add one here and the Setlist can fill it.';
+    : '<b style="color:var(--warning)">This show has no CueList yet</b> — add one here and the Setlist can fill it.';
   return `
     <div class="vcb-card">
       <div class="vcb-card-t">▶ Setlist cue list</div>

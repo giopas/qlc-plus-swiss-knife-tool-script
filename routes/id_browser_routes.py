@@ -210,7 +210,8 @@ def vc_builder_info():
                     'profiles': nomenclature.list_profiles(),
                     'legend': vc_builder.legend_lines(prof),
                     'groups': prof.groups, 'effects': prof.effects,
-                    'chasers': setlist})
+                    'chasers': setlist,
+                    'cuelists': vc_builder.cuelists(ws._state['qxw_root'])})
 
 
 @bp.route('/vc/template', methods=['POST'])

@@ -59,6 +59,16 @@ async function refreshSlots() {
   _renderSlots(_slotData);
 }
 
+async function slNewCueList() {
+  const r = await fetch('/api/vc/op', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ op: 'setlist_cuelist', chaser_id: '__new__' }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { setStatus('✗ ' + (d.error || 'Could not add the CueList'), 'error'); return; }
+  await Promise.all([refreshSlots(), _fetchChasers()]);
+  if (_slotData.length) selectSlot(_slotData[_slotData.length - 1].id);
+  setStatus('✓ CueList “Setlist” added on the first VC page — add your songs, then Apply.', 'ok');
+}
+
 async function _fetchChasers() {
   const data = await _apiJson('/api/setlist/chasers');
   _chasers = Array.isArray(data) ? data : [];
@@ -85,7 +95,10 @@ function _renderSlots(slots) {
   const el = document.getElementById('slot-list');
   if (!el) return;
   if (!slots.length) {
-    el.innerHTML = '<div class="slot-empty">No CueList slots found in workspace</div>';
+    el.innerHTML = `<div class="slot-empty">This show has no CueList yet.
+      <button class="btn btn-sm" style="margin-top:6px" onclick="slNewCueList()"
+        title="Adds a CueList on the first Virtual Console page, playing a new, empty chaser 'Setlist'">▶ ＋ Add a setlist CueList</button>
+      <div style="font-size:10px;margin-top:4px">or place one yourself in the <a href="#" onclick="go('vceditor');return false">VC Editor</a></div></div>`;
     return;
   }
   el.innerHTML = slots.map(s => `

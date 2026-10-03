@@ -7,6 +7,19 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.0.1] — 2026-10-03
+
+**After the pub test: paperwork for the crew, notes in the cue list.** A patch sheet with DIP switches (and a thermal-printer ticket), each setlist cue saying which function and button it stands for, a setlist CueList in one click for a show that has none, a third real show in the test corpus — and the fixes from giopas's first test of all this.
+
+### Changed
+- **The setlist CueList is easy to find.** It was the last, folded item of *Ready-made blocks* in the VC Editor. Now:
+  - **VC Editor › ＋ Add & wire** opens with a highlighted box **▶ Setlist cue list**. It says how many CueLists the show has ("This show has no CueList yet"). Its button names what it will do: *＋ Add a CueList on this page*, or *Wire “…”* when a CueList is selected.
+  - **✥ Selection** of a CueList has **▶ Use for a new setlist**.
+  - **Setlist**: a show with no CueList says so and offers **▶ ＋ Add a setlist CueList** (first VC page, new empty chaser *Setlist*); the slot appears at once.
+  - A new setlist CueList no longer covers other widgets. It goes where it fits at 720 × 420, smaller if the page is full (Quick Start page: under the groups, 720 × 340).
+  - `/api/vc/builder-info` lists `cuelists`; `setlist_cuelist` takes `__new__` with a selected CueList too. Tests `tests/test_setlist_notes.py` (8).
+
 ### Fixed
 - **Setlist: a song with no function was dropped from the cue list without a word** (giopas's test, 3 Oct). Applying now says which songs were left out, and the show report lists them under the Setlist step.
 - **VC Editor: a new CueList is 720 × 420** (was 400 × 500), wide enough to show every column in QLC+, the *Note* included.

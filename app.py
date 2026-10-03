@@ -343,6 +343,28 @@ if __name__ == '__main__':
         flask_thread = threading.Thread(target=_start_flask, daemon=True)
         flask_thread.start()
 
+        # Open the window only once the server answers: a WKWebView that loads
+        # too early stays white (no retry), and a port already taken by an
+        # older Swiss Knife is said plainly instead of showing that one.
+        import socket
+        import time as _time
+        import urllib.request
+        ready, t0 = False, _time.time()
+        while _time.time() - t0 < 15:
+            try:
+                with urllib.request.urlopen(url + '/api/status', timeout=1) as r:
+                    ready = r.status == 200
+                    break
+            except Exception:  # noqa: BLE001 — not listening yet
+                _time.sleep(0.15)
+        if not flask_thread.is_alive():
+            print(f"\n⚠  Could not start the server on port {PORT} — is another Swiss Knife still running?"
+                  "\n   Close it (or: lsof -ti tcp:%d | xargs kill) and start again.\n" % PORT)
+            sys.exit(1)
+        if not ready:
+            print("\n⚠  The server did not answer within 15 s; the window may stay empty — "
+                  "reload it, or run: python3 app.py --browser\n")
+
         print(f"\n⚡  QLC+ Swiss Knife  →  {url}  (native window)")
         print("   Close the window to quit.\n")
 
@@ -355,7 +377,8 @@ if __name__ == '__main__':
             confirm_close=True,
         )
         app._webview_window = window   # let /api/quit destroy it
-        webview.start()  # blocks until window is closed
+        # QSK_DEBUG=1: right-click › Inspect Element in the window (WebKit console)
+        webview.start(debug=bool(os.environ.get('QSK_DEBUG')))  # blocks until window is closed
         print("\n⚡  Window closed — bye!\n")
         os._exit(0)
     else:

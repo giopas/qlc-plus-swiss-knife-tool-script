@@ -414,6 +414,9 @@ function _lbSync() {
   if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${nl} look(s)</span><span class="doc-chip">${nc} chaser(s)</span>` : '';
   if (b) b.disabled = !(nl || nc);
   const x = _v('lb-export'); if (x) x.disabled = !(nl || nc);
+  if (typeof setOutcome === 'function') setOutcome('looks', nl || nc
+    ? [nl ? `+${nl} look${nl > 1 ? 's' : ''}` : '', nc ? `+${nc} chaser${nc > 1 ? 's' : ''}` : ''].filter(Boolean)
+    : 'nothing yet — add looks or chasers to the batch', '', nl || nc ? 'Apply will add' : 'Apply will do');
 }
 
 function _lbPlan() {

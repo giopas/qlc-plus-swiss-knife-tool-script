@@ -29,7 +29,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "2.1.0"  # single source of truth — must match CHANGELOG
+VERSION = "2.2.0"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -1258,6 +1258,87 @@ def step_note(fid: str, engine: ET.Element, buttons: dict) -> str:
             inh = inh if len(inh) <= 60 else inh[:57].rstrip(', ') + '…'
             note += f' — buttons: {inh}'
     return note
+
+
+_CLONE_SUFFIXES = (' (Setlist)', ' (Auto-Clone)')
+
+
+def _content_key(f: ET.Element) -> tuple:
+    """What a function does, without its ID and name (to find the original
+    of a copy whose marker QLC+ dropped)."""
+    return (f.get('Type', ''), tuple(ET.tostring(c, encoding='unicode')  # qxw-io: not output
+                                      for c in f if c.tag.split('}')[-1] != 'Path'))
+
+
+def _note_origin(sid: str, engine: ET.Element, buttons: dict) -> str:
+    """The original function a cue plays: through the copy marker
+    (SwissKnifeClone, or the reference read back from a note), the name of an
+    old-style copy ("Song (Setlist)"), or — for a cue whose function no button
+    plays — the one function with the same content that a button does play."""
+    origin, seen = sid, {sid}
+    while True:
+        f = _find_by_id(engine, 'Function', origin)
+        if f is None:
+            return '' if origin == sid else origin
+        parent = f.get('SwissKnifeClone') or _state['clone_base_map'].get(origin)
+        if not parent or parent in seen:
+            break
+        seen.add(parent)
+        origin = parent
+    if origin != sid or origin in buttons:
+        return origin
+    f = _find_by_id(engine, 'Function', sid)
+    name = f.get('Name', '')
+    for suf in _CLONE_SUFFIXES:
+        if name.endswith(suf):
+            base = _state['func_by_name'].get(name[:-len(suf)])
+            if base and base != sid:
+                return base
+    key = _content_key(f)
+    same = [g.get('ID') for g in engine.findall('q:Function', NS)
+            if g.get('ID') != sid and g.get('ID') in buttons and _content_key(g) == key]
+    return same[0] if len(same) == 1 else sid
+
+
+def cue_notes_missing() -> list:
+    """[(step element, note)] for the setlist cues (chasers of the CueLists)
+    that have no note yet."""
+    root = _state.get('qxw_root')
+    if root is None:
+        return []
+    engine = root.find('q:Engine', NS)
+    buttons = _button_refs(root)
+    out = []
+    for cid in sorted({s.get('chaser_id') for s in _state.get('cuelist_slots', []) if s.get('chaser_id')},
+                      key=_int):
+        ch = _find_by_id(engine, 'Function', cid)
+        if ch is None or ch.get('Type') != 'Chaser':
+            continue
+        for st in ch.findall('q:Step', NS):
+            if (st.get('Note') or '').strip():
+                continue                     # a note is there (ours or typed in QLC+): kept
+            sid = (st.text or '').strip()
+            origin = _note_origin(sid, engine, buttons) if sid else ''
+            note = step_note(origin, engine, buttons) if origin else ''
+            if note:
+                out.append((st, note, sid, origin))
+    return out
+
+
+def fill_cue_notes() -> dict:
+    """Write the reference (original function, its button) into every setlist
+    cue that has no note — for shows built before 2.0.1 or by hand.  Notes
+    already there are never touched.  One step of the show in progress."""
+    todo = cue_notes_missing()
+    if not todo:
+        return {'added': 0}
+    _show_touch('setlist', 'references added to the cue notes')
+    for st, note, sid, origin in todo:
+        st.set('Note', note)
+        if origin != sid and sid not in _state['clone_base_map']:
+            _state['clone_ids'].add(sid)
+            _state['clone_base_map'][sid] = origin
+    return {'added': len(todo)}
 
 
 def _keep_user_note(step: ET.Element, engine: ET.Element, keep: dict) -> None:

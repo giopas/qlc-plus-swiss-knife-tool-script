@@ -8,6 +8,55 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.2.0] — 2026-10-04
+
+**UI polish — after an outside review (Copilot, Gemini; 4 Oct).** What each tool will do is visible before you press Apply, the guided routes come first, the header labels its numbers, and ⌘K / Ctrl+K goes anywhere. Pure CSS and a little JavaScript; no new library. Mockup: `mockups/mockup_C_ui_polish.html`.
+
+### Added
+- **References in the cue notes of older shows** (giopas, 4 Oct: adding a song to an older show).
+  - **When a show opens**, every setlist cue (a step of a chaser played by a CueList) that has **no note** gets the reference that 2.0.1 writes for new cue lists: `↪ [ID] original function — button on Page`.
+  - It is one step of the History (↶ undoes it), so you see it and decide whether to keep it with 💾 Save as new file….
+  - A note already there — yours from QLC+, or Swiss Knife's — is never touched.
+  - Also by hand: Setlist › *↪ Add references to the cue notes*.
+  - The original is found:
+    - through Swiss Knife's copy marker;
+    - from the name of an old-style copy (*Song (Setlist)*);
+    - or, for a copy whose marker QLC+ dropped, as the one function with the same content that a button plays.
+
+    Otherwise the note names the function the cue plays.
+  - `workspace.cue_notes_missing / fill_cue_notes`, `GET|POST /api/setlist/notes`. Tests in `tests/test_setlist_notes.py` (10).
+- **⌘K / Ctrl+K — Go to…** (also a button in the header). Type a few letters to open any tool, or to run an action:
+  - Undo, Redo, History, Save as new file…;
+  - save the recipe or a profile; apply a saved profile;
+  - start a guided route;
+  - check with the Doctor, open, reload, change the theme, help for this tool.
+
+  `static/js/palette.js`.
+- **"Apply will …" in the footer** of the Rig Reducer, Workspace Doctor, Look Builder, Brightness and Setlist, next to the button. For example:
+  - *−6 fixtures · −3 groups · −11 functions · ✓ no new Doctor errors*;
+  - *D005 × 801 · D017 × 1*;
+  - *+2 looks*;
+  - *12 cues · 1 song without a function — left out*.
+- **Start: guided routes first.**
+  - Three cards: *Adapt a show to a new venue* (9 steps — the Pub test took 12 minutes), *Get ready for the gig* (4 steps), and *Do it again with a profile* (your saved profiles).
+  - Each card lists its steps.
+  - The six job cards follow, under *Or pick a tool by job*; card 6 gains *Patch sheet*.
+
+### Changed
+- **Rig Reducer: no Preview click.** *What Apply will do* updates as you tick. It is grouped (fixtures, renamed / re-patched, fixture groups, functions, VC widgets, Doctor on the result), each group folding, instead of one log.
+- **Header**: fixtures, functions, VC widgets, unsaved changes and the Doctor are small labelled cards, with the labels shown at every window width (they were hidden below 1560 px). The Doctor card is red, amber or green.
+- **Side menu**:
+  - the group titles read as titles, with a rule under each;
+  - *Changes* is now **History**: a card that is always there, ✓ for saved steps, ↶ on each.
+- **Tables** (Trigger Manager, Dictionary, ID Browser, Rig Reducer, Show Paperwork, Porter): zebra rows, a row highlight, quieter separators and headers, a quiet ID column and bold names. Names in the UI font; IDs, keys and MIDI stay monospace.
+- **Stage top views** (Fixtures, Function Porter): a lighter grid, and each fixture label on a small plate so it reads over the grid and the other dots.
+- **Design tokens** (`tokens.css`), for the dark, grey and light themes:
+  - semantic colours (`--success`, `--warning`, `--error` and their soft backgrounds) in place of a dozen hard-coded yellows, greens and reds;
+  - one spacing scale (`--sp-1…6`), the text levels (`--fs-title / section / body / small`), one elevation (`--shadow-1`) on cards;
+  - thin scrollbars.
+- Screenshots 01 (Start), 04 (Rig Reducer) and 13 (Workspace Doctor) retaken.
+- **Installable packages** move to v2.3.0.
+
 ## [2.1.0] — 2026-10-03
 
 **Show Profiles: do it again, on another show.** The changes you made to a show — reduce the rig, fix, groups, looks, VC pages, setlist… — kept as a profile and applied to any other show, in the app or from the command line. Each step finds what it changes **by meaning** (name, type, place), not by the IDs of the show it was made on, and says what it left out.

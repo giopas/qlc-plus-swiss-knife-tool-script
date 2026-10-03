@@ -169,3 +169,19 @@ def test_route_steps_open_real_tools():
 
 def test_no_beta_badge_left_on_the_vc_editor():
     assert 'class="b beta"' not in HTML
+
+
+def test_ui_polish_v22():
+    """v2.2 UI review: guided routes first on Start, a footer that says what
+    Apply will do, the ⌘K palette, labelled header cards, semantic tokens."""
+    start = HTML[HTML.index('id="scr-start"'):]
+    assert start.index('class="start-routes"') < start.index('class="start-workflow"')
+    for sid in ("reducer", "brightness", "doctor", "looks", "setlist"):
+        sec = HTML[HTML.index(f'id="scr-{sid}"'):]
+        foot = sec[sec.index('<div class="out-footer">'):]
+        assert f'id="oc-{sid}"' in foot[:foot.index('</div>')], sid
+    assert 'id="cp"' in HTML and "palette.js?v={{ asset_v }}" in HTML
+    assert 'class="ms-l"' in HTML
+    tokens = (Path(os.path.dirname(HERE), "static", "css", "tokens.css")).read_text(encoding="utf-8")
+    for t in ("--success", "--warning", "--error", "--shadow-1", "--fs-title", "--sp-3"):
+        assert tokens.count(t + ":") >= (3 if t in ("--success", "--warning", "--error") else 1), t

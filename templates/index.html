@@ -152,7 +152,7 @@
   <div class="files-panel">
     <div class="side-changes" id="side-changes" hidden>
       <div class="fp-title sc-head">
-        <span>Changes <span id="sc-count"></span></span>
+        <span>History <span id="sc-count"></span></span>
         <span class="sc-acts">
           <button class="sc-link" id="sc-redo" hidden onclick="showRedo()">↷ Redo</button>
           <button class="sc-link" onclick="showHistoryToggle(true)" title="The whole History, and Save as new file">All ›</button>
@@ -208,10 +208,12 @@
     <div class="ms-stat" title="Functions in the show"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
     <div class="ms-stat" title="Virtual Console widgets in the show"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
     <div class="show-bar" id="show-bar" hidden>
-      <span class="sb-pill" id="sb-changes" onclick="showHistoryToggle(true)">no changes yet</span>
+      <span class="sb-pill sb-card" id="sb-changes" onclick="showHistoryToggle(true)"><b>0</b><small>changes</small></span>
       <span class="sb-pill sb-doctor" id="sb-doctor" hidden onclick="go('doctor')" title="The Workspace Doctor on the show as it is now — click to open it"></span>
     </div>
     <div class="ms-actions">
+      <button class="btn btn-surface btn-sm cp-open" onclick="cpOpen()"
+              data-tooltip="Go to any tool or action — type a few letters"><span class="cp-lbl">Go to… </span><kbd class="kbd" id="cp-kbd">⌘K</kbd></button>
       <button class="btn btn-surface btn-sm" id="sb-undo" onclick="showUndo()" disabled
               data-tooltip="Undo the last change to the show (any tool)">↶ Undo</button>
       <button class="btn btn-surface btn-sm" onclick="showHistoryToggle()"
@@ -226,6 +228,16 @@
 
   <!-- Guided route (Start: "Guided route: …"): steps above the tools -->
   <nav class="route-strip" id="route-strip" hidden aria-label="Guided route"></nav>
+
+  <!-- Command palette (⌘K / Ctrl+K) -->
+  <div class="cp" id="cp" hidden onclick="if(event.target===this)cpClose()">
+    <div class="cp-box" role="dialog" aria-label="Go to a tool or action">
+      <input id="cp-input" class="cp-input" placeholder="Go to a tool or action…" autocomplete="off" spellcheck="false"
+             oninput="_cpSel=0;_cpRender()" onkeydown="_cpKey(event)" aria-label="Go to">
+      <ul class="cp-list" id="cp-list"></ul>
+      <div class="cp-foot"><span>↑↓ choose · ↵ open · esc close</span><span>tools, actions, guided routes, your profiles</span></div>
+    </div>
+  </div>
 
   <!-- The show in progress: History and Save (WORKPLAN 2.6) -->
   <aside class="show-history" id="show-history" aria-label="History of the show in progress">
@@ -286,8 +298,8 @@
           <p class="start-purpose">Build, adapt, check and document <b>QLC+ 5</b> shows. Open a show and it becomes the
             <b>show in progress</b>: every tool works on it, the <b>History</b> keeps every step (undo any of them),
             and <b>💾 Save as new file…</b> writes it with a report — the file you opened is never touched.</p>
-          <p class="start-new"><b>New in 2.1:</b> <b>Show Profiles</b> — the changes you made to a show, done again on another show
-            (History › <i>↻ Do it again</i>, or <code>python -m core.profile build</code>) · the recipe without saving · tilt buttons in Quick Start.</p>
+          <p class="start-new"><b>New in 2.2:</b> every tool says what <b>Apply will do</b>, next to the button · guided routes first, below ·
+            <b>⌘K / Ctrl+K</b> to go to any tool or action · <b>Show Profiles</b> (2.1): the changes of a show, done again on another (History › <i>↻ Do it again</i>).</p>
         </div>
         <div class="spacer"></div>
         <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained">?</button>
@@ -315,7 +327,33 @@
       <!-- Recents -->
       <div id="recent-list" class="recents"></div>
 
-      <h3 class="start-h">What do you want to do?</h3>
+      <!-- Guided routes, first (v2.2 UI review: the workflows are the product) -->
+      <h3 class="start-h">Guided routes <small class="sb-optional">— the tools in order, one step at a time; any step, any order</small></h3>
+      <div class="start-routes">
+        <div class="rt-card">
+          <div class="rt-title">Adapt a show to a new venue</div>
+          <div class="rt-meta" data-route-meta="adapt"></div>
+          <div class="rt-desc">A smaller or different rig: keep the fixtures the venue has, clean up, groups and looks for them, the console, tonight's setlist.</div>
+          <ol class="rt-steps" data-route="adapt"></ol>
+          <button class="btn btn-accent btn-sm" onclick="routeStart('adapt')">▶ Start the route</button>
+        </div>
+        <div class="rt-card">
+          <div class="rt-title">Get ready for the gig</div>
+          <div class="rt-meta" data-route-meta="gig"></div>
+          <div class="rt-desc">The show is built: tonight's songs into the cue list, keys and MIDI without clashes, a last check, the paper for the crew.</div>
+          <ol class="rt-steps" data-route="gig"></ol>
+          <button class="btn btn-accent btn-sm" onclick="routeStart('gig')">▶ Start the route</button>
+        </div>
+        <div class="rt-card">
+          <div class="rt-title">Do it again with a profile</div>
+          <div class="rt-meta"><span id="rt-prof-n">Show Profiles</span> · new in 2.1</div>
+          <div class="rt-desc">The changes you made to one show — rig, fixes, groups, looks, pages — done again on the show you open.</div>
+          <ol class="rt-steps" id="rt-prof-list"></ol>
+          <button class="btn btn-accent btn-sm" onclick="startProfiles()">▶ Apply a profile…</button>
+        </div>
+      </div>
+
+      <h3 class="start-h">Or pick a tool by job</h3>
       <!-- Workflow cards: the numbers match the groups of the side menu -->
       <div class="start-workflow">
         <div class="wf-card" data-grp="1">
@@ -327,7 +365,6 @@
           <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
           <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
           <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
-          <button class="wf-route" onclick="routeStart('adapt')" title="A strip of steps above the tools: Rig Reducer → Doctor → Function Porter → Look Builder → VC Editor → Stage → Setlist → final check. Any step, any order.">▶ Guided route: adapt a show to a new venue</button>
         </div>
         <div class="wf-card" data-grp="3">
           <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
@@ -338,7 +375,6 @@
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function.</div>
           <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button></div>
-          <button class="wf-route" onclick="routeStart('gig')" title="A strip of steps above the tools: Setlist → Trigger Manager → Doctor → Show Paperwork.">▶ Guided route: get ready for the gig</button>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -348,7 +384,7 @@
         <div class="wf-card" data-grp="6">
           <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
           <div class="wf-desc">The paper for each reader, in one tool: tech rider for the venue, crew checklist for load-in, show book with decoded DMX values for you — PDF or CSV.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('patch')">Patch sheet</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
         </div>
       </div>
 
@@ -529,6 +565,8 @@
           <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
                   onclick="slDeleteWorkspaceClones()" disabled
                   data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Then ✓ Apply to the show (bottom right) and 💾 Save as new file….">🗑 Delete Clones from WS</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-fill-notes" onclick="slFillCueNotes()"
+                  data-tooltip="Every cue of the setlist cue lists that has no note gets the reference: the original function and its button. Notes already there (yours or Swiss Knife's) are kept. Done for you when a show opens.">↪ Add references to the cue notes</button>
 
           <div class="fb-sep"></div>
 
@@ -603,6 +641,7 @@
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
         Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
+      <span class="out-outcome" id="oc-setlist" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-export-sl-pdf"
               onclick="slExportPdf()" disabled
@@ -1045,6 +1084,7 @@
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
         Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
+      <span class="out-outcome" id="oc-brightness" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="brtGenerateQxw()"
               data-tooltip="Save a scaled copy as a separate file; the show in progress stays as it is">Export a copy…</button>
@@ -1245,7 +1285,7 @@
         <!-- Right panel: three tabs — Selection · Add & wire · Pages (WORKPLAN 2.4) -->
         <div id="vce-right" class="open">
           <!-- Duplicate widget-ID warning (filled by _vceCheckDuplicates) -->
-          <div id="vce-dup-warn" style="display:none;font-size:11px;color:#f9e2af;padding:8px;
+          <div id="vce-dup-warn" style="display:none;font-size:11px;color:var(--warning);padding:8px;
                border-bottom:0.5px solid var(--border);background:var(--surface-0)"></div>
 
           <div class="vce-tabs">
@@ -1759,6 +1799,7 @@
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
         Adds to the <b>&nbsp;show in progress&nbsp;</b>
       </span>
+      <span class="out-outcome" id="oc-looks" aria-live="polite"></span>
       <div class="spacer"></div>
       <button id="lb-export" class="btn btn-surface btn-ghost" onclick="looksBuild()" disabled
               data-tooltip="Save a copy with the looks as a separate file; the show in progress stays as it is">Export a copy…</button>
@@ -1785,12 +1826,12 @@
       <div class="spacer"></div>
       <button class="btn btn-surface btn-sm" onclick="reducerKeepAll(true)">✓ Keep all</button>
       <button class="btn btn-surface btn-sm" onclick="reducerKeepAll(false)">✗ Keep none</button>
-      <button class="btn btn-surface" onclick="reducerPreview()">🔍 Preview</button>
+      <button class="btn btn-surface" onclick="reducerPreview()" data-tooltip="The preview follows every tick; this recomputes it">↻ Refresh</button>
     </div>
 
     <div class="rr-body">
       <div id="rr-table" class="rr-table"><div class="porter-placeholder">Open a workspace to list its fixtures.</div></div>
-      <div id="rr-preview" class="rr-preview"><div class="porter-placeholder">Untick the fixtures to remove, edit names / addresses if needed, then 🔍 Preview.</div></div>
+      <div id="rr-preview" class="rr-preview"><div class="porter-placeholder">Untick the fixtures the venue doesn't have: what Apply will do shows here.</div></div>
     </div>
 
     <div class="out-footer">
@@ -1798,6 +1839,7 @@
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
         Changes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
+      <span class="out-outcome" id="oc-reducer" aria-live="polite"></span>
       <div class="spacer"></div>
       <button id="rr-export" class="btn btn-surface btn-ghost" onclick="reducerRun()" disabled
               data-tooltip="Save a reduced copy as a separate file; the show in progress stays as it is">Export a copy…</button>
@@ -1840,6 +1882,7 @@
         <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
         Fixes the <b>&nbsp;show in progress&nbsp;</b>
       </span>
+      <span class="out-outcome" id="oc-doctor" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()">📋 Copy Report</button>
       <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
@@ -2202,6 +2245,7 @@
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
 <script src="/static/js/show.js?v={{ asset_v }}"></script>
 <script src="/static/js/route.js?v={{ asset_v }}"></script>
+<script src="/static/js/palette.js?v={{ asset_v }}"></script>
 <script src="/static/js/compare.js?v={{ asset_v }}"></script>
 </body>
 </html>

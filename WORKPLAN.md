@@ -29,7 +29,7 @@ A new setlist CueList is placed where it covers nothing (720 × 420, smaller if 
   2. **README = presentation only** (what it is, how it works, the tools, screenshots, install, docs links); the history lives in the CHANGELOG. Done after the 1.9.0 release (branch `docs/readme-and-plan`).
   3. **All screenshots retaken** (16, named in menu order, `screenshots/01-start.png` … `16-show-in-progress.png`). Done (same branch).
   4. **Forum**: no post per release; the BBCode drafts are deleted from the repo. One complete post (every tool + the show-in-progress logic) is written at v2.0.0 (task in 2.8).
-  5. **Installable packages with an update check** → **Phase 3 → v2.1.0**, after v2.0. Running from sources stays. *(3 Oct: moved to v2.2.0 — Show Profiles went first as v2.1.0.)*
+  5. **Installable packages with an update check** → **Phase 3 → v2.1.0**, after v2.0. Running from sources stays. *(3 Oct: moved to v2.2.0 — Show Profiles went first as v2.1.0; 4 Oct: moved to **v2.3.0** — the UI polish is v2.2.0.)*
 - Also fixed on the way: the VC Editor page title still said *BETA*; the README's security details moved to DEVELOPMENT.md. 563 tests.
 
 **Status (1 Oct — 2.6 finished, v1.9.0 ready to release):** the rest of the audit built on `feat/show-in-progress`, 562 tests, browser-checked at 1440 × 900 and 1280 × 800.
@@ -658,7 +658,7 @@ Checks (★ = included in Phase 1.0):
 - parameters other than files are hand-written (`"@param:name"` in a step, `--param name=value`);
 - an editor for a profile's steps (drop one, reorder).
 
-**3.2 UI polish — after an outside review → before the packages** *(giopas, 4 Oct: Copilot's PDF review and Gemini's CSS brief; "tell me what you think, create a mockup and implement what makes sense")*
+**3.2 UI polish — after an outside review → v2.2.0** *(giopas, 4 Oct: "make it 2.2.0 and push the packages to 2.3.0")* *(giopas, 4 Oct: Copilot's PDF review and Gemini's CSS brief; "tell me what you think, create a mockup and implement what makes sense")*
 
 *Assessment* — Copilot scored the UX 7.8/10: strong on structure and workflow, weak on visual hierarchy and polish ("an excellent technical tool, not yet a professional product"). Most of its points are fair. Gemini's brief is a CSS recipe, partly right and partly wrong for this tool. Each point:
 
@@ -686,7 +686,7 @@ Checks (★ = included in Phase 1.0):
 - Look Builder and Porter footers in the same "Apply will" form;
 - consolidating the remaining odd font sizes (8–13.5 px) onto the scale, tool by tool.
 
-### Phase 3 — Install like an app → **v2.2.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct)*
+### Phase 3 — Install like an app → **v2.3.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct, v2.2.0 until 4 Oct)*
 
 *Goal*: download, double-click, run — on macOS, Windows and Linux — and be told when a new version is out. As simple as StemDeck (github.com/stemdeckapp/stemdeck: a Tauri shell + bundled Python, a DMG per Mac architecture, a Windows ZIP with a self-contained `.exe`, a first-run note for unsigned apps; StemDeck itself has no auto-update). **Running from sources stays** exactly as today.
 
@@ -706,7 +706,7 @@ Checks (★ = included in Phase 1.0):
 - [ ] GitHub Actions release workflow (matrix build, smoke test: start, `GET /`, quit; upload the assets + `SHA256SUMS`).
 - [ ] Update check (`/api/update/check`, setting, header badge) and *Update and restart* per OS; tests with a fake release feed.
 - [ ] README *Install*: download first, sources second; wiki *Installing and updating*.
-- [ ] Release **v2.2.0**.
+- [ ] Release **v2.3.0**.
 
 ---
 
@@ -1011,8 +1011,8 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-00. **UI polish (3.2)** on `feat/ui-polish` (stacked on `feat/v2.1.0`) — giopas: look at it, then decide the version (with 2.1.0, or its own release before the packages).
-0. **v2.1.0 prepared** (3.1 Show Profiles + the small items) on `feat/v2.1.0` — giopas: try it (History › ↻ Do it again; `python -m core.profile build`), then release. Next: **Phase 3 packages → v2.2.0**, then the MCP server.
+00. **v2.2.0 prepared** — UI polish (3.2) on `feat/ui-polish` (from `main` after v2.1.0). giopas: look at it, then release. Next: **Phase 3 packages → v2.3.0**, then the MCP server.
+0. (done) **v2.1.0 released** (3.1 Show Profiles + the small items).
 1. (done) **v2.0.0 released** — the Pub test (2.8) and the recipe (2.9); forum post published (qlcplus.org/forum/viewtopic.php?p=84132); v1.1.1 release published (giopas). v2.0.1 released 3 Oct. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).

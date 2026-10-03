@@ -8,6 +8,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 ### Added
+- **VC Editor › Setlist CueList: *＋ a new, empty setlist chaser*.** A show without a cue list (e.g. fresh from Quick Start) gets one in a click — a CueList on the page, wired to a new empty chaser *Setlist*; the Setlist tool then shows its slot and fills it. Before, the CueList had to be wired to an existing chaser, which the Setlist would then overwrite.
 - **Test corpus: `FloorShow_8fix.qxw`**, the third real show (8 PARs, 246 functions, the ceiling PARs brought in with the Function Porter), anonymised like the others. Its Doctor baseline is pinned; it found a real slip — the static look *Soft Yellow* leaves the PARs' strobe channel at 30.
 - **Workspace Doctor D008**: a VC button with the action *Stop All* (or *Blackout*) counts as a panic button — no more "no PANIC RESET function" on shows that use one.
 - **Patch sheet** (Show Paperwork, new *🔌 Patch sheet — for the crew at the rig*): every fixture by universe and address — address range, channels, name, fixture, mode — with an **ID** column and a **DIP-switch diagram** per fixture drawn like the real part — blue body, white levers, ON = lever up (switch *n* = 2^(n−1); 9 or 10 switches; checked against OH Show's sheet on the same show) and the switches to turn ON. An **event / venue** line and a **logo** (PNG or JPEG, remembered in this browser) at the top. Venue-safe: it never carries the show's internals.

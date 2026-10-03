@@ -681,6 +681,16 @@ Checks (★ = included in Phase 1.0):
 
 *Status (4 Oct)*: built on `feat/ui-polish`. Mockup `mockups/mockup_C_ui_polish.html` (Start, Rig Reducer, palette). Browser-checked at 1440 × 900 in the dark and light themes. 650 tests; `test_ui_polish_v22` checks the routes-first Start, the outcome slots, the palette and the tokens.
 
+*Added to 2.2.0 (giopas, 4 Oct)*: **references in the cue notes of older shows**.
+- On opening a show, the app fills every setlist cue that has no note, as one undoable History step. Notes already there are never touched.
+- `core/workspace.cue_notes_missing / fill_cue_notes`; `/api/setlist/notes`; Setlist › *↪ Add references to the cue notes*.
+- How the original is found:
+  - the copy marker;
+  - an old-style *(Setlist)* name;
+  - else the unique same-content function a button plays;
+  - else the function itself.
+- 652 tests.
+
 *Next (not done)*:
 - Porter step 3 with the stage maps folded (mapping first);
 - Look Builder and Porter footers in the same "Apply will" form;

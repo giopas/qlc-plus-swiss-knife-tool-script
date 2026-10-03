@@ -13,6 +13,18 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 **UI polish — after an outside review (Copilot, Gemini; 4 Oct).** What each tool will do is visible before you press Apply, the guided routes come first, the header labels its numbers, and ⌘K / Ctrl+K goes anywhere. Pure CSS and a little JavaScript; no new library. Mockup: `mockups/mockup_C_ui_polish.html`.
 
 ### Added
+- **References in the cue notes of older shows** (giopas, 4 Oct: adding a song to an older show).
+  - **When a show opens**, every setlist cue (a step of a chaser played by a CueList) that has **no note** gets the reference that 2.0.1 writes for new cue lists: `↪ [ID] original function — button on Page`.
+  - It is one step of the History (↶ undoes it), so you see it and decide whether to keep it with 💾 Save as new file….
+  - A note already there — yours from QLC+, or Swiss Knife's — is never touched.
+  - Also by hand: Setlist › *↪ Add references to the cue notes*.
+  - The original is found:
+    - through Swiss Knife's copy marker;
+    - from the name of an old-style copy (*Song (Setlist)*);
+    - or, for a copy whose marker QLC+ dropped, as the one function with the same content that a button plays.
+
+    Otherwise the note names the function the cue plays.
+  - `workspace.cue_notes_missing / fill_cue_notes`, `GET|POST /api/setlist/notes`. Tests in `tests/test_setlist_notes.py` (10).
 - **⌘K / Ctrl+K — Go to…** (also a button in the header). Type a few letters to open any tool, or to run an action:
   - Undo, Redo, History, Save as new file…;
   - save the recipe or a profile; apply a saved profile;

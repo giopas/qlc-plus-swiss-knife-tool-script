@@ -549,6 +549,7 @@ async function _doLoad(fetchOpts) {
     _updateHeader(data);
     _invalidateAllTabs();
     setStatus(`Loaded: ${data.path ? data.path.split(/[\\/]/).pop() : 'workspace'}`);
+    if (typeof slFillCueNotes === 'function') slFillCueNotes(true);
     // Track in session
     if (data.path && typeof sessionOnWorkspaceLoaded === 'function') {
       sessionOnWorkspaceLoaded(data.path);
@@ -569,6 +570,7 @@ async function _refreshAfterLoad() {
   const data = await _apiJson('/api/status');
   _updateHeader(data);
   _invalidateAllTabs();
+  if (data.loaded && typeof slFillCueNotes === 'function') slFillCueNotes(true);
 }
 
 // ── Invalidate all tab caches after a workspace load ─────────────────────────

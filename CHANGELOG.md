@@ -7,6 +7,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.2.0] — 2026-10-04
+
 **UI polish — after an outside review (Copilot, Gemini; 4 Oct).** What each tool will do is visible before you press Apply, the guided routes come first, the header labels its numbers, and ⌘K / Ctrl+K goes anywhere. Pure CSS and a little JavaScript; no new library. Mockup: `mockups/mockup_C_ui_polish.html`.
 
 ### Added
@@ -40,7 +43,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
   - one spacing scale (`--sp-1…6`), the text levels (`--fs-title / section / body / small`), one elevation (`--shadow-1`) on cards;
   - thin scrollbars.
 - Screenshots 01 (Start), 04 (Rig Reducer) and 13 (Workspace Doctor) retaken.
-
+- **Installable packages** move to v2.3.0.
 
 ## [2.1.0] — 2026-10-03
 

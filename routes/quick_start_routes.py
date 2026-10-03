@@ -19,7 +19,6 @@ routes/quick_start_routes.py — Quick Start QXW API
 
 import os
 import re
-import datetime
 import tempfile
 import xml.etree.ElementTree as ET
 
@@ -660,15 +659,10 @@ def generate():
                 'findings': [f"{f.code} {f.location}: {f.message}" for f in report.errors],
             }), 422
 
-        # Build filename: project_name_YYYYMMDD_HHMM.qxw
+        # File name: <project>_v1.qxw (the save dialog suggests the next free one)
         proj = (data.get('project_name') or '').strip()
-        now = datetime.datetime.now()
-        ts = now.strftime('%Y%m%d_%H%M')
-        if proj:
-            slug = re.sub(r'[^a-zA-Z0-9_\- ]', '', proj).replace(' ', '_')
-        else:
-            slug = 'quick_start'
-        filename = f'{slug}_{ts}.qxw'
+        slug = re.sub(r'[^a-zA-Z0-9_\- ]', '', proj).replace(' ', '_') if proj else 'quick_start'
+        filename = f'{slug}_v1.qxw'
 
         return Response(
             qxw_bytes,

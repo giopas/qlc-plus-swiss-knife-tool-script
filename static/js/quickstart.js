@@ -1396,16 +1396,15 @@ function qsLoadSummary() {
   if (nameInput) nameInput.addEventListener('input', _qsUpdateFilenamePreview);
 }
 
+/** `<project>_v1.qxw`; after a save with the same name, the next free
+ *  version (`_v2`, `_v3`…) — the `_vN` rule of every other tool. */
 function _qsGenerateFilename() {
   const name = (document.getElementById('qs-project-name')?.value || '').trim();
-  const now = new Date();
-  const ts = now.getFullYear().toString()
-    + String(now.getMonth() + 1).padStart(2, '0')
-    + String(now.getDate()).padStart(2, '0')
-    + '_' + String(now.getHours()).padStart(2, '0')
-    + String(now.getMinutes()).padStart(2, '0');
   const slug = name ? name.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_') : 'quick_start';
-  return slug + '_' + ts + '.qxw';
+  const last = (_qsLastSavedPath || '').split(/[\\/]/).pop().replace(/\.qxw$/i, '');
+  const m = last.match(/^(.*)_v(\d+)$/);
+  if (m && m[1] === slug) return `${slug}_v${String(+m[2] + 1).padStart(m[2].length, '0')}.qxw`;
+  return slug + '_v1.qxw';
 }
 
 function _qsUpdateFilenamePreview() {
@@ -1483,6 +1482,7 @@ async function qsExport() {
       const fullPath = saveFileWithPicker.lastPath;
       _qsLastSavedPath = fullPath || null;
       _qsUpdateNav();
+      _qsUpdateFilenamePreview();
       let msg = fullPath
         ? 'Workspace saved to: ' + fullPath
         : 'Workspace saved as ' + saved;

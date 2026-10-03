@@ -33,8 +33,9 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **1.10.0** ✅ | Grow a rig | Copied fixtures join the show's own looks ("plays like"): scenes, sequence steps and EFX, translated between fixture types; what can't be wired is listed |
 | **2.0.0** ✅ | Benchmark | The "Pub test" passed: a 14-fixture festival show rebuilt as the 6-fixture pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors; fixture group editor; Compare; tutorial; the *recipe* — every change replayed by the command line to the same file |
 | **2.0.1** ✅ | Paperwork for the crew | Patch sheet with DIP switches (PDF, thermal ticket, CSV); each setlist cue notes its original function and button; setlist CueList in one click; FloorShow in the test corpus |
-| **2.1.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
+| **2.1.0** ✅ | Show Profiles | The changes of a show done again on another show — by meaning, not IDs; in the app (History › Do it again) or `python -m core.profile build`; the recipe onto another show; Quick Start tilt buttons and `_vN` names |
+| **2.2.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
 
-## After 2.0
+## After 2.2
 
-Show Profiles (one JSON per show, built on the recipe), a command-line build pipeline, an MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.
+An MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.

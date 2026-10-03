@@ -93,5 +93,23 @@
         "I002": 1
       }
     }
+  },
+  "FloorShow_8fix.qxw": {
+    "fixtures": 8,
+    "functions": 246,
+    "doctor": {
+      "summary": {
+        "error": 0,
+        "warning": 219,
+        "info": 1
+      },
+      "counts": {
+        "D005": 200,
+        "D006": 13,
+        "D012": 1,
+        "D016": 5,
+        "I002": 1
+      }
+    }
   }
 }

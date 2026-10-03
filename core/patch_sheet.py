@@ -78,20 +78,29 @@ CSV_HEADERS = ["universe", "address", "manufacturer", "model", "mode", "name",
 
 def draw_dip(emit, x: float, y: float, on: list[int], switches: int, sw: float = 7.0,
              h: float = 12.0, numbers: bool = True, fsize: float = 4.5,
-             on_col: str = "0.85 0.15 0.15") -> float:
-    """Draw a DIP block at (x, y) = bottom-left; returns its width.
-    *emit* takes raw PDF operators.  ON = lever up (dark), OFF = lever down."""
+             style: str = "colour") -> float:
+    """Draw a DIP-switch block at (x, y) = bottom-left; returns its width.
+    *emit* takes raw PDF operators.  Like the real part (and OH Show's
+    sheet): a blue body, one slot per switch, the lever UP = ON.
+    style "print" (thermal paper): no fill, black outlines, black levers."""
     gap = 1.2
     w = switches * (sw + gap) + gap
-    emit("0.15 0.15 0.18 rg")
-    emit(f"{x:.2f} {y:.2f} {w:.2f} {h:.2f} re f")
+    if style == "print":
+        emit(f"0 0 0 RG 0.6 w {x:.2f} {y:.2f} {w:.2f} {h:.2f} re S")
+    else:
+        emit("0.02 0.33 0.80 rg")
+        emit(f"{x:.2f} {y:.2f} {w:.2f} {h:.2f} re f")
+    lever_h = (h - 2.4) / 2
     for n in range(1, switches + 1):
         sx = x + gap + (n - 1) * (sw + gap)
-        emit("1 1 1 rg")
-        emit(f"{sx:.2f} {y + 1.2:.2f} {sw:.2f} {h - 2.4:.2f} re f")
-        lever_h = (h - 2.4) / 2
         ly = y + 1.2 + (lever_h if n in on else 0)
-        emit(f"{on_col} rg" if n in on else "0.55 0.55 0.6 rg")
+        if style == "print":
+            emit(f"0 0 0 RG 0.4 w {sx:.2f} {y + 1.2:.2f} {sw:.2f} {h - 2.4:.2f} re S")
+            emit("0 0 0 rg")
+        else:
+            emit("0.17 0.17 0.20 rg")
+            emit(f"{sx:.2f} {y + 1.2:.2f} {sw:.2f} {h - 2.4:.2f} re f")
+            emit("1 1 1 rg")
         emit(f"{sx + 0.8:.2f} {ly + 0.6:.2f} {sw - 1.6:.2f} {lever_h - 1.2:.2f} re f")
         if numbers:
             emit("0 0 0 rg")
@@ -130,7 +139,7 @@ def receipt_pdf(sheet: dict, show_name: str, date: str, event: str = "",
         y -= lhh + 6
     for s, sz, b in ((event, 11, True), (show_name, 9 if event else 11, not event),
                      (f"DMX patch - {date}", 8, False),
-                     (f"{sheet['total']} fixture(s), DIP: {sheet['switches']} switches, ON = lever up (black)", 7, False)):
+                     (f"{sheet['total']} fixture(s), DIP: {sheet['switches']} switches, ON = lever up", 7, False)):
         if s:
             y -= sz + 3
             text(ops, pad, y, trunc(s, sz, W - 2 * pad), sz, b)
@@ -160,7 +169,7 @@ def receipt_pdf(sheet: dict, show_name: str, date: str, event: str = "",
             sw = 8.0 if not small else 6.4
             y -= 13
             dw = draw_dip(ops.append, pad, y, f["dip"], sheet["switches"], sw=sw, h=13,
-                          on_col="0 0 0")         # thermal paper: black, not red
+                          style="print")          # thermal paper: outlines, black levers
             ops.append("0 0 0 rg")
             on = ", ".join(map(str, f["dip"])) or "none"
             if f["dip_fits"]:

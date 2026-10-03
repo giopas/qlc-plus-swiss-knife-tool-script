@@ -3876,3 +3876,11 @@ body.nav-min .side-changes { display: none; }
 
 .fb-assign-dot-dark { background: var(--orange); border-color: var(--orange); }
 .fb-song-dark { color: var(--orange); font-size: 11px; margin-top: 2px; }
+
+/* Patch sheet preview: DIP switches */
+.sb-dips { white-space: nowrap; }
+.sb-dip { display: inline-block; width: 7px; height: 12px; margin-right: 1px; border: 1px solid var(--border-strong);
+          background: linear-gradient(to top, var(--text-faint) 45%, transparent 45%); vertical-align: middle; }
+.sb-dip.on { background: linear-gradient(to bottom, var(--red) 45%, transparent 45%); }
+.sb-sub { margin: 10px 0 4px; font-size: 12.5px; color: var(--text-dim); }
+#sb-patch-opts[hidden] { display: none; }

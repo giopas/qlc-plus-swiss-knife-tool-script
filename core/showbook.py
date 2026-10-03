@@ -39,6 +39,7 @@ QLC_NS_URI = workspace.QLC_NS_URI
 NS = workspace.NS
 
 ALL_SECTIONS = [
+    "patch_sheet",
     "rider",
     "stage_plan",
     "checklist",
@@ -63,6 +64,8 @@ PRESETS = {
                   "title": "Tech Rider", "sections": ["rider", "stage_plan"]},
     "checklist": {"label": "Crew checklist", "reader": "for load-in",
                   "title": "Crew Checklist", "sections": ["checklist", "stage_plan"]},
+    "patch":     {"label": "Patch sheet", "reader": "for the crew at the rig",
+                  "title": "Patch Sheet", "sections": ["patch_sheet"]},
     "operator":  {"label": "Operator show book", "reader": "for you at the desk",
                   "title": "Show Book",
                   "sections": ["summary", "patch", "functions", "scenes", "chasers",
@@ -72,7 +75,7 @@ PRESETS = {
 # What may leave your hands: a document made only of the venue / crew presets
 # never carries function names, key / MIDI maps, the Virtual Console or the
 # Doctor — a rule, not a tick box.
-VENUE_SAFE = {"rider", "stage_plan", "checklist", "patch"}
+VENUE_SAFE = {"rider", "stage_plan", "checklist", "patch", "patch_sheet"}
 
 
 def resolve_sections(presets: list[str] | None, sections: list[str] | None) -> tuple[list[str], str]:
@@ -83,7 +86,7 @@ def resolve_sections(presets: list[str] | None, sections: list[str] | None) -> t
     from_presets = [x for p in presets for x in PRESETS[p]["sections"]]
     chosen = [x for x in (sections or []) if x in ALL_SECTIONS] or from_presets \
         or list(PRESETS["operator"]["sections"])
-    if presets and all(p in ("rider", "checklist") for p in presets):
+    if presets and all(p in ("rider", "checklist", "patch") for p in presets):
         chosen = [x for x in chosen if x in VENUE_SAFE] or from_presets
     order = [x for x in ALL_SECTIONS if x in set(chosen)]
     title = " + ".join(PRESETS[p]["title"] for p in presets) if presets else "Show Paperwork"
@@ -106,7 +109,9 @@ def generate(sections: list[str] | None = None,
              qxf_dir: str | None = None,
              date: str | None = None,
              presets: list[str] | None = None,
-             show_name: str | None = None) -> dict:
+             show_name: str | None = None,
+             event: str | None = None,
+             dip_switches: int = 10) -> dict:
     """Build a structured document from the loaded workspace.
 
     Parameters
@@ -160,8 +165,13 @@ def generate(sections: list[str] | None = None,
         "date": date or datetime.date.today().isoformat(),
         "title": title,
         "presets": [p for p in (presets or []) if p in PRESETS],
+        "event": (event or "").strip(),
         "sections": {},
     }
+
+    if "patch_sheet" in sections:
+        from core import patch_sheet
+        doc["sections"]["patch_sheet"] = patch_sheet.build(state, _fixture_channels(root), dip_switches)
 
     if "rider" in sections:
         doc["sections"]["rider"] = _build_rider(state, root)
@@ -891,6 +901,10 @@ def export_csv(document: dict) -> bytes:
                 ["Done", "ID", "Name", "Model", "Mode", "Patch", "Groups", "3D position"]))
         if "patch" in sections:
             zf.writestr("patch.csv", _csv_patch(sections["patch"]))
+        if "patch_sheet" in sections:
+            from core import patch_sheet
+            zf.writestr("patch_sheet.csv", _csv_write(patch_sheet.rows(sections["patch_sheet"]),
+                                                      patch_sheet.CSV_HEADERS))
 
         if "functions" in sections:
             zf.writestr("functions.csv", _csv_functions(sections["functions"]))
@@ -1242,7 +1256,7 @@ class _PdfBuilder:
 
     def build(self) -> bytes:
         self.finish_page()
-        return assemble_pdf(self.pages, _W, _H)
+        return assemble_pdf(self.pages, _W, _H, images=getattr(self, "images", None))
 
 
 def _col_positions(widths: list[float]) -> list[float]:
@@ -1269,25 +1283,30 @@ def _auto_col_widths(headers: list[str], fixed: dict[str, float] = None) -> list
     return widths
 
 
-def export_pdf(document: dict, paper: str = DEFAULT_PAPER) -> bytes:
+def export_pdf(document: dict, paper: str = DEFAULT_PAPER, logo=None) -> bytes:
     """Export the document as a multi-page PDF on *paper* (see PAPERS;
-    unknown names fall back to A4 landscape).  Returns raw PDF bytes."""
+    unknown names fall back to A4 landscape).  *logo*: a
+    core.pdf_image.PdfImage for the Patch sheet.  Returns raw PDF bytes."""
     global _W, _H
     saved = (_W, _H)
     _W, _H = PAPERS.get(paper or DEFAULT_PAPER, PAPERS[DEFAULT_PAPER])
     try:
-        return _export_pdf(document)
+        return _export_pdf(document, logo)
     finally:
         _W, _H = saved
 
 
-def _export_pdf(document: dict) -> bytes:
+def _export_pdf(document: dict, logo=None) -> bytes:
     show_name = document.get("show_name", "Untitled")
     date = document.get("date", "")
     sections = document.get("sections", {})
 
     pdf = _PdfBuilder(document.get("title") or "Show Book", show_name, date)
     pdf.new_page()
+
+    # ── Patch sheet ───────────────────────────────────────────────────────
+    if "patch_sheet" in sections:
+        _pdf_patch_sheet(pdf, sections["patch_sheet"], document.get("event", ""), logo)
 
     # ── Tech rider / stage plot / crew checklist (Show Paperwork) ─────────
     if "rider" in sections:
@@ -1340,6 +1359,64 @@ def _export_pdf(document: dict) -> bytes:
         _pdf_doctor(pdf, sections["doctor"])
 
     return pdf.build()
+
+
+def _pdf_patch_sheet(pdf: _PdfBuilder, sheet: dict, event: str, logo):
+    """The Patch sheet: event line and logo, then each universe with its
+    fixtures and a DIP-switch diagram per fixture."""
+    from core import patch_sheet as ps
+    top = pdf.cy
+    lh = 0.0
+    if logo is not None:
+        from core.pdf_image import fit
+        lw, lh = fit(logo, 160, 48)
+        pdf.images = {"Logo": logo}
+        pdf._emit(f"q {lw:.2f} 0 0 {lh:.2f} {_W - _PAD - lw:.2f} {top - lh - 4:.2f} cm /Logo Do Q")
+    if event:
+        pdf.fc(0, 0, 0)
+        pdf.txt(_PAD, top - 16, event, sz=14, bold=True)
+        pdf.cy = top - 22
+    pdf.fc(0.3, 0.3, 0.35)
+    pdf.txt(_PAD, pdf.cy - 10, f"{sheet['total']} fixture(s) - DIP switches: {sheet['switches']}, "
+                               f"switch n = 2^(n-1), ON = lever up (red)", sz=8)
+    pdf.cy = min(pdf.cy - 16, top - lh - 10)
+    headers = ["Address", "Ch", "Name", "Fixture", "Mode", "DIP switches", "ON"]
+    dip_w = sheet["switches"] * 9.2 + 12
+    col_w = _auto_col_widths(headers, {"Address": 54, "Ch": 24, "DIP switches": dip_w, "ON": 66,
+                                       "Mode": 70})
+    row_h = 22
+    for u in sheet["universes"]:
+        lo, hi = u["used"]
+        pdf.section_heading(f"Universe {u['universe']} - {len(u['fixtures'])} fixture(s), "
+                            f"channels {lo}-{hi}")
+        pdf.table_header(headers, col_w)
+        xs = _col_positions(col_w)
+        for i, f in enumerate(u["fixtures"]):
+            if pdf.cy - row_h < _PAD + _ROW_H:
+                pdf.new_page()
+                pdf.table_header(headers, col_w)
+            rc = _COL_ALT if i % 2 == 0 else _COL_WHITE
+            for xi, wi in zip(xs, col_w):
+                pdf.rbox(xi, pdf.cy - row_h, wi, row_h, rc, _COL_BORDER, 0.2)
+            pdf.fc(0, 0, 0)
+            ty = pdf.cy - row_h + 8
+            rng = f"{f['address']:03d}" + (f"-{f['end']:03d}" if f["end"] != f["address"] else "")
+            pdf.txt(xs[0] + 3, ty, rng, sz=9, bold=True)
+            pdf.txt(xs[1] + 3, ty, f["channels"] or "", sz=_FSIZE)
+            pdf.fc(0, 0, 0)
+            pdf.txt_trunc(xs[2] + 3, ty, f["name"], _FSIZE, col_w[2] - 6)
+            pdf.txt_trunc(xs[3] + 3, ty, f"{f['manufacturer']} {f['model']}".strip(), _FSIZE, col_w[3] - 6)
+            pdf.txt_trunc(xs[4] + 3, ty, f["mode"], _FSIZE, col_w[4] - 6)
+            if f["dip_fits"]:
+                ps.draw_dip(pdf._emit, xs[5] + 5, pdf.cy - row_h + 7.5, f["dip"], sheet["switches"],
+                            sw=8.0, h=12, fsize=4.5)
+                pdf.fc(0, 0, 0)
+                pdf.txt_trunc(xs[6] + 3, ty, " ".join(map(str, f["dip"])) or "none", _FSIZE, col_w[6] - 6)
+            else:
+                pdf.fc(0, 0, 0)
+                pdf.txt(xs[5] + 3, ty, "above the switches", sz=_FSIZE)
+            pdf.cy -= row_h
+        pdf.spacer(6)
 
 
 def _pdf_rider(pdf: _PdfBuilder, rider: dict, show_name: str, date: str):

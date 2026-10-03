@@ -43,7 +43,7 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Broken references, scenes that leave channels unset, strobe left on, a PANIC RESET that can't reset… found and fixed. Also from the command line. |
 | | [Compare](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Compare) | This show next to another one, by what they do: patch, groups, looks (decoded colour and level), chasers, VC pages, setlist. |
 | | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and VC widget in sortable, filterable tables; CSV and PDF. |
-| **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: tech rider for the venue (never carries your show's internals), crew checklist for load-in, show book for you — with a stage plot; PDF or CSV. |
+| **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: tech rider for the venue (never carries your show's internals), crew checklist for load-in, patch sheet with DIP-switch diagrams (also as a thermal-printer ticket), show book for you — with a stage plot; PDF or CSV. |
 
 ---
 

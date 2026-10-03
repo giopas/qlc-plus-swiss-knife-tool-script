@@ -40,7 +40,7 @@ def _format_time(t_str):
 # Core PDF assembly
 # ──────────────────────────────────────────────────────────────────────────────
 
-def assemble_pdf(pages, W, H):
+def assemble_pdf(pages, W, H, images=None, sizes=None):
     """
     Assemble a multi-page PDF from a list of zlib-compressed page streams.
 
@@ -50,6 +50,11 @@ def assemble_pdf(pages, W, H):
         Each element is a zlib-compressed content stream for one page.
     W, H  : float
         Page width and height in PDF points.
+
+    images : dict[str, core.pdf_image.PdfImage] or None
+        Images the pages draw with ``/<name> Do`` (e.g. a logo).
+    sizes : list[(W, H)] or None
+        Per-page sizes (receipt pages have their own height).
 
     Returns
     -------
@@ -73,14 +78,32 @@ def assemble_pdf(pages, W, H):
                     f"<< /Length {len(data)} /Filter /FlateDecode >>\n"
                     f"stream\n{body}\nendstream")
 
-    font_res = "<< /Font << /F1 3 0 R /F2 4 0 R >> >>"
     kids, po, so = [], [], []
     cid = 5
-    for ps in pages:
+    img_objs, xo = [], []
+    for name, im in (images or {}).items():
+        sm = ""
+        if im.smask is not None:
+            img_objs.append(_obj(cid, f"<< /Type /XObject /Subtype /Image /Width {im.width} "
+                                      f"/Height {im.height} /ColorSpace /DeviceGray /BitsPerComponent 8 "
+                                      f"/Filter /FlateDecode /Length {len(im.smask)} >>\n"
+                                      f"stream\n{im.smask.decode('latin-1')}\nendstream"))
+            sm = f" /SMask {cid} 0 R"
+            cid += 1
+        img_objs.append(_obj(cid, f"<< /Type /XObject /Subtype /Image /Width {im.width} "
+                                  f"/Height {im.height} /ColorSpace {im.colorspace} /BitsPerComponent 8 "
+                                  f"/Filter {im.filter}{sm} {im.decode} /Length {len(im.data)} >>\n"
+                                  f"stream\n{im.data.decode('latin-1')}\nendstream"))
+        xo.append(f"/{name} {cid} 0 R")
+        cid += 1
+    xobj = f" /XObject << {' '.join(xo)} >>" if xo else ""
+    font_res = f"<< /Font << /F1 3 0 R /F2 4 0 R >>{xobj} >>"
+    for k, ps in enumerate(pages):
+        pw, ph = (sizes[k] if sizes else (W, H))
         kids.append(f"{cid} 0 R")
         po.append(_obj(cid,
                        f"<< /Type /Page /Parent 2 0 R "
-                       f"/MediaBox [0 0 {W:.2f} {H:.2f}] "
+                       f"/MediaBox [0 0 {pw:.2f} {ph:.2f}] "
                        f"/Contents {cid + 1} 0 R "
                        f"/Resources {font_res} >>"))
         so.append(_sobj(cid + 1, ps))
@@ -93,6 +116,8 @@ def assemble_pdf(pages, W, H):
                  "/Encoding /WinAnsiEncoding >>"))
     _add(_obj(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold "
                  "/Encoding /WinAnsiEncoding >>"))
+    for o in img_objs:
+        _add(o)
     for p, s in zip(po, so):
         _add(p)
         _add(s)

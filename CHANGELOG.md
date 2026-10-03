@@ -7,6 +7,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added
+- **Patch sheet** (Show Paperwork, new *🔌 Patch sheet — for the crew at the rig*): every fixture by universe and address — address range, channels, name, fixture, mode — with a **DIP-switch diagram** per fixture (switch *n* = 2^(n−1), ON = lever up; 9 or 10 switches) and the switches to turn ON. An **event / venue** line and a **logo** (PNG or JPEG, remembered in this browser) at the top. Venue-safe: it never carries the show's internals.
+  - **Thermal printer ticket**: one long PDF page 58 or 80 mm wide (DIP levers in black), or plain text with 32 / 48 characters a line for printer apps.
+  - **CSV**: `patch_sheet.csv` in the ZIP, with the columns proposed in QLC+ issue #2086 first (universe, address, manufacturer, model, mode, name), then channels, last address, DIP switches ON.
+  - Inspired by OH Show's QLC+ patch tools (apps.fewday.go.yn.fr/QLC). `core/patch_sheet.py`; `/api/showbook/export/receipt`; logos read by `core/pdf_image.py` (standard library only: JPEG, PNG grey / RGB / palette / alpha, 1–16 bit); `core/pdf.assemble_pdf` takes images and per-page sizes. Tests `tests/test_patch_sheet.py` (18).
+- **Setlist: each cue's note says what it plays.** When the Setlist builds the cue list, every step gets a note with the **original** function — not the copy the cue runs — and the button that plays it, e.g. `↪ [2328] Song 22 — buttons: CS · Soft Yellow, FD · Candle Loop`. QLC+ saves step notes in the show and the QLC+ 5 cue list shows them, so they survive a relaunch. A note you typed in QLC+ is kept (only notes starting with `↪` are Swiss Knife's). When QLC+ re-saves a show it drops Swiss Knife's copy marker; the Setlist now reads the reference back from the note. Tests `tests/test_setlist_notes.py` (3).
+
 
 ## [2.0.0] — 2026-10-01
 

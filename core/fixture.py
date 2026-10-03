@@ -282,6 +282,8 @@ def read_positions(qxw_root: "ET.Element") -> dict:
             pos[fxi.get("ID")] = {"x": float(fxi.get("XPos", "0")),
                                   "y": float(fxi.get("YPos", "0")),
                                   "z": float(fxi.get("ZPos", "0"))}
+            if fxi.get("XRot") is not None:
+                pos[fxi.get("ID")]["xrot"] = int(float(fxi.get("XRot")))
         except ValueError:
             continue
     return pos
@@ -400,6 +402,13 @@ def import_from_qxw(qxw_root: "ET.Element"):
             "y_mm":         int(pos["y"]),
             "color":        _get_model_color(key),
         }
+        # keep a tilt set by hand in the show; one that matches the default
+        # stays automatic (it follows the fixture when it moves)
+        if pos.get("xrot") is not None:
+            from core.quick_start.qxw_builder import default_x_rot
+            auto = default_x_rot(pos["y"], _stage_h_mm, pos["z"], _stage_d_mm)
+            if pos["xrot"] % 360 != auto:
+                entry["x_rot"] = pos["xrot"] % 360
         _rig.append(entry)
         existing_keys.add((name, address, universe))
 
@@ -650,7 +659,9 @@ def build_qxw(template_root: "ET.Element" = None,
             fxi.set("XPos", str(int(e["x_mm"])))
             fxi.set("YPos", str(int(e.get("y_mm", 0))))
             fxi.set("ZPos", str(int(e["z_mm"])))
-            fxi.set("XRot", "65")
+            from core.quick_start.qxw_builder import default_x_rot
+            fxi.set("XRot", str(e["x_rot"]) if e.get("x_rot") is not None else
+                    str(default_x_rot(e.get("y_mm", 0), _stage_h_mm, e.get("z_mm"), _stage_d_mm)))
             fxi.set("YRot", "0")
             fxi.set("ZRot", "0")
 

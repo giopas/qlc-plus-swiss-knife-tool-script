@@ -1427,7 +1427,7 @@ function _pCopyNote() {
   if (!box || !_pCopyFx.size) return;
   const n = document.createElement('div');
   n.className = 'porter-hint porter-copy-note';
-  n.innerHTML = `<b>${_pCopyFx.size}</b> source fixture(s) are <b>copied</b> into the target (step 2) — <span style="color:#a6e3a1">green</span> on both plans, placed as in the source (scaled to this stage; fine-tune them later in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>). The functions that use them play on the copies, so their mapping below is not used.`;
+  n.innerHTML = `<b>${_pCopyFx.size}</b> source fixture(s) are <b>copied</b> into the target (step 2) — <span style="color:var(--success)">green</span> on both plans, placed as in the source (scaled to this stage; fine-tune them later in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>). The functions that use them play on the copies, so their mapping below is not used.`;
   box.prepend(n);
 }
 

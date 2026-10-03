@@ -57,6 +57,22 @@ const _LAZY = {
 // =============================================================================
 
 /** Navigate to a screen.  screenId matches the suffix of scr-{id} / sn-{id}. */
+/** The footer of a tool says what its main button will do (v2.2 UI review:
+ *  "what happens if I press Apply?"), next to the button.  *parts*: a string
+ *  or a list of chips; *kind*: '' · 'ok' · 'warn' · 'error'. */
+function setOutcome(screen, parts, kind = '', lead = 'Apply will') {
+  const el = document.getElementById('oc-' + screen);
+  if (!el) return;
+  if (!parts || (Array.isArray(parts) && !parts.length)) { el.innerHTML = ''; el.className = 'out-outcome'; return; }
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const body = Array.isArray(parts)
+    ? parts.map(p => typeof p === 'string' ? `<span class="oc-chip">${esc(p)}</span>`
+      : `<span class="oc-chip oc-${p.kind || ''}">${esc(p.text)}</span>`).join('')
+    : `<span>${esc(parts)}</span>`;
+  el.innerHTML = (lead ? `<b>${esc(lead)}</b>` : '') + body;
+  el.className = 'out-outcome' + (kind ? ' oc-' + kind : '');
+}
+
 function go(screenId) {
   // VC Editor edits not yet sent go into the show before another tool reads it
   if (typeof showPendingEdits === 'function' && _activeScreenId() !== screenId && showPendingEdits()) {
@@ -78,6 +94,7 @@ function go(screenId) {
   const tip = document.getElementById('nav-tip');
   if (tip) tip.style.display = 'none';
   if (typeof routeRender === 'function') routeRender();
+  if (screenId === 'start' && typeof routeCards === 'function') routeCards();
 }
 
 function _activeScreenId() {
@@ -532,6 +549,7 @@ async function _doLoad(fetchOpts) {
     _updateHeader(data);
     _invalidateAllTabs();
     setStatus(`Loaded: ${data.path ? data.path.split(/[\\/]/).pop() : 'workspace'}`);
+    if (typeof slFillCueNotes === 'function') slFillCueNotes(true);
     // Track in session
     if (data.path && typeof sessionOnWorkspaceLoaded === 'function') {
       sessionOnWorkspaceLoaded(data.path);
@@ -552,6 +570,7 @@ async function _refreshAfterLoad() {
   const data = await _apiJson('/api/status');
   _updateHeader(data);
   _invalidateAllTabs();
+  if (data.loaded && typeof slFillCueNotes === 'function') slFillCueNotes(true);
 }
 
 // ── Invalidate all tab caches after a workspace load ─────────────────────────
@@ -944,9 +963,9 @@ function setStatus(msg, level = 'ok') {
     document.body.appendChild(el);
   }
   el.textContent = msg;
-  el.style.color = level === 'error' ? 'var(--danger, #f38ba8)'
-                 : level === 'warn'  ? 'var(--warn, #f9e2af)'
-                 : 'var(--ok, #a6e3a1)';
+  el.style.color = level === 'error' ? 'var(--error)'
+                 : level === 'warn'  ? 'var(--warning)'
+                 : 'var(--success)';
   el.style.opacity = '1';
   clearTimeout(el._timer);
   el._timer = setTimeout(() => { el.style.opacity = '0'; }, 5000);

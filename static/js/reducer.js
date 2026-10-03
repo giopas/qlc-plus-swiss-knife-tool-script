@@ -21,7 +21,7 @@ function invalidateReducer() {
   const t = document.getElementById('rr-table');
   if (t) t.innerHTML = '<div class="porter-placeholder">Open a workspace to list its fixtures.</div>';
   const p = document.getElementById('rr-preview');
-  if (p) p.innerHTML = '<div class="porter-placeholder">Untick the fixtures to remove, edit names / addresses if needed, then 🔍 Preview.</div>';
+  if (p) p.innerHTML = '<div class="porter-placeholder">Untick the fixtures the venue doesn\'t have: what Apply will do shows here.</div>';
   _rrSync();
   if (document.getElementById('scr-reducer')?.classList.contains('active')) _rrLoad();
 }
@@ -69,6 +69,7 @@ function _rrSync() {
   if (!_rrFx) {
     if (s) s.innerHTML = ''; if (b) b.disabled = true;
     const x = document.getElementById('rr-export'); if (x) x.disabled = true;
+    setOutcome('reducer', '');
     return;
   }
   const gone = _rrFx.length - _rrKeep.size;
@@ -83,6 +84,7 @@ function _rrSync() {
     })();
   if (b) b.disabled = !_rrKeep.size || (!gone && !Object.keys(_rrEdit).length);
   const x = document.getElementById('rr-export'); if (x) x.disabled = b ? b.disabled : true;
+  _rrAutoPreview();
 }
 
 function reducerKeep(id, on) {
@@ -111,28 +113,72 @@ function _rrPlan() {
   return { keep: [..._rrKeep], repatch };
 }
 
-async function reducerPreview() {
+let _rrPreviewTimer = null;
+let _rrPreviewSeq = 0;
+
+/** What Apply will do, computed as you tick (v2.2: no Preview click needed). */
+function _rrAutoPreview() {
+  clearTimeout(_rrPreviewTimer);
+  if (!_rrFx) return;
+  const gone = _rrFx.length - _rrKeep.size, edits = Object.keys(_rrEdit).length;
+  if (!gone && !edits) {
+    const el = document.getElementById('rr-preview');
+    if (el) el.innerHTML = '<div class="porter-placeholder">Untick the fixtures the venue doesn\'t have (or rename / re-patch the ones you keep): what Apply will do shows here.</div>';
+    setOutcome('reducer', 'nothing yet — untick the fixtures to remove', '', 'Apply will do');
+    return;
+  }
+  if (!_rrKeep.size) { setOutcome('reducer', 'keep at least one fixture', 'warn', ''); return; }
+  setOutcome('reducer', 'working it out…', '', 'Apply will');
+  _rrPreviewTimer = setTimeout(() => reducerPreview(true), 350);
+}
+
+const _RR_GROUPS = [
+  ['Fixtures removed', l => /^fixture \d+ '/.test(l)],
+  ['Renamed / re-patched', l => /^fixture \d+:/.test(l)],
+  ['Fixture groups', l => l.startsWith('fixture group')],
+  ['Functions removed', l => l.startsWith('function')],
+  ['VC widgets removed', l => l.startsWith('VC ')],
+  ['Other', () => true],
+];
+
+async function reducerPreview(auto) {
   if (!_rrFx) { setStatus('Open a workspace first.', 'warn'); return; }
   const el = document.getElementById('rr-preview');
-  setStatus('Preview…', 'info');
+  const seq = ++_rrPreviewSeq;
+  if (!auto) setStatus('Preview…', 'info');
   try {
     const r = await fetch('/api/reducer/preview', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_rrPlan()),
     });
     const d = await r.json();
-    if (!r.ok) { setStatus(d.error || 'Preview failed.', 'error'); return; }
+    if (seq !== _rrPreviewSeq) return;            // a newer tick is on its way
+    if (!r.ok) { setStatus(d.error || 'Preview failed.', 'error'); setOutcome('reducer', d.error || 'no preview', 'error', ''); return; }
     const c = d.removed, doc = d.doctor;
-    el.innerHTML = `<h3>What will change</h3>
-      <p><b>${c.fixtures}</b> fixture(s), <b>${c.groups}</b> fixture group(s), <b>${c.functions}</b> function(s),
-         <b>${c.widgets}</b> VC widget(s) and <b>${c.values}</b> scene value set(s) removed.</p>
-      <p>Doctor on the result: ${doc.total_errors} error(s), ${doc.total_warnings} warning(s)
-         ${doc.new_errors.length || doc.new_warnings.length ? `— <b>new</b>: ${doc.new_errors.length} error(s), ${doc.new_warnings.length} warning(s)` : '— nothing new'}.</p>
-      ${d.blocked ? '<p class="porter-warn">⛔ The result has new Doctor errors — it will not be exported.</p>' : ''}
-      ${[...doc.new_errors, ...doc.new_warnings].slice(0, 20).map(x => `<div class="porter-warn">⚠ ${_esc(x)}</div>`).join('')}
-      <details open><summary>Changes (${d.log.length + d.more})</summary>
-        <div class="rr-log">${d.log.map(x => `<div>${_esc(x)}</div>`).join('')}${d.more ? `<div>… ${d.more} more in the report</div>` : ''}</div>
-      </details>`;
-    setStatus('Preview ready.', 'ok');
+    const groups = _RR_GROUPS.map(([t]) => [t, []]);
+    for (const l of d.log) groups[_RR_GROUPS.findIndex(([, f]) => f(l))][1].push(l);
+    const newBad = doc.new_errors.length, newWarn = doc.new_warnings.length;
+    el.innerHTML = `<h3 class="rr-h">What Apply will do</h3>
+      <div class="rr-sub">updated as you tick · ${c.values} scene value set(s) go with the fixtures</div>
+      ${d.blocked ? '<div class="rr-block">⛔ The result has new Doctor errors — Apply is refused until they are gone.</div>' : ''}
+      ${groups.filter(([, ls]) => ls.length).map(([t, ls], i) => `
+        <details class="rr-grp"${i === 0 ? ' open' : ''}><summary><span>${t}</span><b>${ls.length}</b></summary>
+          <ul>${ls.map(x => `<li>${_esc(x)}</li>`).join('')}</ul></details>`).join('')}
+      ${d.more ? `<div class="rr-sub">… ${d.more} more lines in the report</div>` : ''}
+      <details class="rr-grp"${newBad || newWarn ? ' open' : ''}><summary><span>Doctor on the result</span>
+        <b class="${newBad ? 'rr-bad' : newWarn ? 'rr-warn' : 'rr-ok'}">${newBad || newWarn ? `${newBad} new error(s), ${newWarn} new warning(s)` : 'nothing new'}</b></summary>
+        <ul>${[...doc.new_errors, ...doc.new_warnings].slice(0, 40).map(x => `<li>${_esc(x)}</li>`).join('') ||
+          `<li>${doc.total_errors} error(s), ${doc.total_warnings} warning(s) in all — none of them caused by this step</li>`}</ul></details>`;
+    const ren = Object.values(_rrEdit).length;
+    const chips = [];
+    if (c.fixtures) chips.push(`−${c.fixtures} fixture${c.fixtures > 1 ? 's' : ''}`);
+    if (c.groups) chips.push(`−${c.groups} group${c.groups > 1 ? 's' : ''}`);
+    if (c.functions) chips.push(`−${c.functions} function${c.functions > 1 ? 's' : ''}`);
+    if (c.widgets) chips.push(`−${c.widgets} VC widget${c.widgets > 1 ? 's' : ''}`);
+    if (ren) chips.push(`${ren} renamed / re-patched`);
+    chips.push(newBad ? { text: `⛔ ${newBad} new Doctor error(s)`, kind: 'error' }
+      : { text: '✓ no new Doctor errors', kind: 'ok' });
+    setOutcome('reducer', chips, newBad ? 'error' : '');
+    if (!auto) setStatus('Preview ready.', 'ok');
   } catch (e) {
     setStatus('Network error: ' + e.message, 'error');
   }

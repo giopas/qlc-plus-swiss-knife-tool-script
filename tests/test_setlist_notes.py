@@ -170,3 +170,54 @@ def test_setlist_cuelist_does_not_cover_the_quick_start_buttons(tmp_path):
     others = [vc_builder._rect(c) for c in page if vc_builder._is_widget(c) and c is not el]
     assert not any(vc_builder._overlaps(me, r) for r in others)
     assert me[2] >= 400
+
+
+def test_old_cue_lists_get_their_references(c):
+    """giopas, 4 Oct: a show built before 2.0.1 (or by hand) — its setlist
+    cues get the reference too; a note already there is kept."""
+    src = (c.tmp / "Festival_14fix.qxw").read_text(encoding="utf-8")
+    first = re.search(r'(<Function ID="4201" Type="Chaser"[^>]*>.*?<Step Number="0")', src, re.S)
+    if first:
+        src = src.replace(first.group(1), first.group(1) + ' Note="Smoke!"', 1)
+    (c.tmp / "Old.qxw").write_text(src, encoding="utf-8")
+    _ok(c.post("/api/load", json={"path": str(c.tmp / "Old.qxw")}))
+    n = c.get("/api/setlist/notes").get_json()["missing"]
+    assert n > 0
+    d = _ok(c.post("/api/setlist/notes")).get_json()
+    assert d["added"] == n and d["show"]["steps"] == 1
+    assert c.get("/api/setlist/notes").get_json()["missing"] == 0
+    root = qxw_io.strip_ns(qxw_io.loads_qxw(c.get("/api/show/file").data))
+    slots = {s["chaser_id"] for s in c.get("/api/setlist/slots").get_json()}
+    notes = [st.get("Note") for f in root.find("Engine").findall("Function") if f.get("ID") in slots
+             for st in f.findall("Step") if (st.text or "").strip()]
+    assert notes and all(notes)
+    assert sum(1 for x in notes if x.startswith("↪ [")) == len(notes) - (1 if first else 0)
+    if first:
+        assert "Smoke!" in notes
+    assert any(" — button" in x for x in notes)
+    _ok(c.post("/api/show/undo", json={}))                       # one undoable step
+    assert c.get("/api/setlist/notes").get_json()["missing"] == n
+    assert _ok(c.post("/api/setlist/notes")).get_json()["added"] == n
+    assert _ok(c.post("/api/setlist/notes")).get_json()["added"] == 0   # nothing twice
+
+
+def test_the_copy_of_a_look_points_at_the_original(tmp_path):
+    """A cue playing a copy whose marker QLC+ dropped: the original is the
+    one function with the same content that a button plays."""
+    root = qxw_io.loads_qxw((
+        '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Workspace>'
+        '<Workspace xmlns="http://www.qlcplus.org/Workspace"><Engine>'
+        '<Function ID="5" Type="Collection" Name="Red"><Step Number="0">1</Step></Function>'
+        '<Function ID="9" Type="Collection" Name="Song 1"><Step Number="0">1</Step></Function>'
+        '<Function ID="1" Type="Scene" Name="R"/>'
+        '<Function ID="20" Type="Chaser" Name="Setlist"><Step Number="0">9</Step></Function>'
+        '</Engine><VirtualConsole><Frame Caption=""><Frame Caption="Looks" ID="1">'
+        '<Button Caption="Red" ID="2"><Function ID="5"/></Button>'
+        '<CueList Caption="Setlist" ID="3"><Chaser>20</Chaser></CueList>'
+        '</Frame></Frame></VirtualConsole></Workspace>').encode())
+    workspace._reset()
+    workspace._state.update(loaded=True, qxw_root=root)
+    workspace._parse_shared_data(root)
+    workspace._parse_cuelist_slots(root)
+    todo = workspace.cue_notes_missing()
+    assert [n for _, n, _, _ in todo] == ["↪ [5] Red — button on Looks"]

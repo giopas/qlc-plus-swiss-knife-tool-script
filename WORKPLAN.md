@@ -660,6 +660,7 @@ Checks (★ = included in Phase 1.0):
   - a **narrow format** for 58 / 80 mm thermal printers (PDF page width + plain text), one block per fixture; direct Bluetooth/USB printing stays out (not reachable from the native window);
   - the patch CSV with the columns proposed in #2086 (universe, address, manufacturer, model, mode, name, UTF-8) so it matches what QLC+ may export;
   - credit OH Show in the docs as the inspiration.
+- *(3 Oct, giopas testing: in QLC+ 5.2.2 a typed note is kept only after Enter, and QLC+ doesn't mark the show changed — save by hand; documented. A Quick Start show has no CueList → VC Editor › Setlist CueList › ＋ new empty setlist chaser, added. Thermal ticket not tested on a real printer.)*
 - **(done 3 Oct, unreleased)** **Setlist: the reference in the cue list Notes.** QLC+ keeps a note per chaser step (`<Step … Note="…">`, saved and reloaded by QLC+ 5; the VC CueList shows and edits it). When the Setlist builds the CueList, write in each step's note the **original** function and its button (e.g. `↪ Song 22 · btn on 2. EFFECTS`), not the copy. Keep notes the user typed in QLC+ (only notes starting with `↪` are ours). Bonus: QLC+ drops Swiss Knife's own `SwissKnifeClone` attribute when it re-saves a show, the note survives — the Setlist can read the reference back from it.
 
 **Left over from 2.6 (1 Oct):**

@@ -7,6 +7,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Fixed
+- **Native window opened white** (giopas, 4 Oct): the window could load the page before the server was listening, and WKWebView does not retry. `python3 app.py` now waits until the server answers (up to 15 s) before opening the window, and says so plainly if port 5731 is taken (e.g. by another Swiss Knife still running). `QSK_DEBUG=1 python3 app.py` enables *Inspect Element* in the window.
+
 
 ## [2.2.0] — 2026-10-04
 

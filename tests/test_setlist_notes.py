@@ -133,3 +133,40 @@ def test_a_song_without_function_is_reported(c):
 def test_new_cuelist_is_wide_enough_for_the_notes():
     from core import vc_builder
     assert vc_builder.DEFAULT_SIZE["CueList"][0] >= 700
+
+
+def test_selected_cuelist_gets_a_new_setlist_and_info_lists_cuelists(tmp_path):
+    """3 Oct: the setlist CueList is now on top of 'Add & wire' and in the
+    Selection of a CueList (▶ Use for a new setlist); the panel says how many
+    CueLists the show has."""
+    shutil.copy(os.path.join(CORPUS, "QuickStart_6fix.qxw"), tmp_path / "QS.qxw")
+    for f in os.listdir(CORPUS):
+        if f.endswith(".qxf"):
+            shutil.copy(os.path.join(CORPUS, f), tmp_path / f)
+    c = app.create_app().test_client()
+    _ok(c.post("/api/load", json={"path": str(tmp_path / "QS.qxw")}))
+    assert c.get("/api/vc/builder-info").get_json()["cuelists"] == []
+    d = _ok(c.post("/api/vc/op", json={"op": "create", "parent_id": "0", "kind": "CueList",
+                                         "caption": "Mine"})).get_json()
+    cl = d["new_ids"][0]
+    d = _ok(c.post("/api/vc/op", json={"op": "setlist_cuelist", "chaser_id": "__new__",
+                                         "cuelist_id": cl})).get_json()
+    info = c.get("/api/vc/builder-info").get_json()
+    assert info["cuelists"] == [{"id": cl, "caption": "Mine", "chaser_id": d["chaser_id"]}]
+    slots = c.get("/api/setlist/slots").get_json()
+    assert [s["chaser_name"] for s in slots] == ["Setlist"]
+
+
+def test_setlist_cuelist_does_not_cover_the_quick_start_buttons(tmp_path):
+    from core import vc_builder
+    from core.vc_ops import _vc
+    root = qxw_io.load_qxw(os.path.join(CORPUS, "QuickStart_6fix.qxw"))
+    d = vc_builder.setlist_cuelist(root, "__new__")
+    vc = _vc(root)
+    nid = d["new_ids"][0]
+    page = next(p for p in vc for c in p if c.get("ID") == nid)
+    el = next(c for c in page if c.get("ID") == nid)
+    me = vc_builder._rect(el)
+    others = [vc_builder._rect(c) for c in page if vc_builder._is_widget(c) and c is not el]
+    assert not any(vc_builder._overlaps(me, r) for r in others)
+    assert me[2] >= 400

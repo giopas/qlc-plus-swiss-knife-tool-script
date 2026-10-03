@@ -4,6 +4,13 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (3 Oct — v2.0.1 prepared on `feat/patch-sheet`):** after giopas's tests of the cue-list notes on a Quick Start show. The **setlist CueList** was hard to find (the last, folded item of *Ready-made blocks*), so it is now:
+- a highlighted **▶ Setlist cue list** box at the top of VC Editor › ＋ Add & wire, saying how many CueLists the show has, with a button that names what it does (*＋ Add a CueList on this page* / *Wire “…”*);
+- **▶ Use for a new setlist** in the Selection of a CueList;
+- **▶ ＋ Add a setlist CueList** in the Setlist when the show has none.
+
+A new setlist CueList is placed where it covers nothing (720 × 420, smaller if the page is full). Also fixed from the test: a song with no function was silently dropped, and new CueLists were too narrow for the *Note* column. Released together: the Patch sheet, the cue notes, the FloorShow corpus and D008 *Stop All*. VERSION 2.0.1, CHANGELOG, release notes, ROADMAP, wiki (Setlist Manager, VC Visual Editor). 637 tests.
+
 **Status (1 Oct, evening — anonymised):** giopas asked that the public repo carry no real names: author references are now *giopas*, show / band / venue names replaced (FloorShow, BigShow, BarShow, SmallShow; corpus already neutral), the naming profile is `prefix`, LICENSE says *giopas*. Commits from here on: `giopas <giopas@users.noreply.github.com>`. Older commits still carry the real name in their author field — rewriting history is optional (instructions given, giopas decides).
 
 **Status (1 Oct, later — v1.9.0 released by giopas; his five points before 2.7):**
@@ -655,13 +662,13 @@ Checks (★ = included in Phase 1.0):
 **First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles still to do.*
 
 **Proposed by giopas (3 Oct) — to schedule:**
-- **(done 3 Oct, unreleased: Patch sheet in Show Paperwork)** **Patch printouts like OH Show's tools** (inspiration: apps.fewday.go.yn.fr/QLC — *DMX Patch PDF* with DIP-switch diagrams, and a *Receipt printer* patch list; discussed in QLC+ issue #2086, where the maintainer prefers QLC+ to export and external tools to print — Swiss Knife is such a tool). Already covered by Show Paperwork: patch list (PDF/CSV), tech rider, crew checklist with stage plot. To add, in Show Paperwork:
+- **(done 3 Oct, released in v2.0.1: Patch sheet in Show Paperwork)** **Patch printouts like OH Show's tools** (inspiration: apps.fewday.go.yn.fr/QLC — *DMX Patch PDF* with DIP-switch diagrams, and a *Receipt printer* patch list; discussed in QLC+ issue #2086, where the maintainer prefers QLC+ to export and external tools to print — Swiss Knife is such a tool). Already covered by Show Paperwork: patch list (PDF/CSV), tech rider, crew checklist with stage plot. To add, in Show Paperwork:
   - a **Patch sheet** section: event / venue, date and an optional logo in the header; fixtures by universe, address, channels, mode; a **DIP-switch diagram** per fixture (address in binary, 9 or 10 switches, ON = up, switch 1 = 1);
   - a **narrow format** for 58 / 80 mm thermal printers (PDF page width + plain text), one block per fixture; direct Bluetooth/USB printing stays out (not reachable from the native window);
   - the patch CSV with the columns proposed in #2086 (universe, address, manufacturer, model, mode, name, UTF-8) so it matches what QLC+ may export;
   - credit OH Show in the docs as the inspiration.
-- *(3 Oct, giopas testing: in QLC+ 5.2.2 a typed note is kept only after Enter, and QLC+ doesn't mark the show changed — save by hand; documented. A Quick Start show has no CueList → VC Editor › Setlist CueList › ＋ new empty setlist chaser, added. Thermal ticket not tested on a real printer.)*
-- **(done 3 Oct, unreleased)** **Setlist: the reference in the cue list Notes.** QLC+ keeps a note per chaser step (`<Step … Note="…">`, saved and reloaded by QLC+ 5; the VC CueList shows and edits it). When the Setlist builds the CueList, write in each step's note the **original** function and its button (e.g. `↪ Song 22 · btn on 2. EFFECTS`), not the copy. Keep notes the user typed in QLC+ (only notes starting with `↪` are ours). Bonus: QLC+ drops Swiss Knife's own `SwissKnifeClone` attribute when it re-saves a show, the note survives — the Setlist can read the reference back from it.
+- *(3 Oct, giopas testing: in QLC+ 5.2.2 a typed note is kept only after Enter, and QLC+ doesn't mark the show changed — save by hand; documented. A Quick Start show has no CueList → VC Editor › Setlist CueList › ＋ new empty setlist chaser, added; then made visible: a box at the top of ＋ Add & wire, a button in the Setlist's empty slot list, *Use for a new setlist* on a selected CueList (v2.0.1). Thermal ticket not tested on a real printer.)*
+- **(done 3 Oct, released in v2.0.1)** **Setlist: the reference in the cue list Notes.** QLC+ keeps a note per chaser step (`<Step … Note="…">`, saved and reloaded by QLC+ 5; the VC CueList shows and edits it). When the Setlist builds the CueList, write in each step's note the **original** function and its button (e.g. `↪ Song 22 · btn on 2. EFFECTS`), not the copy. Keep notes the user typed in QLC+ (only notes starting with `↪` are ours). Bonus: QLC+ drops Swiss Knife's own `SwissKnifeClone` attribute when it re-saves a show, the note survives — the Setlist can read the reference back from it.
 
 **Left over from 2.6 (1 Oct):**
 - Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).

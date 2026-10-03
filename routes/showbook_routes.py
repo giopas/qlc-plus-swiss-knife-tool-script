@@ -15,7 +15,23 @@ def _args(data: dict) -> dict:
             'qxf_dir': (data.get('qxf_dir') or '').strip() or None,
             'presets': presets or None,
             'show_name': (data.get('show_name') or '').strip() or None,
-            'date': (data.get('date') or '').strip() or None}
+            'date': (data.get('date') or '').strip() or None,
+            'event': (data.get('event') or '').strip()[:120] or None,
+            'dip_switches': 9 if str(data.get('dip_switches') or '') == '9' else 10}
+
+
+def _logo(data: dict):
+    """The logo sent as a data URL (PNG / JPEG), or None."""
+    import base64
+    from core import pdf_image
+    url = data.get('logo') or ''
+    if not url:
+        return None
+    try:
+        raw = base64.b64decode(url.split(',', 1)[1] if ',' in url else url, validate=False)
+    except Exception:  # noqa: BLE001
+        raise pdf_image.ImageError('The logo could not be read.')
+    return pdf_image.load(raw)
 
 
 def _suffix(doc: dict) -> str:
@@ -58,7 +74,8 @@ def export_pdf():
 
     try:
         doc = showbook.generate(**_args(data))
-        pdf_bytes = showbook.export_pdf(doc, data.get('paper') or showbook.DEFAULT_PAPER)
+        pdf_bytes = showbook.export_pdf(doc, data.get('paper') or showbook.DEFAULT_PAPER,
+                                        _logo(data) if 'patch_sheet' in doc['sections'] else None)
 
         if not filename:
             safe_name = re.sub(r'[^\w\s-]', '', doc.get('show_name', 'showbook'))
@@ -74,7 +91,40 @@ def export_pdf():
                 'Access-Control-Expose-Headers': 'X-Suggested-Filename',
             },
         )
-    except RuntimeError as e:
+    except (RuntimeError, ValueError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/export/receipt', methods=['POST'])
+def export_receipt():
+    """The Patch sheet as a ticket for a thermal printer.
+
+    Body: the usual paperwork fields + width ('58' | '80'), format ('pdf' | 'txt'),
+    event, dip_switches, logo (data URL, PDF only).
+    """
+    from core import patch_sheet
+    data = request.get_json(force=True) or {}
+    width = '58' if str(data.get('width')) == '58' else '80'
+    fmt = 'txt' if data.get('format') == 'txt' else 'pdf'
+    try:
+        args = _args(data)
+        args.update(sections=['patch_sheet'], presets=None)
+        doc = showbook.generate(**args)
+        sheet = doc['sections']['patch_sheet']
+        base = re.sub(r'[^\w\s-]', '', doc.get('show_name', 'show')).strip().replace(' ', '_') or 'show'
+        if fmt == 'txt':
+            body = patch_sheet.receipt_text(sheet, doc['show_name'], doc['date'], doc.get('event', ''), width)
+            name, mime, out = f'{base}_Patch_{width}mm.txt', 'text/plain; charset=utf-8', body.encode('utf-8')
+        else:
+            out = patch_sheet.receipt_pdf(sheet, doc['show_name'], doc['date'], doc.get('event', ''),
+                                          width, _logo(data))
+            name, mime = f'{base}_Patch_{width}mm.pdf', 'application/pdf'
+        return Response(out, mimetype=mime, headers={
+            'Content-Disposition': f'attachment; filename="{name}"',
+            'X-Suggested-Filename': name, 'Access-Control-Expose-Headers': 'X-Suggested-Filename'})
+    except (RuntimeError, ValueError) as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

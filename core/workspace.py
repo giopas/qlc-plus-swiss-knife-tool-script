@@ -817,6 +817,8 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
 
     linked = False
     create_new = not target_chaser_id or target_chaser_id == '__new__'
+    user_notes: dict = {}          # original function id -> a note typed in QLC+
+    buttons = _button_refs(root)
 
     if create_new:
         _state['highest_func_id'] += 1
@@ -855,6 +857,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
         if master is None:
             raise ValueError(f'Chaser ID {mc_id} not found in workspace.')
         for step in master.findall('q:Step', NS):
+            _keep_user_note(step, engine, user_notes)
             master.remove(step)
         spd = master.find('q:Speed', NS)
         if spd is not None:
@@ -888,7 +891,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
             origin_func = _find_by_id(engine, 'Function', origin_id)
             if origin_func is None:
                 break
-            parent_id = origin_func.get('SwissKnifeClone')
+            parent_id = origin_func.get('SwissKnifeClone') or _state['clone_base_map'].get(origin_id)
             if not parent_id or parent_id in seen:
                 break
             seen.add(parent_id)
@@ -912,6 +915,9 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
             'Hold':    str(d.get('hold', '4294967294')),
             'FadeOut': str(d.get('out', '0')),
         }
+        note = user_notes.get(origin_id) or step_note(origin_id, engine, buttons)
+        if note:
+            sa['Note'] = note
         step_el = ET.SubElement(master, f'{{{QLC_NS_URI}}}Step', sa)
         step_el.text = cid
         step_count += 1
@@ -1181,6 +1187,19 @@ def _parse_shared_data(qxw_root: ET.Element):
             elif f_name.endswith(' (Setlist)') or f_name.endswith(' (Auto-Clone)'):
                 _state['clone_ids'].add(f_id)
 
+    # Clones whose SwissKnifeClone attribute QLC+ dropped on a re-save: the
+    # reference survives in the cue-list step note ("↪ [ID] …").
+    for func in qxw_root.findall('q:Engine/q:Function', NS):
+        if func.get('Type') != 'Chaser':
+            continue
+        for st in func.findall('q:Step', NS):
+            m = NOTE_REF.match(st.get('Note') or '')
+            sid = (st.text or '').strip()
+            if m and sid and sid != m.group(1) and m.group(1) in _state['func_by_id'] \
+                    and sid not in _state['clone_ids']:
+                _state['clone_ids'].add(sid)
+                _state['clone_base_map'][sid] = m.group(1)
+
     # ── Virtual Console ───────────────────────────────────────────────────────
     vc_root = qxw_root.find('q:VirtualConsole', NS)
     if vc_root is not None:
@@ -1192,6 +1211,64 @@ _WIDGET_TYPES = {
     "Label", "Clock", "VUMeter", "AudioTrigger", "Animation",
     "Frame", "SoloFrame", "CueList",
 }
+
+
+NOTE_MARK = '↪'
+NOTE_REF = re.compile(r'^↪ \[(\d+)\]')
+
+
+def _button_refs(root: ET.Element) -> dict:
+    """{function id: [(button caption, page caption)…]} for VC buttons."""
+    from core.porter_vc import widget_function_refs
+    out: dict = {}
+    vc = root.find('q:VirtualConsole', NS)
+    if vc is None:
+        return out
+    pages = [c for c in vc if c.tag.split('}')[-1] in ('Frame', 'SoloFrame')]
+    if len(pages) == 1 and not pages[0].get('Caption'):
+        inner = [c for c in pages[0] if c.tag.split('}')[-1] in ('Frame', 'SoloFrame')]
+        pages = inner or pages
+    for p in pages:
+        pcap = (p.get('Caption') or '').strip()
+        for w in p.iter():
+            if w.tag.split('}')[-1] != 'Button':
+                continue
+            for fid in widget_function_refs(w):
+                out.setdefault(fid, []).append(((w.get('Caption') or '').strip(), pcap))
+    return out
+
+
+def step_note(fid: str, engine: ET.Element, buttons: dict) -> str:
+    """The note for a setlist cue: the original function and the button that
+    plays it — "↪ [2328] Song 22 — button on 2. EFFECTS" (QLC+ keeps step
+    notes and shows them in the cue list)."""
+    f = _find_by_id(engine, 'Function', fid)
+    if f is None:
+        return ''
+    name = f.get('Name', '')
+    note = f'{NOTE_MARK} [{fid}] {name}'
+    refs = buttons.get(fid) or []
+    if refs:
+        cap, page = refs[0]
+        where = f' on {page}' if page else ''
+        note += f' — button{where}' if cap == name or not cap else f' — button "{cap}"{where}'
+    else:
+        inh = _resolve_inherited_vc(fid) if fid in _state.get('func_detailed', {}) else ''
+        if inh:
+            inh = inh if len(inh) <= 60 else inh[:57].rstrip(', ') + '…'
+            note += f' — buttons: {inh}'
+    return note
+
+
+def _keep_user_note(step: ET.Element, engine: ET.Element, keep: dict) -> None:
+    """A note typed in QLC+ (not one of ours) stays with its song."""
+    note = step.get('Note') or ''
+    if not note or note.startswith(NOTE_MARK):
+        return
+    sid = (step.text or '').strip()
+    f = _find_by_id(engine, 'Function', sid)
+    origin = (f.get('SwissKnifeClone') if f is not None else None) or _state['clone_base_map'].get(sid) or sid
+    keep.setdefault(origin, note)
 
 
 def _parse_vc_node(node: ET.Element, frame_ancestry: list):

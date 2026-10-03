@@ -94,7 +94,7 @@ def test_operator_book_unchanged(c):
     a = showbook.export_pdf(showbook.generate(presets=["operator"], date="2026-09-30"))
     b = showbook.export_pdf(showbook.generate(date="2026-09-30"))
     assert len(a) > 10000 and a.replace(b"Show Book", b"") == b.replace(b"Show Book", b"")
-    assert c.get("/api/showbook/presets").get_json()["venue_safe"] == ["checklist", "patch", "rider", "stage_plan"]
+    assert c.get("/api/showbook/presets").get_json()["venue_safe"] == ["checklist", "patch", "patch_sheet", "rider", "stage_plan"]
 
 
 @pytest.mark.parametrize("paper,size", [("A3 Landscape", b"1190 842"), ("US Letter Portrait", b"612 792"),

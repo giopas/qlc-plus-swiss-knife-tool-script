@@ -367,7 +367,7 @@ Today the Porter keeps the key/MIDI bindings **on the widgets it ports** (policy
 - [x] **Report**: section *INPUT / MIDI* — input patch lines (⚠ for other device / none / skipped), every binding not simply kept, copied bindings with where they came from. Doctor D012 clean on the result when the patch is copied (test).
 - [x] **Step 4 UI**: *Key / MIDI input* panel (`GET /api/porter/inputs` → `porter_input.summary()`): per source universe with bindings — device, profile, count, target universe select (target devices shown), live status; *Copy the input patch*; *Also copy bindings onto matching existing target widgets*; policy *Source wins*. Step 5 summary line. Browser-checked (rebuilt MIDI Pub → QuickStart_6fix, universe 2 → 3).
 - [x] **Tests** (`tests/test_porter_input.py`, 11): Pub_6fix + SINCO on universe 2 + PANIC RESET ← ch 40, CueList Next ← 20, Previous ← 10 (giopas's setup, rebuilt; the real `BarShow_v14.qxw` is not committed) → QuickStart_6fix (patch copied incl. profile, D012 clean; copy off → D012; universe 2 → 3); → a copy with SINCO (`UID` only) and *ALL ON* on ch 40 (keep-free names the conflict, source-wins moves it, same device = ok); → a copy with another device (warning); bindings only (PANIC RESET by caption, CueList binding reported as unmatched); deterministic.
-- [ ] giopas: real case BarShow_v14 (*1. SETLIST*) → SmallShow with *Source wins*, and → a rig without MIDI; check in QLC+ that PANIC / Next / Previous respond on the SINCO.
+- [x] *(done, giopas 2 Oct)* giopas: real case BarShow_v14 (*1. SETLIST*) → SmallShow with *Source wins*, and → a rig without MIDI; check in QLC+ that PANIC / Next / Previous respond on the SINCO.
 
 *Analysis of giopas's file (25 Sep):*
 - Input patch: Universe 2 (ID 1) ← MIDI device **SINCO** (`Name="SINCO" UID="528145425"`, mode *Program Change*). 3 VC bindings, all on that universe: **PANIC / BLACKOUT** ← ch 40, setlist **CueList Next** ← ch 20, **Previous** ← ch 10. Plus 42 keyboard keys.
@@ -578,7 +578,7 @@ Checks (★ = included in Phase 1.0):
 
 *Pass criteria* (to be measured, not eyeballed):
 - [x] Doctor on the result: **0 errors**, and no warning the reference doesn't have. *(0 errors, 52 warnings — mostly the festival's unused functions, which the Doctor can remove)*
-- [ ] **Compare with `Pub_6fix.qxw`** — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
+- [x] **Compare with `Pub_6fix.qxw`** *(2 Oct: patch, groups, setlist the same; looks differ by design)* — needs a new tool: **Compare** (`core/compare.py`, from the backlog "functional workspace diff"): fixtures and patch identical; groups present with the same heads; every reference look reproduced (per fixture: same colour/intensity after decoding, ± a tolerance), chasers by steps and timing, VC pages / frames / buttons by function, setlist CueList wired; a report of what's missing, extra or different.
 - [x] **QLC+ open-check** (§6) and a live run of the setlist, PANIC RESET and a few looks. *(giopas, 2 Oct: all good; Song 12 dark → D018)*
 - [x] **Time**: under 30 minutes for someone who knows the show. *(12 min, giopas, 2 Oct)*
 - [ ] ~~**Repeatable**: every step's options recorded in a *recipe* (JSON) that the command line replays to a byte-identical file~~ — moved after v2.0 (giopas, 2 Oct): first item of §7 with the *Show Profile / CLI pipeline*.
@@ -653,6 +653,14 @@ Checks (★ = included in Phase 1.0):
 *The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
 
 **First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles still to do.*
+
+**Proposed by giopas (3 Oct) — to schedule:**
+- **(done 3 Oct, unreleased: Patch sheet in Show Paperwork)** **Patch printouts like OH Show's tools** (inspiration: apps.fewday.go.yn.fr/QLC — *DMX Patch PDF* with DIP-switch diagrams, and a *Receipt printer* patch list; discussed in QLC+ issue #2086, where the maintainer prefers QLC+ to export and external tools to print — Swiss Knife is such a tool). Already covered by Show Paperwork: patch list (PDF/CSV), tech rider, crew checklist with stage plot. To add, in Show Paperwork:
+  - a **Patch sheet** section: event / venue, date and an optional logo in the header; fixtures by universe, address, channels, mode; a **DIP-switch diagram** per fixture (address in binary, 9 or 10 switches, ON = up, switch 1 = 1);
+  - a **narrow format** for 58 / 80 mm thermal printers (PDF page width + plain text), one block per fixture; direct Bluetooth/USB printing stays out (not reachable from the native window);
+  - the patch CSV with the columns proposed in #2086 (universe, address, manufacturer, model, mode, name, UTF-8) so it matches what QLC+ may export;
+  - credit OH Show in the docs as the inspiration.
+- **(done 3 Oct, unreleased)** **Setlist: the reference in the cue list Notes.** QLC+ keeps a note per chaser step (`<Step … Note="…">`, saved and reloaded by QLC+ 5; the VC CueList shows and edits it). When the Setlist builds the CueList, write in each step's note the **original** function and its button (e.g. `↪ Song 22 · btn on 2. EFFECTS`), not the copy. Keep notes the user typed in QLC+ (only notes starting with `↪` are ours). Bonus: QLC+ drops Swiss Knife's own `SwissKnifeClone` attribute when it re-saves a show, the note survives — the Setlist can read the reference back from it.
 
 **Left over from 2.6 (1 Oct):**
 - Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).
@@ -931,7 +939,7 @@ cd wiki && git push origin master && cd ..
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
 **Next Cowork session:**
-1. (done) v2.0.0 prepared — the Pub test (2.8) and the recipe (2.9) in one release, branch `feat/recipe`. Next: **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
+1. (done) **v2.0.0 released** — the Pub test (2.8) and the recipe (2.9); forum post published (qlcplus.org/forum/viewtopic.php?p=84132); v1.1.1 release published (giopas). Next: **Phase 3 packages → v2.1.0**. (Leftovers of 2.6 in §7.)
 1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
 1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
 1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.

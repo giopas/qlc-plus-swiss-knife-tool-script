@@ -1596,6 +1596,7 @@
         <span class="sb-label">Who is it for?</span>
         <button class="sb-preset" data-p="rider" onclick="sbPreset('rider', event)">🎟 Tech rider <small>for the venue</small></button>
         <button class="sb-preset" data-p="checklist" onclick="sbPreset('checklist', event)">✅ Crew checklist <small>for load-in</small></button>
+        <button class="sb-preset" data-p="patch" onclick="sbPreset('patch', event)">🔌 Patch sheet <small>for the crew at the rig</small></button>
         <button class="sb-preset active" data-p="operator" onclick="sbPreset('operator', event)">📖 Show book <small>for you at the desk</small></button>
         <button class="sb-preset" data-p="custom" onclick="sbPreset('custom', event)">⚙ Custom <small>tick the sections</small></button>
         <span class="sb-optional">⇧-click to combine (e.g. rider + checklist for a festival advance) — one PDF</span>
@@ -1616,6 +1617,23 @@
         <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
         <button class="btn btn-surface btn-sm" onclick="sbBrowseQxf()">📂 Folder…</button>
         <span class="sb-optional">optional — definitions next to the show and the QLC+ library are used anyway</span>
+      </div>
+
+      <div id="sb-patch-opts" class="sb-options" hidden>
+        <span class="sb-label">Patch sheet</span>
+        <label class="field-label" for="sb-event">Event / venue</label>
+        <input id="sb-event" type="text" class="filter-input" style="flex:0 0 220px" maxlength="120" placeholder="e.g. Pub night — The Anchor" spellcheck="false">
+        <span id="sb-logo-name" class="file-chip">no logo</span>
+        <button class="btn btn-surface btn-sm" onclick="sbPickLogo()" data-tooltip="A PNG or JPEG printed at the top of the patch sheet and the ticket; remembered in this browser">🖼 Logo…</button>
+        <button id="sb-logo-clear" class="btn btn-surface btn-xs" onclick="sbClearLogo()" hidden>✕</button>
+        <input id="sb-logo-file" type="file" accept="image/png,image/jpeg" hidden onchange="sbLogoChosen(this)">
+        <label class="field-label" for="sb-dip">DIP switches</label>
+        <select id="sb-dip" class="filter-input" style="flex:0 0 70px" data-tooltip="How many address switches the fixtures have (switch n = 2^(n-1); 10 covers address 512)"><option>10</option><option>9</option></select>
+        <span class="sb-optional">Thermal printer ticket:</span>
+        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('80', 'pdf')" data-tooltip="One long PDF page, 80 mm wide">🧾 80 mm PDF…</button>
+        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('58', 'pdf')" data-tooltip="One long PDF page, 58 mm wide">🧾 58 mm PDF…</button>
+        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('58', 'txt')" data-tooltip="Plain text, 32 characters a line (58 mm); for printer apps">TXT 58…</button>
+        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('80', 'txt')" data-tooltip="Plain text, 48 characters a line (80 mm)">TXT 80…</button>
       </div>
 
       <div class="sb-action-bar">

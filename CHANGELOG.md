@@ -8,6 +8,33 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.0.1] — 2026-10-03
+
+**After the pub test: paperwork for the crew, notes in the cue list.** A patch sheet with DIP switches (and a thermal-printer ticket), each setlist cue saying which function and button it stands for, a setlist CueList in one click for a show that has none, a third real show in the test corpus — and the fixes from giopas's first test of all this.
+
+### Changed
+- **The setlist CueList is easy to find.** It was the last, folded item of *Ready-made blocks* in the VC Editor. Now:
+  - **VC Editor › ＋ Add & wire** opens with a highlighted box **▶ Setlist cue list**. It says how many CueLists the show has ("This show has no CueList yet"). Its button names what it will do: *＋ Add a CueList on this page*, or *Wire “…”* when a CueList is selected.
+  - **✥ Selection** of a CueList has **▶ Use for a new setlist**.
+  - **Setlist**: a show with no CueList says so and offers **▶ ＋ Add a setlist CueList** (first VC page, new empty chaser *Setlist*); the slot appears at once.
+  - A new setlist CueList no longer covers other widgets. It goes where it fits at 720 × 420, smaller if the page is full (Quick Start page: under the groups, 720 × 340).
+  - `/api/vc/builder-info` lists `cuelists`; `setlist_cuelist` takes `__new__` with a selected CueList too. Tests `tests/test_setlist_notes.py` (8).
+
+### Fixed
+- **Setlist: a song with no function was dropped from the cue list without a word** (giopas's test, 3 Oct). Applying now says which songs were left out, and the show report lists them under the Setlist step.
+- **VC Editor: a new CueList is 720 × 420** (was 400 × 500), wide enough to show every column in QLC+, the *Note* included.
+
+### Added
+- **VC Editor › Setlist CueList: *＋ a new, empty setlist chaser*.** A show without a cue list (e.g. fresh from Quick Start) gets one in a click — a CueList on the page, wired to a new empty chaser *Setlist*; the Setlist tool then shows its slot and fills it. Before, the CueList had to be wired to an existing chaser, which the Setlist would then overwrite.
+- **Test corpus: `FloorShow_8fix.qxw`**, the third real show (8 PARs, 246 functions, the ceiling PARs brought in with the Function Porter), anonymised like the others. Its Doctor baseline is pinned; it found a real slip — the static look *Soft Yellow* leaves the PARs' strobe channel at 30.
+- **Workspace Doctor D008**: a VC button with the action *Stop All* (or *Blackout*) counts as a panic button — no more "no PANIC RESET function" on shows that use one.
+- **Patch sheet** (Show Paperwork, new *🔌 Patch sheet — for the crew at the rig*): every fixture by universe and address — address range, channels, name, fixture, mode — with an **ID** column and a **DIP-switch diagram** per fixture drawn like the real part — blue body, white levers, ON = lever up (switch *n* = 2^(n−1); 9 or 10 switches; checked against OH Show's sheet on the same show) and the switches to turn ON. An **event / venue** line and a **logo** (PNG or JPEG, remembered in this browser) at the top. Venue-safe: it never carries the show's internals.
+  - **Thermal printer ticket**: one long PDF page 58 or 80 mm wide (DIP outlines with black levers), or plain text with 32 / 48 characters a line for printer apps.
+  - **CSV**: `patch_sheet.csv` in the ZIP, with the columns proposed in QLC+ issue #2086 first (universe, address, manufacturer, model, mode, name), then channels, last address, DIP switches ON.
+  - Inspired by OH Show's QLC+ patch tools (apps.fewday.go.yn.fr/QLC). `core/patch_sheet.py`; `/api/showbook/export/receipt`; logos read by `core/pdf_image.py` (standard library only: JPEG, PNG grey / RGB / palette / alpha, 1–16 bit); `core/pdf.assemble_pdf` takes images and per-page sizes. Tests `tests/test_patch_sheet.py` (18).
+- **Setlist: each cue's note says what it plays.** When the Setlist builds the cue list, every step gets a note with the **original** function — not the copy the cue runs — and the button that plays it, e.g. `↪ [2328] Song 22 — buttons: CS · Soft Yellow, FD · Candle Loop`. QLC+ saves step notes in the show and the QLC+ 5 cue list shows them, so they survive a relaunch. A note you typed in QLC+ is kept (only notes starting with `↪` are Swiss Knife's). When QLC+ re-saves a show it drops Swiss Knife's copy marker; the Setlist now reads the reference back from the note. Tests `tests/test_setlist_notes.py` (3).
+
+
 ## [2.0.0] — 2026-10-01
 
 **The Pub test passed.** A real festival show rebuilt as the pub show with Swiss Knife only, in 12 minutes, Doctor 0 errors, played in QLC+ (WORKPLAN 2.8). The two tools it needed, what the run showed, a tutorial — and the recipe, so a show can be replayed to the same file (WORKPLAN 2.9).

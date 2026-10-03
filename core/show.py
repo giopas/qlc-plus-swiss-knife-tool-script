@@ -145,6 +145,14 @@ def touch(tool: str, title: str = '', detail: str = '') -> dict:
     return public_step(step)
 
 
+def set_detail(text: str) -> None:
+    """Add a detail line to the last step (e.g. what a tool left out)."""
+    steps = _show.get('steps') or []
+    if steps and text:
+        d = steps[-1].get('detail') or ''
+        steps[-1]['detail'] = (d + '\n' if d else '') + text
+
+
 def cancel_touch() -> None:
     """The edit announced by :func:`touch` failed and changed nothing."""
     steps = _show.get('steps') or []

@@ -11,6 +11,7 @@ let _sbDoc      = null;    // last document model from /api/showbook/preview
 let _sbBusy     = false;
 
 const _SB_SECTIONS = [
+  { id: 'patch_sheet', label: 'Patch sheet (DIP switches)', icon: '🔌' },
   { id: 'rider',       label: 'Tech rider (fixture types)', icon: '🎟' },
   { id: 'stage_plan',  label: 'Stage plot',     icon: '🗺' },
   { id: 'checklist',   label: 'Load-in checklist', icon: '✅' },
@@ -33,10 +34,11 @@ const _SB_SECTIONS = [
 const _SB_PRESETS = {
   rider:     ['rider', 'stage_plan'],
   checklist: ['checklist', 'stage_plan'],
+  patch:     ['patch_sheet'],
   operator:  ['summary', 'patch', 'functions', 'scenes', 'chasers', 'collections', 'efx',
               'shows', 'scripts', 'vc_layout', 'doctor'],
 };
-const _SB_VENUE_SAFE = new Set(['rider', 'stage_plan', 'checklist', 'patch']);
+const _SB_VENUE_SAFE = new Set(['rider', 'stage_plan', 'checklist', 'patch', 'patch_sheet']);
 let _sbPresets = new Set(['operator']);
 
 function showbookInit() {
@@ -45,7 +47,7 @@ function showbookInit() {
 }
 
 function _sbVenueOnly() {
-  return _sbPresets.size > 0 && [..._sbPresets].every(p => p === 'rider' || p === 'checklist');
+  return _sbPresets.size > 0 && [..._sbPresets].every(p => p === 'rider' || p === 'checklist' || p === 'patch');
 }
 
 /** Pick who the paper is for; ⇧-click adds / removes a preset. */
@@ -70,6 +72,70 @@ function _sbApplyPresets() {
   });
   const note = document.getElementById('sb-venue-note');
   if (note) note.hidden = !venue;
+  _sbPatchOpts();
+}
+
+// ── Patch sheet options (event, logo, DIP switches, thermal printer) ───────
+const _SB_LOGO_KEY = 'sk.patchLogo';
+let _sbLogo = null;               // data URL of the logo, or null
+try { _sbLogo = localStorage.getItem(_SB_LOGO_KEY) || null; } catch { _sbLogo = null; }
+
+function _sbPatchOpts() {
+  const box = document.getElementById('sb-patch-opts');
+  if (!box) return;
+  const on = _sbSelectedSections().includes('patch_sheet');
+  box.hidden = !on;
+  const chip = document.getElementById('sb-logo-name');
+  if (chip) chip.textContent = _sbLogo ? 'logo set' : 'no logo';
+  const clr = document.getElementById('sb-logo-clear');
+  if (clr) clr.hidden = !_sbLogo;
+}
+
+function sbPickLogo() { document.getElementById('sb-logo-file')?.click(); }
+
+function sbLogoChosen(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (!/^image\/(png|jpeg)$/.test(f.type)) { _sbStatus('Use a PNG or JPEG image for the logo.', 'error'); return; }
+  if (f.size > 4 * 1024 * 1024) { _sbStatus('The logo is larger than 4 MB.', 'error'); return; }
+  const r = new FileReader();
+  r.onload = () => {
+    _sbLogo = r.result;
+    try { localStorage.setItem(_SB_LOGO_KEY, _sbLogo); } catch { /* too large for this browser: kept for this session */ }
+    _sbPatchOpts();
+    _sbStatus(`Logo: ${f.name}`);
+  };
+  r.readAsDataURL(f);
+}
+
+function sbClearLogo() {
+  _sbLogo = null;
+  try { localStorage.removeItem(_SB_LOGO_KEY); } catch { /* ignore */ }
+  _sbPatchOpts();
+}
+
+async function sbExportReceipt(width, format) {
+  if (_sbBusy) return;
+  _sbBusy = true;
+  _sbStatus('Making the ticket…');
+  try {
+    const res = await fetch('/api/showbook/export/receipt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_sbBody({ width, format })),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); _sbStatus(e.error || 'Export failed.', 'error'); return; }
+    const blob = await res.blob();
+    const fname = res.headers.get('X-Suggested-Filename') || `Patch_${width}mm.${format}`;
+    const saved = await saveFileWithPicker(blob, fname, format === 'txt'
+      ? [{ description: 'Text', accept: { 'text/plain': ['.txt'] } }]
+      : [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }], 'Save the ticket');
+    _sbStatus(saved ? `Saved: ${saved}` : 'Export cancelled.');
+  } catch (e) {
+    _sbStatus('Export error: ' + e.message, 'error');
+  } finally {
+    _sbBusy = false;
+  }
 }
 
 function _sbBody(extra) {
@@ -80,6 +146,9 @@ function _sbBody(extra) {
     show_name: typeof getShowName === 'function' ? (getShowName() || null) : null,
     date: typeof getEventDate === 'function' ? (getEventDate() || null) : null,
     paper: document.getElementById('sb-paper')?.value || 'A4 Landscape',
+    event: (document.getElementById('sb-event')?.value || '').trim() || null,
+    dip_switches: document.getElementById('sb-dip')?.value || '10',
+    logo: _sbSelectedSections().includes('patch_sheet') ? _sbLogo : null,
   }, extra || {});
 }
 
@@ -95,7 +164,7 @@ function invalidateShowbook() {
 // The sections in three groups (giopas, 30 Sep: the flat list was chaotic)
 const _SB_GROUPS = [
   { title: 'The rig', hint: 'what the venue and the crew need',
-    ids: ['rider', 'patch', 'checklist', 'stage_plan'] },
+    ids: ['patch_sheet', 'rider', 'patch', 'checklist', 'stage_plan'] },
   { title: 'The show', hint: 'for you — stays with you',
     ids: ['summary', 'functions', 'scenes', 'chasers', 'collections', 'efx', 'shows', 'scripts'] },
   { title: 'Console & checks', hint: 'for you — stays with you',
@@ -111,7 +180,7 @@ function _sbBuildSectionPicker() {
       <legend>${g.title} <small>${g.hint}</small></legend>
       ${g.ids.map(id => byId[id]).filter(Boolean).map(s => `
         <label class="sb-check-label">
-          <input type="checkbox" value="${s.id}" checked>
+          <input type="checkbox" value="${s.id}" checked onchange="_sbPatchOpts()">
           <span>${s.icon} ${s.label}</span>
         </label>`).join('')}
     </fieldset>`).join('');
@@ -125,11 +194,13 @@ function _sbSelectedSections() {
 function sbSelectAll() {
   document.querySelectorAll('#sb-section-checks input[type=checkbox]')
     .forEach(c => c.checked = true);
+  _sbPatchOpts();
 }
 
 function sbSelectNone() {
   document.querySelectorAll('#sb-section-checks input[type=checkbox]')
     .forEach(c => c.checked = false);
+  _sbPatchOpts();
 }
 
 // ── QXF directory ───────────────────────────────────────────────────────────
@@ -237,6 +308,21 @@ function _sbRenderPreview(doc) {
       }</div>
       </div>
     </div>`);
+  }
+
+  // Patch sheet
+  if (secs.patch_sheet) {
+    const ps = secs.patch_sheet;
+    const bar = f => Array.from({ length: ps.switches }, (_, i) =>
+      `<span class="sb-dip ${f.dip.includes(i + 1) ? 'on' : ''}" title="switch ${i + 1}"></span>`).join('');
+    parts.push(`<div class="sb-section" id="sb-sec-patch-sheet"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🔌 Patch sheet <span class="sb-toggle-icon">▾</span></h3>
+      <div class="sb-section-body"><div class="sb-stats"><span>${ps.total} fixture(s) · DIP ${ps.switches} switches, switch <i>n</i> = 2<sup>n−1</sup>, ON = up</span></div>` +
+      ps.universes.map(u => `<h4 class="sb-sub">Universe ${u.universe} — channels ${u.used[0]}–${u.used[1]}</h4>
+        <table class="sb-table"><thead><tr><th>ID</th><th>Address</th><th>Ch</th><th>Name</th><th>Fixture</th><th>Mode</th><th>DIP</th><th>ON</th></tr></thead><tbody>${
+        u.fixtures.map(f => `<tr><td>${_esc(f.id)}</td><td><b>${String(f.address).padStart(3, '0')}${f.end !== f.address ? '–' + String(f.end).padStart(3, '0') : ''}</b></td>
+          <td>${f.channels || ''}</td><td>${_esc(f.name)}</td><td>${_esc((f.manufacturer + ' ' + f.model).trim())}</td><td>${_esc(f.mode)}</td>
+          <td class="sb-dips">${f.dip_fits ? bar(f) : 'above the switches'}</td><td>${f.dip.join(' ') || 'none'}</td></tr>`).join('')
+        }</tbody></table>`).join('') + `</div></div>`);
   }
 
   // Patch

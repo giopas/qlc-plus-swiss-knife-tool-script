@@ -60,7 +60,11 @@ function _vcbSelectionHtml(selArr) {
           `<option value="${_esc(f.id)}" ${f.id === first.func_id ? 'selected' : ''}>${_esc(f.name)} · ${_esc(f.type)}</option>`).join('')}</select>
         <button class="vce-ab" onclick="vcbWire(document.getElementById('vcb-wire-sel').value)">Wire</button>
         ${first.func_id ? `<button class="vce-ab" onclick="vcbWire('')" title="Unwire">✕</button>` : ''}
-      </div>`;
+      </div>${first.type === 'CueList' ? `
+      <div class="vce-row">
+        <button class="vce-ab" onclick="vcbNewSetlistFor('${_esc(first.id)}')" title="Creates an empty chaser 'Setlist' and wires this CueList to it">▶ Use for a new setlist</button>
+        <span class="vce-hint">then fill it in the <a href="#" onclick="go('setlist');return false">Setlist</a></span>
+      </div>` : ''}`;
   }
   if (!isPage) {
     html += `<div class="vce-sec">Edit</div>
@@ -150,6 +154,8 @@ function _vcbRenderPanel() {
   add.innerHTML = `
     <div class="vce-intro">Put new widgets on the page and connect them to your functions. Everything is undoable, goes into the show in progress, and is kept with 💾 Save as new file….</div>
 
+    ${_vcbSetlistCard()}
+
     <div class="vce-sec"><span class="vce-step">1</span>New widget</div>
     <div class="vce-row">
       <select id="vcb-kind" class="vce-pi" style="width:92px">${I.kinds.map(k => opt(k, k)).join('')}</select>
@@ -189,13 +195,6 @@ function _vcbRenderPanel() {
       </div>
       <textarea id="vcb-ltext" class="vce-pi" rows="3" style="${I.legend.length ? 'display:none;' : ''}margin-bottom:4px" placeholder="one label per line"></textarea>
       <div class="vce-row"><button class="vce-ab" onclick="vcbLabelPanel()">＋ Add label panel</button></div>
-    </details>
-    <details class="vce-sub"><summary>▶ Setlist CueList — play a setlist chaser from a CueList</summary>
-      <div class="vce-row">
-        <select id="vcb-chaser" class="vce-pi" style="flex:1;min-width:0">${I.chasers.map(c => opt(c.id, c.name)).join('')}</select>
-        <button class="vce-ab" onclick="vcbSetlist()" title="Wires the selected CueList, or adds a new CueList on this page">Wire / add CueList</button>
-      </div>
-      <div class="vce-hint">A selected CueList is re-wired; otherwise a new CueList is added on this page.</div>
     </details>`;
 
   pages.innerHTML = `
@@ -246,6 +245,44 @@ function _vcbRenderPanel() {
               <button class="vce-ab" onclick="vcbDeleteTemplate('${q(t.name)}')" title="Delete template">🗑</button></span>
       </div>`).join('') : '<div class="vce-hint">none yet</div>'}`;
   _vcbRenderFnList();
+}
+
+// ── Setlist cue list: always on top of "Add & wire" ─────────────────────────
+function _vcbSelCueList() {
+  const s = [..._vceSel].map(id => _vceNodes[id]).filter(Boolean);
+  return s.length === 1 && s[0].type === 'CueList' ? s[0] : null;
+}
+
+function _vcbSetlistBtnLabel() {
+  const cl = _vcbSelCueList();
+  return cl ? `Wire “${_esc(cl.caption || 'CueList')}”` : '＋ Add a CueList on this page';
+}
+
+function _vcbSetlistCard() {
+  const I = _vcbInfo;
+  const opt = (v, t) => `<option value="${_esc(v)}">${_esc(t)}</option>`;
+  const cls = I.cuelists || [];
+  const state = cls.length
+    ? `This show has ${cls.length} CueList${cls.length > 1 ? 's' : ''}: ${cls.slice(0, 3).map(c => `<b>${_esc(c.caption || 'CueList')}</b>`).join(', ')}${cls.length > 3 ? '…' : ''}.`
+    : '<b style="color:#f9e2af">This show has no CueList yet</b> — add one here and the Setlist can fill it.';
+  return `
+    <div class="vcb-card">
+      <div class="vcb-card-t">▶ Setlist cue list</div>
+      <div class="vce-hint" style="margin-bottom:5px">${state}</div>
+      <div class="vce-row">
+        <label class="vce-lb">plays</label>
+        <select id="vcb-chaser" class="vce-pi" style="flex:1;min-width:0">${opt('__new__', '＋ a new, empty setlist chaser')}${I.chasers.map(c => opt(c.id, c.name)).join('')}</select>
+      </div>
+      <div class="vce-row">
+        <button class="vce-ab vcb-primary" id="vcb-sl-btn" onclick="vcbSetlist()">${_vcbSetlistBtnLabel()}</button>
+      </div>
+      <div class="vce-hint">Select a CueList on the canvas to re-wire it instead. Then fill the songs in the <a href="#" onclick="go('setlist');return false">Setlist</a>.</div>
+    </div>`;
+}
+
+function _vcbSyncSetlistBtn() {
+  const b = document.getElementById('vcb-sl-btn');
+  if (b) b.innerHTML = _vcbSetlistBtnLabel();
 }
 
 function _vcbRenderFnList() {
@@ -350,11 +387,18 @@ async function vcbDeleteTemplate(name) {
   _vcbInfo.templates = d.templates; _vcbRenderPanel();
 }
 
+async function vcbNewSetlistFor(cl) {
+  await _vcbRun({ op: 'setlist_cuelist', chaser_id: '__new__', cuelist_id: cl }, cl, [cl],
+    () => 'CueList wired to a new, empty setlist chaser — fill it in the Setlist');
+  vcbLoadInfo();
+}
+
 async function vcbSetlist() {
   const chaser_id = document.getElementById('vcb-chaser').value;
   if (!chaser_id) return;
   const s = [..._vceSel].map(id => _vceNodes[id]).filter(Boolean);
   const cl = s.length === 1 && s[0].type === 'CueList' ? s[0].id : '';
   await _vcbRun({ op: 'setlist_cuelist', chaser_id, cuelist_id: cl, page_id: _vcePage && _vcePage.id },
-    cl || null, cl ? [cl] : null, d => d.wired);
+    cl || null, cl ? [cl] : null, d => (d.wired || 'CueList added') + ' — fill it in the Setlist');
+  vcbLoadInfo();
 }

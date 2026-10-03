@@ -32,7 +32,7 @@ NONE_ID = "4294967295"
 MARGIN, GAP = 10, 6
 KINDS = ("Button", "Frame", "SoloFrame", "Slider", "Label", "CueList")
 DEFAULT_SIZE = {"Button": (110, 55), "Frame": (400, 250), "SoloFrame": (400, 250),
-                "Slider": (60, 200), "Label": (150, 30), "CueList": (400, 500)}
+                "Slider": (60, 200), "Label": (150, 30), "CueList": (720, 420)}   # wide enough for every column, Note included
 SCREENS = {
     "macbook": {"label": "MacBook 1650 × 884", "w": 1650, "h": 884},
     "fullhd": {"label": "Full HD 1920 × 1080", "w": 1920, "h": 1080},
@@ -106,8 +106,10 @@ def _header(el: ET.Element) -> int:
     return 0 if sh is not None and (sh.text or "").strip().lower() == "false" else 30
 
 
-def free_spot(container: ET.Element, w: int, h: int, is_page: bool = False) -> Tuple[int, int]:
-    """First free (x, y) for a w×h widget inside *container* (row by row)."""
+def free_spot(container: ET.Element, w: int, h: int, is_page: bool = False,
+              strict: bool = False):
+    """First free (x, y) for a w×h widget inside *container* (row by row);
+    with *strict*, None when it doesn't fit anywhere."""
     _, _, cw, ch = _rect(container)
     rects = [_rect(c) for c in container if _is_widget(c)]
     top = MARGIN + (0 if is_page else _header(container))
@@ -121,6 +123,8 @@ def free_spot(container: ET.Element, w: int, h: int, is_page: bool = False) -> T
                 continue
             if not any(_overlaps((x, y, w, h), r) for r in rects):
                 return x, y
+    if strict:
+        return None
     # no free room: top-left, over the other widgets (still visible; move it)
     return MARGIN, top
 
@@ -591,17 +595,74 @@ def setlist_cuelist(root, chaser_id: str, *, cuelist_id: Optional[str] = None,
                     page_id: Optional[str] = None) -> dict:
     """Wire a setlist chaser to a CueList: the given one, or a new CueList on
     *page_id* (default: the first page)."""
-    if cuelist_id:
-        return {**wire(root, cuelist_id, chaser_id), "new_ids": []}
     vc = _vc(root)
     pages = _pages(vc)
     if not pages:
         raise VcOpError("This workspace has no pages.")
+    if str(chaser_id) == NEW_SETLIST:
+        chaser_id = _new_setlist_chaser(root)
+    if cuelist_id:
+        return {**wire(root, cuelist_id, chaser_id), "new_ids": [], "chaser_id": str(chaser_id)}
     pid = page_id or pages[0].get("ID")
     f = functions(root).get(str(chaser_id))
     if f is None or f["type"] != "Chaser":
         raise VcOpError("Pick a chaser for the CueList.")
-    return create_widget(root, pid, "CueList", f["name"], func_id=str(chaser_id))
+    # the widest size that fits on the page without covering other widgets
+    by_id, _ = _index(vc)
+    page = _container(vc, by_id, str(pid))
+    for w, h in CUELIST_SIZES:
+        if free_spot(page, w, h, True, strict=True):
+            break
+    else:
+        w, h = DEFAULT_SIZE["CueList"]
+    return {**create_widget(root, pid, "CueList", f["name"], func_id=str(chaser_id), w=w, h=h),
+            "chaser_id": str(chaser_id)}
+
+
+# a setlist CueList: wide enough for the notes; smaller if the page is full
+CUELIST_SIZES = [(720, 420), (720, 340), (600, 300), (480, 260), (400, 220)]
+
+
+def cuelists(root) -> list:
+    """The CueList widgets of the show: id, caption and the chaser they play."""
+    try:
+        vc = _vc(root)
+    except VcOpError:
+        return []
+    out = []
+    for el in vc.iter():
+        if _local(el.tag) != "CueList":
+            continue
+        ch = next((c for c in el if _local(c.tag) == "Chaser"), None)
+        out.append({"id": el.get("ID"), "caption": el.get("Caption") or "",
+                    "chaser_id": (ch.text or "").strip() if ch is not None else ""})
+    return out
+
+
+NEW_SETLIST = "__new__"
+
+
+def _new_setlist_chaser(root) -> str:
+    """An empty chaser for a new setlist (the Setlist tool fills it): steps
+    with their own fades, held until Next."""
+    eng = _engine(root)
+    if eng is None:
+        raise VcOpError("This workspace has no Engine.")
+    ids = [_int(fid, -1) for fid in functions(root)]
+    fid = str(max(ids + [-1]) + 1)
+    names = {f["name"] for f in functions(root).values()}
+    name, n = "Setlist", 2
+    while name in names:
+        name, n = f"Setlist {n}", n + 1
+    kids = list(eng)
+    last = max((i for i, c in enumerate(kids) if _local(c.tag) == "Function"), default=len(kids) - 1)
+    fn = ET.Element(_q("Function", eng), {"ID": fid, "Type": "Chaser", "Name": name})
+    eng.insert(last + 1, fn)
+    _sub(fn, "Speed", FadeIn="0", FadeOut="0", Duration="4294967294")
+    _sub(fn, "Direction", "Forward")
+    _sub(fn, "RunOrder", "SingleShot")
+    _sub(fn, "SpeedModes", FadeIn="PerStep", FadeOut="PerStep", Duration="PerStep")
+    return fid
 
 
 OPS = {

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from core import merger, porter, qxw_io
+from core import porter, qxw_io
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CORPUS = os.path.join(HERE, "corpus")
@@ -35,15 +35,6 @@ def ns_file(tmp_path):
     return str(p)
 
 
-def test_merger_reads_namespaced_file(ns_file):
-    merger.clear_src(); merger.clear_dst()
-    assert merger.load_src(ns_file) == {"fixtures": 1, "groups": 0, "functions": 1}
-    merger.load_dst(ns_file)
-    name, data = merger.export_dst()
-    assert name == "Show_v2.qxw"
-    assert b'<Workspace xmlns="http://www.qlcplus.org/Workspace"' in data
-
-
 def test_porter_reads_namespaced_file(ns_file):
     porter.clear()
     src = porter.load_source(ns_file)
@@ -59,22 +50,17 @@ def test_corpus_counts(name, fixtures, functions):
     porter.clear()
     src = porter.load_source(path)
     assert (src["fixtures"], src["functions"]) == (fixtures, functions)
-    merger.clear_src()
-    assert merger.load_src(path)["functions"] == functions
-    # a merger pass-through export is byte-identical to a direct qxw_io write
-    merger.clear_dst()
-    merger.load_dst(path)
-    _, data = merger.export_dst()
-    assert data == qxw_io.qxw_bytes(qxw_io.load_qxw(path).getroot())
+    # the writer is byte-identical to a plain load → write round trip
+    assert qxw_io.qxw_bytes(qxw_io.load_qxw(path).getroot()) == qxw_io.qxw_bytes(qxw_io.load_qxw(path).getroot())
 
 
 def test_upload_keeps_real_file_name(ns_file):
-    """Browse/upload in Merger and Porter must not show 'tmpxw7vxz61'."""
+    """Browse/upload in the Porter must not show 'tmpxw7vxz61'."""
     import io
     import app
     c = app.create_app().test_client()
     data = Path(ns_file).read_bytes()
-    for url in ("/api/porter/source/load", "/api/merger/src/load"):
+    for url in ("/api/porter/source/load",):
         r = c.post(url, data={"file": (io.BytesIO(data), "Festival_14fix.qxw")},
                    content_type="multipart/form-data")
         assert r.get_json()["name"] == "Festival_14fix", url

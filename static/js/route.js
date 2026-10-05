@@ -6,6 +6,19 @@
 // =============================================================================
 
 const ROUTES = {
+  new: {
+    title: 'Start a new show',
+    steps: [
+      { tool: 'quickstart', label: 'The rig',     hint: 'Quick Start (or Fixtures for the rig alone) — fixtures, patch, groups, first looks and console; 💾 Save as new file…, then 🎛 Open it as the show' },
+      { tool: 'stage',    label: 'Groups', tab: 'groups', hint: 'Stage & Meshes › Groups — the fixture groups the looks are built on' },
+      { tool: 'looks',    label: 'Looks',         hint: 'Look Builder — looks and chasers for the groups' },
+      { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — pages, buttons, the setlist CueList' },
+      { tool: 'stage',    label: 'Stage',         hint: 'Stage & Meshes — the stage, band and set pieces' },
+      { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — the songs into the CueList' },
+      { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — patch sheet, tech rider, crew checklist' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
+    ],
+  },
   adapt: {
     title: 'Adapt a show to a new venue',
     steps: [
@@ -165,8 +178,8 @@ function routeCards() {
 }
 
 /** Start card "Do it again with a profile": the History's Do it again box. */
-async function startProfiles() {
-  if (typeof _show === 'undefined' || !_show.active) { setStatus('Open the show to apply the profile to first (📂 Open…).', 'warn'); return; }
+async function startProfiles(fromNothing) {
+  if (!fromNothing && (typeof _show === 'undefined' || !_show.active)) { setStatus('Open the show to apply the profile to first (📂 Open…) — or ▶ Start a show from a profile that keeps its own rig.', 'warn'); return; }
   await showHistoryToggle(true);
   const d = document.getElementById('sh-again');
   if (d) { d.open = true; d.scrollIntoView({ block: 'nearest' }); }

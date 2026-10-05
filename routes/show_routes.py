@@ -103,6 +103,22 @@ def file():
                              'Access-Control-Expose-Headers': 'X-Suggested-Filename'})
 
 
+def _fixture_files(qxw: str) -> dict:
+    """A show started from a profile's rig: write the fixture definitions QLC+
+    lacks next to the saved file (as Quick Start does)."""
+    if not (qxw and show._show.get('qxf_pending')):
+        return {}
+    folder = os.path.dirname(os.path.abspath(qxw))
+    if not os.path.isdir(folder):
+        return {}
+    try:
+        from routes import quick_start_routes as qs
+        r = qs.write_qxf(folder)
+        return {'fixture_files': r['files'], 'fixture_warnings': r['warnings']}
+    except Exception:  # noqa: BLE001 — never block a save
+        return {}
+
+
 @bp.route('/saved', methods=['POST'])
 def saved():
     """The client saved /file with the Save dialog.  qxw_path is known when the
@@ -117,7 +133,7 @@ def saved():
         else:
             out = show.mark_saved('')
             show._show['saved_name'] = os.path.basename(name) if name else show._show['saved_name']
-        return jsonify({'ok': True, **out, 'show': show.status()})
+        return jsonify({'ok': True, **out, **_fixture_files(qxw), 'show': show.status()})
     except Exception as e:  # noqa: BLE001
         return jsonify({'error': _safe_err(e)}), 500
 
@@ -131,7 +147,7 @@ def save():
         return jsonify({'error': 'Choose a .qxw file name.'}), 400
     try:
         out = show.save(os.path.abspath(path))
-        return jsonify({'ok': True, **out, 'show': show.status()})
+        return jsonify({'ok': True, **out, **_fixture_files(path), 'show': show.status()})
     except Exception as e:  # noqa: BLE001
         return jsonify({'error': _safe_err(e)}), 400
 

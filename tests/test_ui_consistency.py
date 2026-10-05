@@ -201,3 +201,18 @@ def test_porter_footers_and_folded_maps_v221():
         assert t + ":" in tokens, t
     css = (root / "static" / "css" / "style.css").read_text(encoding="utf-8")
     assert not re.search(r"font-size:\s*(?:10\.5|11\.5|12\.5|13\.5)px", css)
+
+
+def test_new_show_flow_v230():
+    """v2.3: Fixtures open as the show, a guided New-show route, the Setlist's
+    function list as a drawer, profiles that start a show and the step editor."""
+    fx = HTML[HTML.index('id="scr-fixtures"'):HTML.index('id="scr-brightness"')]
+    assert 'id="fix-btn-open"' in fx and 'fixOpenAsShow()' in fx
+    js = (Path(os.path.dirname(HERE), "static", "js", "route.js")).read_text(encoding="utf-8")
+    assert "\n  new: {" in js and "routeStart('new')" in HTML
+    sl = HTML[HTML.index('id="scr-setlist"'):]
+    assert 'id="sl-split"' in sl and 'id="btn-pool-toggle"' in sl and 'slTogglePool(false)' in sl
+    css = (Path(os.path.dirname(HERE), "static", "css", "style.css")).read_text(encoding="utf-8")
+    assert ".sl-fb-split.pool-closed .fn-pool-pane" in css
+    for hook in ('id="sh-prof-start"', 'showEditProfile()', 'id="sh-prof-rig"', 'qsSaveRigProfile()'):
+        assert hook in HTML, hook

@@ -700,14 +700,14 @@ Checks (★ = included in Phase 1.0):
 
 ### Phase 3.3–3.7 — Finishing the toolkit → **v2.3.0 … v2.7.0** *(giopas, 5 Oct; each release is tested by giopas on real shows before the next)*
 
-**3.3 New-show flow → v2.3.0**
-- [ ] **Fixtures "open it as the show"**: after 💾 Save as new file…, a button *🎛 Open it as the show* (as Quick Start has), the result becomes the show in progress.
-- [ ] **Guided route *New show***: Quick Start or Fixtures → Look Builder → VC Editor → Stage & Meshes → Show Paperwork → Doctor, a third route card on Start and in the ⌘K palette.
-- [ ] **A profile that starts a show from nothing**: the Quick Start rig and options saved inside the profile; `python -m core.profile build --new` builds the rig, then applies the steps; in the app *Start a show from a profile*.
-- [ ] **Profile step editor**: open a profile, drop a step, reorder steps, rename it; the left-out reasons stay visible.
-- [ ] **Setlist in fewer columns**: slot list + songs, the QLC+ functions in a drawer.
-- [ ] **Thin wrappers**: `/api/checklist/*` and `/api/techrider/*` over `showbook`; retire `core/merger.py` and `/api/merger/*` (tests moved to the Porter).
-- [ ] **Housekeeping**: `Old and tests/` archived as a zip outside the repo folder and removed from the working folder (the folder is git-ignored; nothing is lost from history).
+**3.3 New-show flow → v2.3.0** ✅ *(5 Oct, 665 tests; giopas tests on real shows)*
+- [x] **Fixtures "open it as the show"**: after 💾 Save as new file…, a button *🎛 Open it as the show* (as Quick Start has), the result becomes the show in progress.
+- [x] **Guided route *New show***: Quick Start or Fixtures → Look Builder → VC Editor → Stage & Meshes → Show Paperwork → Doctor, a third route card on Start and in the ⌘K palette.
+- [x] **A profile that starts a show from nothing**: the Quick Start rig and options saved inside the profile; `python -m core.profile build --new` builds the rig, then applies the steps; in the app *Start a show from a profile*.
+- [x] **Profile step editor**: open a profile, drop a step, reorder steps, rename it; the left-out reasons stay visible.
+- [x] **Setlist in fewer columns**: slot list + songs, the QLC+ functions in a drawer.
+- [x] **Thin wrappers**: `/api/checklist/*` and `/api/techrider/*` over `showbook`; retire `core/merger.py` and `/api/merger/*` (tests moved to the Porter).
+- [x] **Housekeeping**: (already gone from the folder) `Old and tests/` archived as a zip outside the repo folder and removed from the working folder (the folder is git-ignored; nothing is lost from history).
 
 **3.4 Doctor and Quick Start → v2.4.0**
 - [ ] **PANIC RESET as a plain Scene**: the Porter offers to convert it to the script form when porting (as D017 does in the Doctor).

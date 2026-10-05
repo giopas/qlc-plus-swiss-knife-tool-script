@@ -112,7 +112,6 @@ from routes.checklist_routes  import bp as checklist_bp
 from routes.techrider_routes  import bp as techrider_bp
 from routes.triggers_routes   import bp as triggers_bp
 from routes.fixture_routes    import bp as fixture_bp
-from routes.merger_routes     import bp as merger_bp
 from routes.brightness_routes import bp as brightness_bp
 from routes.session_routes    import bp as session_bp
 from routes.native_picker_routes import bp as picker_bp
@@ -160,7 +159,6 @@ def create_app():
     app.register_blueprint(techrider_bp)
     app.register_blueprint(triggers_bp)
     app.register_blueprint(fixture_bp)
-    app.register_blueprint(merger_bp)
     app.register_blueprint(brightness_bp)
     app.register_blueprint(session_bp)
     app.register_blueprint(picker_bp)

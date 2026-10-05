@@ -4065,3 +4065,31 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .porter-maps-fold[open] > summary::before { content: "▾"; }
 .porter-maps-sub { font-weight: 400; color: var(--text-dim); font-size: var(--fs-ui); }
 .porter-maps-fold > .porter-plans, .porter-maps-fold > .porter-hint { margin-left: var(--sp-3); margin-right: var(--sp-3); }
+
+/* ── v2.3: profiles that start a show, the step editor, Quick Start rig profile ── */
+.sh-opt { display: flex; gap: 6px; align-items: flex-start; font-size: var(--fs-ui); color: var(--text-dim); line-height: 1.4; }
+.sh-opt[hidden] { display: none; }
+.sh-prof-edit { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-2); display: flex; flex-direction: column; gap: 6px; }
+.sh-prof-edit[hidden] { display: none; }
+.spe-row { display: flex; gap: 4px; align-items: center; }
+.spe-row.dropped { opacity: .45; }
+.spe-row.dropped input { text-decoration: line-through; }
+.spe-row input { flex: 1; min-width: 0; font-size: var(--fs-ui); }
+.spe-n { width: 20px; text-align: right; color: var(--text-faint); font-size: var(--fs-small); }
+.spe-row .btn { padding: 2px 7px; }
+.qs-profile-row { margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--fs-ui); }
+.qs-profile-row label { font-weight: 600; white-space: nowrap; }
+.qs-profile-row input { flex: 1; min-width: 160px; font-size: var(--fs-ui); }
+
+/* ── Setlist: the QLC+ function list is a drawer (v2.3) ── */
+.sl-fb-split.pool-closed .fn-pool-pane,
+.sl-fb-split.pool-closed .pool-resize-handle { display: none; }
+#btn-pool-toggle.on { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 1499px) {
+  .sl-fb-split { position: relative; }
+  .sl-fb-split:not(.pool-closed) .pool-resize-handle { display: none; }
+  .sl-fb-split:not(.pool-closed) .fn-pool-pane {
+    position: absolute; top: 0; right: 0; bottom: 0; flex: none; width: 360px !important; max-width: 90%;
+    z-index: 6; border-left: 1px solid var(--border-strong); box-shadow: var(--shadow-1);
+  }
+}

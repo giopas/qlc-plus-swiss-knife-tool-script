@@ -8,6 +8,24 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.3.0] — 2026-10-05
+
+**The new-show flow.** Starting a show from nothing is now one path, and a profile can start it.
+
+### Added
+- **Fixtures → 🎛 Open it as the show**: after *Save as new file…* the saved file becomes the show in progress (as in Quick Start).
+- **Guided route *New show***: The rig → Groups → Looks → VC Editor → Stage → Setlist → Show Book → Doctor; a third route card on Start and in the ⌘K palette.
+- **Profiles that start a show from nothing**: Quick Start's *Save the rig as a profile* (rig, fixture files, options, stage) and, on Start, *Start a show from a profile*. `python -m core.profile rig` / `build` without `--show` do the same on the command line.
+- **Profile step editor** (History › Do it again › ✎ Edit steps): drop a step, reorder, rename; the left-out reasons stay visible.
+- **Setlist in fewer columns**: the QLC+ function list is a drawer (docked on wide windows, an overlay on narrow ones; remembered).
+
+### Changed
+- `/api/checklist/*` and `/api/techrider/*` are thin wrappers over the Show Book.
+
+### Removed
+- `core/merger.py` and `/api/merger/*` (the Function Porter has done their work since 1.9).
+
+
 ## [2.2.1] — 2026-10-05
 
 **Finishing the UI polish.** The three items left over from 2.2.0, plus the white-window fix.

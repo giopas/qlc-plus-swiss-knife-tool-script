@@ -412,6 +412,18 @@ async function fixAddConfirm() {
 
 // ── Generate QXW ──────────────────────────────────────────────────────────────
 
+// Path of the last saved rig (v2.3: "Open it as the show", as in Quick Start)
+let _fixLastSavedPath = null;
+
+/** The rig just saved becomes the show in progress (asks first if the open
+ *  one has unsaved changes). */
+async function fixOpenAsShow() {
+  if (!_fixLastSavedPath) { setStatus('Save the rig first (💾 Save as new file…).', 'warn'); return; }
+  const inp = document.getElementById('path-input');
+  if (inp) inp.value = _fixLastSavedPath;
+  await loadFromPath();
+}
+
 async function fixGenerateQxw() {
   if (!_rig.length) { setStatus('Rig is empty.', 'error'); return; }
   try {
@@ -423,8 +435,14 @@ async function fixGenerateQxw() {
     const cd   = resp.headers.get('Content-Disposition') || '';
     const m    = cd.match(/filename=([^\s;]+)/);
     const name = m ? m[1] : 'rig.qxw';
-    _downloadBlob(blob, name);
-    setStatus('QXW downloaded.', 'ok');
+    const saved = await saveFileWithPicker(blob, name,
+      [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }], 'Save QLC+ Workspace');
+    if (saved) {
+      _fixLastSavedPath = saveFileWithPicker.lastPath || null;
+      const opn = document.getElementById('fix-btn-open');
+      if (opn) opn.style.display = _fixLastSavedPath ? '' : 'none';
+      setStatus(_fixLastSavedPath ? 'Workspace saved to: ' + _fixLastSavedPath + ' — 🎛 Open it as the show to keep working on it.' : 'QXW saved.', 'ok');
+    }
   } catch (err) { setStatus(String(err), 'error'); }
 }
 

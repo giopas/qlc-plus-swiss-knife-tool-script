@@ -1443,6 +1443,23 @@ function qsPortFromShow() {
             + 'tick what to port in step 2; step 3 starts with Fan-in by stage position — different fixture types are translated by capability.', 'ok');
 }
 
+/** Keep the rig (and these options) as a Show Profile that starts a show from nothing. */
+async function qsSaveRigProfile() {
+  const name = (document.getElementById('qs-prof-name')?.value || '').trim();
+  if (!name) { setStatus('Give the profile a name.', 'warn'); return; }
+  const projectName = (document.getElementById('qs-project-name')?.value || '').trim();
+  try {
+    const d = await fetch('/api/profile/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, include_rig: true, steps: false, project_name: projectName,
+        stage: { w_mm: _qsStage.w_mm, d_mm: _qsStage.d_mm, h_mm: _qsStage.h_mm } }),
+    }).then(r => r.json());
+    if (d.error) { setStatus('✗ ' + d.error, 'error'); return; }
+    setStatus(`★ Profile '${d.name}' saved — the rig and these options. `
+      + 'Start a show from it: Start screen › Start a show from a profile, or python -m core.profile build "' + d.name + '" --out <new>.qxw', 'ok');
+  } catch (e) { setStatus('✗ ' + e.message, 'error'); }
+}
+
 async function qsExport() {
   const btn = document.getElementById('qs-btn-export');
   if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }

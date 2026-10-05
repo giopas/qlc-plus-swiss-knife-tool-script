@@ -34,6 +34,7 @@ function _cpActions() {
     { label: '📂 Open a show…', sub: 'file', run: () => browseWorkspace() },
     { label: '↻ Reload the show from disk', sub: 'file', when: on, run: () => reloadFromDisk() },
     { label: '🔍 Check the show (Workspace Doctor)', sub: 'check', when: on, run: () => { go('doctor'); if (typeof doctorCheck === 'function') doctorCheck(); } },
+    { label: '▶ Route: start a new show', sub: 'guided route', run: () => routeStart('new') },
     { label: '▶ Route: adapt a show to a new venue', sub: 'guided route', run: () => routeStart('adapt') },
     { label: '▶ Route: get ready for the gig', sub: 'guided route', run: () => routeStart('gig') },
     { label: '◐ Change the theme (dark / grey / light)', sub: 'view', run: () => cycleTheme() },

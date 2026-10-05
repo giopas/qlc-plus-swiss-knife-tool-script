@@ -244,24 +244,44 @@ async function showProfilesLoad() {
   _shProfiles = d.profiles || [];
   const sel = document.getElementById('sh-prof-list');
   if (sel) sel.innerHTML = _shProfiles.length
-    ? _shProfiles.map(p => `<option value="${_esc(p.name)}" title="${_esc(p.description || '')}">${_esc(p.name)} — ${p.steps} step${p.steps === 1 ? '' : 's'}${p.params.length ? ' · needs ' + _esc(p.params.join(', ')) : ''}</option>`).join('')
+    ? _shProfiles.map(p => `<option value="${_esc(p.name)}" title="${_esc(p.description || '')}">${_esc(p.name)} — ${p.rig ? p.fixtures + ' fixtures · ' : ''}${p.steps} step${p.steps === 1 ? '' : 's'}${p.params.length ? ' · needs ' + _esc(p.params.join(', ')) : ''}</option>`).join('')
     : '<option value="">no profiles yet — save one above</option>';
+  showProfSelected();
+  // the rig of Quick Start can go into the profile
+  try {
+    const q = await (await _origFetch('/api/quickstart/status')).json();
+    const row = document.getElementById('sh-prof-rig-row');
+    if (row) { row.hidden = !q.fixture_count; document.getElementById('sh-prof-rig-n').textContent = q.fixture_count || 0; }
+  } catch { /* optional */ }
+}
+
+/** "▶ Start a show" is offered for a profile that keeps its own rig. */
+function showProfSelected() {
+  const sel = document.getElementById('sh-prof-list');
+  const p = _shProfiles.find(x => x.name === (sel && sel.value));
+  const b = document.getElementById('sh-prof-start');
+  if (b) b.hidden = !(p && p.rig);
+  const e = document.getElementById('sh-prof-edit');
+  if (e) { e.hidden = true; e.innerHTML = ''; }
 }
 
 async function showSaveProfile() {
   const name = document.getElementById('sh-prof-name').value.trim();
   if (!name) { setStatus('Give the profile a name.', 'warn'); return; }
   await showFlushPending();
+  const rig = !!(document.getElementById('sh-prof-rig') || {}).checked;
   const r = await _origFetch('/api/profile/save', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description: document.getElementById('sh-prof-desc').value }) });
+    body: JSON.stringify({ name, description: document.getElementById('sh-prof-desc').value, include_rig: rig,
+                           stage: typeof _qsStage !== 'undefined' ? _qsStage : undefined }) });
   const d = await r.json();
   if (!r.ok) { setStatus('✗ ' + d.error, 'error'); return; }
   document.getElementById('sh-prof-new').hidden = true;
-  setStatus(`★ Profile '${d.name}' saved — ${d.steps} step(s)` + (d.params.length ? `, needs ${d.params.join(', ')}` : '') +
-    '. Apply it to another show from here, or: python -m core.profile build "' + d.name + '" --show <show>.qxw', 'ok');
+  setStatus(`★ Profile '${d.name}' saved — ${d.steps} step(s)` + (d.rig ? ' and the rig' : '') + (d.params.length ? `, needs ${d.params.join(', ')}` : '') +
+    (d.rig ? '. It can start a show from nothing: ▶ Start a show here, or python -m core.profile build "' + d.name + '" --out <new>.qxw'
+           : '. Apply it to another show from here, or: python -m core.profile build "' + d.name + '" --show <show>.qxw'), 'ok');
   await showProfilesLoad();
   const sel = document.getElementById('sh-prof-list');
-  if (sel) sel.value = d.name;
+  if (sel) { sel.value = d.name; showProfSelected(); }
 }
 
 async function showApplyProfileFile() {
@@ -289,16 +309,100 @@ async function showApplyProfile(path) {
     return;
   }
   document.getElementById('sh-prof-params').innerHTML = '';
+  _showProfResult(d, box);
+  await showRefresh();
+  showHistoryRender();
+}
+
+function _showProfResult(d, box) {
   const bad = d.steps.filter(s => s.status !== 'applied');
   const notes = d.steps.filter(s => s.status === 'applied' && s.note);
-  box.innerHTML = `<b>${_esc(d.name)}</b>: ${d.applied} applied` +
+  box.innerHTML = (d.started ? `Started from the rig: <b>${d.started.fixtures}</b> fixture(s). ` : '') +
+    `<b>${_esc(d.name)}</b>: ${d.applied} applied` +
     (d.skipped ? `, <span class="skip">${d.skipped} left out</span>` : '') + (d.failed ? `, <span class="fail">${d.failed} failed</span>` : '') +
     (bad.length || notes.length ? '<ul>' + bad.map(s => `<li class="${s.status === 'failed' ? 'fail' : 'skip'}">${s.n}. ${_esc(s.title)} — ${_esc(s.why || '')}</li>`).join('') +
       notes.map(s => `<li>${s.n}. ${_esc(s.title)} — ${_esc(s.note)}</li>`).join('') + '</ul>' : '');
   setStatus(`▶ Profile '${d.name}': ${d.applied} step(s) applied` + (d.skipped + d.failed ? `, ${d.skipped + d.failed} not — see the History` : '') +
     '. Each one is a step of the History (↶ undo works).', d.skipped + d.failed ? 'warn' : 'ok');
+}
+
+/** A profile with its own rig builds a show from nothing (the show open now is replaced). */
+async function showStartProfile(path) {
+  const name = path ? '' : document.getElementById('sh-prof-list').value;
+  if (!name && !path) { setStatus('Save a profile first, or pick one from a file.', 'warn'); return; }
+  if (_show.active && !showConfirmDiscard('Starting a new show from the profile')) return;
+  const params = {};
+  document.querySelectorAll('#sh-prof-params input[data-param]').forEach(i => { params[i.dataset.param] = i.value.trim(); });
+  const box = document.getElementById('sh-prof-result');
+  box.textContent = 'Building the show…';
+  const r = await _origFetch('/api/profile/start', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, path: path || '', params }) });
+  const d = await r.json();
+  if (!r.ok) {
+    box.textContent = '';
+    if (d.params && d.params.length) _showParamInputs(d.params, path);
+    setStatus('✗ ' + d.error, 'error');
+    return;
+  }
+  document.getElementById('sh-prof-params').innerHTML = '';
+  if (typeof _refreshAfterLoad === 'function') await _refreshAfterLoad();
+  _showProfResult(d, box);
   await showRefresh();
   showHistoryRender();
+}
+
+// ── The step editor: drop, reorder, rename ───────────────────────────────────
+let _speSteps = [];       // [{n, title, drop}] in the current order
+let _speName = '';
+
+async function showEditProfile() {
+  const sel = document.getElementById('sh-prof-list');
+  const name = sel && sel.value;
+  if (!name) { setStatus('Pick a profile to edit.', 'warn'); return; }
+  const r = await _origFetch('/api/profile/steps?name=' + encodeURIComponent(name));
+  const d = await r.json();
+  if (!r.ok) { setStatus('✗ ' + d.error, 'error'); return; }
+  _speName = d.name;
+  _speSteps = d.steps.map(s => ({ n: s.n, title: s.title, orig: s.title, drop: false }));
+  _speRender();
+}
+
+function _speRender() {
+  const box = document.getElementById('sh-prof-edit');
+  if (!box) return;
+  box.hidden = false;
+  box.innerHTML = `<div class="sh-note">Steps of <b>${_esc(_speName)}</b> — ↑ ↓ to reorder, ✕ to drop, edit a title to rename. (Order matters: a step may use what an earlier one made.)</div>` +
+    _speSteps.map((s, i) => `<div class="spe-row${s.drop ? ' dropped' : ''}">
+      <span class="spe-n">${i + 1}</span>
+      <input class="filter-input" value="${_esc(s.title)}" oninput="_speSteps[${i}].title = this.value" aria-label="Step ${i + 1} title">
+      <button class="btn btn-surface btn-sm" onclick="_speMove(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Earlier">↑</button>
+      <button class="btn btn-surface btn-sm" onclick="_speMove(${i}, 1)" ${i === _speSteps.length - 1 ? 'disabled' : ''} title="Later">↓</button>
+      <button class="btn btn-surface btn-sm" onclick="_speSteps[${i}].drop = !_speSteps[${i}].drop; _speRender()" title="${s.drop ? 'Keep this step' : 'Drop this step'}">${s.drop ? '↺' : '✕'}</button>
+    </div>`).join('') +
+    `<div class="sh-row"><button class="btn btn-accent btn-sm" onclick="showSaveProfileEdit()">✓ Save the changes</button>
+      <button class="btn btn-surface btn-sm" onclick="showProfSelected()">Cancel</button></div>`;
+}
+
+function _speMove(i, d) {
+  const j = i + d;
+  if (j < 0 || j >= _speSteps.length) return;
+  [_speSteps[i], _speSteps[j]] = [_speSteps[j], _speSteps[i]];
+  _speRender();
+}
+
+async function showSaveProfileEdit() {
+  const kept = _speSteps.filter(s => !s.drop);
+  const titles = {};
+  kept.forEach(s => { if (s.title.trim() && s.title !== s.orig) titles[s.n] = s.title.trim(); });
+  const r = await _origFetch('/api/profile/edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: _speName, order: kept.map(s => s.n), titles }) });
+  const d = await r.json();
+  if (!r.ok) { setStatus('✗ ' + d.error, 'error'); return; }
+  setStatus(`✎ Profile '${d.name}': ${d.steps} step(s) kept.`, 'ok');
+  await showProfilesLoad();
+  const sel = document.getElementById('sh-prof-list');
+  if (sel) sel.value = d.name;
+  showProfSelected();
 }
 
 function _showParamInputs(names, path) {

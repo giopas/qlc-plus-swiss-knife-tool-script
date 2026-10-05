@@ -32,10 +32,12 @@ def _nom(ref):
 def _plan() -> dict:
     d = request.get_json(force=True) or {}
     looks = [{'group': str(x.get('group')), 'colours': list(x.get('colours') or []),
-              'level': x.get('level')} for x in (d.get('looks') or []) if isinstance(x, dict)]
+              'level': x.get('level'), 'position': x.get('position')}
+             for x in (d.get('looks') or []) if isinstance(x, dict)]
+    matrices = [dict(x) for x in (d.get('matrices') or []) if isinstance(x, dict)]
     chasers = [dict(x) for x in (d.get('chasers') or []) if isinstance(x, dict)]
     vc = (d.get('vc_page') or '').strip() if isinstance(d.get('vc_page'), str) else ''
-    return {'looks': looks, 'chasers': chasers, 'folder': (d.get('folder') or '').strip(),
+    return {'looks': looks, 'chasers': chasers, 'matrices': matrices, 'folder': (d.get('folder') or '').strip(),
             'vc_page': vc or None, 'nomenclature': d.get('nomenclature') or 'plain'}
 
 
@@ -54,7 +56,11 @@ def options():
     return jsonify({'source': name, 'groups': lb.groups(root, _defs(path)),
                     'palettes': lb.palettes(), 'palette_order': list(lb.palettes()), 'presets': lb.presets(),
                     'patterns': [{'id': p, 'label': lb.PATTERN_LABELS[p]} for p in lb.PATTERNS],
-                    'notes': list(lb.NOTES), 'nomenclature': nom.list_profiles()})
+                    'notes': list(lb.NOTES), 'nomenclature': nom.list_profiles(),
+                    'positions': [{'name': k, 'pan': v[0], 'tilt': v[1]} for k, v in lb.POSITIONS.items()],
+                    'pixel_bars': lb.pixel_bars(root, _defs(path)),
+                    'matrix_patterns': [{'name': k, 'colours': v[1], 'duration': v[2]}
+                                        for k, v in lb.MATRIX_PATTERNS.items()]})
 
 
 @bp.route('/preview-chaser', methods=['POST'])
@@ -76,15 +82,15 @@ def preview_look():
     d = request.get_json(force=True) or {}
     try:
         return jsonify(lb.preview_look(root, _defs(path), str(d.get('group', 'all')),
-                                       d.get('colours') or [], float(d.get('level') or 1.0)))
+                                       d.get('colours') or [], float(d.get('level') or 1.0), d.get('position')))
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
 
 def _run(root, path, name, out_name=''):
     p = _plan()
-    if not p['looks'] and not p['chasers']:
-        raise ValueError('Add at least one look or chaser.')
+    if not p['looks'] and not p['chasers'] and not p['matrices']:
+        raise ValueError('Add at least one look, chaser or matrix pattern.')
     return lb.run(root, _defs(path), p, _nom(p['nomenclature']), name, out_name)
 
 
@@ -145,7 +151,8 @@ def apply():
         _last = {'report': res['report'], 'created': res['created'], 'doctor': res['doctor'],
                  'filename': ''}
         c = res['created']
-        title = f'{c.get("looks", 0)} looks, {c.get("chasers", 0)} chasers'
+        title = f'{c.get("looks", 0)} looks, {c.get("chasers", 0)} chasers' + \
+            (f', {c["matrices"]} matrices' if c.get('matrices') else '')
         detail = f'{c.get("buttons", 0)} buttons' if c.get('buttons') else ''
         return applied('looks', title, res['root'], res['report'], detail)
     except ValueError as e:
@@ -195,3 +202,23 @@ def delete_preset():
     if not lb.delete_preset(name):
         return jsonify({'error': 'Not one of your presets.'}), 404
     return jsonify({'ok': True, 'presets': lb.presets()})
+
+
+@bp.route('/palettes', methods=['POST'])
+def save_palette():
+    d = request.get_json(force=True) or {}
+    try:
+        p = lb.save_palette(str(d.get('name') or ''), d.get('colours') or [])
+        return jsonify({'ok': True, 'palette': p, 'palettes': lb.palettes(), 'palette_order': list(lb.palettes())})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except OSError as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/palettes/delete', methods=['POST'])
+def delete_palette():
+    name = ((request.get_json(force=True) or {}).get('name') or '').strip()
+    if not lb.delete_palette(name):
+        return jsonify({'error': 'Not one of your palettes.'}), 404
+    return jsonify({'ok': True, 'palettes': lb.palettes(), 'palette_order': list(lb.palettes())})

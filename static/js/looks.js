@@ -10,7 +10,7 @@
  */
 
 let _lbOpts = null;              // /api/looks/options
-let _lbBatch = { looks: [], chasers: [] };
+let _lbBatch = { looks: [], chasers: [], matrices: [] };
 let _lbLookCols = [];            // [{name, hex, white}] ticked for looks
 let _lbChCols = [];              // ordered colours of the chaser
 let _lbCustom = [];              // custom colours (both sections)
@@ -21,7 +21,7 @@ function looksInit() {
 }
 
 function invalidateLooks() {
-  _lbOpts = null; _lbBatch = { looks: [], chasers: [] };
+  _lbOpts = null; _lbBatch = { looks: [], chasers: [], matrices: [] };
   _lbStop();
   const b = document.getElementById('lb-body');
   if (b) b.innerHTML = '<div class="porter-placeholder">Open a workspace to build looks and chasers for its fixture groups.</div>';
@@ -44,7 +44,8 @@ function _lbAllColours() {
   if (!_lbOpts) return [];
   const out = [];
   for (const k of _lbOpts.palette_order) for (const c of _lbOpts.palettes[k].colours) out.push(c);
-  return out.concat(_lbCustom);
+  const seen = new Set();
+  return out.concat(_lbCustom).filter(c => !seen.has(c.name) && seen.add(c.name));
 }
 
 function _lbGroupOpts(sel) {
@@ -57,6 +58,23 @@ function _lbChip(c, on, fn) {
   return `<button class="lb-chip ${on ? 'on' : ''}" style="--c:${c.hex}" title="${_esc(c.hex)}"
             onclick="${fn}('${_esc(c.name).replace(/'/g, "\\'")}')"><i></i>${_esc(c.name)}</button>`;
 }
+
+// moving-head position (v2.5): a name from the list, or pan / tilt in percent (50 = centre)
+function _lbPosHtml(id, onchange) {
+  return `<label>Position <select id="${id}" class="filter-input" onchange="_lbPosForm('${id}'); ${onchange}">
+      <option value="">— as it is —</option>${_lbOpts.positions.map(p => `<option value="${_esc(p.name)}">${_esc(p.name)} (pan ${p.pan} · tilt ${p.tilt} %)</option>`).join('')}
+      <option value="custom">custom…</option></select></label>
+    <span id="${id}-c" class="lb-poscustom" hidden>
+      pan <input type="number" id="${id}-pan" class="filter-input rr-num" min="0" max="100" value="50" oninput="${onchange}"> %
+      tilt <input type="number" id="${id}-tilt" class="filter-input rr-num" min="0" max="100" value="50" oninput="${onchange}"> %</span>`;
+}
+function _lbPosForm(id) { const c = _v(id + '-c'); if (c) c.hidden = _v(id).value !== 'custom'; }
+function _lbPosVal(id) {
+  const el = _v(id); if (!el || !el.value) return null;
+  if (el.value === 'custom') return { pan: +_v(id + '-pan').value, tilt: +_v(id + '-tilt').value };
+  return el.value;
+}
+function _lbPosName(p) { return !p ? '' : (typeof p === 'string' ? p : `pan ${p.pan}% tilt ${p.tilt}%`); }
 
 // Inspector tabs (2.6): Looks and Chasers one at a time, To build always visible
 let _lbTab = 'looks';
@@ -79,6 +97,8 @@ function _lbRender() {
               title="A look = a fixture group in one colour: one scene each">🎨 Looks</button>
       <button class="subtab-btn${_lbTab === 'chaser' ? ' active' : ''}" data-lbtab="chaser" onclick="looksTab('chaser')"
               title="A chaser = a pattern across a fixture group, with BPM timing">🔁 Chasers</button>
+      <button class="subtab-btn${_lbTab === 'matrix' ? ' active' : ''}" data-lbtab="matrix" onclick="looksTab('matrix')"
+              title="An RGB-matrix pattern across the pixels of LED / pixel bars">▦ Matrix</button>
       <span class="lb-tabs-note">both go into <b>To build</b> on the right</span>
     </div>
     <div class="lb-card" data-lbpane="looks"${_lbTab === 'looks' ? '' : ' hidden'}>
@@ -95,6 +115,12 @@ function _lbRender() {
         <input type="color" id="lb-cust-hex" value="#ff8800" title="Pick a colour">
         <input class="filter-input lb-cname" id="lb-cust-name" placeholder="name">
         <button class="btn btn-surface btn-sm" onclick="looksAddCustom()">+ add</button></div>
+      <div class="lb-row">
+        ${_lbPosHtml('lb-lpos', '_lbLookPreview()')}
+        <input class="filter-input lb-cname" id="lb-palname" placeholder="palette name">
+        <button class="btn btn-surface btn-sm" onclick="looksSavePalette()" title="Keep the ticked colours as a palette of your own">★ Save ticked as palette</button>
+        <button class="btn btn-surface btn-sm" onclick="looksDeletePalette()" title="Delete the palette named in the box (yours only)">🗑</button>
+      </div>
       <div class="lb-row">
         <label>Level <input type="range" id="lb-level" min="5" max="100" step="5" value="100"
           oninput="document.getElementById('lb-level-v').textContent=this.value+' %'; _lbLookPreview()"></label>
@@ -130,7 +156,10 @@ function _lbRender() {
         <label class="lb-bpm">BPM <input type="number" id="lb-bpm" class="filter-input rr-num" min="20" max="400" value="120" oninput="_lbChPreview()"></label>
         <label class="lb-bpm">Note <select id="lb-note" class="filter-input" onchange="_lbChPreview()">${_lbOpts.notes.map(n =>
           `<option ${n === '1/4' ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="lb-bpm" title="The chaser follows the BPM of QLC+ itself (speed dial / tap) instead of a fixed time: steps are stored in beats">
+          <input type="checkbox" id="lb-beats" onchange="_lbChPreview()"> follow the QLC+ tempo (beats)</label>
         <label class="lb-ms">Step ms <input type="number" id="lb-ms" class="filter-input rr-num" min="20" value="500" oninput="_lbChPreview()"></label>
+        ${_lbPosHtml('lb-cpos', '_lbChPreview()')}
         <label>Fade <select id="lb-fade" class="filter-input" onchange="_lbChForm()">
           <option value="cut">cut</option><option value="fade">fade</option></select></label>
         <label class="lb-fd">% of step <input type="number" id="lb-fpct" class="filter-input rr-num" min="0" max="100" value="100" oninput="_lbChPreview()"></label>
@@ -154,6 +183,26 @@ function _lbRender() {
       </div>
       <div id="lb-ch-prev" class="lb-prev"></div>
     </div>
+
+    <div class="lb-card" data-lbpane="matrix"${_lbTab === 'matrix' ? '' : ' hidden'}>
+      <h3>Matrix pattern <span class="p-desc">an RGB-matrix pattern across the pixels of LED / pixel bars</span></h3>
+      ${_lbOpts.pixel_bars.length ? `
+      <div class="lb-groups">${_lbOpts.pixel_bars.map(b => `
+        <label><input type="checkbox" class="lb-mb" value="${_esc(b.id)}" checked> ${_esc(b.name)} <span class="lb-n">${b.heads} pixels</span></label>`).join('')}
+      </div>
+      <div class="lb-grid">
+        <label>Pattern <select id="lb-mpat" class="filter-input" onchange="_lbMatrixForm()">${_lbOpts.matrix_patterns.map(m =>
+          `<option value="${_esc(m.name)}">${_esc(m.name)}</option>`).join('')}</select></label>
+        <label>Colour 1 <input type="color" id="lb-mc1"></label>
+        <label>Colour 2 <input type="color" id="lb-mc2"></label>
+        <label>Speed <input type="number" id="lb-mdur" class="filter-input rr-num" min="20" max="600000" step="10"> ms</label>
+        <label>Name <input class="filter-input" id="lb-mname" placeholder="default: bars + pattern"></label>
+      </div>
+      <p class="p-desc">The bars in a row make one grid: the pattern runs across the pixels (and from bar to bar when you tick several).
+        A bar with a master dimmer gets it opened by the same button.</p>
+      <div class="lb-row"><div class="spacer"></div><button class="btn btn-surface" onclick="looksAddMatrix()">+ Add matrix pattern</button></div>`
+      : '<div class="porter-placeholder">No pixel bar in this show — a pixel bar is a fixture whose mode has several heads (pixels) in its definition.</div>'}
+    </div>
    </div>
 
    <div class="lb-right">
@@ -175,6 +224,54 @@ function _lbRender() {
   _lbChForm();
   _lbRenderChCols();
   _lbRenderBatch();
+  if (_lbOpts.pixel_bars.length) _lbMatrixForm();
+}
+
+function _lbMatrixForm() {
+  const m = _lbOpts.matrix_patterns.find(x => x.name === _v('lb-mpat').value) || _lbOpts.matrix_patterns[0];
+  _v('lb-mc1').value = (m.colours[0] || '#ff0000').toLowerCase();
+  _v('lb-mc2').value = (m.colours[1] || m.colours[0] || '#0000ff').toLowerCase();
+  _v('lb-mc2').closest('label').style.display = m.colours.length > 1 ? '' : 'none';
+  _v('lb-mdur').value = m.duration;
+}
+
+function looksAddMatrix() {
+  const ids = [...document.querySelectorAll('.lb-mb:checked')].map(x => x.value);
+  if (!ids.length) { setStatus('Tick at least one pixel bar.', 'warn'); return; }
+  const m = _lbOpts.matrix_patterns.find(x => x.name === _v('lb-mpat').value);
+  const cols = [_v('lb-mc1').value];
+  if (m.colours.length > 1) cols.push(_v('lb-mc2').value);
+  const spec = { fixtures: ids, pattern: m.name, colours: cols.map(h => ({ name: h.toUpperCase(), hex: h })), duration: +_v('lb-mdur').value };
+  const nm = (_v('lb-mname').value || '').trim(); if (nm) spec.name = nm;
+  _lbBatch.matrices.push(spec);
+  _lbRenderBatch();
+  setStatus('Matrix pattern added.', 'ok');
+}
+
+async function looksSavePalette() {
+  const name = (_v('lb-palname').value || '').trim();
+  if (!name) { setStatus('Type a name for the palette.', 'warn'); return; }
+  if (!_lbLookCols.length) { setStatus('Tick the colours to keep first.', 'warn'); return; }
+  const r = await fetch('/api/looks/palettes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, colours: _lbLookCols }) });
+  const d = await r.json();
+  if (!r.ok) { setStatus(d.error, 'error'); return; }
+  _lbOpts.palettes = d.palettes; _lbOpts.palette_order = d.palette_order;
+  _lbGroupsTicked = [...document.querySelectorAll('.lb-lg:checked')].map(x => x.value);
+  _lbRender(); _lbRestoreLooks();
+  setStatus(`Palette '${name}' saved in ~/.qlc_swiss_knife/look_palettes.json.`, 'ok');
+}
+
+async function looksDeletePalette() {
+  const name = (_v('lb-palname').value || '').trim();
+  if (!name) { setStatus('Type the name of your palette to delete.', 'warn'); return; }
+  const r = await fetch('/api/looks/palettes/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }) });
+  const d = await r.json();
+  if (!r.ok) { setStatus(d.error, 'error'); return; }
+  _lbOpts.palettes = d.palettes; _lbOpts.palette_order = d.palette_order;
+  _lbRender();
+  setStatus(`Palette '${name}' deleted.`, 'ok');
 }
 
 // ── looks ──────────────────────────────────────────────────────────────────
@@ -219,7 +316,7 @@ function _lbLookPreview() {
     }
     const g = _lbGroupsTicked[0];
     const r = await fetch('/api/looks/preview-look', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group: g, colours: _lbLookCols, level: +document.getElementById('lb-level').value / 100 }) });
+      body: JSON.stringify({ group: g, colours: _lbLookCols, level: +document.getElementById('lb-level').value / 100, position: _lbPosVal('lb-lpos') }) });
     const d = await r.json();
     if (!r.ok) { el.innerHTML = `<div class="porter-warn">${_esc(d.error)}</div>`; return; }
     const gn = _lbOpts.groups.find(x => x.id === g).name;
@@ -235,7 +332,8 @@ function looksAddLooks() {
   const gs = [...document.querySelectorAll('.lb-lg:checked')].map(x => x.value);
   if (!gs.length || !_lbLookCols.length) { setStatus('Tick at least one group and one colour.', 'warn'); return; }
   const level = +document.getElementById('lb-level').value / 100;
-  for (const g of gs) _lbBatch.looks.push({ group: g, colours: _lbLookCols.map(c => ({ ...c })), level });
+  const position = _lbPosVal('lb-lpos');
+  for (const g of gs) _lbBatch.looks.push({ group: g, colours: _lbLookCols.map(c => ({ ...c })), level, ...(position ? { position } : {}) });
   _lbRenderBatch();
   setStatus(`${gs.length * _lbLookCols.length} look(s) added.`, 'ok');
 }
@@ -248,6 +346,7 @@ function _lbChForm() {
   document.querySelectorAll('.lb-rnd').forEach(x => x.style.display = pat === 'random' ? '' : 'none');
   document.querySelectorAll('.lb-alt').forEach(x => x.style.display = pat === 'alternate' ? '' : 'none');
   document.querySelectorAll('.lb-bpm').forEach(x => x.style.display = tm === 'bpm' ? '' : 'none');
+  if (_v('lb-beats') && tm !== 'bpm') _v('lb-beats').checked = false;
   document.querySelectorAll('.lb-ms').forEach(x => x.style.display = tm === 'ms' ? '' : 'none');
   document.querySelectorAll('.lb-fd').forEach(x => x.style.display = fade === 'fade' ? '' : 'none');
   _lbChPreview();
@@ -271,7 +370,11 @@ function _lbSpec() {
   };
   const steps = parseInt(_v('lb-steps').value, 10);
   if (steps) s.steps = steps;
-  if (_v('lb-tm').value === 'bpm') { s.bpm = +_v('lb-bpm').value; s.note = _v('lb-note').value; }
+  if (_v('lb-tm').value === 'bpm') {
+    s.bpm = +_v('lb-bpm').value; s.note = _v('lb-note').value;
+    if (_v('lb-beats').checked) s.tempo = 'beats';
+  }
+  const pos = _lbPosVal('lb-cpos'); if (pos) s.position = pos;
   else s.step_ms = +_v('lb-ms').value;
   if (s.fade === 'fade') s.fade_pct = +_v('lb-fpct').value;
   if (s.pattern === 'random') { s.seed = +_v('lb-seed').value || 0; s.on_count = +_v('lb-on').value || 1; }
@@ -339,6 +442,8 @@ function looksLoadPreset(i) {
   _v('lb-steps').value = p.steps || '';
   if (p.bpm) { _v('lb-tm').value = 'bpm'; set('lb-bpm', p.bpm); set('lb-note', p.note || '1/4'); }
   else { _v('lb-tm').value = 'ms'; set('lb-ms', p.step_ms || 500); }
+  _v('lb-beats').checked = p.tempo === 'beats';
+  set('lb-cpos', typeof p.position === 'string' ? p.position : ''); _lbPosForm('lb-cpos');
   set('lb-fade', p.fade || 'cut'); set('lb-fpct', p.fade_pct ?? 100);
   set('lb-cmode', p.colour_mode || 'step'); set('lb-kind', p.kind || 'dynamic');
   set('lb-seed', p.seed ?? 1); set('lb-on', p.on_count ?? 1); set('lb-split', p.split || 'halves');
@@ -391,17 +496,21 @@ function _lbRenderBatch() {
   if (!el) { _lbSync(); return; }
   const L = _lbBatch.looks.map((l, i) => `<div class="lb-item">
       <span>🎨 ${_esc(_lbGName(l.group))} × ${l.colours.map(c => `<i class="lb-dot" style="background:${c.hex}"></i>${_esc(c.name)}`).join(' ')}
-        ${l.level < 1 ? ` @ ${Math.round(l.level * 100)} %` : ''}</span>
+        ${l.level < 1 ? ` @ ${Math.round(l.level * 100)} %` : ''}${l.position ? ` · ${_esc(_lbPosName(l.position))}` : ''}</span>
       <button class="btn btn-surface btn-sm" onclick="looksRemove('looks', ${i})">✕</button></div>`);
+  const M = _lbBatch.matrices.map((m, i) => `<div class="lb-item">
+      <span>▦ ${_esc(m.name || m.pattern)} — ${_esc(m.pattern)} on ${m.fixtures.map(id => _esc((_lbOpts.pixel_bars.find(b => b.id === id) || {}).name || id)).join(', ')},
+        ${m.duration} ms ${m.colours.map(x => `<i class="lb-dot" style="background:${x.hex}"></i>`).join('')}</span>
+      <button class="btn btn-surface btn-sm" onclick="looksRemove('matrices', ${i})">✕</button></div>`);
   const C = _lbBatch.chasers.map((c, i) => {
     const pat = (_lbOpts.patterns.find(p => p.id === c.pattern) || {}).label;
-    const t = c.bpm ? `${c.bpm} BPM ${c.note}` : `${c.step_ms} ms`;
+    const t = c.bpm ? (c.tempo === 'beats' ? `${c.note} beat (QLC+ tempo)` : `${c.bpm} BPM ${c.note}`) : `${c.step_ms} ms`;
     return `<div class="lb-item">
-      <span>🔁 ${_esc(c.name || pat)} — ${_esc(_lbGName(c.group))}, ${_esc(pat)}, ${t}, ${c.fade === 'fade' ? `fade ${c.fade_pct}%` : 'cut'}
+      <span>🔁 ${_esc(c.name || pat)} — ${_esc(_lbGName(c.group))}, ${_esc(pat)}, ${t}${c.position ? `, ${_esc(_lbPosName(c.position))}` : ''}, ${c.fade === 'fade' ? `fade ${c.fade_pct}%` : 'cut'}
         ${c.colours.map(x => `<i class="lb-dot" style="background:${x.hex}"></i>`).join('')}</span>
       <button class="btn btn-surface btn-sm" onclick="looksRemove('chasers', ${i})">✕</button></div>`;
   });
-  el.innerHTML = (L.concat(C).join('')) || '<div class="porter-placeholder">Add looks or chasers on the left.</div>';
+  el.innerHTML = (L.concat(C, M).join('')) || '<div class="porter-placeholder">Add looks or chasers on the left.</div>';
   _v('lb-check').innerHTML = '';
   _lbSync();
 }
@@ -410,18 +519,18 @@ function looksRemove(kind, i) { _lbBatch[kind].splice(i, 1); _lbRenderBatch(); }
 
 function _lbSync() {
   const s = _v('lb-summary'), b = _v('lb-go');
-  const nl = _lbBatch.looks.reduce((a, l) => a + l.colours.length, 0), nc = _lbBatch.chasers.length;
-  if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${nl} look(s)</span><span class="doc-chip">${nc} chaser(s)</span>` : '';
-  if (b) b.disabled = !(nl || nc);
-  const x = _v('lb-export'); if (x) x.disabled = !(nl || nc);
-  if (typeof setOutcome === 'function') setOutcome('looks', nl || nc
-    ? [nl ? `+${nl} look${nl > 1 ? 's' : ''}` : '', nc ? `+${nc} chaser${nc > 1 ? 's' : ''}` : ''].filter(Boolean)
-    : 'nothing yet — add looks or chasers to the batch', '', nl || nc ? 'Apply will add' : 'Apply will do');
+  const nl = _lbBatch.looks.reduce((a, l) => a + l.colours.length, 0), nc = _lbBatch.chasers.length, nm = _lbBatch.matrices.length;
+  if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${nl} look(s)</span><span class="doc-chip">${nc} chaser(s)</span>${nm ? `<span class="doc-chip">${nm} matrix</span>` : ''}` : '';
+  if (b) b.disabled = !(nl || nc || nm);
+  const x = _v('lb-export'); if (x) x.disabled = !(nl || nc || nm);
+  if (typeof setOutcome === 'function') setOutcome('looks', nl || nc || nm
+    ? [nl ? `+${nl} look${nl > 1 ? 's' : ''}` : '', nc ? `+${nc} chaser${nc > 1 ? 's' : ''}` : '', nm ? `+${nm} matrix pattern${nm > 1 ? 's' : ''}` : ''].filter(Boolean)
+    : 'nothing yet — add looks, chasers or matrix patterns to the batch', '', nl || nc || nm ? 'Apply will add' : 'Apply will do');
 }
 
 function _lbPlan() {
   return {
-    looks: _lbBatch.looks, chasers: _lbBatch.chasers,
+    looks: _lbBatch.looks, chasers: _lbBatch.chasers, matrices: _lbBatch.matrices,
     nomenclature: _v('lb-nom')?.value || 'plain', folder: _v('lb-folder')?.value || '',
     vc_page: _v('lb-vc')?.checked ? (_v('lb-vcname').value || 'Looks') : '',
   };
@@ -436,7 +545,7 @@ async function looksCheck() {
   if (!r.ok) { setStatus(d.error || 'Check failed.', 'error'); return; }
   const c = d.created, doc = d.doctor;
   el.innerHTML = `<p><b>${c.looks}</b> look(s), <b>${c.chasers}</b> chaser(s) with <b>${c.step_scenes}</b> step scene(s),
-      <b>${c.buttons}</b> button(s).</p>
+      ${c.matrices ? `<b>${c.matrices}</b> matrix pattern(s), ` : ''}<b>${c.buttons}</b> button(s).</p>
     <p>Doctor on the result: ${doc.total_errors} error(s), ${doc.total_warnings} warning(s)
       ${doc.new_errors.length || doc.new_warnings.length ? `— <b>new</b>: ${doc.new_errors.length} error(s), ${doc.new_warnings.length} warning(s)` : '— nothing new'}.</p>
     ${d.blocked ? '<p class="porter-warn">⛔ The result has new Doctor errors — it will not be exported.</p>' : ''}

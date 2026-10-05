@@ -710,6 +710,8 @@ Checks (★ = included in Phase 1.0):
 - [x] **Housekeeping**: (already gone from the folder) `Old and tests/` archived as a zip outside the repo folder and removed from the working folder (the folder is git-ignored; nothing is lost from history).
 
 **3.4 Doctor and Quick Start → v2.4.0**
+- [ ] **Looks for fixtures without a dimmer** (found by giopas testing v2.3.0 with an Abstract VR8 scanner: every look was the same neutral state): use the colour-wheel slots for Warm / Cold and the shutter/gobo-closed slot for BLACKOUT where the fixture has one; say in Quick Start step 5 and in the report which fixtures can't do a look.
+- [ ] **Say where a profile is saved**: path + *Open folder* in the Quick Start message and in the History profile box (`~/.qlc_swiss_knife/profiles/`).
 - [ ] **PANIC RESET as a plain Scene**: the Porter offers to convert it to the script form when porting (as D017 does in the Doctor).
 - [ ] **D013 fix** with the timing choice (ms or BPM, as in the Look Builder).
 - [ ] **D002 renumbering** (duplicate function / widget IDs), **D003 repairs** (dangling CueList / button / chaser step: unlink or rewire), **D004** (degenerate chasers: remove or merge), **D015** (name suggestions from context). Each opt-in per finding, always into a new file, with the report.

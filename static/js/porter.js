@@ -39,6 +39,7 @@ let _pValidation     = null;
 let _pExported       = false;   // step 5: the new .qxw has been written
 let _pDropUnmapped   = false;
 let _pCompleteCh     = true;
+let _pConvertPanic   = true;
 let _pManual         = new Set();   // functions ticked in the function list
 let _pExcluded       = new Set();   // functions coming from the VC but unticked by hand
 let _pVcTree         = [];          // source VC (from /source/vc)
@@ -757,6 +758,9 @@ async function _pRenderMapFixtures() {
     <label style="margin-left:1rem" data-tooltip="Missing channels get their neutral value (no LTP bleed)">
       <input type="checkbox" ${_pCompleteCh ? 'checked' : ''} onchange="_pCompleteCh = this.checked">
       Declare every channel</label>
+    <label style="margin-left:1rem" data-tooltip="If the target's PANIC RESET is a plain scene it cannot darken running looks: it becomes a script that stops everything first (Doctor D017)">
+      <input type="checkbox" ${_pConvertPanic ? 'checked' : ''} onchange="_pConvertPanic = this.checked">
+      Make PANIC RESET a script</label>
     <label style="margin-left:1rem">Name prefix:
       <input type="text" id="porter-name-prefix" class="filter-input" style="width:150px"
              value="${_esc(_pNamePrefix)}" placeholder="e.g. SHOW2 / "
@@ -1419,6 +1423,7 @@ function _pBuildPlan() {
     import_path:     _pImportPath,
     drop_unmapped:   _pDropUnmapped,
     complete_channels: _pCompleteCh,
+    convert_panic:   _pConvertPanic,
     vc: Object.assign({}, _pVc, { scope: _pVcScope, remove: _pRmScope }),
     copy_fixtures:   [..._pCopyFx],
     copy_groups:     [..._pCopyGrp],

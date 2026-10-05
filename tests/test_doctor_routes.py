@@ -55,3 +55,11 @@ def test_fix_returns_new_file_and_report(tmp_path):
 def test_fix_needs_a_selection(tmp_path):
     c, _ = _client(tmp_path, "Pub_6fix.qxw")
     assert c.post("/api/doctor/fix", json={"keys": []}).status_code == 400
+
+
+def test_fix_options_are_cleaned():
+    from core.doctor import fixes
+    assert fixes.clean_options({"d004": "x", "d003": "rewire", "d013": {"bpm": "120"}}) == \
+        {"d003": "rewire", "d013": {"bpm": 120.0}}
+    assert fixes.clean_options({"d013": {"ms": 0}}) == {}
+    assert fixes.clean_options("nope") == {}

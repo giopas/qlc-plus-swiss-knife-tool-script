@@ -298,6 +298,29 @@ def _update_ws(elem: ET.Element, x: int, y: int):
 # Main generator
 # ═════════════════════════════════════════════════════════════════════════════
 
+
+_SLOT_COLOURS = (
+    (r"\bwhite\b|\bopen\b", (255, 255, 255)),
+    (r"light\s*blue|\bcto?b\b|ice|pale\s*blue", (170, 210, 255)),
+    (r"\bcyan\b|turquoise|aqua", (0, 255, 255)),
+    (r"dark\s*blue|\bblue\b", (0, 0, 255)),
+    (r"magenta|pink|rose", (255, 0, 255)),
+    (r"purple|violet|lilac|lavender", (148, 0, 211)),
+    (r"\bred\b", (255, 0, 0)),
+    (r"orange|amber|\bcto\b", (255, 140, 0)),
+    (r"yellow", (255, 255, 0)),
+    (r"green", (0, 255, 0)),
+)
+
+
+def _slot_rgb(label: str) -> Optional[Tuple[int, int, int]]:
+    """Nominal colour of a colour-wheel slot from its label, None if unnamed."""
+    import re as _re
+    for pat, rgb in _SLOT_COLOURS:
+        if _re.search(pat, label or "", _re.IGNORECASE):
+            return rgb
+    return None
+
 class VCLayoutGenerator:
     """
     Generate a complete VC layout with backing functions from a rig
@@ -452,7 +475,52 @@ class VCLayoutGenerator:
         ri = self._rgb_indices(idx)
         if ri and rgb:
             o[ri["red"]], o[ri["green"]], o[ri["blue"]] = rgb
+        elif di is None and rgb:
+            w = self._wheel_slot(idx, rgb)       # no dimmer, no RGB: the colour wheel
+            if w is not None:
+                o[w[0]] = w[1]
         return o
+
+    def _wheel_slots(self, idx: int) -> List[Tuple[int, int, Tuple[int, int, int]]]:
+        """[(channel index, DMX value, nominal rgb)] for the *named* slots of the
+        fixture's colour wheel (empty when the wheel has no named slots)."""
+        entry = self.rig[idx]
+        defs = (self.qxf_defs.get(entry.get("key", ""), {}).get("channel_defs")) or {}
+        out = []
+        for i, n in enumerate(self._mode_channels(idx)):
+            d = defs.get(n) or {}
+            if (d.get("group") or "").lower() != "colour":
+                continue
+            for c in d.get("capabilities") or []:
+                rgb = _slot_rgb(c.get("label", ""))
+                if rgb is not None:
+                    out.append((i, (int(c.get("min", 0)) + int(c.get("max", 0))) // 2, rgb))
+        return out
+
+    def _wheel_slot(self, idx: int, rgb) -> Optional[Tuple[int, int]]:
+        best = None
+        for i, v, nominal in self._wheel_slots(idx):
+            dist = sum((a - b) ** 2 for a, b in zip(nominal, rgb))
+            if best is None or dist < best[0]:
+                best = (dist, i, v)
+        return (best[1], best[2]) if best else None
+
+    def look_limits(self) -> List[str]:
+        """Plain-language notes on fixtures that cannot make the whole-rig looks
+        (no dimmer, no RGB, no named colour slots, no closable shutter)."""
+        notes = []
+        for i, e in enumerate(self.rig):
+            if self._dimmer_index(i) is not None or self._rgb_indices(i):
+                continue
+            name = e.get("name") or e.get("model") or f"fixture {i + 1}"
+            can_colour = bool(self._wheel_slots(i))
+            can_dark = bool(self._shutter_closed(i))
+            if not can_colour and not can_dark:
+                notes.append(f"{name} has no dimmer, no colour mixing and no named colour slots: "
+                             "ALL ON, Warm White, Cold White and BLACKOUT will look the same on it.")
+            elif not can_dark:
+                notes.append(f"{name} has no dimmer and no closable shutter: BLACKOUT cannot darken it.")
+        return notes
 
     def _dark(self, idx: int) -> Dict[int, int]:
         """Overrides that keep fixture *idx* dark (shutter closed if it has

@@ -490,6 +490,7 @@ def _normalize_plan(data: dict) -> dict:
         'drop_unmapped':     bool(data.get('drop_unmapped', False)),
         'complete_channels': bool(data.get('complete_channels', True)),
         'extend_panic':      bool(data.get('extend_panic', True)),
+        'convert_panic':     bool(data.get('convert_panic', True)),
         'vc': {
             'enabled':      bool(vc.get('enabled', False)),
             'scope':        [str(k) for k in (vc.get('scope') or [])],

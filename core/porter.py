@@ -1626,8 +1626,10 @@ def _build(plan: dict) -> dict:
             tgt_engine.append(el)
     kept_map = {s: n for s, n in func_id_map.items() if s in new_fns and s not in removed}
     panic = []
+    if plan.get("convert_panic", True):
+        panic = _convert_panic_scene(tgt_root)
     if plan.get("extend_panic", True):
-        panic = _extend_panic_reset(tgt_engine, [kept_map[s] for s in func_ids if s in kept_map])
+        panic += _extend_panic_reset(tgt_engine, [kept_map[s] for s in func_ids if s in kept_map])
 
     # ── 5b. Wire the copied fixtures into the show's own looks (2.7) ──────
     wired = _wire_copies(plan, tgt_root, defs)
@@ -1769,6 +1771,24 @@ def _cascade_prune(new_fns: dict[str, ET.Element], id_map: dict[str, str],
 
 
 _PANIC_RE = re.compile(r"panic\s*reset", re.IGNORECASE)
+
+
+def _convert_panic_scene(root: ET.Element) -> list[str]:
+    """A target whose PANIC RESET is a plain Scene cannot darken a running look
+    (dimmer / colour are HTP).  Wrap it in the script form, as Doctor D017 does,
+    so the ported functions are stopped too.  Returns what was done."""
+    from core.doctor import fixes as dfix
+    from core.doctor.report import Finding
+    engine = root.find("Engine") if root.find("Engine") is not None else root
+    fns = engine.findall("Function")
+    if any(f.get("Type") == "Script" and _PANIC_RE.search(f.get("Name", "")) for f in fns):
+        return []
+    out = []
+    for f in fns:
+        if f.get("Type") == "Scene" and _PANIC_RE.search(f.get("Name", "")):
+            out += dfix._fix_d017(root, Finding("D017", "warning", "", "", {"function": f.get("ID")}))
+            break
+    return out
 
 
 def _extend_panic_reset(engine: ET.Element, new_ids: list[str]) -> list[str]:

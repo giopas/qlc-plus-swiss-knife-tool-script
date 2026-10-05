@@ -266,12 +266,14 @@
             Also keep the Quick Start rig (<span id="sh-prof-rig-n">0</span> fixtures) — the profile can then <b>start a show from nothing</b></label>
           <button class="btn btn-accent btn-sm" onclick="showSaveProfile()">★ Save profile</button>
         </div>
+        <div class="sh-note" id="sh-prof-where"></div>
         <div class="sh-foot-t" style="margin-top:4px">Apply a profile to this show</div>
         <div class="sh-row">
           <select id="sh-prof-list" class="filter-input" aria-label="Saved profiles" onchange="showProfSelected()"></select>
           <button class="btn btn-accent btn-sm" onclick="showApplyProfile()">▶ Apply</button>
           <button class="btn btn-surface btn-sm" id="sh-prof-start" onclick="showStartProfile()" hidden
                   title="This profile keeps its own rig: it builds a new show from it, then applies its steps. The show open now is replaced.">▶ Start a show</button>
+          <button class="btn btn-surface btn-sm" onclick="fetch('/api/profile/open-folder',{method:'POST'})" title="Show the folder where profiles are kept">📂 Open folder</button>
           <button class="btn btn-surface btn-sm" onclick="showEditProfile()" title="Drop, reorder or rename the steps of the profile">✎ Edit steps</button>
           <button class="btn btn-surface btn-sm" onclick="showApplyProfileFile()" title="A .profile.json or .recipe.json from anywhere">From a file…</button>
         </div>

@@ -4093,3 +4093,8 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
     z-index: 6; border-left: 1px solid var(--border-strong); box-shadow: var(--shadow-1);
   }
 }
+
+/* Doctor: how a fix is done (v2.4) */
+.doc-opt { font-size: var(--fs-ui); color: var(--text-dim); padding: 4px 12px 2px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.doc-opt select, .doc-opt input { font-size: var(--fs-ui); }
+.qs-limits { color: var(--yellow, #f9e2af); font-size: var(--fs-ui); margin: 6px 0 0; }

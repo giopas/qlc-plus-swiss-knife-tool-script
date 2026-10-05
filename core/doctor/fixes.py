@@ -18,8 +18,10 @@ D003    dangling references removed: chaser/collection steps, show items
         function become caption-only.  Not fixed: CueList without chaser,
         RGB matrix → missing group, missing bound scene.
 D004    empty scenes and empty collections removed, with every step,
-        script command and button that used them.  Degenerate chasers:
-        not fixed (report).
+        script command and button that used them.  Degenerate chasers (0 or
+        1 step), option ``d004`` (default ``merge``): ``merge`` points every
+        user of the chaser at its one scene and removes the chaser; ``remove``
+        removes it with its users; an empty chaser is always removed.
 D005    missing channels added at the fixture's neutral value
         (``channel_model.neutral_value``; 0 without a definition).
 D006    the strobe / program channel set to its neutral value.
@@ -32,7 +34,11 @@ D008    no PANIC RESET: creates *Reset: neutral state* (every fixture
 D010    the setlist page (the only page with a CueList) moved to page 1.
 D011    a widget sticking out of its page / frame moved back inside (not
         when it is larger than its page / frame).
-D015    unnamed function removed when nothing uses it.
+D013    chaser steps that last 0 ms get a duration: option ``d013`` =
+        ``{"ms": 500}`` or ``{"bpm": 120}`` (default 500 ms).
+D015    unnamed function removed when nothing uses it; option ``d015`` =
+        ``rename`` names it from its context instead (the button that starts
+        it, else its parent chaser / collection and step number).
 D016    unreferenced function removed.
 D017    PANIC RESET scene → wrapped in a *PANIC RESET* script (stop every
         function, then start the scene); its buttons now run the script.
@@ -52,15 +58,16 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Set
 
 from core import qxw_io, vc_ops
-from core.doctor.checks import (NONE_ID, PANIC_RE, SCRIPT_FUNC_RE, _normalise_defs,
+from core.doctor.checks import (NONE_ID, UNNAMED_RE, PANIC_RE, SCRIPT_FUNC_RE, _normalise_defs,
                                 _scene_pairs, _Workspace, check)
 from core.doctor.report import Finding, Report
 
 # Fixes that delete functions: offered, but not selected by default
 REMOVING = {"D004", "D015", "D016"}
+OPTION_CODES = {"D003", "D004", "D013", "D015"}      # fixes that take options
 DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017"}
 
-FIX_ORDER = ["D002", "D003", "D004", "D005", "D006", "D007", "D010", "D011",
+FIX_ORDER = ["D002", "D003", "D004", "D005", "D006", "D007", "D010", "D011", "D013",
              "D015", "D016", "D017", "D008"]
 
 
@@ -75,6 +82,25 @@ class FixResult:
     @property
     def changed(self) -> bool:
         return bool(self.actions)
+
+
+def clean_options(raw) -> dict:
+    """The *options* of :func:`fix` from untrusted input (JSON body, CLI)."""
+    o, raw = {}, (raw if isinstance(raw, dict) else {})
+    for k, allowed in (("d003", ("unlink", "rewire")), ("d004", ("merge", "remove")),
+                       ("d015", ("remove", "rename"))):
+        if raw.get(k) in allowed:
+            o[k] = raw[k]
+    t = raw.get("d013")
+    if isinstance(t, dict):
+        try:
+            if t.get("bpm"):
+                o["d013"] = {"bpm": min(max(float(t["bpm"]), 1.0), 999.0)}
+            elif t.get("ms"):
+                o["d013"] = {"ms": min(max(int(t["ms"]), 1), 3600000)}
+        except (TypeError, ValueError):
+            pass
+    return o
 
 
 # ── selection ────────────────────────────────────────────────────────────────
@@ -93,14 +119,14 @@ def fixable(f: Finding) -> bool:
         if "group" in r:
             return False
         if "widget" in r and "target" not in r and "fixture" not in r:
-            return False                       # CueList without chaser
+            return True                        # CueList without chaser: rewire only
         if "widget" in r and "target" in r and "CueList" in f.location:
-            return False
+            return True                        # rewire / detach
         if "bound" in f.message:
             return False
         return True
-    if f.code == "D004":
-        return "degenerate" not in f.message
+    if f.code in ("D004", "D013"):
+        return True
     if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017"):
         return True
     if f.code == "D008":
@@ -114,8 +140,10 @@ def fix_hint(f: Finding) -> str:
     """One line: what the fix will do (for the UI)."""
     return {
         "D002": "renumber the later copies",
-        "D003": "remove the broken reference",
-        "D004": "remove it (and the steps/buttons that use it)",
+        "D003": "remove the broken reference (or rewire it to the function with the same name)",
+        "D004": ("merge it into its one scene, or remove it" if "degenerate" in f.message
+                 else "remove it (and the steps/buttons that use it)"),
+        "D013": "give the steps a duration (ms or BPM)",
         "D005": "add the missing channels at their neutral value",
         "D006": "set the channel to its neutral value",
         "D007": "give the chaser its own copy of the scene",
@@ -123,7 +151,7 @@ def fix_hint(f: Finding) -> str:
                  if "no PANIC" in f.message else "add a PANIC RESET button"),
         "D010": "move the setlist page to page 1",
         "D011": "move it inside (when it fits)",
-        "D015": "remove it if nothing uses it",
+        "D015": "remove it if nothing uses it, or give it a name from its context",
         "D016": "remove the unused function",
         "D017": "wrap the scene in a PANIC RESET script that stops everything first",
     }.get(f.code, "") if fixable(f) else ""
@@ -366,6 +394,152 @@ def _fix_d003(root, f: Finding) -> List[str]:
     return []
 
 
+
+def _opt(options, code: str, default):
+    return ((options or {}).get(code.lower()) if options else None) or default
+
+
+def _replace_refs(root, old: str, new: str) -> int:
+    """Point every user of function *old* at *new*; returns how many places."""
+    from urllib.parse import quote, unquote
+    n = 0
+    for f in _functions(root):
+        if f.get("Type") in ("Chaser", "Collection"):
+            for st in f.findall("Step"):
+                if (st.text or "").strip() == old:
+                    st.text = new
+                    n += 1
+        if f.get("Type") == "Script":
+            for c in f.findall("Command"):
+                t = unquote(c.text or "")
+                m = re.match(r"((?:start|stop)function:)(\d+)$", t, re.I)
+                if m and m.group(2) == old:
+                    c.text = quote(m.group(1) + new, safe="")
+                    n += 1
+    vc = root.find("VirtualConsole")
+    if vc is not None:
+        for w in vc.iter():
+            if w.tag == "CueList":
+                continue
+            for fe in w.findall("Function"):
+                if fe.get("ID") == old:
+                    fe.set("ID", new)
+                    n += 1
+    return n
+
+
+def _fix_d004_chaser(root, f: Finding, options) -> List[str]:
+    fid = f.ref["function"]
+    ch = _fn(root, fid)
+    if ch is None:
+        return []
+    steps = [s for s in ch.findall("Step") if (s.text or "").strip()]
+    name = ch.get("Name", "")
+    if len(steps) == 1 and _opt(options, "D004", "merge") == "merge":
+        scene = (steps[0].text or "").strip()
+        n = _replace_refs(root, fid, scene)
+        _engine(root).remove(ch)
+        return [f"chaser {name!r} merged into function {scene}: {n} user(s) now run it directly"]
+    touched = _remove_function(root, fid)
+    return [f"removed {name!r}" + (f"; also: {', '.join(touched)}" if touched else "")]
+
+
+def _fix_d013(root, f: Finding, options) -> List[str]:
+    fn = _fn(root, f.ref["function"])
+    if fn is None:
+        return []
+    raw = (options or {}).get("d013") or {}
+    if raw.get("bpm"):
+        ms = max(1, int(round(60000 / float(raw["bpm"]))))
+        how = f"{raw['bpm']} BPM"
+    else:
+        ms = max(1, int(raw.get("ms") or 500))
+        how = f"{ms} ms"
+    sm = fn.find("SpeedModes")
+    dmode = (sm.get("Duration") if sm is not None else "Default") or "Default"
+    out = []
+    if dmode == "PerStep":
+        for i in f.ref.get("steps", []):
+            st = fn.findall("Step")[i - 1]
+            st.set("Hold", str(ms))
+        out.append(f"{len(f.ref.get('steps', []))} step(s) now hold {ms} ms ({how})")
+    else:
+        sp = fn.find("Speed")
+        if sp is not None:
+            sp.set("Duration", str(ms))
+            out.append(f"chaser duration 0 → {ms} ms ({how})")
+    return out
+
+
+def _suggest_name(root, fid: str) -> Optional[str]:
+    """A name for an unnamed function from where it is used."""
+    fn = _fn(root, fid)
+    if fn is None:
+        return None
+    vc = root.find("VirtualConsole")
+    if vc is not None:
+        for w in vc.iter():
+            if w.tag == "Button" and any(fe.get("ID") == fid for fe in w.findall("Function")):
+                cap = " ".join((w.get("Caption") or "").split())
+                if cap:
+                    return cap
+    for p in _functions(root):
+        if p.get("Type") in ("Chaser", "Collection") and not UNNAMED_RE.match(p.get("Name", "")):
+            steps = [s for s in p.findall("Step") if (s.text or "").strip()]
+            for i, s in enumerate(steps):
+                if (s.text or "").strip() == fid:
+                    return f"{p.get('Name', '')} - step {i + 1}"
+    return None
+
+
+def _fix_d015_rename(root, f: Finding) -> List[str]:
+    fid = f.ref.get("function")
+    fn = _fn(root, fid) if fid is not None else None
+    if fn is None:
+        return []
+    new = _suggest_name(root, fid)
+    if not new:
+        return []
+    names = {x.get("Name") for x in _functions(root)}
+    base, k = new, 2
+    while new in names:
+        new, k = f"{base} ({k})", k + 1
+    old = fn.get("Name", "")
+    fn.set("Name", new)
+    return [f"renamed {old!r} → {new!r}"]
+
+
+def _fix_d003_rewire(root, f: Finding) -> List[str]:
+    """Widget → missing / absent function: point it at the function with the
+    caption's name (CueList: a chaser, caption match or the only chaser)."""
+    r = f.ref
+    vc = root.find("VirtualConsole")
+    if vc is None or "widget" not in r:
+        return []
+    funcs = _functions(root)
+    out = []
+    for w in [x for x in vc.iter() if vc_ops._is_widget(x) and x.get("ID") == r["widget"]]:
+        cap = " ".join((w.get("Caption") or "").split()).lower()
+        if w.tag == "CueList":
+            chasers = [x for x in funcs if x.get("Type") == "Chaser"]
+            cand = [x for x in chasers if " ".join(x.get("Name", "").split()).lower() == cap] or \
+                   (chasers if len(chasers) == 1 else [])
+            if len(cand) == 1:
+                ch = w.find("Chaser")
+                if ch is None:
+                    ch = ET.SubElement(w, "Chaser")
+                ch.text = cand[0].get("ID")
+                out.append(f"CueList '{w.get('Caption', '')}' → chaser {cand[0].get('ID')} '{cand[0].get('Name', '')}'")
+            continue
+        cand = [x for x in funcs if cap and " ".join(x.get("Name", "").split()).lower() == cap]
+        if len(cand) == 1:
+            for fe in w.iter("Function"):
+                if fe.get("ID") == r.get("target"):
+                    fe.set("ID", cand[0].get("ID"))
+                    out.append(f"{w.tag} '{w.get('Caption', '')}' → function {cand[0].get('ID')} '{cand[0].get('Name', '')}'")
+    return out
+
+
 def _fix_remove(root, f: Finding, only_unused: bool = False) -> List[str]:
     fid = f.ref.get("function")
     if fid is None or _fn(root, fid) is None:
@@ -504,8 +678,13 @@ def _fix_d017(root, f: Finding) -> List[str]:
 # ── public API ───────────────────────────────────────────────────────────────
 
 def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
-        codes: Optional[Iterable[str]] = None, allow_fx: Iterable[str] = ()) -> FixResult:
+        codes: Optional[Iterable[str]] = None, allow_fx: Iterable[str] = (),
+        options: Optional[dict] = None) -> FixResult:
     """Apply the selected fixes to a copy of *root*.
+
+    *options* per code, lower-case keys: ``d003`` ``"unlink"``|``"rewire"``,
+    ``d004`` ``"merge"``|``"remove"``, ``d013`` ``{"ms"|"bpm": n}``,
+    ``d015`` ``"remove"``|``"rename"``.
 
     *keys*   finding keys (:func:`finding_key`) to fix; ``None`` = all fixable
     *codes*  restrict to these codes (e.g. ``{"D003", "D005"}``)
@@ -529,9 +708,16 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
             if code == "D002":
                 acts = _fix_d002(work, f, done)
             elif code == "D003":
-                acts = _fix_d003(work, f)
+                acts = []
+                if (options or {}).get("d003") == "rewire" and "widget" in f.ref:
+                    acts = _fix_d003_rewire(work, f)
+                if not acts and not ("widget" in f.ref and "CueList" in f.location):
+                    acts = _fix_d003(work, f)       # a CueList can only be rewired
             elif code == "D004":
-                acts = _fix_remove(work, f)
+                acts = _fix_d004_chaser(work, f, options) if "degenerate" in f.message \
+                    else _fix_remove(work, f)
+            elif code == "D013":
+                acts = _fix_d013(work, f, options)
             elif code == "D005":
                 acts = _fix_d005(work, f, defs)
             elif code == "D006":
@@ -539,7 +725,8 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
             elif code == "D007":
                 acts = _fix_d007(work, f)
             elif code == "D015":
-                acts = _fix_remove(work, f, only_unused=True)
+                acts = _fix_d015_rename(work, f) if (options or {}).get("d015") == "rename" \
+                    else _fix_remove(work, f, only_unused=True)
             elif code == "D016":
                 acts = _fix_remove(work, f)
             elif code == "D017":
@@ -560,6 +747,11 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
             elif code == "D011":
                 skipped.append({"code": f.code, "location": f.location,
                                 "reason": "larger than its page / frame — resize it in QLC+"})
+            elif code == "D003" and "widget" in f.ref and "CueList" in f.location:
+                skipped.append({"code": f.code, "location": f.location,
+                                "reason": "no chaser to rewire it to (need option d003 = rewire and "
+                                          "a chaser named like the CueList, or only one chaser) — "
+                                          "attach one in QLC+"})
             elif code not in ("D002",):
                 skipped.append({"code": f.code, "location": f.location,
                                 "reason": "nothing left to change (fixed by an earlier fix)"})
@@ -606,12 +798,12 @@ def report_path(qxw_path: str) -> str:
 
 
 def fix_file(path: str, qxf_defs=None, *, out_path: Optional[str] = None,
-             keys=None, codes=None, allow_fx=()) -> dict:
+             keys=None, codes=None, allow_fx=(), options=None) -> dict:
     """Fix *path* into a new file (default ``<name>_v<N+1>.qxw`` next to it)
     and write the fix report next to that.  Never overwrites *path*.
     Returns ``{"output", "report_path", "result"}``."""
     tree = qxw_io.load_qxw(path)
-    res = fix(tree.getroot(), qxf_defs, keys=keys, codes=codes, allow_fx=allow_fx)
+    res = fix(tree.getroot(), qxf_defs, keys=keys, codes=codes, allow_fx=allow_fx, options=options)
     out = out_path or qxw_io.next_version_path(path)
     ET.indent(res.root, space=" ")
     qxw_io.write_qxw(res.root, out, protect=[path])

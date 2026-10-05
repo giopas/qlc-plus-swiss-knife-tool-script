@@ -1387,6 +1387,9 @@ function qsLoadSummary() {
     if (_qsLoadedDefs.length > 0) {
       html += '<p><b>Fixture types:</b> ' + _qsLoadedDefs.map(d => `${_esc(d.manufacturer)} ${_esc(d.model)}`).join(', ') + '</p>';
     }
+    if ((d.look_limits || []).length) {
+      html += '<p class="qs-limits">⚠ ' + d.look_limits.map(_esc).join('<br>⚠ ') + '</p>';
+    }
     html += '</div>';
     wrap.innerHTML = html;
   });
@@ -1455,9 +1458,21 @@ async function qsSaveRigProfile() {
         stage: { w_mm: _qsStage.w_mm, d_mm: _qsStage.d_mm, h_mm: _qsStage.h_mm } }),
     }).then(r => r.json());
     if (d.error) { setStatus('✗ ' + d.error, 'error'); return; }
-    setStatus(`★ Profile '${d.name}' saved — the rig and these options. `
-      + 'Start a show from it: Start screen › Start a show from a profile, or python -m core.profile build "' + d.name + '" --out <new>.qxw', 'ok');
+    setStatus(`★ Profile '${d.name}' saved — the rig and these options — in ${d.path}. `
+      + 'Start a show from it: Start screen › Start a show from a profile.', 'ok');
+    _qsProfileFolderLink(d.path);
   } catch (e) { setStatus('✗ ' + e.message, 'error'); }
+}
+
+/** Offer "Open folder" next to the profile row after a save. */
+function _qsProfileFolderLink(path) {
+  const row = document.querySelector('.qs-profile-row');
+  if (!row) return;
+  let a = document.getElementById('qs-prof-folder');
+  if (!a) { a = document.createElement('button'); a.id = 'qs-prof-folder'; a.className = 'btn btn-secondary'; row.appendChild(a); }
+  a.textContent = '📂 Open folder';
+  a.title = path;
+  a.onclick = () => fetch('/api/profile/open-folder', { method: 'POST' }).catch(() => {});
 }
 
 async function qsExport() {

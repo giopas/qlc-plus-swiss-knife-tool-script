@@ -90,11 +90,13 @@ def run_fix():
     root, path, name = _open_workspace()
     if root is None:
         return jsonify({'error': 'No workspace open.'}), 400
-    keys = [str(k) for k in ((request.get_json(force=True) or {}).get('keys') or [])]
+    body = request.get_json(force=True) or {}
+    keys = [str(k) for k in (body.get('keys') or [])]
+    opts = fixes.clean_options(body.get('options'))
     if not keys:
         return jsonify({'error': 'Tick at least one finding to fix.'}), 400
     try:
-        res = fixes.fix(root, _defs(path), keys=keys)
+        res = fixes.fix(root, _defs(path), keys=keys, options=opts)
         import xml.etree.ElementTree as ET
         ET.indent(res.root, space=' ')
         out_name = os.path.basename(qxw_io.next_version_name(name))
@@ -119,12 +121,14 @@ def run_apply():
     root, path, name = _open_workspace()
     if root is None:
         return jsonify({'error': 'No workspace open.'}), 400
-    keys = [str(k) for k in ((request.get_json(force=True) or {}).get('keys') or [])]
+    body = request.get_json(force=True) or {}
+    keys = [str(k) for k in (body.get('keys') or [])]
+    opts = fixes.clean_options(body.get('options'))
     if not keys:
         return jsonify({'error': 'Tick at least one finding to fix.'}), 400
     try:
         from routes.show_routes import applied
-        res = fixes.fix(root, _defs(path), keys=keys)
+        res = fixes.fix(root, _defs(path), keys=keys, options=opts)
         rep = fixes.format_report(res, name, '')
         _last = {'report': rep, 'before': res.before.severity_counts(),
                  'after': res.after.severity_counts(), 'actions': len(res.actions),

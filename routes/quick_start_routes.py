@@ -215,7 +215,12 @@ def status():
     """Return current Quick Start wizard state."""
     total_ch = sum(e.get("ch_count", 0) for e in _qs_rig)
     universes = set(e.get("universe", 0) for e in _qs_rig) if _qs_rig else set()
+    try:
+        limits = _make_generator()[1].look_limits() if _qs_rig else []
+    except Exception:
+        limits = []
     return jsonify({
+        "look_limits":     limits,
         "fixture_count":   len(_qs_rig),
         "total_channels":  total_ch,
         "universes":       sorted(u + 1 for u in universes),

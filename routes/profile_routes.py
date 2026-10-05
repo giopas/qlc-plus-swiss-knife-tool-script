@@ -84,6 +84,29 @@ def save():
                     'rig': bool(p.get('start')), 'file': os.path.basename(path), 'path': path})
 
 
+@bp.route('/folder')
+def folder():
+    return jsonify({'path': prof.profiles_dir()})
+
+
+@bp.route('/open-folder', methods=['POST'])
+def open_folder():
+    """Show the profiles folder in Finder / Explorer (the local app only)."""
+    import subprocess, sys
+    d = prof.profiles_dir()
+    os.makedirs(d, exist_ok=True)
+    try:
+        if sys.platform == 'darwin':
+            subprocess.Popen(['open', d])
+        elif sys.platform.startswith('win'):
+            os.startfile(d)  # type: ignore[attr-defined]
+        else:
+            subprocess.Popen(['xdg-open', d])
+    except OSError as e:
+        return jsonify({'error': str(e), 'path': d}), 500
+    return jsonify({'ok': True, 'path': d})
+
+
 @bp.route('/start', methods=['POST'])
 def start():
     """A profile with its own rig builds a show from nothing and applies its

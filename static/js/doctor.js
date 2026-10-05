@@ -12,7 +12,26 @@
 let _docData = null;          // last /api/doctor/check result
 let _docSel = new Set();      // ticked finding keys
 let _docOpen = new Set();     // expanded codes
-const _DOC_SHOW = 150;        // rows shown per code (the rest follow the group tick)
+const _DOC_SHOW = 150;
+// per-kind choices (v2.4): how a fix is done; sent with the fix as `options`
+let _docOpt = { d003: 'unlink', d004: 'merge', d015: 'remove', d013mode: 'ms', d013val: 500 };
+function _docOptions() {
+  const o = { d003: _docOpt.d003, d004: _docOpt.d004, d015: _docOpt.d015 };
+  const v = Number(_docOpt.d013val) || 0;
+  if (v > 0) o.d013 = _docOpt.d013mode === 'bpm' ? { bpm: v } : { ms: v };
+  return o;
+}
+function doctorOpt(k, v) { _docOpt[k] = v; if (k === 'd013mode') _docOpt.d013val = v === 'bpm' ? 120 : 500; doctorRender(); }
+function _docOptBar(code) {
+  const sel = (k, opts) => `<select onchange="doctorOpt('${k}', this.value)" aria-label="${code} option">` +
+    opts.map(([v, t]) => `<option value="${v}" ${_docOpt[k] === v ? 'selected' : ''}>${t}</option>`).join('') + '</select>';
+  if (code === 'D003') return `<div class="doc-opt">When a link is broken: ${sel('d003', [['unlink', 'remove the link'], ['rewire', 'rewire to the function with the same name, else remove']])}</div>`;
+  if (code === 'D004') return `<div class="doc-opt">A chaser with one step: ${sel('d004', [['merge', 'merge it into its scene'], ['remove', 'remove it']])}</div>`;
+  if (code === 'D015') return `<div class="doc-opt">Unnamed functions: ${sel('d015', [['remove', 'remove when unused'], ['rename', 'name them from where they are used']])}</div>`;
+  if (code === 'D013') return `<div class="doc-opt">Give 0 ms steps ${sel('d013mode', [['ms', 'a duration in ms'], ['bpm', 'a tempo in BPM']])}
+    <input type="number" min="1" style="width:5em" value="${_docOpt.d013val}" onchange="_docOpt.d013val = this.value" aria-label="${_docOpt.d013mode === 'bpm' ? 'BPM' : 'milliseconds'}"> ${_docOpt.d013mode === 'bpm' ? 'BPM (one beat per step)' : 'ms'}</div>`;
+  return '';
+}        // rows shown per code (the rest follow the group tick)
 
 function doctorInit() {
   if (_docData) return;
@@ -95,6 +114,7 @@ function doctorRender() {
         <span class="doc-hint">${_esc(hint)}</span>
         <span class="doc-caret">${open ? '▾' : '▸'}</span>
       </div>
+      ${open && fixable.length ? _docOptBar(code) : ''}
       <div class="doc-rows">${rows}</div>
     </div>`;
   }).join('');
@@ -155,7 +175,7 @@ async function doctorFix() {
   try {
     const r = await fetch('/api/doctor/fix', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keys: [..._docSel] }),
+      body: JSON.stringify({ keys: [..._docSel], options: _docOptions() }),
     });
     if (!r.ok) { const d = await r.json(); _docStatus(d.error || 'Fix failed.', 'error'); return; }
     const name = r.headers.get('X-Suggested-Filename') || 'workspace_v2.qxw';

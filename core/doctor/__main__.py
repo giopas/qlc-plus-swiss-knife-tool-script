@@ -14,6 +14,17 @@ from core.doctor.checks import check_file, load_qxf_defs
 from core.doctor.report import SEVERITIES
 
 
+def _options(args) -> dict:
+    raw = {"d003": args.d003, "d004": args.d004, "d015": args.d015}
+    t = (args.timing or "").strip().lower()
+    if t.endswith("bpm") and t[:-3].replace(".", "", 1).isdigit():
+        raw["d013"] = {"bpm": float(t[:-3])}
+    elif t.rstrip("ms").isdigit():
+        raw["d013"] = {"ms": int(t.rstrip("ms"))}
+    from core.doctor import fixes
+    return fixes.clean_options(raw)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="python -m core.doctor",
@@ -38,6 +49,14 @@ def main(argv=None) -> int:
     ap.add_argument("--remove", action="store_true",
                     help="with --fix: also remove empty (D004), unnamed unused (D015) "
                          "and unused (D016) functions")
+    ap.add_argument("--timing", metavar="500ms|120bpm",
+                    help="with --fix D013: the duration given to 0 ms chaser steps (default 500ms)")
+    ap.add_argument("--d004", choices=("merge", "remove"),
+                    help="with --fix D004: degenerate chasers merged into their scene (default) or removed")
+    ap.add_argument("--d015", choices=("remove", "rename"),
+                    help="with --fix D015: unnamed functions removed (if unused) or renamed from context")
+    ap.add_argument("--d003", choices=("unlink", "rewire"),
+                    help="with --fix D003: broken buttons / CueLists unlinked (default) or rewired by name")
     ap.add_argument("--out", metavar="PATH", help="with --fix: output file (one input only)")
     args = ap.parse_args(argv)
 
@@ -54,7 +73,7 @@ def main(argv=None) -> int:
             codes = ({c.strip().upper() for c in args.codes.split(",") if c.strip()}
                      or set(fixes.DEFAULT_CODES) | (fixes.REMOVING if args.remove else set()))
             out = fixes.fix_file(path, defs, out_path=args.out if len(args.files) == 1 else None,
-                                 codes=codes, allow_fx=allow)
+                                 codes=codes, allow_fx=allow, options=_options(args))
             res = out["result"]
             print(f"{len(res.actions)} fix(es) → {out['output']}  (report: {out['report_path']})")
             path = out["output"]

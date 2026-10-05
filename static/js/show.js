@@ -247,6 +247,11 @@ async function showProfilesLoad() {
     ? _shProfiles.map(p => `<option value="${_esc(p.name)}" title="${_esc(p.description || '')}">${_esc(p.name)} — ${p.rig ? p.fixtures + ' fixtures · ' : ''}${p.steps} step${p.steps === 1 ? '' : 's'}${p.params.length ? ' · needs ' + _esc(p.params.join(', ')) : ''}</option>`).join('')
     : '<option value="">no profiles yet — save one above</option>';
   showProfSelected();
+  try {
+    const f = await (await _origFetch('/api/profile/folder')).json();
+    const w = document.getElementById('sh-prof-where');
+    if (w) w.textContent = 'Profiles are kept in ' + f.path;
+  } catch { /* optional */ }
   // the rig of Quick Start can go into the profile
   try {
     const q = await (await _origFetch('/api/quickstart/status')).json();
@@ -475,7 +480,7 @@ async function showApply(url, body, busy = 'Applying…') {
 
 async function doctorApply() {
   if (typeof _docSel === 'undefined' || !_docSel.size) return;
-  const d = await showApply('/api/doctor/apply', { keys: [..._docSel] }, 'Fixing the show…');
+  const d = await showApply('/api/doctor/apply', { keys: [..._docSel], options: _docOptions() }, 'Fixing the show…');
   if (d) doctorCheck();
 }
 

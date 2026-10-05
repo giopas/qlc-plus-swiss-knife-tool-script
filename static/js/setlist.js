@@ -1073,6 +1073,37 @@ async function slExportMultiPdf() {
   } catch (err) { setStatus(String(err), 'error'); }
 }
 
+// ── The QLC+ function list as a drawer (v2.3) ──────────────────────────────────
+// Slots · Songs · Actions are the working columns; the functions open beside
+// them when you need to pick one.  Wide windows (≥ 1500 px) keep it docked and
+// open; narrower ones open it over the right edge.  The choice is remembered.
+
+const _POOL_KEY = 'sk.setlist.pool';
+
+function slTogglePool(force) {
+  const split = document.getElementById('sl-split');
+  if (!split) return;
+  const open = typeof force === 'boolean' ? force : split.classList.contains('pool-closed');
+  split.classList.toggle('pool-closed', !open);
+  const b = document.getElementById('btn-pool-toggle');
+  if (b) { b.setAttribute('aria-pressed', open ? 'true' : 'false'); b.classList.toggle('on', open); }
+  if (typeof force !== 'boolean') {
+    try { localStorage.setItem(_POOL_KEY, open ? '1' : '0'); } catch { /* per-browser convenience only */ }
+  }
+}
+
+function _initPoolDrawer() {
+  let pref = null;
+  try { pref = localStorage.getItem(_POOL_KEY); } catch { pref = null; }
+  slTogglePool(pref === null ? window.innerWidth >= 1500 : pref === '1');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initPoolDrawer);
+} else {
+  _initPoolDrawer();
+}
+
 // ── Pool resize (drag handle) ─────────────────────────────────────────────────
 
 function _initPoolResize() {

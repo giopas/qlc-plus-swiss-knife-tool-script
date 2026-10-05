@@ -39,6 +39,7 @@ let _pValidation     = null;
 let _pExported       = false;   // step 5: the new .qxw has been written
 let _pDropUnmapped   = false;
 let _pCompleteCh     = true;
+let _pConvertPanic   = true;
 let _pManual         = new Set();   // functions ticked in the function list
 let _pExcluded       = new Set();   // functions coming from the VC but unticked by hand
 let _pVcTree         = [];          // source VC (from /source/vc)
@@ -250,6 +251,55 @@ async function _pFetchTargetData() {
 
 // ── Wizard navigation ────────────────────────────────────────────────────────
 
+// ── "What Apply will do", in the footer of steps 2–5 (v2.2.1) ─────────────
+// Same form as the other tools: a lead + chips next to the button.
+function _pSyncOutcome() {
+  if (typeof setOutcome !== 'function') return;
+  for (let i = 2; i <= 5; i++) setOutcome('porter' + i, '');   // clear the hidden steps
+  const n = 'porter' + _pStep;
+  const c = _pClosure;
+  const nFn = c ? c.function_ids.length : 0;
+  const nCopy = _pCopyFx.size + _pCopyGrp.size;
+  const where = _pTgtShow ? 'the show in progress' : 'a copy of the target';
+  if (_pStep === 2) {
+    if (!nFn && !nCopy) return setOutcome(n, 'nothing yet — tick pages, frames, buttons or functions', '', 'Apply will do');
+    const chips = [];
+    if (nFn) chips.push(`port ${nFn} function${nFn > 1 ? 's' : ''}`);
+    if (_pVcScope.length) chips.push(`${_pVcScope.length} VC widget${_pVcScope.length > 1 ? 's' : ''}`);
+    if (_pCopyFx.size) chips.push(`copy ${_pCopyFx.size} fixture${_pCopyFx.size > 1 ? 's' : ''}`);
+    if (_pCopyGrp.size) chips.push(`copy ${_pCopyGrp.size} group${_pCopyGrp.size > 1 ? 's' : ''}`);
+    return setOutcome(n, chips, '', 'Apply will');
+  }
+  if (_pStep === 3) {
+    const ids = c ? c.fixture_ids : [];
+    const skipped = ids.filter(id => _pSkipFx.has(id) || _pSkipFx.has(String(id))).length;
+    const mapped = ids.filter(id => (_pFixMapping[id] || _pFixMapping[String(id)] || []).length).length;
+    const open = ids.length - skipped - mapped;
+    const chips = [];
+    if (ids.length) chips.push({ text: `${mapped} of ${ids.length} fixture${ids.length > 1 ? 's' : ''} mapped`, kind: open > 0 && !_pDropUnmapped ? 'warn' : '' });
+    if (skipped) chips.push(`${skipped} not ported`);
+    if (open > 0 && !_pDropUnmapped) chips.push({ text: `${open} without a target`, kind: 'warn' });
+    if (nCopy) chips.push(`${_pCopyFx.size} fixture${_pCopyFx.size === 1 ? '' : 's'} copied`);
+    return chips.length ? setOutcome(n, chips, '', 'Apply will') : setOutcome(n, 'nothing to map', '', 'Apply will do');
+  }
+  if (_pStep === 4) {
+    const v = _pValidation;
+    if (!v) return setOutcome(n, 'checking the plan…', '', 'Apply will');
+    const chips = [];
+    if (v.errors.length) chips.push({ text: `${v.errors.length} error${v.errors.length > 1 ? 's' : ''} to fix first`, kind: 'error' });
+    else chips.push(`port ${nFn} function${nFn === 1 ? '' : 's'} into ${where}`);
+    if (v.warnings.length) chips.push({ text: `${v.warnings.length} warning${v.warnings.length > 1 ? 's' : ''}`, kind: 'warn' });
+    return setOutcome(n, chips, v.errors.length ? 'error' : '', v.errors.length ? 'Blocked:' : 'Apply will');
+  }
+  if (_pStep === 5) {
+    if (_pExported) return;
+    const chips = [`port ${nFn} function${nFn === 1 ? '' : 's'}`];
+    if (nCopy) chips.push(`copy ${nCopy} fixture/group${nCopy > 1 ? 's' : ''}`);
+    chips.push(_pTgtShow ? 'one History step' : 'write a new file');
+    return setOutcome(n, chips, '', 'Apply will');
+  }
+}
+
 async function porterGoStep(n) {
   if (n < 1 || n > 5) return;
   // Guard: can't advance past step 1 without both files loaded
@@ -308,6 +358,7 @@ function _pRenderStep() {
   }
   if (_pStep === 4) { _pRenderVcOptions(); _pRenderValidation(); }
   if (_pStep === 5 && !_pExported) _pRenderExportReady();
+  _pSyncOutcome();
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -546,6 +597,7 @@ function _pRenderClosureSummary() {
   }
   html += `</div>`;
   el.innerHTML = html;
+  _pSyncOutcome();
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -706,6 +758,9 @@ async function _pRenderMapFixtures() {
     <label style="margin-left:1rem" data-tooltip="Missing channels get their neutral value (no LTP bleed)">
       <input type="checkbox" ${_pCompleteCh ? 'checked' : ''} onchange="_pCompleteCh = this.checked">
       Declare every channel</label>
+    <label style="margin-left:1rem" data-tooltip="If the target's PANIC RESET is a plain scene it cannot darken running looks: it becomes a script that stops everything first (Doctor D017)">
+      <input type="checkbox" ${_pConvertPanic ? 'checked' : ''} onchange="_pConvertPanic = this.checked">
+      Make PANIC RESET a script</label>
     <label style="margin-left:1rem">Name prefix:
       <input type="text" id="porter-name-prefix" class="filter-input" style="width:150px"
              value="${_esc(_pNamePrefix)}" placeholder="e.g. SHOW2 / "
@@ -746,6 +801,7 @@ function porterUpdateMapping(srcId, selectEl) {
   const b = document.getElementById('porter-xlate-' + srcId);
   if (b) b.innerHTML = _pXlateBadge(srcId);
   _pDrawPlans();
+  _pSyncOutcome();
 }
 
 // ── "Port this fixture" (step 3) ────────────────────────────────────────────
@@ -792,6 +848,7 @@ function _pApplySkips() {
     }
   }
   _pVcScope = _pVcTree.map(w => w.key).filter(k => scope.has(k));
+  _pSyncOutcome();
 }
 
 async function _pRefreshVcSeeds() {
@@ -921,6 +978,10 @@ function _pDrawPlans() {
 }
 
 window.addEventListener('resize', () => { if (_pStep === 1 || _pStep === 3) _pDrawPlans(); });
+// v2.2.1: the step-3 stage maps are folded (mapping first); draw them when opened
+document.addEventListener('toggle', ev => {
+  if (ev.target && ev.target.id === 'porter-maps-fold' && ev.target.open) setTimeout(_pDrawPlans, 0);
+}, true);
 
 function porterToggleMirror(srcId, checked) {
   if (checked) _pMirrorFixtures.add(srcId);
@@ -1161,6 +1222,7 @@ async function _pRenderValidation() {
     }
 
     container.innerHTML = html;
+    _pSyncOutcome();
   } catch (e) {
     _pStatus('Network error: ' + e.message, 'error');
   }
@@ -1361,6 +1423,7 @@ function _pBuildPlan() {
     import_path:     _pImportPath,
     drop_unmapped:   _pDropUnmapped,
     complete_channels: _pCompleteCh,
+    convert_panic:   _pConvertPanic,
     vc: Object.assign({}, _pVc, { scope: _pVcScope, remove: _pRmScope }),
     copy_fixtures:   [..._pCopyFx],
     copy_groups:     [..._pCopyGrp],
@@ -1419,6 +1482,7 @@ function _pCopyChanged() {
   if (_pClosureKey === 'copy-only') { _pClosure = null; _pClosureKey = ''; }
   _pRenderCopyPick();
   _pRenderClosureSummary();
+  _pSyncOutcome();
 }
 
 /** Step 3: copied fixtures play their own functions — their mapping is not used. */
@@ -1574,6 +1638,7 @@ function _pPickChanged(srcId) {
   if (b) b.innerHTML = _pXlateBadge(srcId);
   _pValidation = null;
   _pDrawPlans();
+  _pSyncOutcome();
 }
 
 function porterPickToggle(srcId, tgtId, on) {

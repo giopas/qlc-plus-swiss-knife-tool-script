@@ -215,7 +215,12 @@ def status():
     """Return current Quick Start wizard state."""
     total_ch = sum(e.get("ch_count", 0) for e in _qs_rig)
     universes = set(e.get("universe", 0) for e in _qs_rig) if _qs_rig else set()
+    try:
+        limits = _make_generator()[1].look_limits() if _qs_rig else []
+    except Exception:
+        limits = []
     return jsonify({
+        "look_limits":     limits,
         "fixture_count":   len(_qs_rig),
         "total_channels":  total_ch,
         "universes":       sorted(u + 1 for u in universes),
@@ -441,25 +446,11 @@ def qxf_filename(manufacturer: str, model: str) -> str:
     return f"{manufacturer}-{model}.qxf".replace(" ", "-").replace("/", "-")
 
 
-@bp.route('/save-qxf', methods=['POST'])
-def save_qxf():
-    """Write fixture definitions next to a saved workspace — only those the
-    installed QLC+ doesn't already have.
-
-    QLC+ resolves fixtures from its own library (stock + user folder) first;
-    only a missing definition is looked up next to the workspace as
-    ``<Manufacturer>-<Model>.qxf``.  Without it the fixture loads as a plain
-    dimmer (no colour, RGB effects dark).
-
-    Response: ``files`` written, ``skipped`` [{file, reason}] (already in
-    QLC+), ``warnings`` (e.g. the installed definition lacks the mode used).
-    """
+def write_qxf(folder: str) -> dict:
+    """Write the fixture definitions of the Quick Start rig next to a saved
+    workspace — only those the installed QLC+ doesn't already have.
+    ``{files, skipped, warnings, folder}``."""
     from core.quick_start import qlc_library
-    data = request.get_json(force=True) or {}
-    qxw = data.get('qxw_path') or ''
-    folder = os.path.dirname(os.path.abspath(qxw)) if qxw else ''
-    if not folder or not os.path.isdir(folder):
-        return jsonify({'error': 'Workspace folder not found.'}), 400
     written, skipped, warnings = [], [], []
     for key in sorted({e.get('key') for e in _qs_rig}):
         raw, defn = _qs_qxf_raw.get(key), _qs_qxf_defs.get(key)
@@ -490,8 +481,28 @@ def save_qxf():
             with open(dest, 'wb') as fh:
                 fh.write(raw)
         written.append(fname)
-    return jsonify({'ok': True, 'folder': folder, 'files': written,
-                    'skipped': skipped, 'warnings': warnings})
+    return {'folder': folder, 'files': written, 'skipped': skipped, 'warnings': warnings}
+
+
+@bp.route('/save-qxf', methods=['POST'])
+def save_qxf():
+    """Write fixture definitions next to a saved workspace — only those the
+    installed QLC+ doesn't already have.
+
+    QLC+ resolves fixtures from its own library (stock + user folder) first;
+    only a missing definition is looked up next to the workspace as
+    ``<Manufacturer>-<Model>.qxf``.  Without it the fixture loads as a plain
+    dimmer (no colour, RGB effects dark).
+
+    Response: ``files`` written, ``skipped`` [{file, reason}] (already in
+    QLC+), ``warnings`` (e.g. the installed definition lacks the mode used).
+    """
+    data = request.get_json(force=True) or {}
+    qxw = data.get('qxw_path') or ''
+    folder = os.path.dirname(os.path.abspath(qxw)) if qxw else ''
+    if not folder or not os.path.isdir(folder):
+        return jsonify({'error': 'Workspace folder not found.'}), 400
+    return jsonify({'ok': True, **write_qxf(folder)})
 
 
 @bp.route('/options', methods=['GET', 'POST'])
@@ -594,6 +605,68 @@ def preview():
     })
 
 
+class QsError(Exception):
+    """A generation error with the HTTP status and the Doctor findings."""
+    def __init__(self, msg, status=400, findings=None):
+        super().__init__(msg)
+        self.status, self.findings = status, findings
+
+
+def build_workspace(data: dict):
+    """The new show from the current Quick Start state: ``(qxw_bytes, filename)``.
+    Used by the Generate route and by a profile that starts a show from nothing.
+    Raises :class:`QsError` (empty rig, Doctor errors)."""
+    if not _qs_rig:
+        raise QsError('Rig is empty.', 400)
+    over = {k: data[k] for k in ("nomenclature", "style") if data.get(k)}
+    if "style" in over:
+        over["style_data"] = None if isinstance(over["style"], str) else over["style"]
+    analysis, gen = _make_generator(over)
+    funcs, vc_frame, fixture_groups = gen.generate()
+
+    # Use QS-specific stage dims if provided, else fall back to global
+    # Support both nested JSON {stage: {w_mm, d_mm, h_mm}} and flat
+    # form fields (stage_w, stage_d, stage_h)
+    qs_stage = data.get('stage', {})
+    if isinstance(qs_stage, dict) and all(k in qs_stage for k in ('w_mm', 'd_mm', 'h_mm')):
+        stage_w = int(qs_stage['w_mm'])
+        stage_d = int(qs_stage['d_mm'])
+        stage_h = int(qs_stage['h_mm'])
+    elif all(k in data for k in ('stage_w', 'stage_d', 'stage_h')):
+        stage_w = int(data['stage_w'])
+        stage_d = int(data['stage_d'])
+        stage_h = int(data['stage_h'])
+    else:
+        stage = fx.get_stage_dims()
+        stage_w = stage['w_mm']
+        stage_d = stage['d_mm']
+        stage_h = stage['h_mm']
+
+    qxw_bytes = build_qxw(
+        rig=_qs_rig,
+        functions=funcs,
+        vc_frame=vc_frame,
+        fixture_groups=fixture_groups,
+        stage_w_mm=stage_w,
+        stage_d_mm=stage_d,
+        stage_h_mm=stage_h,
+        vc_size=gen.page_size,
+    )
+
+    # Doctor gates every export (WORKPLAN principle 4): errors block it.
+    from core.doctor import check
+    from core.qxw_io import loads_qxw
+    report = check(loads_qxw(qxw_bytes), list(_qs_qxf_defs.values()))
+    if report.errors:
+        raise QsError('Doctor found errors in the generated workspace; not exported.', 422,
+                      [f"{f.code} {f.location}: {f.message}" for f in report.errors])
+
+    # File name: <project>_v1.qxw (the save dialog suggests the next free one)
+    proj = (data.get('project_name') or '').strip()
+    slug = re.sub(r'[^a-zA-Z0-9_\- ]', '', proj).replace(' ', '_') if proj else 'quick_start'
+    return qxw_bytes, f'{slug}_v1.qxw'
+
+
 @bp.route('/generate', methods=['GET', 'POST'])
 def generate():
     """Generate and download a complete .qxw file.
@@ -614,65 +687,85 @@ def generate():
         data = request.form.to_dict()
 
     try:
-        over = {k: data[k] for k in ("nomenclature", "style") if data.get(k)}
-        if "style" in over:
-            over["style_data"] = None if isinstance(over["style"], str) else over["style"]
-        analysis, gen = _make_generator(over)
-        funcs, vc_frame, fixture_groups = gen.generate()
-
-        # Use QS-specific stage dims if provided, else fall back to global
-        # Support both nested JSON {stage: {w_mm, d_mm, h_mm}} and flat
-        # form fields (stage_w, stage_d, stage_h)
-        qs_stage = data.get('stage', {})
-        if isinstance(qs_stage, dict) and all(k in qs_stage for k in ('w_mm', 'd_mm', 'h_mm')):
-            stage_w = int(qs_stage['w_mm'])
-            stage_d = int(qs_stage['d_mm'])
-            stage_h = int(qs_stage['h_mm'])
-        elif all(k in data for k in ('stage_w', 'stage_d', 'stage_h')):
-            stage_w = int(data['stage_w'])
-            stage_d = int(data['stage_d'])
-            stage_h = int(data['stage_h'])
-        else:
-            stage = fx.get_stage_dims()
-            stage_w = stage['w_mm']
-            stage_d = stage['d_mm']
-            stage_h = stage['h_mm']
-
-        qxw_bytes = build_qxw(
-            rig=_qs_rig,
-            functions=funcs,
-            vc_frame=vc_frame,
-            fixture_groups=fixture_groups,
-            stage_w_mm=stage_w,
-            stage_d_mm=stage_d,
-            stage_h_mm=stage_h,
-            vc_size=gen.page_size,
-        )
-
-        # Doctor gates every export (WORKPLAN principle 4): errors block it.
-        from core.doctor import check
-        from core.qxw_io import loads_qxw
-        report = check(loads_qxw(qxw_bytes), list(_qs_qxf_defs.values()))
-        if report.errors:
-            return jsonify({
-                'error': 'Doctor found errors in the generated workspace; not exported.',
-                'findings': [f"{f.code} {f.location}: {f.message}" for f in report.errors],
-            }), 422
-
-        # File name: <project>_v1.qxw (the save dialog suggests the next free one)
-        proj = (data.get('project_name') or '').strip()
-        slug = re.sub(r'[^a-zA-Z0-9_\- ]', '', proj).replace(' ', '_') if proj else 'quick_start'
-        filename = f'{slug}_v1.qxw'
-
+        qxw_bytes, filename = build_workspace(data)
         return Response(
             qxw_bytes,
             mimetype='application/octet-stream',
             headers={'Content-Disposition': f'attachment; filename={filename}'},
         )
+    except QsError as e:
+        body = {'error': str(e)}
+        if e.findings:
+            body['findings'] = e.findings
+        return jsonify(body), e.status
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({'error': _safe_err(e)}), 500
+
+
+# ── The Quick Start rig as data (a Show Profile can start a show from it) ───
+
+SNAPSHOT_FORMAT = 'qsk-quickstart/1'
+
+
+def snapshot(stage: dict = None, project_name: str = '') -> dict:
+    """The whole Quick Start setup as JSON: rig, fixture definitions (the raw
+    .qxf files), options, groups, stage.  ``{}`` when the rig is empty."""
+    import base64
+    if not _qs_rig:
+        return {}
+    keys = sorted({e.get('key') for e in _qs_rig if e.get('key')})
+    st = stage if isinstance(stage, dict) and all(k in stage for k in ('w_mm', 'd_mm', 'h_mm')) \
+        else fx.get_stage_dims()
+    return {
+        'format': SNAPSHOT_FORMAT,
+        'rig': [dict(e) for e in _qs_rig],
+        'qxf': {k: {'data': base64.b64encode(_qs_qxf_raw[k]).decode('ascii'),
+                    'origin': _qs_qxf_defs.get(k, {}).get('origin', 'file')}
+                for k in keys if k in _qs_qxf_raw},
+        'options': {k: _qs_options.get(k) for k in ('nomenclature', 'style', 'style_data')},
+        'groups': _qs_groups,
+        'stage': {'w_mm': int(st['w_mm']), 'd_mm': int(st['d_mm']), 'h_mm': int(st['h_mm'])},
+        'project_name': project_name or '',
+    }
+
+
+def restore(snap: dict) -> None:
+    """Put a :func:`snapshot` back as the Quick Start state (replaces it)."""
+    import base64
+    global _qs_rig, _qs_next_id, _qs_options, _qs_groups
+    if (snap or {}).get('format') != SNAPSHOT_FORMAT:
+        raise ValueError('Not a Quick Start setup.')
+    _reset_qs()
+    for key, spec in (snap.get('qxf') or {}).items():
+        _parse_qxf_bytes(base64.b64decode(spec['data']), key.replace('::', '-') + '.qxf',
+                         spec.get('origin') or 'file')
+    _qs_rig = [dict(e) for e in snap.get('rig') or []]
+    missing = sorted({e.get('key') for e in _qs_rig} - set(_qs_qxf_defs))
+    if missing:
+        raise ValueError('The setup lacks the definition of: ' + ', '.join(missing))
+    _qs_next_id = max([e.get('id', -1) for e in _qs_rig if isinstance(e.get('id'), int)] + [len(_qs_rig) - 1]) + 1
+    _qs_options = {**_QS_DEFAULT_OPTIONS, **{k: v for k, v in (snap.get('options') or {}).items() if v is not None}}
+    _qs_groups = snap.get('groups')
+
+
+@bp.route('/restore', methods=['POST'])
+def restore_route():
+    try:
+        restore(request.get_json(force=True) or {})
+    except (ValueError, KeyError, OSError) as e:
+        return jsonify({'error': _safe_err(e)}), 400
+    return jsonify({'ok': True, 'fixtures': len(_qs_rig)})
+
+
+@bp.route('/snapshot', methods=['POST'])
+def snapshot_route():
+    d = request.get_json(silent=True) or {}
+    snap = snapshot(d.get('stage'), str(d.get('project_name') or ''))
+    if not snap:
+        return jsonify({'error': 'The Quick Start rig is empty.'}), 400
+    return jsonify(snap)
 
 
 # ═════════════════════════════════════════════════════════════════════════════

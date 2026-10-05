@@ -42,7 +42,7 @@ SKIP = [
     r"^/api/profile/", r"^/api/load$", r"^/api/reload$", r"^/api/quit$", r"^/api/help$", r"^/api/output-dir$",
     r"^/api/picker/", r"^/api/session/", r"^/api/show/save$", r"^/api/show/saved$",
     r"^/api/compare/", r"^/api/dictionary/", r"^/api/quickstart/", r"^/api/fixture/",
-    r"^/api/merger/", r"^/api/showbook/", r"^/api/checklist/", r"^/api/techrider/",
+    r"^/api/showbook/", r"^/api/checklist/", r"^/api/techrider/",
     r"/export", r"/save-report$", r"/save-file$", r"/preview", r"^/api/doctor/fix$",
     r"^/api/reducer/reduce$", r"^/api/looks/build$", r"^/api/looks/presets",
     r"^/api/porter/execute$", r"^/api/porter/report$", r"^/api/stage/save$",

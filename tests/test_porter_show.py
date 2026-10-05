@@ -177,7 +177,7 @@ def test_copies_are_pinned_whatever_the_fan_out(c):
                 fanout_mode="pattern_repeat", drop_unmapped=True, copy_fixtures=g["fixtures"])
     _ok(c.post("/api/porter/apply", json=plan))
     root = qxw_io.strip_ns(qxw_io.loads_qxw(c.get("/api/show/file").data))
-    new_fn = root.find("Engine").findall("Function")[-1]
+    new_fn = [f for f in root.find("Engine").findall("Function") if f.get("Type") == "Scene"][-1]
     lit = {v.get("ID") for v in new_fn.findall("FixtureVal")}
     src_ceiling = {s for s in cl["fixture_ids"] if s in g["fixtures"]}
     assert {cand["copied"][s] for s in src_ceiling} <= lit        # the copies play

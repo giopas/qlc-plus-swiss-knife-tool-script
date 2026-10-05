@@ -7,6 +7,49 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.4.0] — 2026-10-05
+
+**Doctor and Quick Start.** Found testing 2.3.0, plus the Doctor fixes that were left.
+
+### Added
+- **Quick Start: looks for fixtures without a dimmer.** A fixture with no dimmer and no RGB uses its colour-wheel slots (named White / Red / Amber / Light Blue… ) for ALL ON, Warm White and Cold White, and its closed shutter for BLACKOUT. Step 5 now **says which fixtures cannot make a look** (found by giopas with an Abstract VR8 scanner, whose channels are mirror pan/tilt, colour and gobo macros: every look was the same).
+- **Profiles say where they are kept**: the path in the Quick Start message and the History box, with **📂 Open folder** (`~/.qlc_swiss_knife/profiles/`).
+- **Function Porter: *Make PANIC RESET a script*** (on by default): a target whose PANIC RESET is a plain scene (it cannot darken running looks) gets the script form, as Doctor D017 does, so the ported functions are stopped too.
+- **Doctor fixes with a choice** (each opt-in, new file, in the report; the *how* is chosen above the findings): **D013** give 0 ms chaser steps a duration in ms or a tempo in BPM; **D004** a chaser with one step is merged into its scene (or removed), an empty one removed; **D003** broken buttons / CueLists are rewired to the function (chaser) with the same name, else unlinked; **D015** unnamed functions named from the button that starts them or their parent chaser. Command line: `--timing 500ms|120bpm`, `--d004`, `--d003`, `--d015`.
+- **Sessions keep the Quick Start setup**: rig, fixture files, groups, naming and style options, stage and project name come back when a `.qsk` is opened.
+- **Live check in CI**: `docker/qlc-check/Dockerfile` (QLC+ 5.2.2 built headless) and `.github/workflows/qlc-live-check.yml` run `tools/qlc_check.py` on the golden workspaces (advisory until its first green run).
+
+### Fixed
+- **The live check reported Chase / Stripes buttons "dark" at random**: a chaser that starts on a dark step is dark for part of its cycle. The check now watches one whole cycle of the look before it calls a button dark.
+
+## [2.3.0] — 2026-10-05
+
+**The new-show flow.** Starting a show from nothing is now one path, and a profile can start it.
+
+### Added
+- **Fixtures → 🎛 Open it as the show**: after *Save as new file…* the saved file becomes the show in progress (as in Quick Start).
+- **Guided route *New show***: The rig → Groups → Looks → VC Editor → Stage → Setlist → Show Book → Doctor; a third route card on Start and in the ⌘K palette.
+- **Profiles that start a show from nothing**: Quick Start's *Save the rig as a profile* (rig, fixture files, options, stage) and, on Start, *Start a show from a profile*. `python -m core.profile rig` / `build` without `--show` do the same on the command line.
+- **Profile step editor** (History › Do it again › ✎ Edit steps): drop a step, reorder, rename; the left-out reasons stay visible.
+- **Setlist in fewer columns**: the QLC+ function list is a drawer (docked on wide windows, an overlay on narrow ones; remembered).
+
+### Changed
+- `/api/checklist/*` and `/api/techrider/*` are thin wrappers over the Show Book.
+
+### Removed
+- `core/merger.py` and `/api/merger/*` (the Function Porter has done their work since 1.9).
+
+
+## [2.2.1] — 2026-10-05
+
+**Finishing the UI polish.** The three items left over from 2.2.0, plus the white-window fix.
+
+### Changed
+- **Function Porter — "Apply will …" in the footer of steps 2–5**, like the other tools: step 2 *port N functions · M VC widgets · copy K fixtures*, step 3 *X of Y fixtures mapped* (amber when some have no target), step 4 the plan's errors / warnings (red when blocked), step 5 *one History step* or *write a new file*. It follows every tick, mapping and copy choice.
+- **Function Porter step 3 — mapping first.** The two stage maps are folded under *🗺 Stage maps* (closed by default; hover or click a mapping row to ring its fixtures once opened).
+- **One type scale in the stylesheet.** Seven odd sizes (8–10.5, 11.5, 12.5, 13.5 px) are now the nearest step, and every size on the scale is a token: `--fs-micro` 10 · `--fs-small` 11 · `--fs-ui` 12 · `--fs-body` 13 · `--fs-lead` 14 · `--fs-section` 15 · `--fs-title` 20. The dense on-canvas parts (VC Editor widgets, fixture chips, the stage-plot SVG) keep their small sizes on purpose. Look Builder already had its footer line since 2.2.0.
+
 ### Fixed
 - **Native window opened white** (giopas, 4 Oct): the window could load the page before the server was listening, and WKWebView does not retry. `python3 app.py` now waits until the server answers (up to 15 s) before opening the window, and says so plainly if port 5731 is taken (e.g. by another Swiss Knife still running). `QSK_DEBUG=1 python3 app.py` enables *Inspect Element* in the window.
 

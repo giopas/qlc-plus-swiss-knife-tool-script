@@ -1387,6 +1387,9 @@ function qsLoadSummary() {
     if (_qsLoadedDefs.length > 0) {
       html += '<p><b>Fixture types:</b> ' + _qsLoadedDefs.map(d => `${_esc(d.manufacturer)} ${_esc(d.model)}`).join(', ') + '</p>';
     }
+    if ((d.look_limits || []).length) {
+      html += '<p class="qs-limits">⚠ ' + d.look_limits.map(_esc).join('<br>⚠ ') + '</p>';
+    }
     html += '</div>';
     wrap.innerHTML = html;
   });
@@ -1441,6 +1444,35 @@ function qsPortFromShow() {
   if (typeof porterLoadTgt === 'function') porterLoadTgt();
   setStatus('Porter: target = your new rig (' + _qsLastSavedPath + '). Now load the existing show as the source, '
             + 'tick what to port in step 2; step 3 starts with Fan-in by stage position — different fixture types are translated by capability.', 'ok');
+}
+
+/** Keep the rig (and these options) as a Show Profile that starts a show from nothing. */
+async function qsSaveRigProfile() {
+  const name = (document.getElementById('qs-prof-name')?.value || '').trim();
+  if (!name) { setStatus('Give the profile a name.', 'warn'); return; }
+  const projectName = (document.getElementById('qs-project-name')?.value || '').trim();
+  try {
+    const d = await fetch('/api/profile/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, include_rig: true, steps: false, project_name: projectName,
+        stage: { w_mm: _qsStage.w_mm, d_mm: _qsStage.d_mm, h_mm: _qsStage.h_mm } }),
+    }).then(r => r.json());
+    if (d.error) { setStatus('✗ ' + d.error, 'error'); return; }
+    setStatus(`★ Profile '${d.name}' saved — the rig and these options — in ${d.path}. `
+      + 'Start a show from it: Start screen › Start a show from a profile.', 'ok');
+    _qsProfileFolderLink(d.path);
+  } catch (e) { setStatus('✗ ' + e.message, 'error'); }
+}
+
+/** Offer "Open folder" next to the profile row after a save. */
+function _qsProfileFolderLink(path) {
+  const row = document.querySelector('.qs-profile-row');
+  if (!row) return;
+  let a = document.getElementById('qs-prof-folder');
+  if (!a) { a = document.createElement('button'); a.id = 'qs-prof-folder'; a.className = 'btn btn-secondary'; row.appendChild(a); }
+  a.textContent = '📂 Open folder';
+  a.title = path;
+  a.onclick = () => fetch('/api/profile/open-folder', { method: 'POST' }).catch(() => {});
 }
 
 async function qsExport() {

@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v2.2.0
+# ⚡ QLC+ Swiss Knife — v2.4.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 

@@ -262,14 +262,22 @@
         <div class="sh-prof-new" id="sh-prof-new" hidden>
           <input id="sh-prof-name" class="filter-input" placeholder="profile name, e.g. Pub night" aria-label="Profile name">
           <input id="sh-prof-desc" class="filter-input" placeholder="what it does (optional)" aria-label="Profile description">
+          <label class="sh-opt" id="sh-prof-rig-row" hidden><input type="checkbox" id="sh-prof-rig">
+            Also keep the Quick Start rig (<span id="sh-prof-rig-n">0</span> fixtures) — the profile can then <b>start a show from nothing</b></label>
           <button class="btn btn-accent btn-sm" onclick="showSaveProfile()">★ Save profile</button>
         </div>
+        <div class="sh-note" id="sh-prof-where"></div>
         <div class="sh-foot-t" style="margin-top:4px">Apply a profile to this show</div>
         <div class="sh-row">
-          <select id="sh-prof-list" class="filter-input" aria-label="Saved profiles"></select>
+          <select id="sh-prof-list" class="filter-input" aria-label="Saved profiles" onchange="showProfSelected()"></select>
           <button class="btn btn-accent btn-sm" onclick="showApplyProfile()">▶ Apply</button>
+          <button class="btn btn-surface btn-sm" id="sh-prof-start" onclick="showStartProfile()" hidden
+                  title="This profile keeps its own rig: it builds a new show from it, then applies its steps. The show open now is replaced.">▶ Start a show</button>
+          <button class="btn btn-surface btn-sm" onclick="fetch('/api/profile/open-folder',{method:'POST'})" title="Show the folder where profiles are kept">📂 Open folder</button>
+          <button class="btn btn-surface btn-sm" onclick="showEditProfile()" title="Drop, reorder or rename the steps of the profile">✎ Edit steps</button>
           <button class="btn btn-surface btn-sm" onclick="showApplyProfileFile()" title="A .profile.json or .recipe.json from anywhere">From a file…</button>
         </div>
+        <div id="sh-prof-edit" class="sh-prof-edit" hidden></div>
         <div id="sh-prof-params"></div>
         <div id="sh-prof-result" class="sh-prof-result"></div>
       </div>
@@ -331,6 +339,13 @@
       <h3 class="start-h">Guided routes <small class="sb-optional">— the tools in order, one step at a time; any step, any order</small></h3>
       <div class="start-routes">
         <div class="rt-card">
+          <div class="rt-title">Start a new show</div>
+          <div class="rt-meta" data-route-meta="new"></div>
+          <div class="rt-desc">From your fixtures: the rig and a first set of looks, groups, your own looks and chasers, the console, the setlist, the paper for the crew.</div>
+          <ol class="rt-steps" data-route="new"></ol>
+          <button class="btn btn-accent btn-sm" onclick="routeStart('new')">▶ Start the route</button>
+        </div>
+        <div class="rt-card">
           <div class="rt-title">Adapt a show to a new venue</div>
           <div class="rt-meta" data-route-meta="adapt"></div>
           <div class="rt-desc">A smaller or different rig: keep the fixtures the venue has, clean up, groups and looks for them, the console, tonight's setlist.</div>
@@ -350,6 +365,7 @@
           <div class="rt-desc">The changes you made to one show — rig, fixes, groups, looks, pages — done again on the show you open.</div>
           <ol class="rt-steps" id="rt-prof-list"></ol>
           <button class="btn btn-accent btn-sm" onclick="startProfiles()">▶ Apply a profile…</button>
+          <button class="btn btn-surface btn-sm" onclick="startProfiles(true)" title="A profile that keeps its own rig builds a show from nothing">▶ Start a show from a profile</button>
         </div>
       </div>
 
@@ -473,7 +489,7 @@
     <input id="sl-import-file" type="file" accept=".txt" style="display:none"
            onchange="slImportSongsTxt(this)">
 
-    <div class="tab-split sl-fb-split">
+    <div class="tab-split sl-fb-split" id="sl-split">
 
       <!-- Col 1: Slot list -->
       <div class="slot-pane">
@@ -512,6 +528,8 @@
 
           <!-- Assignment -->
           <div class="fb-group-label">Assign</div>
+          <button class="btn btn-surface fb-wide-btn" id="btn-pool-toggle" onclick="slTogglePool()" aria-pressed="false"
+                  data-tooltip="Show or hide the list of QLC+ functions: pick one there, then ◀ Assign (or double-click it) to give it to the selected songs">▤ QLC+ functions</button>
           <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
                   onclick="slAssignFromPool()" disabled
                   data-tooltip="Assign the selected function to the selected song(s) — Ctrl+click or Shift+click songs to select multiple (double-click a function also works)">◀ Assign</button>
@@ -598,8 +616,9 @@
       <div class="fn-pool-pane">
         <div class="pane-header" style="display:flex;align-items:center;justify-content:space-between">
           <span>QLC+ Functions</span>
-          <button class="btn btn-surface btn-sm" onclick="refreshFnPool()"
+          <span><button class="btn btn-surface btn-sm" onclick="refreshFnPool()"
                   data-tooltip="Re-fetch functions with latest descriptions from Dictionary">↺</button>
+          <button class="btn btn-surface btn-sm" onclick="slTogglePool(false)" data-tooltip="Hide this list" aria-label="Hide the function list">✕</button></span>
         </div>
         <div class="fn-pool-search">
           <input id="fn-pool-filter" type="text" class="filter-input"
@@ -1013,6 +1032,8 @@
       </select>
       <button class="btn btn-surface" onclick="fixExportPdf()"
               data-tooltip="Export the rig as a scaled blueprint PDF">🖼 Blueprint PDF</button>
+      <button id="fix-btn-open" class="btn btn-surface" onclick="fixOpenAsShow()" style="display:none"
+              data-tooltip="Open the file you just saved: it becomes the show in progress, and every tool (Look Builder, VC Editor, Stage, Setlist…) works on it">🎛 Open it as the show</button>
       <button class="btn btn-accent" onclick="fixGenerateQxw()"
               data-tooltip="A new .qxw with this rig (fixtures, patch, 3D positions) — nothing else">💾 Save as new file…</button>
     </div>
@@ -1529,6 +1550,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter2" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterNextFromSelect()">Next: Map Fixtures →</button>
@@ -1537,11 +1559,14 @@
 
     <!-- Step 3: Map fixtures -->
     <div id="porter-panel-3" class="porter-panel" hidden>
-      <div class="porter-plans porter-plans-map">
-        <div class="porter-plan"><canvas id="porter-plan-source-3"></canvas></div>
-        <div class="porter-plan"><canvas id="porter-plan-target-3"></canvas></div>
-      </div>
-      <p class="porter-hint">Same colour = same target: each target fixture has a colour, and the source fixtures sent to it share that colour. Grey = no target.</p>
+      <details id="porter-maps-fold" class="porter-maps-fold">
+        <summary>🗺 Stage maps <span class="porter-maps-sub">— check the mapping on the stage (hover or click a row below to ring its fixtures)</span></summary>
+        <div class="porter-plans porter-plans-map">
+          <div class="porter-plan"><canvas id="porter-plan-source-3"></canvas></div>
+          <div class="porter-plan"><canvas id="porter-plan-target-3"></canvas></div>
+        </div>
+        <p class="porter-hint">Same colour = same target: each target fixture has a colour, and the source fixtures sent to it share that colour. Grey = no target.</p>
+      </details>
       <div id="porter-fixture-map" class="porter-fixture-map">
         <div class="porter-placeholder">Loading fixture mapping...</div>
       </div>
@@ -1551,6 +1576,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter3" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
         <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
                 data-tooltip="How Auto-Map pairs source and target fixtures">
@@ -1612,6 +1638,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter4" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
@@ -1631,6 +1658,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter5" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
@@ -2125,6 +2153,12 @@
           <label style="font-weight:600;font-size:12px;white-space:nowrap">Project name:</label>
           <input id="qs-project-name" class="filter-input" type="text" placeholder="My Show" style="flex:1;min-width:180px;font-size:12px">
           <span style="font-size:10px;color:var(--overlay0);white-space:nowrap">Filename: <span id="qs-filename-preview" style="font-family:monospace">quick_start_YYYYMMDD_HHMM.qxw</span></span>
+        </div>
+        <div class="qs-profile-row">
+          <label for="qs-prof-name">★ Keep this rig as a profile</label>
+          <input id="qs-prof-name" class="filter-input" type="text" placeholder="profile name, e.g. Club rig">
+          <button class="btn btn-surface btn-sm" onclick="qsSaveRigProfile()"
+                  title="The rig, its fixture definitions and these options, kept to start a show from nothing later: Start screen › Start a show from a profile, or python -m core.profile build">★ Save the rig as a profile</button>
         </div>
       </div>
     </div>

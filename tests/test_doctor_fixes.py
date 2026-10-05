@@ -34,10 +34,39 @@ def test_d003_dangling_removed():
     assert btn.find("Function").get("ID") == fixes.NONE_ID
 
 
-def test_cuelist_without_chaser_not_fixable():
-    root = ws(scene("1"), button(2, "1") + '<CueList Caption="S" ID="4"><Chaser>4294967295</Chaser></CueList>')
+def test_cuelist_without_chaser_is_rewired_only_on_request():
+    body = ('<Function ID="9" Type="Chaser" Name="S"><Step Number="0">1</Step></Function>')
+    root = ws(scene("1") + body, button(2, "1") + '<CueList Caption="S" ID="4"><Chaser>4294967295</Chaser></CueList>')
     r = fixes.fix(root, DEFS, codes={"D003"})
-    assert r.actions == [] and r.skipped and "no automatic fix" in r.skipped[0]["reason"]
+    assert r.actions == [] and r.skipped and "no chaser to rewire" in r.skipped[0]["reason"]
+    r = fixes.fix(root, DEFS, codes={"D003"}, options={"d003": "rewire"})
+    assert next(r.root.iter("CueList")).findtext("Chaser") == "9" and not r.after.by_code("D003")
+
+
+def test_d003_button_rewired_by_caption():
+    root = ws(scene("1"), '<Button Caption="X" ID="2"><Function ID="77"/></Button>')
+    name = next(e for e in root.iter() if e.tag.endswith("Function") and e.get("Name") and e.get("ID") == "1").get("Name")
+    next(b for b in root.iter() if b.tag.endswith("Button") and b.get("ID") == "2").set("Caption", name)
+    b2 = lambda rt: next(b for b in rt.iter("Button") if b.get("ID") == "2").find("Function").get("ID")
+    assert b2(fixes.fix(root, DEFS, codes={"D003"}, options={"d003": "rewire"}).root) == "1"
+    assert b2(fixes.fix(root, DEFS, codes={"D003"}).root) == fixes.NONE_ID      # default: unlink
+
+
+def test_d004_degenerate_chaser_merge_or_remove():
+    f = scene("1") + chaser("3", ["1"])
+    root = ws(f, button(9, "3"))
+    r = fixes.fix(root, DEFS, codes={"D004"})
+    b9 = lambda rt: next(b for b in rt.iter("Button") if b.get("ID") == "9").find("Function").get("ID")
+    assert "3" not in fids(r.root) and b9(r.root) == "1"
+    r = fixes.fix(root, DEFS, codes={"D004"}, options={"d004": "remove"})
+    assert "3" not in fids(r.root) and b9(r.root) == fixes.NONE_ID
+
+
+def test_d015_rename_from_button_caption():
+    f = '<Function ID="1" Type="Scene" Name="[1] Generic - Unassigned"><Speed FadeIn="0" FadeOut="0" Duration="0"/><FixtureVal ID="0">0,1</FixtureVal></Function>'
+    root = ws(f, '<Button Caption="Blue wash" ID="2"><Function ID="1"/></Button>')
+    r = fixes.fix(root, DEFS, codes={"D015"}, options={"d015": "rename"})
+    assert fn(r.root, "1").get("Name") == "Blue wash" and not r.after.by_code("D015")
 
 
 def test_d004_remove_empty_with_cascade():
@@ -195,7 +224,15 @@ def test_d013_zero_length_steps():
             '<Step Number="0">1</Step><Step Number="1">1</Step></Function>')
     rep = check(ws(scene("1") + body, button(2, "1") + button(3, "7")), DEFS)
     [f] = rep.by_code("D013")
-    assert "all step(s) last 0 ms" in f.message and not fixes.fixable(f)
+    assert "all step(s) last 0 ms" in f.message and fixes.fixable(f)
+    r = fixes.fix(ws(scene("1") + body, button(2, "1") + button(3, "7")), DEFS, codes={"D013"},
+                  options={"d013": {"bpm": 120}})
+    assert fn(r.root, "7").find("Speed").get("Duration") == "500" and not r.after.by_code("D013")
+    r = fixes.fix(ws(scene("1") + body, button(2, "1") + button(3, "7")), DEFS, codes={"D013"})
+    assert fn(r.root, "7").find("Speed").get("Duration") == "500"          # default 500 ms
+    r = fixes.fix(ws(scene("1") + body, button(2, "1") + button(3, "7")), DEFS, codes={"D013"},
+                  options={"d013": {"ms": 800}})
+    assert fn(r.root, "7").find("Speed").get("Duration") == "800"
 
 
 def test_d014_cuelist_empty_chaser():

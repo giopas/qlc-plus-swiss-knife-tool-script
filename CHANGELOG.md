@@ -7,6 +7,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.2.1] — 2026-10-05
+
+**Finishing the UI polish.** The three items left over from 2.2.0, plus the white-window fix.
+
+### Changed
+- **Function Porter — "Apply will …" in the footer of steps 2–5**, like the other tools: step 2 *port N functions · M VC widgets · copy K fixtures*, step 3 *X of Y fixtures mapped* (amber when some have no target), step 4 the plan's errors / warnings (red when blocked), step 5 *one History step* or *write a new file*. It follows every tick, mapping and copy choice.
+- **Function Porter step 3 — mapping first.** The two stage maps are folded under *🗺 Stage maps* (closed by default; hover or click a mapping row to ring its fixtures once opened).
+- **One type scale in the stylesheet.** Seven odd sizes (8–10.5, 11.5, 12.5, 13.5 px) are now the nearest step, and every size on the scale is a token: `--fs-micro` 10 · `--fs-small` 11 · `--fs-ui` 12 · `--fs-body` 13 · `--fs-lead` 14 · `--fs-section` 15 · `--fs-title` 20. The dense on-canvas parts (VC Editor widgets, fixture chips, the stage-plot SVG) keep their small sizes on purpose. Look Builder already had its footer line since 2.2.0.
+
 ### Fixed
 - **Native window opened white** (giopas, 4 Oct): the window could load the page before the server was listening, and WKWebView does not retry. `python3 app.py` now waits until the server answers (up to 15 s) before opening the window, and says so plainly if port 5731 is taken (e.g. by another Swiss Knife still running). `QSK_DEBUG=1 python3 app.py` enables *Inspect Element* in the window.
 

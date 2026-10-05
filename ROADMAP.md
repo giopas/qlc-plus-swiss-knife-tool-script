@@ -35,8 +35,10 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **2.0.1** ✅ | Paperwork for the crew | Patch sheet with DIP switches (PDF, thermal ticket, CSV); each setlist cue notes its original function and button; setlist CueList in one click; FloorShow in the test corpus |
 | **2.1.0** ✅ | Show Profiles | The changes of a show done again on another show — by meaning, not IDs; in the app (History › Do it again) or `python -m core.profile build`; the recipe onto another show; Quick Start tilt buttons and `_vN` names |
 | **2.2.0** ✅ | UI polish | After an outside review: "Apply will …" next to each Apply, guided routes first on Start, labelled header cards, the History card, ⌘K / Ctrl+K palette, readable tables, semantic colours and one spacing / type scale in every theme |
+| **2.2.1** ✅ | UI polish, finished | "Apply will …" in the Porter footers, the Porter step 3 stage maps folded (mapping first), one type scale in tokens, the white-window fix |
 | **2.3.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
+| **2.4.0** | MCP server | Claude Desktop / Cowork drive the same tools — the AI proposes, the tools write, the Doctor validates; ships inside the package (`--mcp`) |
 
-## After 2.2
+## After 2.4
 
-An MCP server so AI assistants can drive the deterministic tools, a MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.
+A MIDI/input mapping manager, audio-trigger helper, setlist import and tablet setlist, tech-rider integration, localisation (EN/IT/FR), and upstream bug reports to QLC+.

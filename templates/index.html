@@ -1529,6 +1529,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter2" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterNextFromSelect()">Next: Map Fixtures →</button>
@@ -1537,11 +1538,14 @@
 
     <!-- Step 3: Map fixtures -->
     <div id="porter-panel-3" class="porter-panel" hidden>
-      <div class="porter-plans porter-plans-map">
-        <div class="porter-plan"><canvas id="porter-plan-source-3"></canvas></div>
-        <div class="porter-plan"><canvas id="porter-plan-target-3"></canvas></div>
-      </div>
-      <p class="porter-hint">Same colour = same target: each target fixture has a colour, and the source fixtures sent to it share that colour. Grey = no target.</p>
+      <details id="porter-maps-fold" class="porter-maps-fold">
+        <summary>🗺 Stage maps <span class="porter-maps-sub">— check the mapping on the stage (hover or click a row below to ring its fixtures)</span></summary>
+        <div class="porter-plans porter-plans-map">
+          <div class="porter-plan"><canvas id="porter-plan-source-3"></canvas></div>
+          <div class="porter-plan"><canvas id="porter-plan-target-3"></canvas></div>
+        </div>
+        <p class="porter-hint">Same colour = same target: each target fixture has a colour, and the source fixtures sent to it share that colour. Grey = no target.</p>
+      </details>
       <div id="porter-fixture-map" class="porter-fixture-map">
         <div class="porter-placeholder">Loading fixture mapping...</div>
       </div>
@@ -1551,6 +1555,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter3" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
         <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
                 data-tooltip="How Auto-Map pairs source and target fixtures">
@@ -1612,6 +1617,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter4" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>
@@ -1631,6 +1637,7 @@
           <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
           Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
         </span>
+        <span class="out-outcome" id="oc-porter5" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()">📋 Copy Report</button>
         <div class="spacer"></div>

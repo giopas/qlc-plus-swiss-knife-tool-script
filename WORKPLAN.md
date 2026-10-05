@@ -4,6 +4,11 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
+**Status (5 Oct — v2.2.1 prepared; what is left is the packaging, then the MCP server):**
+- v2.2.0 was released (merged, tagged, pushed). **v2.2.1** closes the 3.2 leftovers on `feat/v2.2.1`: the Porter footers (steps 2–5) say what *Apply will do*, the step-3 stage maps are folded (mapping first), and the font sizes are one scale of tokens (`--fs-micro` … `--fs-title`; the dense VC Editor / fixture-chip / stage-plot sizes stay). It also carries the white-window fix (4 Oct). 653 tests.
+- giopas: the SSH keys are no longer in the repo folder (checked 5 Oct) — housekeeping item removed.
+- **Order decided: packaging first (Phase 3 → v2.3.0), then the MCP server (Phase 4 → v2.4.0).** Reasons: the packaged app is what makes the MCP server easy to connect (one executable to point Claude Desktop at, instead of a venv path), and the update check carries every later release to users. The MCP server is built as a subcommand of the same executable, so it ships inside the package. Everything else in §7 is parked.
+
 **Status (3 Oct, later — v2.1.0 prepared on `feat/v2.1.0`; giopas: "do 1, 2 and 5 together for the 2.1.0 release"):**
 - **Show Profiles** and the command-line build (3.1, below).
 - The recipe extras: saved from the History without saving the show, and replayed onto another show.
@@ -691,10 +696,7 @@ Checks (★ = included in Phase 1.0):
   - else the function itself.
 - 652 tests.
 
-*Next (not done)*:
-- Porter step 3 with the stage maps folded (mapping first);
-- Look Builder and Porter footers in the same "Apply will" form;
-- consolidating the remaining odd font sizes (8–13.5 px) onto the scale, tool by tool.
+*Done in v2.2.1 (5 Oct)*: the Porter step 3 with the stage maps folded (mapping first); the Porter footers in the same "Apply will" form (the Look Builder already had it); the odd font sizes (8–10.5, 11.5, 12.5, 13.5 px) onto the scale, with tokens `--fs-micro` 10 · `--fs-small` 11 · `--fs-ui` 12 · `--fs-body` 13 · `--fs-lead` 14 · `--fs-section` 15 · `--fs-title` 20. Left as they are on purpose: the on-canvas sizes of the VC Editor widgets, the fixture chips and the stage-plot SVG; inline `font-size` in a few JS-built tables (about 70, mostly 10–12 px).
 
 ### Phase 3 — Install like an app → **v2.3.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct, v2.2.0 until 4 Oct)*
 
@@ -718,6 +720,24 @@ Checks (★ = included in Phase 1.0):
 - [ ] README *Install*: download first, sources second; wiki *Installing and updating*.
 - [ ] Release **v2.3.0**.
 
+### Phase 4 — The MCP server → **v2.4.0** *(after the packages; was "Backlog: MCP server / AI layer")*
+
+*Goal*: Claude Desktop / Cowork can drive the deterministic tools on the user's existing subscription. **The AI proposes, the tools write, the Doctor validates** — the same rule as everywhere else: nothing is written without a new file, nothing is exported with new errors.
+
+*Plan* (to confirm with giopas before building):
+- **Where it lives**: `python -m core.mcp_server` (stdio), and `QLC Swiss Knife --mcp` in the packaged app — the same code, no second install. A Claude Desktop config snippet in the wiki and in the app's settings (*Connect to Claude*).
+- **Built on what exists**: the tools already change the show through one call per action (the recipe / Show Profile mechanism: `core/recipe.py`, `core/retarget.py`). The MCP tools are thin wrappers over those calls, so a session driven by an AI also produces a recipe and a History with the same undo.
+- **Tools (first cut)**: `open_show`, `doctor_check`, `doctor_fix`, `reduce_rig`, `port_functions`, `build_looks`, `build_chaser`, `edit_vc` (create / wire / pages), `setlist_apply`, `compare`, `show_history`, `save_show` (always a new `_v<N+1>` file + report). Read-only helpers first: `list_fixtures`, `list_functions`, `describe_show`.
+- **Safety**: one show in progress per server; a write tool returns the Doctor's new findings and the History step, never raw XML; `save_show` is the only way to write a file and never overwrites; paths limited to folders the user lists in the settings.
+- **Tests**: a fake MCP client runs the Pub-test route through the tools and must give the identical file as the recipe replay.
+
+*Tasks*:
+- [ ] Decide the tool list and the folder permissions with giopas.
+- [ ] `core/mcp_server.py` (stdio) + `--mcp` entry in the package.
+- [ ] Route test through a fake client = the recipe's byte-identical file.
+- [ ] Wiki *Connect Claude to Swiss Knife*; README line; the settings snippet.
+- [ ] Release **v2.4.0**.
+
 ---
 
 ## 6. QLC+ open-check (manual, before each release)
@@ -730,47 +750,20 @@ Checks (★ = included in Phase 1.0):
 
 ---
 
-## 7. Backlog / next steps (after v2.0)
+## 7. Next steps
 
-*The old forum drafts (`FORUM_v1.4.0` … `v1.9.0.bbcode`) were deleted on 1 Oct; the history is in the CHANGELOG and the release notes.*
+**Only two items are scheduled (giopas, 5 Oct):** 1. **Phase 3 — packages and the update check (v2.3.0)**. 2. **Phase 4 — the MCP server (v2.4.0)**. Both are in §5.
 
-**First after v2.0 (giopas, 2 Oct):** the *recipe* — every History step's options recorded in JSON, replayed by the command line to a byte-identical file (the Pub test's "repeatable" criterion), with Show Profiles. *Built 2 Oct as 2.9 (above); Show Profiles built 3 Oct as 3.1 (v2.1.0).*
-
-**Proposed by giopas (3 Oct) — to schedule:**
-- **(done 3 Oct, released in v2.0.1: Patch sheet in Show Paperwork)** **Patch printouts like OH Show's tools** (inspiration: apps.fewday.go.yn.fr/QLC — *DMX Patch PDF* with DIP-switch diagrams, and a *Receipt printer* patch list; discussed in QLC+ issue #2086, where the maintainer prefers QLC+ to export and external tools to print — Swiss Knife is such a tool). Already covered by Show Paperwork: patch list (PDF/CSV), tech rider, crew checklist with stage plot. To add, in Show Paperwork:
-  - a **Patch sheet** section: event / venue, date and an optional logo in the header; fixtures by universe, address, channels, mode; a **DIP-switch diagram** per fixture (address in binary, 9 or 10 switches, ON = up, switch 1 = 1);
-  - a **narrow format** for 58 / 80 mm thermal printers (PDF page width + plain text), one block per fixture; direct Bluetooth/USB printing stays out (not reachable from the native window);
-  - the patch CSV with the columns proposed in #2086 (universe, address, manufacturer, model, mode, name, UTF-8) so it matches what QLC+ may export;
-  - credit OH Show in the docs as the inspiration.
-- *(3 Oct, giopas testing: in QLC+ 5.2.2 a typed note is kept only after Enter, and QLC+ doesn't mark the show changed — save by hand; documented. A Quick Start show has no CueList → VC Editor › Setlist CueList › ＋ new empty setlist chaser, added; then made visible: a box at the top of ＋ Add & wire, a button in the Setlist's empty slot list, *Use for a new setlist* on a selected CueList (v2.0.1). Thermal ticket not tested on a real printer.)*
-- **(done 3 Oct, released in v2.0.1)** **Setlist: the reference in the cue list Notes.** QLC+ keeps a note per chaser step (`<Step … Note="…">`, saved and reloaded by QLC+ 5; the VC CueList shows and edits it). When the Setlist builds the CueList, write in each step's note the **original** function and its button (e.g. `↪ Song 22 · btn on 2. EFFECTS`), not the copy. Keep notes the user typed in QLC+ (only notes starting with `↪` are ours). Bonus: QLC+ drops Swiss Knife's own `SwissKnifeClone` attribute when it re-saves a show, the note survives — the Setlist can read the reference back from it.
-
-**Left over from 2.6 (1 Oct):**
-- Setlist in fewer columns: slot list + songs, the QLC+ functions in a drawer (fits at 1280 px today, but crowded).
-- `/api/checklist/*`, `/api/techrider/*` as thin wrappers over `showbook`; retire `core/merger.py` and `/api/merger/*` (the Porter does it all).
-- Fixtures: "open it as the show" after 💾 Save as new file… (as Quick Start does).
-- Guided route for *New show* (Quick Start → Looks → VC → Stage → Paperwork) once Fixtures opens its result as the show.
-
-**Found during Phase 0 (small, do when touching the area):**
-- ~~`core/fixture.py` hard-codes `XRot="65"`~~ — done in v2.1.0 (keeps the show's tilt, else `default_x_rot`).
-- ~~Quick Start `qsSetOrientation()` without buttons~~ — done in v2.1.0 (*Beam (tilt)*: Down / Across / Up / Auto).
-- ~~Quick Start file name with a timestamp~~ — done in v2.1.0 (`<project>_v1.qxw`, then the next free `_vN`).
-- Housekeeping: the repo folder holds SSH private keys (`ssh_github_key`, `github-giopas-ssh-hey.txt`) — git-ignored, but better moved to `~/.ssh`. `Old and tests/` is ignored and can be archived.
-
-
-- ~~**Show Profile**~~ and ~~**command-line pipeline**~~ — done in v2.1.0 (3.1): a profile is the recipe by meaning; `python -m core.profile build`. Still open: a profile that starts a show from nothing (Quick Start rig inside it), a step editor.
-- **MCP server / AI layer**: expose the deterministic tools (reduce, port, build looks, build VC, doctor) to Claude Desktop/Cowork on the existing subscription. The AI proposes; the tools write; Doctor validates. The API-key route is optional and later.
-- **PANIC RESET as a Scene** (seen on BarShow → SmallShow, 29 Sep): a scene at 0 cannot darken HTP channels of a running look. Doctor could flag a PANIC RESET that is a plain Scene and suggest the Quick Start script form (stop functions + neutral scene); the Porter could offer to convert it when porting.
-- **Look Builder follow-ups** (from 2.3): Doctor D013 fix using the chaser timing choice (ms / BPM); chasers in QLC+ *beats* tempo (tap/BPM sync) instead of fixed ms; looks with a moving-head position (pan/tilt presets instead of centre); save your own palettes; RGB-matrix patterns for pixel bars.
-- **Stage follow-ups** (from 2.5): ~~edit fixture positions in the same views~~ (done 1.8.1); fixture tilt aiming at a point / a mesh (reuse `qxw_builder.default_x_rot`); mesh thumbnails in the library; hide/show meshes (`Hidden`); copy meshes between shows (Porter); rotated footprints in the plan view (now the axis-aligned box).
-- **MIDI / input mapping manager**: re-patch inputs; MIDI learn simulation. This covers the recurring "MIDI input saved as None" issue.
-- **Audio triggers** helper (DMX-mode pitfalls documented).
-- Setlist: import setlists from txt/csv/clipboard; an HTML setlist for a tablet on stage.
-- Tech Rider: pull the patch, tilt and meshes into the rider and the blueprint PDF.
-- Workspace diff: compare two versions functionally (fixtures, functions, VC), not as text.
-- Packaging: PyInstaller builds for macOS and Windows; community template and profile library.
-- Localisation (EN / IT / FR).
-- Upstream: report QLC+ 5 bugs found along the way (RGBMatrix orientation, Audio Triggers DMX mode, shared-scene latch) to the QLC+ project.
+**Parked — not scheduled, kept so nothing is lost** (take one up only when giopas asks):
+- Setlist in fewer columns (functions in a drawer); `/api/checklist|techrider` as thin wrappers and retire `core/merger.py`; Fixtures *open it as the show*, then a guided route for *New show*.
+- Show Profile that starts a show from nothing; a profile step editor.
+- Doctor: PANIC RESET as a plain Scene fix in the Porter; D013 fix with the timing choice; unbuilt fixes (D002 renumbering, D003 repairs, D004, D015 names).
+- Look Builder: beats tempo, moving-head positions, own palettes, matrix patterns for pixel bars. Stage: fixture tilt aiming, mesh thumbnails, hide/show meshes, copy meshes between shows.
+- MIDI / input mapping manager; audio-trigger helper; setlist import and a tablet setlist; tech rider with patch, tilt and meshes.
+- Quick Start: save options in the session; whole-rig *Chase* / *Stripes* buttons intermittently dark in the live check; `tools/qlc_check.py` in CI.
+- Localisation (EN / IT / FR); community template and profile library.
+- Upstream reports to QLC+: `VCSlider::loadXMLLevel` over-read after an empty `<Level/>` on unindented XML; RGB-mode matrices ignoring *DimmerControl*; 5.2.2 script-command race; RGBMatrix orientation; Audio Triggers DMX mode; shared-scene latch.
+- Housekeeping: `Old and tests/` is git-ignored and can be archived.
 
 ---
 
@@ -1020,20 +1013,26 @@ cd wiki && git push origin master && cd ..
 ```
 Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked → 💾 Fix → open the new file in QLC+: PANIC RESET now stops a running look. Merge into `main` after the test (v1.5.0 is released with 2.2).
 
+**giopas — release v2.2.1 (the UI polish finished + the white-window fix), branch `feat/v2.2.1`:**
+```bash
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+git checkout feat/v2.2.1
+source ~/.venvs/swissknife/bin/activate
+python -m pytest -q
+git push -u origin feat/v2.2.1
+git checkout main
+git pull --ff-only
+git merge --no-ff feat/v2.2.1 -m "Release v2.2.1"
+python -m pytest -q
+git push origin main
+git tag -a v2.2.1 -m "v2.2.1"
+git push origin v2.2.1
+cd wiki
+git push origin master
+cd ..
+```
+(expect 653 passed.) GitHub Release: tag v2.2.1, title "v2.2.1 — the UI polish, finished", body `docs/release-notes/RELEASE_NOTES_v2.2.1.md`. The v2.2.0 GitHub Release (tag already pushed) is created the same way from `RELEASE_NOTES_v2.2.0.md`.
+
 **Next Cowork session:**
-00. **v2.2.0 prepared** — UI polish (3.2) on `feat/ui-polish` (from `main` after v2.1.0). giopas: look at it, then release. Next: **Phase 3 packages → v2.3.0**, then the MCP server.
-0. (done) **v2.1.0 released** (3.1 Show Profiles + the small items).
-1. (done) **v2.0.0 released** — the Pub test (2.8) and the recipe (2.9); forum post published (qlcplus.org/forum/viewtopic.php?p=84132); v1.1.1 release published (giopas). v2.0.1 released 3 Oct. (Leftovers of 2.6 in §7.)
-1g. (done 1 Oct) Phase 2.6 UI audit → v1.9.0 ready (giopas releases).
-1f. (done) v1.8.0 released (floor at 0.1 m confirmed by giopas).
-1e. (done) v1.7.0 released; Phase 2.5 Stage and Meshes.
-1d. (done) v1.6.0 tests; Phase 2.4 VC Builder.
-1c. (done) v1.5.0 tests; Phase 2.3 Look and Chaser Builder.
-2. (done) Phase 2.1 Workspace Doctor fixes.
-1a. Then Phase 1.6 Port MIDI / input control (needs giopas's show with MIDI controls in the corpus).
-1b. Then Phase 1.3 Show Book (test suite, VC Layout section vs Pub_6fix, Doctor summary section).
-2. (done 3 Oct) `FloorShow_8fix.qxw` in the corpus.
-3. Look into `QuickStart_6fix`'s whole-rig *Chase* / *Stripes* buttons: in the live check (QLC+ 5.2.2 headless) one of them is intermittently dark (a different one per run) — timing of the Collection (dimmer scene + matrix) start, or the check's 1 s settle?
-4. Porter backlog: channel translation between different fixture types (by capability, e.g. PAR → spot); Sequence step values; Show timelines; optional "compact frames" after pruning.
-5. Backlog candidates: `_vN` file name for the Quick Start download; save Quick Start options in the session; run `tools/qlc_check.py` in CI (build QLC+ 5.2.2 in a cached Docker image).
-6. Upstream reports (QLC+ forum/GitHub): `VCSlider::loadXMLLevel` token over-read after an empty `<Level/>` on unindented XML; RGB-mode matrices ignoring *DimmerControl*; 5.2.2 script-command race (if not covered by `ca8ffd41`). Doctor: add a check for fixtures whose definition won't be found next to the workspace.
+1. **Phase 3 — packages and the update check → v2.3.0.** Start with the PyInstaller spec and a local build on the Mac.
+2. **Phase 4 — the MCP server → v2.4.0.** Starts with the tool list and the folder permissions, agreed with giopas.

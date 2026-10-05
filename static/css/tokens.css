@@ -7,7 +7,7 @@
   --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
   /* v2.2 UI polish: one spacing scale, three text levels (+ small), one elevation */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px; --sp-5: 32px; --sp-6: 48px;
-  --fs-title: 20px; --fs-section: 15px; --fs-body: 13px; --fs-small: 11px;
+  --fs-title: 20px; --fs-section: 15px; --fs-lead: 14px; --fs-body: 13px; --fs-ui: 12px; --fs-small: 11px; --fs-micro: 10px;
 }
 
 /* ── Dark (default) ───────────────────────────────────────── */

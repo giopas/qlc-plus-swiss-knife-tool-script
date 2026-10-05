@@ -185,3 +185,19 @@ def test_ui_polish_v22():
     tokens = (Path(os.path.dirname(HERE), "static", "css", "tokens.css")).read_text(encoding="utf-8")
     for t in ("--success", "--warning", "--error", "--shadow-1", "--fs-title", "--sp-3"):
         assert tokens.count(t + ":") >= (3 if t in ("--success", "--warning", "--error") else 1), t
+
+
+def test_porter_footers_and_folded_maps_v221():
+    """v2.2.1: the Porter footers (steps 2-5) carry the "Apply will" slot, the
+    step-3 stage maps are folded, the type scale is a set of tokens."""
+    porter = HTML[HTML.index('id="porter-panel-2"'):HTML.index('id="porter-status"')]
+    for n in (2, 3, 4, 5):
+        assert f'id="oc-porter{n}"' in porter, n
+    p3 = HTML[HTML.index('id="porter-panel-3"'):]
+    assert p3.index('id="porter-maps-fold"') < p3.index('id="porter-fixture-map"')
+    root = Path(os.path.dirname(HERE))
+    tokens = (root / "static" / "css" / "tokens.css").read_text(encoding="utf-8")
+    for t in ("--fs-micro", "--fs-small", "--fs-ui", "--fs-body", "--fs-lead", "--fs-section", "--fs-title"):
+        assert t + ":" in tokens, t
+    css = (root / "static" / "css" / "style.css").read_text(encoding="utf-8")
+    assert not re.search(r"font-size:\s*(?:10\.5|11\.5|12\.5|13\.5)px", css)

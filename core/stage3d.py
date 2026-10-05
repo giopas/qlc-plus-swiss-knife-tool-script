@@ -281,6 +281,7 @@ def fixtures(root: ET.Element, qxf_defs=None) -> List[dict]:
         out.append({"id": fid, "key": f"f:{fid}",
                     "name": (fx.findtext("Name") or "").strip() if fx is not None else f"Fixture {fid}",
                     "x": x, "y": y, "z": z, "size_known": known,
+                    "rot": [_f(el, "XRot"), _f(el, "YRot"), _f(el, "ZRot")],
                     "place": {"x": round(x + w / 2), "z": round(z + d / 2), "bottom": bottom,
                               "top": round(bottom + h), "w": round(w), "h": round(h), "d": round(d),
                               "x0": round(x), "z0": round(z)}})
@@ -461,6 +462,101 @@ def remove_mesh(root, mid: str) -> dict:
     el = _el(root, mid)
     _monitor(root).remove(el)
     return {"removed": mid}
+
+
+def set_hidden(root, ids, hidden: bool) -> dict:
+    """Hide / show meshes (QLC+'s ``Hidden`` attribute) without deleting them."""
+    done = []
+    for mid in ids:
+        el = _el(root, str(mid))
+        it = _item(el)
+        keep = el.get("Hidden")
+        if hidden:
+            el.set("Hidden", "True")
+        elif keep is not None:
+            del el.attrib["Hidden"]
+        _write(el, it)
+        done.append(str(mid))
+    return {"ids": done, "hidden": bool(hidden)}
+
+
+AIM_HEIGHTS = ("centre", "top", "floor")
+
+
+def tilt_for(fx_pos, target) -> float:
+    """XRot (degrees) that points a hanging fixture at *target*.
+
+    Both are ``(z, height)`` pairs in mm (z from the back edge, height above
+    the floor).  0 = straight down, positive = toward +Z (the front)."""
+    dz = target[0] - fx_pos[0]
+    drop = fx_pos[1] - target[1]
+    if abs(dz) < 1e-6 and abs(drop) < 1e-6:
+        return 0.0
+    return round(math.degrees(math.atan2(dz, drop)), 1)
+
+
+def aim_fixtures(root, fids, *, point=None, mesh: Optional[str] = None, where: str = "centre",
+                 qxf_defs=None, qxw_path: str = "", mesh_dirs=()) -> dict:
+    """Tilt (XRot) the fixtures *fids* toward a *point* ``{z, height}`` (mm) or
+    toward a mesh (its centre, top or the floor under it).  Only the tilt
+    changes; the fixture's pan (YRot) and roll stay as they are."""
+    if where not in AIM_HEIGHTS:
+        raise StageError(f"Unknown aim height '{where}'.")
+    if mesh is not None and mesh != "":
+        m = next((x for x in meshes(root, qxw_path, mesh_dirs) if x["id"] == str(mesh)), None)
+        if m is None:
+            raise StageError(f"Mesh {mesh} not found.")
+        if not m["place"]:
+            raise StageError(f"Model file of '{m['label']}' not found - its position is unknown.")
+        pl = m["place"]
+        tz = pl["z"]
+        th = {"centre": (pl["bottom"] + pl["top"]) / 2, "top": pl["top"], "floor": 0}[where]
+        label = m["label"]
+    elif point:
+        tz, th = float(point.get("z", 0)), float(point.get("height", 0))
+        label = f"point (z {round(tz)} mm, h {round(th)} mm)"
+    else:
+        raise StageError("Choose a mesh or a point to aim at.")
+    mon = _monitor(root)
+    els = {e.get("ID"): e for e in (mon.findall("FxItem") if mon is not None else [])}
+    by = {f["id"]: f for f in fixtures(root, qxf_defs)}
+    done = []
+    for fid in fids:
+        fid = str(fid)
+        el, f = els.get(fid), by.get(fid)
+        if el is None or f is None:
+            raise StageError(f"Fixture {fid} is not on the 3D stage.")
+        pl = f["place"]
+        ang = tilt_for((pl["z"], (pl["bottom"] + pl["top"]) / 2), (tz, th))
+        before = f["rot"][0]
+        if round(ang, 4) == 0:
+            el.attrib.pop("XRot", None)
+        else:
+            el.set("XRot", _num(ang))
+        done.append({"id": fid, "name": f["name"], "before": before, "after": ang})
+    return {"aimed": done, "target": label}
+
+
+def thumb_svg(path: str, size: int = 64) -> str:
+    """A small front-view dot drawing of an OBJ model (cached)."""
+    key = (os.path.abspath(path), os.path.getmtime(path), size)
+    if key in _THUMBS:
+        return _THUMBS[key]
+    info = read_obj(path)
+    mn, mx = info["min"], info["max"]
+    w, h = (mx[0] - mn[0]) or 1e-6, (mx[1] - mn[1]) or 1e-6
+    sc = (size - 6) / max(w, h)
+    ox, oy = (size - w * sc) / 2, (size + h * sc) / 2
+    pts = sorted({(round(ox + (v[0] - mn[0]) * sc, 1), round(oy - (v[1] - mn[1]) * sc, 1))
+                  for v in info["verts"]})[:600]
+    dots = "".join(f'<circle cx="{x}" cy="{y}" r="0.9"/>' for x, y in pts)
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" '
+           f'width="{size}" height="{size}" fill="#8aa4c8">{dots}</svg>')
+    _THUMBS[key] = svg
+    return svg
+
+
+_THUMBS: dict = {}
 
 
 def set_stage(root, *, type: Optional[int] = None, w=None, h=None, d=None,

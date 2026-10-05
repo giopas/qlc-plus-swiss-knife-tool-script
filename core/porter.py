@@ -1020,8 +1020,8 @@ def validate(plan: dict) -> dict:
         return f"{i} '{inf['name']}'" if inf else i
 
     # ── Errors ────────────────────────────────────────────────────────────
-    if not func_ids and not (plan.get("copy_fixtures") or plan.get("copy_groups")):
-        errors.append("No functions selected (and no fixtures or groups to copy).")
+    if not func_ids and not (plan.get("copy_fixtures") or plan.get("copy_groups") or plan.get("copy_meshes")):
+        errors.append("No functions selected (and no fixtures, groups or meshes to copy).")
 
     for fid in unresolved:
         errors.append(f"Function ID {fid} is referenced but not found in source file.")
@@ -1355,6 +1355,77 @@ def copy_fixtures_into(src_root: ET.Element, tgt_root: ET.Element,
     return out
 
 
+def list_source_meshes() -> list[dict]:
+    """The source show's 3D-stage meshes: ``{id, label, res, found, hidden, place}``."""
+    if not _src["loaded"]:
+        return []
+    from core import stage3d as s3
+    return [{"id": m["id"], "label": m["label"], "res": m["res"], "found": m["found"],
+             "hidden": m["hidden"], "place": m["place"]}
+            for m in s3.meshes(_src["root"], _src.get("path", ""), s3.library_dirs())]
+
+
+def copy_meshes_into(src_root: ET.Element, tgt_root: ET.Element, ids, src_path: str = "",
+                     tgt_path: str = "") -> dict:
+    """Copy 3D-stage meshes from the source into the target: new IDs, the
+    model path made absolute when it only resolves next to the source file,
+    and the visible placement (centre, floor height) kept — scaled when the
+    two stages differ in size.  Returns ``{copied, skipped, log}``."""
+    out = {"copied": [], "skipped": [], "log": []}
+    ids = [str(i) for i in ids or []]
+    if not ids:
+        return out
+    from core import stage3d as s3
+    dirs = s3.library_dirs()
+    src_items = {m["id"]: m for m in s3.meshes(src_root, src_path, dirs)}
+    smon = s3._monitor(src_root)
+    sels = {e.get("ID"): e for e in (smon.findall("MeshItem") if smon is not None else [])}
+    tmon = s3._monitor(tgt_root, create=True)
+    if tmon is None:
+        out["skipped"] = ids
+        out["log"].append("The target has no 3D stage — meshes not copied.")
+        return out
+    sst, tst = s3.stage(src_root), s3.stage(tgt_root)
+    kx = tst["w"] / sst["w"] if sst["w"] else 1.0
+    kz = tst["d"] / sst["d"] if sst["d"] else 1.0
+    nums = [int(e.get("ID")) for e in tmon.findall("MeshItem") if (e.get("ID") or "").isdigit()]
+    nxt = max(nums, default=0)
+    for sid in ids:
+        el, it = sels.get(sid), src_items.get(sid)
+        if el is None or it is None:
+            out["skipped"].append(sid)
+            continue
+        new = copy.deepcopy(el)
+        nxt += 1
+        new.set("ID", str(nxt))
+        res = new.get("Res", "")
+        if res and not os.path.isabs(res):
+            in_system = any(os.path.isfile(os.path.join(d, res)) for d in s3.SYSTEM_MESH_DIRS)
+            found = s3.resolve(res, src_path, dirs)
+            if found and not in_system:
+                new.set("Res", os.path.abspath(found))
+        tmon.append(new)
+        label = it["label"]
+        pl = it["place"]
+        if pl:
+            try:
+                s3.move_to(tgt_root, str(nxt), x=pl["x"] * kx, z=pl["z"] * kz, bottom=pl["bottom"],
+                           qxw_path=tgt_path, mesh_dirs=dirs)
+            except s3.StageError:
+                pass
+        else:
+            out["log"].append(f"'{label}': model file not found here — copied as it is, position not adjusted")
+        out["copied"].append({"src": sid, "id": str(nxt), "label": label})
+    scaled = (round(kx, 3), round(kz, 3)) != (1.0, 1.0)
+    if out["copied"]:
+        out["log"].insert(0, f"3D meshes: {len(out['copied'])} copied"
+                          + (" (positions scaled to the target stage)" if scaled else "")
+                          + " — fine-tune them in Stage & Meshes")
+    if out["skipped"]:
+        out["log"].append(f"{len(out['skipped'])} mesh(es) not found in the source — skipped")
+    return out
+
+
 def _grid(root: ET.Element) -> tuple[float, float, float]:
     g = root.find("Engine/Monitor/Grid")
     try:
@@ -1634,6 +1705,10 @@ def _build(plan: dict) -> dict:
     # ── 5b. Wire the copied fixtures into the show's own looks (2.7) ──────
     wired = _wire_copies(plan, tgt_root, defs)
 
+    # ── 5c. Meshes copied from the source's 3D stage (2.5) ────────────────
+    meshes = copy_meshes_into(_src["root"], tgt_root, plan.get("copy_meshes") or [],
+                              _src.get("path", ""), _tgt.get("path", ""))
+
     # ── 6. Virtual Console ────────────────────────────────────────────────
     vc_result = None
     vc_opts = plan.get("vc") or {}
@@ -1687,6 +1762,7 @@ def _build(plan: dict) -> dict:
         "input_patch": input_patch,
         "copied_bindings": (copied_bindings or {}).get("log", []),
         "wired": wired,
+        "meshes": meshes,
         "root": tgt_root,
         "_defs": defs,
     }
@@ -2116,6 +2192,13 @@ def generate_report(plan: dict, validation: dict, result: dict | None = None) ->
     if copies and copies.get("log"):
         lines.append("── COPIED FROM THE SOURCE (fixtures / groups) ──")
         lines += [f"  {x}" for x in copies["log"]]
+        lines.append("")
+
+    mz = (result or {}).get("meshes")
+    if mz and mz.get("log"):
+        lines.append("── 3D MESHES COPIED ──")
+        lines += [f"  {x}" for x in mz["log"]]
+        lines += [f"  · {c['label']}  (mesh {c['src']} → {c['id']})" for c in mz.get("copied", [])]
         lines.append("")
 
     wired = (result or {}).get("wired")

@@ -38,7 +38,7 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **2.2.1** ✅ | UI polish, finished | "Apply will …" in the Porter footers, the Porter step 3 stage maps folded (mapping first), one type scale in tokens, the white-window fix |
 | **2.3.0** ✅ | New-show flow | Fixtures open as the show, a guided *New show* route, profiles that start a show from nothing and a step editor, Setlist with the functions in a drawer, old routes retired |
 | **2.4.0** ✅ | Doctor and Quick Start | PANIC RESET fix in the Porter, D002 / D003 / D004 / D013 / D015 fixes, Quick Start options kept, live check in CI |
-| **2.5.0** | Looks and Stage | Beats tempo, moving-head positions, own palettes, matrix patterns for pixel bars; fixture aiming, mesh thumbnails, hide / show and copy meshes |
+| **2.5.0** ✅ | Looks and Stage | Beats tempo, moving-head positions, own palettes, matrix patterns for pixel bars; fixture aiming, mesh thumbnails, hide / show and copy meshes |
 | **2.6.0** | Paperwork, setlists, MIDI | MIDI / input mapping manager, setlist import and a tablet setlist, tech rider with patch, tilt and meshes |
 | **2.7.0** | Language and sharing | Interface in English, Italian and French; a community library of templates, palettes and profiles |
 | **2.8.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |

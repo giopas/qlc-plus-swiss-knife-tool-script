@@ -423,6 +423,7 @@ def parse_qxf(path: str) -> dict:
         modes         dict[str, int]     — mode_name → channel count (backward compat)
         channel_defs  dict[str, dict]    — name → rich channel definition
         mode_channels dict[str, list[str]] — mode_name → ordered channel names
+        mode_heads    dict[str, list[list[int]]] — mode_name → channel indexes of each head (pixel)
         physical      dict               — physical properties
         fine_pairs    dict[str, dict[str, str]] — mode_name → {coarse → fine}
 
@@ -454,6 +455,7 @@ def parse_qxf(path: str) -> dict:
     # ── Parse modes ───────────────────────────────────────────────────────
     modes: dict[str, int] = {}
     mode_channels: dict[str, list[str]] = {}
+    mode_heads: dict[str, list[list[int]]] = {}
     for mode_el in root.findall("f:Mode", _NS):
         mname = mode_el.get("Name", "Default")
         ch_els = mode_el.findall("f:Channel", _NS)
@@ -462,6 +464,9 @@ def parse_qxf(path: str) -> dict:
         names = [(e.text or "").strip() for e in ordered]
         modes[mname] = len(names)
         mode_channels[mname] = names
+        # <Head> = the channels (by index in the mode) of one pixel / cell
+        mode_heads[mname] = [[int(c.text) for c in h.findall("f:Channel", _NS) if (c.text or "").strip().isdigit()]
+                             for h in mode_el.findall("f:Head", _NS)]
 
     # ── Parse physical ────────────────────────────────────────────────────
     physical = _parse_physical(root)
@@ -482,6 +487,7 @@ def parse_qxf(path: str) -> dict:
         # New rich fields
         "channel_defs":  channel_defs,
         "mode_channels": mode_channels,
+        "mode_heads":    mode_heads,
         "physical":      physical,
         "fine_pairs":    fine_pairs,
     }

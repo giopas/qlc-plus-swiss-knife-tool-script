@@ -17,6 +17,9 @@ LOOKS = {"looks": [{"group": "all", "colours": ["Amber", "Blue"]}], "vc_page": "
 @pytest.fixture
 def c(tmp_path, monkeypatch):
     monkeypatch.setenv("QSK_PROFILES", str(tmp_path / "profiles"))
+    # whatever QLC+ is installed on this machine: pretend its fixture library is empty
+    (tmp_path / "qlc_fixtures").mkdir()
+    monkeypatch.setenv("QLCPLUS_FIXTURES", str(tmp_path / "qlc_fixtures"))
     monkeypatch.setenv("QSK_VC_TEMPLATES", str(tmp_path / "templates"))
     monkeypatch.setenv("QSK_LOOK_PRESETS", str(tmp_path / "p.json"))
     client = app.create_app().test_client()

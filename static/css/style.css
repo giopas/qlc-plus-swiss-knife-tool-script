@@ -3754,7 +3754,7 @@ body.nav-min .sn-dot { position: absolute; top: 6px; right: 8px; margin: 0; }
 body.nav-min .side-changes { display: none; }
 
 /* Porter: copy fixtures & groups (the QXW Merger, folded in) */
-.porter-copy-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; }
+.porter-copy-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; }
 .porter-copy-h { font-size: var(--fs-small); font-weight: 600; color: var(--text-dim); margin: 4px 0; }
 .porter-copy-list { max-height: 220px; overflow-y: auto; }
 .porter-copy-note { margin-bottom: 8px; }
@@ -4098,3 +4098,12 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .doc-opt { font-size: var(--fs-ui); color: var(--text-dim); padding: 4px 12px 2px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .doc-opt select, .doc-opt input { font-size: var(--fs-ui); }
 .qs-limits { color: var(--yellow, #f9e2af); font-size: var(--fs-ui); margin: 6px 0 0; }
+
+/* Look Builder: position / matrix (v2.5) */
+.lb-poscustom { font-size: var(--fs-ui); color: var(--text-dim); display: inline-flex; gap: 4px; align-items: center; }
+
+/* v2.5.0 Stage: hidden meshes, library thumbnails */
+.st-m.hid rect { stroke-dasharray: 4 3; opacity: .45; }
+.st-m.hid text { opacity: .55; }
+.st-libname { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.st-thumb { width: 32px; height: 32px; flex: none; background: var(--surface-0); border-radius: 4px; }

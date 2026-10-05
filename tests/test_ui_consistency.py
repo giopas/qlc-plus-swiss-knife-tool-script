@@ -153,7 +153,7 @@ def test_inspector_tabs_in_look_builder_and_stage():
     js = Path(os.path.dirname(HERE), "static", "js")
     looks = (js / "looks.js").read_text(encoding="utf-8")
     stage = (js / "stage3d.js").read_text(encoding="utf-8")
-    assert set(re.findall(r'data-lbpane="(\w+)"', looks)) == {"looks", "chaser"}
+    assert set(re.findall(r'data-lbpane="(\w+)"', looks)) == {"looks", "chaser", "matrix"}
     assert set(re.findall(r'data-stpane="(\w+)"', stage)) == {"select", "place", "add", "stage", "groups"}
 
 

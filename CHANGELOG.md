@@ -8,6 +8,20 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.5.0] — 2026-10-05
+
+**Looks and Stage.** The Look Builder learns beats, positions, own palettes and pixel bars; the stage learns to aim, hide and copy.
+
+### Added
+- **Look Builder: chasers in QLC+ beats tempo** — with *BPM* timing a *Beats* box writes the chaser's tempo as beats (`TempoType Beats`, 1/8-beat steps), so it follows QLC+'s tempo / tap instead of fixed milliseconds.
+- **Look Builder: moving-head positions** — looks and chasers take a **position** (Centre, Left, Right, Back, Front, or your own pan/tilt in %); the scene is named `<colour> @ <position>`.
+- **Look Builder: your own palettes** — *★ Save palette* keeps the colours you picked in `~/.qlc_swiss_knife/look_palettes.json` (`QSK_LOOK_PALETTES`); they sit next to Warm / Cold / Scenic and can be deleted.
+- **Look Builder: RGB-matrix patterns for pixel bars** (Chase, Even-Odd, Gradient, Plasma, Waves, Stripes) — one row per bar, one column per pixel head (read from the .qxf modes); a bar with a master dimmer gets a Collection (dimmer-opening scene + matrix), and a *Matrices* row on the VC.
+- **Stage & Meshes: aim fixtures** — tilt (XRot) toward a mesh (its centre, top or the floor under it) or a point (z, height); pan and roll stay, Undo brings the old tilt back.
+- **Stage & Meshes: 🙈 hide / 👁 show meshes** (QLC+'s `Hidden`) — hidden ones stay in the show and are drawn dashed in the views.
+- **Stage & Meshes: thumbnails** of the models in the library.
+- **Function Porter: copy meshes between shows** — a *Meshes* column in step 2; each copy gets a new ID, a full path to its model file, and the same visible place and floor height (scaled when the stages differ); listed in the port report.
+
 ## [2.4.0] — 2026-10-05
 
 **Doctor and Quick Start.** Found testing 2.3.0, plus the Doctor fixes that were left.

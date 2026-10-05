@@ -207,7 +207,7 @@ function _stRender() {
           const p = m.place;
           const off = p && p.bottom !== 0;
           return `<div class="st-item ${_stSet.has(m.id) ? 'on' : ''}" onclick="stageSelect('${m.id}', event)">
-            <span>${m.found ? '' : '⚠ '}${_esc(m.label)}</span>
+            <span>${m.found ? '' : '⚠ '}${m.hidden ? '<span title="Hidden in the 3D view">🙈 </span>' : ''}${_esc(m.label)}</span>
             <span class="vce-hint">${p ? `${off ? `<b style="color:var(--warning)">${p.bottom > 0 ? 'floats ' + p.bottom : 'sinks ' + (-p.bottom)} mm</b>` : 'on the floor'}` : 'file not found'}</span></div>`;
         }).join('') || '<div class="vce-hint">No meshes yet — add one below.</div>'}</div>
         <div class="lb-row">
@@ -246,7 +246,13 @@ function _stRender() {
 }
 
 function _stEditHtml() {
-  if (_stSet.size > 1) return `<h3>${_stSet.size} items selected</h3><div class="vce-hint">Place them together in the <a href="#" onclick="stageTab('place');return false">Place</a> tab; click one to edit it.</div>`;
+  if (_stSet.size > 1) {
+    const k = _stKinds();
+    return `<h3>${_stSet.size} items selected</h3><div class="vce-hint">Place them together in the <a href="#" onclick="stageTab('place');return false">Place</a> tab; click one to edit it.</div>
+      ${k.ms ? `<div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageHide(true)" title="Hide the selected meshes in QLC+'s 3D view (kept in the show)">🙈 Hide meshes</button>
+        <button class="btn btn-surface btn-sm" onclick="stageHide(false)">👁 Show meshes</button></div>` : ''}
+      ${k.fx ? _stAimHtml() : ''}`;
+  }
   const f = _stFx(_stSel);
   if (f) {
     const p = f.place;
@@ -258,7 +264,8 @@ function _stEditHtml() {
       </div>
       <div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageMoveFixture()">Move</button>
         <span class="vce-hint">body ${p.w} × ${p.h} × ${p.d} mm ${f.size_known ? '(from its .qxf)' : '(assumed — no .qxf dimensions)'} · tilt and pan stay as they are</span></div>
-      <div class="vce-hint">In the file (QLC+ 3D view): X ${f.x} · Y ${f.y} · Z ${f.z} mm</div>`;
+      ${_stAimHtml()}
+      <div class="vce-hint">In the file (QLC+ 3D view): X ${f.x} · Y ${f.y} · Z ${f.z} mm · tilt ${f.rot[0]}°</div>`;
   }
   const m = _stMesh(_stSel);
   if (!m) return `<h3>Selected mesh</h3><div class="vce-hint">Click a mesh in a view or in the list.</div>`;
@@ -277,6 +284,7 @@ function _stEditHtml() {
     <div class="lb-row">
       <button class="btn btn-surface btn-sm" onclick="stageMove()" ${m.found ? '' : 'disabled'}>Move</button>
       <button class="btn btn-surface btn-sm" onclick="stageFloor(['${m.id}'])" ${m.found ? '' : 'disabled'}>⤓ On the floor</button>
+      <button class="btn btn-surface btn-sm" onclick="stageHide(${m.hidden ? 'false' : 'true'})" title="Hide or show it in QLC+'s 3D view — the mesh stays in the show">${m.hidden ? '👁 Show' : '🙈 Hide'}</button>
       <span class="vce-hint">size ${p.w ?? '?'} × ${p.h ?? '?'} × ${p.d ?? '?'} mm (W×H×D as placed)</span>
     </div>
     <div class="lb-row"><span style="width:62px">Rotation</span>
@@ -425,7 +433,7 @@ function _stLibHtml() {
     <div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageSaveDirs()">Save folders</button>
       <input id="st-lq" class="filter-input" style="flex:1;min-width:0" placeholder="search models" value="${_esc(q)}" oninput="stageLibFilter()"></div>
     <div class="st-lib">${items.slice(0, 200).map(i => `
-      <div class="st-item"><span>${_esc(i.name)} <span class="vce-hint">${_esc(i.folder)}</span></span>
+      <div class="st-item"><span class="st-libname"><img class="st-thumb" loading="lazy" alt="" src="/api/stage/thumb?path=${encodeURIComponent(i.path)}">${_esc(i.name)} <span class="vce-hint">${_esc(i.folder)}</span></span>
         <button class="btn btn-surface btn-sm" onclick="stageAdd('${_esc(i.path).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">＋ Add</button></div>`).join('')
       || '<div class="vce-hint">No models found — add a folder above.</div>'}</div>
     <div class="lb-row"><input id="st-addpath" class="filter-input" style="flex:1;min-width:0" placeholder="…or the full path of an .obj file">
@@ -479,6 +487,35 @@ function stageTransform() {
           scale: [+_stVal('st-sx') / 100, +_stVal('st-sy') / 100, +_stVal('st-sz') / 100],
           keep_floor: document.getElementById('st-keep').checked });
 }
+function _stAimHtml() {
+  const ms = (_stS.meshes || []).filter(m => m.place);
+  const sel = _stVal('st-aim-t') || (ms[0] ? 'm:' + ms[0].id : 'p');
+  const opts = ms.map(m => `<option value="m:${m.id}" ${sel === 'm:' + m.id ? 'selected' : ''}>${_esc(m.label)}</option>`).join('')
+    + `<option value="p" ${sel === 'p' ? 'selected' : ''}>a point…</option>`;
+  const wh = _stVal('st-aim-w') || 'centre';
+  return `<div class="st-sec">Aim <span class="vce-hint">tilt only — pan and roll stay as they are</span></div>
+    <div class="lb-row"><label>at <select id="st-aim-t" class="filter-input" onchange="_stRender()">${opts}</select></label>
+      ${sel === 'p'
+        ? `<label>Z <input id="st-aim-z" type="number" step="100" class="filter-input rr-num" value="${_stVal('st-aim-z') || 3000}"> mm</label>
+           <label>height <input id="st-aim-h" type="number" step="100" class="filter-input rr-num" value="${_stVal('st-aim-h') || 0}"> mm</label>`
+        : `<label><select id="st-aim-w" class="filter-input">${[['centre', 'its centre'], ['top', 'its top'], ['floor', 'the floor under it']].map(([v, l]) =>
+            `<option value="${v}" ${wh === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`}
+      <button class="btn btn-surface btn-sm" onclick="stageAim()">🎯 Aim</button></div>
+    <div class="vce-hint">Z is measured from the back edge; the height from the floor. Undo brings the old tilt back.</div>`;
+}
+function stageAim() {
+  const fx = [..._stSet].filter(k => k.startsWith('f:')).map(k => k.slice(2));
+  if (!fx.length) return;
+  const t = _stVal('st-aim-t');
+  const body = { op: 'aim', fixtures: fx };
+  if (t.startsWith('m:')) { body.mesh = t.slice(2); body.where = _stVal('st-aim-w') || 'centre'; }
+  else body.point = { z: _stVal('st-aim-z'), height: _stVal('st-aim-h') };
+  _stOp(body);
+}
+function stageHide(h) {
+  const ids = [..._stSet].filter(k => !k.startsWith('f:'));
+  if (ids.length) _stOp({ op: h ? 'hide' : 'show', ids });
+}
 function stageRelink() { _stOp({ op: 'transform', id: _stSel, res: _stVal('st-res') }); }
 function stageAdd(path) { if ((path || '').trim()) _stOp({ op: 'add', res: path.trim() }); }
 function stageSetStage() {
@@ -497,7 +534,7 @@ function _stDraw() {
   const ph = D * k + 2 * pad, fh = H * k + 2 * pad;
   const fx = _stS.fixtures;
   const ms = _stS.meshes.filter(m => m.place);
-  const cls = m => 'st-m' + (_stSet.has(m.id) ? ' sel' : '');
+  const cls = m => 'st-m' + (_stSet.has(m.id) ? ' sel' : '') + (m.hidden ? ' hid' : '');
   // plan
   box.innerHTML = `<svg width="${W * k + 2 * pad}" height="${ph}" data-k="${k}">
     <rect x="${pad}" y="${pad}" width="${W * k}" height="${D * k}" class="st-floor"/>

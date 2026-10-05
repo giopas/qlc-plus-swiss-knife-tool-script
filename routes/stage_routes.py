@@ -169,6 +169,15 @@ def op():
         elif o == 'remove':
             res = s3.remove_mesh(r, mid)
             msg = 'Mesh removed.'
+        elif o in ('hide', 'show'):
+            ids = [str(i) for i in (d.get('ids') or ([mid] if mid else []))]
+            res = s3.set_hidden(r, ids, o == 'hide')
+            msg = f"{len(ids)} mesh(es) {'hidden' if o == 'hide' else 'shown'}."
+        elif o == 'aim':
+            res = s3.aim_fixtures(r, [str(i) for i in (d.get('fixtures') or [])],
+                                  point=d.get('point'), mesh=d.get('mesh'),
+                                  where=str(d.get('where') or 'centre'), qxf_defs=w['defs'], **kw)
+            msg = f"{len(res['aimed'])} fixture(s) aimed at {res['target']}."
         elif o == 'stage':
             t = d.get('type')
             res = s3.set_stage(r, type=None if t in (None, '') else int(t), w=_num(d.get('w')),
@@ -201,6 +210,20 @@ def op():
 @bp.route('/library')
 def library():
     return jsonify({'dirs': s3.library_dirs(), 'items': s3.library()[:2000]})
+
+
+@bp.route('/thumb')
+def thumb():
+    p = os.path.abspath(request.args.get('path', ''))
+    ok = p.lower().endswith('.obj') and os.path.isfile(p) and any(
+        p.startswith(os.path.abspath(d) + os.sep) for d in s3.library_dirs())
+    if not ok:
+        return Response('', status=404)
+    try:
+        return Response(s3.thumb_svg(p), mimetype='image/svg+xml',
+                        headers={'Cache-Control': 'max-age=3600'})
+    except (OSError, ValueError):
+        return Response('', status=404)
 
 
 @bp.route('/library-dirs', methods=['POST'])

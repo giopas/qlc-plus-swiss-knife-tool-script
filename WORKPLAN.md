@@ -4,10 +4,10 @@
 > Agreed 23 Sep 2026. Baseline: `main` @ `387db18` (v1.3.1).
 > Update the checkboxes and the *Status* line of each step as work lands. Anything new goes into §7 *Backlog* so nothing gets lost.
 
-**Status (5 Oct — v2.2.1 prepared; what is left is the packaging, then the MCP server):**
-- v2.2.0 was released (merged, tagged, pushed). **v2.2.1** closes the 3.2 leftovers on `feat/v2.2.1`: the Porter footers (steps 2–5) say what *Apply will do*, the step-3 stage maps are folded (mapping first), and the font sizes are one scale of tokens (`--fs-micro` … `--fs-title`; the dense VC Editor / fixture-chip / stage-plot sizes stay). It also carries the white-window fix (4 Oct). 653 tests.
-- giopas: the SSH keys are no longer in the repo folder (checked 5 Oct) — housekeeping item removed.
-- **Order decided: packaging first (Phase 3 → v2.3.0), then the MCP server (Phase 4 → v2.4.0).** Reasons: the packaged app is what makes the MCP server easy to connect (one executable to point Claude Desktop at, instead of a venv path), and the update check carries every later release to users. The MCP server is built as a subcommand of the same executable, so it ships inside the package. Everything else in §7 is parked.
+**Status (5 Oct, later — giopas: "work on points 1, 2, 3, 4, 5, 6, 7 and 9"; upstream reports dropped):**
+- v2.2.1 is prepared on `feat/v2.2.1` (the 3.2 leftovers + the white-window fix, 653 tests; giopas releases). The old *parked* list becomes **five themed releases** (Phase 3.3–3.7 below), built on `feat/v2.3.0` and its successors, stacked on `feat/v2.2.1`.
+- **Order (giopas, 5 Oct): v2.3.0 New-show flow · v2.4.0 Doctor + Quick Start · v2.5.0 Looks + Stage · v2.6.0 Paperwork, setlists, MIDI · v2.7.0 Localisation + community library — then packaging (v2.8.0) and the MCP server (v2.9.0).** Packaging still goes before the MCP server (one executable for Claude Desktop to point at; the update check carries later releases).
+- **Out of the plan:** the audio-trigger helper (giopas is not sure it is needed) and the upstream reports to QLC+ (probably solved in future QLC+ 5 releases). The SSH-keys housekeeping item is gone (checked 5 Oct).
 
 **Status (3 Oct, later — v2.1.0 prepared on `feat/v2.1.0`; giopas: "do 1, 2 and 5 together for the 2.1.0 release"):**
 - **Show Profiles** and the command-line build (3.1, below).
@@ -698,7 +698,41 @@ Checks (★ = included in Phase 1.0):
 
 *Done in v2.2.1 (5 Oct)*: the Porter step 3 with the stage maps folded (mapping first); the Porter footers in the same "Apply will" form (the Look Builder already had it); the odd font sizes (8–10.5, 11.5, 12.5, 13.5 px) onto the scale, with tokens `--fs-micro` 10 · `--fs-small` 11 · `--fs-ui` 12 · `--fs-body` 13 · `--fs-lead` 14 · `--fs-section` 15 · `--fs-title` 20. Left as they are on purpose: the on-canvas sizes of the VC Editor widgets, the fixture chips and the stage-plot SVG; inline `font-size` in a few JS-built tables (about 70, mostly 10–12 px).
 
-### Phase 3 — Install like an app → **v2.3.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct, v2.2.0 until 4 Oct)*
+### Phase 3.3–3.7 — Finishing the toolkit → **v2.3.0 … v2.7.0** *(giopas, 5 Oct; each release is tested by giopas on real shows before the next)*
+
+**3.3 New-show flow → v2.3.0**
+- [ ] **Fixtures "open it as the show"**: after 💾 Save as new file…, a button *🎛 Open it as the show* (as Quick Start has), the result becomes the show in progress.
+- [ ] **Guided route *New show***: Quick Start or Fixtures → Look Builder → VC Editor → Stage & Meshes → Show Paperwork → Doctor, a third route card on Start and in the ⌘K palette.
+- [ ] **A profile that starts a show from nothing**: the Quick Start rig and options saved inside the profile; `python -m core.profile build --new` builds the rig, then applies the steps; in the app *Start a show from a profile*.
+- [ ] **Profile step editor**: open a profile, drop a step, reorder steps, rename it; the left-out reasons stay visible.
+- [ ] **Setlist in fewer columns**: slot list + songs, the QLC+ functions in a drawer.
+- [ ] **Thin wrappers**: `/api/checklist/*` and `/api/techrider/*` over `showbook`; retire `core/merger.py` and `/api/merger/*` (tests moved to the Porter).
+- [ ] **Housekeeping**: `Old and tests/` archived as a zip outside the repo folder and removed from the working folder (the folder is git-ignored; nothing is lost from history).
+
+**3.4 Doctor and Quick Start → v2.4.0**
+- [ ] **PANIC RESET as a plain Scene**: the Porter offers to convert it to the script form when porting (as D017 does in the Doctor).
+- [ ] **D013 fix** with the timing choice (ms or BPM, as in the Look Builder).
+- [ ] **D002 renumbering** (duplicate function / widget IDs), **D003 repairs** (dangling CueList / button / chaser step: unlink or rewire), **D004** (degenerate chasers: remove or merge), **D015** (name suggestions from context). Each opt-in per finding, always into a new file, with the report.
+- [ ] **Quick Start options saved in the session** (rig, groups, naming profile, tilt, VC style).
+- [ ] **Whole-rig Chase / Stripes buttons**: find why one is intermittently dark in the live check (Collection start timing or the check's 1 s settle) and fix the cause.
+- [ ] **`tools/qlc_check.py` in CI**: a cached Docker image with a QLC+ 5.2.2 source build; the live check runs on the golden rigs on every push.
+
+**3.5 Looks and Stage → v2.5.0**
+- [ ] **Look Builder**: chasers in QLC+ *beats* tempo (BPM sync); looks with a moving-head **position** (pan/tilt presets); **own palettes** saved in the profile; **RGB-matrix patterns** for pixel bars.
+- [ ] **Stage & Meshes**: fixture **tilt aiming** at a point or a mesh (`qxw_builder.default_x_rot`); **mesh thumbnails** in the library; **hide / show** meshes (`Hidden`); **copy meshes between shows** (in the Porter).
+
+**3.6 Paperwork, setlists, MIDI → v2.6.0**
+- [ ] **MIDI / input mapping manager**: re-patch inputs across a show, MIDI-learn simulation; covers the recurring "MIDI input saved as None".
+- [ ] **Setlist import** from txt / csv / clipboard; **tablet setlist**: a plain HTML page of the setlist for a tablet on stage.
+- [ ] **Tech rider** with the patch, tilt and meshes (and in the blueprint PDF).
+
+**3.7 Localisation and community library → v2.7.0**
+- [ ] **Interface in EN / IT / FR** (strings in JSON, language setting; the wiki stays English).
+- [ ] **Community library**: share and download templates (VC templates, palettes, nomenclature profiles, Show Profiles) as plain files; import / export from the app. Local files only — no server, no network call besides the optional update check later.
+
+*Out of the plan (giopas, 5 Oct):* the audio-trigger helper (he is not sure it is needed) and the upstream bug reports to QLC+ (probably solved in future QLC+ 5 releases).
+
+### Phase 3 — Install like an app → **v2.8.0** *(asked by giopas, 1 Oct; after v2.0; was v2.1.0 until 3 Oct, v2.2.0 until 4 Oct)*
 
 *Goal*: download, double-click, run — on macOS, Windows and Linux — and be told when a new version is out. As simple as StemDeck (github.com/stemdeckapp/stemdeck: a Tauri shell + bundled Python, a DMG per Mac architecture, a Windows ZIP with a self-contained `.exe`, a first-run note for unsigned apps; StemDeck itself has no auto-update). **Running from sources stays** exactly as today.
 
@@ -718,9 +752,9 @@ Checks (★ = included in Phase 1.0):
 - [ ] GitHub Actions release workflow (matrix build, smoke test: start, `GET /`, quit; upload the assets + `SHA256SUMS`).
 - [ ] Update check (`/api/update/check`, setting, header badge) and *Update and restart* per OS; tests with a fake release feed.
 - [ ] README *Install*: download first, sources second; wiki *Installing and updating*.
-- [ ] Release **v2.3.0**.
+- [ ] Release **v2.8.0**.
 
-### Phase 4 — The MCP server → **v2.4.0** *(after the packages; was "Backlog: MCP server / AI layer")*
+### Phase 4 — The MCP server → **v2.9.0** *(after the packages; was "Backlog: MCP server / AI layer")*
 
 *Goal*: Claude Desktop / Cowork can drive the deterministic tools on the user's existing subscription. **The AI proposes, the tools write, the Doctor validates** — the same rule as everywhere else: nothing is written without a new file, nothing is exported with new errors.
 
@@ -736,7 +770,7 @@ Checks (★ = included in Phase 1.0):
 - [ ] `core/mcp_server.py` (stdio) + `--mcp` entry in the package.
 - [ ] Route test through a fake client = the recipe's byte-identical file.
 - [ ] Wiki *Connect Claude to Swiss Knife*; README line; the settings snippet.
-- [ ] Release **v2.4.0**.
+- [ ] Release **v2.9.0**.
 
 ---
 
@@ -752,18 +786,9 @@ Checks (★ = included in Phase 1.0):
 
 ## 7. Next steps
 
-**Only two items are scheduled (giopas, 5 Oct):** 1. **Phase 3 — packages and the update check (v2.3.0)**. 2. **Phase 4 — the MCP server (v2.4.0)**. Both are in §5.
+**Scheduled (giopas, 5 Oct), in this order:** 3.3 New-show flow (v2.3.0) → 3.4 Doctor and Quick Start (v2.4.0) → 3.5 Looks and Stage (v2.5.0) → 3.6 Paperwork, setlists, MIDI (v2.6.0) → 3.7 Localisation and community library (v2.7.0) → **Phase 3 packages (v2.8.0)** → **Phase 4 MCP server (v2.9.0)**. All in §5.
 
-**Parked — not scheduled, kept so nothing is lost** (take one up only when giopas asks):
-- Setlist in fewer columns (functions in a drawer); `/api/checklist|techrider` as thin wrappers and retire `core/merger.py`; Fixtures *open it as the show*, then a guided route for *New show*.
-- Show Profile that starts a show from nothing; a profile step editor.
-- Doctor: PANIC RESET as a plain Scene fix in the Porter; D013 fix with the timing choice; unbuilt fixes (D002 renumbering, D003 repairs, D004, D015 names).
-- Look Builder: beats tempo, moving-head positions, own palettes, matrix patterns for pixel bars. Stage: fixture tilt aiming, mesh thumbnails, hide/show meshes, copy meshes between shows.
-- MIDI / input mapping manager; audio-trigger helper; setlist import and a tablet setlist; tech rider with patch, tilt and meshes.
-- Quick Start: save options in the session; whole-rig *Chase* / *Stripes* buttons intermittently dark in the live check; `tools/qlc_check.py` in CI.
-- Localisation (EN / IT / FR); community template and profile library.
-- Upstream reports to QLC+: `VCSlider::loadXMLLevel` over-read after an empty `<Level/>` on unindented XML; RGB-mode matrices ignoring *DimmerControl*; 5.2.2 script-command race; RGBMatrix orientation; Audio Triggers DMX mode; shared-scene latch.
-- Housekeeping: `Old and tests/` is git-ignored and can be archived.
+**Dropped:** the audio-trigger helper; the upstream bug reports to QLC+ (see §5, 3.3–3.7).
 
 ---
 
@@ -1034,5 +1059,5 @@ cd ..
 (expect 653 passed.) GitHub Release: tag v2.2.1, title "v2.2.1 — the UI polish, finished", body `docs/release-notes/RELEASE_NOTES_v2.2.1.md`. The v2.2.0 GitHub Release (tag already pushed) is created the same way from `RELEASE_NOTES_v2.2.0.md`.
 
 **Next Cowork session:**
-1. **Phase 3 — packages and the update check → v2.3.0.** Start with the PyInstaller spec and a local build on the Mac.
-2. **Phase 4 — the MCP server → v2.4.0.** Starts with the tool list and the folder permissions, agreed with giopas.
+1. Release 1 — **3.3 New-show flow → v2.3.0** (branch `feat/v2.3.0`, stacked on `feat/v2.2.1`).
+2. Then 3.4 → 3.7 in order; then packaging (v2.8.0) and the MCP server (v2.9.0).

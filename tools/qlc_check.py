@@ -117,6 +117,31 @@ class Workspace:
             best = max(best, self.fade_out_ms((st.text or "").strip(), _seen))
         return best
 
+    def cycle_ms(self, fid: str, _seen=None) -> int:
+        """How long one pass of a function takes, so the check can watch a whole
+        cycle: a chaser that starts on a dark step is dark for a while by design
+        (v2.4.0: this was the 'intermittently dark Chase / Stripes buttons')."""
+        _seen = _seen if _seen is not None else set()
+        f = self.functions.get(fid)
+        if f is None or fid in _seen:
+            return 0
+        _seen = _seen | {fid}
+        sp = f.find(f"{NS}Speed")
+        fin = int(sp.get("FadeIn") or 0) if sp is not None and (sp.get("FadeIn") or "").isdigit() else 0
+        dur = int(sp.get("Duration") or 0) if sp is not None and (sp.get("Duration") or "").isdigit() else 0
+        steps = f.findall(f"{NS}Step")
+        if f.get("Type") == "Collection":
+            return max([self.cycle_ms((st.text or "").strip(), _seen) for st in steps] + [0])
+        if f.get("Type") == "Chaser":
+            total = 0
+            for st in steps:
+                sf = int(st.get("FadeIn")) if (st.get("FadeIn") or "").isdigit() else 0
+                sh = int(st.get("Hold")) if (st.get("Hold") or "").isdigit() else 0
+                total += (sf + sh) if (sf or sh) else (fin + dur)
+                total = max(total, 0)
+            return total
+        return 0
+
     def find_function(self, name_part: str):
         for fid, f in self.functions.items():
             if name_part.lower() in (f.get("Name") or "").lower():
@@ -232,10 +257,10 @@ def check_panic_reset(ws: Workspace, qlc: QLC, settle: float) -> list:
         dark_ok = any(w in caption.lower() for w in ("blackout", "off"))
         if light and not dark_ok:
             seen = lit()
-            for _ in range(4):
-                if seen:
-                    break
-                time.sleep(0.3)
+            # watch one whole cycle of the look (a chaser may start on a dark step)
+            end = time.time() + max(1.2, min(ws.cycle_ms(fid) / 1000.0 + 0.5, 20.0))
+            while not seen and time.time() < end:
+                time.sleep(0.15)
                 seen = lit()
             if not seen:
                 errors.append(f"'{caption}': no fixture lights up (all DMX intensity/colour at 0)")

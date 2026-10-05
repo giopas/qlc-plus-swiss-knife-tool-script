@@ -71,3 +71,24 @@ def test_fixture_that_cannot_make_a_look_is_reported(c):
 def test_profile_folder_route(c):
     d = c.get("/api/profile/folder").get_json()
     assert d["path"] == str(c.tmp / "profiles")
+
+
+def test_live_check_watches_a_whole_cycle():
+    """The 'dark Chase button' was a chaser that starts on a dark step: the check
+    must wait one cycle, so it needs the cycle length."""
+    import importlib.util, xml.etree.ElementTree as ET, tempfile
+    spec = importlib.util.spec_from_file_location(
+        "qlc_check", os.path.join(os.path.dirname(__file__), "..", "tools", "qlc_check.py"))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    ns = m.NS
+    xml = (f'<Workspace xmlns="{ns[1:-1]}"><Engine>'
+           '<Function ID="1" Type="Scene" Name="a"/><Function ID="2" Type="Scene" Name="b"/>'
+           '<Function ID="3" Type="Chaser" Name="c"><Speed FadeIn="1000" FadeOut="1000" Duration="500"/>'
+           '<Step Number="0">2</Step><Step Number="1">1</Step></Function>'
+           '<Function ID="4" Type="Collection" Name="col"><Step Number="0">3</Step></Function>'
+           '</Engine></Workspace>')
+    p = tempfile.NamedTemporaryFile("w", suffix=".qxw", delete=False)
+    p.write(xml); p.close()
+    ws = m.Workspace(p.name)
+    assert ws.cycle_ms("3") == 3000 and ws.cycle_ms("4") == 3000 and ws.cycle_ms("1") == 0

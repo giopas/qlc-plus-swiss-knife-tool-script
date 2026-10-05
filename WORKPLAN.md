@@ -709,15 +709,15 @@ Checks (★ = included in Phase 1.0):
 - [x] **Thin wrappers**: `/api/checklist/*` and `/api/techrider/*` over `showbook`; retire `core/merger.py` and `/api/merger/*` (tests moved to the Porter).
 - [x] **Housekeeping**: (already gone from the folder) `Old and tests/` archived as a zip outside the repo folder and removed from the working folder (the folder is git-ignored; nothing is lost from history).
 
-**3.4 Doctor and Quick Start → v2.4.0**
-- [ ] **Looks for fixtures without a dimmer** (found by giopas testing v2.3.0 with an Abstract VR8 scanner: every look was the same neutral state): use the colour-wheel slots for Warm / Cold and the shutter/gobo-closed slot for BLACKOUT where the fixture has one; say in Quick Start step 5 and in the report which fixtures can't do a look.
-- [ ] **Say where a profile is saved**: path + *Open folder* in the Quick Start message and in the History profile box (`~/.qlc_swiss_knife/profiles/`).
-- [ ] **PANIC RESET as a plain Scene**: the Porter offers to convert it to the script form when porting (as D017 does in the Doctor).
-- [ ] **D013 fix** with the timing choice (ms or BPM, as in the Look Builder).
-- [ ] **D002 renumbering** (duplicate function / widget IDs), **D003 repairs** (dangling CueList / button / chaser step: unlink or rewire), **D004** (degenerate chasers: remove or merge), **D015** (name suggestions from context). Each opt-in per finding, always into a new file, with the report.
-- [ ] **Quick Start options saved in the session** (rig, groups, naming profile, tilt, VC style).
-- [ ] **Whole-rig Chase / Stripes buttons**: find why one is intermittently dark in the live check (Collection start timing or the check's 1 s settle) and fix the cause.
-- [ ] **`tools/qlc_check.py` in CI**: a cached Docker image with a QLC+ 5.2.2 source build; the live check runs on the golden rigs on every push.
+**3.4 Doctor and Quick Start → v2.4.0** ✅ *(5 Oct, 675 tests; giopas tests on real shows)*
+- [x] **Looks for fixtures without a dimmer** (found by giopas testing v2.3.0 with an Abstract VR8 scanner: every look was the same neutral state): use the colour-wheel slots for Warm / Cold and the shutter/gobo-closed slot for BLACKOUT where the fixture has one; say in Quick Start step 5 and in the report which fixtures can't do a look.
+- [x] **Say where a profile is saved**: path + *Open folder* in the Quick Start message and in the History profile box (`~/.qlc_swiss_knife/profiles/`).
+- [x] **PANIC RESET as a plain Scene**: the Porter offers to convert it to the script form when porting (as D017 does in the Doctor).
+- [x] **D013 fix** with the timing choice (ms or BPM, as in the Look Builder).
+- [x] **D002 renumbering** (duplicate function / widget IDs), **D003 repairs** (dangling CueList / button / chaser step: unlink or rewire), **D004** (degenerate chasers: remove or merge), **D015** (name suggestions from context). Each opt-in per finding, always into a new file, with the report.
+- [x] **Quick Start options saved in the session** (rig, groups, naming profile, tilt, VC style).
+- [x] **Whole-rig Chase / Stripes buttons**: cause found: a chaser that starts on a dark step; the check now watches one whole cycle (`Workspace.cycle_ms`).
+- [x] **`tools/qlc_check.py` in CI** *(Dockerfile + workflow written, not yet run on GitHub: advisory until the first green run)*: a cached Docker image with a QLC+ 5.2.2 source build; the live check runs on the golden rigs on every push.
 
 **3.5 Looks and Stage → v2.5.0**
 - [ ] **Look Builder**: chasers in QLC+ *beats* tempo (BPM sync); looks with a moving-head **position** (pan/tilt presets); **own palettes** saved in the profile; **RGB-matrix patterns** for pixel bars.

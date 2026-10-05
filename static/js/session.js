@@ -355,6 +355,14 @@ async function sessionSave() {
     event_date:        srv.event_date || '',
     tools:             _collectToolState(),
   };
+  // Quick Start: the rig, its fixture files, groups, naming / style options and stage (v2.4)
+  try {
+    const name = (document.getElementById('qs-project-name') || {}).value || '';
+    const body = { project_name: name.trim() };
+    if (typeof _qsStage !== 'undefined' && _qsStage) body.stage = { w_mm: _qsStage.w_mm, d_mm: _qsStage.d_mm, h_mm: _qsStage.h_mm };
+    const r = await fetch('/api/quickstart/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (r.ok) data.tools.quickstart = await r.json();
+  } catch { /* no rig: nothing to keep */ }
 
   const filename = _sess.filename || _suggestFilename();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -481,6 +489,18 @@ async function _restoreToolState(t) {
   setVal('fix-pdf-paper', pp.fixtures); setVal('sb-paper', pp.paperwork || pp.checklist || pp.techrider);
   // Brightness sliders: applied when the Brightness tab (re)loads its fixtures
   window._brtPendingRestore = t.brightness || null;
+  // Quick Start: the rig and its options come back as they were (v2.4)
+  if (t.quickstart && t.quickstart.format) {
+    try {
+      const r = await fetch('/api/quickstart/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t.quickstart) });
+      if (r.ok) {
+        setVal('qs-project-name', t.quickstart.project_name);
+        const st = t.quickstart.stage;
+        if (st && typeof _qsStage !== 'undefined') { _qsStage.w_mm = st.w_mm; _qsStage.d_mm = st.d_mm; _qsStage.h_mm = st.h_mm; }
+        if (typeof qsRefreshStatus === 'function') qsRefreshStatus();
+      }
+    } catch { /* reported when Quick Start is opened */ }
+  }
   // Two-file tools: reload their files from disk
   const load = async (side, path, fn) => {
     if (!path || typeof window[fn] !== 'function') return;

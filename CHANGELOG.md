@@ -8,6 +8,21 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.4.0] — 2026-10-05
+
+**Doctor and Quick Start.** Found testing 2.3.0, plus the Doctor fixes that were left.
+
+### Added
+- **Quick Start: looks for fixtures without a dimmer.** A fixture with no dimmer and no RGB uses its colour-wheel slots (named White / Red / Amber / Light Blue… ) for ALL ON, Warm White and Cold White, and its closed shutter for BLACKOUT. Step 5 now **says which fixtures cannot make a look** (found by giopas with an Abstract VR8 scanner, whose channels are mirror pan/tilt, colour and gobo macros: every look was the same).
+- **Profiles say where they are kept**: the path in the Quick Start message and the History box, with **📂 Open folder** (`~/.qlc_swiss_knife/profiles/`).
+- **Function Porter: *Make PANIC RESET a script*** (on by default): a target whose PANIC RESET is a plain scene (it cannot darken running looks) gets the script form, as Doctor D017 does, so the ported functions are stopped too.
+- **Doctor fixes with a choice** (each opt-in, new file, in the report; the *how* is chosen above the findings): **D013** give 0 ms chaser steps a duration in ms or a tempo in BPM; **D004** a chaser with one step is merged into its scene (or removed), an empty one removed; **D003** broken buttons / CueLists are rewired to the function (chaser) with the same name, else unlinked; **D015** unnamed functions named from the button that starts them or their parent chaser. Command line: `--timing 500ms|120bpm`, `--d004`, `--d003`, `--d015`.
+- **Sessions keep the Quick Start setup**: rig, fixture files, groups, naming and style options, stage and project name come back when a `.qsk` is opened.
+- **Live check in CI**: `docker/qlc-check/Dockerfile` (QLC+ 5.2.2 built headless) and `.github/workflows/qlc-live-check.yml` run `tools/qlc_check.py` on the golden workspaces (advisory until its first green run).
+
+### Fixed
+- **The live check reported Chase / Stripes buttons "dark" at random**: a chaser that starts on a dark step is dark for part of its cycle. The check now watches one whole cycle of the look before it calls a button dark.
+
 ## [2.3.0] — 2026-10-05
 
 **The new-show flow.** Starting a show from nothing is now one path, and a profile can start it.

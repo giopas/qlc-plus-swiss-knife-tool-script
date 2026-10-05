@@ -71,6 +71,8 @@ let _pTgtStale  = false;          // the show changed since it was read as the t
 let _pSrcGroups = [];             // /api/porter/source/groups
 let _pCopyFx    = new Set();      // source fixtures to copy into the target
 let _pCopyGrp   = new Set();      // source groups to copy
+let _pCopyMsh   = new Set();      // source 3D meshes to copy (2.5)
+let _pSrcMeshes = [];
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
@@ -221,13 +223,15 @@ function porterTgtFileChosen() {
 }
 
 async function _pFetchSourceData() {
-  const [fnR, fxR, grR] = await Promise.all([
+  const [fnR, fxR, grR, msR] = await Promise.all([
     fetch('/api/porter/source/functions'),
     fetch('/api/porter/source/fixtures'),
     fetch('/api/porter/source/groups'),
+    fetch('/api/porter/source/meshes'),
   ]);
   _pSrcGroups = grR.ok ? await grR.json() : [];
-  _pCopyFx = new Set(); _pCopyGrp = new Set();
+  _pSrcMeshes = msR.ok ? await msR.json() : [];
+  _pCopyFx = new Set(); _pCopyGrp = new Set(); _pCopyMsh = new Set();
   await _pFetchPlan('source');
   _pSrcFunctions = fnR.ok ? await fnR.json() : [];
   _pSrcFixtures  = fxR.ok ? await fxR.json() : [];
@@ -259,7 +263,7 @@ function _pSyncOutcome() {
   const n = 'porter' + _pStep;
   const c = _pClosure;
   const nFn = c ? c.function_ids.length : 0;
-  const nCopy = _pCopyFx.size + _pCopyGrp.size;
+  const nCopy = _pCopyFx.size + _pCopyGrp.size + _pCopyMsh.size;
   const where = _pTgtShow ? 'the show in progress' : 'a copy of the target';
   if (_pStep === 2) {
     if (!nFn && !nCopy) return setOutcome(n, 'nothing yet — tick pages, frames, buttons or functions', '', 'Apply will do');
@@ -268,6 +272,7 @@ function _pSyncOutcome() {
     if (_pVcScope.length) chips.push(`${_pVcScope.length} VC widget${_pVcScope.length > 1 ? 's' : ''}`);
     if (_pCopyFx.size) chips.push(`copy ${_pCopyFx.size} fixture${_pCopyFx.size > 1 ? 's' : ''}`);
     if (_pCopyGrp.size) chips.push(`copy ${_pCopyGrp.size} group${_pCopyGrp.size > 1 ? 's' : ''}`);
+    if (_pCopyMsh.size) chips.push(`copy ${_pCopyMsh.size} mesh${_pCopyMsh.size > 1 ? 'es' : ''}`);
     return setOutcome(n, chips, '', 'Apply will');
   }
   if (_pStep === 3) {
@@ -530,7 +535,7 @@ function _pRenderFnList() {
 async function porterResolve(quiet = false) {
   const seedIds = _pSeedIds();
   const key = seedIds.join(',');
-  if (!seedIds.length && (_pCopyFx.size || _pCopyGrp.size)) {
+  if (!seedIds.length && (_pCopyFx.size || _pCopyGrp.size || _pCopyMsh.size)) {
     // copying fixtures / groups only (what the QXW Merger did): no functions
     _pClosure = { seed_ids: [], function_ids: [], fixture_ids: [], cycles: [], unresolved: [] };
     _pClosureKey = 'copy-only';
@@ -1307,7 +1312,7 @@ function _pRenderExportReady() {
   const skipped = [..._pSkipFx];
   const li = [];
   li.push(`<b>${c.function_ids.length}</b> function(s) from <b>${_esc(_pSrcName)}</b> into ${_pTgtShow ? '<b>the show in progress</b>' : `a copy of <b>${_esc(_pTgtName)}</b>`}`);
-  if (_pCopyFx.size || _pCopyGrp.size) li.push(`copied from the source: <b>${_pCopyFx.size}</b> fixture(s), <b>${_pCopyGrp.size}</b> group(s)`);
+  if (_pCopyFx.size || _pCopyGrp.size || _pCopyMsh.size) li.push(`copied from the source: <b>${_pCopyFx.size}</b> fixture(s), <b>${_pCopyGrp.size}</b> group(s), <b>${_pCopyMsh.size}</b> mesh(es)`);
   li.push(`fixtures: ${c.fixture_ids.length} source fixture(s) mapped with <b>${_esc(_pFanoutMode)}</b>`
           + (skipped.length ? `; not ported: ${skipped.join(', ')}` : ''));
   if (_pVc.enabled) {
@@ -1404,7 +1409,7 @@ function porterReset() {
   _pSkipUndo = { manual: new Set(), excluded: new Set(), vc: new Set() };
   _pHlFx = _pHlSticky = null;
   _pRmScope = [];
-  _pCopyFx = new Set(); _pCopyGrp = new Set();
+  _pCopyFx = new Set(); _pCopyGrp = new Set(); _pCopyMsh = new Set();
   _pStep = 1;
   _pStatus('Ready for a new port.', 'info');
   _pRenderStep();
@@ -1427,6 +1432,7 @@ function _pBuildPlan() {
     vc: Object.assign({}, _pVc, { scope: _pVcScope, remove: _pRmScope }),
     copy_fixtures:   [..._pCopyFx],
     copy_groups:     [..._pCopyGrp],
+    copy_meshes:     [..._pCopyMsh],
     wire:            _pWireActive(),
   };
 }
@@ -1448,8 +1454,15 @@ function _pRenderCopyPick() {
   const gEl = document.getElementById('porter-copy-groups');
   const fEl = document.getElementById('porter-copy-fixtures');
   if (!gEl || !fEl) return;
+  const mEl = document.getElementById('porter-copy-meshes');
+  if (mEl) mEl.innerHTML = _pSrcMeshes.length ? _pSrcMeshes.map(m => `
+    <label class="porter-row"><input type="checkbox" class="porter-check" value="${_esc(m.id)}"
+      ${_pCopyMsh.has(String(m.id)) ? 'checked' : ''} onchange="porterCopyMesh(this)">
+      <span>${m.found ? '' : '⚠ '}${m.hidden ? '🙈 ' : ''}${_esc(m.label)}</span>
+      <span class="porter-row-sub">${m.found ? '' : 'model file not found here'}</span></label>`).join('')
+    : '<div class="porter-placeholder">No meshes on the source stage.</div>';
   const det = document.getElementById('porter-copy-pick');
-  if (det && (_pCopyFx.size || _pCopyGrp.size)) det.open = true;
+  if (det && (_pCopyFx.size || _pCopyGrp.size || _pCopyMsh.size)) det.open = true;
   gEl.innerHTML = _pSrcGroups.length ? _pSrcGroups.map(g => `
     <label class="porter-row"><input type="checkbox" class="porter-check" value="${_esc(g.id)}"
       ${_pCopyGrp.has(String(g.id)) ? 'checked' : ''} onchange="porterCopyGroup(this)">
@@ -1467,6 +1480,11 @@ function _pRenderCopyPick() {
 
 function porterCopyFixture(cb) {
   if (cb.checked) _pCopyFx.add(cb.value); else _pCopyFx.delete(cb.value);
+  _pCopyChanged();
+}
+
+function porterCopyMesh(cb) {
+  if (cb.checked) _pCopyMsh.add(cb.value); else _pCopyMsh.delete(cb.value);
   _pCopyChanged();
 }
 

@@ -720,8 +720,8 @@ Checks (★ = included in Phase 1.0):
 - [x] **`tools/qlc_check.py` in CI** *(Dockerfile + workflow written, not yet run on GitHub: advisory until the first green run)*: a cached Docker image with a QLC+ 5.2.2 source build; the live check runs on the golden rigs on every push.
 
 **3.5 Looks and Stage → v2.5.0**
-- [ ] **Look Builder**: chasers in QLC+ *beats* tempo (BPM sync); looks with a moving-head **position** (pan/tilt presets); **own palettes** saved in the profile; **RGB-matrix patterns** for pixel bars.
-- [ ] **Stage & Meshes**: fixture **tilt aiming** at a point or a mesh (`qxw_builder.default_x_rot`); **mesh thumbnails** in the library; **hide / show** meshes (`Hidden`); **copy meshes between shows** (in the Porter).
+- [x] **Look Builder** *(done 5 Oct, `feat/v2.5.0`)*: chasers in QLC+ *beats* tempo (BPM sync); looks with a moving-head **position** (pan/tilt presets); **own palettes** saved in the profile; **RGB-matrix patterns** for pixel bars.
+- [x] **Stage & Meshes** *(done 5 Oct, `feat/v2.5.0`; aiming = tilt only, thumbnails = SVG dot drawings from the OBJ)*: fixture **tilt aiming** at a point or a mesh (`qxw_builder.default_x_rot`); **mesh thumbnails** in the library; **hide / show** meshes (`Hidden`); **copy meshes between shows** (in the Porter).
 
 **3.6 Paperwork, setlists, MIDI → v2.6.0**
 - [ ] **MIDI / input mapping manager**: re-patch inputs across a show, MIDI-learn simulation; covers the recurring "MIDI input saved as None".

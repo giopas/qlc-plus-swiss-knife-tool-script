@@ -92,6 +92,11 @@ def source_fixtures():
     return jsonify(porter.list_source_fixtures())
 
 
+@bp.route('/source/meshes')
+def source_meshes():
+    return jsonify(porter.list_source_meshes())
+
+
 @bp.route('/source/groups')
 def source_groups():
     return jsonify(porter.list_source_groups())
@@ -520,6 +525,8 @@ def _normalize_plan(data: dict) -> dict:
         # 1.9: the QXW Merger folded in — copy source fixtures / groups
         'copy_fixtures':   [str(x) for x in (data.get('copy_fixtures') or [])],
         'copy_groups':     [str(x) for x in (data.get('copy_groups') or [])],
+        # 2.5: 3D-stage meshes of the source (their ids)
+        'copy_meshes':     [str(x) for x in (data.get('copy_meshes') or [])],
         # 2.7: copied fixture (source id) → existing target fixture it plays like
         'wire':            {str(k): str(v) for k, v in (data.get('wire') or {}).items()
                             if str(k).isdigit() and str(v).isdigit()},

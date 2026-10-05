@@ -1508,12 +1508,14 @@
       </details>
 
       <details id="porter-copy-pick" class="porter-vc-pick">
-        <summary>Fixtures and groups to copy into the target <span class="porter-row-sub">(what the QXW Merger did)</span></summary>
+        <summary>Fixtures, groups and meshes to copy into the target <span class="porter-row-sub">(what the QXW Merger did, plus the 3D meshes)</span></summary>
         <p class="porter-hint">Ticked fixtures are <b>added</b> to the target with a new ID (their address is kept when it is free, otherwise the first free one) and the ported functions play on them.
-          A ticked group is rebuilt on the copied (or mapped) fixtures — ticking a group ticks its fixtures.</p>
+          A ticked group is rebuilt on the copied (or mapped) fixtures — ticking a group ticks its fixtures.
+          Ticked meshes are added to the target's 3D stage with a new ID, keeping their place and height (scaled when the stage size differs) and a full path to their model file.</p>
         <div class="porter-copy-cols">
           <div><div class="porter-copy-h">Groups</div><div id="porter-copy-groups" class="porter-list porter-copy-list"></div></div>
           <div><div class="porter-copy-h">Fixtures</div><div id="porter-copy-fixtures" class="porter-list porter-copy-list"></div></div>
+          <div><div class="porter-copy-h">Meshes</div><div id="porter-copy-meshes" class="porter-list porter-copy-list"></div></div>
         </div>
       </details>
 

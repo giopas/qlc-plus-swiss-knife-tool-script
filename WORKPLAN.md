@@ -728,9 +728,10 @@ Checks (★ = included in Phase 1.0):
 - [x] **Setlist import** *(done 6 Oct)* from txt / csv / clipboard; **tablet setlist**: a plain HTML page of the setlist for a tablet on stage.
 - [x] **Tech rider** with the patch, tilt and meshes *(done 6 Oct; in the rider table + PDF — the blueprint page itself is unchanged)*.
 
-**3.7 Localisation and community library → v2.7.0**
-- [ ] **Interface in EN / IT / FR** (strings in JSON, language setting; the wiki stays English).
-- [ ] **Community library**: share and download templates (VC templates, palettes, nomenclature profiles, Show Profiles) as plain files; import / export from the app. Local files only — no server, no network call besides the optional update check later.
+**3.7 Localisation and community library → v2.7.0** ✅ *(6 Oct, `feat/v2.7.0`, 761 tests; giopas tests on real shows)*
+- [x] **Interface in EN / IT / FR**: `static/js/i18n.js` translates by the English text itself (exact dictionary + `{n}` patterns, DOM observer for what the tools draw, tooltips / placeholders / dialogs); `static/i18n/it.json` and `fr.json` (~2,800 strings each, written with parallel AI agents from a glossary and checked by placeholder / count tests and screenshots, not by a native reviewer); language box under *Files* + ⌘K actions; remembered in the browser; English default; show data, reports, PDFs and the wiki stay as they are. `tools/i18n_extract.py` lists the app's strings and what a language lacks. Wiki *Language*. Known gaps: show data (function / fixture names) is intentionally English; some sentences built from fragments with tags read oddly; colour names mixed.
+- [x] **Community library** (`core/library.py`, `routes/library_routes.py`, `static/js/library.js`, menu 3 · Create): share VC templates, palettes, look presets, naming profiles, VC styles and Show Profiles as one `*.qsklib.json`; preview before install, per-item skip / replace / keep both, built-ins reserved, validation (no DOCTYPE / entities, placeholder whitelist, profile steps limited to recordable calls, path warning, size caps); never shares controllers, sessions, meshes. Local files only. Wiki *Community Library*.
+- [ ] giopas: try the language switch on a real show (IT and FR on every screen you use; tell me the strings that read badly), and share / install a library file between two machines.
 
 *Out of the plan (giopas, 5 Oct):* the audio-trigger helper (he is not sure it is needed) and the upstream bug reports to QLC+ (probably solved in future QLC+ 5 releases).
 
@@ -1061,5 +1062,5 @@ cd ..
 (expect 653 passed.) GitHub Release: tag v2.2.1, title "v2.2.1 — the UI polish, finished", body `docs/release-notes/RELEASE_NOTES_v2.2.1.md`. The v2.2.0 GitHub Release (tag already pushed) is created the same way from `RELEASE_NOTES_v2.2.0.md`.
 
 **Next Cowork session:**
-1. Release 1 — **3.3 New-show flow → v2.3.0** (branch `feat/v2.3.0`, stacked on `feat/v2.2.1`).
-2. Then 3.4 → 3.7 in order; then packaging (v2.8.0) and the MCP server (v2.9.0).
+1. Release v2.7.0 (giopas), then **Phase 3 packages → v2.8.0** (PyInstaller, GitHub Actions per-OS builds, update check).
+2. Then the MCP server (v2.9.0).

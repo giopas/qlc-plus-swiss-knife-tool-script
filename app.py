@@ -127,6 +127,7 @@ from routes.show_routes import bp as show_bp
 from routes.profile_routes import bp as profile_bp
 from routes.compare_routes import bp as compare_bp
 from routes.library_routes import bp as library_bp
+from routes.update_routes import bp as update_bp
 
 PORT = 5731
 
@@ -174,6 +175,7 @@ def create_app():
     app.register_blueprint(inputs_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(library_bp)
+    app.register_blueprint(update_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request
@@ -315,14 +317,49 @@ def create_app():
     return app
 
 
+def _smoke(app) -> int:
+    """Release-build check: the page, its scripts and the bundled data files
+    all answer.  Prints one line per failure; exit 0 when none."""
+    c = app.test_client()
+    bad = []
+    for path in ('/', '/api/status', '/static/js/app.js', '/static/css/style.css',
+                 '/static/i18n/it.json', '/static/i18n/fr.json', '/api/update/check'):
+        r = c.get(path)
+        if r.status_code != 200:
+            bad.append(f'{path} → {r.status_code}')
+    try:
+        from core import look_builder
+        from core.quick_start import nomenclature
+        if not look_builder.palettes():
+            bad.append('no built-in palettes')
+        if not nomenclature.list_profiles():
+            bad.append('no naming profiles')
+    except Exception as e:  # noqa: BLE001
+        bad.append(f'data files: {e!r}')
+    from core.workspace import VERSION
+    for b in bad:
+        print('SMOKE FAIL:', b)
+    print(f'SMOKE {"OK" if not bad else "FAILED"} — v{VERSION}')
+    return 1 if bad else 0
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='QLC+ Swiss Knife')
     parser.add_argument('--browser', action='store_true',
                         help='Force browser mode (skip pywebview even if installed)')
+    parser.add_argument('--smoke', action='store_true',
+                        help='Start, load the page and the data files, then exit (used by the release build)')
     args = parser.parse_args()
 
     app = create_app()
+    if args.smoke:
+        sys.exit(_smoke(app))
+    try:                                  # packaged app: drop the version we just replaced
+        from core import update as _update
+        _update.cleanup_after_update()
+    except Exception:  # noqa: BLE001
+        pass
     url = f'http://localhost:{PORT}'
 
     use_webview = False

@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v2.7.0
+# ⚡ QLC+ Swiss Knife — v2.8.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -70,7 +70,24 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 
 ---
 
-## Requirements
+## Install
+
+**Download, unzip, double-click** — from the [latest release](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest):
+
+| Computer | File | Then |
+|---|---|---|
+| macOS, Apple silicon (M1 and later) | `QLC-Swiss-Knife-<version>-macos-arm64.dmg` | drag *QLC Swiss Knife* to Applications |
+| macOS, Intel | `QLC-Swiss-Knife-<version>-macos-x86_64.dmg` | the same |
+| Windows 10/11 | `QLC-Swiss-Knife-<version>-windows-x64.zip` | unzip, run `QLC Swiss Knife.exe` |
+| Linux | `QLC-Swiss-Knife-<version>-linux-x64.tar.gz` | unpack, run `QLC-Swiss-Knife` (opens in your browser) |
+
+The first releases are **not signed**, so the system asks once: macOS — right-click the app › *Open* (or `xattr -dr com.apple.quarantine "/Applications/QLC Swiss Knife.app"`); Windows — *More info › Run anyway*. Each release has a `SHA256SUMS` file to check the download. When a newer version is out, a badge appears in the header; **Update and restart** downloads it, checks it and starts it again (your shows and settings are not touched). Switch the check off with *Check for updates* under the menu. Details: [Installing and updating](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Installing-and-updating).
+
+Or **run from the sources** (below) — same app, and the badge then says `git pull`.
+
+---
+
+## Requirements (to run from the sources)
 
 | Requirement | Details |
 |---|---|
@@ -172,7 +189,7 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the
 
 ## Privacy and security
 
-Everything runs on your computer. The app listens on `127.0.0.1` only (not reachable from your network) and checks the origin of every request. The only internet access is optional: fetching a fixture definition from the official QLC+ fixture library on GitHub, and the ID Browser's table library. Details in [DEVELOPMENT.md](DEVELOPMENT.md#security).
+Everything runs on your computer. The app listens on `127.0.0.1` only (not reachable from your network) and checks the origin of every request. The only internet access is optional: once at start, the update check asks GitHub which version is the latest (nothing about you or your shows is sent; switch it off under the menu), fetching a fixture definition from the official QLC+ fixture library on GitHub, and the ID Browser's table library. Details in [DEVELOPMENT.md](DEVELOPMENT.md#security).
 
 ---
 

@@ -8,6 +8,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.8.0] — 2026-10-06
+
+**Install like an app.** Download, unzip, double-click — and be told when a newer version is out.
+
+### Added
+- **Packages for macOS (Apple silicon and Intel), Windows and Linux**, built by GitHub Actions on every `v*` tag (`.github/workflows/release.yml`): PyInstaller one-folder (`packaging/swissknife.spec`), tests and a **smoke test of the bundle** (`--smoke`: the page, its scripts, the translations and the data files answer) before anything is published, then the files and a `SHA256SUMS` are attached to the GitHub Release. Names: `QLC-Swiss-Knife-<version>-<os>-<arch>.zip` / `.tar.gz` / `.dmg` (macOS `.dmg` for the first install). Not signed: first-run steps in the README and the wiki. *Untested live on macOS and Windows (built and checked on Linux only).*
+- **Update check** (`core/update.py`): once at start, one request to the GitHub Releases API (the app's only network call on its own; switch off with *Check for updates* under the menu; cached 12 hours; nothing about you or your shows is sent). A header badge *vX.Y.Z available* opens a card with the release notes.
+- **Update and restart** (packaged app): downloads the file for this computer, checks it against the release's `SHA256SUMS`, refuses paths that leave the folder, unpacks it, and a small script swaps the folder (or the `.app`) after Swiss Knife quits and starts the new version; the old one is kept as `….old` until the new one has started. Your shows and `~/.qlc_swiss_knife/` are never touched. From the sources the card says `git pull`.
+- `python app.py --smoke` (used by the release build).
+
 ## [2.7.0] — 2026-10-06
 
 **Language and sharing.** The interface in English, Italian and French, and a library to share what you built as one plain file.

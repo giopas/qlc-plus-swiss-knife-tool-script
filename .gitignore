@@ -47,3 +47,8 @@ _tmp_sync/
 
 # Claude / AI working folders
 .claude/
+
+# local packaging output
+/build/
+/dist/
+/release/

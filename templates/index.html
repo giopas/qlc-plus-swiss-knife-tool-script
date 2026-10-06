@@ -184,6 +184,11 @@
         <option value="en">English</option><option value="it">Italiano</option><option value="fr">Français</option>
       </select>
     </div>
+    <div class="fp-item" id="fp-update">
+      <label class="fp-label upd-opt" title="Once at start, Swiss Knife asks GitHub which version is the latest. Nothing about you or your shows is sent.">
+        <input type="checkbox" id="upd-enabled" checked onchange="updSetEnabled(this.checked)"> Check for updates
+      </label>
+    </div>
     <div class="fp-session">
       <span id="session-badge" class="session-badge"></span>
       <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file">📋 Session</button>
@@ -223,6 +228,8 @@
       <span class="sb-pill sb-doctor" id="sb-doctor" hidden onclick="go('doctor')" title="The Workspace Doctor on the show as it is now — click to open it"></span>
     </div>
     <div class="ms-actions">
+      <button class="btn btn-accent btn-sm" id="update-badge" hidden onclick="updToggle()"
+              data-tooltip="A newer version of Swiss Knife is out — click for what is new and how to get it">⬆ <span id="update-badge-v"></span></button>
       <button class="btn btn-surface btn-sm cp-open" onclick="cpOpen()"
               data-tooltip="Go to any tool or action — type a few letters"><span class="cp-lbl">Go to… </span><kbd class="kbd" id="cp-kbd">⌘K</kbd></button>
       <button class="btn btn-surface btn-sm" id="sb-undo" onclick="showUndo()" disabled
@@ -239,6 +246,18 @@
 
   <!-- Guided route (Start: "Guided route: …"): steps above the tools -->
   <nav class="route-strip" id="route-strip" hidden aria-label="Guided route"></nav>
+
+  <!-- Update card (v2.8.0): what is new, and how to get it -->
+  <div class="upd-card" id="upd-card" hidden>
+    <div class="upd-head"><b id="upd-title">New version</b><button class="btn btn-surface btn-sm" onclick="updToggle(false)">✕</button></div>
+    <div class="upd-sub" id="upd-sub"></div>
+    <pre class="upd-notes" id="upd-notes"></pre>
+    <div class="upd-actions">
+      <button class="btn btn-accent btn-sm" id="upd-install" hidden onclick="updInstall()">⬇ Update and restart</button>
+      <button class="btn btn-surface btn-sm" id="upd-open" onclick="updOpen()">Open the release page</button>
+    </div>
+    <div class="upd-msg" id="upd-msg"></div>
+  </div>
 
   <!-- Command palette (⌘K / Ctrl+K) -->
   <div class="cp" id="cp" hidden onclick="if(event.target===this)cpClose()">
@@ -2385,5 +2404,6 @@
 <script src="/static/js/palette.js?v={{ asset_v }}"></script>
 <script src="/static/js/compare.js?v={{ asset_v }}"></script>
 <script src="/static/js/library.js?v={{ asset_v }}"></script>
+<script src="/static/js/update.js?v={{ asset_v }}"></script>
 </body>
 </html>

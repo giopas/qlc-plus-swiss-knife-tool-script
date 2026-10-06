@@ -58,7 +58,8 @@ jobs:
 
   publish:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    # publish what was built even if one platform failed (so the others are not lost)
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4

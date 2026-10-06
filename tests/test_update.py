@@ -221,3 +221,12 @@ def test_badge_hidden_and_check_now_wired():
     js = open(os.path.join(root, "static", "js", "update.js"), encoding="utf-8").read()
     assert 'onclick="updCheckNow()"' in page and "async function updCheckNow" in js
     assert "/api/update/check?force=1" in js
+
+
+def test_ssl_context_for_frozen_apps():
+    """v2.8.2 — the check/download use an explicit context (a frozen Python may have no CA list)."""
+    import ssl
+    assert isinstance(update._ssl_context(), ssl.SSLContext)
+    import inspect
+    assert "context=_ssl_context()" in inspect.getsource(update._read)
+    assert "context=_ssl_context()" in inspect.getsource(update._download)

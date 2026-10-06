@@ -19,6 +19,8 @@ function _updApply(d) {
   _upd = d;
   const cb = document.getElementById('upd-enabled');
   if (cb) cb.checked = !!d.enabled;
+  const m = document.getElementById('upd-now-msg');
+  if (m && d.error) m.textContent = d.error;
   const b = document.getElementById('update-badge');
   if (d.newer) {
     document.getElementById('update-badge-v').textContent = `v${d.latest} available`;

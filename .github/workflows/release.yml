@@ -31,7 +31,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install
-        run: python -m pip install "flask>=3.0" pywebview pyinstaller pytest
+        run: python -m pip install "flask>=3.0" pywebview certifi pyinstaller pytest
         shell: bash
       - name: Tests
         # the suite assumes POSIX paths / line endings in a few places; tests.yml runs it on Linux

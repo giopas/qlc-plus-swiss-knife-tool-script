@@ -33,6 +33,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import ssl
 import tempfile
 import time
 import urllib.request
@@ -145,6 +146,31 @@ def pick_asset(assets: List[dict], os_name: str = None, arch: str = None) -> Opt
     return best
 
 
+_CA_FILES = ("/etc/ssl/cert.pem",                      # macOS (and some Linux)
+             "/etc/ssl/certs/ca-certificates.crt",     # Debian / Ubuntu
+             "/etc/pki/tls/certs/ca-bundle.crt")       # Fedora / RHEL
+
+
+def _ssl_context() -> ssl.SSLContext:
+    """A bundled (PyInstaller) Python often has no list of trusted certificates and then cannot
+    open any https:// address: use certifi's list, else the system's file, else the default."""
+    cafile = None
+    try:
+        import certifi
+        cafile = certifi.where()
+    except Exception:  # noqa: BLE001
+        for p in _CA_FILES:
+            if os.path.isfile(p):
+                cafile = p
+                break
+    if cafile and os.path.isfile(cafile):
+        try:
+            return ssl.create_default_context(cafile=cafile)
+        except Exception:  # noqa: BLE001
+            pass
+    return ssl.create_default_context()
+
+
 def _read(url: str, limit: int = 2_000_000) -> bytes:
     if os.path.isfile(url):
         with open(url, "rb") as f:
@@ -153,7 +179,7 @@ def _read(url: str, limit: int = 2_000_000) -> bytes:
         raise ValueError("only https:// or a local file")
     req = urllib.request.Request(url, headers={"User-Agent": f"QLC-Swiss-Knife/{VERSION}",
                                                "Accept": "application/vnd.github+json"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_ssl_context()) as r:
         return r.read(limit)
 
 
@@ -248,7 +274,7 @@ def _download(url: str, dest: str) -> None:
         raise ValueError("only https:// downloads")
     req = urllib.request.Request(url, headers={"User-Agent": f"QLC-Swiss-Knife/{VERSION}"})
     got = 0
-    with urllib.request.urlopen(req, timeout=30) as r, open(dest, "wb") as f:
+    with urllib.request.urlopen(req, timeout=30, context=_ssl_context()) as r, open(dest, "wb") as f:
         while True:
             chunk = r.read(1 << 20)
             if not chunk:

@@ -2865,5 +2865,6 @@
  "Check now": "Controlla ora",
  "Checking…": "Controllo…",
  "Could not check for updates.": "Impossibile controllare gli aggiornamenti.",
- "You have the latest version (v{0}).": "Hai l'ultima versione (v{0})."
+ "You have the latest version (v{0}).": "Hai l'ultima versione (v{0}).",
+ "Could not check for updates ({0}).": "Impossibile controllare gli aggiornamenti ({0})."
 }

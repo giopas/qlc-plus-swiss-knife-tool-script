@@ -16,6 +16,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Check now** under the menu (next to *Check for updates*): asks GitHub again, ignoring the answer remembered from the last 12 hours, and says *You have the latest version* or opens the card. (First live try of v2.8.0 → v2.8.1: the app had been started before v2.8.1 existed and kept saying *latest = 2.8.0*.)
 
 ### Fixed
+- **The update check could not reach GitHub from the packaged app** (the bundled Python has no list of trusted certificates): it now uses certifi's list or the system's, and when a check fails the reason is shown under the menu. *First live try on the Mac: v2.8.0 never offered v2.8.1.*
 - The update arrow in the top bar showed even when there was no update (the button style overrode `hidden`); now it appears only when a newer version is out.
 - The tooltips of the top-bar buttons opened upwards, outside the window, and could not be read; they now open below (the right-hand ones leftwards).
 

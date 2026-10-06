@@ -7,6 +7,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Changed
+- CI: a version tag no longer starts the `tests` workflow a second time (the release workflow runs the tests itself). Release in one push: merge locally, tag, `git push origin main vX.Y.Z`.
+
 
 ## [2.8.6] — 2026-10-07
 

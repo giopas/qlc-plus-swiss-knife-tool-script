@@ -2,6 +2,8 @@ name: tests
 
 on:
   push:
+    # a version tag is built and tested by release.yml; it must not start the tests a second time
+    tags-ignore: ["**"]
     paths-ignore: ["**.md", "screenshots/**", "docs/**", "wiki/**", "LICENSE"]
   pull_request:
     paths-ignore: ["**.md", "screenshots/**", "docs/**", "wiki/**", "LICENSE"]

@@ -23,8 +23,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import ntpath
 import os
 import platform
+import posixpath
 import re
 import shutil
 import stat
@@ -295,6 +297,7 @@ def helper_script(pid: int, old: str, new: str, system: str = None, exe: str = N
     """(file name, text) of the script that swaps the install after we quit.
     Kept the old version as ``<name>.old`` until the new one has started."""
     system = system or platform.system()
+    pth = ntpath if system == "Windows" else posixpath
     if system == "Windows":
         text = (
             "@echo off\r\n"
@@ -305,11 +308,11 @@ def helper_script(pid: int, old: str, new: str, system: str = None, exe: str = N
             f'if exist "{old}.old" rmdir /s /q "{old}.old"\r\n'
             f'move /y "{old}" "{old}.old" >NUL\r\n'
             f'move /y "{new}" "{old}" >NUL\r\n'
-            f'start "" "{os.path.join(old, os.path.basename(exe or "QLC Swiss Knife.exe"))}"\r\n'
+            f'start "" "{pth.join(old, pth.basename(exe or "QLC Swiss Knife.exe"))}"\r\n'
         )
         return "swk-update.bat", text
     q = lambda s: "'" + str(s).replace("'", "'\\''") + "'"       # noqa: E731
-    start = f"open {q(old)}" if system == "Darwin" else q(os.path.join(old, os.path.basename(exe or "QLC-Swiss-Knife")))
+    start = f"open {q(old)}" if system == "Darwin" else q(pth.join(old, pth.basename(exe or "QLC-Swiss-Knife")))
     clear = (f"xattr -dr com.apple.quarantine {q(old)} 2>/dev/null\n" if system == "Darwin" else "")
     text = (
         "#!/bin/sh\n"

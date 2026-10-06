@@ -73,7 +73,18 @@ function _sbApplyPresets() {
   const note = document.getElementById('sb-venue-note');
   if (note) note.hidden = !venue;
   _sbPatchOpts();
+  _sbRiderOpts();
 }
+
+function _sbRiderOpts() {
+  const box = document.getElementById('sb-rider-opts');
+  if (box) box.hidden = !_sbSelectedSections().includes('rider');
+}
+function _sbRiderExtras() {
+  if (!_sbSelectedSections().includes('rider')) return [];
+  return ['patch', 'tilt', 'meshes'].filter(k => document.getElementById('sb-rx-' + k)?.checked);
+}
+function sbRiderChanged() { invalidateShowbook(); }
 
 // ── Patch sheet options (event, logo, DIP switches, thermal printer) ───────
 const _SB_LOGO_KEY = 'sk.patchLogo';
@@ -148,6 +159,7 @@ function _sbBody(extra) {
     paper: document.getElementById('sb-paper')?.value || 'A4 Landscape',
     event: (document.getElementById('sb-event')?.value || '').trim() || null,
     dip_switches: document.getElementById('sb-dip')?.value || '10',
+    rider_extras: _sbRiderExtras(),
     logo: _sbSelectedSections().includes('patch_sheet') ? _sbLogo : null,
   }, extra || {});
 }
@@ -275,6 +287,18 @@ function _sbRenderPreview(doc) {
       t => [t.manufacturer, t.model, t.mode, t.quantity, t.channels || '', t.patch_range, t.universes.join(', ')],
       'sb-sec-rider').replace('</table>', `</table><div class="sb-stats"><span><b>Total:</b> ${r.total_fixtures} fixture(s),
         ${r.total_channels} DMX channel(s), ${r.universes.length} universe(s)</span></div>`));
+    const d = r.detail, ex = r.extras || [];
+    if (d && d.fixtures.length && (ex.includes('patch') || ex.includes('tilt'))) {
+      const heads = ['#', 'Name', 'Model'].concat(ex.includes('patch') ? ['Universe', 'Address', 'Ch'] : [], ex.includes('tilt') ? ['X (m)', 'Depth (m)', 'Height (m)', 'Tilt'] : []);
+      parts.push(_sbTable('🎟 Tech rider — fixtures' + (ex.includes('tilt') ? ' (position and tilt: centre of the fixture; height = underside above the floor)' : ''), d.fixtures, heads,
+        f => [f.id, f.name, f.model].concat(ex.includes('patch') ? [f.universe + 1, f.address + 1, f.channels || ''] : [],
+          ex.includes('tilt') ? [(f.x / 1000).toFixed(2), (f.z / 1000).toFixed(2), (f.height / 1000).toFixed(2), f.tilt_text] : []), 'sb-sec-rider-fx'));
+    }
+    if (d && ex.includes('meshes')) {
+      parts.push(_sbTable('🎟 Tech rider — set pieces on the stage (3D)', d.meshes, ['Name', 'X (m)', 'Depth (m)', 'Floor to bottom (m)', 'W × D × H (m)'],
+        m => [m.name, (m.x / 1000).toFixed(2), (m.z / 1000).toFixed(2), (m.bottom / 1000).toFixed(2),
+              `${(m.w / 1000).toFixed(2)} × ${(m.d / 1000).toFixed(2)} × ${(m.h / 1000).toFixed(2)}`], 'sb-sec-rider-mesh'));
+    }
   }
   if (secs.checklist) {
     parts.push(_sbTable('✅ Load-in checklist', secs.checklist,

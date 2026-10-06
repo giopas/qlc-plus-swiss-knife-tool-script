@@ -489,6 +489,26 @@
     <input id="sl-import-file" type="file" accept=".txt" style="display:none"
            onchange="slImportSongsTxt(this)">
 
+    <!-- Import / paste modal (v2.6.0) -->
+    <div id="sl-import-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="width:560px;max-width:94vw">
+        <div class="pane-header" style="margin-bottom:10px">📋 Import a setlist</div>
+        <textarea id="sl-imp-text" class="field-input" rows="9" style="width:100%;font-family:var(--font-mono)"
+                  placeholder="Paste the list here — one song per line (numbers are fine), or CSV with columns like Song, Set, Fade in, Hold, Fade out"
+                  oninput="slImportPreview()"></textarea>
+        <div class="lb-row" style="margin-top:6px">
+          <button class="btn btn-surface btn-sm" onclick="slImportClipboard()">📋 From the clipboard</button>
+          <label class="btn btn-surface btn-sm" style="cursor:pointer">📂 A file…
+            <input type="file" accept=".txt,.csv,.tsv,text/plain,text/csv" style="display:none" onchange="slImportFile(this)"></label>
+        </div>
+        <div id="sl-imp-preview" style="margin-top:8px"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-accent" id="sl-imp-go" onclick="slImportApply()" disabled>✓ Import</button>
+          <button class="btn btn-surface" onclick="slCloseImport()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-split sl-fb-split" id="sl-split">
 
       <!-- Col 1: Slot list -->
@@ -575,6 +595,13 @@
           <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
                   onclick="slSaveSlotFile()" disabled
                   data-tooltip="Save this slot's songs and function assignments to a .txt file. Path remembered in session.">💾 Save Slot File</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-import-paste"
+                  onclick="slOpenImport()" disabled
+                  data-tooltip="Bring a setlist in from the clipboard, a .txt or a .csv (spreadsheet): numbering is dropped, set breaks and fade / hold columns are understood. You see what will be imported first.">📋 Import / paste…</button>
+          <button class="btn btn-surface fb-wide-btn" id="btn-tablet-page"
+                  onclick="slTabletPage()" disabled
+                  data-tooltip="One HTML file with every setlist in big type: tap a song to tick it off. Open it on a tablet or phone — no app, no network.">📱 Tablet page…</button>
+          <label class="vce-hint" style="font-size:10px"><input type="checkbox" id="sl-tab-notes"> with the QLC+ function names</label>
 
           <div class="fb-sep"></div>
 
@@ -709,6 +736,13 @@
               data-tooltip="Bulk re-assign all triggers from one MIDI universe/channel to another">⇄ MIDI Shift</button>
       <button id="trg-matrix-btn" class="btn btn-surface" onclick="toggleMatrix()"
               data-tooltip="Show a grid of all widget key assignments">⊞ Matrix</button>
+      <button id="trg-inputs-btn" class="btn btn-surface" onclick="toggleInputs()"
+              data-tooltip="The input device of each universe, re-patching the bindings, a MIDI simulator">🎚 Inputs &amp; MIDI</button>
+    </div>
+
+    <!-- Inputs & MIDI panel (v2.6.0) -->
+    <div id="trg-inputs-panel" class="lb-card" style="display:none;margin:8px 12px">
+      <div id="trg-inputs-wrap"></div>
     </div>
 
     <!-- Matrix panel (toggled by Matrix button) -->
@@ -1717,6 +1751,14 @@
         <span class="sb-optional">optional — definitions next to the show and the QLC+ library are used anyway</span>
       </div>
 
+      <div id="sb-rider-opts" class="sb-options" hidden>
+        <span class="sb-label">Tech rider</span>
+        <span class="sb-optional">also list:</span>
+        <label class="toggle-label"><input type="checkbox" id="sb-rx-patch" checked onchange="sbRiderChanged()"> the patch of each fixture</label>
+        <label class="toggle-label"><input type="checkbox" id="sb-rx-tilt" checked onchange="sbRiderChanged()"> where it hangs and its tilt</label>
+        <label class="toggle-label"><input type="checkbox" id="sb-rx-meshes" checked onchange="sbRiderChanged()"> the set pieces on the stage</label>
+      </div>
+
       <div id="sb-patch-opts" class="sb-options" hidden>
         <span class="sb-label">Patch sheet</span>
         <label class="field-label" for="sb-event">Event / venue</label>
@@ -2267,6 +2309,7 @@
 <script src="/static/js/setlist.js?v={{ asset_v }}"></script>
 <script src="/static/js/dictionary.js?v={{ asset_v }}"></script>
 <script src="/static/js/triggers.js?v={{ asset_v }}"></script>
+<script src="/static/js/inputs.js?v={{ asset_v }}"></script>
 <script src="/static/js/fixture.js?v={{ asset_v }}"></script>
 <script src="/static/js/porter.js?v={{ asset_v }}"></script>
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>

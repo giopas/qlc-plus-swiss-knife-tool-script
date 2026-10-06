@@ -2861,5 +2861,9 @@
  "Version {0} is ready — Swiss Knife quits and starts again.": "La versione {0} è pronta — Swiss Knife si chiude e si riavvia.",
  "Could not update: {0}": "Aggiornamento non riuscito: {0}",
  "You already have the latest version.": "Hai già l’ultima versione.",
- "{0} steps · the Pub test took {1} minutes": "{0} passi · il test del Pub è durato {1} minuti"
+ "{0} steps · the Pub test took {1} minutes": "{0} passi · il test del Pub è durato {1} minuti",
+ "Check now": "Controlla ora",
+ "Checking…": "Controllo…",
+ "Could not check for updates.": "Impossibile controllare gli aggiornamenti.",
+ "You have the latest version (v{0}).": "Hai l'ultima versione (v{0})."
 }

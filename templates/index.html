@@ -191,6 +191,7 @@
       <label class="fp-label upd-opt" title="Once at start, Swiss Knife asks GitHub which version is the latest. Nothing about you or your shows is sent.">
         <input type="checkbox" id="upd-enabled" checked onchange="updSetEnabled(this.checked)"> Check for updates
       </label>
+      <div class="upd-now"><button class="sc-link" id="upd-now" onclick="updCheckNow()">Check now</button><span class="upd-msg" id="upd-now-msg"></span></div>
     </div>
     <div class="fp-session">
       <span id="session-badge" class="session-badge"></span>

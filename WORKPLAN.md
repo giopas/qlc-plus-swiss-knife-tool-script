@@ -762,6 +762,8 @@ Checks (★ = included in Phase 1.0):
 - [ ] Linux AppImage (the tar.gz comes first; AppImage only if asked).
 - [x] giopas: v2.8.0 released (6 Oct): Actions run green, nine assets attached.
 - [x] v2.8.1 (6 Oct, `feat/v2.8.1`): logo — Q with a folding-knife tail, red Swiss cross, dark tile (D variant, chosen by giopas); `static/logo/` (svg, png), `packaging/icons/` (.icns, .ico); app icon, favicon, header mark, README and wiki Home. Tag it to test *Update and restart* from an installed 2.8.0.
+- [x] v2.8.1 released (6 Oct) — logo; first live try of the update showed: the 12 h cache hid the new release (app started before it existed), the update arrow showed with no update (`.btn` display overrode `hidden`), top-bar tooltips clipped by the strip's `overflow:hidden`.
+- [x] v2.8.2 (6 Oct, `feat/v2.8.2`, 778 tests): **Check now** (forces the check), arrow only when newer, tooltips below and readable. IT/FR added. Tag it and try *Update and restart* from the installed app (2.8.0 → 2.8.1 first, then → 2.8.2).
 - [ ] giopas: install v2.8.0 on the Mac (right-click › Open), then tag v2.8.1 and try *Update and restart*; first-run, native dialogs.
 
 ### Phase 4 — The MCP server → **v2.9.0** *(after the packages; was "Backlog: MCP server / AI layer")*

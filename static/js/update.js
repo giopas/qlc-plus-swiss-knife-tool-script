@@ -12,14 +12,31 @@ let _upd = null;
 async function updInit() {
   let d;
   try { d = await (await fetch('/api/update/check')).json(); } catch { return; }
+  _updApply(d);
+}
+
+function _updApply(d) {
   _upd = d;
   const cb = document.getElementById('upd-enabled');
   if (cb) cb.checked = !!d.enabled;
+  const b = document.getElementById('update-badge');
   if (d.newer) {
-    const b = document.getElementById('update-badge');
     document.getElementById('update-badge-v').textContent = `v${d.latest} available`;
     if (b) b.hidden = false;
-  }
+  } else if (b) b.hidden = true;
+}
+
+/** "Check now": ask GitHub again, ignoring the answer remembered from the last hours. */
+async function updCheckNow() {
+  const m = document.getElementById('upd-now-msg');
+  if (m) m.textContent = t('Checking…');
+  let d;
+  try { d = await (await fetch('/api/update/check?force=1')).json(); }
+  catch { if (m) m.textContent = t('Could not check for updates.'); return; }
+  _updApply(d);
+  if (d.error) { if (m) m.textContent = d.error; return; }
+  if (d.newer) { if (m) m.textContent = ''; updToggle(true); }
+  else if (m) m.textContent = t('You have the latest version (v{0}).', d.current);
 }
 
 function updToggle(open) {

@@ -51,6 +51,7 @@ aside {
   overflow: hidden;
 }
 .logo svg { width: 22px; height: 22px; color: var(--accent); flex-shrink: 0; }
+.btn[hidden] { display: none; }   /* .btn sets display, which would defeat [hidden] (the update badge showed with no update) */
 .logo .logo-img { width: 26px; height: 26px; flex-shrink: 0; border-radius: 6px; }
 
 .ver {
@@ -2999,6 +3000,15 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   border-top-color: transparent;
   border-bottom-color: var(--border-strong);
 }
+
+.metrics-strip { overflow: visible; position: relative; z-index: 30; }   /* it clipped the tooltips of its own buttons */
+/* Top-bar buttons: tooltips open below (above is outside the window), the right-hand ones leftwards */
+.ms-actions [data-tooltip]::after { bottom: auto; top: calc(100% + 7px); }
+.ms-actions [data-tooltip]::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: var(--border-strong); }
+.ms-actions [data-tooltip]:nth-last-child(-n+3)::after { left: auto; right: 0; transform: none; }
+.ms-actions [data-tooltip]:nth-last-child(-n+3)::before { left: auto; right: 12px; transform: none; }
+.upd-now { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.upd-now .upd-msg { margin: 0; }
 
 /* =============================================================================
    VC BADGE IN DICTIONARY

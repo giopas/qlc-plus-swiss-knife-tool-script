@@ -209,3 +209,15 @@ def test_logo_and_icons_wired():
     assert "/static/logo/icon.svg" in page and "rel=\"icon\"" in page
     spec = open(os.path.join(root, "packaging", "swissknife.spec"), encoding="utf-8").read()
     assert "icon.icns" in spec and "icon.ico" in spec
+
+
+def test_badge_hidden_and_check_now_wired():
+    """v2.8.2 — .btn must not override [hidden]; 'Check now' is in the page and its script."""
+    import os
+    root = os.path.join(os.path.dirname(__file__), "..")
+    css = open(os.path.join(root, "static", "css", "style.css"), encoding="utf-8").read()
+    assert ".btn[hidden]" in css and ".ms-actions [data-tooltip]::after" in css
+    page = open(os.path.join(root, "templates", "index.html"), encoding="utf-8").read()
+    js = open(os.path.join(root, "static", "js", "update.js"), encoding="utf-8").read()
+    assert 'onclick="updCheckNow()"' in page and "async function updCheckNow" in js
+    assert "/api/update/check?force=1" in js

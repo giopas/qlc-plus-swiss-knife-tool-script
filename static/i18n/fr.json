@@ -2837,5 +2837,9 @@
  "Version {0} is ready — Swiss Knife quits and starts again.": "La version {0} est prête — Swiss Knife se ferme et redémarre.",
  "Could not update: {0}": "Mise à jour impossible : {0}",
  "You already have the latest version.": "Vous avez déjà la dernière version.",
- "{0} steps · the Pub test took {1} minutes": "{0} étapes · le test du Pub a pris {1} minutes"
+ "{0} steps · the Pub test took {1} minutes": "{0} étapes · le test du Pub a pris {1} minutes",
+ "Check now": "Vérifier maintenant",
+ "Checking…": "Vérification…",
+ "Could not check for updates.": "Impossible de vérifier les mises à jour.",
+ "You have the latest version (v{0}).": "Vous avez la dernière version (v{0})."
 }

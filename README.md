@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife — v2.8.1
+# QLC+ Swiss Knife — v2.8.2
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 

@@ -32,6 +32,12 @@ from core.qxw_io import load_qxw
 PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "profiles", "vc_style")
 
+def user_dir() -> str:
+    """Your own VC styles (v2.7.0: from the community library)."""
+    return os.environ.get("QSK_VC_STYLES") or os.path.join(
+        os.path.expanduser("~"), ".qlc_swiss_knife", "vc_style")
+
+
 DEFAULTS = {
     "id": "default",
     "label": "Default",
@@ -146,12 +152,21 @@ def extract_style_file(path: str) -> VCStyle:
 
 
 def list_styles() -> list:
-    out = [{"id": "default", "label": "Default"}]
-    for fn in sorted(os.listdir(PROFILE_DIR)):
-        if fn.endswith(".json"):
-            with open(os.path.join(PROFILE_DIR, fn), encoding="utf-8") as fh:
-                d = json.load(fh)
-            out.append({"id": d.get("id", fn[:-5]), "label": d.get("label", fn[:-5])})
+    out = [{"id": "default", "label": "Default", "builtin": True}]
+    for folder, builtin in ((PROFILE_DIR, True), (user_dir(), False)):
+        if not os.path.isdir(folder):
+            continue
+        for fn in sorted(os.listdir(folder)):
+            if fn.endswith(".json"):
+                try:
+                    with open(os.path.join(folder, fn), encoding="utf-8") as fh:
+                        d = json.load(fh)
+                except (OSError, ValueError):
+                    continue
+                sid = d.get("id", fn[:-5])
+                if not builtin and any(o["id"] == sid for o in out):
+                    continue
+                out.append({"id": sid, "label": d.get("label", fn[:-5]), "builtin": builtin})
     return out
 
 
@@ -166,8 +181,10 @@ def load_style(ref=None) -> VCStyle:
         return VCStyle()
     if ref.lower().endswith(".qxw") and os.path.isfile(ref):
         return extract_style_file(ref)
-    path = os.path.join(PROFILE_DIR, f"{os.path.basename(ref)}.json")
-    if not os.path.isfile(path):
+    base = os.path.basename(ref)
+    path = next((q for q in (os.path.join(f, f"{base}.json") for f in (PROFILE_DIR, user_dir()))
+                 if os.path.isfile(q)), "")
+    if not path:
         raise ValueError(f"Unknown VC style: {ref}")
     with open(path, encoding="utf-8") as fh:
         return VCStyle(json.load(fh))

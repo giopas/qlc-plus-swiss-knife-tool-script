@@ -50,6 +50,7 @@ const _LAZY = {
   // initVcEditor() attaches the canvas mouse handlers (once); _vceLoad() re-reads the tree
   vceditor:   () => typeof vcEditorOnTabShow     === 'function' && vcEditorOnTabShow(),
   quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
+  library:    () => typeof libInit                === 'function' && libInit(),
 };
 
 // =============================================================================

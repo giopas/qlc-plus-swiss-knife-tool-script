@@ -109,6 +109,11 @@
       <span>Stage &amp; Meshes</span>
     </button>
 
+    <button class="sn-item" id="sn-library" data-tip="Library" data-desc="Share your VC templates, palettes, look presets, naming profiles, VC styles and Show Profiles as one file — and install what other QLC+ users shared. Local files only." onclick="go('library')">
+      <svg class="ic"><use href="/static/icons.svg#folder"/></svg>
+      <span>Library</span>
+    </button>
+
     <!-- 4 · Run the show -->
     <div class="sn-group-label" id="sn-grp-4"><span class="sn-gnum">4</span><span class="sn-gtxt">Run the show</span></div>
     <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Tonight’s songs matched to functions, with fade timings, into the setlist CueList." onclick="go('setlist')">
@@ -384,8 +389,8 @@
         </div>
         <div class="wf-card" data-grp="3">
           <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
-          <div class="wf-desc">Build looks and chasers, lay out the Virtual Console, place the 3D meshes and fixtures on the stage.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('looks')">Look Builder</button><button class="wf-chip" onclick="go('vceditor')">VC Visual Editor</button><button class="wf-chip" onclick="go('stage')">Stage &amp; Meshes</button></div>
+          <div class="wf-desc">Build looks and chasers, lay out the Virtual Console, place the 3D meshes and fixtures on the stage — and share your templates with other QLC+ users.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('looks')">Look Builder</button><button class="wf-chip" onclick="go('vceditor')">VC Visual Editor</button><button class="wf-chip" onclick="go('stage')">Stage &amp; Meshes</button><button class="wf-chip" onclick="go('library')">Library</button></div>
         </div>
         <div class="wf-card" data-grp="4">
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
@@ -429,6 +434,53 @@
 
   </section>
 
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       LIBRARY (WORKPLAN 3.7, v2.7.0)
+  ══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="scr-library">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#folder"/></svg></div>
+      <div><h2>Library</h2><div class="p-desc">Share your templates, palettes, presets, naming profiles, VC styles and Show Profiles as one file — and install what other QLC+ users shared. Local files only: no server, no account.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Community-Library')" title="How this tool works — opens the Community Library page of the wiki">?</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="lib-cols">
+      <div class="lb-card" id="lib-share">
+        <h3>Share what you made</h3>
+        <div id="lib-items" class="lib-items"><div class="porter-placeholder">Loading…</div></div>
+        <div class="lib-meta">
+          <input id="lib-title" class="search" placeholder="Title of the library (optional)" maxlength="120">
+          <input id="lib-author" class="search" placeholder="Your name (optional)" maxlength="80">
+          <input id="lib-desc" class="search" placeholder="A line about it (optional)" maxlength="300">
+        </div>
+        <button class="btn btn-surface" onclick="libSave()">💾 Save library file…</button>
+        <span class="vce-hint" id="lib-save-note"></span>
+      </div>
+
+      <div class="lb-card" id="lib-get">
+        <h3>Get what someone shared</h3>
+        <button class="btn btn-surface" onclick="libOpen()">📂 Open a library file…</button>
+        <label class="btn btn-surface path-fallback-btn" style="display:none" id="lib-open-fallback">📂 Choose file…
+          <input type="file" accept=".json" style="display:none" onchange="libOpenInput(this)"></label>
+        <div id="lib-preview"><div class="porter-placeholder">Open a <code>.qsklib.json</code> file: you see what is in it and what is new to you before anything is installed.</div></div>
+      </div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Writes only your own template folders — <b>&nbsp;no show is touched</b>
+      </span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="libFolders()">📁 Where my items are</button>
+      <button class="btn btn-accent" id="lib-install-btn" onclick="libInstall()" disabled>⬇ Install</button>
+    </div>
+
+  </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        COMPARE (WORKPLAN 2.8)
@@ -2326,5 +2378,6 @@
 <script src="/static/js/route.js?v={{ asset_v }}"></script>
 <script src="/static/js/palette.js?v={{ asset_v }}"></script>
 <script src="/static/js/compare.js?v={{ asset_v }}"></script>
+<script src="/static/js/library.js?v={{ asset_v }}"></script>
 </body>
 </html>

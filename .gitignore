@@ -44,3 +44,6 @@ Claude outputs/
 
 # scratch used when working with Claude
 _tmp_sync/
+
+# Claude / AI working folders
+.claude/

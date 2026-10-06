@@ -246,6 +246,7 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
 - [ ] Tests added or updated; `python -m pytest -q` is green locally.
 - [ ] **Translations aligned (from v2.7.0):** any new or changed interface string (HTML, JS `t()` / toasts, Python messages shown in the UI) has its Italian and French entry in `static/i18n/it.json` and `fr.json` (`python tools/i18n_extract.py --missing it` and `--missing fr` list what lacks one; names kept in English are fine). Keep `{0}`, `{1}` placeholders. Ask giopas to review new wording when it is long or technical.
 - [ ] No version-specific text on the Start page (no *New in x.y* lines).
+- [ ] **Nothing confidential or working-material is committed.** Before every commit and release run `git status` and `git diff --cached --stat` and check that no file belongs to the working process rather than the product: scratch / sync folders (`_tmp_sync/`), archives (`*.tgz`, `*.zip`, `*.bundle`), AI or assistant folders (`.claude/`), notes, drafts (forum posts), real show files or real names (only the anonymised corpus), keys / tokens / `.env`, logs, personal paths. Never `git add -A` without looking at the status first; scratch lives in git-ignored folders only. If something slipped in: untrack it, add it to `.gitignore`, and rewrite the history before pushing (it is public once pushed).
 - [ ] `CHANGELOG.md`: entry under `## [Unreleased]` (Added / Changed / Fixed / Security).
 - [ ] Docstrings for new public functions; user-facing wording checked.
 

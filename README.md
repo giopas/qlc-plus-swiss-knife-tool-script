@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife — v2.8.5
+# QLC+ Swiss Knife — v2.8.6
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -80,7 +80,7 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 |---|---|---|
 | macOS, Apple silicon (M1 and later) | `QLC-Swiss-Knife-<version>-macos-arm64.dmg` | drag *QLC Swiss Knife* to Applications |
 | macOS, Intel | `QLC-Swiss-Knife-<version>-macos-x86_64.dmg` | the same |
-| Windows 10/11 | `QLC-Swiss-Knife-<version>-windows-x64.zip` | unzip, run `QLC Swiss Knife.exe` |
+| Windows 10/11 | `QLC-Swiss-Knife-<version>-windows-x64-setup.exe` | run the installer (no administrator needed; Start menu entry, uninstaller). Or the `…-windows-x64.zip`: unzip, run `QLC Swiss Knife.exe` |
 | Linux | `QLC-Swiss-Knife-<version>-linux-x64.tar.gz` | unpack, run `QLC-Swiss-Knife` (opens in your browser) |
 
 The first releases are **not signed**, so the system asks once: macOS — right-click the app › *Open* (or `xattr -dr com.apple.quarantine "/Applications/QLC Swiss Knife.app"`); Windows — *More info › Run anyway*. Each release has a `SHA256SUMS` file to check the download. When a newer version is out, a badge appears in the header; **Update and restart** downloads it, checks it and starts it again (your shows and settings are not touched). Switch the check off with *Check for updates* under the menu. Details: [Installing and updating](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Installing-and-updating).

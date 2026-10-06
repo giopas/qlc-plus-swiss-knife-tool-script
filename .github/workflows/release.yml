@@ -50,9 +50,24 @@ jobs:
             linux-*)   EXE="dist/QLC-Swiss-Knife/QLC-Swiss-Knife" ;;
           esac
           "$EXE" --smoke
+      - name: Inno Setup (Windows installer)
+        if: runner.os == 'Windows'
+        run: choco install innosetup -y --no-progress
+        shell: bash
       - name: Pack
         run: python packaging/make_archive.py
         shell: bash
+      - name: Test the Windows installer (silent install, start, uninstall)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem release\*-setup.exe).FullName
+          $dir = Join-Path $env:RUNNER_TEMP 'swk-install'
+          Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir" -Wait
+          $p = Start-Process "$dir\QLC Swiss Knife.exe" -ArgumentList '--smoke' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "smoke test of the installed app failed ($($p.ExitCode))" }
+          if (-not (Test-Path "$dir\unins000.exe")) { throw "no uninstaller" }
+          Start-Process "$dir\unins000.exe" -ArgumentList '/VERYSILENT' -Wait
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.label }}

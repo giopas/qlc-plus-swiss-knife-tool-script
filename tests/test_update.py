@@ -276,3 +276,19 @@ def test_sidebar_update_row_stacks():
     css = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                             "static", "css", "style.css"), encoding="utf-8").read()
     assert "#fp-update { flex-direction: column" in css and "#fp-lang select" in css
+
+
+def test_windows_installer_files_and_updater_keep_uninstaller(tmp_path):
+    """v2.8.6 — the installer script exists, is per-user, is not picked by the updater,
+    and the updater carries unins000.* over to the new folder."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    iss = open(os.path.join(root, "packaging", "windows", "installer.iss"), encoding="utf-8").read()
+    assert "PrivilegesRequired=lowest" in iss and "windows-x64-setup" in iss
+    assert update.pick_asset([{"name": "QLC-Swiss-Knife-2.8.6-windows-x64-setup.exe"}],
+                             "windows", "x64") is None
+    old, new = tmp_path / "old", tmp_path / "new"
+    old.mkdir(); new.mkdir()
+    (old / "unins000.exe").write_text("u"); (old / "unins000.dat").write_text("d")
+    (old / "app.exe").write_text("a")
+    update.keep_uninstaller(str(old), str(new))
+    assert sorted(os.listdir(new)) == ["unins000.dat", "unins000.exe"]

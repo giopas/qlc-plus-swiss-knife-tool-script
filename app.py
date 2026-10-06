@@ -21,6 +21,12 @@
 import sys
 import os
 
+try:                                    # cp1252 consoles / windowed apps must not stop on ⚡ ⚠
+    from core.console import make_stdio_safe
+    make_stdio_safe()
+except Exception:                       # noqa: BLE001 — never block the start
+    pass
+
 def _try_bootstrap():
     """Re-exec under the project's .venv Python if flask is missing."""
     here   = os.path.dirname(os.path.abspath(__file__))

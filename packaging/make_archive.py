@@ -52,6 +52,14 @@ def main() -> int:
                 for f in files:
                     p = os.path.join(d, f)
                     zf.write(p, os.path.join("QLC Swiss Knife", os.path.relpath(p, folder)))
+        iscc = shutil.which("ISCC") or next((c for c in (
+            r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe", r"C:\Program Files\Inno Setup 6\ISCC.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe")) if os.path.exists(c)), None)
+        if iscc:                                  # the installer (per-user, with an uninstaller)
+            subprocess.check_call([iscc, f"/DAppVersion={VERSION}",
+                                   os.path.join(ROOT, "packaging", "windows", "installer.iss")])
+        else:
+            print("Inno Setup (ISCC) not found — no installer built.")
     else:
         folder = os.path.join(dist, "QLC-Swiss-Knife")
         with tarfile.open(os.path.join(out, asset_name("tar.gz")), "w:gz") as t:

@@ -364,6 +364,17 @@ def helper_script(pid: int, old: str, new: str, system: str = None, exe: str = N
     return "swk-update.sh", text
 
 
+def keep_uninstaller(old: str, new: str) -> None:
+    """The Windows installer puts ``unins000.exe/.dat`` in the app folder; the swap
+    replaces the folder, so carry them over (Apps & features keeps working)."""
+    try:
+        for n in os.listdir(old):
+            if n.lower().startswith("unins") and os.path.isfile(os.path.join(old, n)):
+                shutil.copy2(os.path.join(old, n), os.path.join(new, n))
+    except OSError:
+        pass
+
+
 def cleanup_after_update() -> None:
     """At start of a packaged app: remove the previous version (``<name>.old``)
     and the leftovers of the swap.  Never raises."""
@@ -412,6 +423,7 @@ def install(info: dict = None) -> dict:
         _safe_extract(arc, unpacked)
         new = os.path.join(work, "new")
         shutil.move(_payload(unpacked), new)
+        keep_uninstaller(root, new)
         name, text = helper_script(os.getpid(), root, new, exe=os.path.basename(sys.executable))
         script = os.path.join(work, name)
         with open(script, "w", encoding="utf-8", newline="") as f:

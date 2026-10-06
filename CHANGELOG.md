@@ -8,6 +8,17 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.8.6] — 2026-10-07
+
+**Windows: the app starts, and there is an installer.**
+
+### Fixed
+- **The first Windows package did not start**: `UnicodeEncodeError: 'charmap' codec can't encode character '\u26a1'` — the start message (⚡, ⚠) could not be printed on a Windows console in cp1252 (or without a console at all). The console streams are now UTF-8 and never raise (`core/console.py`).
+
+### Added
+- **A real Windows installer** (`QLC-Swiss-Knife-<version>-windows-x64-setup.exe`, Inno Setup): per-user (no administrator), Start menu entry, optional desktop shortcut, uninstaller in *Apps & features*. It installs into your user programs folder so *Update and restart* keeps working; the update keeps the uninstaller. The `.zip` stays for those who prefer to unzip. The build tests the installer silently (install, start, uninstall) before it is published.
+
+
 ## [2.8.5] — 2026-10-07
 
 **Pictures retaken, a sidebar fix, and the build actions brought up to date.**

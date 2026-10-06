@@ -35,6 +35,18 @@ from typing import Dict, List, Optional
 PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "profiles", "nomenclature")
 
+
+
+def user_dir() -> str:
+    """Your own naming profiles (v2.7.0: from the community library)."""
+    return os.environ.get("QSK_NOMENCLATURE") or os.path.join(
+        os.path.expanduser("~"), ".qlc_swiss_knife", "nomenclature")
+
+
+def _dirs():
+    return [(PROFILE_DIR, True), (user_dir(), False)]
+
+
 # Effect kinds the generator uses (for documentation / UI)
 EFFECT_KINDS = ("static", "dynamic", "pulse", "movement", "matrix", "fx", "utility")
 
@@ -114,15 +126,25 @@ class Nomenclature:
 
 
 def list_profiles() -> List[dict]:
-    """[{id, label, description}] of the built-in profiles, plain first."""
+    """[{id, label, description, builtin}] — the built-in profiles (plain first),
+    then your own (``~/.qlc_swiss_knife/nomenclature/``)."""
     out = []
-    for fn in sorted(os.listdir(PROFILE_DIR)):
-        if fn.endswith(".json"):
-            with open(os.path.join(PROFILE_DIR, fn), encoding="utf-8") as fh:
-                p = json.load(fh)
-            out.append({"id": p.get("id", fn[:-5]), "label": p.get("label", fn[:-5]),
-                        "description": p.get("description", "")})
-    out.sort(key=lambda p: (p["id"] != "plain", p["id"]))
+    for folder, builtin in _dirs():
+        if not os.path.isdir(folder):
+            continue
+        for fn in sorted(os.listdir(folder)):
+            if fn.endswith(".json"):
+                try:
+                    with open(os.path.join(folder, fn), encoding="utf-8") as fh:
+                        p = json.load(fh)
+                except (OSError, ValueError):
+                    continue
+                pid = p.get("id", fn[:-5])
+                if not builtin and any(o["id"] == pid for o in out):
+                    continue                      # a built-in id is never shadowed
+                out.append({"id": pid, "label": p.get("label", fn[:-5]),
+                            "description": p.get("description", ""), "builtin": builtin})
+    out.sort(key=lambda p: (p["id"] != "plain", not p["builtin"], p["id"]))
     return out
 
 
@@ -133,8 +155,12 @@ def load_profile(ref: Optional[str] = None) -> Nomenclature:
     """
     if not ref or ref == "plain":
         ref = "plain"
-    path = ref if ref.endswith(".json") and os.path.isfile(ref) \
-        else os.path.join(PROFILE_DIR, f"{os.path.basename(ref)}.json")
+    if ref.endswith(".json") and os.path.isfile(ref):
+        path = ref
+    else:
+        base = os.path.basename(ref)
+        path = next((q for q in (os.path.join(f, f"{base}.json") for f, _b in _dirs()) if os.path.isfile(q)),
+                    os.path.join(PROFILE_DIR, f"{base}.json"))
     if not os.path.isfile(path):
         raise ValueError(f"Unknown nomenclature profile: {ref}")
     with open(path, encoding="utf-8") as fh:

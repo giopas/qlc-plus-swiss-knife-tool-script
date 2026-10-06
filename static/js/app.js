@@ -50,6 +50,7 @@ const _LAZY = {
   // initVcEditor() attaches the canvas mouse handlers (once); _vceLoad() re-reads the tree
   vceditor:   () => typeof vcEditorOnTabShow     === 'function' && vcEditorOnTabShow(),
   quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
+  library:    () => typeof libInit                === 'function' && libInit(),
 };
 
 // =============================================================================
@@ -332,10 +333,8 @@ async function _initGreeting() {
   } catch {}
 
   const h = new Date().getHours();
-  const part = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
-  el.textContent = name
-    ? `Good ${part}, ${name} 👋`
-    : 'Welcome 👋';
+  const greet = h < 12 ? 'Good morning, {0} 👋' : h < 18 ? 'Good afternoon, {0} 👋' : 'Good evening, {0} 👋';
+  el.textContent = name ? greet.replace('{0}', name) : 'Welcome 👋';   // English; the i18n observer translates it
 }
 
 // =============================================================================
@@ -428,6 +427,7 @@ async function nativePick(title, types = [], initDir = '', folder = false) {
   }
   nativePick.unavailable = !_pickerAvailable;   // callers: fall back to <input type=file>
   if (!_pickerAvailable) return null;
+  title = typeof t === 'function' ? t(title) : title;
 
   try {
     const r = await fetch('/api/picker/pick', {

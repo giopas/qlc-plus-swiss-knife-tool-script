@@ -40,7 +40,7 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **2.4.0** ✅ | Doctor and Quick Start | PANIC RESET fix in the Porter, D002 / D003 / D004 / D013 / D015 fixes, Quick Start options kept, live check in CI |
 | **2.5.0** ✅ | Looks and Stage | Beats tempo, moving-head positions, own palettes, matrix patterns for pixel bars; fixture aiming, mesh thumbnails, hide / show and copy meshes |
 | **2.6.0** ✅ | Paperwork, setlists, MIDI | MIDI / input mapping manager, setlist import and a tablet setlist, tech rider with patch, tilt and meshes |
-| **2.7.0** | Language and sharing | Interface in English, Italian and French; a community library of templates, palettes and profiles |
+| **2.7.0** ✅ | Language and sharing | Interface in English, Italian and French; a community library of templates, palettes, presets, naming profiles, VC styles and Show Profiles as one plain file |
 | **2.8.0** | Install like an app | Packages for macOS, Windows and Linux built on each release, with an update check; running from sources stays |
 | **2.9.0** | MCP server | Claude Desktop / Cowork drive the same tools — the AI proposes, the tools write, the Doctor validates; ships inside the package (`--mcp`) |
 

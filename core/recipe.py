@@ -39,7 +39,7 @@ FORMAT = "qsk-recipe/1"
 # Paths never recorded: reads, previews that change nothing, exports, desktop
 # dialogs, sessions, other tools' scratch state, and the save itself.
 SKIP = [
-    r"^/api/profile/", r"^/api/load$", r"^/api/reload$", r"^/api/quit$", r"^/api/help$", r"^/api/output-dir$",
+    r"^/api/profile/", r"^/api/library/", r"^/api/load$", r"^/api/reload$", r"^/api/quit$", r"^/api/help$", r"^/api/output-dir$",
     r"^/api/picker/", r"^/api/session/", r"^/api/show/save$", r"^/api/show/saved$",
     r"^/api/compare/", r"^/api/dictionary/", r"^/api/quickstart/", r"^/api/fixture/",
     r"^/api/showbook/", r"^/api/checklist/", r"^/api/techrider/",

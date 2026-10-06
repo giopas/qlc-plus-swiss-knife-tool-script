@@ -1,4 +1,4 @@
-# ⚡ QLC+ Swiss Knife — v2.6.0
+# ⚡ QLC+ Swiss Knife — v2.7.0
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
@@ -38,6 +38,7 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks from a palette for your fixture groups; chasers from a pattern with BPM timing, song presets and a playable preview. |
 | | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | The Virtual Console as a canvas: add and wire widgets, pages, templates, screen sizes; align, distribute, sort. |
 | | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage from above and from the front: put band members and set pieces on the floor, place them around the fixtures; make and edit fixture groups. |
+| | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share your VC templates, palettes, look presets, naming profiles, VC styles and Show Profiles as one plain file — and install what other QLC+ users shared (checked first; no server). |
 | **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs matched to functions, with fades, into the setlist CueList; setlist PDFs. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every keyboard and MIDI binding in one table: clashes, gaps, bulk MIDI shift. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A description for every function, shown everywhere. |
@@ -47,6 +48,8 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: tech rider for the venue (never carries your show's internals), crew checklist for load-in, patch sheet with DIP-switch diagrams (also as a thermal-printer ticket), show book for you — with a stage plot; PDF or CSV. |
 
 ---
+
+**Language.** The interface speaks English, Italian and French — pick it at the bottom of the left menu ([Language](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Language)). Shows, reports and the wiki stay as they are.
 
 ## Screenshots
 

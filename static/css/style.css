@@ -4107,3 +4107,17 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .st-m.hid text { opacity: .55; }
 .st-libname { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .st-thumb { width: 32px; height: 32px; flex: none; background: var(--surface-0); border-radius: 4px; }
+
+/* ── Library (v2.7.0) ─────────────────────────────────────────────────────── */
+.lib-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px; padding: 0 12px; align-items: start; }
+.lib-items { max-height: 340px; overflow: auto; margin-bottom: 8px; }
+.lib-kind { margin: 6px 0 2px; font-size: var(--fs-small); color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; }
+.lib-row { display: flex; align-items: baseline; gap: 6px; padding: 2px 0; font-size: var(--fs-body); }
+.lib-row .vce-hint { margin-left: auto; }
+#scr-library .vce-hint { color: var(--text-dim); font-size: var(--fs-small); }
+.lib-meta { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.lib-st { display: inline-block; min-width: 64px; text-align: center; font-size: var(--fs-small); border-radius: 10px; padding: 1px 8px; background: var(--surface-2, var(--surface-1)); }
+.lib-st.new { color: var(--success); }
+.lib-st.exists, .lib-st.reserved { color: var(--warning); }
+.lib-st.invalid { color: var(--error); }
+.lib-warn { color: var(--warning); font-size: var(--fs-small); }

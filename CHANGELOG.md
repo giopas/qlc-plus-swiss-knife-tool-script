@@ -8,6 +8,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.7.0] — 2026-10-06
+
+**Language and sharing.** The interface in English, Italian and French, and a library to share what you built as one plain file.
+
+### Added
+- **Interface in English, Italian and French**: a language menu at the bottom of the left menu (remembered in the browser; English by default). Text, tooltips, placeholders and dialogs are translated as the page is drawn — numbers and names inside a sentence stay in place ("12 functions" → "12 funzioni" / "12 fonctions"). Strings live in `static/i18n/<lang>.json` (about 2,800 each, English text → translation, `{0}` for a changing part), so another language is one more file. Show data (function, fixture and group names), reports, PDFs and the wiki are not translated. The ⌘K / Ctrl+K palette has *Language: English / Italiano / Français*. `tools/i18n_extract.py` lists the strings of the app and what a language still lacks.
+- **📚 Library** (menu 3 · Create): share your VC templates, colour palettes, look presets, naming profiles, VC styles and Show Profiles as one `*.qsklib.json` file, and install what others shared. Nothing is installed before you have seen every item with its status (new / same / differs / name taken) and chosen *skip*, *replace* or *keep both*; built-in names are reserved; a file is refused when it holds an XML entity or DOCTYPE, an unknown format placeholder, a Show Profile step that is not a recordable call, or is bigger than 8 MB / 500 items; a Show Profile that names a folder of your computer is flagged. Never shared: controllers, sessions, mesh folders, shows. Local files only — no server, no network.
+- Naming profiles and VC styles can now be your own: `~/.qlc_swiss_knife/nomenclature` and `vc_style` (`QSK_NOMENCLATURE`, `QSK_VC_STYLES`) next to the built-in ones.
+
 ## [2.6.0] — 2026-10-06
 
 **Paperwork, setlists, MIDI.** The controller side of a show, setlists that come in from anywhere and go out to a tablet, and a tech rider that says where things hang.

@@ -126,6 +126,7 @@ from routes.inputs_routes import bp as inputs_bp
 from routes.show_routes import bp as show_bp
 from routes.profile_routes import bp as profile_bp
 from routes.compare_routes import bp as compare_bp
+from routes.library_routes import bp as library_bp
 
 PORT = 5731
 
@@ -172,6 +173,7 @@ def create_app():
     app.register_blueprint(stage_bp)
     app.register_blueprint(inputs_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(library_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request

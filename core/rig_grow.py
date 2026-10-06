@@ -23,7 +23,10 @@ from __future__ import annotations
 
 import copy
 import math
+import re
 import xml.etree.ElementTree as ET
+
+from core import script_cmds
 
 
 def _engine(root: ET.Element):
@@ -253,8 +256,11 @@ def not_wired(root: ET.Element, plan: dict[str, str]) -> list[str]:
             if heads & tmpl and not heads & new:
                 by_group.setdefault(gname, []).append(fn.get("Name", ""))
         elif ftype == "Script":
-            cmds = " ".join((c.text or "") for c in fn.findall("Command"))
-            if any(f"setfixture:{t}" in cmds for t in tmpl):
+            cmds = " ".join(script_cmds.decode(c.text) for c in fn.findall("Command"))
+            # legacy "setfixture:ID,..." / 5.3 "Engine.setFixture(ID, ...)"
+            if any(f"setfixture:{t}" in cmds.lower()
+                   or re.search(rf"Engine\.setFixture\(\s*{re.escape(str(t))}\s*,", cmds, re.I)
+                   for t in tmpl):
                 lines.append(f"Script '{fn.get('Name', '')}' sets channels of a followed "
                              "fixture directly — edit it in QLC+ to include the new ones.")
     for gname, mats in sorted(by_group.items()):

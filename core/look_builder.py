@@ -58,7 +58,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from typing import Dict, List, Optional, Tuple
 
 from core import capability_map as cm
-from core import qxw_io, vc_ops
+from core import qxw_io, script_cmds, vc_ops
 from core.quick_start.channel_model import mode_channels
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "looks")
@@ -566,15 +566,17 @@ def _panic_add_stops(root, fids: List[str]) -> List[str]:
         if f.get("Type") != "Script" or not PANIC_RE.search(f.get("Name", "")):
             continue
         cmds = f.findall("Command")
-        if not any((c.text or "").startswith("stopfunction") for c in cmds):
+        if not any(script_cmds.is_stop(c.text) for c in cmds):
             continue
         at = next((i for i, c in enumerate(list(f)) if c.tag == "Command"
-                   and (c.text or "").startswith("startfunction")), None)
-        have = {(c.text or "") for c in cmds}
-        new = [x for x in fids if f"stopfunction%3A{x}" not in have]
+                   and script_cmds.is_start(c.text)), None)
+        have = {fid for c in cmds if script_cmds.is_stop(c.text)
+                for fid in script_cmds.func_ids(c.text)}
+        engine = script_cmds.uses_engine_style(cmds)
+        new = [x for x in fids if str(x) not in have]
         for k, x in enumerate(new):
             el = ET.Element("Command")
-            el.text = f"stopfunction%3A{x}"
+            el.text = script_cmds.make("stop", x, engine=engine)
             if at is None:
                 f.append(el)
             else:

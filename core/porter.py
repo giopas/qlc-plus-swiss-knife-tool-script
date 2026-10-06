@@ -51,7 +51,7 @@ from contextlib import contextmanager
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
-from core import qxw_io
+from core import qxw_io, script_cmds
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Module state
@@ -233,9 +233,8 @@ def _fixture_info(el: ET.Element) -> dict:
 _FUNC_REF_ATTRS = {"Function", "FunctionID", "SceneID", "ChaserID"}
 _FIX_REF_ATTRS  = {"Fixture", "FixtureID"}
 
-# Script command patterns that embed function IDs
-# QLC+ saves script commands percent-encoded ("stopfunction%3A12")
-_SCRIPT_FUNC_RE = re.compile(r'((?:start|stop)function(?::|%3A))(\d+)', re.IGNORECASE)
+# Script commands that embed function IDs: legacy "stopfunction%3A12" and the
+# QLC+ 5.3 form "Engine.stopFunction%2812%29%3B" — see core/script_cmds.py
 
 
 def resolve_closure(seed_ids: list[str]) -> dict:
@@ -424,9 +423,7 @@ def _collect_refs(fn_el: ET.Element, fn_type: str,
     # ── Script commands ───────────────────────────────────────────────────
     if fn_type == "Script":
         for cmd in fn_el.findall("Command"):
-            text = cmd.text or ""
-            for m in _SCRIPT_FUNC_RE.finditer(text):
-                func_ids.append(m.group(2))
+            func_ids.extend(script_cmds.func_ids(cmd.text))
 
     # ── Generic: walk child attributes for any remaining refs ─────────────
     for child in fn_el:
@@ -1831,8 +1828,7 @@ def _cascade_prune(new_fns: dict[str, ET.Element], id_map: dict[str, str],
                     if st.get("Number") is not None:
                         st.set("Number", str(n))
             for cmd in el.findall("Command"):
-                ids = {m.group(2) for m in _SCRIPT_FUNC_RE.finditer(unquote(cmd.text or ""))}
-                if ids & gone:
+                if set(script_cmds.func_ids(cmd.text)) & gone:
                     el.remove(cmd)
             reason = ""
             if steps and not el.findall("Step"):
@@ -1880,18 +1876,19 @@ def _extend_panic_reset(engine: ET.Element, new_ids: list[str]) -> list[str]:
         if fn.get("Type") != "Script" or not _PANIC_RE.search(fn.get("Name", "")):
             continue
         cmds = fn.findall("Command")
-        start = next((c for c in cmds if re.match(r"\s*startfunction", unquote(c.text or ""))), None)
+        start = next((c for c in cmds if script_cmds.is_start(c.text)), None)
         if start is None or not new_ids:
             continue
-        sep = "%3A" if "%3A" in (start.text or "") else ":"
-        have = {m.group(2) for c in cmds for m in _SCRIPT_FUNC_RE.finditer(c.text or "")}
+        engine = script_cmds.uses_engine_style(cmds)
+        encoded = "%" in (start.text or "")
+        have = {fid for c in cmds for fid in script_cmds.func_ids(c.text)}
         pos = list(fn).index(start)
         added = 0
         for fid in new_ids:
             if fid in have:
                 continue
             cmd = ET.Element("Command")
-            cmd.text = f"stopfunction{sep}{fid}"
+            cmd.text = script_cmds.make("stop", fid, engine=engine, encoded=encoded)
             fn.insert(pos + added, cmd)
             added += 1
         if added:
@@ -1993,10 +1990,7 @@ def _remap_func_refs(fn_el: ET.Element, id_map: dict[str, str]):
 
         # Script commands
         if tag == "Command" and child.text:
-            child.text = _SCRIPT_FUNC_RE.sub(
-                lambda m: (m.group(1) + id_map[m.group(2)]
-                           if m.group(2) in id_map else m.group(0)),
-                child.text)
+            child.text = script_cmds.renumber(child.text, id_map)
 
         # Generic attribute refs
         for attr in _FUNC_REF_ATTRS:

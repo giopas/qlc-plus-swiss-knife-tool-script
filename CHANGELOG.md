@@ -8,6 +8,22 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.8.3] — 2026-10-06
+
+**QLC+ 5.3.0 compatibility.**
+
+### Fixed
+- **Script commands saved by QLC+ 5.3.0 are understood.** QLC+ 5.3.0 rewrites `stopfunction:6` as `Engine.stopFunction(6);` (and `startfunction`, `stoponexit`, `wait`) when it saves a workspace. The Doctor reported a false *unreferenced function* (D016) for the PANIC RESET scene of such a file; the Function Porter, Look Builder, Doctor fixes and Rig Reducer now read both forms for dependencies, ID renumbering and removal of dead references. A script that is edited (PANIC RESET gets the stops of newly ported or built functions) is edited in its own style; new scripts are still written in the old form, which QLC+ 5.2 and 5.3 both open.
+- Rig Grow's warning about scripts that set channels of a followed fixture also recognises the `Engine.setFixture(...)` form.
+
+### Changed
+- The live-check tool finds the macOS binary of QLC+ 5.3 (`qlcplus5`).
+- Test and live-check workflows run on Ubuntu 24.04 (the `ubuntu-latest` alias moves on 19 October).
+
+### Added
+- `core/script_cmds.py` — one place for reading, building and renumbering Script commands; `tests/corpus/QuickStart_club_qlc530.qxw`, the QuickStart_club file saved by QLC+ 5.3.0, and tests on it.
+
+
 ## [2.8.2] — 2026-10-06
 
 **Update check, fixed after the first live try.**

@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
-from core import qxw_io
+from core import qxw_io, script_cmds
 from core.doctor.report import ERROR, INFO, WARNING, Finding, Report, make_report
 
 NONE_ID = "4294967295"          # QLC+ "no function" sentinel
@@ -37,7 +37,6 @@ FX_NAME_RE = re.compile(
     r"strob|flash|\*|punk|macro|program|audio|(?<![a-z])fx(?![a-z])", re.I)
 PANIC_RE = re.compile(r"panic\s*reset", re.I)
 UNNAMED_RE = re.compile(r"^\[\d+\]\s+\S+\s+-\s+Unassigned$")
-SCRIPT_FUNC_RE = re.compile(r"(?:start|stop)function:(\d+)", re.I)
 
 # Channel groups whose non-neutral values run strobe / internal programs.
 RISKY_GROUPS = ("Shutter", "Effect")
@@ -193,10 +192,10 @@ class _Workspace:
             yield "bound", f.get("BoundScene")
         if f.get("Type") == "Script":
             for cmd in f.findall("Command"):
-                # QLC+ saves script commands percent-encoded ("%3A" = ":")
-                for m in SCRIPT_FUNC_RE.finditer(unquote(cmd.text or "")):
-                    stop = m.group(0).lower().startswith("stop")
-                    yield ("script-stop" if stop else "script"), m.group(1)
+                # legacy ("stopfunction:12") and QLC+ 5.3 ("Engine.stopFunction(12);"),
+                # both percent-encoded in the file
+                for verb, fid in script_cmds.func_refs(cmd.text):
+                    yield ("script-stop" if verb == "stop" else "script"), fid
 
     def _walk_vc(self, el: ET.Element, page: str):
         self.widgets.append((el, page))

@@ -865,11 +865,10 @@ class TestExecute(unittest.TestCase):
         # startfunction and stopfunction should reference the new IDs
         new_ids = {fn.get("ID") for fn in engine.findall("Function")
                    if fn.get("Type") != "Script"}
+        from core import script_cmds
         for cmd in commands:
-            if cmd and "function:" in cmd:
-                m = porter._SCRIPT_FUNC_RE.search(cmd)
-                if m:
-                    self.assertIn(m.group(2), new_ids)
+            for fid in script_cmds.func_ids(cmd):
+                self.assertIn(fid, new_ids)
         os.unlink(src_path)
         os.unlink(tgt_path)
 

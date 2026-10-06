@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife — v2.8.2
+# QLC+ Swiss Knife — v2.8.3
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -97,7 +97,7 @@ Or **run from the sources** (below) — same app, and the badge then says `git p
 | Flask | `pip install flask` — the only required dependency |
 | pywebview | `pip install pywebview` — *optional*, enables native window mode |
 | Browser | Chrome or Edge recommended (for native Save dialog); Firefox/Safari also work |
-| QLC+ workspace | `.qxw` format (QLC+ 5.x) |
+| QLC+ workspace | `.qxw` format (QLC+ 5.x; checked with 5.2.2 and 5.3.0) |
 
 ---
 

@@ -54,7 +54,8 @@ NS = "{http://www.qlcplus.org/Workspace}"
 WIDGET_TAGS = {"Button", "Slider", "Frame", "SoloFrame", "Label", "XYPad",
                "CueList", "Knob", "SpeedDial", "AudioTriggers", "Clock",
                "Matrix", "Animation"}
-MAC_BINARIES = ("/Applications/QLC+.app/Contents/MacOS/qlcplus-qml",
+MAC_BINARIES = ("/Applications/QLC+.app/Contents/MacOS/qlcplus5",      # 5.3+
+                "/Applications/QLC+.app/Contents/MacOS/qlcplus-qml",
                 "/Applications/QLC+.app/Contents/MacOS/qlcplus")
 
 

@@ -57,8 +57,8 @@ import xml.etree.ElementTree as ET  # nosec B405
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Set
 
-from core import qxw_io, vc_ops
-from core.doctor.checks import (NONE_ID, UNNAMED_RE, PANIC_RE, SCRIPT_FUNC_RE, _normalise_defs,
+from core import qxw_io, script_cmds, vc_ops
+from core.doctor.checks import (NONE_ID, UNNAMED_RE, PANIC_RE, _normalise_defs,
                                 _scene_pairs, _Workspace, check)
 from core.doctor.report import Finding, Report
 
@@ -209,9 +209,7 @@ def _unlink_function(root, fid: str) -> List[str]:
                 out.append(f"show item of function {f.get('ID')}")
         if f.get("Type") == "Script":
             for c in list(f.findall("Command")):
-                from urllib.parse import unquote
-                ids = [m.group(1) for m in SCRIPT_FUNC_RE.finditer(unquote(c.text or ""))]
-                if fid in ids:
+                if fid in script_cmds.func_ids(c.text):
                     f.remove(c)
                     out.append(f"script command in function {f.get('ID')}")
     vc = root.find("VirtualConsole")
@@ -364,9 +362,8 @@ def _fix_d003(root, f: Finding) -> List[str]:
                 for sf in [x for x in tr.findall("ShowFunction") if x.get("ID") == tgt]:
                     tr.remove(sf)
                     out.append(f"removed show item → missing function {tgt}")
-            from urllib.parse import unquote
             for c in list(fn.findall("Command")):
-                if tgt in [m.group(1) for m in SCRIPT_FUNC_RE.finditer(unquote(c.text or ""))]:
+                if tgt in script_cmds.func_ids(c.text):
                     fn.remove(c)
                     out.append(f"removed script command → missing function {tgt}")
             return out
@@ -411,10 +408,8 @@ def _replace_refs(root, old: str, new: str) -> int:
                     n += 1
         if f.get("Type") == "Script":
             for c in f.findall("Command"):
-                t = unquote(c.text or "")
-                m = re.match(r"((?:start|stop)function:)(\d+)$", t, re.I)
-                if m and m.group(2) == old:
-                    c.text = quote(m.group(1) + new, safe="")
+                if old in script_cmds.func_ids(c.text):
+                    c.text = script_cmds.renumber(c.text, {old: new})
                     n += 1
     vc = root.find("VirtualConsole")
     if vc is not None:

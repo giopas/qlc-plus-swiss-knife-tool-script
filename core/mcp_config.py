@@ -18,6 +18,15 @@ from typing import Iterable, List, Optional
 from core import qxw_io
 
 
+def _next_free(path: str) -> str:
+    """``notes.txt`` → ``notes_v2.txt`` → ``notes_v3.txt``… the first name not on disk."""
+    stem, ext = os.path.splitext(path)
+    n = 2
+    while os.path.exists(f"{stem}_v{n}{ext}"):
+        n += 1
+    return f"{stem}_v{n}{ext}"
+
+
 class NotAllowed(Exception):
     """A path outside the folders the user listed."""
 
@@ -84,17 +93,20 @@ class Allowlist:
         raise NotAllowed("That file is outside the folders shared with Claude: "
                          + ", ".join(folders))
 
-    def new_file_path(self, folder_or_name: str, source_name: str = "") -> str:
-        """A free ``.qxw`` path inside an allowed folder (never an existing file)."""
+    def new_file_path(self, folder_or_name: str, source_name: str = "", ext: str = ".qxw") -> str:
+        """A free path ending in *ext* inside an allowed folder (never an existing file)."""
         p = self.check(folder_or_name)
         if os.path.isdir(p):
-            base = source_name or "Show.qxw"
-            p = qxw_io.next_version_path(os.path.join(p, base))
+            base = source_name or ("Show" + ext)
+            p = qxw_io.next_version_path(os.path.join(p, base)) if os.path.exists(os.path.join(p, base)) \
+                else os.path.join(p, base)
+            if ext != ".qxw" and os.path.exists(p):
+                p = _next_free(p)
         else:
-            if not p.lower().endswith(".qxw"):
-                raise NotAllowed("The new file must end in .qxw.")
+            if not p.lower().endswith(ext):
+                raise NotAllowed(f"The new file must end in {ext}.")
             if os.path.exists(p):
-                p = qxw_io.next_version_path(p)
+                p = qxw_io.next_version_path(p) if ext == ".qxw" else _next_free(p)
         self.check(p)
         return p
 

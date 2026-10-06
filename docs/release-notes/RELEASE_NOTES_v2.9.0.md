@@ -2,6 +2,7 @@
 
 ### Added
 - **MCP server.** Under the menu, **🔌 Connect to Claude**: add the folders with your shows, copy the snippet into Claude Desktop's settings (or the one-line command for Claude Code), and Claude can open a show, run the Doctor, reduce the rig, port functions, build looks and chasers, edit the Virtual Console, apply a setlist, compare shows and undo — then save the result.
+- **Claude can draft the Dictionary** — it describes your functions from their names, types, buttons and contents; you review the proposal and it saves a new dictionary `.txt`.
 - **You stay in control:** Claude only sees the folders you list; it always saves a **new file** (with the report and the recipe) and never overwrites one; every change is a step in History.
 - Windows: `QLC Swiss Knife MCP.exe` next to the app (the console program Claude talks to).
 - Wiki page *Connect Claude to Swiss Knife*.

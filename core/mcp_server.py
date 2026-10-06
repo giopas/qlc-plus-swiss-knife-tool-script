@@ -134,6 +134,20 @@ TOOLS: List[dict] = [
     {"name": "compare", "handler": "t_compare",
      "description": "Compare the show in progress with another .qxw and return the differences (read only).",
      "inputSchema": _obj({"path": _S}, ["path"])},
+    {"name": "dictionary_context", "handler": "t_dictionary_context",
+     "description": "For writing the Dictionary (ID → description of each function): lists the functions of the show in progress with id, name, type, current description, the Virtual Console button caption/frames that trigger it and short facts (chaser steps, scene fixture count, collection members). Use only_missing=true to see just the undescribed ones. Read-only. To DRAFT descriptions: call this, write one plain sentence per function (what it looks like / when it is used — only from the facts and names you were given; say \"unclear\" rather than guess), show the proposal to the user, and call dictionary_set once they agree (or straight away if they asked you to just do it).",
+     "inputSchema": _obj({"only_missing": {"type": "boolean"}, "type": _S, "query": _S, "frame": _S,
+                          "limit": {"type": "integer"}, "offset": {"type": "integer"}})},
+    {"name": "dictionary_set", "handler": "t_dictionary_set",
+     "description": "Store descriptions in the Dictionary: entries [{id, description}]. An existing description is kept unless overwrite=true. Nothing is written to a file until dictionary_save; the show itself is never changed.",
+     "inputSchema": _obj({"entries": {"type": "array", "items": _obj({"id": _S, "description": _S}, ["id", "description"])},
+                          "overwrite": {"type": "boolean"}}, ["entries"])},
+    {"name": "dictionary_load", "handler": "t_dictionary_load",
+     "description": "Load an existing dictionary .txt (ID|Name|Description) from a shared folder, to extend it.",
+     "inputSchema": _obj({"path": _S}, ["path"])},
+    {"name": "dictionary_save", "handler": "t_dictionary_save",
+     "description": "Write the Dictionary as a NEW .txt in a shared folder (never overwrites: _v2, _v3…). `where` is a folder or a .txt path; default: next to the opened show.",
+     "inputSchema": _obj({"where": _S})},
     {"name": "show_history", "handler": "t_show_history",
      "description": "The steps made so far on the show in progress (what each did, Doctor counts after it).",
      "inputSchema": _obj()},
@@ -152,6 +166,8 @@ INSTRUCTIONS = (
     "look at it (show_summary, doctor_check), change it with the tools, and finish "
     "with save_show, which writes a NEW file — the original is never modified. "
     "Every change is a History step you can show_history or undo. "
+    "To describe functions in the Dictionary, use dictionary_context, propose the descriptions to the user, "
+    "then dictionary_set and dictionary_save (the Dictionary is a separate .txt, not part of the show). "
     "Only folders the user shared in Swiss Knife (Settings › Connect to Claude) are reachable."
 )
 
@@ -375,6 +391,108 @@ class Server:
         if len(rep) > 9000:
             out["note"] = f"Report cut at 9000 of {len(rep)} characters."
         return out
+
+    # ── dictionary (descriptions; never part of the .qxw) ───────────────────
+    def _facts(self) -> Dict[str, str]:
+        import copy
+        from core import qxw_io, workspace
+        root = workspace._state.get("qxw_root")
+        if root is None:
+            return {}
+        root = qxw_io.strip_ns(copy.deepcopy(root))
+        names = workspace._state.get("func_by_id", {})
+        out: Dict[str, str] = {}
+        for f in root.iter("Function"):
+            fid, typ = f.get("ID", ""), f.get("Type", "")
+            if typ in ("Chaser", "Collection", "Sequence"):
+                steps = [names.get((st.text or "").strip(), "?") for st in f.iter("Step")
+                         if (st.text or "").strip().isdigit()]
+                if steps:
+                    out[fid] = (f"{len(steps)} step(s): " + ", ".join(steps[:6]) + ("…" if len(steps) > 6 else ""))
+            elif typ == "Scene":
+                n = len(list(f.iter("FixtureVal")))
+                out[fid] = f"{n} fixture(s)" if n else "no fixture values"
+            elif typ == "EFX":
+                a = f.find("Algorithm")
+                out[fid] = f"EFX {a.text}" if a is not None and a.text else "EFX"
+        return out
+
+    def t_dictionary_context(self, a: dict) -> Any:
+        self.need_show()
+        rows = self.api("GET", "/api/dictionary/")
+        facts = self._facts()
+        q = str(a.get("query") or "").lower()
+        typ = str(a.get("type") or "").lower()
+        frame = str(a.get("frame") or "").lower()
+        out = []
+        for r in rows:
+            if a.get("only_missing") and (r.get("desc") or "").strip():
+                continue
+            if typ and typ != str(r.get("type", "")).lower():
+                continue
+            if q and q not in str(r.get("name", "")).lower():
+                continue
+            if frame and not any(frame in str(x).lower() for x in r.get("vc_frames") or []):
+                continue
+            row = {"id": r["id"], "name": r["name"], "type": r["type"]}
+            if r.get("desc"):
+                row["description"] = r["desc"]
+            if r.get("vc_button"):
+                row["vc_button"] = r["vc_button"]
+            if r.get("vc_frames"):
+                row["vc_frames"] = r["vc_frames"]
+            if facts.get(r["id"]):
+                row["facts"] = facts[r["id"]]
+            out.append(row)
+        limit = max(1, min(int(a.get("limit") or 60), 150))
+        off = max(0, int(a.get("offset") or 0))
+        res: Dict[str, Any] = {"total": len(rows), "matching": len(out),
+                               "described": sum(1 for r in rows if (r.get("desc") or "").strip()),
+                               "functions": out[off:off + limit]}
+        if len(out) > off + limit:
+            res["next_offset"] = off + limit
+        return res
+
+    def t_dictionary_set(self, a: dict) -> Any:
+        self.need_show()
+        known = {r["id"]: r for r in self.api("GET", "/api/dictionary/")}
+        done, kept, unknown = [], [], []
+        for e in a.get("entries") or []:
+            fid = str(e.get("id", "")).strip()
+            desc = " ".join(str(e.get("description", "")).split())[:400]
+            if fid not in known:
+                unknown.append(fid)
+            elif not desc:
+                continue
+            elif (known[fid].get("desc") or "").strip() and not a.get("overwrite"):
+                kept.append(fid)
+            else:
+                self.api("PATCH", f"/api/dictionary/{fid}", {"desc": desc})
+                done.append(fid)
+        out: Dict[str, Any] = {"set": len(done), "kept_existing": kept, "unknown_ids": unknown,
+                               "note": "Held in memory — call dictionary_save to write the .txt."}
+        return out
+
+    def t_dictionary_load(self, a: dict) -> Any:
+        self.need_show()
+        p = self.allow.check(a.get("path", ""))
+        if not p.lower().endswith(".txt"):
+            raise ToolError("A dictionary is a .txt file.")
+        return self.api("POST", "/api/dictionary/load", {"path": p})
+
+    def t_dictionary_save(self, a: dict) -> Any:
+        self.need_show()
+        st = self.api("GET", "/api/show/status?doctor=0")
+        where = a.get("where") or (os.path.dirname(self.opened_path) if self.opened_path else "")
+        if not where:
+            raise ToolError("Say where to save: a shared folder or a .txt path.")
+        stem = os.path.splitext(st.get("source_name") or "Show.qxw")[0]
+        try:
+            path = self.allow.new_file_path(where, f"{stem}_dictionary.txt", ext=".txt")
+        except mcp_config.NotAllowed as e:
+            raise ToolError(str(e))
+        self.api("POST", "/api/dictionary/save", {"path": path})
+        return {"saved": path, "note": "A new file; the show and any earlier dictionary are untouched."}
 
     def t_show_history(self, a: dict) -> Any:
         self.need_show()

@@ -74,7 +74,8 @@ def test_protocol_handshake_and_tool_list(work):
     tools = work.rpc("tools/list")["result"]["tools"]
     names = {t["name"] for t in tools}
     assert {"open_show", "doctor_fix", "reduce_rig", "port_functions", "build_looks", "edit_vc",
-            "setlist", "compare", "undo", "save_show"} <= names
+            "setlist", "compare", "undo", "save_show", "dictionary_context", "dictionary_set",
+            "dictionary_save", "dictionary_load"} <= names
     assert all(t["inputSchema"]["type"] == "object" and t["description"] for t in tools)
     assert work.rpc("nope")["error"]["code"] == -32601
     assert work.rpc("ping")["result"] == {}
@@ -229,3 +230,35 @@ def test_connect_panel_routes(work):
     assert str(work.folder) in srv.allow.folders()
     page = c.get("/").get_data(as_text=True)
     assert "mcp-card" in page and "mcp.js" in page
+
+
+def test_dictionary_draft_and_save(work):
+    f = work.folder
+    work.ok("open_show", path=str(f / "Festival_14fix.qxw"))
+    ctx = work.ok("dictionary_context", only_missing=True, limit=5)
+    assert ctx["total"] > 5 and len(ctx["functions"]) == 5 and ctx["next_offset"] == 5
+    first = ctx["functions"][0]
+    assert {"id", "name", "type"} <= set(first)
+    assert any("facts" in x or x["type"] not in ("Scene", "Chaser") for x in ctx["functions"] + work.ok(
+        "dictionary_context", type="Chaser", limit=20)["functions"])
+    steps_before = work.ok("show_summary")["show"]["steps"]
+    r = work.ok("dictionary_set", entries=[{"id": first["id"], "description": "Warm   front wash,\nverses"},
+                                            {"id": "99999", "description": "x"}])
+    assert r["set"] == 1 and r["unknown_ids"] == ["99999"]
+    again = work.ok("dictionary_set", entries=[{"id": first["id"], "description": "other"}])
+    assert again["set"] == 0 and again["kept_existing"] == [first["id"]]
+    assert work.ok("dictionary_set", entries=[{"id": first["id"], "description": "other"}],
+                   overwrite=True)["set"] == 1
+    assert work.ok("show_summary")["show"]["steps"] == steps_before        # not a History step
+    shown = work.ok("dictionary_context", query=first["name"])["functions"]
+    assert shown[0]["description"] == "other"
+    path = work.ok("dictionary_save")["saved"]
+    assert path.startswith(str(f)) and path.endswith("_dictionary.txt")
+    assert f"{first['id']}|{first['name']}|other" in open(path, encoding="utf-8").read()
+    path2 = work.ok("dictionary_save")["saved"]
+    assert path2 != path and os.path.isfile(path)                            # never overwritten
+    work.ok("dictionary_load", path=path)
+    err, msg = work.tool("dictionary_save", where=str(work.tmp / "x.txt"))
+    assert err and "outside" in msg
+    err, _ = work.tool("dictionary_load", path=str(f / "Pub_6fix.qxw"))
+    assert err

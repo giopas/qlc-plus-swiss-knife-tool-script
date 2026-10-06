@@ -5,6 +5,7 @@ Console bindings (core.input_manager); every edit is a step of the show's
 History."""
 
 import copy
+import os
 import re
 
 from flask import Blueprint, jsonify, request
@@ -85,23 +86,34 @@ def op():
             if o == 'remember':
                 im.remember_controller(str(d.get('name', '')), plugin=str(d.get('plugin') or 'MIDI'),
                                        device=str(d.get('device', '')), line=d.get('line') or '0',
-                                       profile=str(d.get('profile') or ''), feedback=bool(d.get('feedback', True)))
+                                       profile=str(d.get('profile') or ''), feedback=bool(d.get('feedback', True)),
+                                       uid=str(d.get('uid') or ''), mode=str(d.get('mode') or ''))
                 return _state(message=f"Controller '{d.get('name')}' remembered.")
             im.forget_controller(str(d.get('name', '')))
             return _state(message='Controller forgotten.')
+        if o == 'learn':
+            path = str(d.get('path') or '').strip()
+            if not path.lower().endswith('.qxw') or not os.path.isfile(path):
+                raise im.InputError('Choose a .qxw file.')
+            found = im.learn_from_file(path)
+            if not found:
+                raise im.InputError('No patched input device found in that show (inputs saved as None are skipped).')
+            return _state(message=f"{len(found)} controller(s) remembered: " + ', '.join(c['device'] for c in found) + '.')
         w = qxw_io.strip_ns(copy.deepcopy(live))
         vc = False
         if o == 'set_input':
             res = im.set_input(w, str(d.get('universe', '')), plugin=str(d.get('plugin') or 'MIDI'),
                                device=str(d.get('device', '')), line=d.get('line') or '0',
-                               profile=str(d.get('profile') or ''), feedback=bool(d.get('feedback')))
+                               profile=str(d.get('profile') or ''), feedback=bool(d.get('feedback')),
+                               device_uid=str(d.get('uid') or ''), mode=str(d.get('mode') or ''))
             msg, title = f"Universe {int(res['universe']) + 1}: input patched to {res['device']}.", 'input patch'
         elif o == 'apply_controller':
             c = next((x for x in im.controllers() if x['name'] == d.get('name')), None)
             if c is None:
                 raise im.InputError('Controller not found.')
             im.set_input(w, str(d.get('universe', '')), plugin=c['plugin'], device=c['device'],
-                         line=c['line'], profile=c['profile'], feedback=c['feedback'])
+                         line=c['line'], profile=c['profile'], feedback=c['feedback'],
+                         device_uid=c.get('uid', ''), mode=c.get('mode', ''))
             msg, title = f"Universe {int(d.get('universe')) + 1}: '{c['name']}' patched.", 'input patch'
         elif o == 'clear_input':
             im.clear_input(w, str(d.get('universe', '')))

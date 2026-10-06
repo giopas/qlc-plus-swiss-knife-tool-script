@@ -24,6 +24,7 @@ result back into the show in progress.
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import xml.etree.ElementTree as ET  # nosec B405
@@ -122,6 +123,16 @@ def _bindings(root: ET.Element) -> Dict[str, List[ET.Element]]:
     return out
 
 
+def _mode(inp: Optional[ET.Element]) -> str:
+    """The MIDI plugin's line mode (``<PluginParameters mode="Program Change"/>``)."""
+    pp = inp.find("PluginParameters") if inp is not None else None
+    return (pp.get("mode") or "") if pp is not None else ""
+
+
+def _real(v) -> bool:
+    return bool(v) and str(v).strip().casefold() not in ("none", "")
+
+
 def universes(root: ET.Element) -> List[dict]:
     """Every universe: ``{id, name, input, feedback, output, bindings, status}``;
     status ``ok`` / ``no_input`` (bindings but no device — they stay silent)
@@ -143,7 +154,8 @@ def universes(root: ET.Element) -> List[dict]:
             "id": uid, "name": (u.get("Name") if u is not None else "") or f"Universe {int(uid) + 1}",
             "exists": u is not None,
             "input": {"plugin": p.get("plugin", ""), "device": dev, "line": p.get("line", ""),
-                      "profile": p.get("profile", ""), "uid": inp.get("UID", "") if inp is not None else ""},
+                      "profile": p.get("profile", ""), "uid": inp.get("UID", "") if inp is not None else "",
+                      "mode": _mode(inp)},
             "feedback": {"plugin": fb.get("Plugin", "") if fb is not None else "",
                          "device": pi.device_name(fb)},
             "output": {"plugin": o.get("Plugin", "") if o is not None else "",
@@ -155,9 +167,17 @@ def universes(root: ET.Element) -> List[dict]:
 
 
 def set_input(root: ET.Element, uid: str, *, plugin: str = "MIDI", device: str = "",
-              line="0", profile: str = "", feedback: Optional[bool] = None) -> dict:
+              line="0", profile: str = "", feedback: Optional[bool] = None,
+              device_uid: str = "", mode: str = "") -> dict:
     """Patch an input device on universe *uid* (the universe is created when
-    missing).  Feedback follows the input when *feedback* is true."""
+    missing).  Feedback follows the input when *feedback* is true.
+
+    QLC+ 5.2.2 writes ``Name`` + a numeric ``UID`` it knows from the system
+    (e.g. ``Name="SINCO" UID="528145425"``), QLC+ 5.2.1 only ``UID="<name>"``.
+    The UID cannot be invented: *device_uid* (from a remembered controller or
+    another show) is written when given, else the one already on this
+    universe for the same device, else the name (the 5.2.1 form).  *mode*
+    is the MIDI line mode (``<PluginParameters mode=…>``)."""
     device = (device or "").strip()
     if not device:
         raise InputError("Give the device name as QLC+ shows it (Inputs/Outputs tab).")
@@ -169,9 +189,14 @@ def set_input(root: ET.Element, uid: str, *, plugin: str = "MIDI", device: str =
     if profile:
         attrs["Profile"] = profile
     attrs["Name"] = device
-    attrs["UID"] = (old.get("UID") if old is not None and pi.device_name(old).casefold() == device.casefold()
-                    and old.get("UID") else device)
+    same = old is not None and pi.device_name(old).casefold() == device.casefold()
+    attrs["UID"] = (device_uid if _real(device_uid)
+                    else old.get("UID") if same and _real(old.get("UID")) else device)
     new = ET.Element("Input", attrs)
+    if mode:
+        ET.SubElement(new, "PluginParameters", {"mode": mode})
+    elif same and old.find("PluginParameters") is not None:
+        new.append(copy.deepcopy(old.find("PluginParameters")))
     if old is not None:
         i = list(u).index(old)
         u.remove(old)
@@ -187,7 +212,7 @@ def set_input(root: ET.Element, uid: str, *, plugin: str = "MIDI", device: str =
             u.insert(i, fb)
         else:
             u.append(fb)
-    return {"universe": str(uid), "device": device, "plugin": attrs["Plugin"]}
+    return {"universe": str(uid), "device": device, "plugin": attrs["Plugin"], "uid": attrs["UID"]}
 
 
 def clear_input(root: ET.Element, uid: str) -> dict:
@@ -308,6 +333,10 @@ def simulate(root: ET.Element, universe: str, channel: int) -> dict:
     notes = []
     if u is None or u["status"] == "no_input" or (u and not u["input"]["device"]):
         notes.append("This universe has no input device patched — in QLC+ nothing would answer.")
+    mode = (u or {}).get("input", {}).get("mode", "") if u else ""
+    if mode and mode not in ("Control Change",):
+        notes.append(f"This input line is in '{mode}' mode: QLC+ may number the messages of this line "
+                     "differently from the table above — compare with what QLC+'s Auto Detect shows.")
     if not hits and near:
         notes.append("The same number is bound on another MIDI channel — see 'near misses' "
                      "(OMNI mode adds the MIDI channel to the number).")
@@ -336,13 +365,15 @@ def controllers() -> List[dict]:
 
 
 def remember_controller(name: str, *, plugin: str = "MIDI", device: str = "", line="0",
-                        profile: str = "", feedback: bool = True) -> List[dict]:
+                        profile: str = "", feedback: bool = True, uid: str = "",
+                        mode: str = "") -> List[dict]:
     name, device = (name or "").strip(), (device or "").strip()
     if not name or not device:
         raise InputError("Give the controller a name and its device name.")
     items = [c for c in controllers() if c["name"].casefold() != name.casefold()]
     items.append({"name": name, "plugin": plugin or "MIDI", "device": device, "line": str(line or "0"),
-                  "profile": profile or "", "feedback": bool(feedback)})
+                  "profile": profile or "", "feedback": bool(feedback),
+                  "uid": uid if _real(uid) else "", "mode": mode or ""})
     items.sort(key=lambda c: c["name"].casefold())
     os.makedirs(os.path.dirname(_controllers_path()), exist_ok=True)
     with open(_controllers_path(), "w", encoding="utf-8") as fh:
@@ -390,3 +421,31 @@ def profiles(dirs=None) -> List[str]:
             if n:
                 names.add(n)
     return sorted(names, key=str.casefold)
+
+
+def learn_from_file(path: str) -> List[dict]:
+    """Remember the controllers patched in another show (``.qxw``): QLC+
+    wrote their real UID and line mode there.  Universes saved with the input
+    as None are skipped.  Returns the controllers found."""
+    from core import qxw_io
+    try:
+        root = qxw_io.strip_ns(qxw_io.load_qxw(path).getroot())
+    except (OSError, ET.ParseError, ValueError) as e:
+        raise InputError(f"Could not read that file: {e.__class__.__name__}.")
+    found = []
+    iom = _iom(root)
+    for u in (iom.findall("Universe") if iom is not None else []):
+        inp, fb = u.find("Input"), u.find("Feedback")
+        dev = pi.device_name(inp)
+        if not dev or not _real(dev):
+            continue
+        spec = {"name": dev, "plugin": inp.get("Plugin", "MIDI"), "device": dev,
+                "line": inp.get("Line", "0"), "profile": inp.get("Profile", ""),
+                "feedback": fb is not None and _real(pi.device_name(fb)),
+                "uid": inp.get("UID", "") if _real(inp.get("UID")) and inp.get("UID") != dev else "",
+                "mode": _mode(inp)}
+        if spec["uid"] or not any(c["device"] == dev for c in found):
+            found = [c for c in found if c["device"] != dev] + [spec]
+    for c in found:
+        remember_controller(**{k: c[k] for k in ("name", "plugin", "device", "line", "profile", "feedback", "uid", "mode")})
+    return found

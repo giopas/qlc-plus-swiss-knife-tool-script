@@ -135,3 +135,71 @@ def test_routes_on_show_in_progress(tmp_path):
     assert c.post("/api/inputs/op", json={"op": "move", "src": "9", "dst": "0"}).status_code == 400
     assert c.post("/api/inputs/op", json={"op": "nope"}).status_code == 400
     assert c.get("/api/inputs/decode", query_string={"channel": "188"}).get_json()["kind"] == "note"
+
+
+# ── the three real forms QLC+ writes (from giopas's shows) ──────────────────
+
+def _show(inp_xml: str, tmp_path, name="s.qxw"):
+    p = tmp_path / name
+    p.write_text('<?xml version="1.0"?>\n<!DOCTYPE Workspace>\n<Workspace xmlns="http://www.qlcplus.org/Workspace"><Engine>'
+                 '<InputOutputMap><Universe Name="Universe 1" ID="0"><Output Plugin="DMX USB" Line="0"/></Universe>'
+                 f'<Universe Name="Universe 2" ID="1">{inp_xml}</Universe></InputOutputMap></Engine>'
+                 '<VirtualConsole><Frame Caption="P" ID="0"><Button Caption="B" ID="1"><Function ID="0"/>'
+                 '<Input ID="0" Universe="1" Channel="20"/></Button></Frame></VirtualConsole></Workspace>', encoding="utf-8")
+    return str(p)
+
+
+GOOD = '<Input Plugin="MIDI" Name="SINCO" UID="528145425" Line="0"><PluginParameters mode="Program Change"/></Input>'
+OLD = '<Input Plugin="MIDI" UID="SINCO" Line="0"/>'
+NONE = '<Input Plugin="MIDI" Name="None" UID="None" Line="0"/>'
+
+
+def _unis(path):
+    r = qxw_io.strip_ns(qxw_io.load_qxw(path).getroot())
+    return r, {u["id"]: u for u in im.universes(r)}
+
+
+def test_real_forms_are_read(tmp_path):
+    _, u = _unis(_show(GOOD, tmp_path))
+    assert u["1"]["status"] == "ok" and u["1"]["input"]["device"] == "SINCO"
+    assert u["1"]["input"]["uid"] == "528145425" and u["1"]["input"]["mode"] == "Program Change"
+    _, u = _unis(_show(OLD, tmp_path, "old.qxw"))
+    assert u["1"]["status"] == "ok" and u["1"]["input"]["device"] == "SINCO"      # QLC+ 5.2.1: UID is the name
+    _, u = _unis(_show(NONE, tmp_path, "none.qxw"))
+    assert u["1"]["status"] == "no_input" and u["1"]["bindings"] == 1             # the "saved as None" case
+
+
+def test_learn_then_repair_a_none_show(tmp_path):
+    good, bad = _show(GOOD, tmp_path, "good.qxw"), _show(NONE, tmp_path, "bad.qxw")
+    assert im.learn_from_file(bad) == []                                          # nothing to learn from None
+    found = im.learn_from_file(good)
+    assert found[0]["device"] == "SINCO" and found[0]["uid"] == "528145425" and found[0]["mode"] == "Program Change"
+    c = im.controllers()[0]
+    assert c["uid"] == "528145425"
+    r, _ = _unis(bad)
+    im.set_input(r, "1", plugin=c["plugin"], device=c["device"], line=c["line"], profile=c["profile"],
+                 device_uid=c["uid"], mode=c["mode"])
+    inp = r.find("Engine/InputOutputMap/Universe[@ID='1']/Input")
+    assert inp.get("Name") == "SINCO" and inp.get("UID") == "528145425"
+    assert inp.find("PluginParameters").get("mode") == "Program Change"
+    assert {x["id"]: x for x in im.universes(r)}["1"]["status"] == "ok"
+
+
+def test_uid_rules(tmp_path):
+    r, _ = _unis(_show(GOOD, tmp_path))
+    im.set_input(r, "1", device="SINCO", line=0)                                  # same device again: keeps the real UID and the mode
+    inp = r.find("Engine/InputOutputMap/Universe[@ID='1']/Input")
+    assert inp.get("UID") == "528145425" and inp.find("PluginParameters").get("mode") == "Program Change"
+    im.set_input(r, "0", device="Other", line=0)                                  # unknown device: the name (the 5.2.1 form)
+    assert r.find("Engine/InputOutputMap/Universe[@ID='0']/Input").get("UID") == "Other"
+    # bindings keep their slot ID when moved
+    im.move_bindings(r, "1", "0")
+    b = r.find(".//Button/Input")
+    assert b.get("ID") == "0" and b.get("Universe") == "0" and b.get("Channel") == "20"
+
+
+def test_simulate_warns_about_the_line_mode(tmp_path):
+    r, _ = _unis(_show(GOOD, tmp_path))
+    s = im.simulate(r, "1", 20)
+    assert [h["caption"] for h in s["hits"]] == ["B"]
+    assert any("Program Change' mode" in n for n in s["notes"])

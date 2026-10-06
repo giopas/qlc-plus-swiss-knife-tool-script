@@ -55,7 +55,7 @@ function _inRender() {
     : '<span class="vce-hint">—</span>';
   const rows = U.map(u => `<tr>
       <td>${_te(_uLabel(u))}</td>
-      <td>${u.input.device ? `${_te(u.input.plugin)} · ${_te(u.input.device)}${u.input.line && u.input.line !== '0' ? ' · line ' + (+u.input.line + 1) : ''}` : '<span class="no-val">—</span>'}</td>
+      <td>${u.input.device ? `${_te(u.input.plugin)} · ${_te(u.input.device)}${u.input.line && u.input.line !== '0' ? ' · line ' + (+u.input.line + 1) : ''}${u.input.mode ? ' · <span class="vce-hint">' + _te(u.input.mode) + ' mode</span>' : ''}` : '<span class="no-val">—</span>'}</td>
       <td>${_te(u.input.profile) || '<span class="no-val">—</span>'}</td>
       <td>${u.feedback.device ? '✓' : '<span class="no-val">—</span>'}</td>
       <td>${u.bindings}</td><td>${chip(u)}</td>
@@ -77,16 +77,24 @@ function _inRender() {
       <label class="vce-hint"><input type="checkbox" id="in-fb" ${e.feedback.device ? 'checked' : ''}> feedback to the same device</label>
     </div>
     <div class="lb-row">
+      <label>Line mode <input id="in-mode" class="filter-input" list="in-modes" style="width:170px" value="${_te(e.input.mode)}" placeholder="as QLC+ shows it"></label>
+      <datalist id="in-modes"><option value="Control Change"><option value="Program Change"></datalist>
+      <label>UID <input id="in-uid" class="filter-input" style="width:170px" value="${_te(e.input.uid && e.input.uid !== 'None' && e.input.uid !== e.input.device ? e.input.uid : '')}" placeholder="from a remembered controller"></label>
+      <span class="vce-hint">QLC+ 5.2.2 saves a numeric UID for the device. It cannot be invented: leave it empty unless you copy it from a controller you remembered or learned from another show.</span>
+    </div>
+    <div class="lb-row">
       <button class="btn btn-accent btn-sm" onclick="_inPatch()">✓ Patch</button>
       <button class="btn btn-surface btn-sm" onclick="_inRemember()" title="Keep this controller so any show can use it in one click">★ Remember it…</button>
       <button class="btn btn-surface btn-sm" onclick="_inEdit=null;_inRender()">Cancel</button>
     </div>` : '';
+  const learn = `<div class="lb-row"><button class="btn btn-surface btn-sm" onclick="_inLearn()" title="Read the controllers patched in another show — QLC+ wrote their real UID and line mode there — and remember them">📂 Learn my controllers from another show…</button></div>`;
   const ctl = S.controllers.length ? `
     <div class="st-sec">My controllers <span class="vce-hint">kept on this computer — when QLC+ saved a show with the input as None, patch it back in one click</span></div>
     <div class="lb-row"><label>Patch <select id="in-ctl" class="filter-input">${S.controllers.map(c => `<option value="${_te(c.name)}">${_te(c.name)} — ${_te(c.device)}</option>`).join('')}</select></label>
       <label>on <select id="in-ctl-u" class="filter-input">${uOpts(e ? e.id : (U.find(u => u.status === 'no_input') || U[0] || {}).id)}</select></label>
       <button class="btn btn-accent btn-sm" onclick="_inApplyCtl()">✓ Patch</button>
       <button class="btn btn-surface btn-sm" onclick="_inForget()">Forget</button></div>` : '';
+  const ctlAll = learn + ctl;
   const move = U.length ? `
     <div class="st-sec">Re-patch the bindings <span class="vce-hint">move every button that listens to one universe to another — e.g. a new controller on another universe</span></div>
     <div class="lb-row"><label>From <select id="in-mv-a" class="filter-input">${uOpts((U.find(u => u.bindings) || U[0]).id)}</select></label>
@@ -112,14 +120,14 @@ function _inRender() {
   wrap.innerHTML = `<h3>Inputs &amp; MIDI <span class="p-desc">${_te(S.source)}</span></h3>
     <table class="custom-table"><thead><tr><th>Universe</th><th>Input</th><th>Profile</th><th>Feedback</th><th>Bindings</th><th></th><th></th></tr></thead><tbody>
     ${rows || '<tr><td colspan="7" class="vce-hint">No universes.</td></tr>'}</tbody></table>
-    ${patchForm}${ctl}${move}${sim}${widgets}`;
+    ${patchForm}${ctlAll}${move}${sim}${widgets}`;
 }
 
 function _inEditUni(id) { _inEdit = id; _inRender(); }
 
 function _inPatch() {
   _inOp({ op: 'set_input', universe: _inEdit, plugin: _inV('in-plugin'), device: _inV('in-device'),
-          line: Math.max(0, (+_inV('in-line') || 1) - 1), profile: _inV('in-profile'),
+          line: Math.max(0, (+_inV('in-line') || 1) - 1), profile: _inV('in-profile'), uid: _inV('in-uid'), mode: _inV('in-mode'),
           feedback: document.getElementById('in-fb').checked }).then(d => { if (d) { _inEdit = null; _inRender(); } });
 }
 
@@ -127,7 +135,7 @@ function _inRemember() {
   const name = prompt('Name this controller (e.g. "BCF2000 on stage"):', _inV('in-profile') || _inV('in-device'));
   if (!name) return;
   _inOp({ op: 'remember', name, plugin: _inV('in-plugin'), device: _inV('in-device'),
-          line: Math.max(0, (+_inV('in-line') || 1) - 1), profile: _inV('in-profile'),
+          line: Math.max(0, (+_inV('in-line') || 1) - 1), profile: _inV('in-profile'), uid: _inV('in-uid'), mode: _inV('in-mode'),
           feedback: document.getElementById('in-fb').checked });
 }
 
@@ -159,3 +167,10 @@ function _inSimHtml() {
 }
 
 function invalidateInputs() { if (typeof invalidateTriggers === 'function') invalidateTriggers(); _inS = null; _inSim = null; _inEdit = null; if (_inOpen) _inLoad(); }
+
+async function _inLearn() {
+  const path = typeof nativePick === 'function'
+    ? await nativePick('Select a show where your controller is patched', [{ label: 'QLC+ workspaces', exts: ['.qxw'] }], '')
+    : prompt('Full path of the .qxw file:');
+  if (path) _inOp({ op: 'learn', path });
+}

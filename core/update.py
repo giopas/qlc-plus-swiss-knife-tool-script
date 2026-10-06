@@ -298,11 +298,21 @@ def _safe_extract(archive: str, dest: str) -> None:
             bad = [n for n in z.namelist() if not ok(n)]
             if bad:
                 raise ValueError(f"unsafe path in the archive: {bad[0]}")
-            z.extractall(dest)
-            for info in z.infolist():                 # keep the executable bit
+            for info in z.infolist():
                 mode = info.external_attr >> 16
-                if mode and stat.S_ISREG(mode):
-                    os.chmod(os.path.join(dest, info.filename), mode & 0o7777)
+                target = os.path.join(dest, info.filename)
+                if mode and stat.S_ISLNK(mode):       # a .app is full of symlinks
+                    link = z.read(info).decode("utf-8")
+                    if not ok(os.path.join(os.path.dirname(info.filename), link)):
+                        raise ValueError(f"unsafe link in the archive: {info.filename}")
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    if os.path.lexists(target):
+                        os.remove(target)
+                    os.symlink(link, target)
+                    continue
+                z.extract(info, dest)
+                if mode and stat.S_ISREG(mode):       # keep the executable bit
+                    os.chmod(target, mode & 0o7777)
     else:
         with tarfile.open(archive) as t:
             bad = [m.name for m in t.getmembers() if not ok(m.name) or m.islnk() and not ok(m.linkname)]

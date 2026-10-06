@@ -31,8 +31,11 @@ def main() -> int:
     system = platform.system()
     if system == "Darwin":
         app = os.path.join(dist, "QLC Swiss Knife.app")
-        z = os.path.join(out, asset_name("zip"))
-        subprocess.check_call(["ditto", "-c", "-k", "--keepParent", app, z])      # keeps symlinks and modes
+        # The updater's archive is a .tar.gz, not a .zip: Python's zipfile writes the .app's
+        # symlinks (Frameworks/, Resources/) as plain text files and the updated app then
+        # cannot start (v2.8.3 → v2.8.4 try on the Mac).  tarfile keeps links and modes.
+        with tarfile.open(os.path.join(out, asset_name("tar.gz")), "w:gz") as t:
+            t.add(app, arcname="QLC Swiss Knife.app")
         stage = os.path.join(out, "dmg-stage")
         shutil.rmtree(stage, ignore_errors=True)
         os.makedirs(stage)

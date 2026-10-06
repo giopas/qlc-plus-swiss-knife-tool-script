@@ -8,6 +8,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.8.4] — 2026-10-06
+
+**Update and restart works on macOS.**
+
+### Fixed
+- **The macOS update left an app that would not open** (first live try, v2.8.2 → v2.8.3: the Dock icon jumped, then nothing). The update archive was a `.zip`, and the unpacking turned the app's internal symbolic links into plain text files. The macOS update is now a `.tar.gz`, which keeps them (the `.dmg` for a first install is unchanged), and the zip unpacking also restores symbolic links. Windows and Linux were not affected.
+- Updating from v2.8.3 or earlier on macOS uses the new `.tar.gz`, so it works with the updater you already have.
+
+
 ## [2.8.3] — 2026-10-06
 
 **QLC+ 5.3.0 compatibility.**

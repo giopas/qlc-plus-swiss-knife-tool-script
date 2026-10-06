@@ -230,3 +230,42 @@ def test_ssl_context_for_frozen_apps():
     import inspect
     assert "context=_ssl_context()" in inspect.getsource(update._read)
     assert "context=_ssl_context()" in inspect.getsource(update._download)
+
+
+def test_zip_symlinks_are_kept(tmp_path):
+    """v2.8.4 — a .app is full of symlinks; zipfile used to write them as text files."""
+    import stat, zipfile
+    z = tmp_path / "a.zip"
+    with zipfile.ZipFile(z, "w") as zf:
+        zf.writestr("App.app/Contents/Frameworks/lib.dylib", "x")
+        info = zipfile.ZipInfo("App.app/Contents/Resources/lib.dylib")
+        info.external_attr = (stat.S_IFLNK | 0o755) << 16
+        zf.writestr(info, "../Frameworks/lib.dylib")
+    out = tmp_path / "out"
+    out.mkdir()
+    update._safe_extract(str(z), str(out))
+    link = out / "App.app/Contents/Resources/lib.dylib"
+    assert link.is_symlink() and os.readlink(link) == "../Frameworks/lib.dylib"
+    assert link.read_text() == "x"
+
+
+def test_tar_keeps_symlinks_and_macos_archive_is_a_tarball(tmp_path):
+    import tarfile
+    src = tmp_path / "App.app/Contents"
+    (src / "Frameworks").mkdir(parents=True)
+    (src / "Frameworks/a").write_text("x")
+    os.symlink("../Frameworks/a", src / "b")
+    t = tmp_path / "a.tar.gz"
+    with tarfile.open(t, "w:gz") as tf:
+        tf.add(tmp_path / "App.app", arcname="App.app")
+    out = tmp_path / "out"
+    out.mkdir()
+    update._safe_extract(str(t), str(out))
+    assert (out / "App.app/Contents/b").is_symlink()
+    mk = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                           "packaging", "make_archive.py"), encoding="utf-8").read()
+    mac = mk.split('system == "Darwin"')[1].split('elif system == "Windows"')[0]
+    assert 'asset_name("tar.gz")' in mac and 'ditto", "-c"' not in mac
+    assert update.pick_asset([{"name": "QLC-Swiss-Knife-2.8.4-macos-arm64.tar.gz"},
+                              {"name": "QLC-Swiss-Knife-2.8.4-macos-arm64.dmg"}],
+                             "macos", "arm64")["name"].endswith(".tar.gz")

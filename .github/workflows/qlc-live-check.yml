@@ -6,11 +6,17 @@ name: qlc-live-check
 on:
   push:
     branches: [main]
+    paths: ["core/**", "tools/qlc_check.py", "docker/**", "tests/corpus/**", ".github/workflows/qlc-live-check.yml"]
   pull_request:
+    paths: ["core/**", "tools/qlc_check.py", "docker/**", "tests/corpus/**", ".github/workflows/qlc-live-check.yml"]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: live-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   live-check:

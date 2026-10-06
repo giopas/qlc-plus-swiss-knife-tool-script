@@ -17,6 +17,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Changed
 - **All screenshots and the route GIF retaken** with v2.8.5 (the README's 18 pictures — *Library* is new — and the 9 pictures of the wiki tutorial). Two small scripts now make them: `tools/make_screenshots.py` and `tools/make_route_gif.py`, on the scrubbed corpus shows.
+- Faster CI: a newer push cancels the older test / live-check run on the same branch, a 10-minute limit on the tests, and documentation-only changes (markdown, screenshots, docs, wiki) no longer start the tests; the live check (advisory) starts only when code, the corpus or its Docker image changed.
 - GitHub Actions moved to the Node 24 versions (`checkout` v7, `setup-python` v7, `upload-artifact` v7, `download-artifact` v8, `setup-buildx-action` v4, `build-push-action` v7) before Node 20 is retired.
 
 

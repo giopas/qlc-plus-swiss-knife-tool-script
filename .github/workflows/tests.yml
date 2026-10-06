@@ -2,14 +2,22 @@ name: tests
 
 on:
   push:
+    paths-ignore: ["**.md", "screenshots/**", "docs/**", "wiki/**", "LICENSE"]
   pull_request:
+    paths-ignore: ["**.md", "screenshots/**", "docs/**", "wiki/**", "LICENSE"]
 
 permissions:
   contents: read
 
+# a newer push to the same branch makes the older run pointless
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pytest:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:

@@ -41,3 +41,6 @@ Claude outputs/
 
 # QLC+ autosave files
 *.autosave.qxw
+
+# scratch used when working with Claude
+_tmp_sync/

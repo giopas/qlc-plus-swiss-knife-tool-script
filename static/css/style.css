@@ -4153,3 +4153,13 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 #fp-update .upd-now { flex-wrap: wrap; margin-top: 0; }
 #fp-lang { min-width: 0; }
 #fp-lang select { min-width: 0; flex: 1 1 auto; max-width: 100%; }
+
+/* Connect to Claude (v2.9.0) */
+.mcp-card { max-height: calc(100vh - 80px); overflow: auto; }
+.mcp-h { font-size: var(--fs-small); color: var(--text-dim); margin: 12px 0 4px; font-weight: 600; }
+.mcp-folders { list-style: none; margin: 0 0 8px; padding: 0; }
+.mcp-folders li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.mcp-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-ui); }
+.mcp-none { color: var(--text-dim); font-size: var(--fs-ui); }
+.mcp-snip { max-height: 150px; user-select: all; margin: 4px 0 8px; }
+.mcp-snip:empty { display: none; }

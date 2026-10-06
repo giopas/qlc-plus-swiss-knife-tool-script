@@ -798,11 +798,13 @@ Checks (★ = included in Phase 1.0):
 - **Tests**: a fake MCP client runs the Pub-test route through the tools and must give the identical file as the recipe replay.
 
 *Tasks*:
-- [ ] Decide the tool list and the folder permissions with giopas.
-- [ ] `core/mcp_server.py` (stdio) + `--mcp` entry in the package.
-- [ ] Route test through a fake client = the recipe's byte-identical file.
-- [ ] Wiki *Connect Claude to Swiss Knife*; README line; the settings snippet.
-- [ ] Release **v2.9.0**.
+- [x] Decisions (giopas, 7 Oct): **full tool set, writes only to a new file**; **only folders he lists** (Settings › Connect to Claude, `~/.qlc_swiss_knife/mcp.json`); **config snippet shown in the app** (no `.mcpb` bundle).
+- [x] `core/mcp_server.py` (hand-rolled JSON-RPC 2.0 over stdio, no new dependency; 19 tools wrapping the app's own API through `create_app().test_client()`, so History and recipe record everything) + `core/mcp_config.py` (allowlist, no-overwrite save path) + `--mcp` / `--selftest` in `app.py`. stdout carries the protocol only; answers are compact JSON, cut at 14 000 characters.
+- [x] Route test through a fake client = the recipe's byte-identical file (`tests/test_mcp.py`, 13 tests: handshake, allowlist and `../`, no overwrite, porter, compare, real subprocess over stdio, panel routes).
+- [x] Settings › **🔌 Connect to Claude** card (`routes/mcp_routes.py`, `static/js/mcp.js`): folders, Claude Desktop snippet, `claude mcp add …` line; IT/FR strings. Windows: second console EXE `QLC Swiss Knife MCP.exe` in `packaging/swissknife.spec`; `release.yml` smoke-tests `--mcp --selftest` and a ping on every platform.
+- [x] Wiki *Connect Claude to Swiss Knife*; README line; CHANGELOG [2.9.0]; RELEASE_NOTES_v2.9.0.md.
+- [ ] giopas: try it with **Claude Desktop** on the Mac (add a folder, paste the snippet, ask Claude to open a show, fix it and save); Windows console EXE untested (spec only runs on the Actions Windows runner).
+- [ ] Release **v2.9.0** (§4 one-push procedure). *Not done, by design:* `build_chaser`/`describe_show` as separate tools (chasers are in `build_looks`, the summary in `show_summary`); resources/prompts (empty lists).
 
 ---
 

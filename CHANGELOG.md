@@ -7,6 +7,18 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.9.0] — 2026-10-07
+
+**Swiss Knife as an MCP server: Claude can use the same tools you do.**
+
+### Added
+- **MCP server** (`QLC Swiss Knife --mcp`, or `python -m core.mcp_server`): 19 tools over stdio — open a show, summary, Doctor check/fix, rig fixtures/reduce (with preview), porter source/port, looks options/build, VC pages/edit, setlist, compare, history/undo/redo, and `save_show`. No new dependency.
+- **Safe by design:** only the folders listed in *Connect to Claude* can be read or written; saving only ever creates a **new file** (`_v2`, `_v3`… — never an existing name) with the report and the recipe; every change is a History step; tools return counts, findings and names, never the raw XML.
+- **🔌 Connect to Claude** (under the menu): add or remove the shared folders, and copy the snippet for Claude Desktop's settings or the one-line command for Claude Code.
+- Windows: a console program `QLC Swiss Knife MCP.exe` next to the app (Claude needs stdin/stdout, which the window app does not have). The release build smoke-tests the MCP server on every platform.
+- Wiki: *Connect Claude to Swiss Knife*.
+
 ### Changed
 - CI: a version tag no longer starts the `tests` workflow a second time (the release workflow runs the tests itself). Release in one push: merge locally, tag, `git push origin main vX.Y.Z`.
 

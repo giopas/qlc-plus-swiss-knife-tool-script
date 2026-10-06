@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife — v2.8.6
+# QLC+ Swiss Knife — v2.9.0
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -20,6 +20,7 @@
 2. **Use any tool, in any order, as often as you need.** Each tool's main button is **✓ Apply to the show**; the header counts the changes and shows the Workspace Doctor's verdict on the show as it is now.
 3. **Go back** to any step in the **History** (undo, redo).
 4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change, and a *recipe* that the command line can replay to the same file. **The file you opened is never overwritten.**
+5. **Claude can use the same tools** — *🔌 Connect to Claude* (under the menu) lets Claude Desktop or Claude Code open, check, fix and build on your shows through MCP: only the folders you share, always saved as a new file. See the wiki: *Connect Claude to Swiss Knife*.
 5. **Do it again on another show.** Save the changes as a **Show Profile** and apply it to tonight's venue, next month's rig or a friend's show — in the app (History › *Do it again*) or from the command line: `python -m core.profile build Pub.profile.json --show Venue.qxw`. Each step finds what it changes by name, type and place, and tells you what it left out. See [Show Profiles](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Profiles).
 
 For jobs that take several tools, *guided routes* (e.g. *adapt a show to a new venue*) show the steps above the tools — see the [tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub). Every tool has a **?** that opens its page of the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).

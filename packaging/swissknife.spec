@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for QLC+ Swiss Knife (v2.8.6).  One-folder build:
+# PyInstaller spec for QLC+ Swiss Knife (v2.9.0).  One-folder build:
 #
 #     pip install pyinstaller flask pywebview
 #     pyinstaller --noconfirm packaging/swissknife.spec
@@ -24,7 +24,7 @@ for sub in ('doctor', 'quick_start'):
         if f.endswith(('.json', '.txt')):
             datas.append((os.path.join(d, f), os.path.join('core', sub)))
 
-hidden = ['webview', 'routes', 'core']
+hidden = ['webview', 'routes', 'core', 'app']   # 'app': the MCP server imports it
 for name in os.listdir(os.path.join(ROOT, 'routes')):
     if name.endswith('.py') and name != '__init__.py':
         hidden.append('routes.' + name[:-3])
@@ -55,7 +55,20 @@ exe = EXE(
     upx=False,
     icon=(os.path.join(ROOT, 'packaging', 'icons', 'icon.ico') if sys.platform == 'win32' else None),
 )
-coll = COLLECT(exe, a.binaries, a.datas, name=NAME, upx=False)
+if sys.platform == 'win32':
+    # Claude starts the MCP server and talks to it over stdin/stdout, which a
+    # window-only exe does not have: a second, console exe in the same folder.
+    exe_mcp = EXE(
+        pyz, a.scripts, [],
+        exclude_binaries=True,
+        name='QLC Swiss Knife MCP',
+        console=True,
+        upx=False,
+        icon=os.path.join(ROOT, 'packaging', 'icons', 'icon.ico'),
+    )
+    coll = COLLECT(exe, exe_mcp, a.binaries, a.datas, name=NAME, upx=False)
+else:
+    coll = COLLECT(exe, a.binaries, a.datas, name=NAME, upx=False)
 
 if sys.platform == 'darwin':
     sys.path.insert(0, ROOT)

@@ -50,6 +50,13 @@ jobs:
             linux-*)   EXE="dist/QLC-Swiss-Knife/QLC-Swiss-Knife" ;;
           esac
           "$EXE" --smoke
+          # Claude talks to the app over stdin/stdout (Windows: the console exe next to it)
+          case "${{ matrix.label }}" in
+            windows-*) MCP="dist/QLC Swiss Knife/QLC Swiss Knife MCP.exe" ;;
+            *)         MCP="$EXE" ;;
+          esac
+          "$MCP" --mcp --selftest
+          echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | "$MCP" --mcp | grep -q '"result"'
       - name: Inno Setup (Windows installer)
         if: runner.os == 'Windows'
         run: choco install innosetup -y --no-progress

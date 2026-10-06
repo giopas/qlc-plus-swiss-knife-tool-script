@@ -193,6 +193,9 @@
       </label>
       <div class="upd-now"><button class="sc-link" id="upd-now" onclick="updCheckNow()">Check now</button><span class="upd-msg" id="upd-now-msg"></span></div>
     </div>
+    <div class="fp-item" id="fp-mcp">
+      <button class="sc-link" onclick="mcpToggle()" title="Let Claude open, check and fix your shows">🔌 Connect to Claude</button>
+    </div>
     <div class="fp-session">
       <span id="session-badge" class="session-badge"></span>
       <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file">📋 Session</button>
@@ -261,6 +264,23 @@
       <button class="btn btn-surface btn-sm" id="upd-open" onclick="updOpen()">Open the release page</button>
     </div>
     <div class="upd-msg" id="upd-msg"></div>
+  </div>
+
+  <!-- Connect to Claude (v2.9.0): folders Claude may use + the settings snippet -->
+  <div class="upd-card mcp-card" id="mcp-card" hidden>
+    <div class="upd-head"><b>Connect to Claude</b><button class="btn btn-surface btn-sm" onclick="mcpToggle(false)">✕</button></div>
+    <div class="upd-sub">Let Claude open, check and fix your shows with these tools. Claude only sees the folders you add here, and saves its work as a new file — your originals are never changed.</div>
+    <div class="mcp-h">Folders shared with Claude</div>
+    <ul class="mcp-folders" id="mcp-folders"></ul>
+    <button class="btn btn-surface btn-sm" onclick="mcpAddFolder()">+ Add a folder…</button>
+    <div class="mcp-h">Claude Desktop: add this to its settings file, then restart Claude</div>
+    <div class="upd-sub" id="mcp-cfgpath"></div>
+    <pre class="upd-notes mcp-snip" id="mcp-snippet"></pre>
+    <button class="btn btn-accent btn-sm" id="mcp-copy" onclick="mcpCopy('mcp-snippet', this)">Copy</button>
+    <div class="mcp-h">Claude Code: run this once</div>
+    <pre class="upd-notes mcp-snip" id="mcp-cc"></pre>
+    <button class="btn btn-surface btn-sm" onclick="mcpCopy('mcp-cc', this)">Copy</button>
+    <div class="upd-msg" id="mcp-msg"></div>
   </div>
 
   <!-- Command palette (⌘K / Ctrl+K) -->
@@ -2409,5 +2429,6 @@
 <script src="/static/js/compare.js?v={{ asset_v }}"></script>
 <script src="/static/js/library.js?v={{ asset_v }}"></script>
 <script src="/static/js/update.js?v={{ asset_v }}"></script>
+<script src="/static/js/mcp.js?v={{ asset_v }}"></script>
 </body>
 </html>

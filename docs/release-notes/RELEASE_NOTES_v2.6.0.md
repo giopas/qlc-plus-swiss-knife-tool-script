@@ -9,3 +9,5 @@
 Your original files are never changed.
 
 Full details: [CHANGELOG](../../CHANGELOG.md). Wiki: [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager), [Setlist Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager), [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork).
+
+**Status:** Inputs & MIDI is untested live (no controller connected during testing); it is verified against real show files and automated tests.

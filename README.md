@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife — v2.8.4
+# QLC+ Swiss Knife — v2.8.5
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -67,7 +67,7 @@ Grouped by job, numbered 1–6 like the side menu and the Start screen.
 | Trigger Manager | Dictionary | Workspace Doctor |
 | ![ID Browser](screenshots/14-id-browser.png) | ![Show Paperwork](screenshots/15-show-paperwork.png) | ![History](screenshots/16-show-in-progress.png) |
 | ID Browser | Show Paperwork — tech rider with stage plot | The show in progress and its History |
-| ![Start](screenshots/01-start.png) | ![Compare](screenshots/17-compare.png) | |
+| ![Start](screenshots/01-start.png) | ![Compare](screenshots/17-compare.png) | ![Library](screenshots/18-library.png) |
 | Start — what do you want to do? | Compare — the rebuilt show next to the hand-made one | |
 
 ---

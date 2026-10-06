@@ -269,3 +269,10 @@ def test_tar_keeps_symlinks_and_macos_archive_is_a_tarball(tmp_path):
     assert update.pick_asset([{"name": "QLC-Swiss-Knife-2.8.4-macos-arm64.tar.gz"},
                               {"name": "QLC-Swiss-Knife-2.8.4-macos-arm64.dmg"}],
                              "macos", "arm64")["name"].endswith(".tar.gz")
+
+
+def test_sidebar_update_row_stacks():
+    """v2.8.5 — the update row and language picker must not overflow the label column."""
+    css = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "static", "css", "style.css"), encoding="utf-8").read()
+    assert "#fp-update { flex-direction: column" in css and "#fp-lang select" in css

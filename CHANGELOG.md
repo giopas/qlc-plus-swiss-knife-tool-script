@@ -8,6 +8,18 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.8.5] — 2026-10-07
+
+**Pictures retaken, a sidebar fix, and the build actions brought up to date.**
+
+### Fixed
+- The bottom of the sidebar: *Check for updates*, *Check now* and its message overlapped, and the language picker was cut off. They now stack and fit.
+
+### Changed
+- **All screenshots and the route GIF retaken** with v2.8.5 (the README's 18 pictures — *Library* is new — and the 9 pictures of the wiki tutorial). Two small scripts now make them: `tools/make_screenshots.py` and `tools/make_route_gif.py`, on the scrubbed corpus shows.
+- GitHub Actions moved to the Node 24 versions (`checkout` v7, `setup-python` v7, `upload-artifact` v7, `download-artifact` v8, `setup-buildx-action` v4, `build-push-action` v7) before Node 20 is retired.
+
+
 ## [2.8.4] — 2026-10-06
 
 **Update and restart works on macOS.**

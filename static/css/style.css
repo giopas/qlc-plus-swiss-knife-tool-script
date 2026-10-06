@@ -4146,3 +4146,10 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .upd-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .upd-msg { font-size: var(--fs-ui); margin-top: 8px; color: var(--text-dim); }
 .upd-opt { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; }
+
+/* v2.8.5 — the sidebar's update row and language picker no longer overflow the 60 px label column */
+#fp-update { flex-direction: column; align-items: flex-start; gap: 2px; white-space: normal; }
+#fp-update .fp-label { min-width: 0; }
+#fp-update .upd-now { flex-wrap: wrap; margin-top: 0; }
+#fp-lang { min-width: 0; }
+#fp-lang select { min-width: 0; flex: 1 1 auto; max-width: 100%; }

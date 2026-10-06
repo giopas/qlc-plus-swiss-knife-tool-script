@@ -244,10 +244,13 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
 
 **Per step, before committing**
 - [ ] Tests added or updated; `python -m pytest -q` is green locally.
+- [ ] **Translations aligned (from v2.7.0):** any new or changed interface string (HTML, JS `t()` / toasts, Python messages shown in the UI) has its Italian and French entry in `static/i18n/it.json` and `fr.json` (`python tools/i18n_extract.py --missing it` and `--missing fr` list what lacks one; names kept in English are fine). Keep `{0}`, `{1}` placeholders. Ask giopas to review new wording when it is long or technical.
+- [ ] No version-specific text on the Start page (no *New in x.y* lines).
 - [ ] `CHANGELOG.md`: entry under `## [Unreleased]` (Added / Changed / Fixed / Security).
 - [ ] Docstrings for new public functions; user-facing wording checked.
 
 **Per release**
+- [ ] Run the two `--missing` commands above one last time; the translation files are committed with the release.
 - [ ] Bump `VERSION` in `core/workspace.py`. The single source of truth; check that it matches the CHANGELOG.
 - [ ] Move `[Unreleased]` to `[X.Y.Z] — date`.
 - [ ] README stays a presentation (no *What's new* sections — the CHANGELOG has them); screenshots retaken where a screen changed.

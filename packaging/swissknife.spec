@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for QLC+ Swiss Knife (v2.8.0).  One-folder build:
+# PyInstaller spec for QLC+ Swiss Knife (v2.8.1).  One-folder build:
 #
 #     pip install pyinstaller flask pywebview
 #     pyinstaller --noconfirm packaging/swissknife.spec
@@ -53,6 +53,7 @@ exe = EXE(
     name=NAME,
     console=(sys.platform != 'win32' and sys.platform != 'darwin'),
     upx=False,
+    icon=(os.path.join(ROOT, 'packaging', 'icons', 'icon.ico') if sys.platform == 'win32' else None),
 )
 coll = COLLECT(exe, a.binaries, a.datas, name=NAME, upx=False)
 
@@ -62,6 +63,7 @@ if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
         name='QLC Swiss Knife.app',
+        icon=os.path.join(ROOT, 'packaging', 'icons', 'icon.icns'),
         bundle_identifier='io.github.giopas.qlc-swiss-knife',
         info_plist={
             'CFBundleShortVersionString': VERSION,

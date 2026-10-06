@@ -196,3 +196,16 @@ def test_packaging_files_are_consistent():
     sp.loader.exec_module(m)
     for ext, o, a in (("zip", "macos", "arm64"), ("zip", "windows", "x64"), ("tar.gz", "linux", "x64")):
         assert update._ASSET_RE.match(m.asset_name(ext, o, a))
+
+
+def test_logo_and_icons_wired():
+    """v2.8.1 — the logo files exist, the page links them, the packages use them."""
+    import os
+    root = os.path.join(os.path.dirname(__file__), "..")
+    for rel in ("static/logo/icon.svg", "static/logo/icon-512.png", "static/logo/icon-180.png",
+                "static/logo/favicon.png", "packaging/icons/icon.icns", "packaging/icons/icon.ico"):
+        assert os.path.getsize(os.path.join(root, rel)) > 100, rel
+    page = open(os.path.join(root, "templates", "index.html"), encoding="utf-8").read()
+    assert "/static/logo/icon.svg" in page and "rel=\"icon\"" in page
+    spec = open(os.path.join(root, "packaging", "swissknife.spec"), encoding="utf-8").read()
+    assert "icon.icns" in spec and "icon.ico" in spec

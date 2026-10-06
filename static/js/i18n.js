@@ -135,7 +135,7 @@ const I18N = (() => {
       }
     }
     document.documentElement.lang = lang;
-    document.title = t('⚡ QLC+ Swiss Knife');
+    document.title = 'QLC+ Swiss Knife';
   }
 
   function _observe() {

@@ -8,6 +8,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.8.1] — 2026-10-06
+
+**A logo.** The app has its own icon now, and it is the first update to try *Update and restart* on.
+
+### Added
+- **Logo**: a Q whose tail is a folding knife, red Swiss cross inside, on a dark tile (`static/logo/`). Used as the app icon (macOS `.icns` and Windows `.ico` in `packaging/icons/`, so the Dock, the Finder, the taskbar and the `.dmg` show it), the browser tab icon, the header mark, and at the top of the README and the wiki.
+
+### Changed
+- The page title and the README title no longer start with ⚡.
+
 ## [2.8.0] — 2026-10-06
 
 **Install like an app.** Download, unzip, double-click — and be told when a newer version is out.

@@ -760,7 +760,9 @@ Checks (★ = included in Phase 1.0):
 - [x] **Update check** (`core/update.py`, `/api/update/*`, header badge + card, opt-out under the menu) and **Update and restart** — checksum verified, path-safe extraction, swap script per OS (macOS keeps `.app`, clears quarantine); the whole chain (feed → download → SHA-256 → unpack → swap → restart) run on the Linux bundle with a local feed; tests with a fake feed.
 - [x] README *Install*, wiki *Installing and updating*, CHANGELOG, release notes.
 - [ ] Linux AppImage (the tar.gz comes first; AppImage only if asked).
-- [ ] giopas: release v2.8.0, watch the Actions run, download the files on the Mac, first-run (right-click › Open), try *Update and restart* from a v2.8.0 build to the next release; signing / notarisation later if wanted.
+- [x] giopas: v2.8.0 released (6 Oct): Actions run green, nine assets attached.
+- [x] v2.8.1 (6 Oct, `feat/v2.8.1`): logo — Q with a folding-knife tail, red Swiss cross, dark tile (D variant, chosen by giopas); `static/logo/` (svg, png), `packaging/icons/` (.icns, .ico); app icon, favicon, header mark, README and wiki Home. Tag it to test *Update and restart* from an installed 2.8.0.
+- [ ] giopas: install v2.8.0 on the Mac (right-click › Open), then tag v2.8.1 and try *Update and restart*; first-run, native dialogs.
 
 ### Phase 4 — The MCP server → **v2.9.0** *(after the packages; was "Backlog: MCP server / AI layer")*
 

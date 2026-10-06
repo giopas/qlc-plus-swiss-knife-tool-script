@@ -261,6 +261,21 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
 
 **Push:** Cowork's sandbox cannot reach GitHub, so Cowork commits locally and giopas pushes.
 
+**Merge and release — always this way (giopas, 7 Oct 2026)**
+
+*Do not push the feature branch* (it would start a third run of the tests for the same commit). Merge locally, tag, push `main` and the tag together, then the wiki:
+
+```
+cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script && git status --short
+git checkout main && git merge --ff-only feat/vX.Y.Z && git tag vX.Y.Z && git push origin main vX.Y.Z && (cd wiki && git push origin master)
+```
+
+- `git status --short` must print nothing first. For a change that is not a release, leave out the `git tag …` part: `git checkout main && git merge --ff-only <branch> && git push origin main`.
+- What runs: `tests` once (on `main`; version tags and docs-only changes are ignored), `qlc-live-check` once (advisory), `release` once (the tag: tests + build + installer test on macOS ×2, Windows, Linux).
+- Then edit the **draft** release (title and notes from `docs/release-notes/RELEASE_NOTES_vX.Y.Z.md`, mark *Latest*, keep only the `…-X.Y.Z-…` files plus `SHA256SUMS`) and publish. Then try *Update and restart* from the previous version.
+- Cautious variant when a change is risky: push `main` first, wait for `tests` to be green, then `git push origin vX.Y.Z` (two rounds, still no branch push).
+- The release assets are: macOS arm64 and Intel (`.tar.gz` for the updater, `.dmg` for a first install), Windows (`-setup.exe` installer and `.zip`), Linux (`.tar.gz`).
+
 ---
 
 ## 5. Work programme
@@ -768,7 +783,7 @@ Checks (★ = included in Phase 1.0):
 - [x] v2.8.3 (6 Oct, `feat/v2.8.3`, 787 tests): **QLC+ 5.3.0 compatibility.** 5.3.0 (About box confirmed) saves Script commands as `Engine.stopFunction(N);` etc. and opens our legacy form. New `core/script_cmds.py` reads/builds/renumbers both; Porter, Look Builder, Doctor (false D016 on the PANIC RESET scene), Doctor fixes, Rig Grow patched; edited scripts keep their own style, new scripts stay legacy. Corpus: `QuickStart_club_qlc530.qxw`. `qlcplus5` added to the live-check binaries; workflows on `ubuntu-24.04`. *Not done:* live-check Docker still builds 5.2.2 (5.3.0 tag/build deps unverified); Actions Node-20 bumps; open-check of generated files in a real 5.3.0; `Engine.setFixture(...)` form is a guess (never seen in a saved file). Release it, then try *Update and restart* from the installed 2.8.2.
 - [x] v2.8.4 (6 Oct): **macOS Update and restart fixed.** First live try 2.8.2 → 2.8.3 left an app that would not open: Python's `zipfile` extracted the `.app`'s symlinks as text files. macOS update asset is now a `.tar.gz` (old updaters accept it), zip extraction restores symlinks. *Confirmed by giopas: 2.8.2 → 2.8.4 from inside the app works.*
 - [x] v2.8.5 (7 Oct, `feat/v2.8.5`): all 17 screenshots + new `18-library.png`, the 9 tutorial pictures and `route.gif` retaken with `tools/make_screenshots.py` and `tools/make_route_gif.py` (Playwright on the scrubbed corpus; start the app, run the script); sidebar CSS fix (update row/language picker overlap); Actions bumped to Node 24 majors (checkout v7, setup-python v7, upload-artifact v7, download-artifact v8, buildx v4, build-push v7 — versions read from the repos' release pages, first CI run proves them). Next: 2.9.0 MCP server (decisions first), Windows test, live-check Docker to 5.3.0, open-check in a real 5.3.0.
-- [x] v2.8.6 (7 Oct, `feat/v2.8.6`): **first Windows test (giopas)** — the packaged app died at start: `UnicodeEncodeError` printing `⚡` on a cp1252 stream (`app.py` line 407). `core/console.py` `make_stdio_safe()` (UTF-8, errors=replace, devnull if no stdout) called first in `app.py`. **Windows installer** (Inno Setup `packaging/windows/installer.iss`, per-user, Start menu, uninstaller; `make_archive.py` builds it when ISCC is there; release.yml installs Inno Setup via choco and tests silent install/start/uninstall); updater `keep_uninstaller()` carries `unins000.*` across the swap; updater ignores `-setup.exe`. *Unsigned: SmartScreen warns once; signing is a later decision.*
+- [x] v2.8.6 (7 Oct, `feat/v2.8.6`): **first Windows test (giopas)** — the packaged app died at start: `UnicodeEncodeError` printing `⚡` on a cp1252 stream (`app.py` line 407). `core/console.py` `make_stdio_safe()` (UTF-8, errors=replace, devnull if no stdout) called first in `app.py`. **Windows installer** (Inno Setup `packaging/windows/installer.iss`, per-user, Start menu, uninstaller; `make_archive.py` builds it when ISCC is there; release.yml installs Inno Setup via choco and tests silent install/start/uninstall); updater `keep_uninstaller()` carries `unins000.*` across the swap; updater ignores `-setup.exe`. *Unsigned: SmartScreen warns once; signing is a later decision.* *Confirmed by giopas on Windows (7 Oct): installer works; the Windows package test is done.* CI: tag pushes no longer start `tests` (`chore/ci-once`).
 - [ ] giopas: install v2.8.0 on the Mac (right-click › Open), then tag v2.8.1 and try *Update and restart*; first-run, native dialogs.
 
 ### Phase 4 — The MCP server → **v2.9.0** *(after the packages; was "Backlog: MCP server / AI layer")*

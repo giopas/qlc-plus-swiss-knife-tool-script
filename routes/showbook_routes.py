@@ -17,7 +17,8 @@ def _args(data: dict) -> dict:
             'show_name': (data.get('show_name') or '').strip() or None,
             'date': (data.get('date') or '').strip() or None,
             'event': (data.get('event') or '').strip()[:120] or None,
-            'dip_switches': 9 if str(data.get('dip_switches') or '') == '9' else 10}
+            'dip_switches': 9 if str(data.get('dip_switches') or '') == '9' else 10,
+            'rider_extras': [x for x in (data.get('rider_extras') or []) if x in showbook.RIDER_EXTRAS] or None}
 
 
 def _logo(data: dict):

@@ -37,7 +37,7 @@ TOOL_TITLES = {
     'stage': 'Stage & Meshes', 'brightness': 'Brightness', 'setlist': 'Setlist',
     'triggers': 'Trigger Manager', 'vceditor': 'VC Editor', 'porter': 'Function Porter',
     'merger': 'QXW Merger', 'dictionary': 'Dictionary', 'fixtures': 'Fixtures',
-    'quickstart': 'Quick Start', 'idbrowser': 'ID Browser',
+    'quickstart': 'Quick Start', 'idbrowser': 'ID Browser', 'inputs': 'Inputs & MIDI',
 }
 
 _show: dict = {}

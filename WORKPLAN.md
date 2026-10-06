@@ -724,9 +724,9 @@ Checks (★ = included in Phase 1.0):
 - [x] **Stage & Meshes** *(done 5 Oct, `feat/v2.5.0`; aiming = tilt only, thumbnails = SVG dot drawings from the OBJ)*: fixture **tilt aiming** at a point or a mesh (`qxw_builder.default_x_rot`); **mesh thumbnails** in the library; **hide / show** meshes (`Hidden`); **copy meshes between shows** (in the Porter).
 
 **3.6 Paperwork, setlists, MIDI → v2.6.0**
-- [ ] **MIDI / input mapping manager**: re-patch inputs across a show, MIDI-learn simulation; covers the recurring "MIDI input saved as None".
-- [ ] **Setlist import** from txt / csv / clipboard; **tablet setlist**: a plain HTML page of the setlist for a tablet on stage.
-- [ ] **Tech rider** with the patch, tilt and meshes (and in the blueprint PDF).
+- [x] **MIDI / input mapping manager** *(done 6 Oct, `feat/v2.6.0`: Trigger Manager › Inputs & MIDI; patch editor, remembered controllers, move / swap, simulator)*: re-patch inputs across a show, MIDI-learn simulation; covers the recurring "MIDI input saved as None".
+- [x] **Setlist import** *(done 6 Oct)* from txt / csv / clipboard; **tablet setlist**: a plain HTML page of the setlist for a tablet on stage.
+- [x] **Tech rider** with the patch, tilt and meshes *(done 6 Oct; in the rider table + PDF — the blueprint page itself is unchanged)*.
 
 **3.7 Localisation and community library → v2.7.0**
 - [ ] **Interface in EN / IT / FR** (strings in JSON, language setting; the wiki stays English).

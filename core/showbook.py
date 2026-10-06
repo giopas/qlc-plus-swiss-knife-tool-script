@@ -111,7 +111,8 @@ def generate(sections: list[str] | None = None,
              presets: list[str] | None = None,
              show_name: str | None = None,
              event: str | None = None,
-             dip_switches: int = 10) -> dict:
+             dip_switches: int = 10,
+             rider_extras: list[str] | None = None) -> dict:
     """Build a structured document from the loaded workspace.
 
     Parameters
@@ -175,6 +176,10 @@ def generate(sections: list[str] | None = None,
 
     if "rider" in sections:
         doc["sections"]["rider"] = _build_rider(state, root)
+        extras = [x for x in (rider_extras or []) if x in RIDER_EXTRAS]
+        if extras:
+            doc["sections"]["rider"]["extras"] = extras
+            doc["sections"]["rider"]["detail"] = _build_rider_detail(state, root, extras)
 
     if "stage_plan" in sections:
         doc["sections"]["stage_plan"] = _build_stage_plan(state)
@@ -371,6 +376,55 @@ def _fixture_channels(root: ET.Element) -> dict:
                     out[fid.strip()] = int(ch or 0)
                 except ValueError:
                     out[fid.strip()] = 0
+    return out
+
+
+RIDER_EXTRAS = ("patch", "tilt", "meshes")
+
+
+def tilt_text(xrot: float) -> str:
+    """A fixture's tilt in words: 0° = straight down, 90° = horizontal,
+    positive = toward the front (the audience), negative = toward the back."""
+    n = ((float(xrot) + 180) % 360) - 180
+    if abs(n) < 0.05:
+        return "straight down"
+    if abs(abs(n) - 180) < 0.05:
+        return "straight up"
+    side = "front" if n > 0 else "back"
+    if abs(abs(n) - 90) < 0.05:
+        return f"horizontal, to the {side}"
+    return f"{abs(n):g}° to the {side}" if abs(n) < 90 else f"{abs(n):g}° (above horizontal), to the {side}"
+
+
+def _build_rider_detail(state: dict, root: ET.Element, extras: list[str]) -> dict:
+    """What a venue needs besides the types: the patch per fixture, where each
+    hangs and how it is tilted, and the set pieces (3D meshes) on the stage —
+    from the 3D view, as you see it (centre of the body, height of its
+    underside above the floor).  No function, VC or binding data."""
+    from core import qxw_io, stage3d as s3
+    from routes.doctor_routes import _defs      # the same definition lookup as the Doctor
+    path = state.get("path") or ""
+    st = qxw_io.strip_ns(copy.deepcopy(root))
+    out: dict = {"stage": s3.stage(st), "fixtures": [], "meshes": []}
+    chans = _fixture_channels(root)
+    by_id = state.get("fixture_map", {})
+    for f in s3.fixtures(st, _defs(path)):
+        info = by_id.get(f["id"], {})
+        p = f["place"]
+        out["fixtures"].append({
+            "id": f["id"], "name": f["name"], "model": _model_only(info) or info.get("model", ""),
+            "mode": info.get("mode", ""), "universe": info.get("universe", 0), "address": info.get("address", 0),
+            "patch": info.get("patch", ""), "channels": chans.get(f["id"], 0),
+            "x": p["x"], "z": p["z"], "height": p["bottom"],
+            "tilt": f["rot"][0], "tilt_text": tilt_text(f["rot"][0]), "pan": f["rot"][1]})
+    out["fixtures"].sort(key=lambda r: (r["universe"], r["address"]))
+    if "meshes" in extras:
+        for m in s3.meshes(st, path, s3.library_dirs()):
+            if m["hidden"] or not m["place"]:
+                continue
+            pl = m["place"]
+            out["meshes"].append({"name": m["label"], "x": pl["x"], "z": pl["z"], "bottom": pl["bottom"],
+                                  "w": pl["w"], "d": pl["d"], "h": pl["h"]})
     return out
 
 
@@ -1437,6 +1491,46 @@ def _pdf_rider(pdf: _PdfBuilder, rider: dict, show_name: str, date: str):
             f"Total: {rider['total_fixtures']} fixture(s), {rider['total_channels']} DMX channel(s), "
             f"{len(rider['universes'])} universe(s).", sz=9, bold=True)
     pdf.cy -= 20
+    detail, extras = rider.get("detail"), rider.get("extras") or []
+    if detail and detail["fixtures"] and ("patch" in extras or "tilt" in extras):
+        pdf.spacer(6)
+        pdf.section_heading("Fixtures - " + " and ".join(
+            x for x, k in (("patch", "patch"), ("position and tilt", "tilt")) if k in extras))
+        headers = ["#", "Name", "Model"]
+        if "patch" in extras:
+            headers += ["Universe", "Address", "Ch"]
+        if "tilt" in extras:
+            headers += ["X (m)", "Depth (m)", "Height (m)", "Tilt"]
+        fixed = {"#": 28, "Universe": 50, "Address": 50, "Ch": 30, "X (m)": 46, "Depth (m)": 56, "Height (m)": 58}
+        col_w = _auto_col_widths(headers, fixed)
+        pdf.table_header(headers, col_w)
+        for i, f in enumerate(detail["fixtures"]):
+            row = [f["id"], f["name"], f["model"]]
+            if "patch" in extras:
+                row += [f["universe"] + 1, f["address"] + 1, f["channels"] or ""]
+            if "tilt" in extras:
+                row += [f"{f['x'] / 1000:.2f}", f"{f['z'] / 1000:.2f}", f"{f['height'] / 1000:.2f}", f["tilt_text"]]
+            pdf.table_row(row, col_w, i)
+        if "tilt" in extras:
+            pdf.spacer(4)
+            pdf.fc(*_COL_DARK)
+            pdf.txt(_PAD, pdf.cy - 9, "Position: centre of the fixture, from the stage's left edge and back edge; "
+                    "height of its underside above the floor. Tilt 0 = straight down, positive = toward the audience.", sz=7)
+            pdf.cy -= 14
+    if detail and "meshes" in extras:
+        pdf.spacer(6)
+        pdf.section_heading("Set pieces on the stage (3D)")
+        if not detail["meshes"]:
+            pdf.fc(*_COL_DARK)
+            pdf.txt(_PAD, pdf.cy - 12, "No visible 3D model on the stage.", sz=9)
+            pdf.cy -= 20
+        else:
+            headers = ["Name", "X (m)", "Depth (m)", "Floor to bottom (m)", "W x D x H (m)"]
+            col_w = _auto_col_widths(headers, {"X (m)": 50, "Depth (m)": 56, "Floor to bottom (m)": 100, "W x D x H (m)": 110})
+            pdf.table_header(headers, col_w)
+            for i, m in enumerate(detail["meshes"]):
+                pdf.table_row([m["name"], f"{m['x'] / 1000:.2f}", f"{m['z'] / 1000:.2f}", f"{m['bottom'] / 1000:.2f}",
+                               f"{m['w'] / 1000:.2f} x {m['d'] / 1000:.2f} x {m['h'] / 1000:.2f}"], col_w, i)
 
 
 def _pdf_checklist(pdf: _PdfBuilder, rows: list[dict]):

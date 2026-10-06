@@ -581,6 +581,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateChecklist  === 'function') invalidateChecklist();
   if (typeof invalidateTechRider === 'function') invalidateTechRider();
   if (typeof invalidateTriggers   === 'function') invalidateTriggers();
+  if (typeof invalidateInputs     === 'function') invalidateInputs();
   if (typeof invalidateFixtures   === 'function') invalidateFixtures();
   if (typeof invalidateBrightness === 'function') invalidateBrightness();
   if (typeof invalidateShowbook === 'function') invalidateShowbook();

@@ -178,7 +178,7 @@ function _clearSongEditor() {
 
 function _setEditorEnabled(on) {
   ['btn-add-song','btn-remove-song','btn-move-song-up','btn-move-song-dn',
-   'btn-import-slot-txt','btn-export-slot-txt','btn-auto-match','btn-clear-assign','btn-clear-all',
+   'btn-import-slot-txt','btn-export-slot-txt','btn-import-paste','btn-tablet-page','btn-auto-match','btn-clear-assign','btn-clear-all',
    'btn-purge-clones', 'btn-delete-ws-clones',
    'sl-chaser-select','btn-generate-qxw','btn-apply-setlist','btn-export-sl-pdf','btn-export-sl-xml','btn-save-songs']
     .forEach(id => {
@@ -1168,4 +1168,100 @@ async function _apiPost(url, body) {
     });
     return await r.json();
   } catch (e) { return { error: String(e) }; }
+}
+
+
+// ── v2.6.0 Import a setlist (paste / txt / csv) ───────────────────────────────
+
+let _slImp = null;          // parsed result of the text in the import box
+
+function slOpenImport() {
+  if (!_selectedSlot) { setStatus('Select a slot first.', 'warn'); return; }
+  _slImp = null;
+  document.getElementById('sl-imp-text').value = '';
+  document.getElementById('sl-imp-preview').innerHTML = '';
+  document.getElementById('sl-imp-go').disabled = true;
+  document.getElementById('sl-import-modal').style.display = 'flex';
+  document.getElementById('sl-imp-text').focus();
+}
+function slCloseImport() { document.getElementById('sl-import-modal').style.display = 'none'; }
+
+async function slImportClipboard() {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (!t) { setStatus('The clipboard is empty.', 'warn'); return; }
+    document.getElementById('sl-imp-text').value = t;
+    slImportPreview();
+  } catch { setStatus('The browser did not allow reading the clipboard — paste into the box with ⌘V / Ctrl+V.', 'warn'); }
+}
+
+function slImportFile(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => { document.getElementById('sl-imp-text').value = String(e.target.result || ''); slImportPreview(f.name); };
+  r.readAsText(f, 'utf-8');
+  input.value = '';
+}
+
+let _slImpTimer = null;
+function slImportPreview(name) {
+  clearTimeout(_slImpTimer);
+  _slImpTimer = setTimeout(async () => {
+    const text = document.getElementById('sl-imp-text').value;
+    const box = document.getElementById('sl-imp-preview'), go = document.getElementById('sl-imp-go');
+    if (!text.trim()) { box.innerHTML = ''; go.disabled = true; _slImp = null; return; }
+    const d = await _apiPost('/api/setlist/parse', { text, name: typeof name === 'string' ? name : '' });
+    if (d.error) { box.innerHTML = `<div class="porter-warn">${_esc(d.error)}</div>`; go.disabled = true; _slImp = null; return; }
+    _slImp = d;
+    const multi = d.sets.length > 1;
+    const sel = multi ? `<label>Import <select id="sl-imp-set" class="filter-input" onchange="_slImpList()">
+        ${d.sets.map((s, i) => `<option value="${i}">${_esc(s.name)} (${s.songs.length})</option>`).join('')}
+        <option value="all">all sets, one list (${d.songs})</option></select></label>` : '';
+    box.innerHTML = `<div class="lb-row">${sel}
+        <label>into this slot <select id="sl-imp-mode" class="filter-input"><option value="replace">replacing its songs</option><option value="append">after its songs</option></select></label></div>
+      ${d.notes.map(n => `<div class="vce-hint">${_esc(n)}</div>`).join('')}
+      <div id="sl-imp-list" class="st-list" style="max-height:170px"></div>`;
+    _slImpList();
+    go.disabled = false;
+  }, 250);
+}
+
+function _slImpSongs() {
+  if (!_slImp) return [];
+  const v = (document.getElementById('sl-imp-set') || {}).value;
+  if (v === 'all') return _slImp.sets.flatMap(s => s.songs);
+  return (_slImp.sets[+v || 0] || _slImp.sets[0]).songs;
+}
+function _slImpList() {
+  const songs = _slImpSongs(), el = document.getElementById('sl-imp-list'); if (!el) return;
+  el.innerHTML = songs.map((s, i) => `<div class="st-item"><span><span class="vce-hint">${i + 1}</span> ${_esc(s.txt_name)}</span>
+    <span class="vce-hint">${s.hold !== '4294967294' ? 'hold ' + (+s.hold / 1000) + ' s' : ''}${s.in !== '0' ? ' in ' + (+s.in / 1000) + ' s' : ''}${s.out !== '0' ? ' out ' + (+s.out / 1000) + ' s' : ''}</span></div>`).join('');
+}
+
+async function slImportApply() {
+  const songs = _slImpSongs(); if (!songs.length) return;
+  const mode = (document.getElementById('sl-imp-mode') || {}).value || 'replace';
+  const rows = songs.map(s => ({ txt_name: s.txt_name, qxw_id: '', qxw_name: '', in: s.in, hold: s.hold, out: s.out }));
+  if (mode === 'replace' && _songRows.some(r => r.qxw_id) &&
+      !confirm('Replacing the songs drops the function assignments of this slot. Continue?')) return;
+  _songRows = mode === 'append' ? _songRows.concat(rows) : rows;
+  _selectedSong = -1; _selectedSongs = new Set();
+  _renderSongList(); _updateSongCount(); _clearTimingPanel(); _renderFnPool(_poolFiltered);
+  await slSaveDetails();
+  slCloseImport();
+  setStatus(`Imported ${rows.length} song(s) — use 🎯 Re-Match to give them functions.`, 'ok');
+}
+
+// ── v2.6.0 The tablet page ────────────────────────────────────────────────────
+
+async function slTabletPage() {
+  await slSaveDetails(true);
+  const st = await _apiJson('/api/status');
+  const title = (st.original_name || 'Setlist').replace(/\.qxw$/i, '').replace(/_v\d+$/, '');
+  const r = await fetch('/api/setlist/tablet', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, notes: document.getElementById('sl-tab-notes').checked }) });
+  if (!r.ok) { const d = await r.json().catch(() => ({})); setStatus(d.error || 'Failed.', 'error'); return; }
+  const blob = await r.blob();
+  const saved = await saveFileWithPicker(blob, `${title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_')}_setlist.html`, null, 'Save the tablet page as');
+  if (saved) setStatus(`Tablet page saved → ${saved}. Open it on the tablet (AirDrop, mail, cloud drive).`, 'ok');
 }

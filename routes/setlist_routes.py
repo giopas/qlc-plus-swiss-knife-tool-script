@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
 from core import pdf as pdf_mod
 import core.session as sess
+from core import setlist_io
 
 
 def _safe_err(exc: Exception) -> str:
@@ -568,3 +569,50 @@ def export_multi_pdf():
         mimetype='application/pdf',
         headers={'Content-Disposition': f'attachment; filename={filename}'},
     )
+
+
+# ── Import (paste / txt / csv) and the tablet page (v2.6.0) ─────────────────
+
+@bp.route('/parse', methods=['POST'])
+def parse_setlist():
+    """Body: {text, name?} → {sets: [{name, songs: [{txt_name, in, hold, out}]}], songs, notes, format}.
+    Nothing is changed: the page shows the preview and applies it."""
+    data = request.get_json(force=True) or {}
+    text = data.get('text') or ''
+    if not text.strip():
+        return jsonify({'error': 'Nothing to import — paste a list or choose a file.'}), 400
+    if len(text) > 2_000_000:
+        return jsonify({'error': 'That file is too big for a setlist.'}), 400
+    res = setlist_io.parse(text, str(data.get('name') or ''))
+    if not res['songs']:
+        return jsonify({'error': 'No songs found in that text.'}), 400
+    return jsonify(res)
+
+
+@bp.route('/tablet', methods=['POST'])
+def tablet_page():
+    """Body: {title, slots?: [ids], notes?: bool} → one self-contained HTML
+    page of the setlists (a tablet on stage)."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    import datetime
+    data = request.get_json(force=True) or {}
+    want = [str(x) for x in (data.get('slots') or [])]
+    sets = []
+    for slot in ws.get_cuelist_slots():
+        if want and slot['id'] not in want:
+            continue
+        rows = ws.get_slot_details(slot['id'])
+        if rows:
+            rows = _resolve_cue_names(rows)
+            songs = [{'name': r.get('txt_name') or r.get('qxw_name') or '', 'note': r.get('qxw_name') or ''}
+                     for r in rows if (r.get('txt_name') or r.get('qxw_name'))]
+        else:
+            songs = [{'name': n, 'note': ''} for n in ws.get_slot_songs(slot['id']) if n]
+        sets.append({'name': slot.get('caption') or f"Set {slot['id']}", 'songs': songs})
+    if not any(s['songs'] for s in sets):
+        return jsonify({'error': 'No songs in the setlist yet.'}), 400
+    title = (data.get('title') or 'Setlist').strip() or 'Setlist'
+    page = setlist_io.tablet_page(title, sets, notes=bool(data.get('notes')),
+                                  generated=datetime.date.today().isoformat())
+    return Response(page, mimetype='text/html; charset=utf-8')

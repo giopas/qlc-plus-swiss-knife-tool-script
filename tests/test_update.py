@@ -187,7 +187,7 @@ def test_packaging_files_are_consistent():
     for p in ("templates", "static", "looks", "profiles"):
         assert p in spec
     wf = open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8").read()
-    for want in ("macos-14", "macos-13", "windows-latest", "ubuntu-22.04", "SHA256SUMS", "--smoke",
+    for want in ("macos-14", "macos-15-intel", "windows-latest", "ubuntu-22.04", "SHA256SUMS", "--smoke",
                  "QLC-Swiss-Knife-"):
         assert want in wf
     import importlib.util

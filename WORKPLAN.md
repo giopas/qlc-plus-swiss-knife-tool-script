@@ -754,12 +754,13 @@ Checks (★ = included in Phase 1.0):
 - **Signing**: the first releases are unsigned, with first-run instructions (macOS: right-click → Open, or `xattr -dr com.apple.quarantine`; Windows SmartScreen: *More info → Run anyway*). Apple Developer ID / notarisation and a Windows certificate later, if giopas wants them (they cost money).
 - **User data** stays in `~/.qlc_swiss_knife/` (settings, presets, recent files, sessions), untouched by updates.
 
-*Tasks*:
-- [ ] PyInstaller spec + a local build on the Mac (size, start time, native window, QLC+ library path detection, file dialogs).
-- [ ] GitHub Actions release workflow (matrix build, smoke test: start, `GET /`, quit; upload the assets + `SHA256SUMS`).
-- [ ] Update check (`/api/update/check`, setting, header badge) and *Update and restart* per OS; tests with a fake release feed.
-- [ ] README *Install*: download first, sources second; wiki *Installing and updating*.
-- [ ] Release **v2.8.0**.
+*Tasks* (6 Oct, `feat/v2.8.0`, 776 tests):
+- [x] **PyInstaller spec** (`packaging/swissknife.spec`, `packaging/make_archive.py`) — built and smoke-tested on Linux (39 MB, `--smoke` OK); **not yet tried on a Mac or on Windows** (giopas: build locally with `pyinstaller --noconfirm packaging/swissknife.spec`, then check the native window, file dialogs, QLC+ library path detection).
+- [x] **GitHub Actions release workflow** (`.github/workflows/release.yml`: matrix macos-14 / macos-13 / windows-latest / ubuntu-22.04, tests, build, smoke, pack, `SHA256SUMS`, attach to the release) — **not yet run on GitHub**; the first tag shows what needs adjusting (runner labels, pywebview on Windows, the .dmg step).
+- [x] **Update check** (`core/update.py`, `/api/update/*`, header badge + card, opt-out under the menu) and **Update and restart** — checksum verified, path-safe extraction, swap script per OS (macOS keeps `.app`, clears quarantine); the whole chain (feed → download → SHA-256 → unpack → swap → restart) run on the Linux bundle with a local feed; tests with a fake feed.
+- [x] README *Install*, wiki *Installing and updating*, CHANGELOG, release notes.
+- [ ] Linux AppImage (the tar.gz comes first; AppImage only if asked).
+- [ ] giopas: release v2.8.0, watch the Actions run, download the files on the Mac, first-run (right-click › Open), try *Update and restart* from a v2.8.0 build to the next release; signing / notarisation later if wanted.
 
 ### Phase 4 — The MCP server → **v2.9.0** *(after the packages; was "Backlog: MCP server / AI layer")*
 

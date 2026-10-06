@@ -4121,3 +4121,17 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .lib-st.exists, .lib-st.reserved { color: var(--warning); }
 .lib-st.invalid { color: var(--error); }
 .lib-warn { color: var(--warning); font-size: var(--fs-small); }
+
+/* ── Update card (v2.8.0) ───────────────────────────────────────────────── */
+.upd-card { position: fixed; top: 58px; right: 16px; z-index: 60; width: min(420px, calc(100vw - 32px));
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow-1, 0 8px 24px rgba(0,0,0,.35)); padding: 14px; }
+.upd-card[hidden] { display: none; }
+.upd-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.upd-sub { font-size: var(--fs-ui); color: var(--text-dim); line-height: 1.5; }
+.upd-notes { max-height: 180px; overflow: auto; white-space: pre-wrap; font: inherit; font-size: var(--fs-small);
+  background: var(--surface-0); border-radius: 6px; padding: 8px; margin: 8px 0; color: var(--text); }
+.upd-notes:empty { display: none; }
+.upd-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.upd-msg { font-size: var(--fs-ui); margin-top: 8px; color: var(--text-dim); }
+.upd-opt { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; }

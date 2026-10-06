@@ -178,6 +178,12 @@
       <span class="fp-label">QXF</span>
       <span id="fp-qxf-name">—</span>
     </div>
+    <div class="fp-item" id="fp-lang">
+      <span class="fp-label" data-tip="Language">🌐</span>
+      <select id="lang-select" class="filter-input" onchange="I18N.set(this.value)" aria-label="Language" title="Language of the interface (shows, reports and the wiki stay as they are)" data-i18n="off">
+        <option value="en">English</option><option value="it">Italiano</option><option value="fr">Français</option>
+      </select>
+    </div>
     <div class="fp-session">
       <span id="session-badge" class="session-badge"></span>
       <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file">📋 Session</button>
@@ -2357,6 +2363,8 @@
 <div id="nav-tip"></div>
 
 <!-- ── JS modules ──────────────────────────────────────────────────────────── -->
+<script>window.__ASSET_V = '{{ asset_v }}';</script>
+<script src="/static/js/i18n.js?v={{ asset_v }}"></script>
 <script src="/static/js/app.js?v={{ asset_v }}"></script>
 <script src="/static/js/setlist.js?v={{ asset_v }}"></script>
 <script src="/static/js/dictionary.js?v={{ asset_v }}"></script>

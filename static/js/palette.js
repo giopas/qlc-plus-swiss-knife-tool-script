@@ -38,6 +38,9 @@ function _cpActions() {
     { label: '▶ Route: adapt a show to a new venue', sub: 'guided route', run: () => routeStart('adapt') },
     { label: '▶ Route: get ready for the gig', sub: 'guided route', run: () => routeStart('gig') },
     { label: '◐ Change the theme (dark / grey / light)', sub: 'view', run: () => cycleTheme() },
+    { label: '🌐 Language: English', sub: 'view', run: () => I18N.set('en') },
+    { label: '🌐 Lingua: Italiano', sub: 'view', run: () => I18N.set('it') },
+    { label: '🌐 Langue : Français', sub: 'view', run: () => I18N.set('fr') },
     { label: '? Help for this tool', sub: 'wiki', run: () => document.querySelector('.screen.active .help-btn')?.click() },
   ];
   return a.filter(x => x.when === undefined || x.when).map(x => ({ ...x, kind: 'action' }));

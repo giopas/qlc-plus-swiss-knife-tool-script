@@ -1,10 +1,12 @@
 """routes/mcp_routes.py — Settings › Connect to Claude (v2.9.0).
 
   GET  /api/mcp/config    → folders shared with Claude, and the snippet to paste into Claude's settings
+  GET  /api/mcp/status    → whether Claude Desktop has Swiss Knife, and when Claude last started it
   POST /api/mcp/folders   → {"folders": [...]}: the new list (only folders that exist are kept)
 """
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -38,6 +40,46 @@ def claude_desktop_config() -> str:
         return os.path.join(os.environ.get("APPDATA") or os.path.join(home, "AppData", "Roaming"),
                             "Claude", "claude_desktop_config.json")
     return os.path.join(home, ".config", "Claude", "claude_desktop_config.json")
+
+
+def _claude_dir() -> str:
+    return os.path.dirname(claude_desktop_config())
+
+
+def status() -> dict:
+    """Is Swiss Knife connected to Claude Desktop?  Best effort, from three signs:
+    the extension folder of Claude Desktop, its settings file, and the launcher's own log
+    (the last time Claude started Swiss Knife, which is the surest sign)."""
+    out = {"extension": False, "config": False, "last_start": None}
+    base = _claude_dir()
+    try:
+        ext = os.path.join(base, "Claude Extensions")
+        if os.path.isdir(ext) and any("swiss" in n.lower() for n in os.listdir(ext)):
+            out["extension"] = True
+        inst = os.path.join(base, "extensions-installations.json")
+        if os.path.isfile(inst) and "swiss" in open(inst, encoding="utf-8", errors="replace").read().lower():
+            out["extension"] = True
+    except OSError:
+        pass
+    try:
+        out["config"] = "qlc-swiss-knife" in open(claude_desktop_config(), encoding="utf-8", errors="replace").read()
+    except OSError:
+        pass
+    try:
+        log = os.path.join(os.path.dirname(mcp_config.config_path()), "mcp-launcher.log")
+        with open(log, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                m = re.match(r"(\d{4}-\d\d-\d\dT[\d:.]+Z) start ", line)
+                if m:
+                    out["last_start"] = m.group(1)
+    except OSError:
+        pass
+    return out
+
+
+@bp.route("/api/mcp/status")
+def status_route():
+    return jsonify(status())
 
 
 @bp.route("/api/mcp/config")

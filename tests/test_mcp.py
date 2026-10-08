@@ -353,3 +353,24 @@ def test_claude_desktop_bundle(work, tmp_path):
                        env={**os.environ, "HOME": str(tmp_path / "empty"), "USERPROFILE": str(tmp_path / "empty"),
                             "LOCALAPPDATA": str(tmp_path / "empty")})
     assert p.returncode == 1 and "not found" in p.stderr
+
+
+def test_connection_status(tmp_path, monkeypatch):
+    """The card tells whether Claude Desktop has Swiss Knife and when Claude last started it."""
+    import app as appmod
+    from routes import mcp_routes
+    home = tmp_path / "h"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setenv("APPDATA", str(home / "AppData" / "Roaming"))
+    c = appmod.create_app().test_client()
+    s = c.get("/api/mcp/status").get_json()
+    assert s == {"extension": False, "config": False, "last_start": None}
+    base = os.path.dirname(mcp_routes.claude_desktop_config())
+    os.makedirs(os.path.join(base, "Claude Extensions", "local.mcpb.giopas.qlc-swiss-knife"))
+    log = os.path.join(str(home), ".qlc_swiss_knife")
+    os.makedirs(log, exist_ok=True)
+    with open(os.path.join(log, "mcp-launcher.log"), "w") as fh:
+        fh.write("2026-10-08T09:00:00.000Z start /x/app --mcp\n2026-10-08T09:05:00.000Z swiss knife exited code=0\n")
+    s = c.get("/api/mcp/status").get_json()
+    assert s["extension"] is True and s["last_start"] == "2026-10-08T09:00:00.000Z"

@@ -33,11 +33,25 @@ async function mcpLoad() {
   document.getElementById('mcp-cfgpath').textContent = _mcp.claude_desktop_config;
 }
 
+async function mcpStatus() {
+  const el = document.getElementById('mcp-status');
+  const btn = document.getElementById('mcp-install');
+  let s;
+  try { s = await (await fetch('/api/mcp/status')).json(); } catch { return; }
+  const connected = !!(s.last_start || s.extension || s.config);
+  if (s.last_start) el.textContent = t('Connected. Claude last started Swiss Knife on {0}.', new Date(s.last_start).toLocaleString());
+  else if (s.extension) el.textContent = t('Installed in Claude Desktop. Claude has not used it yet.');
+  else if (s.config) el.textContent = t("Found in Claude Desktop's settings file. Claude has not used it yet.");
+  else el.textContent = t('Not connected yet. Use the button below.');
+  el.className = 'upd-msg mcp-status ' + (connected ? 'mcp-ok' : 'mcp-no');
+  btn.textContent = connected ? t('⬇ Reinstall the connection') : t('⬇ Connect Claude Desktop');
+}
+
 async function mcpToggle(open) {
   const card = document.getElementById('mcp-card');
   const show = open === undefined ? card.hidden : open;
   card.hidden = !show;
-  if (show) { document.getElementById('mcp-msg').textContent = ''; await mcpLoad(); }
+  if (show) { document.getElementById('mcp-msg').textContent = ''; await mcpLoad(); await mcpStatus(); }
 }
 
 async function mcpSetFolders(list) {

@@ -2885,5 +2885,11 @@
  "Preparing…": "Preparazione…",
  "Could not prepare the file.": "Impossibile preparare il file.",
  "Claude Desktop should now ask to install it. Choose the folders with your shows, then Install.": "Claude Desktop dovrebbe ora chiederti di installarlo. Scegli le cartelle con i tuoi show, poi Installa.",
- "The file is in your Downloads folder ({0}): double-click it to open it in Claude Desktop.": "Il file è nella cartella Download ({0}): fai doppio clic per aprirlo in Claude Desktop."
+ "The file is in your Downloads folder ({0}): double-click it to open it in Claude Desktop.": "Il file è nella cartella Download ({0}): fai doppio clic per aprirlo in Claude Desktop.",
+ "Connected. Claude last started Swiss Knife on {0}.": "Connesso. Claude ha avviato Swiss Knife l'ultima volta il {0}.",
+ "Installed in Claude Desktop. Claude has not used it yet.": "Installato in Claude Desktop. Claude non lo ha ancora usato.",
+ "Found in Claude Desktop's settings file. Claude has not used it yet.": "Presente nel file delle impostazioni di Claude Desktop. Claude non lo ha ancora usato.",
+ "Not connected yet. Use the button below.": "Non ancora connesso. Usa il pulsante qui sotto.",
+ "⬇ Reinstall the connection": "⬇ Reinstalla la connessione",
+ "Check again": "Controlla di nuovo"
 }

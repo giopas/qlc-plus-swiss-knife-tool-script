@@ -42,8 +42,11 @@ The detailed, step-by-step plan (tasks, acceptance criteria, commit messages, de
 | **2.6.0** ✅ | Paperwork, setlists, MIDI | MIDI / input mapping manager, setlist import and a tablet setlist, tech rider with patch, tilt and meshes |
 | **2.7.0** ✅ | Language and sharing | Interface in English, Italian and French; a community library of templates, palettes, presets, naming profiles, VC styles and Show Profiles as one plain file |
 | **2.8.0** ✅ | Install like an app | Packages for macOS, Windows and Linux built on each release (checksums, smoke-tested), an update check with Update and restart; running from sources stays |
-| **2.9.0** | MCP server | Claude Desktop / Cowork drive the same tools — the AI proposes, the tools write, the Doctor validates; ships inside the package (`--mcp`) |
+| **2.8.1 to 2.8.6** ✅ | Install fixes | A logo, the update check and *Update and restart* working on macOS, QLC+ 5.3.0 script commands, a Windows installer |
+| **2.9.0** ✅ | MCP server | Claude Desktop and Claude Code use the same tools. Claude gets only the folders you list and Swiss Knife itself, and writes only new files. One `.mcpb` file connects Claude Desktop; Claude drafts Dictionary descriptions |
+| **2.9.1, 2.9.2** ✅ | Connection status | The card and the menu say when Claude is connected |
+| **3.0.0** ✅ | Milestone | The plan is complete. README, wiki and work plan rewritten |
 
-## After 2.9
+## After 3.0
 
-Nothing scheduled.
+Nothing scheduled. What is left is testing on real systems (Claude Desktop on Windows, the packaged Mac app, QLC+ 5.3.0) and fixes from your reports. See [WORKPLAN.md](WORKPLAN.md).

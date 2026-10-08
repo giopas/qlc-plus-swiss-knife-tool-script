@@ -8,6 +8,19 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [3.0.0] — 2026-10-08
+
+**Swiss Knife 3.0: install it like an app, use it in three languages, and let Claude help.**
+
+This release has no code beyond 2.9.2. The version number marks that the plan is complete, and the documentation was rewritten to match.
+
+### Changed
+- README rewritten: a short section on Claude (what Claude can reach: only the folders you list and Swiss Knife itself), the Claude Desktop file in the install table, and every tool described up to date.
+- Wiki: every page reworded in plain language, with the features of 2.0.1 to 2.9 added where they were missing (Porter meshes and script commands, setlist import and tablet page, Doctor fixes with a choice, Look Builder beats and pixel bars, Stage aiming, Claude sections, new Troubleshooting rows). Home rebuilt around "Start here".
+- WORKPLAN reorganised into a short current plan with a release history. The full log of 23 September to 8 October moved to `docs/WORKPLAN_ARCHIVE.md`.
+- ROADMAP brought up to date.
+
+
 ## [2.9.2] — 2026-10-08
 
 **The menu says when Claude is connected.**

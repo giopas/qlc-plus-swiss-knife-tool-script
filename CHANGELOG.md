@@ -8,6 +8,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [2.9.2] — 2026-10-08
+
+**The menu says when Claude is connected.**
+
+### Changed
+- The menu item reads *🔌 MCP connected to Claude* (in the accent colour) when Claude Desktop already has Swiss Knife, and *🔌 Connect to Claude* otherwise. It checks once when the app starts, and again when you open the card.
+
+
 ## [2.9.1] — 2026-10-08
 
 **The Connect to Claude card shows whether Claude is already connected.**

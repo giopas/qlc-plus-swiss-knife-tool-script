@@ -33,6 +33,19 @@ async function mcpLoad() {
   document.getElementById('mcp-cfgpath').textContent = _mcp.claude_desktop_config;
 }
 
+function mcpSidebar(connected) {
+  const b = document.querySelector('#fp-mcp .sc-link');
+  if (!b) return;
+  b.textContent = connected ? t('🔌 MCP connected to Claude') : t('🔌 Connect to Claude');
+  b.classList.toggle('mcp-on', !!connected);
+}
+
+async function mcpSidebarInit() {
+  try { const s = await (await fetch('/api/mcp/status')).json(); mcpSidebar(!!(s.last_start || s.extension || s.config)); }
+  catch { /* the sidebar keeps its plain label */ }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(mcpSidebarInit, 400));
+
 async function mcpStatus() {
   const el = document.getElementById('mcp-status');
   const btn = document.getElementById('mcp-install');
@@ -44,6 +57,7 @@ async function mcpStatus() {
   else if (s.config) el.textContent = t("Found in Claude Desktop's settings file. Claude has not used it yet.");
   else el.textContent = t('Not connected yet. Use the button below.');
   el.className = 'upd-msg mcp-status ' + (connected ? 'mcp-ok' : 'mcp-no');
+  mcpSidebar(connected);
   btn.textContent = connected ? t('⬇ Reinstall the connection') : t('⬇ Connect Claude Desktop');
 }
 

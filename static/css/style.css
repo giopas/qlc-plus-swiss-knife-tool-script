@@ -4166,3 +4166,4 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 
 .mcp-status.mcp-ok { color: var(--accent, #5eead4); }
 .mcp-status.mcp-no { opacity: .85; }
+.sc-link.mcp-on { color: var(--accent, #5eead4); }

@@ -8,6 +8,21 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [3.0.3] — 2026-10-09
+
+The gaps found on the first look at 3.0.2 in Japanese, filled in every language.
+
+### Changed
+- The tool names are translated in all seven languages, Italian and French included: in the menu, on the screens and in the sentences that mention them (*クイックスタート*, *Riduttore di rig*, *Look-Baukasten*, *Documentation de la show*…). Links to a wiki page keep its English name, because the wiki is in English.
+- The Look Builder shows the palette colours in your language. A colour word is looked up under its own context (`colour|Red`), so a function called *Red* elsewhere keeps its name. The fixture group names in the Look Builder are no longer translated (a group called *Floor* showed as *Boden* in German).
+
+### Fixed
+- The menu read *ファンクション Porter*: a loose pattern (`Function {0}`) translated half of *Function Porter*. Every tool name now has its own entry, and a numbered label such as *3. Bring functions* uses its exact translation before any pattern.
+- Strings that stayed English in every language now have a translation: *Console* in the guided routes, the Doctor titles D004, D006, D015 and D016, the D012 message added in 3.0.1, *Apply will fix*, the Look Builder patterns, positions and chaser presets, *New group*, *floats … mm*, the CueList actions (Next, Previous, Stop), the function type filters, *My Show*, the MIDI message types and a few update messages.
+- Placeholders of text boxes (the setlist paste box, the description box, the label panel) were never translated. They are now.
+- The language box's own tooltip follows the language.
+
+
 ## [3.0.2] — 2026-10-08
 
 Five more languages for the interface.

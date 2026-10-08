@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.0.2, 8 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.0.3, 9 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -27,10 +27,10 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 24 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 849 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 863 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
-Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese.
+Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
 
 ## 2. What is left
 
@@ -56,6 +56,20 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | No Linux AppImage unless someone asks. The `.tar.gz` stays. | 8 Oct |
 | The update on macOS is tested and works (several runs). | 8 Oct |
 | Forum: no post per release. A post for 2.0 and one for 3.0. | 1 Oct, 8 Oct |
+
+### Released in 3.0.3
+
+Found on 9 October by giopas on the Mac, in Japanese: English left in the menu and on the Start page.
+
+| Change | Where |
+|---|---|
+| Tool names translated in all seven languages, also inside sentences; wiki links keep the English page name | `static/i18n/*.json` |
+| A numbered label uses its exact translation before any pattern (fixes *ファンクション Porter* and *3. Bring funzioni*) | `static/js/i18n.js` |
+| Textarea placeholders translated; the language box tooltip follows the language | `static/js/i18n.js` |
+| Palette colours translated through `data-i18n-ctx="colour"`; group names in the Look Builder never translated | `static/js/looks.js`, `static/js/i18n.js` |
+| About 90 strings that were English everywhere (Console, Doctor titles, D012, patterns, presets, positions, CueList actions, type filters) | `static/i18n/*.json` |
+| A crawl of every screen with a show open, in English, Japanese, Italian and Chinese, left only show data, brand and file names in English | Done |
+| Check on the Mac in each language | To do (giopas) |
 
 ### Released in 3.0.2
 
@@ -147,6 +161,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.0.0 | 8 Oct | Milestone release. Documentation rewritten, work plan reorganised. |
 | 3.0.1 | 8 Oct | Dictionary drafts and *Ask Claude…*; cue notes name the button; Claude's `guide`, ready requests and the *Claude's tools* wiki page; tooltips that fit the window; D016 and D012 fixes. |
 | 3.0.2 | 8 Oct | German, Spanish, Portuguese, Japanese and Chinese. |
+| 3.0.3 | 9 Oct | Tool names translated; the gaps of the new languages filled. |
 
 ## 4. Goal and the Pub test
 

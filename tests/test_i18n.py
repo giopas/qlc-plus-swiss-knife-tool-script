@@ -74,3 +74,24 @@ def test_the_page_loads_the_engine_before_the_app():
     for code in ("en",) + LANGS:
         assert f'<option value="{code}"' in html or code in open(
             os.path.join(ROOT, "static", "js", "i18n.js"), encoding="utf-8").read()
+
+
+TOOL_NAMES = ("Quick Start", "Rig Reducer", "Function Porter", "Look Builder", "VC Visual Editor",
+              "Stage & Meshes", "Trigger Manager", "Workspace Doctor", "ID Browser", "Show Paperwork")
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_tool_names_are_translated(lang):
+    """The menu names exactly, so a loose pattern ("Function {0}") never half-translates them."""
+    d = _load(lang)
+    for name in TOOL_NAMES:
+        assert d.get(name) and d[name] != name, f"{lang}: {name}"
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_palette_colours_use_the_colour_context(lang):
+    """Colour names are looked up as colour|Red so a function called Red keeps its name."""
+    d = _load(lang)
+    for c in ("Red", "Warm White", "Congo", "Teal"):
+        assert d.get("colour|" + c), f"{lang}: colour|{c}"
+        assert c not in d, f"{lang}: bare '{c}' would rename show data"

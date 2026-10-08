@@ -56,7 +56,7 @@ function _lbGroupOpts(sel) {
 
 function _lbChip(c, on, fn) {
   return `<button class="lb-chip ${on ? 'on' : ''}" style="--c:${c.hex}" title="${_esc(c.hex)}"
-            onclick="${fn}('${_esc(c.name).replace(/'/g, "\\'")}')"><i></i>${_esc(c.name)}</button>`;
+            onclick="${fn}('${_esc(c.name).replace(/'/g, "\\'")}')"><i></i><span data-i18n-ctx="colour">${_esc(c.name)}</span></button>`;
 }
 
 // moving-head position (v2.5): a name from the list, or pan / tilt in percent (50 = centre)
@@ -105,7 +105,7 @@ function _lbRender() {
       <h3>Looks <span class="p-desc">fixture group × palette — one scene each, every channel declared</span></h3>
       <div class="lb-groups">${_lbOpts.groups.map(g => `
         <label class="${g.supported ? '' : 'lb-dis'}"><input type="checkbox" class="lb-lg" value="${_esc(g.id)}"
-          ${g.supported ? '' : 'disabled'} onchange="_lbLookPreview()"> ${_esc(g.name)} <span class="lb-n">${g.fixtures.length}</span></label>`).join('')}
+          ${g.supported ? '' : 'disabled'} onchange="_lbLookPreview()"> <span data-i18n="off">${_esc(g.name)}</span> <span class="lb-n">${g.fixtures.length}</span></label>`).join('')}
       </div>
       ${pal.map(([id, p]) => `<div class="lb-pal"><span class="lb-pal-h">${_esc(p.label)}</span>
           ${p.colours.map(c => _lbChip(c, hasPick.includes(c.name), 'looksToggleLookColour')).join('')}
@@ -170,7 +170,7 @@ function _lbRender() {
           <option value="movement">movement</option><option value="fx">special FX</option></select></label>
         <label><input type="checkbox" id="lb-bg" onchange="_lbChPreview()"> Background
           <select id="lb-bgc" class="filter-input" onchange="_lbChPreview()">${_lbAllColours().map(c =>
-            `<option ${c.name === 'Blue' ? 'selected' : ''}>${_esc(c.name)}</option>`).join('')}</select>
+            `<option data-i18n-ctx="colour" ${c.name === 'Blue' ? 'selected' : ''}>${_esc(c.name)}</option>`).join('')}</select>
           <input type="number" id="lb-bgl" class="filter-input rr-num" min="5" max="100" value="30" oninput="_lbChPreview()"> %</label>
       </div>
       <div class="lb-pal"><span class="lb-pal-h">Colours</span><span id="lb-chcols"></span></div>
@@ -323,7 +323,7 @@ function _lbLookPreview() {
     el.innerHTML = `<div class="lb-cap">Simulated output — ${_esc(gn)}${_lbGroupsTicked.length > 1 ? ` (+${_lbGroupsTicked.length - 1} more group(s))` : ''}:
         ${_lbGroupsTicked.length * _lbLookCols.length} look(s)</div>
       <table class="lb-strip"><tr><th></th>${d.fixtures.map(f => `<th title="${_esc(f)}">${_esc(f)}</th>`).join('')}</tr>
-      ${d.looks.map(l => `<tr><td>${_esc(l.colour.name)}</td>${l.cells.map(c =>
+      ${d.looks.map(l => `<tr><td data-i18n-ctx="colour">${_esc(l.colour.name)}</td>${l.cells.map(c =>
         `<td><span class="lb-cell" style="background:${c || 'transparent'}" title="${c || 'no .qxf — skipped'}">${c ? '' : '–'}</span></td>`).join('')}</tr>`).join('')}</table>`;
   }, 150);
 }
@@ -356,7 +356,7 @@ function _lbRenderChCols() {
   const el = _v('lb-chcols');
   if (!el) return;
   el.innerHTML = _lbChCols.length ? _lbChCols.map((c, i) =>
-    `<button class="lb-chip on" style="--c:${c.hex}" onclick="looksRemoveChColour(${i})" title="remove"><i></i>${_esc(c.name)} ✕</button>`).join('')
+    `<button class="lb-chip on" style="--c:${c.hex}" onclick="looksRemoveChColour(${i})" title="remove"><i></i><span data-i18n-ctx="colour">${_esc(c.name)}</span> ✕</button>`).join('')
     : '<span class="p-desc">click colours below (in order)</span>';
 }
 

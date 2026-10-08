@@ -54,6 +54,10 @@ const I18N = (() => {
       const core = norm(m[2]);
       if (core) {
         let tr = dict[core];
+        if (tr === undefined) {              // "3. Bring functions": an exact label wins over a loose pattern
+          const pm = /^(\d+[.)]\s+)(.+)$/.exec(core);
+          if (pm && dict[pm[2]] !== undefined) tr = pm[1] + dict[pm[2]];
+        }
         if (tr === undefined) {
           for (const p of patterns) {
             const mm = p.re.exec(core);
@@ -85,7 +89,11 @@ const I18N = (() => {
     if (!src || !src.trim()) return;
     const par = node.parentElement;
     if (par && _skip(par)) return;
-    const out = t(src);
+    // data-i18n-ctx="colour": a word that is also a name in shows ("Red") is looked up as "colour|Red",
+    // so a function called Red elsewhere keeps its name
+    const ctx = par && par.getAttribute('data-i18n-ctx');
+    let out = ctx ? t(ctx + '|' + src) : t(src);
+    if (ctx && out.startsWith(ctx + '|')) out = src;
     if (out !== src || rec) {
       if (par && par.tagName === 'OPTION' && !par.hasAttribute('value')) par.setAttribute('value', norm(src));
       node.__i18n = { src, out };
@@ -96,7 +104,8 @@ const I18N = (() => {
   }
 
   function _attrs(el) {
-    if (_skip(el)) return;
+    // a textarea's own text is the user's, but its placeholder and tooltip are interface
+    if (el.tagName === 'TEXTAREA' ? _skip(el.parentElement) : _skip(el)) return;
     const rec = el.__i18na || (el.__i18na = {});
     for (const a of ATTRS) {
       if (!el.hasAttribute(a)) continue;
@@ -111,7 +120,9 @@ const I18N = (() => {
   function _walk(root) {
     if (!root) return;
     if (root.nodeType === 3) { _text(root); return; }
-    if (root.nodeType !== 1 || SKIP_TAGS.has(root.tagName)) return;
+    if (root.nodeType !== 1) return;
+    if (root.tagName === 'TEXTAREA') { _attrs(root); return; }
+    if (SKIP_TAGS.has(root.tagName)) return;
     _attrs(root);
     for (let n = root.firstChild; n; n = n.nextSibling) {
       if (n.nodeType === 3) _text(n);
@@ -172,7 +183,11 @@ const I18N = (() => {
     if (remember) { try { localStorage.setItem('sk-lang', code); } catch { /* per-browser convenience only */ } }
     _reapply();
     const sel = document.getElementById('lang-select');
-    if (sel) sel.value = code;
+    if (sel) {                    // the box itself stays untranslated (its options are language names)
+      sel.value = code;
+      sel.setAttribute('aria-label', t('Language'));
+      sel.title = t('Language of the interface (shows, reports and the wiki stay as they are)');
+    }
   }
 
   function init() {

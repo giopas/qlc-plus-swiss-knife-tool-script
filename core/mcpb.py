@@ -54,19 +54,46 @@ function fromUsualPlaces() {
   return hit ? { command: hit, args: ['--mcp'] } : null;
 }
 
+function log(msg) {
+  try {
+    const dir = path.join(os.homedir(), '.qlc_swiss_knife');
+    fs.mkdirSync(dir, { recursive: true });
+    const f = path.join(dir, 'mcp-launcher.log');
+    try { if (fs.statSync(f).size > 200000) fs.unlinkSync(f); } catch (e) { /* no log yet */ }
+    fs.appendFileSync(f, new Date().toISOString() + ' ' + msg + '\n');
+  } catch (e) { /* the log is a bonus */ }
+}
+
 const target = fromLaunchFile() || fromUsualPlaces();
 if (!target) {
-  process.stderr.write('QLC+ Swiss Knife was not found. Install it, start it once, then restart Claude.\n');
+  const m = 'QLC+ Swiss Knife was not found. Install it, start it once, then restart Claude.';
+  log(m);
+  process.stderr.write(m + '\n');
   process.exit(1);
 }
 const folders = process.argv.slice(2).filter((a) => a && !a.startsWith('${'));
 const args = target.args.slice();
 for (const f of folders) args.push('--folder', f);
+log('start ' + target.command + ' ' + JSON.stringify(args));
 
-const child = spawn(target.command, args, { stdio: 'inherit' });
-child.on('error', (e) => { process.stderr.write('Could not start Swiss Knife: ' + e.message + '\n'); process.exit(1); });
-child.on('exit', (code, signal) => process.exit(signal ? 1 : (code === null ? 0 : code)));
-for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => child.kill(s));
+// The launcher is a plain pipe between Claude and Swiss Knife.
+const child = spawn(target.command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+child.on('error', (e) => {
+  const m = 'Could not start Swiss Knife: ' + e.message;
+  log(m);
+  process.stderr.write(m + '\n');
+  process.exit(1);
+});
+process.stdin.pipe(child.stdin);
+process.stdin.on('end', () => { log('claude closed stdin'); try { child.stdin.end(); } catch (e) { /* gone */ } });
+child.stdin.on('error', () => {});
+child.stdout.pipe(process.stdout);
+child.stderr.on('data', (d) => { process.stderr.write(d); log('stderr: ' + String(d).trim().slice(0, 500)); });
+child.on('close', (code, signal) => {
+  log('swiss knife exited code=' + code + ' signal=' + signal);
+  process.exit(signal ? 1 : (code === null ? 0 : code));
+});
+for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => { log('got ' + s); child.kill(s); });
 """
 
 

@@ -208,7 +208,11 @@ class Server:
     @property
     def client(self):
         if self._client is None:
-            import app as _app
+            try:
+                import app as _app
+            except ModuleNotFoundError as e:
+                raise ToolError(f"Swiss Knife's Python is missing a package ({e.name}). Install the "
+                                f"requirements (pip install flask) for {sys.executable}.")
             self._client = _app.create_app().test_client()
         return self._client
 
@@ -752,7 +756,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     except AttributeError:                                  # not a real console (tests)
         stdin, stdout = sys.stdin, real_out
     sys.stdout = sys.stderr                                 # stdout is the protocol, nothing else
-    serve(stdin, stdout, Server(mcp_config.Allowlist(args.folder)))
+    print(f"[qsk-mcp] v{_version()} started, pid {os.getpid()}, python {sys.executable}, "
+          f"folders {args.folder}", file=sys.stderr, flush=True)
+    try:
+        serve(stdin, stdout, Server(mcp_config.Allowlist(args.folder)))
+    except BaseException:                                   # noqa: BLE001 — say why before dying
+        print("[qsk-mcp] crashed:\n" + traceback.format_exc(), file=sys.stderr, flush=True)
+        return 1
+    print("[qsk-mcp] input closed, exiting", file=sys.stderr, flush=True)
     return 0
 
 

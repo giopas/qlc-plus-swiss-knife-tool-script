@@ -27,6 +27,12 @@ try:                                    # cp1252 consoles / windowed apps must n
 except Exception:                       # noqa: BLE001 — never block the start
     pass
 
+if __name__ == '__main__' and '--mcp' in sys.argv:        # Claude connects here: answer fast, import Flask on first use
+    sys.argv.remove('--mcp')
+    from core import mcp_server
+    sys.exit(mcp_server.main(sys.argv[1:]))
+
+
 def _try_bootstrap():
     """Re-exec under the project's .venv Python if flask is missing."""
     here   = os.path.dirname(os.path.abspath(__file__))
@@ -352,10 +358,6 @@ def _smoke(app) -> int:
 
 
 if __name__ == '__main__':
-    if '--mcp' in sys.argv:                 # Claude connects here: JSON on stdin/stdout, no window
-        sys.argv.remove('--mcp')
-        from core import mcp_server
-        sys.exit(mcp_server.main(sys.argv[1:]))
     import argparse
     parser = argparse.ArgumentParser(description='QLC+ Swiss Knife')
     parser.add_argument('--browser', action='store_true',

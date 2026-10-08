@@ -8,22 +8,24 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
-## [2.9.0] — 2026-10-07
+## [2.9.0] — 2026-10-08
 
-**Swiss Knife as an MCP server: Claude can use the same tools you do.**
+**Claude can use Swiss Knife's tools.**
 
 ### Added
-- **MCP server** (`QLC Swiss Knife --mcp`, or `python -m core.mcp_server`): 23 tools over stdio — open a show, summary, Doctor check/fix, rig fixtures/reduce (with preview), porter source/port, looks options/build, VC pages/edit, setlist, compare, history/undo/redo, and `save_show`.
-- **Dictionary by Claude:** `dictionary_context` (functions with VC buttons and what is inside them), `dictionary_set`, `dictionary_load`, `dictionary_save` — Claude drafts or proposes the function descriptions, and saves them as a new dictionary `.txt` (never overwrites; not part of the show). No new dependency.
-- **Safe by design:** only the folders listed in *Connect to Claude* can be read or written; saving only ever creates a **new file** (`_v2`, `_v3`… — never an existing name) with the report and the recipe; every change is a History step; tools return counts, findings and names, never the raw XML.
-- **One-click connection for Claude Desktop:** *🔌 Connect to Claude › ⬇ Connect Claude Desktop* (or the `QLC-Swiss-Knife-<version>-claude.mcpb` file attached to each release) opens Claude Desktop's install window, which asks which folders to share. The file holds no Swiss Knife code, only a small launcher; Swiss Knife leaves `~/.qlc_swiss_knife/mcp-launch.json` at every start so Claude finds it after moves and updates. Checked with the official `mcpb validate`.
-- **Dictionary by Claude, better:** scripts (what they start and stop), where a function is used, matrix patterns, scene levels; `skip_steps` hides helper steps and `auto_steps` names them ("Step 3 of Color Fade"); `save_show` says when it is an identical copy.
-- **🔌 Connect to Claude** (under the menu): add or remove the shared folders, and copy the snippet for Claude Desktop's settings or the one-line command for Claude Code.
-- Windows: a console program `QLC Swiss Knife MCP.exe` next to the app (Claude needs stdin/stdout, which the window app does not have). The release build smoke-tests the MCP server on every platform.
-- Wiki: *Connect Claude to Swiss Knife* — a step-by-step guide for Claude Desktop and example requests.
+- An MCP server (`QLC Swiss Knife --mcp`, or `python -m core.mcp_server`) with 23 tools over stdio: open a show, summary, Doctor check and fix, rig fixtures and reduce (with a preview), porter source and port, looks options and build, VC pages and edit, setlist, compare, history, undo, redo and `save_show`. It adds no dependency.
+- Limited access. Through this connection Claude gets the folders you list and the Swiss Knife tools, and nothing else on your computer. It cannot browse the disk, run commands, open other programs or use the network. A path outside the listed folders is refused, including `../` and links that lead out.
+- Writing creates new files only: the show (`_v2`, `_v3` and so on), its report, its recipe and a dictionary `.txt`. An existing file is never overwritten or deleted. Every change is a History step, so it can be undone, and the Doctor refuses a result with new errors. Claude receives names, counts and findings, never the raw XML.
+- One-click connection for Claude Desktop. *🔌 Connect to Claude › ⬇ Connect Claude Desktop*, or the `QLC-Swiss-Knife-<version>-claude.mcpb` file attached to each release, opens Claude Desktop's install window, which asks which folders to share. The file holds a small launcher and no Swiss Knife code. Swiss Knife writes `~/.qlc_swiss_knife/mcp-launch.json` at every start, so the launcher finds it after a move or an update. The launcher logs to `~/.qlc_swiss_knife/mcp-launcher.log`. Checked with the official `mcpb validate`, and installed in Claude Desktop on macOS.
+- Dictionary descriptions by Claude. `dictionary_context` gives each function's type, VC button, users and contents (chaser steps, what a script starts and stops, matrix patterns, scene levels). `dictionary_set` stores the descriptions, `dictionary_load` and `dictionary_save` read and write the Dictionary `.txt` as a new file. `skip_steps` leaves out helper steps and `auto_steps` names them ("Step 3 of Color Fade"). The dictionary is not part of the show.
+- Tool annotations tell Claude Desktop which tools only read and which change the show, so you can allow the reading group once and keep approving the two that write to disk.
+- The server answers Claude's first message at once and loads the rest on the first tool call.
+- *🔌 Connect to Claude* in the menu: add or remove the shared folders, copy the snippet for Claude Desktop's settings file or the one-line command for Claude Code.
+- Windows: a console program, `QLC Swiss Knife MCP.exe`, next to the app, because Claude needs stdin and stdout and the window app has neither. The release build runs the MCP self-test and a ping on every platform.
+- Wiki: *Connect Claude to Swiss Knife*, with setup steps, example requests, what Claude can and cannot reach, and troubleshooting.
 
 ### Changed
-- CI: a version tag no longer starts the `tests` workflow a second time (the release workflow runs the tests itself). Release in one push: merge locally, tag, `git push origin main vX.Y.Z`.
+- CI: a version tag no longer starts the `tests` workflow a second time, because the release workflow runs the tests itself. Release in one push: merge locally, tag, `git push origin main vX.Y.Z`.
 
 
 ## [2.8.6] — 2026-10-07

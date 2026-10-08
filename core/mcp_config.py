@@ -61,6 +61,23 @@ def save_folders(folders: Iterable[str]) -> List[str]:
     return clean
 
 
+def launch_path() -> str:
+    return os.path.join(os.path.dirname(config_path()), "mcp-launch.json")
+
+
+def write_launch(launch: dict) -> str:
+    """Remember how to start this Swiss Knife as an MCP server, for the Claude Desktop
+    bundle's launcher.  Rewritten at every start, so moving/updating the app needs nothing in Claude."""
+    path = launch_path()
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({"command": launch["command"], "args": launch["args"]}, fh, indent=2)
+    except OSError:
+        return ""
+    return path
+
+
 def env_folders() -> List[str]:
     raw = os.environ.get("QSK_MCP_FOLDERS", "")
     return [f for f in raw.split(os.pathsep) if f.strip()]

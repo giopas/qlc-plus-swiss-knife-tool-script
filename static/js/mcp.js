@@ -70,3 +70,16 @@ async function mcpCopy(id, btn) {
   btn.textContent = t('Copied');
   setTimeout(() => { btn.textContent = old; }, 1500);
 }
+
+async function mcpInstallBundle() {
+  const msg = document.getElementById('mcp-install-msg');
+  msg.textContent = t('Preparing…');
+  let d;
+  try {
+    d = await (await fetch('/api/mcp/install-bundle', {method: 'POST'})).json();
+  } catch { msg.textContent = t('Could not prepare the file.'); return; }
+  if (d.error) { msg.textContent = d.error; return; }
+  msg.textContent = d.opened
+    ? t('Claude Desktop should now ask to install it. Choose the folders with your shows, then Install.')
+    : t('The file is in your Downloads folder ({0}): double-click it to open it in Claude Desktop.', d.path);
+}

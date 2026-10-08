@@ -365,6 +365,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     app = create_app()
+    try:                                  # so the Claude connection file finds this program
+        from core import mcp_config as _mc
+        from routes.mcp_routes import launch as _launch
+        if not args.smoke:
+            _mc.write_launch(_launch())
+    except Exception:  # noqa: BLE001
+        pass
     if args.smoke:
         sys.exit(_smoke(app))
     try:                                  # packaged app: drop the version we just replaced

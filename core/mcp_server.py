@@ -135,13 +135,13 @@ TOOLS: List[dict] = [
      "description": "Compare the show in progress with another .qxw and return the differences (read only).",
      "inputSchema": _obj({"path": _S}, ["path"])},
     {"name": "dictionary_context", "handler": "t_dictionary_context",
-     "description": "For writing the Dictionary (ID → description of each function): lists the functions of the show in progress with id, name, type, current description, the Virtual Console button caption/frames that trigger it and short facts (chaser steps, scene fixture count, collection members). Use only_missing=true to see just the undescribed ones. Read-only. To DRAFT descriptions: call this, write one plain sentence per function (what it looks like / when it is used — only from the facts and names you were given; say \"unclear\" rather than guess), show the proposal to the user, and call dictionary_set once they agree (or straight away if they asked you to just do it).",
-     "inputSchema": _obj({"only_missing": {"type": "boolean"}, "type": _S, "query": _S, "frame": _S,
+     "description": "For writing the Dictionary (ID → description of each function): lists the functions of the show in progress with id, name, type, current description, the Virtual Console button caption/frames that trigger it and short facts (chaser steps, scene fixture count, collection members). Also gives `used_by` (the chasers, collections and scripts that start it) and, for scripts, what they start and stop. Use only_missing=true for the undescribed ones and skip_steps=true to hide helper steps (they are named by dictionary_set auto_steps). Read-only. To DRAFT descriptions: call this, write ONE short plain sentence per function (what it looks like or when it is used — only from the facts and names given; say \"unclear\" rather than guess; mention the button only when it adds something, not on every line), show the proposal to the user as a compact table, and call dictionary_set once they agree (or straight away if they asked you to just do it).",
+     "inputSchema": _obj({"only_missing": {"type": "boolean"}, "skip_steps": {"type": "boolean"}, "type": _S, "query": _S, "frame": _S,
                           "limit": {"type": "integer"}, "offset": {"type": "integer"}})},
     {"name": "dictionary_set", "handler": "t_dictionary_set",
-     "description": "Store descriptions in the Dictionary: entries [{id, description}]. An existing description is kept unless overwrite=true. Nothing is written to a file until dictionary_save; the show itself is never changed.",
+     "description": "Store descriptions in the Dictionary: entries [{id, description}]. An existing description is kept unless overwrite=true. auto_steps=true also describes the helper steps (functions that are only steps of a chaser or collection and have no button) as \"Step n of …\" / \"Part of …\". Nothing is written to a file until dictionary_save; the show itself is never changed.",
      "inputSchema": _obj({"entries": {"type": "array", "items": _obj({"id": _S, "description": _S}, ["id", "description"])},
-                          "overwrite": {"type": "boolean"}}, ["entries"])},
+                          "overwrite": {"type": "boolean"}, "auto_steps": {"type": "boolean"}}, ["entries"])},
     {"name": "dictionary_load", "handler": "t_dictionary_load",
      "description": "Load an existing dictionary .txt (ID|Name|Description) from a shared folder, to extend it.",
      "inputSchema": _obj({"path": _S}, ["path"])},
@@ -191,6 +191,7 @@ INSTRUCTIONS = (
     "look at it (show_summary, doctor_check), change it with the tools, and finish "
     "with save_show, which writes a NEW file — the original is never modified. "
     "Every change is a History step you can show_history or undo. "
+    "The show is open only in this server's own session, not in the Swiss Knife window: tell the user to open the saved file in the app. "
     "To describe functions in the Dictionary, use dictionary_context, propose the descriptions to the user, "
     "then dictionary_set and dictionary_save (the Dictionary is a separate .txt, not part of the show). "
     "Only folders the user shared in Swiss Knife (Settings › Connect to Claude) are reachable."
@@ -418,28 +419,77 @@ class Server:
         return out
 
     # ── dictionary (descriptions; never part of the .qxw) ───────────────────
-    def _facts(self) -> Dict[str, str]:
+    def _facts(self) -> Dict[str, dict]:
+        """{function id: {facts, used_by, helper, auto}} read from the show in progress."""
         import copy
-        from core import qxw_io, workspace
+        from core import qxw_io, script_cmds, workspace
         root = workspace._state.get("qxw_root")
         if root is None:
             return {}
         root = qxw_io.strip_ns(copy.deepcopy(root))
         names = workspace._state.get("func_by_id", {})
-        out: Dict[str, str] = {}
-        for f in root.iter("Function"):
-            fid, typ = f.get("ID", ""), f.get("Type", "")
+        eng = root.find("Engine")                      # not the <Function ID=…/> references of VC buttons
+        funcs = [(f.get("ID", ""), f.get("Type", ""), f)
+                 for f in (eng.findall("Function") if eng is not None else [])]
+        types = {fid: typ for fid, typ, _f in funcs}
+        parents: Dict[str, list] = {}                 # child id → [(parent id, type, step number)]
+        out: Dict[str, dict] = {}
+        for fid, typ, f in funcs:
+            info: Dict[str, Any] = {}
             if typ in ("Chaser", "Collection", "Sequence"):
-                steps = [names.get((st.text or "").strip(), "?") for st in f.iter("Step")
-                         if (st.text or "").strip().isdigit()]
-                if steps:
-                    out[fid] = (f"{len(steps)} step(s): " + ", ".join(steps[:6]) + ("…" if len(steps) > 6 else ""))
+                kids = [(st.text or "").strip() for st in f.iter("Step")]
+                kids = [k for k in kids if k.isdigit()]
+                for n, k in enumerate(kids, 1):
+                    parents.setdefault(k, []).append((fid, typ, n))
+                if kids:
+                    info["facts"] = (f"{len(kids)} step(s): " + ", ".join(names.get(k, "?") for k in kids[:6])
+                                     + ("…" if len(kids) > 6 else ""))
             elif typ == "Scene":
+                vals = []
+                for fv in f.iter("FixtureVal"):
+                    p_ = (fv.text or "").split(",")
+                    vals += [int(x) for x in p_[1::2] if x.strip().lstrip("-").isdigit()]
                 n = len(list(f.iter("FixtureVal")))
-                out[fid] = f"{n} fixture(s)" if n else "no fixture values"
+                if not n:
+                    info["facts"] = "no fixture values"
+                else:
+                    up = sum(1 for v in vals if v > 0)
+                    info["facts"] = (f"{n} fixture(s); " + ("all values 0 (blackout/neutral)" if not up
+                                                           else f"{up} of {len(vals)} channel values above 0"))
             elif typ == "EFX":
-                a = f.find("Algorithm")
-                out[fid] = f"EFX {a.text}" if a is not None and a.text else "EFX"
+                al = f.find("Algorithm")
+                info["facts"] = f"EFX {al.text}" if al is not None and al.text else "EFX"
+            elif typ == "RGBMatrix":
+                al = f.find("Algorithm")
+                sp = f.find("Speed")
+                bits = [f"pattern '{al.text}'" if al is not None and al.text else "matrix"]
+                if sp is not None and sp.get("Duration"):
+                    bits.append(f"{sp.get('Duration')} ms per step")
+                info["facts"] = ", ".join(bits)
+            elif typ == "Script":
+                starts, stops = [], []
+                for c in f.iter("Command"):
+                    for verb, ref in script_cmds.func_refs(c.text):
+                        (starts if verb == "start" else stops).append(ref)
+                bits = []
+                if starts:
+                    bits.append("starts " + ", ".join(names.get(r, "?") for r in dict.fromkeys(starts)))
+                if stops:
+                    bits.append(f"stops {len(set(stops))} function(s)")
+                info["facts"] = "script: " + ("; ".join(bits) if bits else "no start/stop commands")
+                for r in dict.fromkeys(starts):
+                    parents.setdefault(r, []).append((fid, typ, 0))
+            out[fid] = info
+        for kid, plist in parents.items():
+            if kid not in out:
+                continue
+            out[kid]["used_by"] = [f"{names.get(pid, '?')} ({pt})" for pid, pt, _n in plist][:4]
+            only_steps = all(pt in ("Chaser", "Collection", "Sequence") for _pid, pt, _n in plist)
+            out[kid]["_only_steps"] = only_steps
+            pid, pt, n = plist[0]
+            out[kid]["_auto"] = (f"Step {n} of {names.get(pid, '?')}" if pt == "Chaser" and n
+                                 else f"Part of {names.get(pid, '?')}" if pt in ("Collection", "Sequence")
+                                 else "")
         return out
 
     def t_dictionary_context(self, a: dict) -> Any:
@@ -449,8 +499,9 @@ class Server:
         q = str(a.get("query") or "").lower()
         typ = str(a.get("type") or "").lower()
         frame = str(a.get("frame") or "").lower()
-        out = []
+        out, hidden = [], 0
         for r in rows:
+            fx = facts.get(r["id"], {})
             if a.get("only_missing") and (r.get("desc") or "").strip():
                 continue
             if typ and typ != str(r.get("type", "")).lower():
@@ -459,6 +510,9 @@ class Server:
                 continue
             if frame and not any(frame in str(x).lower() for x in r.get("vc_frames") or []):
                 continue
+            if a.get("skip_steps") and fx.get("_only_steps") and not r.get("vc_button"):
+                hidden += 1                         # a helper: dictionary_set(auto_steps=true) names it
+                continue
             row = {"id": r["id"], "name": r["name"], "type": r["type"]}
             if r.get("desc"):
                 row["description"] = r["desc"]
@@ -466,14 +520,20 @@ class Server:
                 row["vc_button"] = r["vc_button"]
             if r.get("vc_frames"):
                 row["vc_frames"] = r["vc_frames"]
-            if facts.get(r["id"]):
-                row["facts"] = facts[r["id"]]
+            if fx.get("facts"):
+                row["facts"] = fx["facts"]
+            if fx.get("used_by"):
+                row["used_by"] = fx["used_by"]
             out.append(row)
         limit = max(1, min(int(a.get("limit") or 60), 150))
         off = max(0, int(a.get("offset") or 0))
         res: Dict[str, Any] = {"total": len(rows), "matching": len(out),
                                "described": sum(1 for r in rows if (r.get("desc") or "").strip()),
                                "functions": out[off:off + limit]}
+        if hidden:
+            res["helper_steps_hidden"] = hidden
+            res["note"] = ("Helper steps (functions that only exist as steps of a chaser or collection, with no "
+                           "button) are hidden; dictionary_set(auto_steps=true) describes them as \"Step n of …\".")
         if len(out) > off + limit:
             res["next_offset"] = off + limit
         return res
@@ -481,8 +541,17 @@ class Server:
     def t_dictionary_set(self, a: dict) -> Any:
         self.need_show()
         known = {r["id"]: r for r in self.api("GET", "/api/dictionary/")}
+        entries = [dict(e) for e in a.get("entries") or []]
+        auto = 0
+        if a.get("auto_steps"):
+            given = {str(e.get("id", "")).strip() for e in entries}
+            for fid, fx in self._facts().items():
+                if (fid in known and fid not in given and fx.get("_only_steps") and fx.get("_auto")
+                        and not known[fid].get("vc_button")):
+                    entries.append({"id": fid, "description": fx["_auto"]})
+                    auto += 1
         done, kept, unknown = [], [], []
-        for e in a.get("entries") or []:
+        for e in entries:
             fid = str(e.get("id", "")).strip()
             desc = " ".join(str(e.get("description", "")).split())[:400]
             if fid not in known:
@@ -496,6 +565,8 @@ class Server:
                 done.append(fid)
         out: Dict[str, Any] = {"set": len(done), "kept_existing": kept, "unknown_ids": unknown,
                                "note": "Held in memory — call dictionary_save to write the .txt."}
+        if auto:
+            out["auto_steps_named"] = auto
         return out
 
     def t_dictionary_load(self, a: dict) -> Any:
@@ -548,9 +619,11 @@ class Server:
         if os.path.abspath(path) == os.path.abspath(self.opened_path or "?"):
             raise ToolError("That would overwrite the opened show; pick another name.")
         r = self.api("POST", "/api/show/save", {"path": path})
-        return {"saved": r.get("path") or path, "report": r.get("report_path"),
+        no_change = not st.get("steps")
+        return {"saved": r.get("path") or path, "no_changes": no_change, "report": r.get("report_path"),
                 "recipe": r.get("recipe_path"), "doctor": self._counts(),
-                "note": "The original file was not changed. The recipe replays this to the same file: "
+                "note": ("No changes were made, so this is an identical copy. " if no_change else "")
+                        + "The original file was not changed. The recipe replays this to the same file: "
                         "python -m core.recipe replay <recipe>"}
 
     # ── protocol ────────────────────────────────────────────────────────────

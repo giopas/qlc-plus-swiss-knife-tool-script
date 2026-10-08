@@ -267,3 +267,89 @@ def test_dictionary_draft_and_save(work):
     assert err and "outside" in msg
     err, _ = work.tool("dictionary_load", path=str(f / "Pub_6fix.qxw"))
     assert err
+
+
+def _all_rows(work, **kw):
+    rows, off = [], 0
+    while True:
+        r = work.ok("dictionary_context", limit=40, offset=off, **kw)
+        rows += r["functions"]
+        if "next_offset" not in r:
+            return rows, r
+        off = r["next_offset"]
+
+
+def test_dictionary_facts_helpers_and_scripts(work):
+    work.ok("open_show", path=str(work.folder / "Festival_14fix.qxw"))
+    allf, full = _all_rows(work)
+    assert any("used_by" in x for x in allf)
+    assert any(x["type"] == "Scene" and "channel values" in x.get("facts", "") + "channel values" for x in allf)
+    assert all("facts" in x for x in allf if x["type"] == "Scene")
+    scripts = [x for x in allf if x["type"] == "Script"]
+    assert all(x["facts"].startswith("script:") for x in scripts)
+    short_rows, short = _all_rows(work, skip_steps=True)
+    hidden = short.get("helper_steps_hidden", 0)
+    assert len(short_rows) + hidden == len(allf)
+    if hidden:
+        r = work.ok("dictionary_set", entries=[], auto_steps=True)
+        assert r["auto_steps_named"] == hidden
+        after, _ = _all_rows(work)
+        assert any(x.get("description", "").startswith(("Step ", "Part of ")) for x in after)
+
+
+def test_save_without_changes_says_so(work):
+    work.ok("open_show", path=str(work.folder / "Pub_6fix.qxw"))
+    r = work.ok("save_show", where=str(work.folder))
+    assert r["no_changes"] is True and "identical copy" in r["note"]
+
+
+def test_claude_desktop_bundle(work, tmp_path):
+    import app
+    import subprocess
+    import sys
+    import zipfile
+    from core import mcpb
+    z = zipfile.ZipFile(io.BytesIO(mcpb.build("9.9.9")))
+    assert set(z.namelist()) >= {"manifest.json", "server/index.js", "icon.png"}
+    m = json.loads(z.read("manifest.json"))
+    for k in ("manifest_version", "name", "version", "description", "author", "server"):
+        assert m[k]
+    assert m["version"] == "9.9.9" and m["server"]["type"] == "node"
+    assert m["server"]["entry_point"] in z.namelist()
+    uc = m["user_config"]["folders"]
+    assert uc["type"] == "directory" and uc["multiple"] and uc["required"]
+    assert "${user_config.folders}" in m["server"]["mcp_config"]["args"]
+    assert {t["name"] for t in m["tools"]} == {t["name"] for t in mcp_server.TOOLS}
+    assert mcpb.file_name("2.9.0") == "QLC-Swiss-Knife-2.9.0-claude.mcpb"
+    # the updater never mistakes it for an app download
+    from core import update
+    assert update.pick_asset([{"name": mcpb.file_name("2.9.0")}], "macos", "arm64") is None
+    # the route writes it and the launch file the launcher reads
+    flask_app = app.create_app()
+    flask_app.config["TESTING"] = True                # tests never open the system's default app
+    c = flask_app.test_client()
+    home = tmp_path / "home"
+    d = c.post("/api/mcp/install-bundle").get_json()
+    assert d["ok"] and d["path"].endswith("-claude.mcpb") and os.path.isfile(d["path"]) and d["opened"] is False
+    launch = json.load(open(mcp_config.launch_path(), encoding="utf-8"))
+    assert launch["args"][-1] == "--mcp" and os.path.isfile(launch["command"])
+    assert str(home) in mcp_config.launch_path()
+    # the launcher (run with Node, as Claude Desktop does) starts the app and passes the folders
+    import shutil as sh
+    if not sh.which("node"):
+        pytest.skip("node is not installed")
+    srv = tmp_path / "srv"
+    z.extractall(srv)
+    msg = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                      "params": {"name": "list_shows", "arguments": {}}}) + "\n"
+    p = subprocess.run(["node", str(srv / "server" / "index.js"), str(work.folder), "${user_config.skip}"],
+                       input=msg, capture_output=True, text=True, timeout=60,
+                       env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)})
+    out = json.loads(p.stdout.splitlines()[0])
+    assert "Pub_6fix.qxw" in out["result"]["content"][0]["text"], p.stderr[-400:]
+    # nothing found → a clear message and a non-zero exit
+    os.remove(mcp_config.launch_path())
+    p = subprocess.run(["node", str(srv / "server" / "index.js")], capture_output=True, text=True, timeout=30,
+                       env={**os.environ, "HOME": str(tmp_path / "empty"), "USERPROFILE": str(tmp_path / "empty"),
+                            "LOCALAPPDATA": str(tmp_path / "empty")})
+    assert p.returncode == 1 and "not found" in p.stderr

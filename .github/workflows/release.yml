@@ -86,6 +86,9 @@ jobs:
     if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v7
+      - name: Claude Desktop connection file (.mcpb)
+        run: python3 tools/make_mcpb.py files
       - uses: actions/download-artifact@v8
         with:
           path: files

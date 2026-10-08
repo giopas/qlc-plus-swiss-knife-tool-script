@@ -6,11 +6,12 @@
 import json
 import os
 import shlex
+import subprocess
 import sys
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
-from core import mcp_config
+from core import mcp_config, mcpb
 
 bp = Blueprint("mcp", __name__)
 
@@ -42,6 +43,7 @@ def claude_desktop_config() -> str:
 @bp.route("/api/mcp/config")
 def config():
     la = launch()
+    mcp_config.write_launch(la)
     snippet = {"mcpServers": {"qlc-swiss-knife": la}}
     q = (lambda s: '"%s"' % s) if sys.platform == "win32" else shlex.quote
     return jsonify({
@@ -60,3 +62,32 @@ def folders():
     if not isinstance(lst, list):
         return jsonify({"error": "folders must be a list."}), 400
     return jsonify({"folders": mcp_config.save_folders(lst)})
+
+
+@bp.route("/api/mcp/install-bundle", methods=["POST"])
+def install_bundle():
+    """Write the Claude Desktop connection file (.mcpb) to Downloads and open it:
+    Claude Desktop then shows its install dialog and asks which folders to share."""
+    mcp_config.write_launch(launch())
+    folder = os.path.join(os.path.expanduser("~"), "Downloads")
+    if not os.path.isdir(folder):
+        folder = os.path.expanduser("~")
+    path = os.path.join(folder, mcpb.file_name())
+    try:
+        with open(path, "wb") as fh:
+            fh.write(mcpb.build())
+    except OSError as e:
+        return jsonify({"error": f"Could not write {path}: {e.strerror}"}), 500
+    opened = False
+    if not current_app.config.get("TESTING"):
+        try:
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", path])
+            elif sys.platform == "win32":
+                os.startfile(path)                                    # noqa: S606 — the user's default app
+            else:
+                subprocess.Popen(["xdg-open", path])
+            opened = True
+        except Exception:                                             # noqa: BLE001
+            opened = False
+    return jsonify({"ok": True, "path": path, "opened": opened})

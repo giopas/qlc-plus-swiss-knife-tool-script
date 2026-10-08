@@ -2852,5 +2852,14 @@
  "Claude Desktop: add this to its settings file, then restart Claude": "Claude Desktop : ajoutez ceci à son fichier de réglages, puis redémarrez Claude",
  "Claude Code: run this once": "Claude Code : exécutez ceci une fois",
  "Let Claude open, check and fix your shows": "Laissez Claude ouvrir, vérifier et corriger vos shows",
- "Folder to share with Claude": "Dossier à partager avec Claude"
+ "Folder to share with Claude": "Dossier à partager avec Claude",
+ "Claude Desktop — the easy way": "Claude Desktop : la méthode simple",
+ "One click makes a small connection file and opens it in Claude Desktop, which asks which folders to share and installs it. Start Swiss Knife once from where you installed it; Claude finds it from then on, even after an update.": "Un clic crée un petit fichier de connexion et l'ouvre dans Claude Desktop, qui demande quels dossiers partager et l'installe. Lancez Swiss Knife une fois depuis son emplacement d'installation ; Claude le retrouve ensuite, même après une mise à jour.",
+ "⬇ Connect Claude Desktop": "⬇ Connecter Claude Desktop",
+ "Other ways (Claude Code, or by hand): folders shared with Claude": "Autres méthodes (Claude Code, ou à la main) : dossiers partagés avec Claude",
+ "By hand: add this to Claude Desktop's settings file, then restart Claude": "À la main : ajoutez ceci au fichier de réglages de Claude Desktop, puis redémarrez Claude",
+ "Preparing…": "Préparation…",
+ "Could not prepare the file.": "Impossible de préparer le fichier.",
+ "Claude Desktop should now ask to install it. Choose the folders with your shows, then Install.": "Claude Desktop devrait maintenant proposer de l'installer. Choisissez les dossiers de vos shows, puis Installer.",
+ "The file is in your Downloads folder ({0}): double-click it to open it in Claude Desktop.": "Le fichier est dans votre dossier Téléchargements ({0}) : double-cliquez dessus pour l'ouvrir dans Claude Desktop."
 }

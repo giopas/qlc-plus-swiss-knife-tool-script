@@ -30,7 +30,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Tests | 812 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (30 pages), CHANGELOG, one set of release notes per version. |
 
-Release 3.0.0 is a milestone. It contains no code beyond 2.9.2: the version marks that installing, updating, three languages and the Claude connection are all in place, and the documentation was rewritten to match.
+Release 3.0.0 is a milestone. It adds one small fix to 2.9.2 (unreadable shared folders are reported to Claude): the version marks that installing, updating, three languages and the Claude connection are all in place, and the documentation was rewritten to match.
 
 ## 2. What is left
 

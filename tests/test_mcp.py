@@ -374,3 +374,25 @@ def test_connection_status(tmp_path, monkeypatch):
         fh.write("2026-10-08T09:00:00.000Z start /x/app --mcp\n2026-10-08T09:05:00.000Z swiss knife exited code=0\n")
     s = c.get("/api/mcp/status").get_json()
     assert s["extension"] is True and s["last_start"] == "2026-10-08T09:00:00.000Z"
+
+
+def test_list_shows_names_unreadable_and_missing_folders(tmp_path):
+    """An unreadable or missing folder is reported, not shown as 'no shows'."""
+    good = tmp_path / "good"
+    good.mkdir()
+    (good / "a.qxw").write_text("<x/>")
+    gone = tmp_path / "gone"
+    srv = mcp_server.Server(mcp_config.Allowlist([str(good), str(gone)]))
+    d = srv.t_list_shows({})
+    assert [s["name"] for s in d["shows"]] == ["a.qxw"]
+    assert any("does not exist" in p for p in d["problems"]) and "hint" in d
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    os.chmod(locked, 0)
+    try:
+        if os.access(locked, os.R_OK):
+            pytest.skip("running as a user who can read anything")
+        d = mcp_server.Server(mcp_config.Allowlist([str(locked)])).t_list_shows({})
+        assert d["shows"] == [] and d["problems"]
+    finally:
+        os.chmod(locked, 0o755)

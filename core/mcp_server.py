@@ -250,11 +250,17 @@ class Server:
 
     # ── tools ───────────────────────────────────────────────────────────────
     def t_list_shows(self, a: dict) -> Any:
-        shows = self.allow.list_shows()
+        problems: list = []
+        shows = self.allow.list_shows(problems=problems)
         if not self.allow.folders():
             return {"folders": [], "shows": [],
                     "hint": "No folder is shared yet: Swiss Knife › Settings › Connect to Claude."}
-        return {"folders": self.allow.folders(), "shows": shows}
+        out: dict = {"folders": self.allow.folders(), "shows": shows}
+        if problems:
+            out["problems"] = problems[:10]
+            out["hint"] = ("Some folders could not be read, so the list may be incomplete. On a Mac, allow "
+                           "Claude and Swiss Knife to read the folder under System Settings › Privacy & Security › Files and Folders.")
+        return out
 
     def t_open_show(self, a: dict) -> Any:
         p = self.allow.check(a.get("path", ""))

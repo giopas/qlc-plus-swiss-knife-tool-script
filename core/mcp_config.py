@@ -127,10 +127,22 @@ class Allowlist:
         self.check(p)
         return p
 
-    def list_shows(self, limit: int = 200) -> List[dict]:
+    def list_shows(self, limit: int = 200, problems: Optional[List[str]] = None) -> List[dict]:
+        """The .qxw files in the shared folders.  A folder that is missing or cannot be read
+        (macOS can deny a program access to Documents) is named in ``problems`` and not skipped silently."""
         out = []
+
+        def _err(e):
+            if problems is not None:
+                problems.append(f"{e.filename}: {e.strerror or e}")
+
         for f in self.folders():
-            for root, dirs, files in os.walk(os.path.expanduser(f)):
+            base = os.path.expanduser(f)
+            if not os.path.isdir(base):
+                if problems is not None:
+                    problems.append(f"{f}: this folder does not exist")
+                continue
+            for root, dirs, files in os.walk(base, onerror=_err):
                 dirs[:] = [d for d in dirs if not d.startswith(".")]
                 for n in sorted(files):
                     if n.lower().endswith(".qxw"):

@@ -1,6 +1,6 @@
 # QLC+ Swiss Knife v3.0.0
 
-Version 3.0 is a milestone. The programme of work is complete: you can install Swiss Knife like an app, keep it up to date from inside, use it in English, Italian or French, and connect Claude to it. The code is the same as 2.9.2. What changed is the documentation.
+Version 3.0 is a milestone. The programme of work is complete: you can install Swiss Knife like an app, keep it up to date from inside, use it in English, Italian or French, and connect Claude to it. What changed is mostly the documentation, plus one fix.
 
 ## What 3.0 means
 
@@ -12,6 +12,7 @@ Version 3.0 is a milestone. The programme of work is complete: you can install S
 
 ## Changed in this release
 
+- When a folder shared with Claude cannot be read (or does not exist), Claude is now told which one and why, and does not just report "no shows".
 - The README, every wiki page and the work plan were rewritten in plain language and brought up to date. The wiki has a *Start here* section on its home page.
 - The full working log moved to `docs/WORKPLAN_ARCHIVE.md`.
 

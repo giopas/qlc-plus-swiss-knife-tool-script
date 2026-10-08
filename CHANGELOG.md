@@ -12,7 +12,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 **Swiss Knife 3.0: install it like an app, use it in three languages, and let Claude help.**
 
-This release has no code beyond 2.9.2. The version number marks that the plan is complete, and the documentation was rewritten to match.
+The version number marks that the plan is complete, and the documentation was rewritten to match. One small fix came with it.
+
+### Fixed
+- Claude's `list_shows` said "no shows" when a shared folder could not be read, for example when macOS denies a program access to the Documents folder. It now names the folders it could not read or that do not exist, and says where to allow access on a Mac.
 
 ### Changed
 - README rewritten: a short section on Claude (what Claude can reach: only the folders you list and Swiss Knife itself), the Claude Desktop file in the install table, and every tool described up to date.

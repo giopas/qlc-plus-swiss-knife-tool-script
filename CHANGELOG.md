@@ -7,6 +7,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [2.9.1] — 2026-10-08
+
+**The Connect to Claude card shows whether Claude is already connected.**
+
 ### Added
 - *Connect to Claude* now says whether Claude Desktop already has Swiss Knife. It looks for the extension, the settings entry and the launcher log, and shows when Claude last started Swiss Knife. A *Check again* button reads it anew, and the setup button becomes *Reinstall the connection* once connected.
 

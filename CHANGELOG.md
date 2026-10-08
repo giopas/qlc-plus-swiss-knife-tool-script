@@ -18,6 +18,7 @@ The version number marks that the plan is complete, and the documentation was re
 - Claude's `list_shows` said "no shows" when a shared folder could not be read, for example when macOS denies a program access to the Documents folder. It now names the folders it could not read or that do not exist, and says where to allow access on a Mac.
 
 ### Changed
+- README and wiki say that Swiss Knife is tested with QLC+ 5.x (5.2.2 and 5.3.0).
 - After *Update and restart*, quit and reopen Claude Desktop so it starts the new Swiss Knife (the wiki says so in *Connect Claude to Swiss Knife* and *Troubleshooting*).
 - README rewritten: a short section on Claude (what Claude can reach: only the folders you list and Swiss Knife itself), the Claude Desktop file in the install table, and every tool described up to date.
 - Wiki: every page reworded in plain language, with the features of 2.0.1 to 2.9 added where they were missing (Porter meshes and script commands, setlist import and tablet page, Doctor fixes with a choice, Look Builder beats and pixel bars, Stage aiming, Claude sections, new Troubleshooting rows). Home rebuilt around "Start here".

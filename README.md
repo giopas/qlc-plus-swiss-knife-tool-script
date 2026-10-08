@@ -6,6 +6,8 @@
 
 **Build, adapt, check and document QLC+ 5 shows.** Swiss Knife opens your QLC+ workspace (`.qxw`) in a native window or your browser and does the long, fiddly jobs for you: a new show from your fixtures, the same show on a smaller or different rig, looks and chasers, the Virtual Console, the 3D stage, tonight's setlist, a health check, and the paperwork for the venue and the crew. You can also connect Claude, which then uses the same tools on the folders you choose.
 
+Swiss Knife is tested with QLC+ 5.x: the output has been opened and run in QLC+ 5.2.2 and 5.3.0.
+
 > ⚠️ **Independent project.** Swiss Knife is not affiliated with, endorsed by or connected to the QLC+ project or its team. All credit for QLC+ goes to the [QLC+ team](https://www.qlcplus.org/). Swiss Knife works on top of QLC+ workspace files.
 
 ![A festival show becomes a pub show: the guided route in Swiss Knife](screenshots/route.gif)

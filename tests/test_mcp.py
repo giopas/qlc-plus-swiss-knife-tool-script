@@ -77,6 +77,11 @@ def test_protocol_handshake_and_tool_list(work):
             "setlist", "compare", "undo", "save_show", "dictionary_context", "dictionary_set",
             "dictionary_save", "dictionary_load"} <= names
     assert all(t["inputSchema"]["type"] == "object" and t["description"] for t in tools)
+    ann = {t["name"]: t["annotations"] for t in tools}
+    assert ann["doctor_check"]["readOnlyHint"] and ann["dictionary_context"]["readOnlyHint"]
+    assert not ann["doctor_fix"]["readOnlyHint"] and ann["save_show"]["destructiveHint"] is False
+    assert all(a["title"] and a["openWorldHint"] is False for a in ann.values())
+    assert mcp_server.READ_ONLY <= names
     assert work.rpc("nope")["error"]["code"] == -32601
     assert work.rpc("ping")["result"] == {}
 

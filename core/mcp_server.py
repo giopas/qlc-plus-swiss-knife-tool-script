@@ -161,6 +161,31 @@ TOOLS: List[dict] = [
      "inputSchema": _obj({"where": _S})},
 ]
 
+# MCP tool annotations: they let the client group the tools ("reads" vs "changes") and
+# ask once per group instead of once per tool.  None of the tools deletes or overwrites a file.
+READ_ONLY = {"list_shows", "show_summary", "doctor_check", "rig_fixtures", "source_functions",
+             "looks_options", "vc_pages", "compare", "dictionary_context", "show_history"}
+TITLES = {
+    "list_shows": "List shows", "open_show": "Open a show", "show_summary": "Show summary",
+    "doctor_check": "Doctor: check", "doctor_fix": "Doctor: fix", "rig_fixtures": "List fixtures",
+    "reduce_rig": "Reduce the rig", "source_functions": "Porter: source functions",
+    "port_functions": "Porter: port functions", "looks_options": "Looks: options",
+    "build_looks": "Build looks and chasers", "vc_pages": "Virtual Console pages",
+    "edit_vc": "Edit the Virtual Console", "setlist": "Setlist to chaser", "compare": "Compare shows",
+    "dictionary_context": "Dictionary: read functions", "dictionary_set": "Dictionary: set descriptions",
+    "dictionary_load": "Dictionary: load", "dictionary_save": "Dictionary: save as new file",
+    "show_history": "History", "undo": "Undo", "redo": "Redo", "save_show": "Save as a new file",
+}
+
+
+def _annotations(name: str) -> dict:
+    ro = name in READ_ONLY
+    a = {"title": TITLES.get(name, name), "readOnlyHint": ro, "openWorldHint": False}
+    if not ro:
+        a["destructiveHint"] = False          # works on the show in progress or writes a NEW file
+    return a
+
+
 INSTRUCTIONS = (
     "QLC+ Swiss Knife edits QLC+ show files (.qxw). Open a show with open_show, "
     "look at it (show_summary, doctor_check), change it with the tools, and finish "
@@ -566,7 +591,9 @@ class Server:
         if method == "ping":
             return ok({})
         if method == "tools/list":
-            return ok({"tools": [{k: t[k] for k in ("name", "description", "inputSchema")} for t in TOOLS]})
+            return ok({"tools": [dict({k: t[k] for k in ("name", "description", "inputSchema")},
+                                      title=TITLES.get(t["name"], t["name"]),
+                                      annotations=_annotations(t["name"])) for t in TOOLS]})
         if method == "tools/call":
             return ok(self.call_tool(params.get("name", ""), params.get("arguments") or {}))
         if method in ("resources/list", "resources/templates/list"):

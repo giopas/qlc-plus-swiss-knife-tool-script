@@ -29,7 +29,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "3.0.0"  # single source of truth — must match CHANGELOG
+VERSION = "3.0.1"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -915,7 +915,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
             'Hold':    str(d.get('hold', '4294967294')),
             'FadeOut': str(d.get('out', '0')),
         }
-        note = user_notes.get(origin_id) or step_note(origin_id, engine, buttons)
+        note = user_notes.get(origin_id) or step_note(origin_id, engine, buttons, txt_n)
         if note:
             sa['Note'] = note
         step_el = ET.SubElement(master, f'{{{QLC_NS_URI}}}Step', sa)
@@ -1238,26 +1238,37 @@ def _button_refs(root: ET.Element) -> dict:
     return out
 
 
-def step_note(fid: str, engine: ET.Element, buttons: dict) -> str:
-    """The note for a setlist cue: the original function and the button that
-    plays it — "↪ [2328] Song 22 — button on 2. EFFECTS" (QLC+ keeps step
-    notes and shows them in the cue list)."""
+def step_note(fid: str, engine: ET.Element, buttons: dict, cue_name: str = '') -> str:
+    """The note for a setlist cue: the button that plays the same look, so the
+    operator sees which button it is (the cue list already shows the cue's
+    own name).  "↪ [2328] button "Song 22" on 2. EFFECTS"; a song whose look
+    sits on buttons inside it: "↪ [4028] buttons: STAGE PATTER"; no button:
+    "↪ [4002] no button · plays SONG: 1979 Haze Drift".  The [ID] is the
+    original function (it links a copy back to it); its name is added only
+    when the cue is called differently (*cue_name*).  QLC+ keeps step notes
+    and shows them in the cue list."""
     f = _find_by_id(engine, 'Function', fid)
     if f is None:
         return ''
     name = f.get('Name', '')
-    note = f'{NOTE_MARK} [{fid}] {name}'
     refs = buttons.get(fid) or []
     if refs:
         cap, page = refs[0]
-        where = f' on {page}' if page else ''
-        note += f' — button{where}' if cap == name or not cap else f' — button "{cap}"{where}'
+        tail = f'button "{cap or name}"' + (f' on {page}' if page else '')
     else:
         inh = _resolve_inherited_vc(fid) if fid in _state.get('func_detailed', {}) else ''
         if inh:
             inh = inh if len(inh) <= 60 else inh[:57].rstrip(', ') + '…'
-            note += f' — buttons: {inh}'
-    return note
+            tail = ('buttons: ' if ', ' in inh else 'button: ') + inh
+        else:
+            kids = [(st.text or '').strip() for st in f.findall('q:Step', NS)] \
+                if f.get('Type') == 'Collection' else []
+            kids = [k for k in dict.fromkeys(kids) if k]
+            plays = ', '.join(_state['func_by_id'].get(k, k) for k in kids[:3]) if kids else name
+            tail = f'no button · plays {plays}'
+    if cue_name and name and cue_name.strip() != name.strip() and f'"{name}"' not in tail:
+        tail = f'{name} · {tail}'
+    return f'{NOTE_MARK} [{fid}] {tail}'
 
 
 _CLONE_SUFFIXES = (' (Setlist)', ' (Auto-Clone)')
@@ -1301,8 +1312,10 @@ def _note_origin(sid: str, engine: ET.Element, buttons: dict) -> str:
 
 
 def cue_notes_missing() -> list:
-    """[(step element, note)] for the setlist cues (chasers of the CueLists)
-    that have no note yet."""
+    """[(step element, note, step id, origin id)] for the setlist cues
+    (chasers of the CueLists) with no note yet, or with a Swiss Knife note
+    ("↪ …") that no longer matches the show (renumbered IDs, a button added
+    or removed).  Notes typed in QLC+ are never touched."""
     root = _state.get('qxw_root')
     if root is None:
         return []
@@ -1315,20 +1328,24 @@ def cue_notes_missing() -> list:
         if ch is None or ch.get('Type') != 'Chaser':
             continue
         for st in ch.findall('q:Step', NS):
-            if (st.get('Note') or '').strip():
-                continue                     # a note is there (ours or typed in QLC+): kept
+            have = (st.get('Note') or '').strip()
+            if have and not have.startswith(NOTE_MARK):
+                continue                     # a note typed in QLC+: always kept
             sid = (st.text or '').strip()
             origin = _note_origin(sid, engine, buttons) if sid else ''
-            note = step_note(origin, engine, buttons) if origin else ''
-            if note:
+            cue = _find_by_id(engine, 'Function', sid) if sid else None
+            note = step_note(origin, engine, buttons, cue.get('Name', '') if cue is not None else '') \
+                if origin else ''
+            if note and note != have:        # missing, or one of ours that is out of date
                 out.append((st, note, sid, origin))
     return out
 
 
 def fill_cue_notes() -> dict:
-    """Write the reference (original function, its button) into every setlist
-    cue that has no note — for shows built before 2.0.1 or by hand.  Notes
-    already there are never touched.  One step of the show in progress."""
+    """Write the reference (the button, the original function) into every
+    setlist cue that has no note, and refresh Swiss Knife's own notes that
+    are out of date.  Notes typed in QLC+ are never touched.  One step of the
+    show in progress."""
     todo = cue_notes_missing()
     if not todo:
         return {'added': 0}

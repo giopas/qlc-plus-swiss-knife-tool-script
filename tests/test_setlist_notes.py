@@ -51,7 +51,8 @@ def test_each_cue_names_the_original_and_its_button(c):
     steps = _steps(c, "1756")
     assert len(steps) == 2
     n0 = steps[0].get("Note")
-    assert n0.startswith(f"↪ [{fn['Song 22']['id']}] Song 22")
+    assert n0.startswith(f"↪ [{fn['Song 22']['id']}] ")                # the original's ID
+    assert "Song 22" not in n0 or "button" in n0                   # the button, not the cue's name again
     assert steps[0].text != fn["Song 22"]["id"]                   # the cue plays a copy
     refs = workspace._button_refs(workspace._state["qxw_root"]).get(fn["Song 22"]["id"])
     if refs:
@@ -64,7 +65,7 @@ def test_a_note_typed_in_qlc_is_kept(c):
     # the user types a note in QLC+ and saves: QLC+ also drops SwissKnifeClone
     out = c.tmp / "Edited.qxw"
     data = c.get("/api/show/file").data.decode("utf-8")
-    first = re.search(r'Note="↪ \[\d+\] Song 22[^"]*"', data).group(0)
+    first = re.search(r'Note="↪ \[\d+\][^"]*"', data).group(0)
     data = data.replace(first, 'Note="Smoke on!"', 1)
     data = re.sub(r' SwissKnifeClone="\d+"', "", data)
     out.write_text(data, encoding="utf-8")
@@ -74,8 +75,8 @@ def test_a_note_typed_in_qlc_is_kept(c):
     _build(c, ["Song 22", "Song 07", "Song 19"])
     notes = [s.get("Note") for s in _steps(c, "1756")]
     assert notes[0] == "Smoke on!"
-    assert notes[1].startswith("↪ [") and "Song 07" in notes[1]
-    assert notes[2].startswith("↪ [") and "Song 19" in notes[2]
+    assert notes[1].startswith("↪ [") and ("button" in notes[1] or "Song 07" in notes[1])
+    assert notes[2].startswith("↪ [") and ("button" in notes[2] or "Song 19" in notes[2])
 
 
 def test_reference_read_back_from_the_note():
@@ -194,7 +195,7 @@ def test_old_cue_lists_get_their_references(c):
     assert sum(1 for x in notes if x.startswith("↪ [")) == len(notes) - (1 if first else 0)
     if first:
         assert "Smoke!" in notes
-    assert any(" — button" in x for x in notes)
+    assert any(" button" in x for x in notes)
     _ok(c.post("/api/show/undo", json={}))                       # one undoable step
     assert c.get("/api/setlist/notes").get_json()["missing"] == n
     assert _ok(c.post("/api/setlist/notes")).get_json()["added"] == n
@@ -220,4 +221,49 @@ def test_the_copy_of_a_look_points_at_the_original(tmp_path):
     workspace._parse_shared_data(root)
     workspace._parse_cuelist_slots(root)
     todo = workspace.cue_notes_missing()
-    assert [n for _, n, _, _ in todo] == ["↪ [5] Red — button on Looks"]
+    assert [n for _, n, _, _ in todo] == ['↪ [5] button "Red" on Looks']
+
+
+def test_an_out_of_date_note_of_ours_is_refreshed():
+    """giopas, 8 Oct: notes kept an old ID ([4000]) after the show was
+    renumbered, and repeated the cue's name instead of naming the button."""
+    root = qxw_io.loads_qxw((
+        '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Workspace>'
+        '<Workspace xmlns="http://www.qlcplus.org/Workspace"><Engine>'
+        '<Function ID="1" Type="Scene" Name="Haze"/>'
+        '<Function ID="2" Type="Scene" Name="Red"/>'
+        '<Function ID="9" Type="Collection" Name="Song 1"><Step Number="0">1</Step></Function>'
+        '<Function ID="20" Type="Chaser" Name="Setlist">'
+        '<Step Number="0" Note="↪ [4000] Song 1">9</Step>'
+        '<Step Number="1" Note="Smoke!">2</Step>'
+        '<Step Number="2">2</Step></Function>'
+        '</Engine><VirtualConsole><Frame Caption=""><Frame Caption="Looks" ID="1">'
+        '<Button Caption="Big Red" ID="2"><Function ID="2"/></Button>'
+        '<CueList Caption="Setlist" ID="3"><Chaser>20</Chaser></CueList>'
+        '</Frame></Frame></VirtualConsole></Workspace>').encode())
+    workspace._reset()
+    workspace._state.update(loaded=True, qxw_root=root)
+    workspace._parse_shared_data(root)
+    workspace._parse_cuelist_slots(root)
+    todo = {sid: n for _, n, sid, _ in workspace.cue_notes_missing()}
+    assert todo == {"9": "↪ [9] no button · plays Haze", "2": '↪ [2] button "Big Red" on Looks'}
+    workspace.fill_cue_notes()
+    assert workspace.cue_notes_missing() == []          # nothing twice; "Smoke!" untouched
+
+
+def test_saving_brings_the_cue_notes_up_to_date(c):
+    """giopas, 8 Oct: buttons added for the songs after the notes were written
+    must show in the notes of the saved file."""
+    _ok(c.post("/api/load", json={"path": str(c.tmp / "Festival_14fix.qxw")}))
+    _build(c, ["Song 22", "Song 07"])
+    first = _steps(c, "1756")[0]
+    workspace.cue_notes_missing()                       # nothing pending after the build
+    first_note = first.get("Note")
+    root = workspace._state["qxw_root"]
+    ch = workspace._find_by_id(root.find("q:Engine", workspace.NS), "Function", "1756")
+    ch.findall("q:Step", workspace.NS)[0].set("Note", "↪ [999999] stale")
+    out = c.tmp / "Saved.qxw"
+    _ok(c.post("/api/show/save", json={"path": str(out)}))
+    saved = qxw_io.strip_ns(qxw_io.loads_qxw(out.read_bytes()))
+    f = next(x for x in saved.find("Engine").findall("Function") if x.get("ID") == "1756")
+    assert f.findall("Step")[0].get("Note") == first_note

@@ -133,3 +133,17 @@ def install_bundle():
         except Exception:                                             # noqa: BLE001
             opened = False
     return jsonify({"ok": True, "path": path, "opened": opened})
+
+
+@bp.route("/api/mcp/dictionary-request", methods=["POST"])
+def dictionary_request():
+    """The request the Dictionary's Ask Claude… window shows (v3.0.1)."""
+    from core import mcp_guide, workspace
+    d = request.get_json(silent=True) or {}
+    st = workspace.get_state()
+    if not st.get("loaded"):
+        return jsonify({"error": "No workspace loaded."}), 400
+    show = st.get("path") or st.get("original_name") or "the show"
+    mode = d.get("mode") if d.get("mode") in ("buttons", "missing", "all") else "buttons"
+    text = mcp_guide.dictionary_request(show, mode, bool(d.get("review", True)), str(d.get("dictionary") or ""))
+    return jsonify({"text": text, "show": show})

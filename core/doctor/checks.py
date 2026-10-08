@@ -656,10 +656,22 @@ def _d012_inputs(ws: _Workspace):
     if ws.vc is None:
         return
     bound: Dict[str, int] = defaultdict(int)
+    where: Dict[str, List[str]] = defaultdict(list)     # universe → "Widget (Next)"
+    parent = {c: p for p in ws.vc.iter() for c in p}
     for inp in ws.vc.iter("Input"):
         u = inp.get("Universe")
-        if u is not None:
-            bound[u] += 1
+        if u is None:
+            continue
+        bound[u] += 1
+        role, w = None, parent.get(inp)
+        while w is not None and not w.get("Caption") and w.tag not in ("Button", "Slider", "CueList"):
+            role = role or w.tag                        # Next / Previous / Playback …
+            w = parent.get(w)
+        if w is not None:
+            cap = (w.get("Caption") or w.tag).replace("\n", " ").strip()
+            label = f"{cap} ({role})" if role else cap
+            if label not in where[u]:
+                where[u].append(label)
     patched = set()
     iom = ws.engine.find("InputOutputMap")
     if iom is not None:
@@ -672,9 +684,13 @@ def _d012_inputs(ws: _Workspace):
                     patched.add(u.get("ID"))
     for u in sorted(bound, key=lambda x: _int(x, 0)):
         if u not in patched:
-            yield Finding("D012", WARNING, f"Universe {(_int(u, 0) or 0) + 1}",
-                          f"{bound[u]} VC input binding(s) but no input device patched "
-                          f"(saved as None) — they will not respond",
+            n = (_int(u, 0) or 0) + 1
+            names = where.get(u) or []
+            on = (": " + ", ".join(names[:4]) + (f" and {len(names) - 4} more" if len(names) > 4 else "")) if names else ""
+            yield Finding("D012", WARNING, f"Universe {n}",
+                          f"{bound[u]} VC input binding(s){on}, but no input device is patched on "
+                          f"Universe {n} (saved as None), so they will not respond. Fine if the "
+                          f"controller is only plugged in at the venue: patch it in QLC+ Input/Output then",
                           {"universe": u, "bindings": bound[u]})
 
 
@@ -686,9 +702,23 @@ def _d015_unnamed(ws: _Workspace):
                           {"function": f.get("ID")})
 
 
+_NOTE_REF = re.compile(r"^↪ \[(\d+)\]")
+
+
 def _d016_unreferenced(ws: _Workspace):
+    # The original of a setlist copy is in use: the copy points back to it
+    # (SwissKnifeClone, or the "↪ [ID]" cue note when QLC+ dropped the marker),
+    # and removing it would break the cue note and the next re-match.
+    origins = {f.get("SwissKnifeClone") for f in ws.function_els if f.get("SwissKnifeClone")}
+    for f in ws.function_els:
+        for st in f.findall("Step"):
+            m = _NOTE_REF.match(st.get("Note") or "")
+            if m:
+                origins.add(m.group(1))
     for f in ws.function_els:
         fid = f.get("ID")
+        if fid in origins:
+            continue
         if not ws.parents.get(fid) and not ws.vc_refs.get(fid):
             yield Finding("D016", WARNING, ws.fn_loc(fid),
                           f"{f.get('Type')} not used by any function or VC widget",

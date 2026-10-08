@@ -347,7 +347,14 @@ def test_claude_desktop_bundle(work, tmp_path):
                        env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)})
     out = json.loads(p.stdout.splitlines()[0])
     assert "Pub_6fix.qxw" in out["result"]["content"][0]["text"], p.stderr[-400:]
-    # nothing found → a clear message and a non-zero exit
+    # nothing found → a clear message and a non-zero exit (not checkable on a machine where the
+    # app is installed in a place outside the home folder the launcher also looks at)
+    installed = [p_ for p_ in ("/Applications/QLC Swiss Knife.app",
+                               os.path.join(os.environ.get("ProgramFiles", "") or "-", "QLC Swiss Knife"),
+                               os.path.join(os.environ.get("ProgramFiles(x86)", "") or "-", "QLC Swiss Knife"),
+                               "/opt/QLC-Swiss-Knife") if os.path.exists(p_)]
+    if installed:
+        pytest.skip(f"Swiss Knife is installed here ({installed[0]}): the launcher finds it")
     os.remove(mcp_config.launch_path())
     p = subprocess.run(["node", str(srv / "server" / "index.js")], capture_output=True, text=True, timeout=30,
                        env={**os.environ, "HOME": str(tmp_path / "empty"), "USERPROFILE": str(tmp_path / "empty"),

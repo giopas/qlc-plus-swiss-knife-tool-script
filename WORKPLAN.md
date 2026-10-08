@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.0.0, 8 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.0.1, 8 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -26,11 +26,11 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Reuse | The recipe replays a session to the same file. Show Profiles apply the same changes to another show. |
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian and French. |
-| Claude | Swiss Knife is an MCP server with 23 tools. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 812 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
-| Documentation | README, wiki (30 pages), CHANGELOG, one set of release notes per version. |
+| Claude | Swiss Knife is an MCP server with 24 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
+| Tests | 825 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
-Release 3.0.0 is a milestone. It adds one small fix to 2.9.2 (unreadable shared folders are reported to Claude): the version marks that installing, updating, three languages and the Claude connection are all in place, and the documentation was rewritten to match.
+Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them.
 
 ## 2. What is left
 
@@ -56,6 +56,22 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | No Linux AppImage unless someone asks. The `.tar.gz` stays. | 8 Oct |
 | The update on macOS is tested and works (several runs). | 8 Oct |
 | Forum: no post per release. A post for 2.0 and one for 3.0. | 1 Oct, 8 Oct |
+
+### Released in 3.0.1
+
+Found on 8 October while Claude described the Liquid Bar show (the show stays out of the repository).
+
+| Change | Where |
+|---|---|
+| Cue notes name the button that plays the same look, or what the cue plays; Swiss Knife's own notes are refreshed on open and before saving | `core/workspace.py`, `routes/show_routes.py` |
+| Setlist: *Load setlist…* and *Save setlist…*; the function list button is filled; an edge tab and wider columns while the list is closed | Setlist screen, IT and FR strings |
+| Dictionary: *Draft descriptions*, *Save as new file*, *Load dictionary…*, and *Ask Claude…*, a window with the request for Claude Desktop | `core/dictionary_draft.py`, `core/scene_words.py`, `static/js/dictionary.js` |
+| Claude: `guide` tool, guide resources, four ready requests, `draft_missing`, `list_shows` paging, `edit_vc` arguments in its schema | `core/mcp_guide.py`, `core/mcp_server.py`, `core/mcpb.py` |
+| Wiki page *Claude's tools* written from `core/mcp_guide.py` by `tools/make_claude_tools_wiki.py`; a test fails when they differ | `wiki/Claude-Tools.md` |
+| Tooltips drawn in a layer that fits the window | `static/js/tooltip.js` |
+| Doctor: D016 counts the original of a setlist copy as used; D012 names the widgets | `core/doctor/checks.py` |
+| Claude test on the real show: a *3. SONGS* page with 15 song buttons built through `edit_vc`, saved as v18 | Done |
+| Check on the Mac: the Ask Claude window, a dictionary written by Claude, the cue notes in QLC+ | To do (giopas) |
 
 ## 3. Release history
 
@@ -115,6 +131,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 2.9.1 | 8 Oct | The *Connect to Claude* card shows whether Claude is connected. |
 | 2.9.2 | 8 Oct | The menu item reads *MCP connected to Claude* when it is. |
 | 3.0.0 | 8 Oct | Milestone release. Documentation rewritten, work plan reorganised. |
+| 3.0.1 | 8 Oct | Dictionary drafts and *Ask Claude…*; cue notes name the button; Claude's `guide`, ready requests and the *Claude's tools* wiki page; tooltips that fit the window; D016 and D012 fixes. |
 
 ## 4. Goal and the Pub test
 
@@ -177,7 +194,7 @@ One branch per release, named `feat/vX.Y.Z` (or `fix/...` for a small change). C
 - Bump `VERSION` in `core/workspace.py` (it must match the CHANGELOG), the installer version, the README title and the spec comment.
 - Move `[Unreleased]` to `[X.Y.Z] date`.
 - README stays a presentation; retake screenshots where a screen changed.
-- A wiki page for each new or changed tool.
+- A wiki page for each new or changed tool. When a Claude tool changed, run `python tools/make_claude_tools_wiki.py` (the tests fail until the page matches).
 - Release notes in `docs/release-notes/RELEASE_NOTES_vX.Y.Z.md`.
 
 ### Merge and release, always this way
@@ -216,7 +233,6 @@ These were left out on purpose or have no date.
 | Item | Note |
 |---|---|
 | Separate `build_chaser` and `describe_show` tools for Claude | Chasers are part of `build_looks` and the summary is `show_summary`. |
-| MCP resources and prompts | The lists are empty. |
 | Doctor: renumbering of fixtures and groups (D002), CueList, matrix and bound-scene repairs beyond what exists, D012 | D012 belongs to a future MIDI manager. |
 | Moving-head position beyond what Look Builder sets | Pan and tilt are centred in looks unless you set a position. |
 | VC Editor: resizing by dragging handles, widget types beyond the six (knob, XY pad, speed dial, clock), templates with key or MIDI bindings | |

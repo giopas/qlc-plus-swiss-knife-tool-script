@@ -356,3 +356,25 @@ def test_stop_all_button_counts_as_panic():
     eng = root.find(qxw_io._NS_PREFIX + "Engine")
     eng.remove(next(f for f in eng if f.get("Name") == "PANIC RESET"))
     assert not check(root, DEFS).by_code("D008")
+
+
+def test_d016_keeps_the_original_of_a_setlist_copy():
+    """giopas, 8 Oct: after a re-built setlist, the originals of the cue copies
+    were reported as unused (34 warnings) although the copies point to them."""
+    from core import qxw_io
+    root = qxw_io.loads_qxw((
+        '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Workspace>'
+        '<Workspace xmlns="http://www.qlcplus.org/Workspace"><Engine>'
+        '<Function ID="1" Type="Scene" Name="Look"/>'
+        '<Function ID="5" Type="Collection" Name="Song A"><Step Number="0">1</Step></Function>'
+        '<Function ID="6" Type="Collection" Name="Song B"><Step Number="0">1</Step></Function>'
+        '<Function ID="9" Type="Collection" Name="Song A" SwissKnifeClone="5"><Step Number="0">1</Step></Function>'
+        '<Function ID="10" Type="Collection" Name="Song B"><Step Number="0">1</Step></Function>'
+        '<Function ID="20" Type="Chaser" Name="Setlist">'
+        '<Step Number="0">9</Step><Step Number="1" Note="↪ [6] no button">10</Step></Function>'
+        '<Function ID="30" Type="Scene" Name="Spare"/>'
+        '</Engine><VirtualConsole><Frame Caption=""><CueList Caption="S" ID="3"><Chaser>20</Chaser></CueList>'
+        '</Frame></VirtualConsole></Workspace>').encode())
+    found = {f.ref["function"] for f in check(root, []).by_code("D016")}
+    assert "5" not in found and "6" not in found       # originals of the copies
+    assert "30" in found                               # really unused

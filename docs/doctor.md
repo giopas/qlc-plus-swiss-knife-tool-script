@@ -39,11 +39,11 @@ rep.ok, rep.counts(), rep.errors, rep.to_json()
 | D009 | warning | DMX address overlap |
 | D010 | info | The only page with a CueList (the setlist) is not page 1 — QLC+ opens on page 1 |
 | D011 | warning | Widget sticks out of its page or frame by more than 8 px (partly hidden) |
-| D012 | warning | VC input bindings on a universe whose input device is not patched (saved as None) |
+| D012 | warning | VC input bindings on a universe whose input device is not patched (saved as None). The finding names the widgets; it is fine when the controller is only plugged in at the venue. |
 | D013 | warning | Chaser steps that last 0 ms (Common duration 0 and no fade-in, or per-step hold and fade-in 0) |
 | D014 | warning | CueList runs a chaser with no steps |
 | D015 | info | Unnamed function (`[NNN] Scene - Unassigned`) |
-| D016 | warning | Function not used by any function or VC widget (a script that only *stops* it doesn't count) |
+| D016 | warning | Function not used by any function or VC widget (a script that only *stops* it doesn't count). The original of a setlist copy counts as used. |
 | D017 | warning | PANIC RESET is a plain Scene: a scene at 0 can't darken looks that are still running (dimmer/colour are HTP) |
 | D018 | warning | A song in the setlist (a cue of the chaser a CueList runs) lights nothing — an empty scene, or a chaser / collection with no steps or only such steps: the stage goes dark on that cue |
 | I001 | info | Button with no function (label use) — StopAll/Blackout buttons excluded |

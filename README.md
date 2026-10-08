@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.0.0
+# QLC+ Swiss Knife v3.0.1
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -46,7 +46,7 @@ The tools are grouped by job and numbered 1 to 6, like the side menu and the Sta
 | | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share VC templates, palettes, look presets, naming profiles, VC styles and Show Profiles as one plain file, and install what other QLC+ users shared. Items are checked first, and there is no server. |
 | **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, the clipboard or a CSV, matched to functions with fades, in the setlist CueList. Setlist PDFs, and one HTML page for a tablet on stage. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every keyboard and MIDI binding in one table: clashes, gaps, bulk MIDI shift, the input device of each universe and a MIDI simulator. |
-| | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A description for every function, shown in the other tools. Claude can draft them. |
+| | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A description for every function, shown in the other tools. Swiss Knife drafts them from the show's colours and steps, and Claude can write them. |
 | **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Finds broken references, scenes that leave channels unset, strobe left on, a PANIC RESET that cannot reset and more, and fixes them. Also from the command line. |
 | | [Compare](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Compare) | This show next to another one, by what they do: patch, groups, looks (decoded colour and level), chasers, VC pages, setlist. |
 | | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and VC widget in sortable, filterable tables, with CSV and PDF export. |
@@ -58,7 +58,9 @@ The tools are grouped by job and numbered 1 to 6, like the side menu and the Sta
 
 ## Claude and your shows
 
-Swiss Knife can act as an MCP server, which is the way Claude Desktop and Claude Code use outside tools. Once connected, you ask in plain language ("open Festival_14fix, run the Doctor and fix what is safe, save it as a new file") and Claude uses the same tools you use in the window. It can also draft a description for every function for the Dictionary.
+Swiss Knife can act as an MCP server, which is the way Claude Desktop and Claude Code use outside tools. Once connected, you ask in plain language ("open Festival_14fix, run the Doctor and fix what is safe, save it as a new file") and Claude uses the same tools you use in the window. It can also write a description for every function in the Dictionary: the **🤖 Ask Claude…** button there gives you the request to paste in Claude Desktop.
+
+Claude has a `guide` tool that explains any other tool, with its arguments and an example, and the connection offers Claude Desktop a few ready requests (write the Dictionary, check and fix a show, adapt a show to fewer fixtures, add buttons for looks that have none). The wiki page [Claude's tools](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Claude-Tools) lists every tool with the same text Claude reads.
 
 **What Claude can reach.** Claude gets the folders you list and Swiss Knife's tools, nothing else on your computer. It cannot browse your disk, run commands, open other programs or use the network. A path outside your folders is refused. Claude only writes new files (the show, its report, its recipe, a dictionary `.txt`), never overwrites or deletes one, and every change is a History step you can undo. The Doctor refuses a result with new errors, as it does in the window.
 

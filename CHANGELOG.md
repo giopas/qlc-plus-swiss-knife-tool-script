@@ -8,6 +8,35 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [3.0.1] — 2026-10-08
+
+Found while describing a real show with Claude: the Dictionary gets a draft of its own and a way to ask Claude, the cue notes name the button, and Claude's tools are documented where Claude can read them.
+
+### Added
+- Dictionary: **✨ Draft descriptions** gives every function without a description a first one drawn from the show. A scene says which colours it shows and where, a chaser says how it changes (through which colours, moving across the fixtures, or only brighter and dimmer), a collection or script says what it starts, and a helper scene says which step of what it is. Colours come from the fixture definitions. Your own descriptions are kept.
+- Dictionary: **💾 Save as new file** writes `<show>_dictionary.txt` next to the show, or `_v2`, `_v3` when the name is taken. *Save dictionary* with no dictionary loaded does the same.
+- Dictionary: **🤖 Ask Claude…** appears when Claude is connected. It opens a window like *Connect to Claude* with a ready request for Claude Desktop: you choose what Claude writes (its own words for the functions with a button and a draft for the rest, only the empty ones, or everything) and whether it shows you the lines before saving, then copy it. Swiss Knife cannot start Claude itself, because the connection runs from Claude Desktop to Swiss Knife.
+- Claude's `guide` tool explains any other tool: arguments, answer, an example, and the usual sequences of tools for a job. The same text is offered as MCP resources (`swissknife://guide`) and is the wiki page *Claude's tools*, written from the code by `tools/make_claude_tools_wiki.py`; a test keeps the two equal.
+- Ready requests (MCP prompts) for Claude Desktop: write the Dictionary, check and fix a show, adapt a show to fewer fixtures, add buttons for looks that have none. The Claude Desktop file lists them too.
+- `dictionary_set` takes `draft_missing`, so Claude writes the lines that matter and lets the app's draft cover the rest. `list_shows` takes `query`, `limit` and `offset`.
+
+### Changed
+- A setlist cue note names the button that plays the same look, for example `↪ [5225] button: XM · TMO Drive`, or says what the cue plays when no button does: `↪ [5220] no button · plays SONG: 1979 Haze Drift`. The cue list already shows the cue's name, so the note no longer repeats it.
+- Swiss Knife's own cue notes (they start with ↪) are rewritten when they no longer match the show, for instance after the functions were renumbered. This happens when a show opens, and before *Save as new file…* when the show changed, so a button added in the meantime is named. Notes typed in QLC+ are never touched.
+- Setlist: *Load Slot File* and *Save Slot File* are now **Load setlist…** and **Save setlist…**. The function list button is filled and reads *Show QLC+ functions ▸* or *Hide QLC+ functions ◂*; while the list is closed, a tab on the right edge opens it and the song list takes the free room.
+- Dictionary: *Browse TXT* is now **Load dictionary…**.
+- Tooltips are drawn above everything and placed inside the window, so they are no longer cut off at the top of the window or by narrow columns.
+- The facts Claude reads for the Dictionary include the colours of each scene and chaser, every step a helper fills, and what a setlist cue runs, so Claude no longer writes "unclear" for unnamed scenes.
+- `edit_vc` lists every operation and the arguments of `create` in its description and schema.
+- Doctor D012 names the widgets bound to the unpatched universe and says the warning is fine when the controller is only plugged in at the venue.
+
+### Fixed
+- Doctor D016 reported the originals of setlist copies as unused (34 warnings on a rebuilt setlist). Deleting them would have broken the cue notes; they now count as used.
+- `dictionary_context` pages stop before a reply would be cut, so Claude always gets whole pages.
+- `list_shows` no longer comes back cut off when the shared folders hold many shows.
+- The test of the Claude Desktop launcher failed on a computer where Swiss Knife is installed in Applications, because the launcher found the app there. That last check is now skipped on such a computer.
+
+
 ## [3.0.0] — 2026-10-08
 
 **Swiss Knife 3.0: install it like an app, use it in three languages, and let Claude help.**

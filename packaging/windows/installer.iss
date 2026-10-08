@@ -1,5 +1,5 @@
 ; Inno Setup script for QLC Swiss Knife (Windows).
-; Build:  ISCC /DAppVersion=3.0.0 packaging\windows\installer.iss   (after pyinstaller)
+; Build:  ISCC /DAppVersion=3.0.1 packaging\windows\installer.iss   (after pyinstaller)
 ; Per-user install (no administrator): the app folder stays writable, so
 ; "Update and restart" inside the app keeps working.
 #ifndef AppVersion

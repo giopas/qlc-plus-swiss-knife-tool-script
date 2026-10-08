@@ -69,8 +69,8 @@ async function slNewCueList() {
   setStatus('✓ CueList “Setlist” added on the first VC page — add your songs, then Apply.', 'ok');
 }
 
-/** Cue notes for shows made before 2.0.1 (or by hand): every setlist cue
- *  without a note gets its reference.  *auto*: called when a show opens —
+/** Cue notes: every setlist cue without a note, or with an out-of-date
+ *  Swiss Knife note, gets the button that plays it.  *auto*: called when a show opens —
  *  silent when there is nothing to add. */
 async function slFillCueNotes(auto) {
   try {
@@ -81,9 +81,9 @@ async function slFillCueNotes(auto) {
     const r = await fetch('/api/setlist/notes', { method: 'POST' });
     const d = await r.json();
     if (!r.ok) { if (!auto) setStatus('✗ ' + (d.error || 'Could not add the notes.'), 'error'); return; }
-    if (!d.added) { if (!auto) setStatus('Every setlist cue already has a note.', 'ok'); return; }
-    setStatus(`↪ References added to ${d.added} setlist cue note${d.added > 1 ? 's' : ''} (original function and its button) — ` +
-      'notes already there are kept. A step of the History (↶ to undo); 💾 Save as new file… to keep them.', 'ok');
+    if (!d.added) { if (!auto) setStatus('Every setlist cue note is up to date.', 'ok'); return; }
+    setStatus(`↪ ${d.added} setlist cue note(s) written: the button that plays each cue. Notes you typed in QLC+ are kept. ` +
+      'A step of the History (↶ to undo); 💾 Save as new file… to keep them.', 'ok');
     if (typeof showRefresh === 'function') showRefresh();
   } catch (e) { if (!auto) setStatus('Network error: ' + e.message, 'error'); }
 }
@@ -1086,7 +1086,11 @@ function slTogglePool(force) {
   const open = typeof force === 'boolean' ? force : split.classList.contains('pool-closed');
   split.classList.toggle('pool-closed', !open);
   const b = document.getElementById('btn-pool-toggle');
-  if (b) { b.setAttribute('aria-pressed', open ? 'true' : 'false'); b.classList.toggle('on', open); }
+  if (b) {
+    b.setAttribute('aria-pressed', open ? 'true' : 'false');
+    b.classList.toggle('on', open);
+    b.textContent = open ? 'Hide QLC+ functions ◂' : 'Show QLC+ functions ▸';
+  }
   if (typeof force !== 'boolean') {
     try { localStorage.setItem(_POOL_KEY, open ? '1' : '0'); } catch { /* per-browser convenience only */ }
   }

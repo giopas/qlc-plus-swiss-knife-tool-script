@@ -101,6 +101,11 @@ def manifest(version: str) -> dict:
     from core import mcp_server
     tools = [{"name": t["name"], "description": mcp_server.TITLES.get(t["name"], t["name"])}
              for t in mcp_server.TOOLS]
+    from core import mcp_guide
+    prompts = [{"name": p["name"], "description": p["description"],
+                "arguments": [a["name"] for a in p["arguments"]],
+                "text": p["text"].format(**{a["name"]: "${arguments." + a["name"] + "}" for a in p["arguments"]})}
+               for p in mcp_guide.PROMPTS]
     return {
         "manifest_version": "0.3",
         "name": "qlc-swiss-knife",
@@ -127,6 +132,8 @@ def manifest(version: str) -> dict:
         },
         "tools": tools,
         "tools_generated": False,
+        "prompts": prompts,
+        "prompts_generated": False,
         "keywords": ["qlc+", "lighting", "dmx", "show files"],
         "license": "MIT",
         "user_config": {

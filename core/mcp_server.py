@@ -36,6 +36,7 @@ PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"]
 MAX_TEXT = 14000                       # characters returned by one tool call
 
 
+
 class ToolError(Exception):
     """A tool failed in a way Claude should read and act on."""
 
@@ -83,9 +84,12 @@ _S = {"type": "string"}
 _IDS = {"type": "array", "items": {"type": "string"}}
 
 TOOLS: List[dict] = [
+    {"name": "guide", "handler": "t_guide",
+     "description": "How to use these tools: call with a tool name (e.g. `edit_vc`) for its arguments, answers and an example, `edit_vc:<op>` for one Virtual Console operation, `workflows` for the usual sequences, or nothing for the list of all tools. Read it before a tool whose arguments you are unsure of.",
+     "inputSchema": _obj({"topic": _S})},
     {"name": "list_shows", "handler": "t_list_shows",
-     "description": "List the .qxw shows in the folders shared with Claude (newest first).",
-     "inputSchema": _obj()},
+     "description": "List the .qxw shows in the folders shared with Claude (newest first). `query` keeps the paths that contain it (e.g. a venue or folder name); `limit` (default 25) and `offset` page through the rest.",
+     "inputSchema": _obj({"query": _S, "limit": {"type": "integer"}, "offset": {"type": "integer"}})},
     {"name": "open_show", "handler": "t_open_show",
      "description": "Open a .qxw show to work on. Starts a fresh History; the file itself is never changed.",
      "inputSchema": _obj({"path": _S}, ["path"])},
@@ -124,9 +128,14 @@ TOOLS: List[dict] = [
      "description": "List the Virtual Console pages and their widgets.",
      "inputSchema": _obj()},
     {"name": "edit_vc", "handler": "t_edit_vc",
-     "description": "One Virtual Console edit. `op` is one of: copy, move, new_page, fix_ids, copy_page, create, delete, duplicate, wire, rename_page, move_page, delete_page, label_panel, auto_arrange, screen, apply_template, setlist_cuelist; the other fields are that op's arguments (the same as the VC tool).",
-     "inputSchema": {"type": "object", "properties": {"op": _S}, "required": ["op"],
-                     "additionalProperties": True}},
+     "description": "One Virtual Console edit (one History step). `op` is one of: create, wire, delete, duplicate, copy, move, new_page, copy_page, rename_page, move_page, delete_page, label_panel, auto_arrange, screen, apply_template, setlist_cuelist, fix_ids. Put that operation's arguments next to `op`, e.g. create: parent_id, kind (Button, Frame, SoloFrame, Slider, Label, CueList), caption, x, y, w, h, func_id, bg_color. Call guide with `edit_vc:<op>` for any other operation. Get the page and frame ids from vc_pages.",
+     "inputSchema": _obj({"op": _S, "parent_id": _S, "kind": _S, "caption": _S, "x": {"type": "integer"},
+                          "y": {"type": "integer"}, "w": {"type": "integer"}, "h": {"type": "integer"},
+                          "func_id": _S, "bg_color": _S, "widget_id": _S, "ids": _IDS, "target_id": _S,
+                          "page_id": _S, "frame_id": _S, "index": {"type": "integer"},
+                          "keep_bindings": {"type": "boolean"}, "lines": _IDS, "columns": {"type": "integer"},
+                          "title": _S, "profile": _S, "profile_id": _S, "page_ids": _IDS, "name": _S,
+                          "chaser_id": _S, "cuelist_id": _S}, ["op"])},
     {"name": "setlist", "handler": "t_setlist",
      "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out}. With apply=false only shows the matches.",
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
@@ -139,9 +148,10 @@ TOOLS: List[dict] = [
      "inputSchema": _obj({"only_missing": {"type": "boolean"}, "skip_steps": {"type": "boolean"}, "type": _S, "query": _S, "frame": _S,
                           "limit": {"type": "integer"}, "offset": {"type": "integer"}})},
     {"name": "dictionary_set", "handler": "t_dictionary_set",
-     "description": "Store descriptions in the Dictionary: entries [{id, description}]. An existing description is kept unless overwrite=true. auto_steps=true also describes the helper steps (functions that are only steps of a chaser or collection and have no button) as \"Step n of …\" / \"Part of …\". Nothing is written to a file until dictionary_save; the show itself is never changed.",
+     "description": "Store descriptions in the Dictionary: entries [{id, description}]. An existing description is kept unless overwrite=true. auto_steps=true also describes the helper steps (functions that are only steps of a chaser or collection and have no button) as \"Step n of …\" / \"Part of …\". draft_missing=true gives every function still without a description the app's own first draft (colours, steps, what it starts); write your own entries for the ones that matter and let the draft cover the rest. Nothing is written to a file until dictionary_save; the show itself is never changed.",
      "inputSchema": _obj({"entries": {"type": "array", "items": _obj({"id": _S, "description": _S}, ["id", "description"])},
-                          "overwrite": {"type": "boolean"}, "auto_steps": {"type": "boolean"}}, ["entries"])},
+                          "overwrite": {"type": "boolean"}, "auto_steps": {"type": "boolean"},
+                          "draft_missing": {"type": "boolean"}}, ["entries"])},
     {"name": "dictionary_load", "handler": "t_dictionary_load",
      "description": "Load an existing dictionary .txt (ID|Name|Description) from a shared folder, to extend it.",
      "inputSchema": _obj({"path": _S}, ["path"])},
@@ -163,10 +173,10 @@ TOOLS: List[dict] = [
 
 # MCP tool annotations: they let the client group the tools ("reads" vs "changes") and
 # ask once per group instead of once per tool.  None of the tools deletes or overwrites a file.
-READ_ONLY = {"list_shows", "show_summary", "doctor_check", "rig_fixtures", "source_functions",
+READ_ONLY = {"guide", "list_shows", "show_summary", "doctor_check", "rig_fixtures", "source_functions",
              "looks_options", "vc_pages", "compare", "dictionary_context", "show_history"}
 TITLES = {
-    "list_shows": "List shows", "open_show": "Open a show", "show_summary": "Show summary",
+    "guide": "Guide: how to use a tool", "list_shows": "List shows", "open_show": "Open a show", "show_summary": "Show summary",
     "doctor_check": "Doctor: check", "doctor_fix": "Doctor: fix", "rig_fixtures": "List fixtures",
     "reduce_rig": "Reduce the rig", "source_functions": "Porter: source functions",
     "port_functions": "Porter: port functions", "looks_options": "Looks: options",
@@ -194,7 +204,8 @@ INSTRUCTIONS = (
     "The show is open only in this server's own session, not in the Swiss Knife window: tell the user to open the saved file in the app. "
     "To describe functions in the Dictionary, use dictionary_context, propose the descriptions to the user, "
     "then dictionary_set and dictionary_save (the Dictionary is a separate .txt, not part of the show). "
-    "Only folders the user shared in Swiss Knife (Settings › Connect to Claude) are reachable."
+    "Only folders the user shared in Swiss Knife (Settings › Connect to Claude) are reachable. "
+    "For the arguments and an example of any tool, call guide with its name (guide with no topic lists them all)."
 )
 
 
@@ -249,13 +260,24 @@ class Server:
         return out
 
     # ── tools ───────────────────────────────────────────────────────────────
+    def t_guide(self, a: dict) -> Any:
+        from core import mcp_guide
+        return mcp_guide.answer(str(a.get("topic") or ""), TOOLS, TITLES, READ_ONLY)
+
     def t_list_shows(self, a: dict) -> Any:
         problems: list = []
         shows = self.allow.list_shows(problems=problems)
         if not self.allow.folders():
             return {"folders": [], "shows": [],
                     "hint": "No folder is shared yet: Swiss Knife › Settings › Connect to Claude."}
-        out: dict = {"folders": self.allow.folders(), "shows": shows}
+        q = str(a.get("query") or "").lower()
+        if q:
+            shows = [x for x in shows if q in str(x.get("path", "")).lower()]
+        limit = max(1, min(int(a.get("limit") or 25), 200))
+        off = max(0, int(a.get("offset") or 0))
+        out: dict = {"folders": self.allow.folders(), "total": len(shows), "shows": shows[off:off + limit]}
+        if len(shows) > off + limit:
+            out["next_offset"] = off + limit
         if problems:
             out["problems"] = problems[:10]
             out["hint"] = ("Some folders could not be read, so the list may be incomplete. On a Mac, allow "
@@ -431,76 +453,8 @@ class Server:
     # ── dictionary (descriptions; never part of the .qxw) ───────────────────
     def _facts(self) -> Dict[str, dict]:
         """{function id: {facts, used_by, helper, auto}} read from the show in progress."""
-        import copy
-        from core import qxw_io, script_cmds, workspace
-        root = workspace._state.get("qxw_root")
-        if root is None:
-            return {}
-        root = qxw_io.strip_ns(copy.deepcopy(root))
-        names = workspace._state.get("func_by_id", {})
-        eng = root.find("Engine")                      # not the <Function ID=…/> references of VC buttons
-        funcs = [(f.get("ID", ""), f.get("Type", ""), f)
-                 for f in (eng.findall("Function") if eng is not None else [])]
-        types = {fid: typ for fid, typ, _f in funcs}
-        parents: Dict[str, list] = {}                 # child id → [(parent id, type, step number)]
-        out: Dict[str, dict] = {}
-        for fid, typ, f in funcs:
-            info: Dict[str, Any] = {}
-            if typ in ("Chaser", "Collection", "Sequence"):
-                kids = [(st.text or "").strip() for st in f.iter("Step")]
-                kids = [k for k in kids if k.isdigit()]
-                for n, k in enumerate(kids, 1):
-                    parents.setdefault(k, []).append((fid, typ, n))
-                if kids:
-                    info["facts"] = (f"{len(kids)} step(s): " + ", ".join(names.get(k, "?") for k in kids[:6])
-                                     + ("…" if len(kids) > 6 else ""))
-            elif typ == "Scene":
-                vals = []
-                for fv in f.iter("FixtureVal"):
-                    p_ = (fv.text or "").split(",")
-                    vals += [int(x) for x in p_[1::2] if x.strip().lstrip("-").isdigit()]
-                n = len(list(f.iter("FixtureVal")))
-                if not n:
-                    info["facts"] = "no fixture values"
-                else:
-                    up = sum(1 for v in vals if v > 0)
-                    info["facts"] = (f"{n} fixture(s); " + ("all values 0 (blackout/neutral)" if not up
-                                                           else f"{up} of {len(vals)} channel values above 0"))
-            elif typ == "EFX":
-                al = f.find("Algorithm")
-                info["facts"] = f"EFX {al.text}" if al is not None and al.text else "EFX"
-            elif typ == "RGBMatrix":
-                al = f.find("Algorithm")
-                sp = f.find("Speed")
-                bits = [f"pattern '{al.text}'" if al is not None and al.text else "matrix"]
-                if sp is not None and sp.get("Duration"):
-                    bits.append(f"{sp.get('Duration')} ms per step")
-                info["facts"] = ", ".join(bits)
-            elif typ == "Script":
-                starts, stops = [], []
-                for c in f.iter("Command"):
-                    for verb, ref in script_cmds.func_refs(c.text):
-                        (starts if verb == "start" else stops).append(ref)
-                bits = []
-                if starts:
-                    bits.append("starts " + ", ".join(names.get(r, "?") for r in dict.fromkeys(starts)))
-                if stops:
-                    bits.append(f"stops {len(set(stops))} function(s)")
-                info["facts"] = "script: " + ("; ".join(bits) if bits else "no start/stop commands")
-                for r in dict.fromkeys(starts):
-                    parents.setdefault(r, []).append((fid, typ, 0))
-            out[fid] = info
-        for kid, plist in parents.items():
-            if kid not in out:
-                continue
-            out[kid]["used_by"] = [f"{names.get(pid, '?')} ({pt})" for pid, pt, _n in plist][:4]
-            only_steps = all(pt in ("Chaser", "Collection", "Sequence") for _pid, pt, _n in plist)
-            out[kid]["_only_steps"] = only_steps
-            pid, pt, n = plist[0]
-            out[kid]["_auto"] = (f"Step {n} of {names.get(pid, '?')}" if pt == "Chaser" and n
-                                 else f"Part of {names.get(pid, '?')}" if pt in ("Collection", "Sequence")
-                                 else "")
-        return out
+        from core import dictionary_draft
+        return dictionary_draft.current_facts()
 
     def t_dictionary_context(self, a: dict) -> Any:
         self.need_show()
@@ -537,9 +491,17 @@ class Server:
             out.append(row)
         limit = max(1, min(int(a.get("limit") or 60), 150))
         off = max(0, int(a.get("offset") or 0))
+        page, size = [], 0                     # a page also stops before the reply would be cut
+        for row in out[off:off + limit]:
+            n = len(json.dumps(row, ensure_ascii=False)) + 2
+            if page and size + n > MAX_TEXT - 2000:
+                break
+            page.append(row)
+            size += n
+        limit = len(page)
         res: Dict[str, Any] = {"total": len(rows), "matching": len(out),
                                "described": sum(1 for r in rows if (r.get("desc") or "").strip()),
-                               "functions": out[off:off + limit]}
+                               "functions": page}
         if hidden:
             res["helper_steps_hidden"] = hidden
             res["note"] = ("Helper steps (functions that only exist as steps of a chaser or collection, with no "
@@ -560,6 +522,13 @@ class Server:
                         and not known[fid].get("vc_button")):
                     entries.append({"id": fid, "description": fx["_auto"]})
                     auto += 1
+        if a.get("draft_missing"):
+            from core import dictionary_draft
+            given = {str(e.get("id", "")).strip() for e in entries}
+            rows = [r for r in known.values() if r["id"] not in given]
+            for fid, text in dictionary_draft.draft_all(rows, self._facts()).items():
+                entries.append({"id": fid, "description": text})
+                auto += 1
         done, kept, unknown = [], [], []
         for e in entries:
             fid = str(e.get("id", "")).strip()
@@ -668,7 +637,8 @@ class Server:
         if method == "initialize":
             want = params.get("protocolVersion")
             return ok({"protocolVersion": want if want in PROTOCOL_VERSIONS else PROTOCOL_VERSIONS[0],
-                       "capabilities": {"tools": {"listChanged": False}},
+                       "capabilities": {"tools": {"listChanged": False}, "prompts": {"listChanged": False},
+                                        "resources": {"listChanged": False}},
                        "serverInfo": {"name": "qlc-swiss-knife", "version": _version()},
                        "instructions": INSTRUCTIONS})
         if method == "ping":
@@ -679,10 +649,35 @@ class Server:
                                       annotations=_annotations(t["name"])) for t in TOOLS]})
         if method == "tools/call":
             return ok(self.call_tool(params.get("name", ""), params.get("arguments") or {}))
-        if method in ("resources/list", "resources/templates/list"):
-            return ok({"resources": []} if method == "resources/list" else {"resourceTemplates": []})
-        if method == "prompts/list":
-            return ok({"prompts": []})
+        if method in ("resources/list", "resources/templates/list", "resources/read",
+                      "prompts/list", "prompts/get"):
+            from core import mcp_guide
+            if method == "resources/list":
+                res = [{"uri": "swissknife://guide", "name": "Swiss Knife tools: guide", "mimeType": "text/plain",
+                        "description": "Every tool, what it does, and the usual sequences."}]
+                res += [{"uri": f"swissknife://guide/{t['name']}", "name": f"Guide: {TITLES.get(t['name'], t['name'])}",
+                         "mimeType": "text/plain"} for t in TOOLS]
+                return ok({"resources": res})
+            if method == "resources/templates/list":
+                return ok({"resourceTemplates": []})
+            if method == "resources/read":
+                uri = str(params.get("uri") or "")
+                if not uri.startswith("swissknife://guide"):
+                    return err(-32602, f"Unknown resource: {uri}")
+                topic = uri[len("swissknife://guide"):].lstrip("/")
+                text = mcp_guide.answer(topic, TOOLS, TITLES, READ_ONLY)
+                return ok({"contents": [{"uri": uri, "mimeType": "text/plain", "text": text}]})
+            if method == "prompts/list":
+                return ok({"prompts": [{k: p[k] for k in ("name", "title", "description", "arguments")}
+                                       for p in mcp_guide.PROMPTS]})
+            name = str(params.get("name") or "")
+            try:
+                text = mcp_guide.prompt_text(name, params.get("arguments") or {})
+            except KeyError:
+                return err(-32602, f"Unknown prompt: {name}")
+            p = next(x for x in mcp_guide.PROMPTS if x["name"] == name)
+            return ok({"description": p["description"],
+                       "messages": [{"role": "user", "content": {"type": "text", "text": text}}]})
         return err(-32601, f"Method not found: {method}")
 
 

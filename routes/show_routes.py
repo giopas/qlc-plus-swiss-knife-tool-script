@@ -146,6 +146,14 @@ def save():
     if not path.lower().endswith('.qxw'):
         return jsonify({'error': 'Choose a .qxw file name.'}), 400
     try:
+        # cue notes follow the show: a button added or renamed since the notes
+        # were written is named in them (only when something changed, so a
+        # save without changes stays an identical copy)
+        if show.status().get('steps'):
+            from core import workspace as _ws
+            if _ws.cue_notes_missing():
+                _ws.fill_cue_notes()
+                show.close_step()
         out = show.save(os.path.abspath(path))
         return jsonify({'ok': True, **out, **_fixture_files(path), 'show': show.status()})
     except Exception as e:  # noqa: BLE001

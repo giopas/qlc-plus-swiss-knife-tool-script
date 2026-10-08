@@ -289,6 +289,30 @@
     <div class="upd-msg" id="mcp-msg"></div>
   </div>
 
+  <!-- Ask Claude to write the Dictionary (v3.0.1) -->
+  <div class="upd-card mcp-card" id="dict-claude-card" hidden>
+    <div class="upd-head"><b>Ask Claude to write the Dictionary</b><button class="btn btn-surface btn-sm" onclick="dictClaudeToggle(false)">✕</button></div>
+    <div class="upd-sub">Swiss Knife cannot start Claude: Claude Desktop starts Swiss Knife. Copy this request, paste it in a new chat in Claude Desktop, and Claude does the work through the Swiss Knife connection.</div>
+    <div class="upd-msg" id="dict-claude-status"></div>
+    <div class="mcp-h">What Claude should write</div>
+    <label class="upd-opt"><input type="radio" name="dict-claude-mode" value="buttons" checked onchange="dictClaudeText()"> Its own words for the functions with a button, a draft for the rest</label>
+    <label class="upd-opt"><input type="radio" name="dict-claude-mode" value="missing" onchange="dictClaudeText()"> Only the functions without a description</label>
+    <label class="upd-opt"><input type="radio" name="dict-claude-mode" value="all" onchange="dictClaudeText()"> A new description for every function</label>
+    <label class="upd-opt"><input type="checkbox" id="dict-claude-review" checked onchange="dictClaudeText()"> Show me the descriptions before saving</label>
+    <div class="mcp-h">The request</div>
+    <pre class="upd-notes mcp-snip" id="dict-claude-text"></pre>
+    <button class="btn btn-accent btn-sm" onclick="mcpCopy('dict-claude-text', this)">Copy</button>
+    <div class="mcp-h">Then</div>
+    <ol class="dict-claude-steps">
+      <li>In Claude Desktop, start a new chat and paste the request.</li>
+      <li>Allow the Swiss Knife tools Claude asks for. Only "Dictionary: save as new file" writes to disk, and always a new file.</li>
+      <li>Read the descriptions Claude shows you, correct what is wrong, and say OK.</li>
+      <li>Back here, use 📂 Load dictionary… and pick the new _dictionary.txt file next to the show.</li>
+    </ol>
+    <div class="upd-sub">Claude Desktop can also offer this request from the Swiss Knife connection, as "Write the Dictionary of a show".</div>
+    <button class="sc-link" onclick="openHelp('Claude-Tools')">Every tool Claude can use (wiki)</button>
+  </div>
+
   <!-- Command palette (⌘K / Ctrl+K) -->
   <div class="cp" id="cp" hidden onclick="if(event.target===this)cpClose()">
     <div class="cp-box" role="dialog" aria-label="Go to a tool or action">
@@ -653,8 +677,8 @@
 
           <!-- Assignment -->
           <div class="fb-group-label">Assign</div>
-          <button class="btn btn-surface fb-wide-btn" id="btn-pool-toggle" onclick="slTogglePool()" aria-pressed="false"
-                  data-tooltip="Show or hide the list of QLC+ functions: pick one there, then ◀ Assign (or double-click it) to give it to the selected songs">▤ QLC+ functions</button>
+          <button class="btn fb-wide-btn pool-toggle" id="btn-pool-toggle" onclick="slTogglePool()" aria-pressed="false"
+                  data-tooltip="Open the list of the show's QLC+ functions on the right: pick one there, then ◀ Assign (or double-click it) to give it to the selected songs">Show QLC+ functions ▸</button>
           <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
                   onclick="slAssignFromPool()" disabled
                   data-tooltip="Assign the selected function to the selected song(s) — Ctrl+click or Shift+click songs to select multiple (double-click a function also works)">◀ Assign</button>
@@ -696,10 +720,10 @@
           <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
                   onclick="slImportSlotFile()"
                   disabled
-                  data-tooltip="Load this slot from a .txt file — restores songs AND assignments if saved with this tool. Path remembered in session.">📂 Load Slot File</button>
+                  data-tooltip="Open a setlist saved as .txt into this slot: the songs, and their functions if it was saved with Swiss Knife. The file is remembered in the session.">📂 Load setlist…</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
                   onclick="slSaveSlotFile()" disabled
-                  data-tooltip="Save this slot's songs and function assignments to a .txt file. Path remembered in session.">💾 Save Slot File</button>
+                  data-tooltip="Save this setlist (songs and their functions) as a .txt file you can open again later. The file is remembered in the session.">💾 Save setlist…</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-import-paste"
                   onclick="slOpenImport()" disabled
                   data-tooltip="Bring a setlist in from the clipboard, a .txt or a .csv (spreadsheet): numbering is dropped, set breaks and fade / hold columns are understood. You see what will be imported first.">📋 Import / paste…</button>
@@ -716,7 +740,7 @@
                   onclick="slDeleteWorkspaceClones()" disabled
                   data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Then ✓ Apply to the show (bottom right) and 💾 Save as new file….">🗑 Delete Clones from WS</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-fill-notes" onclick="slFillCueNotes()"
-                  data-tooltip="Every cue of the setlist cue lists that has no note gets the reference: the original function and its button. Notes already there (yours or Swiss Knife's) are kept. Done for you when a show opens.">↪ Add references to the cue notes</button>
+                  data-tooltip="Every setlist cue gets a note naming the button that plays the same look (or what it plays when there is none). Swiss Knife's own notes are refreshed when the show changed; notes you typed in QLC+ are kept. Done for you when a show opens.">↪ Add references to the cue notes</button>
 
           <div class="fb-sep"></div>
 
@@ -742,6 +766,10 @@
       </div>
 
       <!-- Resize handle -->
+      <!-- Closed drawer: a tab on the right edge that opens it (v3.0.1) -->
+      <button class="pool-edge-tab" id="pool-edge-tab" onclick="slTogglePool(true)"
+              data-tooltip="Open the list of QLC+ functions" aria-label="Open the list of QLC+ functions">
+        <span class="pool-edge-arrow">◂</span><span class="pool-edge-text">QLC+ functions</span></button>
       <div id="pool-resize-handle" class="pool-resize-handle" title="Drag to resize"></div>
 
       <!-- Col 4: QLC+ Function Pool (FileBot Right) -->
@@ -944,9 +972,13 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
       <div><h2>Dictionary</h2><div class="p-desc">Describe what every function does — descriptions show up in Setlist and everywhere else.</div></div>
       <div class="spacer"></div>
+      <button class="btn btn-surface" id="btn-dict-claude" onclick="dictAskClaude()" style="display:none"
+              data-tooltip="Copy a ready request for Claude Desktop: Claude reads the show through Swiss Knife, writes the descriptions and saves them next to the show. Paste it in Claude.">
+        🤖 Ask Claude…
+      </button>
       <button class="btn btn-surface" onclick="browseDictTxt()"
-              data-tooltip="Browse and load a dictionary .txt file (path remembered for session)">
-        📂 Browse TXT
+              data-tooltip="Open a dictionary .txt (ID|Name|Description). The file is remembered in the session.">
+        📂 Load dictionary…
       </button>
       <input id="dict-path" type="hidden">
       <span id="dict-path-name" class="file-chip" title="">no dictionary loaded</span>
@@ -996,8 +1028,12 @@
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="exportDictTxt()"
               data-tooltip="Download the dictionary as a pipe-delimited .txt file">⬇ Export TXT</button>
+      <button class="btn btn-surface" onclick="dictDraft()"
+              data-tooltip="Give every function without a description a first one drawn from the show: its colours, its steps, what it starts. Your own descriptions are kept. Nothing is written to a file until you save.">✨ Draft descriptions</button>
+      <button class="btn btn-surface" onclick="saveDictNew()"
+              data-tooltip="Save as a new file next to the show (Show_dictionary.txt, or _v2, _v3 … when taken). Never overwrites.">💾 Save as new file</button>
       <button class="btn btn-accent" onclick="saveDictFile()"
-              data-tooltip="Save all descriptions to the dictionary .txt path">💾 Save dictionary</button>
+              data-tooltip="Save all descriptions to the dictionary you loaded (or to a new file next to the show when none is loaded)">💾 Save dictionary</button>
     </div>
 
   </section>
@@ -2412,6 +2448,7 @@
 <!-- ── JS modules ──────────────────────────────────────────────────────────── -->
 <script>window.__ASSET_V = '{{ asset_v }}';</script>
 <script src="/static/js/i18n.js?v={{ asset_v }}"></script>
+<script src="/static/js/tooltip.js?v={{ asset_v }}"></script>
 <script src="/static/js/app.js?v={{ asset_v }}"></script>
 <script src="/static/js/setlist.js?v={{ asset_v }}"></script>
 <script src="/static/js/dictionary.js?v={{ asset_v }}"></script>

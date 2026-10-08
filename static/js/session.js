@@ -215,7 +215,7 @@ function _renderModal() {
             + Object.entries(slotPaths).map(([sid, p]) =>
                 `<div class="sess-field-hint sess-muted" style="margin-top:3px">Slot ${_esc(sid)}: ${_truncPath(p)}</div>`
               ).join('')
-          : `<span class="sess-muted">No slot files saved yet — use "Save Slot File" in the Setlist tab</span>`}
+          : `<span class="sess-muted">No setlist files saved yet — use "Save setlist…" in the Setlist tab</span>`}
       </div>
     </div>
 
@@ -298,7 +298,7 @@ async function sessionPickDictionary(fallbackInput) {
 // ── Browse for setlist backup ─────────────────────────────────────────────────
 
 // sessionPickSetlist removed — slot paths are now tracked per slot via
-// "Save Slot File" / "Load Slot File" buttons in the Setlist tab.
+// "Save setlist…" / "Load setlist…" buttons in the Setlist tab.
 
 
 // ── Save session (download .qsk) ──────────────────────────────────────────────

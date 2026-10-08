@@ -321,7 +321,7 @@ async function loadDictFile() {
 
 async function saveDictFile() {
   const path = document.getElementById('dict-path').value.trim();
-  if (!path) { setStatus('Paste a .txt path first.', 'warn'); return; }
+  if (!path) { await saveDictNew(); return; }
   const result = await _apiJson('/api/dictionary/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -330,6 +330,76 @@ async function saveDictFile() {
   if (result.error) { setStatus(result.error, 'error'); return; }
   setStatus(`Dictionary saved → ${result.path.split(/[\\/]/).pop()}`);
 }
+
+// ── Draft, save as new, ask Claude (v3.0.1) ──────────────────────────────────
+
+/** Fill the empty descriptions with a first draft drawn from the show. */
+async function dictDraft() {
+  const state = await _apiJson('/api/status');
+  if (!state.loaded) { setStatus('No workspace loaded.', 'warn'); return; }
+  const r = await _apiJson('/api/dictionary/draft', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+  });
+  if (r.error) { setStatus(r.error, 'error'); return; }
+  await _loadDictionary();
+  if (!r.drafted) { setStatus('Every function already has a description.', 'ok'); return; }
+  setStatus(`✨ ${r.drafted} description(s) drafted — ${r.described} of ${r.total} functions now described. ` +
+    'Check them, then 💾 Save as new file.', 'ok');
+}
+
+/** Save as a new file next to the show (or the loaded dictionary); never overwrites. */
+async function saveDictNew() {
+  const near = document.getElementById('dict-path').value.trim();
+  const r = await _apiJson('/api/dictionary/save-new', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ near }),
+  });
+  if (r.error) { setStatus(r.error, 'error'); return; }
+  document.getElementById('dict-path').value = r.path;
+  setFileChip('dict-path-name', r.path, 'no dictionary loaded');
+  setStatus(`Dictionary saved as a new file → ${r.path.split(/[\\/]/).pop()}`, 'ok');
+}
+
+/** Ask Claude… (v3.0.1): a window like Connect to Claude, with the request to
+ *  paste in Claude Desktop.  Swiss Knife cannot start Claude itself. */
+async function dictAskClaude() { await dictClaudeToggle(true); }
+
+async function dictClaudeToggle(open) {
+  const card = document.getElementById('dict-claude-card');
+  if (!card) return;
+  const show = open === undefined ? card.hidden : open;
+  card.hidden = !show;
+  if (!show) return;
+  const st = document.getElementById('dict-claude-status');
+  try {
+    const s = await (await fetch('/api/mcp/status')).json();
+    st.textContent = s.last_start
+      ? t('Connected. Claude last started Swiss Knife on {0}.', new Date(s.last_start).toLocaleString())
+      : (s.extension || s.config) ? t('Installed in Claude Desktop. Claude has not used it yet.')
+      : t('Not connected yet: use 🔌 Connect to Claude in the left menu first.');
+  } catch { st.textContent = ''; }
+  await dictClaudeText();
+}
+
+async function dictClaudeText() {
+  const mode = (document.querySelector('input[name="dict-claude-mode"]:checked') || {}).value || 'buttons';
+  const review = document.getElementById('dict-claude-review').checked;
+  const dictionary = document.getElementById('dict-path').value.trim();
+  const r = await _apiJson('/api/mcp/dictionary-request', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, review, dictionary }),
+  });
+  document.getElementById('dict-claude-text').textContent = r.error ? r.error : r.text;
+}
+
+async function dictClaudeButton() {
+  const b = document.getElementById('btn-dict-claude');
+  if (!b) return;
+  try {
+    const s = await (await fetch('/api/mcp/status')).json();
+    b.style.display = (s.last_start || s.extension || s.config) ? '' : 'none';
+  } catch { b.style.display = 'none'; }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(dictClaudeButton, 500));
 
 // ── Export TXT download ───────────────────────────────────────────────────────
 

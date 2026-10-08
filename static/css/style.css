@@ -2247,7 +2247,7 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 
 /* FileBot middle: Actions pane */
 .fb-actions-pane {
-  width: 180px;
+  width: 200px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -2984,6 +2984,21 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 
 [data-tooltip]:hover::after,
 [data-tooltip]:hover::before { opacity: 1; }
+
+/* v3.0.1: tooltip.js draws the tooltips in a layer that fits the window;
+   the CSS ones stay only for disabled controls (no mouse events there) */
+.js-tt [data-tooltip]:not(:disabled)::after,
+.js-tt [data-tooltip]:not(:disabled)::before { display: none !important; }
+.sk-tip {
+  position: fixed; z-index: 100000; pointer-events: none;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 5px;
+  padding: 5px 10px; font-size: var(--fs-small); line-height: 1.4;
+  max-width: 300px; width: max-content; text-align: left; white-space: normal;
+  box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  opacity: 0; visibility: hidden; transition: opacity .15s ease;
+}
+.sk-tip.on { opacity: 1; visibility: visible; }
 
 /* Tooltips — edge adjustments */
 [data-tooltip].tt-right::after { left: 0; transform: none; }
@@ -4095,7 +4110,26 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 /* ── Setlist: the QLC+ function list is a drawer (v2.3) ── */
 .sl-fb-split.pool-closed .fn-pool-pane,
 .sl-fb-split.pool-closed .pool-resize-handle { display: none; }
-#btn-pool-toggle.on { border-color: var(--accent); color: var(--accent); }
+/* v3.0.1: the toggle reads as a button (filled accent when the list is
+   closed, outlined when open) and a closed list leaves a tab on the edge */
+#btn-pool-toggle { background: var(--accent); color: var(--accent-contrast, #0b0f14); font-weight: 600;
+  border: 1px solid var(--accent); cursor: pointer; }
+#btn-pool-toggle:hover { filter: brightness(1.08); }
+#btn-pool-toggle.on { background: transparent; color: var(--accent); }
+.pool-edge-tab { display: none; }
+.sl-fb-split.pool-closed .pool-edge-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 0 0 30px;
+  padding: 12px 0; border: none; border-left: 1px solid var(--border-strong);
+  background: var(--surface-1); color: var(--accent); cursor: pointer; font-weight: 600;
+  font-size: var(--fs-small); letter-spacing: .04em;
+}
+.sl-fb-split.pool-closed .pool-edge-tab:hover { background: var(--surface-2, var(--surface-1)); filter: brightness(1.15); }
+.pool-edge-text { writing-mode: vertical-rl; white-space: nowrap; }
+/* closed drawer: the songs take the room, the actions get wider labels */
+.sl-fb-split.pool-closed .fb-songs-pane { flex: 1 1 auto; }
+.sl-fb-split.pool-closed .slot-pane { width: 300px; }
+.sl-fb-split.pool-closed .fb-actions-pane { width: 260px; }
+.fb-actions-pane .fb-wide-btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 1499px) {
   .sl-fb-split { position: relative; }
   .sl-fb-split:not(.pool-closed) .pool-resize-handle { display: none; }
@@ -4167,3 +4201,8 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .mcp-status.mcp-ok { color: var(--accent, #5eead4); }
 .mcp-status.mcp-no { opacity: .85; }
 .sc-link.mcp-on { color: var(--accent, #5eead4); }
+
+/* v3.0.1 — Ask Claude window */
+#dict-claude-card { max-height: calc(100vh - 80px); overflow: auto; }
+.dict-claude-steps { margin: 4px 0 8px 18px; padding: 0; font-size: var(--fs-ui); color: var(--text-dim); line-height: 1.5; }
+#dict-claude-card .upd-opt { margin: 3px 0; font-size: var(--fs-ui); }

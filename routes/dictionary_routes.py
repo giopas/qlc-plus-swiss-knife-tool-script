@@ -1,5 +1,6 @@
 """routes/dictionary_routes.py — Dictionary Manager API (fully implemented)."""
 
+import os
 import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
@@ -43,6 +44,54 @@ def bulk_update():
             ws.update_description(fid, desc)
             count += 1
     return jsonify({'ok': True, 'count': count})
+
+
+@bp.route('/draft', methods=['POST'])
+def draft():
+    """Fill the functions that have no description with a first one drawn
+    from the show (structure, names, colours).  overwrite=true redraws all."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import dictionary_draft as dd
+    data = request.get_json(silent=True) or {}
+    rows = ws.get_dictionary()
+    texts = dd.draft_all(rows, dd.current_facts(), overwrite=bool(data.get('overwrite')))
+    for fid, text in texts.items():
+        ws.update_description(fid, text)
+    return jsonify({'ok': True, 'drafted': len(texts), 'total': len(rows),
+                    'described': sum(1 for r in ws.get_dictionary() if (r.get('desc') or '').strip())})
+
+
+def new_dictionary_path(folder: str, stem: str) -> str:
+    """<stem>_dictionary.txt in *folder*, or _v2, _v3 … when taken (never overwrites)."""
+    base = os.path.join(folder, f'{stem}_dictionary')
+    path, n = base + '.txt', 2
+    while os.path.exists(path):
+        path, n = f'{base}_v{n}.txt', n + 1
+    return path
+
+
+@bp.route('/save-new', methods=['POST'])
+def save_new():
+    """Save the dictionary as a NEW file next to the show (or next to the
+    dictionary that was loaded): <show>_dictionary.txt, _v2 … if taken."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(silent=True) or {}
+    st = ws.get_state()
+    show_path = st.get('path') or ''
+    loaded = (data.get('near') or '').strip()
+    folder = os.path.dirname(loaded or show_path)
+    if not folder or not os.path.isdir(folder):
+        return jsonify({'error': 'No folder to save into: open the show from a file first.'}), 400
+    stem = os.path.splitext(st.get('original_name') or os.path.basename(show_path) or 'Show.qxw')[0]
+    path = new_dictionary_path(folder, stem)
+    try:
+        ws.save_dictionary(path)
+        sess.set_dictionary(path)
+        return jsonify({'ok': True, 'path': path})
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
 
 
 @bp.route('/load', methods=['POST'])

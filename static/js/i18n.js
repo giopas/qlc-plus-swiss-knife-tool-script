@@ -1,5 +1,6 @@
 /* =============================================================================
-   i18n.js — the interface in English, Italiano or Français (v2.7.0)
+   i18n.js — the interface in English, Italiano, Français, Deutsch, Español,
+                Português, 日本語 or 中文 (v2.7.0, five more in v3.0.2)
 
    The interface is translated by the English text itself: static/i18n/<lang>.json
    maps an English string to its translation.  A string with a changing part is
@@ -13,7 +14,9 @@
 'use strict';
 
 const I18N = (() => {
-  const LANGS = [['en', 'English'], ['it', 'Italiano'], ['fr', 'Français']];
+  const LANGS = [['en', 'English'], ['it', 'Italiano'], ['fr', 'Français'],
+                 ['de', 'Deutsch'], ['es', 'Español'], ['pt', 'Português'],
+                 ['ja', '日本語'], ['zh', '中文']];
   const ATTRS = ['title', 'placeholder', 'data-tip', 'data-desc', 'data-tooltip', 'aria-label', 'alt'];
   const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT']);
   let lang = 'en';

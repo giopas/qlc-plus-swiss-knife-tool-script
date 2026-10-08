@@ -18,19 +18,19 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.0.1, 8 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.0.2, 8 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
 | Tools | Quick Start, Fixtures, Rig Reducer, Function Porter, Brightness, Look Builder, VC Visual Editor, Stage and Meshes, Library, Setlist, Trigger Manager, Dictionary, Workspace Doctor, Compare, ID Browser, Show Paperwork. |
 | Reuse | The recipe replays a session to the same file. Show Profiles apply the same changes to another show. |
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
-| Language | English, Italian and French. |
+| Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 24 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 825 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 849 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
-Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them.
+Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese.
 
 ## 2. What is left
 
@@ -43,7 +43,7 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | Claude Desktop with the Windows console program (`QLC Swiss Knife MCP.exe`) and the Windows launcher | The build smoke-tests it on a Windows runner, but nobody has used it from Claude Desktop on Windows. |
 | Claude Desktop with the packaged macOS app | So far Claude has been connected to Swiss Knife run from the sources. |
 | A live check against QLC+ 5.3.0 | The Docker image has 5.2.2. Opening the output in a real QLC+ 5.3.0 is still to do. |
-| Italian and French wording | Written with an AI assistant and checked against the screens, not by a native reviewer. |
+| Wording in the seven translations | Written with an AI assistant and checked against the screens, not by native reviewers. German, Spanish, Portuguese, Japanese and Chinese are new in 3.0.2. |
 | A library file moved between two machines | Built and tested, never tried between two computers. |
 | The SINCO MIDI patch and a real controller | The Inputs and MIDI tools are verified on show files and by tests, not with a controller connected. |
 | The v2.4.0 live check on the Mac | Doctor fixes with a choice, opened in real QLC+. |
@@ -57,9 +57,23 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | The update on macOS is tested and works (several runs). | 8 Oct |
 | Forum: no post per release. A post for 2.0 and one for 3.0. | 1 Oct, 8 Oct |
 
+### Released in 3.0.2
+
+Written on 8 October while giopas was away from the laptop; the local folder is aligned when it is back.
+
+| Change | Where |
+|---|---|
+| German, Spanish, Portuguese (European spelling), Japanese and Simplified Chinese, about 2,970 strings each | `static/i18n/de.json`, `es.json`, `pt.json`, `ja.json`, `zh.json` |
+| The language box, ⌘K entries and the i18n tests know the eight languages | `templates/index.html`, `static/js/i18n.js`, `static/js/palette.js`, `tests/test_i18n.py` |
+| Five strings that had no translation anywhere (*Connect to Claude* in the menu, *Auto-Map*, *Patch…*, *Stop*, *Strobe / flash*) | all seven language files |
+| A real venue name removed from the `guide` example and from this plan | `core/mcp_guide.py`, wiki *Claude's tools* |
+| Wiki *Language* and *Home* list the eight languages | wiki |
+| Screens checked in German and Japanese at 1440 × 900 | Done |
+| Check on the Mac in each new language | To do (giopas) |
+
 ### Released in 3.0.1
 
-Found on 8 October while Claude described the Liquid Bar show (the show stays out of the repository).
+Found on 8 October while Claude described a real show (the show stays out of the repository).
 
 | Change | Where |
 |---|---|
@@ -132,6 +146,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 2.9.2 | 8 Oct | The menu item reads *MCP connected to Claude* when it is. |
 | 3.0.0 | 8 Oct | Milestone release. Documentation rewritten, work plan reorganised. |
 | 3.0.1 | 8 Oct | Dictionary drafts and *Ask Claude…*; cue notes name the button; Claude's `guide`, ready requests and the *Claude's tools* wiki page; tooltips that fit the window; D016 and D012 fixes. |
+| 3.0.2 | 8 Oct | German, Spanish, Portuguese, Japanese and Chinese. |
 
 ## 4. Goal and the Pub test
 
@@ -181,7 +196,7 @@ One branch per release, named `feat/vX.Y.Z` (or `fix/...` for a small change). C
 ### Before every commit
 
 - Tests added or updated, and `python -m pytest -q` green.
-- Every new or changed interface string has its Italian and French entry in `static/i18n/it.json` and `fr.json`. `python tools/i18n_extract.py --missing it` and `--missing fr` list what lacks one. Placeholders such as `{0}` stay.
+- Every new or changed interface string has its entry in each file of `static/i18n/` (`it`, `fr`, `de`, `es`, `pt`, `ja`, `zh`). `python tools/i18n_extract.py --missing <code>` lists what a language lacks. Placeholders such as `{0}` stay.
 - No version-specific text on the Start page.
 - Nothing confidential or working-material is committed: no scratch folders (`_tmp_sync/`), archives, assistant folders (`.claude/`), notes, forum drafts, real show files or real names, keys, logs or personal paths. Run `git status` and `git diff --cached --stat` and read them.
 - CHANGELOG entry under `## [Unreleased]`.

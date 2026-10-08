@@ -34,7 +34,7 @@ GUIDE: Dict[str, dict] = {
                  ("offset", "Skip this many; use `next_offset` from the previous answer.")],
         "returns": "`folders`, `total`, `shows` [{path, name, bytes, modified}], `next_offset` when there are more, "
                    "`problems` when a folder could not be read.",
-        "example": '{"query": "Liquid", "limit": 10}',
+        "example": '{"query": "Festival", "limit": 10}',
     },
     "open_show": {
         "use": "Open a show to work on. Everything after this works on this show in progress.",

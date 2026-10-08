@@ -8,6 +8,18 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ## [Unreleased]
 
 
+## [3.0.2] — 2026-10-08
+
+Five more languages for the interface.
+
+### Added
+- The interface speaks German, Spanish, Portuguese, Japanese and Chinese, next to English, Italian and French. Pick the language at the bottom of the left menu or with ⌘K / Ctrl+K and *Language*. Each file in `static/i18n/` holds about 2,970 lines, the same strings as Italian and French. Portuguese follows the European spelling and Chinese is Simplified.
+- Strings that had no translation in any language now have one: the *🔌 Connect to Claude* menu item, *🔄 Auto-Map* in the Function Porter, *Patch…* in Inputs & MIDI, *■ Stop* in the Look Builder preview and *Strobe / flash* in Quick Start.
+
+### Changed
+- The example in Claude's `guide` for `list_shows` searches for "Festival" instead of the name of a real venue. The wiki page *Claude's tools* follows.
+
+
 ## [3.0.1] — 2026-10-08
 
 Found while describing a real show with Claude: the Dictionary gets a draft of its own and a way to ask Claude, the cue notes name the button, and Claude's tools are documented where Claude can read them.

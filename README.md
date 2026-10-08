@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.0.1
+# QLC+ Swiss Knife v3.0.2
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -52,7 +52,7 @@ The tools are grouped by job and numbered 1 to 6, like the side menu and the Sta
 | | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and VC widget in sortable, filterable tables, with CSV and PDF export. |
 | **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: a tech rider for the venue (it never carries your show's internals), a crew checklist for load-in, a patch sheet with DIP-switch diagrams (also as a thermal-printer ticket), and a show book for you, with a stage plot. PDF or CSV. |
 
-**Language.** The interface speaks English, Italian and French. Pick it at the bottom of the left menu ([Language](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Language)). Shows, reports and the wiki stay as they are.
+**Language.** The interface speaks English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. Pick it at the bottom of the left menu ([Language](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Language)). Shows, reports and the wiki stay as they are.
 
 ---
 

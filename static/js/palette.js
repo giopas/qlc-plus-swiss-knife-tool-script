@@ -41,6 +41,11 @@ function _cpActions() {
     { label: '🌐 Language: English', sub: 'view', run: () => I18N.set('en') },
     { label: '🌐 Lingua: Italiano', sub: 'view', run: () => I18N.set('it') },
     { label: '🌐 Langue : Français', sub: 'view', run: () => I18N.set('fr') },
+    { label: '🌐 Sprache: Deutsch', sub: 'view', run: () => I18N.set('de') },
+    { label: '🌐 Idioma: Español', sub: 'view', run: () => I18N.set('es') },
+    { label: '🌐 Idioma: Português', sub: 'view', run: () => I18N.set('pt') },
+    { label: '🌐 言語: 日本語', sub: 'view', run: () => I18N.set('ja') },
+    { label: '🌐 语言：中文', sub: 'view', run: () => I18N.set('zh') },
     { label: '? Help for this tool', sub: 'wiki', run: () => document.querySelector('.screen.active .help-btn')?.click() },
   ];
   return a.filter(x => x.when === undefined || x.when).map(x => ({ ...x, kind: 'action' }));

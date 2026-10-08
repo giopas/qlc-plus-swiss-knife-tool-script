@@ -2902,5 +2902,10 @@
  "Back here, use 📂 Load dictionary… and pick the new _dictionary.txt file next to the show.": "Ensuite ici, utilisez 📂 Charger le dictionnaire… et choisissez le nouveau fichier _dictionary.txt à côté du show.",
  "Claude Desktop can also offer this request from the Swiss Knife connection, as \"Write the Dictionary of a show\".": "Claude Desktop peut aussi proposer cette demande depuis la connexion à Swiss Knife, sous le nom « Write the Dictionary of a show ».",
  "Every tool Claude can use (wiki)": "Tous les outils que Claude peut utiliser (wiki)",
- "Not connected yet: use 🔌 Connect to Claude in the left menu first.": "Pas encore connecté : utilisez d’abord 🔌 Connecter à Claude dans le menu de gauche."
+ "Not connected yet: use 🔌 Connect to Claude in the left menu first.": "Pas encore connecté : utilisez d’abord 🔌 Connecter à Claude dans le menu de gauche.",
+ "🔌 Connect to Claude": "🔌 Connecter à Claude",
+ "🔄 Auto-Map": "🔄 Associer automatiquement",
+ "Patch…": "Patch…",
+ "■ Stop": "■ Arrêter",
+ "Strobe / flash": "Stroboscope / flash"
 }

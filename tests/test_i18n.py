@@ -10,7 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import i18n_extract as ex  # noqa: E402
 
-LANGS = ("it", "fr")
+LANGS = ("it", "fr", "de", "es", "pt", "ja", "zh")
 _PH = re.compile(r"\{\d+\}")
 
 
@@ -71,6 +71,6 @@ def test_the_page_loads_the_engine_before_the_app():
         html = f.read()
     assert "lang-select" in html
     assert html.index("i18n.js") < html.index("js/app.js")
-    for code in ("en", "it", "fr"):
+    for code in ("en",) + LANGS:
         assert f'<option value="{code}"' in html or code in open(
             os.path.join(ROOT, "static", "js", "i18n.js"), encoding="utf-8").read()

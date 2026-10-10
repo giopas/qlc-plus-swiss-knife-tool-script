@@ -56,6 +56,7 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | No Linux AppImage unless someone asks. The `.tar.gz` stays. | 8 Oct |
 | The update on macOS is tested and works (several runs). | 8 Oct |
 | Forum: no post per release. A post for 2.0 and one for 3.0. | 1 Oct, 8 Oct |
+| Only Claude is connected. The Gemini app, Gems and other assistants that run on their makers' servers cannot start a local program, and putting Swiss Knife online is not planned. Gemini CLI may work with `--mcp` but is untested and unsupported. The wiki page *Connect Claude to Swiss Knife* explains why (wiki only, no release). | 10 Oct |
 
 ### Released in 3.0.3
 

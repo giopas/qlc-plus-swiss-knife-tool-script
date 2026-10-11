@@ -209,6 +209,10 @@ The complete decision log, with the reasons, is in section 3 of the archive. The
 
 One branch per release, named `feat/vX.Y.Z` (or `fix/...` for a small change). Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`), small and focused. The sandbox Claude works in cannot reach GitHub, so Claude commits locally and giopas pushes.
 
+### At the start of a session
+
+Run `python3 tools/ground_truth.py` before trusting this file or any note. It says what git and GitHub show: anything not pushed, a branch only on this disk, the tag and the release for `VERSION`, the last CI run and stale lock files. Exit code 0 means nothing to act on, 1 means drift, 2 means a check could not run. Run it again after a release.
+
 ### Before every commit
 
 - Tests added or updated, and `python -m pytest -q` green.

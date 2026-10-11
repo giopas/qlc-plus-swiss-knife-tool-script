@@ -7,6 +7,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added
+- `tools/ground_truth.py` for developers. It reads from git (and GitHub, when `gh` is installed) what the notes only claim: uncommitted changes, commits on `main` or the wiki not pushed, branches that exist only on this disk, the tag for `VERSION` on origin, a release still in draft, the last `tests` run and lock files left in `.git`. A check that cannot run says UNKNOWN; it never counts as a pass.
+
 
 ## [3.0.3] — 2026-10-09
 

@@ -898,6 +898,42 @@ def _i007_wizard_lost(ws: _Workspace):
                       {"functions": c["steps"], "name": c["name"]})
 
 
+def qlc53_only(root) -> List[Tuple[str, int]]:
+    """Content of a QLC+ 5.3 workspace that QLC+ 5.2.2 ignores or can't use
+    (from the two versions' source): ``[(what, count)]``, only non-zero."""
+    eng = root.find("Engine")
+    vc = root.find("VirtualConsole")
+    pos3d = [p for p in (eng.findall("Palette") if eng is not None else [])
+             if p.get("Type") == "Position3D"]
+    pos3d_ids = {p.get("ID") for p in pos3d}
+    pos3d_scenes = sum(1 for f in (eng.findall("Function") if eng is not None else [])
+                       if f.get("Type") == "Scene" and any(p.get("ID") in pos3d_ids for p in f.findall("Palette")))
+    mon = eng.find("Monitor") if eng is not None else None
+    locked = sum(1 for i in (mon.findall("FxItem") if mon is not None else [])
+                 if (i.get("Locked") or "").lower() == "true")
+    pads = list(vc.iter("XYPad")) if vc is not None else []
+    floor = sum(1 for p in pads if p.get("FloorControl", "0") not in ("", "0"))
+    group_only = sum(1 for p in pads if p.findall("Group") and not p.findall("Fixture"))
+    bpm = sum(1 for d in (vc.iter("SpeedDial") if vc is not None else [])
+              if (d.findtext("ControlBPM") or "").strip().lower() == "true")
+    efx_dim = sum(1 for f in (eng.findall("Function") if eng is not None else [])
+                  if f.get("Type") == "EFX" and (f.findtext("DimmerControl") or "0").strip() not in ("", "0"))
+    rows = [("Position3D palette(s)", len(pos3d)), ("scene(s) aiming with a Position3D palette", pos3d_scenes),
+            ("fixture(s) locked in 2D/3D", locked), ("XY pad(s) in floor mode (plain pan/tilt pads in 5.2.2)", floor),
+            ("XY pad(s) with only a fixture group, which do nothing", group_only),
+            ("speed dial(s) setting the BPM", bpm), ("EFX with dimmer control", efx_dim)]
+    return [(w, n) for w, n in rows if n]
+
+
+def _i008_qlc53_only(ws: _Workspace):
+    rows = qlc53_only(ws.root)
+    if rows:
+        yield Finding("I008", INFO, "Workspace",
+                      "QLC+ 5.3 only, ignored by QLC+ 5.2.2: " + ", ".join(f"{n} {w}" for w, n in rows)
+                      + ". The rest of the show works in 5.2.2.",
+                      {"items": {w: n for w, n in rows}})
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Public API
 # ═════════════════════════════════════════════════════════════════════════════
@@ -926,7 +962,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),
                 _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws),
                 _i004_layers(ws, layers), _i005_wizard_unused(ws), _i006_infrastructure(ws),
-                _i007_wizard_lost(ws)):
+                _i007_wizard_lost(ws), _i008_qlc53_only(ws)):
         findings.extend(gen)
     stats = {"fixtures": len(ws.fixture_els), "functions": len(ws.function_els),
              "vc_widgets": len(ws.widgets), "vc_pages": len(ws.pages)}

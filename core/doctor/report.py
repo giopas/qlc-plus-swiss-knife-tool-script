@@ -41,6 +41,7 @@ TITLES = {
     "I005": "QLC+ Show Wizard functions on no button",
     "I006": "Page-switch fixtures (not lights)",
     "I007": "QLC+ Show Wizard effect never created",
+    "I008": "QLC+ 5.3 content that QLC+ 5.2.2 ignores",
 }
 
 

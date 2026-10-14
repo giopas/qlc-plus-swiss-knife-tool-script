@@ -850,6 +850,8 @@ def _i004_layers(ws: _Workspace, layers: Dict[str, str]):
 def _i005_wizard_unused(ws: _Workspace):
     """Show Wizard functions that nothing plays, per folder (the ones Wizard
     Repair puts on the group's page)."""
+    if not palettes.is_wizard_show(ws.root):
+        return
     try:
         from core.wizard_repair import orphans
         orph = orphans(ws.root)
@@ -882,6 +884,8 @@ def _i006_infrastructure(ws: _Workspace):
 
 
 def _i007_wizard_lost(ws: _Workspace):
+    if not palettes.is_wizard_show(ws.root):
+        return
     try:
         from core.wizard_repair import missing_chasers
         lost = missing_chasers(ws.root)

@@ -18,16 +18,16 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.0.3, 9 October 2026.** Every phase of the plan is built and released. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.1.0, 14 October 2026 (prepared, not yet merged).** Every phase of the plan is built and released up to 3.0.3; 3.1.0 adds support for shows made by the QLC+ 5.3 Show Wizard. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
-| Tools | Quick Start, Fixtures, Rig Reducer, Function Porter, Brightness, Look Builder, VC Visual Editor, Stage and Meshes, Library, Setlist, Trigger Manager, Dictionary, Workspace Doctor, Compare, ID Browser, Show Paperwork. |
+| Tools | Quick Start, Fixtures, Rig Reducer, Function Porter, Brightness, Look Builder, VC Visual Editor, Stage and Meshes, Library, Setlist, Trigger Manager, Dictionary, Workspace Doctor, Wizard Repair, Compare, ID Browser, Show Paperwork. |
 | Reuse | The recipe replays a session to the same file. Show Profiles apply the same changes to another show. |
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
-| Claude | Swiss Knife is an MCP server with 24 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 863 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Claude | Swiss Knife is an MCP server with 25 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
+| Tests | 893 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -47,6 +47,27 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | A library file moved between two machines | Built and tested, never tried between two computers. |
 | The SINCO MIDI patch and a real controller | The Inputs and MIDI tools are verified on show files and by tests, not with a controller connected. |
 | The v2.4.0 live check on the Mac | Doctor fixes with a choice, opened in real QLC+. |
+
+### Released in 3.1.0 (prepared 14 October, branch `feat/v3.1.0`)
+
+Started from the QLC+ 5.3.0 highlights video and two wizard shows giopas made on the Mac. The analysis is in the Claude project (`claude/STAGE_WIZARD_ALIGNMENT.md`). Items 3.1 and 3.2 of that plan are done together.
+
+| Change | Where |
+|---|---|
+| Palettes read and resolved the way QLC+ does it (Dimmer, Color, Shutter, Pan/Tilt, Position3D, fanning); layer scenes; page-switch fixtures | `core/palettes.py` |
+| Doctor: palette scenes not empty (D004, D018), layer scenes not D005 (I004), wizard functions not D016 (I005), built-in generic dimmer needs no .qxf, *default* capabilities safe for D006, new D019 (fixed by default), D020, I006, I007 | `core/doctor/` |
+| Rig Reducer: group scenes, XY pads, grids closed up, the wizard page of a gone group, page dimmers always kept | `core/rig_reducer.py` |
+| Porter: group scenes bring their group and palettes; XY pad groups mapped | `core/porter.py`, `core/porter_vc.py` |
+| Compare, Dictionary drafts, Brightness, paperwork, Fixtures import | `core/compare.py`, `core/dictionary_draft.py`, `core/brightness.py`, `core/showbook.py`, `core/fixture.py` |
+| Wizard Repair: lost chasers, palettes that do nothing, PANIC RESET per page, buttons, grids, hide, lock, captions; screen, route, `wizard_repair` Claude tool | `core/wizard_repair.py`, `routes/wizard_routes.py`, `static/js/wizard.js` |
+| Translations of the new strings in the seven languages | `static/i18n/*.json` |
+| Two scrubbed wizard shows and their definitions; 22 tests | `tests/corpus/Wizard530_*.qxw`, `tests/fixtures/wizard530/`, `tests/test_wizard530.py` |
+| Wiki: new page *Wizard Repair*; *Workspace Doctor* codes; *Claude's tools* regenerated | wiki |
+| Check on the Mac: open both repaired shows in QLC+ 5.3.0 (buttons, chasers, PANIC RESET, matrices on the new grids, the strobe buttons on the Sharpys); open a wizard show in QLC+ 5.2.2 | To do (giopas) |
+
+Decisions taken with it (14 October): Swiss Knife's own output keeps declaring every channel (principle 5); the Doctor accepts layer scenes made by others. Supported range: QLC+ 5.2.2 to 5.3.x; QLC+ 4 is not a target. Next: 3.3.0 *Upgrade a v5 show to 5.3* and 3.4.0 aligning Quick Start with the wizard (roles, capabilities from the definition, grids from the stage, placement by role).
+
+Open question for giopas: report the `makeChaserFromScenes` bug upstream (one missing line in `stagewizard_functions.cpp`), although upstream reports were dropped.
 
 ### Decisions taken
 
@@ -163,6 +184,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.0.1 | 8 Oct | Dictionary drafts and *Ask Claude…*; cue notes name the button; Claude's `guide`, ready requests and the *Claude's tools* wiki page; tooltips that fit the window; D016 and D012 fixes. |
 | 3.0.2 | 8 Oct | German, Spanish, Portuguese, Japanese and Chinese. |
 | 3.0.3 | 9 Oct | Tool names translated; the gaps of the new languages filled. |
+| 3.1.0 | 14 Oct | QLC+ 5.3 Show Wizard shows: palettes read everywhere, Doctor D019 and D020, Wizard Repair. |
 
 ## 4. Goal and the Pub test
 
@@ -197,7 +219,8 @@ The complete decision log, with the reasons, is in section 3 of the archive. The
 | Generated XML | Indented like QLC+'s own files, because QLC+ 5.2.2 misreads a one-line file after an empty `<Level/>`. Fixture definitions QLC+ lacks are saved next to the workspace as `.qxf`. |
 | Porter | Fan-in takes, per scene, the values of the first lit source of a block. Unmapped source fixtures are an error unless you tick *leave out*. Functions left with no fixture are removed and reported. VC copies drop key and MIDI bindings unless you opt in. |
 | Test data | Real shows in the repository are renamed and scrubbed. The public repository carries no real names. Commits since 1 October use the author *giopas*. |
-| Behaviour | Verified in real QLC+, not only by reading XML (`tools/qlc_check.py`). Targets are QLC+ 5.2.2 and 5.3.0. |
+| Behaviour | Verified in real QLC+, not only by reading XML (`tools/qlc_check.py`). Targets are QLC+ 5.2.2 to 5.3.x; QLC+ 4 is not a target. |
+| Layer scenes | Swiss Knife's generators declare every channel (principle 5). Scenes from others that set one family of channels on purpose, or palette scenes, are accepted (I004) and never filled in. |
 | README | A presentation only. The history lives in the CHANGELOG. |
 | Forum | One complete post at 2.0, one at 3.0. No post per release. Drafts stay out of the repository. |
 | Claude | Full tool set, writes only to new files, only the folders giopas lists, nothing else on the computer. Connection by one `.mcpb` file for Claude Desktop. |

@@ -16,6 +16,8 @@ Real QLC+ 5 show files used as the **oracle** for Doctor, Porter, Rig Reducer, S
 | `QuickStart_multiuni.qxw` | Quick Start output: 8 × Intimidator Spot 375Z (15 ch, **shutter closed at 0**) + 60 × SlimPAR 56 → two universes. two-letter prefix names, VC style cloned from `Pub_6fix.qxw`. | Same. Pins capability-aware neutral values (shutter open = 4), universe roll-over and style cloning. |
 
 All three are **generated** by `tools/make_quickstart_sample.py`; regenerate them when Quick Start output changes on purpose.
+| `Wizard530_small.qxw` | Made with the Show Wizard of QLC+ 5.3.0 (14 Oct 2026): 4 RGBW washes on the back truss, 4 RGB bars on the front, 2 gobo scanners (*Singer*), 4 page-switch dimmers on a Loopback universe. 130 functions, 20 palettes, a multipage *Show Wizard* frame. Definitions in `tests/fixtures/wizard530/`. | Palettes, layer scenes, page-switch fixtures, Wizard Repair (`tests/test_wizard530.py`). |
+| `Wizard530_video.qxw` | The same wizard, built as in the QLC+ 5.3.0 highlights video: 8 Sharpy (back), 8 Intimidator Spot 400 (front), 12 Generic RGB on the side columns, 6 GLP JDC1, 5 page-switch dimmers. 201 functions, 24 palettes. | Same, plus side-column grids, Shutter palettes that do nothing on the Sharpy and the JDC1, Rig Reducer and Porter on palette scenes. |
 | `Generic-7Ch-RGB-PAR.qxf` | Floor PAR definition (7 ch: dimmer, R, G, B, strobe, mode, mode speed) | Channel decoding, D005/D006. |
 | `Eurolite-LED-4C-12-Silent-Slim-Spot.qxf` | Ceiling spot definition (9 ch, includes Internal Programs) | Channel decoding, D006. |
 

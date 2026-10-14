@@ -7,8 +7,36 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+
+## [3.1.0] — 2026-10-14
+
+QLC+ 5.3 shows made with the new Show Wizard: Swiss Knife reads them correctly, stops harming them, and can finish them. Measured on two wizard shows made in QLC+ 5.3.0, now part of the test data.
+
 ### Added
+- **Wizard Repair**, a new tool in *Check & fix*. It finishes a show made by the QLC+ 5.3 Show Wizard, in the show in progress, and removes nothing. Each step can be ticked:
+  - *Effects the wizard lost*: QLC+ 5.3.0 builds the step scenes of Color Rainbow, Split Color and Strobe Chase but never adds the chaser. The chaser is built from them with the timing the wizard meant (500 ms fade and 1 s hold for the rainbow, 80 ms steps for the strobe).
+  - *Palettes that do nothing on some fixtures*: a Shutter palette asks for one exact strobe preset, and a Color palette sets colour mixing only. A Clay Paky Sharpy (strobe range *StrobeFreqRange*) or a GLP JDC1 gets nothing from the wizard's Strobe Slow and Strobe Fast, and a colour-wheel fixture stays as it is under *White*. Those fixtures get the values that do the same: their own strobe range, the nearest slot of their colour wheel.
+  - *PANIC RESET on every page*: the wizard gives only Blackout, which leaves effects running. A PANIC RESET script (the Doctor's D008 recipe) gets a red button next to Blackout on each page of the wizard's frame.
+  - *Buttons for what is off the console*: RGB matrices, musician positions, Audience Sweep, Dimmer Full and Half, Blinder Hit and the rebuilt effects get buttons on their group's page, in rows, in the free space, below the row of page buttons.
+  - *Group grids that follow the stage*: rows run from the front to the back and a side column becomes its own row, so a chase runs the same way on both sides. On the video show the PARs on the two side columns go from 12 × 1 to 6 × 2 and *All Groups* from 26 × 2 to 8 × 5.
+  - *Hide the page-switch fixtures*, *Lock the fixtures in 2D and 3D* (QLC+ 5.3) and *Captions on the gobo buttons*, the last two not ticked by default.
+- A guided route, *Finish a QLC+ wizard show*: Doctor, Wizard Repair, Console, Setlist, Paperwork, final check.
+- Claude: the `wizard_repair` tool (without steps it lists what each step would do) and a workflow in `guide`. Swiss Knife has 25 Claude tools.
+- `core/palettes.py` reads QLC+ 5 palettes and works out what a palette scene sets, following QLC+'s own rules: Dimmer on the master and head intensity channels, Color on R/G/B, C/M/Y and W/A/UV, Shutter through the capability with the exact preset, Pan, Tilt and fanning, and Position3D from each fixture's 3D position and rotation (without the small offset of the moving-head model, so a value can differ from QLC+'s by a step or two).
+- Doctor: **D019** (error) a scene or XY pad that uses a palette or fixture group that does not exist; fixed by default by removing the reference. **D020** (warning) a palette that sets nothing on the fixtures of its scene, with a pointer to Wizard Repair when it can help. **I004** layer scenes, **I005** Show Wizard functions on no button, **I006** page-switch fixtures, **I007** a Show Wizard effect that was never created.
 - `tools/ground_truth.py` for developers. It reads from git (and GitHub, when `gh` is installed) what the notes only claim: uncommitted changes, commits on `main` or the wiki not pushed, branches that exist only on this disk, the tag for `VERSION` on origin, a release still in draft, the last `tests` run and lock files left in `.git`. A check that cannot run says UNKNOWN; it never counts as a pass.
+
+### Changed
+- A scene with a palette (QLC+ 5 *palette scene*) is no longer reported as empty (D004), and a setlist cue that plays one no longer lights nothing (D018).
+- *Layer scenes* are no longer reported as LTP bleed (D005). A layer scene is a group scene (it carries a fixture group, or the Show Wizard made it) that sets one family of channels on purpose: colour, gobo, shutter, position, intensity or lamp; or a palette scene with a few values of its own. The Doctor lists them once (I004) and never offers to fill them, so a colour button and a gobo button still combine. Swiss Knife's own looks keep declaring every channel.
+- Show Wizard functions with no button are information (I005), not unused functions (D016), so *remove the unused functions* no longer deletes them.
+- QLC+'s built-in generic dimmer (*Generic* / *Generic*, *N Channel*) needs no definition file; I003 no longer lists it.
+- A capability labelled *default* is a safe value for D006 (the Sharpy's *Pan-Tilt Function (Fast - Default)*).
+- Rig Reducer: a group scene loses the group that went with its fixtures and goes when nothing is left to set; XY pads lose the fixtures and groups that are gone; a group that loses some heads has its grid closed up; the page of a group that is gone is removed from the Show Wizard frame, with its page button and its page-switch scene. The page-switch fixtures always stay and are not offered in the list.
+- Function Porter: a group scene brings its fixture group (built from the ported fixtures, or an equal group of the target) and its palettes (an equal palette of the target is reused). XY pads keep their groups. In 3.0.3 a ported palette scene kept the source's group and palette IDs, which in the target pointed at other groups and palettes.
+- Compare and the Dictionary drafts read what a palette scene sets. Brightness leaves palette scenes alone, because their Dimmer palette is shared by other scenes, and says how many it left.
+- The page-switch fixtures of a wizard show stay out of the patch sheet, the tech rider, the crew checklist, Compare's patch and the Fixtures import.
+- Supported versions: QLC+ 5.2.2 to 5.3.x. QLC+ 4 was never a target.
 
 
 ## [3.0.3] — 2026-10-09

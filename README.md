@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.0.3
+# QLC+ Swiss Knife v3.1.0
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -48,6 +48,7 @@ The tools are grouped by job and numbered 1 to 6, like the side menu and the Sta
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every keyboard and MIDI binding in one table: clashes, gaps, bulk MIDI shift, the input device of each universe and a MIDI simulator. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A description for every function, shown in the other tools. Swiss Knife drafts them from the show's colours and steps, and Claude can write them. |
 | **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Finds broken references, scenes that leave channels unset, strobe left on, a PANIC RESET that cannot reset and more, and fixes them. Also from the command line. |
+| | [Wizard Repair](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Wizard-Repair) | Finishes a show made by the QLC+ 5.3 Show Wizard: the effects it loses, buttons for what it leaves off the console, group grids that follow the stage, palettes that do nothing on some fixtures, a PANIC RESET on every page. Shows made by the wizard are read correctly by every tool, palettes included. |
 | | [Compare](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Compare) | This show next to another one, by what they do: patch, groups, looks (decoded colour and level), chasers, VC pages, setlist. |
 | | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and VC widget in sortable, filterable tables, with CSV and PDF export. |
 | **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: a tech rider for the venue (it never carries your show's internals), a crew checklist for load-in, a patch sheet with DIP-switch diagrams (also as a thermal-printer ticket), and a show book for you, with a stage plot. PDF or CSV. |

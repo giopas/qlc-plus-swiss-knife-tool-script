@@ -775,6 +775,25 @@ def apply_brightness_scales(
         if scene_touched:
             scenes_modified += 1
 
+    # QLC+ 5 palette scenes take their dimmer from a Dimmer palette shared by
+    # many scenes: scaling it would change them all, so they are left alone
+    # and counted (3.1.0)
+    from core import palettes
+    pals = palettes.read_palettes(root_copy)
+    groups = palettes.groups_by_id(root_copy)
+    scaled = {k for k, v in scales.items() if abs(v - 1.0) >= 0.001}
+    palette_left = 0
+    for func in engine.findall('q:Function', NS):
+        if func.get('Type') != 'Scene':
+            continue
+        if not any(pals.get(p) is not None and pals[p].type == 'Dimmer'
+                   for p in palettes.scene_palettes(func)):
+            continue
+        fx = {f for g in palettes.scene_groups(func) if g in groups
+              for f in palettes.group_fixture_ids(groups[g])}
+        if fx & scaled:
+            palette_left += 1
+
     # Build suggested output filename
     orig = _state.get('original_name')
     src  = orig or _state.get('path') or 'workspace.qxw'
@@ -782,4 +801,5 @@ def apply_brightness_scales(
     return suggested_filename, qxw_io.qxw_bytes(root_copy), {
         'scenes_modified': scenes_modified,
         'values_changed':  values_changed,
+        'palette_scenes_left': palette_left,
     }

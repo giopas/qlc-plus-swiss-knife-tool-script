@@ -105,6 +105,9 @@ def apply_to_show():
         _, xml_bytes, stats = br.apply_brightness_scales(scales, manual or None)
         changed = {k: v for k, v in scales.items() if abs(v - 1.0) > 1e-9}
         detail = ', '.join(f'fixture {k}: {round(v * 100)}%' for k, v in sorted(changed.items()))
+        if stats.get('palette_scenes_left'):
+            detail += (f'; {stats["palette_scenes_left"]} palette scene(s) left as they are '
+                       '(their Dimmer palette is shared by other scenes)')
         return applied('brightness',
                        f'{stats["scenes_modified"]} scenes, {stats["values_changed"]} values',
                        qxw_io.loads_qxw(xml_bytes), '', detail)

@@ -349,10 +349,14 @@ def import_from_qxw(qxw_root: "ET.Element"):
     monitor_pos = read_positions(qxw_root)
 
     existing_keys = {(e["name"], e["address"], e["universe"]) for e in _rig}
+    from core import palettes
+    infra = set(palettes.infrastructure_fixtures(qxw_root))   # wizard page switches: not lights
 
     for fix in qxw_root.findall("q:Engine/q:Fixture", NS):
         id_node  = fix.find("q:ID",           NS)
         fid      = id_node.text if id_node is not None else None
+        if fid is not None and fid.strip() in infra:
+            continue
         name_n   = fix.find("q:Name",         NS)
         name     = (name_n.text or "").strip() if name_n is not None else f"Fixture {fid}"
         mfg_n    = fix.find("q:Manufacturer", NS)

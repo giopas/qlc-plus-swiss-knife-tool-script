@@ -15,7 +15,7 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, List
 
-from core import qxw_io, scene_words, script_cmds
+from core import palettes, qxw_io, scene_words, script_cmds
 
 
 def join_words(items: List[str]) -> str:
@@ -32,6 +32,7 @@ def show_facts(root, names: Dict[str, str], fxinfo: Dict[str, dict]) -> Dict[str
              for f in (eng.findall("Function") if eng is not None else [])]
     parents: Dict[str, list] = {}                 # child id → [(parent id, type, step number)]
     out: Dict[str, dict] = {}
+    resolver = None                               # palette scenes (QLC+ 5), built when needed
     for fid, typ, f in funcs:
         info: Dict[str, Any] = {}
         if typ in ("Chaser", "Collection", "Sequence"):
@@ -43,13 +44,19 @@ def show_facts(root, names: Dict[str, str], fxinfo: Dict[str, dict]) -> Dict[str
                 info["facts"] = (f"{len(kids)} step(s): " + ", ".join(names.get(k, "?") for k in kids[:6])
                                  + ("…" if len(kids) > 6 else ""))
         elif typ == "Scene":
+            refs = palettes.describe_refs(f, root)
+            if palettes.scene_palettes(f):
+                # a QLC+ 5 palette scene: describe what its palettes set
+                if resolver is None:
+                    resolver = palettes.Resolver(root, [x["def"] for x in fxinfo.values() if x.get("def")])
+                f = palettes.expand(f, resolver)
             vals = []
             for fv in f.iter("FixtureVal"):
                 p_ = (fv.text or "").split(",")
                 vals += [int(x) for x in p_[1::2] if x.strip().lstrip("-").isdigit()]
             n = len(list(f.iter("FixtureVal")))
             if not n:
-                info["facts"] = "no fixture values"
+                info["facts"] = refs or "no fixture values"
             else:
                 up = sum(1 for v in vals if v > 0)
                 info["facts"] = (f"{n} fixture(s); " + ("all values 0 (blackout/neutral)" if not up
@@ -58,6 +65,8 @@ def show_facts(root, names: Dict[str, str], fxinfo: Dict[str, dict]) -> Dict[str
                 if look:
                     info["facts"] += "; looks: " + look
                     info["_look"] = look
+                if refs:
+                    info["facts"] += "; " + refs
                     info["_dom"] = scene_words.dominant(f, fxinfo)
         elif typ == "EFX":
             al = f.find("Algorithm")

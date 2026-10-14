@@ -170,28 +170,36 @@ def generate(sections: list[str] | None = None,
         "sections": {},
     }
 
+    # The page-switch dimmers of a QLC+ 5.3 Show Wizard show are not lights:
+    # they stay out of the rig the venue and the crew read about (3.1.0)
+    from core import palettes
+    infra = set(palettes.infrastructure_fixtures(root))
+    rig = dict(state)
+    if infra:
+        rig["fixture_map"] = {k: v for k, v in state.get("fixture_map", {}).items() if k not in infra}
+
     if "patch_sheet" in sections:
         from core import patch_sheet
-        doc["sections"]["patch_sheet"] = patch_sheet.build(state, _fixture_channels(root), dip_switches)
+        doc["sections"]["patch_sheet"] = patch_sheet.build(rig, _fixture_channels(root), dip_switches)
 
     if "rider" in sections:
-        doc["sections"]["rider"] = _build_rider(state, root)
+        doc["sections"]["rider"] = _build_rider(rig, root)
         extras = [x for x in (rider_extras or []) if x in RIDER_EXTRAS]
         if extras:
             doc["sections"]["rider"]["extras"] = extras
-            doc["sections"]["rider"]["detail"] = _build_rider_detail(state, root, extras)
+            doc["sections"]["rider"]["detail"] = _build_rider_detail(rig, root, extras, infra)
 
     if "stage_plan" in sections:
-        doc["sections"]["stage_plan"] = _build_stage_plan(state)
+        doc["sections"]["stage_plan"] = _build_stage_plan(rig)
 
     if "checklist" in sections:
-        doc["sections"]["checklist"] = _build_checklist(state)
+        doc["sections"]["checklist"] = _build_checklist(rig)
 
     if "summary" in sections:
-        doc["sections"]["summary"] = _build_summary(state, root)
+        doc["sections"]["summary"] = _build_summary(rig, root)
 
     if "patch" in sections:
-        doc["sections"]["patch"] = _build_patch(state)
+        doc["sections"]["patch"] = _build_patch(rig)
 
     if "functions" in sections:
         doc["sections"]["functions"] = _build_function_index(state)
@@ -396,7 +404,8 @@ def tilt_text(xrot: float) -> str:
     return f"{abs(n):g}° to the {side}" if abs(n) < 90 else f"{abs(n):g}° (above horizontal), to the {side}"
 
 
-def _build_rider_detail(state: dict, root: ET.Element, extras: list[str]) -> dict:
+def _build_rider_detail(state: dict, root: ET.Element, extras: list[str],
+                        skip: set | None = None) -> dict:
     """What a venue needs besides the types: the patch per fixture, where each
     hangs and how it is tilted, and the set pieces (3D meshes) on the stage —
     from the 3D view, as you see it (centre of the body, height of its
@@ -409,6 +418,8 @@ def _build_rider_detail(state: dict, root: ET.Element, extras: list[str]) -> dic
     chans = _fixture_channels(root)
     by_id = state.get("fixture_map", {})
     for f in s3.fixtures(st, _defs(path)):
+        if f["id"] in (skip or ()):
+            continue
         info = by_id.get(f["id"], {})
         p = f["place"]
         out["fixtures"].append({

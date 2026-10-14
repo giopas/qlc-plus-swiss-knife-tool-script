@@ -204,9 +204,11 @@ def list_target_pages(root: ET.Element) -> List[dict]:
 # ── pruning ──────────────────────────────────────────────────────────────────
 
 class _Pruner:
-    def __init__(self, fmap: Dict[str, str], fx_map: Dict[str, List[str]]):
+    def __init__(self, fmap: Dict[str, str], fx_map: Dict[str, List[str]],
+                 group_map: Optional[Dict[str, Optional[str]]] = None):
         self.fmap = fmap
         self.fx_map = fx_map
+        self.group_map = group_map or {}      # source group → target group (XY pads)
         self.dropped: List[str] = []
         self.levels_reset = 0
 
@@ -239,6 +241,14 @@ class _Pruner:
             _set_function_refs(w, self.fmap)
             return True, True
 
+        if _local(w.tag) == "XYPad":
+            gmap = self.group_map
+            for g in [c for c in list(w) if _local(c.tag) == "Group"]:
+                new = gmap.get(g.get("ID"))
+                if new is None:
+                    w.remove(g)
+                else:
+                    g.set("ID", new)
         holders = _fixture_holders(w)
         if holders:
             seen = set()
@@ -475,7 +485,7 @@ def port_vc(src_root: ET.Element, tgt_root: ET.Element, fmap: Dict[str, str],
                     units.append((c, pg))
 
     # 2. prune copies
-    pruner = _Pruner(fmap, fx_map)
+    pruner = _Pruner(fmap, fx_map, opts.get("_group_map"))
     ready: List[Tuple[ET.Element, ET.Element]] = []
     for el, pg in units:
         dup = copy.deepcopy(el)

@@ -339,6 +339,30 @@ def resolve_closure(seed_ids: list[str]) -> dict:
                 else:
                     unresolved.append(f"group {gid}")
 
+    # QLC+ 5 group scenes (``<FixtureGroup ID>`` + ``<Palette ID>``): the
+    # group's fixtures are part of the closure, the palettes come along
+    palette_ids: list[str] = []
+    for fid in ordered:
+        fn = func_by_id.get(fid)
+        if fn is None or fn.get("Type") != "Scene":
+            continue
+        for gref in fn.findall("FixtureGroup"):
+            gid = gref.get("ID", "")
+            g = groups.get(gid)
+            if g is None:
+                unresolved.append(f"group {gid}")
+                continue
+            if gid not in group_ids:
+                group_ids.append(gid)
+            for head in g.findall("Head"):
+                fx = head.get("Fixture", "")
+                if fx:
+                    fixture_refs[fid].add(fx)
+        for pref in fn.findall("Palette"):
+            pid = pref.get("ID", "")
+            if pid and pid not in palette_ids:
+                palette_ids.append(pid)
+
     all_fixture_ids = set()
     for fids in fixture_refs.values():
         all_fixture_ids.update(fids)
@@ -362,6 +386,7 @@ def resolve_closure(seed_ids: list[str]) -> dict:
         "fixture_ids":  _id_sorted(all_fixture_ids),
         "lit_fixture_map": lit_map,
         "group_ids":    group_ids,
+        "palette_ids":  palette_ids,
         "dep_map":      dict(dep_map),
         "fixture_map":  {k: _id_sorted(v) for k, v in fixture_refs.items()},
         "cycles":       cycles,
@@ -1644,6 +1669,9 @@ def _build(plan: dict) -> dict:
     pruned: list[dict] = []
     group_map: dict[str, str | None] = {}
     new_groups: list[ET.Element] = []
+    palette_map: dict[str, str | None] = {}
+    new_palettes: list[ET.Element] = []
+    src_palettes = {p.get("ID", ""): p for p in src_engine.findall("Palette")}
     for src_fid in func_ids:
         src_fn = src_func_by_id.get(src_fid)
         if src_fn is None:
@@ -1667,6 +1695,26 @@ def _build(plan: dict) -> dict:
                                             pan_channel_map, intensity, neutral,
                                             translate, plan.get("strobe", "keep"),
                                             translated, efx_fit)
+        # QLC+ 5 group scene: map its groups (built from the ported fixtures) and
+        # bring its palettes (reused when the target has the same one)
+        grefs = new_fn.findall("FixtureGroup") if new_fn.get("Type") == "Scene" else []
+        had_groups = bool(grefs)
+        for gref in grefs:
+            gid = gref.get("ID", "")
+            if gid not in group_map:
+                group_map[gid] = _port_group(src_groups.get(gid), tgt_engine, blocks, new_groups)
+            if group_map[gid] is None:
+                new_fn.remove(gref)
+            else:
+                gref.set("ID", group_map[gid])
+        for pref in new_fn.findall("Palette"):
+            pid = pref.get("ID", "")
+            if pid not in palette_map:
+                palette_map[pid] = _port_palette(src_palettes.get(pid), tgt_engine, new_palettes)
+            if palette_map[pid] is None:
+                new_fn.remove(pref)
+            else:
+                pref.set("ID", palette_map[pid])
         if new_fn.get("Type") == "RGBMatrix":
             gid = (new_fn.findtext("FixtureGroup") or "").strip()
             if gid not in group_map:
@@ -1678,7 +1726,8 @@ def _build(plan: dict) -> dict:
                                "reason": "no fixture of its matrix group is ported"})
             else:
                 new_fn.find("FixtureGroup").text = new_gid
-        elif before and not after:
+        elif (before or had_groups) and not after and not (
+                new_fn.findall("FixtureGroup") and new_fn.findall("Palette")):
             pruned.append({"id": src_fid, "name": src_fn.get("Name", ""),
                            "reason": "none of its fixtures is ported"})
         new_fns[src_fid] = new_fn
@@ -1689,6 +1738,7 @@ def _build(plan: dict) -> dict:
 
     # ── 5. Insert groups (after fixtures/groups) and functions ────────────
     _insert_groups(tgt_engine, new_groups)
+    _insert_palettes(tgt_engine, new_palettes)
     for src_fid, el in new_fns.items():
         if src_fid not in removed:
             tgt_engine.append(el)
@@ -1732,7 +1782,8 @@ def _build(plan: dict) -> dict:
         input_used.update(copied_bindings["used"])
     if vc_opts.get("enabled"):
         from core import porter_vc
-        vc_result = porter_vc.port_vc(src_root, tgt_root, kept_map, blocks, vc_opts,
+        vc_result = porter_vc.port_vc(src_root, tgt_root, kept_map, blocks,
+                                      dict(vc_opts, _group_map=group_map),
                                       src_name=_src["name"] or "source")
         input_used.update(vc_result.get("input_used") or {})
     input_patch = []
@@ -1752,6 +1803,8 @@ def _build(plan: dict) -> dict:
         "blocks": blocks,
         "pruned": pruned,
         "groups": [{"id": g.get("ID"), "name": g.findtext("Name", "")} for g in new_groups],
+        "palettes": [{"id": p.get("ID"), "name": p.get("Name", ""), "type": p.get("Type", "")}
+                     for p in new_palettes],
         "vc": vc_result,
         "panic": panic,
         "removed_vc": removed_vc,
@@ -1905,6 +1958,46 @@ def _insert_groups(engine: ET.Element, groups: list[ET.Element]) -> None:
             last = i
     for n, g in enumerate(groups):
         engine.insert(last + 1 + n, g)
+
+
+_PALETTE_KEYS = ("Type", "Value", "Fan", "Layout", "Amount", "FanValue")
+
+
+def _insert_palettes(engine: ET.Element, palettes: list[ET.Element]) -> None:
+    """Palettes go after the fixtures, groups and palettes, before functions
+    (where QLC+ writes them)."""
+    if not palettes:
+        return
+    last = -1
+    for i, c in enumerate(list(engine)):
+        if c.tag in ("Fixture", "FixtureGroup", "Palette"):
+            last = i
+    for n, p in enumerate(palettes):
+        engine.insert(last + 1 + n, p)
+
+
+def _port_palette(src_pal: ET.Element | None, tgt_engine: ET.Element,
+                  new_palettes: list[ET.Element]) -> str | None:
+    """Target palette ID for a source palette: an existing target palette with
+    the same type, value and fanning is reused (the name may differ);
+    otherwise the palette is copied with a new ID (``max + 1``).  None when
+    the source palette is missing."""
+    if src_pal is None:
+        return None
+    key = tuple(src_pal.get(k, "") for k in _PALETTE_KEYS)
+    existing = tgt_engine.findall("Palette") + new_palettes
+    for p in existing:
+        if tuple(p.get(k, "") for k in _PALETTE_KEYS) == key:
+            return p.get("ID")
+    pid = str(max([int(p.get("ID")) for p in existing if (p.get("ID") or "").isdigit()],
+                  default=-1) + 1)
+    p = copy.deepcopy(src_pal)
+    p.set("ID", pid)
+    names = {x.get("Name", "") for x in existing}
+    if p.get("Name", "") in names:
+        p.set("Name", f"{p.get('Name', '')} (ported)")
+    new_palettes.append(p)
+    return pid
 
 
 def _port_group(src_group: ET.Element | None, tgt_engine: ET.Element,

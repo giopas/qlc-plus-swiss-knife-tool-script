@@ -27,6 +27,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+from core import palettes
 
 TOL = 0.06          # level / colour difference (0..1) still "the same look"
 NONE_ID = "4294967295"
@@ -61,10 +62,15 @@ def _pairs(text: str) -> dict[int, int]:
 # ── fixtures ────────────────────────────────────────────────────────────────
 
 def _fixtures(root) -> dict[str, dict]:
+    """The rig: every fixture but the page-switch dimmers of a QLC+ 5.3 Show
+    Wizard show (not lights)."""
     out = {}
     eng = _eng(root)
+    infra = set(palettes.infrastructure_fixtures(root)) if eng is not None else set()
     for f in (eng.findall("Fixture") if eng is not None else []):
         fid = (f.findtext("ID") or "").strip()
+        if fid in infra:
+            continue
         out[fid] = {"id": fid, "name": (f.findtext("Name") or "").strip(),
                     "manufacturer": (f.findtext("Manufacturer") or "").strip(),
                     "model": (f.findtext("Model") or "").strip(),
@@ -285,6 +291,7 @@ def _cmp_functions(a, b, defs) -> tuple[dict, dict]:
     ga = {g.get("ID"): (g.findtext("Name") or "") for g in (_eng(a).findall("FixtureGroup") if _eng(a) is not None else [])}
     secs = {k: _sec() for k in ("scenes", "chasers", "collections", "efx", "matrices", "other")}
     ua, ub = _unused(a), _unused(b)
+    ra = rb = None                      # palette resolvers, built when needed
     kind = {"Scene": "scenes", "Chaser": "chasers", "Sequence": "chasers", "Collection": "collections",
             "EFX": "efx", "RGBMatrix": "matrices"}
     for f in _functions(a):
@@ -301,7 +308,13 @@ def _cmp_functions(a, b, defs) -> tuple[dict, dict]:
             sec["different"].append(f"{label}: a {t} here, a {g.get('Type')} in the other")
             continue
         if t in ("Scene", "Sequence"):
-            diff = _cmp_scene(f, g, fmap, la, lb, names)
+            # QLC+ 5 palette scenes: compare what they set, not the raw XML
+            if t == "Scene" and (palettes.scene_palettes(f) or palettes.scene_palettes(g)):
+                ra = ra or palettes.Resolver(a, defs)
+                rb = rb or palettes.Resolver(b, defs)
+                diff = _cmp_scene(palettes.expand(f, ra), palettes.expand(g, rb), fmap, la, lb, names)
+            else:
+                diff = _cmp_scene(f, g, fmap, la, lb, names)
         if t in ("Chaser", "Sequence"):
             sa, sb = _steps(f, na), _steps(g, nb)
             if len(sa) != len(sb):

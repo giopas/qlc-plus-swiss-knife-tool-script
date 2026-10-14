@@ -136,6 +136,10 @@ def _strip(tag: str) -> str:
 
 
 def _engine(root: ET.Element) -> Optional[ET.Element]:
+    if isinstance(root, ET.ElementTree):
+        root = root.getroot()
+    if root is None:
+        return None
     if _strip(root.tag) == "Engine":
         return root
     for c in root:
@@ -917,3 +921,45 @@ def is_wizard_show(root: ET.Element) -> bool:
     return eng is not None and any((fn.get("Path") or "").startswith(WIZARD_PATH + "/")
                                    or fn.get("Path") == WIZARD_PATH
                                    for fn in _children(eng, "Function"))
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Helpers for the tools that read scene values
+# ═════════════════════════════════════════════════════════════════════════════
+
+def expand(fn: ET.Element, resolver: Resolver) -> ET.Element:
+    """A copy of scene *fn* whose ``<FixtureVal>`` hold what it sets when it
+    runs (its palettes resolved), for tools that read values: Compare, the
+    Dictionary, the Show Paperwork.  Scenes without palettes come back as
+    they are (the same element)."""
+    if fn.get("Type") != "Scene" or not scene_palettes(fn):
+        return fn
+    vals = resolver.resolve(fn)
+    out = ET.Element(fn.tag, dict(fn.attrib))
+    for c in fn:
+        if _strip(c.tag) not in ("FixtureVal",):
+            out.append(c)
+    order = [v.get("ID") for v in _children(fn, "FixtureVal")]
+    order += [f for f in vals if f not in order]
+    for f in order:
+        if vals.get(f):
+            ET.SubElement(out, "FixtureVal", {"ID": f}).text = fixture_val_text(vals[f])
+    return out
+
+
+def describe_refs(fn: ET.Element, root: ET.Element, resolver: Optional[Resolver] = None) -> str:
+    """``"group 'Par Group'; palettes Red (Color), Dimmer Full (Dimmer)"`` for
+    a QLC+ 5 group scene, "" otherwise."""
+    gids, pids = scene_groups(fn), scene_palettes(fn)
+    if not gids and not pids:
+        return ""
+    groups = resolver.groups if resolver else groups_by_id(root)
+    pals = resolver.palettes if resolver else read_palettes(root)
+    parts = []
+    if gids:
+        names = [f"'{(groups[g].findtext('Name') or g) if g in groups else g}'" for g in gids]
+        parts.append(("group " if len(names) == 1 else "groups ") + ", ".join(names))
+    if pids:
+        names = [f"{pals[p].name} ({pals[p].type})" if p in pals else f"missing palette {p}" for p in pids]
+        parts.append(("palette " if len(names) == 1 else "palettes ") + ", ".join(names))
+    return "; ".join(parts)

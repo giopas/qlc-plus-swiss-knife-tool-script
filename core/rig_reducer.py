@@ -10,14 +10,19 @@ Cascade (in this order, until nothing changes):
 1. ``<Fixture>`` elements of removed fixtures.
 2. Fixture groups: heads of removed fixtures; a group left empty is removed.
 3. Functions: scene values (``FixtureVal``) and Sequence step values of
-   removed fixtures; EFX entries; RGB matrices whose group is gone.  A
-   scene / sequence / EFX that *had* fixtures and has none left, a matrix
-   without group, a chaser or collection left without steps are removed —
-   and with them every step, script command and show item that used them.
+   removed fixtures; EFX entries; RGB matrices whose group is gone; a QLC+ 5
+   scene's ``<FixtureGroup>`` when the group is gone.  A scene / sequence /
+   EFX that *had* fixtures and has nothing left to set, a matrix without
+   group, a chaser or collection left without steps are removed — and with
+   them every step, script command and show item that used them.  A group
+   that lost some heads has its grid closed up.  Palettes are kept.
 4. Virtual Console: buttons (and sliders' playback) running a removed
    function are removed; a CueList whose chaser is gone is removed; Level
    sliders lose the channels of removed fixtures, and are removed when none
-   is left.  Frames are kept (possibly empty — nothing is re-arranged).
+   is left; XY pads lose removed fixtures and groups, likewise.  Frames are
+   kept (possibly empty — nothing is re-arranged), except the page of a gone
+   group in the QLC+ Show Wizard frame, which is removed with its page
+   button and page-switch scene.
 5. 3D monitor: ``FxItem`` of removed fixtures.  Meshes are kept.
 
 Re-patch: ``{fixture id: {"name", "universe", "address"}}`` (universe and
@@ -47,10 +52,14 @@ def fixtures(root: ET.Element) -> List[dict]:
     ``[{id, name, manufacturer, model, mode, universe (1-based), address
     (1-based), channels}]`` in document order."""
     r = qxw_io.strip_ns(copy.deepcopy(root)) if root.tag.startswith("{") else root
+    from core import palettes
+    infra = set(palettes.infrastructure_fixtures(r))
     out = []
     for f in _engine(r).findall("Fixture"):
         def t(tag, d=""):
             return (f.findtext(tag) or d).strip()
+        if t("ID") in infra:
+            continue            # page-switch dimmers: always kept, not offered
         out.append({"id": t("ID"), "name": t("Name"), "manufacturer": t("Manufacturer"),
                     "model": t("Model"), "mode": t("Mode"),
                     "universe": int(t("Universe", "0") or 0) + 1,
@@ -76,6 +85,11 @@ def reduce(root: ET.Element, keep: Iterable[str],
     work = qxw_io.strip_ns(copy.deepcopy(root))
     eng = _engine(work)
     keep = {str(k) for k in keep}
+    # the page-switch dimmers of a QLC+ Show Wizard frame always stay: they
+    # are what switches its pages, not lights
+    from core import palettes
+    infra = set(palettes.infrastructure_fixtures(work))
+    keep |= infra
     all_ids = [(f.findtext("ID") or "").strip() for f in eng.findall("Fixture")]
     gone = [i for i in all_ids if i not in keep]
     gone_set = set(gone)
@@ -91,16 +105,24 @@ def reduce(root: ET.Element, keep: Iterable[str],
 
     # 2. groups
     dead_groups = set()
+    dead_group_names = []
     for g in list(eng.findall("FixtureGroup")):
         heads = g.findall("Head")
+        lost = 0
         for h in heads:
             if h.get("Fixture") in gone_set:
                 g.remove(h)
+                lost += 1
         if heads and not g.findall("Head"):
             eng.remove(g)
             dead_groups.add(g.get("ID"))
+            dead_group_names.append(g.findtext("Name") or "")
             counts["groups"] += 1
             log.append(f"fixture group {g.get('ID')} '{g.findtext('Name') or ''}' removed (empty)")
+        elif lost and _compact_grid(g):
+            sz = g.find("Size")
+            log.append(f"fixture group {g.get('ID')} '{g.findtext('Name') or ''}': grid closed up "
+                       f"to {sz.get('X')}×{sz.get('Y')}")
 
     # 3. functions (values, then removal cascade until stable)
     dead_fns: List[str] = []
@@ -109,11 +131,16 @@ def reduce(root: ET.Element, keep: Iterable[str],
         had = False
         if ftype in ("Scene", "Sequence"):
             vals = fn.findall("FixtureVal")
-            had = bool(vals)
+            grefs = fn.findall("FixtureGroup")
+            had = bool(vals) or bool(grefs)
             for v in vals:
                 if v.get("ID") in gone_set:
                     fn.remove(v)
                     counts["values"] += 1
+            # QLC+ 5 group scenes (palettes on a group): the group went with its fixtures
+            for g in grefs:
+                if g.get("ID") in dead_groups:
+                    fn.remove(g)
             if ftype == "Sequence":
                 for st in fn.findall("Step"):
                     items = _seq_items(st.text or "")
@@ -123,8 +150,9 @@ def reduce(root: ET.Element, keep: Iterable[str],
                         if len(kept) != len(items):
                             st.text = ":".join(f"{a}:{b}" for a, b in kept)
                             st.set("Values", str(sum(_pairs_count(b) for _, b in kept)))
-            if had and not fn.findall("FixtureVal") and not any(
-                    _seq_items(s.text or "") for s in fn.findall("Step")):
+            # nothing left to set: no values, and no palette acting on a live group
+            lit = fn.findall("FixtureVal") or (fn.findall("FixtureGroup") and fn.findall("Palette"))
+            if had and not lit and not any(_seq_items(s.text or "") for s in fn.findall("Step")):
                 dead_fns.append(fn.get("ID"))
         elif ftype == "EFX":
             ents = fn.findall("Fixture")
@@ -183,6 +211,15 @@ def reduce(root: ET.Element, keep: Iterable[str],
                         and _was_linked(root, w))
             elif tag == "CueList":
                 drop = (w.findtext("Chaser") or "").strip() == NONE_ID and _was_linked(root, w)
+            elif tag == "XYPad":
+                ents = [e for e in w.findall("Fixture")] + [e for e in w.findall("Group")]
+                for e in w.findall("Fixture"):
+                    if e.get("ID") in gone_set:
+                        w.remove(e)
+                for e in w.findall("Group"):
+                    if e.get("ID") in dead_groups:
+                        w.remove(e)
+                drop = bool(ents) and not w.findall("Fixture") and not w.findall("Group")
             elif tag == "Slider":
                 lvl = w.find("Level")
                 if lvl is not None:
@@ -195,6 +232,12 @@ def reduce(root: ET.Element, keep: Iterable[str],
                 parent[w].remove(w)
                 counts["widgets"] += 1
                 log.append(f"VC {tag} '{(w.get('Caption') or '').strip()}' removed")
+
+    # 4b. QLC+ Show Wizard frame: the page of a group that is gone
+    if vc is not None and dead_group_names:
+        for line in _drop_wizard_pages(work, dead_group_names):
+            counts["widgets"] += 1 if line.startswith("VC page") else 0
+            log.append(line)
 
     # 5. 3D monitor
     mon = eng.find("Monitor")
@@ -221,6 +264,91 @@ def reduce(root: ET.Element, keep: Iterable[str],
                                + (" (file value, QLC+ shows +1)" if tag != "Name" else ""))
                     el.text = new
     return {"root": work, "log": log, "removed": counts, "removed_ids": gone}
+
+
+def _compact_grid(g: ET.Element) -> bool:
+    """Close up the empty columns and rows a group's grid has after heads
+    were removed; True when the grid changed."""
+    heads = g.findall("Head")
+    try:
+        cells = [(int(h.get("X", 0)), int(h.get("Y", 0)), h) for h in heads]
+    except ValueError:
+        return False
+    xs = {x: i for i, x in enumerate(sorted({c[0] for c in cells}))}
+    ys = {y: i for i, y in enumerate(sorted({c[1] for c in cells}))}
+    sz = g.find("Size")
+    old = (sz.get("X"), sz.get("Y")) if sz is not None else None
+    changed = False
+    for x, y, h in cells:
+        if (xs[x], ys[y]) != (x, y):
+            h.set("X", str(xs[x]))
+            h.set("Y", str(ys[y]))
+            changed = True
+    if sz is not None:
+        sz.set("X", str(len(xs)))
+        sz.set("Y", str(len(ys)))
+        changed = changed or old != (sz.get("X"), sz.get("Y"))
+    return changed
+
+
+def _drop_wizard_pages(work: ET.Element, group_names: List[str]) -> List[str]:
+    """Remove the page of each gone group from the QLC+ Show Wizard frame:
+    its widgets, its page shortcut, the group's page buttons on the other
+    pages and the scene that switched to it.  Later pages move up."""
+    from core.doctor.fixes import _unlink_function
+    from core.wizard_repair import frame_pages, wizard_frame
+    out: List[str] = []
+    eng = _engine(work)
+    for name in group_names:
+        fr = wizard_frame(work)
+        pages = frame_pages(fr)
+        if fr is None or name not in pages:
+            continue
+        idx = pages[name]
+
+        def page_of(w):
+            try:
+                return int(w.get("Page", "0"))
+            except ValueError:
+                return 0
+        for w in [c for c in list(fr) if vc_ops._is_widget(c)]:
+            p = page_of(w)
+            if p == idx:
+                fr.remove(w)
+            elif p > idx:
+                if p - 1:
+                    w.set("Page", str(p - 1))
+                else:
+                    w.attrib.pop("Page", None)
+        for sc in fr.findall("Shortcut"):
+            try:
+                p = int(sc.get("Page", "0"))
+            except ValueError:
+                continue
+            if p == idx:
+                fr.remove(sc)
+            elif p > idx:
+                sc.set("Page", str(p - 1))
+        mp = fr.find("Multipage")
+        if mp is not None:
+            n = max(1, int(mp.get("PagesNum", "1") or 1) - 1)
+            mp.set("PagesNum", str(n))
+            cur = int(mp.get("CurrentPage", "0") or 0)
+            mp.set("CurrentPage", str(min(cur - 1 if cur > idx else cur, n - 1)))
+        out.append(f"VC page '{name}' of the Show Wizard frame removed (its group is gone)")
+        # the page-switch scene and the buttons that ran it on the other pages
+        for fn in list(eng.findall("Function")):
+            if (fn.get("Path") or "").startswith("Show Wizard/Page Switch") and \
+                    fn.get("Name") == f"{name} On":
+                eng.remove(fn)
+                _unlink_function(work, fn.get("ID"))
+                for b in [b for b in fr.iter("Button") if b.get("Caption") == name]:
+                    for par in fr.iter():
+                        if b in list(par):
+                            par.remove(b)
+                            break
+                out.append(f"page-switch scene '{fn.get('Name')}' and its buttons removed")
+    return out
 
 
 def _was_linked(orig_root: ET.Element, w: ET.Element) -> bool:

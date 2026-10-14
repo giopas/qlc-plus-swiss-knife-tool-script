@@ -62,7 +62,8 @@ Started from the QLC+ 5.3.0 highlights video and two wizard shows giopas made on
 | Wizard Repair: lost chasers, palettes that do nothing, PANIC RESET per page, buttons, grids, hide, lock, captions; screen, route, `wizard_repair` Claude tool | `core/wizard_repair.py`, `routes/wizard_routes.py`, `static/js/wizard.js` |
 | Translations of the new strings in the seven languages | `static/i18n/*.json` |
 | Two scrubbed wizard shows and their definitions; 22 tests | `tests/corpus/Wizard530_*.qxw`, `tests/fixtures/wizard530/`, `tests/test_wizard530.py` |
-| Wiki: new page *Wizard Repair*; *Workspace Doctor* codes; *Claude's tools* regenerated | wiki |
+| Wiki: new page *Wizard Repair*; *Workspace Doctor* codes; *Claude's tools* regenerated; the wizard route on *Home* and *Show in Progress* | wiki, commit `3159647` (local, not pushed) |
+| Second check of the branch (14 October): 894 tests pass. On both shows the repair gives the same file twice, a second run changes nothing, no widgets overlap on any page, the Doctor finds no errors. Left on purpose: D020 on fixtures with no dimmer or shutter channel (nothing to fill), and D007 where the wizard's gobo cycle uses the gobo buttons' scenes (the Doctor's D007 fix handles it) | Done |
 | Check on the Mac: open both repaired shows in QLC+ 5.3.0 (buttons, chasers, PANIC RESET, matrices on the new grids, the strobe buttons on the Sharpys); open a wizard show in QLC+ 5.2.2 | To do (giopas) |
 
 Decisions taken with it (14 October): Swiss Knife's own output keeps declaring every channel (principle 5); the Doctor accepts layer scenes made by others. Supported range: QLC+ 5.2.2 to 5.3.x; QLC+ 4 is not a target. Next: 3.3.0 *Upgrade a v5 show to 5.3* and 3.4.0 aligning Quick Start with the wizard (roles, capabilities from the definition, grids from the stage, placement by role).

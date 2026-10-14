@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
-from core import qxw_io, script_cmds
+from core import palettes, qxw_io, script_cmds
 from core.doctor.report import ERROR, INFO, WARNING, Finding, Report, make_report
 
 NONE_ID = "4294967295"          # QLC+ "no function" sentinel
@@ -42,7 +42,7 @@ UNNAMED_RE = re.compile(r"^\[\d+\]\s+\S+\s+-\s+Unassigned$")
 RISKY_GROUPS = ("Shutter", "Effect")
 SAFE_CAP_RE = re.compile(
     r"no function|no flash|no effect|shutter open|\bopen\b|\boff\b|"
-    r"dmx mode|manual|^none$", re.I)
+    r"dmx mode|manual|^none$|\bdefault\b", re.I)
 SAFE_PRESETS = {"ShutterOpen"}
 # Words that make a capability "active" (a program, a strobe, a macro …).
 # At DMX 0, a capability whose label has none of these is the fixture's
@@ -137,7 +137,12 @@ class _Workspace:
             names = (d or {}).get("mode_channels", {}).get(info["mode"])
             info["def"] = d if names else None
             info["channel_names"] = names or []
+            # QLC+'s built-in generic dimmer needs no .qxf (3.1.0)
+            info["builtin"] = info["def"] is None and palettes.is_builtin_generic(info)
             self.fixtures.setdefault(fid, info)
+        # 1-channel dimmers the QLC+ 5.3 Show Wizard uses to switch pages
+        self.infra = set(palettes.infrastructure_fixtures(root))
+        self._resolver = None
 
         self.group_els = self.engine.findall("FixtureGroup")
         self.groups = {g.get("ID"): g for g in self.group_els}
@@ -175,6 +180,13 @@ class _Workspace:
                 self.vc_refs[fid].append(w)
 
     # ── helpers ─────────────────────────────────────────────────────────
+    @property
+    def resolver(self) -> "palettes.Resolver":
+        """Palette-aware view of the workspace (built on first use)."""
+        if self._resolver is None:
+            self._resolver = palettes.Resolver(self.root, self.defs)
+        return self._resolver
+
     @staticmethod
     def _function_refs(f: ET.Element):
         """Yield ``(kind, function_id)`` for every function *f* references."""
@@ -324,6 +336,13 @@ def _d003_dangling(ws: _Workspace):
             if ref not in ws.functions:
                 yield Finding("D003", ERROR, loc, f"→ missing function {ref}",
                               {"widget": w.get("ID"), "target": ref})
+        if w.tag == "XYPad":
+            for fx_el in w.findall("Fixture"):
+                fx = fx_el.get("ID")
+                if fx is not None and fx not in ws.fixtures:
+                    yield Finding("D003", ERROR, loc,
+                                  f"XY pad moves missing fixture {fx}",
+                                  {"widget": w.get("ID"), "fixture": fx})
         if w.tag == "Slider":
             for ch in w.iter("Channel"):
                 fx = ch.get("Fixture")
@@ -337,7 +356,8 @@ def _d004_empty(ws: _Workspace):
     for f in ws.function_els:
         fid, ftype = f.get("ID"), f.get("Type")
         if ftype == "Scene":
-            if not any((v.text or "").strip() for v in f.findall("FixtureVal")):
+            # a palette scene (QLC+ 5) gets its values from its palettes
+            if not palettes.has_values(f) and not palettes.scene_palettes(f):
                 yield Finding("D004", WARNING, ws.fn_loc(fid), "empty scene (no channel values)",
                               {"function": fid})
         elif ftype == "Chaser" and f.find("Sequence") is None and not f.get("BoundScene"):
@@ -365,15 +385,21 @@ def _ch_label(fx: dict, ch: int) -> str:
     return f"{ch + 1} {names[ch]}" if ch < len(names) else f"{ch + 1}"
 
 
-def _d005_incomplete(ws: _Workspace):
+def _d005_incomplete(ws: _Workspace, layers: Dict[str, str]):
+    """*layers* is filled with the layer scenes found ({function: family}):
+    they set one family of channels on purpose and are reported by I004."""
     for f in ws.function_els:
         if f.get("Type") != "Scene":
             continue
         fid = f.get("ID")
+        fam = palettes.scene_layer(f, ws.resolver) if f.findall("FixtureVal") else None
+        if fam:
+            layers[fid] = fam
+            continue
         for v in f.findall("FixtureVal"):
             fx = ws.fixtures.get(v.get("ID"))
             pairs = _scene_pairs(v)
-            if fx is None or not pairs or fx["channels"] <= 0:
+            if fx is None or not pairs or fx["channels"] <= 0 or fx["id"] in ws.infra:
                 continue
             missing = [c for c in range(fx["channels"]) if c not in pairs]
             if missing:
@@ -608,7 +634,7 @@ def _lights_nothing(ws: _Workspace, fid: str, seen=None) -> bool:
         return True
     t = f.get("Type")
     if t == "Scene":
-        return not any((v.text or "").strip() for v in f.findall("FixtureVal"))
+        return not palettes.has_values(f) and not palettes.scene_palettes(f)
     if t in ("Chaser", "Collection"):
         steps = [(s.text or "").strip() for s in f.findall("Step") if (s.text or "").strip()]
         return all(_lights_nothing(ws, x, seen) for x in steps)
@@ -719,6 +745,8 @@ def _d016_unreferenced(ws: _Workspace):
         fid = f.get("ID")
         if fid in origins:
             continue
+        if (f.get("Path") or "").startswith(palettes.WIZARD_PATH):
+            continue                    # QLC+ Show Wizard building blocks: I005
         if not ws.parents.get(fid) and not ws.vc_refs.get(fid):
             yield Finding("D016", WARNING, ws.fn_loc(fid),
                           f"{f.get('Type')} not used by any function or VC widget",
@@ -750,12 +778,120 @@ def _i003_missing_defs(ws: _Workspace):
     seen = set()
     for fid, fx in ws.fixtures.items():
         key = (fx["manufacturer"], fx["model"], fx["mode"])
-        if fx["def"] is None and key not in seen:
+        if fx["def"] is None and not fx["builtin"] and fid not in ws.infra and key not in seen:
             seen.add(key)
             yield Finding("I003", INFO, f"Fixture {fid} '{fx['name']}'",
                           f"no definition loaded for {fx['manufacturer']} {fx['model']} "
                           f"({fx['mode']}) — D006 skipped for it",
                           {"fixture": fid})
+
+
+# ── QLC+ 5 palettes and the Show Wizard (3.1.0) ─────────────────────────────
+
+def _d019_palette_refs(ws: _Workspace):
+    """Scenes and XY pads that point at a palette or fixture group that does
+    not exist: QLC+ skips them, so the look or the pad does nothing."""
+    pals = ws.resolver.palettes
+    for f in ws.function_els:
+        if f.get("Type") != "Scene":
+            continue
+        fid = f.get("ID")
+        for gid in palettes.scene_groups(f):
+            if gid not in ws.groups:
+                yield Finding("D019", ERROR, ws.fn_loc(fid), f"uses missing fixture group {gid}",
+                              {"function": fid, "group": gid})
+        for pid in palettes.scene_palettes(f):
+            if pid not in pals:
+                yield Finding("D019", ERROR, ws.fn_loc(fid), f"uses missing palette {pid}",
+                              {"function": fid, "palette": pid})
+    for w, page in ws.widgets:
+        if w.tag != "XYPad":
+            continue
+        for g in w.findall("Group"):
+            gid = g.get("ID")
+            if gid is not None and gid not in ws.groups:
+                yield Finding("D019", ERROR, ws.widget_loc(w, page),
+                              f"XY pad moves missing fixture group {gid}",
+                              {"widget": w.get("ID"), "group": gid})
+
+
+def _d020_palette_noop(ws: _Workspace):
+    """A palette that sets nothing on the fixtures of its scene: QLC+ finds no
+    channel or capability it can use (a Shutter palette asks for one exact
+    preset, a Color palette needs R/G/B or C/M/Y).  Needs the definitions."""
+    R = ws.resolver
+    for f in ws.function_els:
+        if f.get("Type") != "Scene" or not palettes.scene_palettes(f):
+            continue
+        for pid in R.unresolved(f):
+            pal = R.palettes[pid]
+            from core.wizard_repair import _palette_fill
+            fill = any(_palette_fill(pal, R.models[x]) for x in R.scene_fixtures(f)
+                       if R.models.get(x) is not None)
+            hint = " — Wizard Repair can add the values these fixtures need" if fill else ""
+            yield Finding("D020", WARNING, ws.fn_loc(f.get("ID")),
+                          f"{pal.label()} sets nothing on its fixtures{hint}",
+                          {"function": f.get("ID"), "palette": pid})
+
+
+def _i004_layers(ws: _Workspace, layers: Dict[str, str]):
+    if not layers:
+        return
+    count: Dict[str, int] = defaultdict(int)
+    for fam in layers.values():
+        count[fam] += 1
+    parts = ", ".join(f"{fam} {n}" for fam, n in sorted(count.items(), key=lambda kv: (-kv[1], kv[0])))
+    yield Finding("I004", INFO, "Workspace",
+                  f"{len(layers)} layer scene(s) ({parts}): group scenes that set one family of "
+                  "channels on purpose, to be combined with others; D005 does not apply to them",
+                  {"functions": sorted(layers, key=lambda i: _int(i, 0))})
+
+
+def _i005_wizard_unused(ws: _Workspace):
+    """Show Wizard functions that nothing plays, per folder (the ones Wizard
+    Repair puts on the group's page)."""
+    try:
+        from core.wizard_repair import orphans
+        orph = orphans(ws.root)
+    except Exception:  # noqa: BLE001 — informative only
+        return
+    folders: Dict[str, List[str]] = defaultdict(list)
+    for rows in orph.values():
+        for fns in rows.values():
+            for f in fns:
+                folders[f.get("Path") or ""].append(f.get("ID"))
+    for path in sorted(folders):
+        ids = sorted(folders[path], key=lambda i: _int(i, 0))
+        names = [ws.functions[i].get("Name", "").split(" – ", 1)[-1] for i in ids[:6]]
+        more = f" and {len(ids) - 6} more" if len(ids) > 6 else ""
+        yield Finding("I005", INFO, f"Folder '{path}'",
+                      f"{len(ids)} function(s) made by the QLC+ Show Wizard on no button: "
+                      + ", ".join(names) + more + " — Wizard Repair can put them on the group's page",
+                      {"functions": ids, "path": path})
+
+
+def _i006_infrastructure(ws: _Workspace):
+    if ws.infra:
+        names = [ws.fixtures[i]["name"] for i in sorted(ws.infra, key=lambda x: _int(x, 0))
+                 if i in ws.fixtures]
+        yield Finding("I006", INFO, "Workspace",
+                      f"{len(names)} page-switch fixture(s) on a Loopback universe ("
+                      + ", ".join(names[:5]) + ("…" if len(names) > 5 else "")
+                      + "): not lights; left out of rig lists and paperwork",
+                      {"fixtures": sorted(ws.infra, key=lambda x: _int(x, 0))})
+
+
+def _i007_wizard_lost(ws: _Workspace):
+    try:
+        from core.wizard_repair import missing_chasers
+        lost = missing_chasers(ws.root)
+    except Exception:  # noqa: BLE001 — informative only
+        return
+    for c in lost:
+        yield Finding("I007", INFO, f"Folder '{c['path']}'",
+                      f"'{c['name']}' was never created (QLC+ 5.3.0 Show Wizard): only its "
+                      f"{len(c['steps'])} step scenes are there — Wizard Repair can build it",
+                      {"functions": c["steps"], "name": c["name"]})
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -777,13 +913,16 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
     ws = _Workspace(root, _normalise_defs(qxf_defs))
     allow = {str(a) for a in allow_fx}
     findings: List[Finding] = []
-    for gen in (_d002_duplicates(ws), _d003_dangling(ws), _d004_empty(ws),
-                _d005_incomplete(ws), _d006_strobe(ws, allow),
+    layers: Dict[str, str] = {}
+    for gen in (_d002_duplicates(ws), _d003_dangling(ws), _d019_palette_refs(ws), _d004_empty(ws),
+                _d005_incomplete(ws, layers), _d020_palette_noop(ws), _d006_strobe(ws, allow),
                 _d007_shared_scene(ws), _d008_panic(ws), _d009_overlap(ws),
                 _d010_setlist_page(ws), _d011_overflow(ws), _d013_chaser_timing(ws),
                 _d014_cuelist_empty_chaser(ws), _d017_panic_scene(ws), _d018_setlist_dark_song(ws),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),
-                _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws)):
+                _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws),
+                _i004_layers(ws, layers), _i005_wizard_unused(ws), _i006_infrastructure(ws),
+                _i007_wizard_lost(ws)):
         findings.extend(gen)
     stats = {"fixtures": len(ws.fixture_els), "functions": len(ws.function_els),
              "vc_widgets": len(ws.widgets), "vc_pages": len(ws.pages)}

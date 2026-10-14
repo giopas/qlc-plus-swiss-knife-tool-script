@@ -45,7 +45,7 @@ def main(argv=None) -> int:
                          "the original is never changed")
     ap.add_argument("--codes", default="", metavar="CODES",
                     help="with --fix: comma-separated codes to fix (default: "
-                         "D002,D003,D005,D006,D007,D008,D017 — no removals)")
+                         "D002,D003,D005,D006,D007,D008,D011,D017,D019 — no removals)")
     ap.add_argument("--remove", action="store_true",
                     help="with --fix: also remove empty (D004), unnamed unused (D015) "
                          "and unused (D016) functions")

@@ -32,9 +32,15 @@ TITLES = {
     "D016": "Unreferenced function",
     "D017": "PANIC RESET is a plain scene (cannot darken running looks)",
     "D018": "Setlist song that lights nothing",
+    "D019": "Missing palette or fixture group",
+    "D020": "Palette that sets nothing on its fixtures",
     "I001": "Caption-only button (used as a label)",
     "I002": "Virtual Console pages",
     "I003": "No fixture definition — channel checks skipped",
+    "I004": "Layer scenes (meant to be combined)",
+    "I005": "QLC+ Show Wizard functions on no button",
+    "I006": "Page-switch fixtures (not lights)",
+    "I007": "QLC+ Show Wizard effect never created",
 }
 
 

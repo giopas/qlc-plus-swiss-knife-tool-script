@@ -42,6 +42,8 @@ D015    unnamed function removed when nothing uses it; option ``d015`` =
 D016    unreferenced function removed.
 D017    PANIC RESET scene → wrapped in a *PANIC RESET* script (stop every
         function, then start the scene); its buttons now run the script.
+D019    a scene's or XY pad's reference to a missing palette or fixture group
+        removed (3.1.0).
 ======  ================================================================
 
 Deterministic: fixes run in code order, items in document order, new IDs
@@ -65,9 +67,9 @@ from core.doctor.report import Finding, Report
 # Fixes that delete functions: offered, but not selected by default
 REMOVING = {"D004", "D015", "D016"}
 OPTION_CODES = {"D003", "D004", "D013", "D015"}      # fixes that take options
-DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017"}
+DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017", "D019"}
 
-FIX_ORDER = ["D002", "D003", "D004", "D005", "D006", "D007", "D010", "D011", "D013",
+FIX_ORDER = ["D002", "D003", "D019", "D004", "D005", "D006", "D007", "D010", "D011", "D013",
              "D015", "D016", "D017", "D008"]
 
 
@@ -125,7 +127,7 @@ def fixable(f: Finding) -> bool:
         if "bound" in f.message:
             return False
         return True
-    if f.code in ("D004", "D013"):
+    if f.code in ("D004", "D013", "D019"):
         return True
     if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017"):
         return True
@@ -154,6 +156,7 @@ def fix_hint(f: Finding) -> str:
         "D015": "remove it if nothing uses it, or give it a name from its context",
         "D016": "remove the unused function",
         "D017": "wrap the scene in a PANIC RESET script that stops everything first",
+        "D019": "remove the reference to the missing palette or group",
     }.get(f.code, "") if fixable(f) else ""
 
 
@@ -382,6 +385,9 @@ def _fix_d003(root, f: Finding) -> List[str]:
                     for ch in [c for c in lvl.findall("Channel") if c.get("Fixture") == fx]:
                         lvl.remove(ch)
                         out.append(f"removed level channel of missing fixture {fx}")
+                for el in [c for c in w.findall("Fixture") if c.get("ID") == fx]:   # XY pad
+                    w.remove(el)
+                    out.append(f"removed XY pad entry of missing fixture {fx}")
             elif tgt:
                 for fe in w.iter("Function"):
                     if fe.get("ID") == tgt:
@@ -390,6 +396,30 @@ def _fix_d003(root, f: Finding) -> List[str]:
         return out
     return []
 
+
+
+def _fix_d019(root, f: Finding) -> List[str]:
+    """Drop a scene's or XY pad's reference to a palette / group that is gone."""
+    r = f.ref
+    if "function" in r:
+        fn = _fn(root, r["function"])
+        if fn is None:
+            return []
+        tag, key = ("Palette", r["palette"]) if "palette" in r else ("FixtureGroup", r.get("group"))
+        dead = [el for el in fn.findall(tag) if el.get("ID") == key]
+        for el in dead:
+            fn.remove(el)
+        what = "palette" if tag == "Palette" else "fixture group"
+        return [f"removed the reference to missing {what} {key}"] if dead else []
+    if "widget" in r:
+        vc = root.find("VirtualConsole")
+        out = []
+        for w in [w for w in vc.iter("XYPad") if w.get("ID") == r["widget"]]:
+            for el in [g for g in w.findall("Group") if g.get("ID") == r.get("group")]:
+                w.remove(el)
+                out.append(f"removed XY pad entry of missing fixture group {r.get('group')}")
+        return out
+    return []
 
 
 def _opt(options, code: str, default):
@@ -708,6 +738,8 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
                     acts = _fix_d003_rewire(work, f)
                 if not acts and not ("widget" in f.ref and "CueList" in f.location):
                     acts = _fix_d003(work, f)       # a CueList can only be rewired
+            elif code == "D019":
+                acts = _fix_d019(work, f)
             elif code == "D004":
                 acts = _fix_d004_chaser(work, f, options) if "degenerate" in f.message \
                     else _fix_remove(work, f)

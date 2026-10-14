@@ -142,6 +142,10 @@
       <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
       <span>Wizard Repair</span>
     </button>
+    <button class="sn-item" id="sn-upgrade" data-tip="Upgrade to QLC+ 5.3" data-desc="Give a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers: folders, palettes, an All Fixtures group, positions on the stage, a page per group with XY pads, locked fixtures. Nothing is removed." onclick="go('upgrade')">
+      <svg class="ic"><use href="/static/icons.svg#upload"/></svg>
+      <span>Upgrade to QLC+ 5.3</span>
+    </button>
     <button class="sn-item" id="sn-idbrowser" data-tip="ID Browser" data-desc="Sortable, filterable tables of every function and VC widget." onclick="go('idbrowser')">
       <svg class="ic"><use href="/static/icons.svg#search"/></svg>
       <span>ID Browser</span>
@@ -453,6 +457,13 @@
           <button class="btn btn-accent btn-sm" onclick="routeStart('wizard')">▶ Start the route</button>
         </div>
         <div class="rt-card">
+          <div class="rt-title">Upgrade a show to QLC+ 5.3</div>
+          <div class="rt-meta" data-route-meta="upgrade"></div>
+          <div class="rt-desc">A show made with QLC+ 5.0 to 5.2: check it, add what QLC+ 5.3 offers, look at the new page on the console, a final check.</div>
+          <ol class="rt-steps" data-route="upgrade"></ol>
+          <button class="btn btn-accent btn-sm" onclick="routeStart('upgrade')">▶ Start the route</button>
+        </div>
+        <div class="rt-card">
           <div class="rt-title">Do it again with a profile</div>
           <div class="rt-meta"><span id="rt-prof-n">Show Profiles</span> · new in 2.1</div>
           <div class="rt-desc">The changes you made to one show — rig, fixes, groups, looks, pages — done again on the show you open.</div>
@@ -487,8 +498,8 @@
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
-          <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; a QLC+ Show Wizard show finished; every ID in a table.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('wizard')">Wizard Repair</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
+          <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; a QLC+ Show Wizard show finished, an older show upgraded to QLC+ 5.3; every ID in a table.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('wizard')">Wizard Repair</button><button class="wf-chip" onclick="go('upgrade')">Upgrade to QLC+ 5.3</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
         </div>
         <div class="wf-card" data-grp="6">
           <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
@@ -2152,6 +2163,47 @@
   </section>
 
   <!-- ======================================================================
+       UPGRADE TO QLC+ 5.3 (3.2.0)
+  ====================================================================== -->
+  <section class="screen" id="scr-upgrade">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
+      <div><h2>Upgrade to QLC+ 5.3</h2><div class="p-desc">Give a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers, in the show in progress, step by step. Nothing is removed and your looks keep every channel.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Upgrade-Older-Shows')" title="How this tool works — opens the Upgrade to QLC+ 5.3 page of the wiki">?</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <span id="up-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <label class="up-target" data-tooltip="The QLC+ the show will run on. Steps that only QLC+ 5.3 understands are greyed out for 5.2.2.">For
+        <select id="up-target" onchange="upgradeTarget(this.value)">
+          <option value="5.3">QLC+ 5.3</option>
+          <option value="5.2.2">QLC+ 5.2.2</option>
+        </select>
+      </label>
+      <button class="btn btn-surface" onclick="upgradeAnalyse()" data-tooltip="Look at the show again">↻ Refresh</button>
+    </div>
+
+    <div class="wz-body">
+      <div id="up-steps" class="wz-steps"><div class="porter-placeholder">Open a workspace made with QLC+ 5.</div></div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
+      </span>
+      <span class="out-outcome" id="oc-upgrade" aria-live="polite"></span>
+      <div class="spacer"></div>
+      <button id="up-go" class="btn btn-accent" onclick="upgradeApply()" disabled>✓ Apply to the show</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        QUICK START QXW WIZARD
   ====================================================================== -->
   <section class="screen" id="scr-quickstart">
@@ -2506,6 +2558,7 @@
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
 <script src="/static/js/reducer.js?v={{ asset_v }}"></script>
 <script src="/static/js/wizard.js?v={{ asset_v }}"></script>
+<script src="/static/js/upgrade.js?v={{ asset_v }}"></script>
 <script src="/static/js/looks.js?v={{ asset_v }}"></script>
 <script src="/static/js/stage3d.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>

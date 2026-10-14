@@ -38,6 +38,7 @@ function _cpActions() {
     { label: '▶ Route: adapt a show to a new venue', sub: 'guided route', run: () => routeStart('adapt') },
     { label: '▶ Route: get ready for the gig', sub: 'guided route', run: () => routeStart('gig') },
     { label: '▶ Route: finish a QLC+ wizard show', sub: 'guided route', run: () => routeStart('wizard') },
+    { label: '▶ Route: upgrade a show to QLC+ 5.3', sub: 'guided route', run: () => routeStart('upgrade') },
     { label: '◐ Change the theme (dark / grey / light)', sub: 'view', run: () => cycleTheme() },
     { label: '🌐 Language: English', sub: 'view', run: () => I18N.set('en') },
     { label: '🌐 Lingua: Italiano', sub: 'view', run: () => I18N.set('it') },

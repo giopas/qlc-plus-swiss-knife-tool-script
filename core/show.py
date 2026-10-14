@@ -39,6 +39,7 @@ TOOL_TITLES = {
     'merger': 'QXW Merger', 'dictionary': 'Dictionary', 'fixtures': 'Fixtures',
     'quickstart': 'Quick Start', 'idbrowser': 'ID Browser', 'inputs': 'Inputs & MIDI',
     'wizard': 'Wizard Repair',
+    'upgrade': 'Upgrade to QLC+ 5.3',
 }
 
 _show: dict = {}

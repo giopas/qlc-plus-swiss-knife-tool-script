@@ -45,6 +45,7 @@ const _LAZY = {
   doctor:     () => typeof doctorInit             === 'function' && doctorInit(),
   reducer:    () => typeof reducerInit            === 'function' && reducerInit(),
   wizard:     () => typeof wizardInit             === 'function' && wizardInit(),
+  upgrade:    () => typeof upgradeInit            === 'function' && upgradeInit(),
   looks:      () => typeof looksInit              === 'function' && looksInit(),
   stage:      () => typeof stageInit              === 'function' && stageInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
@@ -638,7 +639,7 @@ function _updateHeader(state) {
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
-                     'wizard'];
+                     'wizard', 'upgrade'];
 
 function _updateNeedWsBanners(loaded) {
   _WS_SCREENS.forEach(id => {

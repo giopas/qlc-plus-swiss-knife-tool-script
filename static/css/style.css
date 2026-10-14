@@ -3622,6 +3622,10 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .wz-items { font-size: var(--fs-ui); margin: 6px 0 0 24px; padding-left: 16px; max-height: 160px; overflow: auto; }
 .wz-note { font-size: var(--fs-ui); color: var(--orange, #ff9800); margin: 6px 0 0 24px; }
 
+/* ── Upgrade to QLC+ 5.3 (3.2.0) ─────────────────────────────────────── */
+.up-target { display: flex; align-items: center; gap: 6px; font-size: var(--fs-ui); margin-right: 8px; }
+.up-only53 { font-size: var(--fs-ui); color: var(--text-dim); border: 1px solid var(--border, #555); border-radius: 4px; padding: 0 4px; }
+
 /* ── Look & Chaser Builder (WORKPLAN 2.3) ─────────────────────────────── */
 .lb-body { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }
 .lb-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }

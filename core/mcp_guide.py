@@ -82,6 +82,26 @@ GUIDE: Dict[str, dict] = {
         "notes": "Only adds functions, buttons and flags, and re-lays group grids. The Doctor's I005, I007 "
                  "and D020 point at what it repairs.",
     },
+    "upgrade_show": {
+        "use": "Give a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers, without touching its looks: "
+               "folders, palettes, an All Fixtures group, positions on the stage, a page per group, locked fixtures.",
+        "args": [("steps", "Leave out to see what each step would do. Otherwise any of: `folders` (a folder for "
+                           "every function with none), `palettes` (Dimmer, the Shutter palettes the rig can take, "
+                           "a Color palette per colour the looks use), `allgroup` (an All Fixtures group when no "
+                           "group holds the whole rig), `grids` (group grids from the stage; changes how matrices "
+                           "run), `positions` (Position3D palettes: centre, audience, each musician model; QLC+ 5.3), "
+                           "`frame` (a Groups page: one page per group with an intensity slider, its looks, its "
+                           "effects and an XY pad for moving heads), `hide` (hide page-switch fixtures) and `lock` "
+                           "(lock fixtures in 2D/3D; QLC+ 5.3). The app ticks folders, palettes, allgroup, "
+                           "positions and hide by default."),
+                 ("target", "`5.3` (default) or `5.2.2`: with 5.2.2 the 5.3-only steps are skipped.")],
+        "returns": "Without steps: `version` (in the file), `wizard`, `steps` [{id, count, items, only53, note}]. "
+                   "With steps: what was done and the Doctor counts after.",
+        "example": '{"steps": ["folders", "palettes", "allgroup", "positions", "frame"]}',
+        "notes": "Only adds. Generated scenes still declare every channel; positions are palettes and XY pads, "
+                 "not position-only scenes. On a Show Wizard show use `wizard_repair` instead. The Doctor's "
+                 "I008 lists what QLC+ 5.2.2 would ignore.",
+    },
     "rig_fixtures": {
         "use": "List the fixtures of the show in progress (id, name, universe, address). Use it before `reduce_rig`.",
         "args": [],
@@ -241,6 +261,7 @@ WORKFLOWS = """Usual sequences:
 - Check a show: list_shows → open_show → doctor_check → doctor_fix → save_show.
 - Smaller venue: open_show → rig_fixtures → reduce_rig (preview) → reduce_rig → doctor_check → save_show.
 - QLC+ 5.3 Show Wizard show: open_show → doctor_check → wizard_repair (no steps, to see) → wizard_repair (steps) → doctor_check → save_show.
+- Older show to QLC+ 5.3: open_show → doctor_check → upgrade_show (no steps, to see) → upgrade_show (steps) → doctor_check → save_show.
 - Bring looks from another show: source_functions → port_functions (preview) → port_functions → save_show.
 - New looks and buttons: looks_options → build_looks (check_only) → build_looks → vc_pages → save_show.
 - Buttons for existing functions: vc_pages → edit_vc new_page → edit_vc create (SoloFrame) → edit_vc create (Button, func_id) → save_show.

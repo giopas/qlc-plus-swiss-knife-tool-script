@@ -7,6 +7,27 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+Older QLC+ 5 shows get what QLC+ 5.3 offers. Checked against the source of QLC+ 5.2.2 and 5.3.0: an older show opens in 5.3 as it is, so the upgrade only adds.
+
+### Added
+- **Upgrade to QLC+ 5.3**, a new tool in *Check & fix*, for shows made with QLC+ 5.0 to 5.2, by hand or by Swiss Knife. It works on the show in progress and removes nothing. Each step can be ticked:
+  - *Folders for the functions*: every function with no folder gets one, by what it does: Looks per group, Chasers (each chaser with the steps only it plays), Effects per group, Collections, Setlist (the CueList chasers and their songs), Safety (the PANIC RESET and its scene). QLC+ 5 shows the function list as a tree of these folders.
+  - *Palettes*: Dimmer Full, Half and Off, the Shutter palettes the rig can take (a palette no fixture can follow is left out), and a Color palette for each colour the looks use. Names and values are the Show Wizard's (Red is `#ff0000`, Amber `#ffbf00`); Warm White, Cool White, Teal, Violet and Purple are added for colours the wizard has no palette for. Scenes keep their own values.
+  - *An All Fixtures group*, laid out from the stage, when no group holds the whole rig.
+  - *Group grids that follow the stage*, as in Wizard Repair. It changes how RGB matrices run, so it is not ticked by default.
+  - *Positions on the stage* (QLC+ 5.3): Position3D palettes for the stage centre, the audience and each musician model placed in Stage & Meshes (a cube counts only when its name says it is a person).
+  - *A page per group*: a new Virtual Console page with one multipage frame, a page for each group (picked in the frame's header, no Loopback universe needed): an intensity slider, the group's looks in a solo frame, its effects, PANIC RESET when the show has one, and an XY pad for moving heads. The pad lists its fixtures one by one and aims at the stage floor in QLC+ 5.3; in 5.2.2 it is a plain pan/tilt pad. A scene a chaser plays never gets a button (no D007).
+  - *Hide the page-switch fixtures* and *Lock the fixtures in 2D and 3D* (QLC+ 5.3).
+  - A target, QLC+ 5.3 or 5.2.2. With 5.2.2 the steps only 5.3 understands are greyed out.
+  - On a show made by the Show Wizard the tool points to Wizard Repair and offers only hiding and locking.
+- A guided route, *Upgrade a show to QLC+ 5.3*: Doctor, Upgrade, Console, final check.
+- Claude: the `upgrade_show` tool (without steps it lists what each step would do) and a workflow in `guide`. Swiss Knife has 26 Claude tools.
+- Doctor: **I008** lists what a QLC+ 5.3 show holds that QLC+ 5.2.2 ignores: Position3D palettes and the scenes that use them, locked fixtures, XY pads in floor mode or with only a fixture group, speed dials that set the BPM, EFX with dimmer control. The rest of such a show works in 5.2.2.
+
+### Not done, on purpose
+- No position-only or colour-only scenes are generated: Swiss Knife's own scenes keep declaring every channel (principle 5). Positions are palettes and XY pads.
+- No BPM speed dial: in QLC+ 5.3 it only drives functions set to follow the beat, and Swiss Knife's chasers run on time.
+
 
 ## [3.1.0] — 2026-10-14
 

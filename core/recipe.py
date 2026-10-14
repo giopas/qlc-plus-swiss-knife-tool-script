@@ -196,6 +196,7 @@ _TOOLS = [("/api/reducer", "Rig Reducer"), ("/api/doctor", "Workspace Doctor"),
           ("/api/setlist", "Setlist"), ("/api/brightness", "Brightness"),
           ("/api/porter", "Function Porter"), ("/api/triggers", "Trigger Manager"),
           ("/api/wizard", "Wizard Repair"),
+          ("/api/upgrade", "Upgrade to QLC+ 5.3"),
           ("/api/show", "History")]
 
 

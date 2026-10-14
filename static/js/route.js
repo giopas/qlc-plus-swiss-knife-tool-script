@@ -44,6 +44,15 @@ const ROUTES = {
       { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
     ],
   },
+  upgrade: {
+    title: 'Upgrade a show to QLC+ 5.3',
+    steps: [
+      { tool: 'doctor',   label: 'Check',         hint: 'Workspace Doctor — fix what the show carries before adding to it' },
+      { tool: 'upgrade',  label: 'Upgrade',       hint: 'Upgrade to QLC+ 5.3 — folders, palettes, an All Fixtures group, positions, a page per group, locked fixtures' },
+      { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — look at the Groups page, move or rename what you like' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix (I008 lists what QLC+ 5.2.2 would ignore), then 💾 Save as new file…' },
+    ],
+  },
   gig: {
     title: 'Get ready for the gig',
     steps: [

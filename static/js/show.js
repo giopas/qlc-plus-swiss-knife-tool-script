@@ -15,7 +15,7 @@ const _SHOW_INVALIDATE = {
   fixtures: 'invalidateFixtures', brightness: 'invalidateBrightness', showbook: 'invalidateShowbook',
   doctor: 'invalidateDoctor', reducer: 'invalidateReducer', looks: 'invalidateLooks',
   stage: 'invalidateStage', vceditor: 'invalidateVcEditor', porter: 'invalidatePorter',
-  compare: 'invalidateCompare', inputs: 'invalidateInputs', wizard: 'invalidateWizard',
+  compare: 'invalidateCompare', inputs: 'invalidateInputs', wizard: 'invalidateWizard', upgrade: 'invalidateUpgrade',
 };
 
 function _activeScreen() {
@@ -487,6 +487,14 @@ async function doctorApply() {
 async function reducerApply() {
   const d = await showApply('/api/reducer/apply', _rrPlan(), 'Reducing the show…');
   if (d) { invalidateReducer(); }
+}
+
+async function upgradeApply() {
+  const steps = typeof _upChosen === 'function' ? _upChosen() : [];
+  if (!steps.length) return;
+  const target = typeof _upTarget === 'function' ? _upTarget() : '5.3';
+  const d = await showApply('/api/upgrade/apply', { steps, target }, 'Upgrading the show…');
+  if (d) { invalidateUpgrade(); }
 }
 
 async function wizardApply() {

@@ -65,6 +65,23 @@ GUIDE: Dict[str, dict] = {
         "example": '{"keys": ["D016|Function 30 \'Spare\'|Scene not used by any function or VC widget"]}',
         "notes": "A fix that would leave new errors is refused.",
     },
+    "wizard_repair": {
+        "use": "Finish a show made by the QLC+ 5.3 Show Wizard: the effects it lost, buttons for what it left "
+               "off the console, group grids that follow the stage, palettes that do nothing on some fixtures, "
+               "a PANIC RESET on every page of its frame.",
+        "args": [("steps", "Leave out to see what each step would do. Otherwise any of: `chasers` (build the "
+                           "Color Rainbow, Split Color and Strobe Chase chasers QLC+ 5.3.0 forgets), `palettes` "
+                           "(values for fixtures a Shutter or Color palette leaves untouched), `panic` (PANIC "
+                           "RESET script and buttons), `buttons` (buttons for wizard functions on no button), "
+                           "`grids` (group grids from the stage), `hide` (hide page-switch fixtures), `lock` "
+                           "(lock fixtures in 2D/3D, QLC+ 5.3) and `captions` (name the gobo picture buttons). "
+                           "The app ticks chasers, palettes, panic, buttons, grids and hide by default.")],
+        "returns": "Without steps: `wizard` (true when the show was made by the Show Wizard) and `steps` "
+                   "[{id, count, items}]. With steps: what was done and the Doctor counts after.",
+        "example": '{"steps": ["chasers", "palettes", "panic", "buttons", "grids"]}',
+        "notes": "Only adds functions, buttons and flags, and re-lays group grids. The Doctor's I005, I007 "
+                 "and D020 point at what it repairs.",
+    },
     "rig_fixtures": {
         "use": "List the fixtures of the show in progress (id, name, universe, address). Use it before `reduce_rig`.",
         "args": [],
@@ -223,6 +240,7 @@ WORKFLOWS = """Usual sequences:
 
 - Check a show: list_shows → open_show → doctor_check → doctor_fix → save_show.
 - Smaller venue: open_show → rig_fixtures → reduce_rig (preview) → reduce_rig → doctor_check → save_show.
+- QLC+ 5.3 Show Wizard show: open_show → doctor_check → wizard_repair (no steps, to see) → wizard_repair (steps) → doctor_check → save_show.
 - Bring looks from another show: source_functions → port_functions (preview) → port_functions → save_show.
 - New looks and buttons: looks_options → build_looks (check_only) → build_looks → vc_pages → save_show.
 - Buttons for existing functions: vc_pages → edit_vc new_page → edit_vc create (SoloFrame) → edit_vc create (Button, func_id) → save_show.

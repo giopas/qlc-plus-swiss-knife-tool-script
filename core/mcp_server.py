@@ -102,6 +102,9 @@ TOOLS: List[dict] = [
     {"name": "doctor_fix", "handler": "t_doctor_fix",
      "description": "Fix Doctor findings. Without `keys`, fixes every finding the Doctor ticks by default. `options` are the Doctor's fix options.",
      "inputSchema": _obj({"keys": _IDS, "options": {"type": "object"}})},
+    {"name": "wizard_repair", "handler": "t_wizard_repair",
+     "description": "Finish a show made by the QLC+ 5.3 Show Wizard. Without `steps`, lists what each repair would do (read only). With `steps` (chasers, palettes, panic, buttons, grids, hide, lock, captions), applies them as one History step. Nothing is removed.",
+     "inputSchema": _obj({"steps": _IDS})},
     {"name": "rig_fixtures", "handler": "t_rig_fixtures",
      "description": "List the fixtures of the show in progress (ids, names, universe, address) — use before reduce_rig.",
      "inputSchema": _obj()},
@@ -178,6 +181,7 @@ READ_ONLY = {"guide", "list_shows", "show_summary", "doctor_check", "rig_fixture
 TITLES = {
     "guide": "Guide: how to use a tool", "list_shows": "List shows", "open_show": "Open a show", "show_summary": "Show summary",
     "doctor_check": "Doctor: check", "doctor_fix": "Doctor: fix", "rig_fixtures": "List fixtures",
+    "wizard_repair": "Wizard Repair",
     "reduce_rig": "Reduce the rig", "source_functions": "Porter: source functions",
     "port_functions": "Porter: port functions", "looks_options": "Looks: options",
     "build_looks": "Build looks and chasers", "vc_pages": "Virtual Console pages",
@@ -335,6 +339,14 @@ class Server:
     def _counts(self) -> dict:
         from routes.show_routes import doctor_counts
         return doctor_counts()
+
+    def t_wizard_repair(self, a: dict) -> Any:
+        self.need_show()
+        steps = [str(x) for x in a.get("steps") or []]
+        if not steps:
+            return self.api("GET", "/api/wizard/analyse")
+        r = self.api("POST", "/api/wizard/repair", {"steps": steps})
+        return self._written(r, "Wizard show repaired")
 
     def t_rig_fixtures(self, a: dict) -> Any:
         self.need_show()

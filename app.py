@@ -141,6 +141,7 @@ from routes.compare_routes import bp as compare_bp
 from routes.library_routes import bp as library_bp
 from routes.update_routes import bp as update_bp
 from routes.mcp_routes import bp as mcp_bp
+from routes.wizard_routes import bp as wizard_bp
 
 PORT = 5731
 
@@ -190,6 +191,7 @@ def create_app():
     app.register_blueprint(library_bp)
     app.register_blueprint(update_bp)
     app.register_blueprint(mcp_bp)
+    app.register_blueprint(wizard_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request

@@ -138,6 +138,10 @@
       <svg class="ic"><use href="/static/icons.svg#check-square"/></svg>
       <span>Workspace Doctor</span>
     </button>
+    <button class="sn-item" id="sn-wizard" data-tip="Wizard Repair" data-desc="Finish a show made by the QLC+ 5.3 Show Wizard: the effects it lost, buttons for what it left off the console, group grids that follow the stage, palettes that do nothing on some fixtures, a PANIC RESET on every page." onclick="go('wizard')">
+      <svg class="ic"><use href="/static/icons.svg#wrench"/></svg>
+      <span>Wizard Repair</span>
+    </button>
     <button class="sn-item" id="sn-idbrowser" data-tip="ID Browser" data-desc="Sortable, filterable tables of every function and VC widget." onclick="go('idbrowser')">
       <svg class="ic"><use href="/static/icons.svg#search"/></svg>
       <span>ID Browser</span>
@@ -442,6 +446,13 @@
           <button class="btn btn-accent btn-sm" onclick="routeStart('gig')">▶ Start the route</button>
         </div>
         <div class="rt-card">
+          <div class="rt-title">Finish a QLC+ wizard show</div>
+          <div class="rt-meta" data-route-meta="wizard"></div>
+          <div class="rt-desc">A show made with the Show Wizard of QLC+ 5.3: check it, repair what the wizard left, a PANIC RESET, tonight's setlist, the paper for the crew.</div>
+          <ol class="rt-steps" data-route="wizard"></ol>
+          <button class="btn btn-accent btn-sm" onclick="routeStart('wizard')">▶ Start the route</button>
+        </div>
+        <div class="rt-card">
           <div class="rt-title">Do it again with a profile</div>
           <div class="rt-meta"><span id="rt-prof-n">Show Profiles</span> · new in 2.1</div>
           <div class="rt-desc">The changes you made to one show — rig, fixes, groups, looks, pages — done again on the show you open.</div>
@@ -476,8 +487,8 @@
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
-          <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; every ID in a table.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
+          <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; a QLC+ Show Wizard show finished; every ID in a table.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('wizard')">Wizard Repair</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
         </div>
         <div class="wf-card" data-grp="6">
           <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
@@ -2106,6 +2117,41 @@
   </section>
 
   <!-- ======================================================================
+       WIZARD REPAIR (3.1.0)
+  ====================================================================== -->
+  <section class="screen" id="scr-wizard">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
+      <div><h2>Wizard Repair</h2><div class="p-desc">Finish a show made by the QLC+ 5.3 Show Wizard, in the show in progress: what it lost or left half done, step by step. Nothing is removed.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Wizard-Repair')" title="How this tool works — opens the Wizard Repair page of the wiki">?</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <span id="wz-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="wizardAnalyse()" data-tooltip="Look at the show again">↻ Refresh</button>
+    </div>
+
+    <div class="wz-body">
+      <div id="wz-steps" class="wz-steps"><div class="porter-placeholder">Open a workspace made with the QLC+ Show Wizard.</div></div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new" title="Keep it with 💾 Save as new file… in the header — the file you opened is never touched">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Changes the <b>&nbsp;show in progress&nbsp;</b>
+      </span>
+      <span class="out-outcome" id="oc-wizard" aria-live="polite"></span>
+      <div class="spacer"></div>
+      <button id="wz-go" class="btn btn-accent" onclick="wizardApply()" disabled>✓ Apply to the show</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        QUICK START QXW WIZARD
   ====================================================================== -->
   <section class="screen" id="scr-quickstart">
@@ -2459,6 +2505,7 @@
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
 <script src="/static/js/reducer.js?v={{ asset_v }}"></script>
+<script src="/static/js/wizard.js?v={{ asset_v }}"></script>
 <script src="/static/js/looks.js?v={{ asset_v }}"></script>
 <script src="/static/js/stage3d.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>

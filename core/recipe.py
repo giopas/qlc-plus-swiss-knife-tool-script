@@ -195,6 +195,7 @@ _TOOLS = [("/api/reducer", "Rig Reducer"), ("/api/doctor", "Workspace Doctor"),
           ("/api/looks", "Look Builder"), ("/api/vc", "VC Editor"), ("/api/stage", "Stage & Meshes"),
           ("/api/setlist", "Setlist"), ("/api/brightness", "Brightness"),
           ("/api/porter", "Function Porter"), ("/api/triggers", "Trigger Manager"),
+          ("/api/wizard", "Wizard Repair"),
           ("/api/show", "History")]
 
 

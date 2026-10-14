@@ -15,7 +15,7 @@ const _SHOW_INVALIDATE = {
   fixtures: 'invalidateFixtures', brightness: 'invalidateBrightness', showbook: 'invalidateShowbook',
   doctor: 'invalidateDoctor', reducer: 'invalidateReducer', looks: 'invalidateLooks',
   stage: 'invalidateStage', vceditor: 'invalidateVcEditor', porter: 'invalidatePorter',
-  compare: 'invalidateCompare', inputs: 'invalidateInputs',
+  compare: 'invalidateCompare', inputs: 'invalidateInputs', wizard: 'invalidateWizard',
 };
 
 function _activeScreen() {
@@ -487,6 +487,13 @@ async function doctorApply() {
 async function reducerApply() {
   const d = await showApply('/api/reducer/apply', _rrPlan(), 'Reducing the show…');
   if (d) { invalidateReducer(); }
+}
+
+async function wizardApply() {
+  const steps = typeof _wzChosen === 'function' ? _wzChosen() : [];
+  if (!steps.length) return;
+  const d = await showApply('/api/wizard/repair', { steps }, 'Repairing the wizard show…');
+  if (d) { invalidateWizard(); }
 }
 
 async function looksApply() {

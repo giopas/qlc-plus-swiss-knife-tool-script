@@ -44,6 +44,7 @@ const _LAZY = {
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   doctor:     () => typeof doctorInit             === 'function' && doctorInit(),
   reducer:    () => typeof reducerInit            === 'function' && reducerInit(),
+  wizard:     () => typeof wizardInit             === 'function' && wizardInit(),
   looks:      () => typeof looksInit              === 'function' && looksInit(),
   stage:      () => typeof stageInit              === 'function' && stageInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
@@ -636,7 +637,8 @@ function _updateHeader(state) {
 // so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
-                     'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage'];
+                     'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
+                     'wizard'];
 
 function _updateNeedWsBanners(loaded) {
   _WS_SCREENS.forEach(id => {

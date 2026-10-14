@@ -842,7 +842,7 @@ def _i004_layers(ws: _Workspace, layers: Dict[str, str]):
         count[fam] += 1
     parts = ", ".join(f"{fam} {n}" for fam, n in sorted(count.items(), key=lambda kv: (-kv[1], kv[0])))
     yield Finding("I004", INFO, "Workspace",
-                  f"{len(layers)} layer scene(s) ({parts}): group scenes that set one family of "
+                  f"{len(layers)} layer scene(s) ({parts}): group scenes that set only part of the "
                   "channels on purpose, to be combined with others; D005 does not apply to them",
                   {"functions": sorted(layers, key=lambda i: _int(i, 0))})
 

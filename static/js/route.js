@@ -33,6 +33,17 @@ const ROUTES = {
       { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
     ],
   },
+  wizard: {
+    title: 'Finish a QLC+ wizard show',
+    steps: [
+      { tool: 'doctor',   label: 'Check',         hint: 'Workspace Doctor — what the Show Wizard left (I005, I007, D020); fix the rest' },
+      { tool: 'wizard',   label: 'Repair',        hint: 'Wizard Repair — lost effects, buttons for what is off the console, group grids, palettes that do nothing, PANIC RESET' },
+      { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — move or rename the new buttons, add a setlist page' },
+      { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — tonight’s songs into the CueList' },
+      { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — patch sheet, tech rider, crew checklist' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
+    ],
+  },
   gig: {
     title: 'Get ready for the gig',
     steps: [

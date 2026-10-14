@@ -3611,6 +3611,17 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .rr-num { width: 70px; }
 .rr-log { font-size: var(--fs-ui); max-height: 360px; overflow: auto; color: var(--text-dim); }
 
+/* ── Wizard Repair (3.1.0) ─────────────────────────────────────────────── */
+.wz-body { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }
+.wz-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+.wz-step { background: var(--surface-1); border-radius: 8px; padding: 10px 12px; }
+.wz-step.wz-none { opacity: .55; }
+.wz-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.wz-title { flex: 1; font-weight: 600; }
+.wz-desc { font-size: var(--fs-ui); color: var(--text-dim); margin: 6px 0 0 24px; }
+.wz-items { font-size: var(--fs-ui); margin: 6px 0 0 24px; padding-left: 16px; max-height: 160px; overflow: auto; }
+.wz-note { font-size: var(--fs-ui); color: var(--orange, #ff9800); margin: 6px 0 0 24px; }
+
 /* ── Look & Chaser Builder (WORKPLAN 2.3) ─────────────────────────────── */
 .lb-body { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }
 .lb-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }

@@ -83,6 +83,7 @@ WIKI_PAGES = {
     "Brightness", "Look-Builder", "VC-Visual-Editor", "Stage-and-Meshes",
     "Setlist-Manager", "Trigger-Manager", "Dictionary-Manager", "Workspace-Doctor",
     "ID-Browser", "Show-Paperwork", "Show-in-Progress", "Compare", "Community-Library",
+    "Wizard-Repair",
 }
 
 

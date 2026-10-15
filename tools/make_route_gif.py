@@ -29,7 +29,8 @@ NAMES = {6: "DR: Drums Floor", 7: "FLB: Front Left (Band)", 8: "FRB: Front Right
          9: "LG: Logo / Banner", 10: "FLS: Front Left (Singer)", 13: "FRS: Front Right (Singer)"}
 DROP = [0, 1, 2, 3, 4, 5, 11, 12]
 GROUPS = [("Singer Pair", ["FLS", "FRS"]), ("Band Pair", ["FLB", "FRB"]),
-          ("Front Band", ["FLB", "FRB", "DR"]), ("Logo", ["LG"]), ("All 6", [""])]
+          ("Front Band", ["FLB", "FRB", "DR"]), ("Logo", ["LG"]),
+          ("All 6", ["DR", "FLB", "FRB", "LG", "FLS", "FRS"])]
 
 
 def main():
@@ -75,10 +76,19 @@ def main():
             .get_by_role("button", name="Start the route").click()
         pg.wait_for_timeout(800)
 
-        def done():
+        def calm():
             pg.evaluate("document.getElementById('show-history').classList.remove('open')")
             pg.wait_for_timeout(300)
-            pg.get_by_role("button", name="Done, next").click()
+
+        def done():
+            # 3.4.0: the footer's route button is the one way forward ("Go on: 4 Groups ›")
+            calm()
+            pg.locator("button.rs-go:visible").last.click()
+            pg.wait_for_timeout(700)
+
+        def skip():
+            calm()
+            pg.locator("#route-strip").get_by_role("button", name="Skip").click()
             pg.wait_for_timeout(700)
 
         # 1 · Rig Reducer
@@ -108,7 +118,10 @@ def main():
         step("doctor", s2)
 
         # 3 · skipped
-        step("skip", done)
+        def s3():
+            frame(None, 500)
+            skip()
+        step("skip", s3)
 
         # 4 · Groups
         def s4():
@@ -117,11 +130,8 @@ def main():
             for name, tags in GROUPS:
                 pg.fill("#st-grp-name", name)
                 pg.get_by_role("button", name="None").first.click()
-                if tags == [""]:
-                    pg.get_by_role("button", name="All").first.click()
-                else:
-                    for t in tags:
-                        pg.locator("label").filter(has_text=f"{t}:").first.locator("input").check()
+                for t in tags:
+                    pg.locator("label").filter(has_text=f"{t}:").first.locator("input").check()
                 pg.get_by_role("button", name="Create group").click()
                 pg.wait_for_timeout(700)
             pg.evaluate("document.getElementById('show-history').classList.remove('open')")
@@ -131,20 +141,25 @@ def main():
 
         # 5 · Look Builder
         def s5():
-            lk = pg.locator("#scr-looks")
-            lk.locator("label").filter(has_text="Singer Pair").first.locator("input").check()
-            lk.locator("label").filter(has_text="Band Pair").first.locator("input").check()
-            for c in ("Warm White", "Amber", "Orange", "Red", "Pink"):
-                lk.get_by_text(c, exact=True).first.click()
-            lk.get_by_role("button", name="Add looks").click()
-            frame("04-looks.png", 900)
-            lk.get_by_role("button", name="Chasers").first.click()
-            pg.wait_for_timeout(500)
-            frame(None, 400)
-            lk.get_by_role("button", name="Check").first.click()
-            frame("05-looks-to-build.png", 900)
-            lk.get_by_role("button", name="Add to the show").click()
-            frame(None, 1800)
+            # 3.3.0 screen: the three groups, warm colour looks on the two pairs, a rainbow on All 6
+            pg.wait_for_timeout(1200)
+            pg.evaluate("""() => {
+              const id = n => (_lbOpts.groups.find(g => g.name === n) || {}).id;
+              const pairs = ['Singer Pair', 'Band Pair'].map(id), all6 = id('All 6');
+              [...pairs, all6].forEach(g => g && looksGroup(g, true));
+              looksTick('colour', true); looksTick('rainbow', true);
+              if (all6) looksFxGroup('colour', all6);
+              pairs.forEach(g => g && looksFxGroup('rainbow', g));
+              _lbCols.length = 0;
+              ['Warm White', 'Amber', 'Orange', 'Red', 'Pink'].forEach(looksColour);
+            }""")
+            frame("04-looks.png", 1800)
+            pg.evaluate("looksEdit('rainbow')")
+            frame("05-looks-effect.png", 1200)
+            pg.locator("#lb-edit-done").click()
+            pg.wait_for_timeout(800)
+            pg.locator("#lb-go").click()
+            frame(None, 2500)
             done()
         step("looks", s5)
 
@@ -156,7 +171,7 @@ def main():
         step("vc", s6)
 
         # 7 · stage: skipped here
-        step("stage", done)
+        step("stage", skip)
 
         # 8 · Setlist
         def s8():

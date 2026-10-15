@@ -3869,7 +3869,16 @@ body.nav-min .side-changes { display: none; }
 .rs-skip-btn { margin: 0 0 6px auto; }
 .rs-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: var(--fs-body); padding: 4px 4px 8px; }
 .rs-close:hover { color: var(--red); }
-.route-strip .stp-route { flex: 1 1 auto; min-width: 0; row-gap: 0; }
+.route-strip .stp-route { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; align-items: flex-end;
+  scrollbar-width: none; }
+.route-strip .stp-route::-webkit-scrollbar { display: none; }
+.route-strip .stp-route .stp-i { flex: none; }
+.route-strip .stp-route.ovf-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+.route-strip .stp-route.ovf-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+.route-strip .stp-route.ovf-l.ovf-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 .route-strip .rs-title, .route-strip .rs-pos, .route-strip .rs-skip, .route-strip .rs-skip-btn, .route-strip .rs-close { flex: none; }
 .route-sub {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 16px;

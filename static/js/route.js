@@ -293,6 +293,19 @@ function routeRender() {
       : '') +
     `<button type="button" class="rs-close" onclick="routeClose()" title="Leave the route (the show is not affected)" aria-label="Leave the route">✕</button>`;
   if (cur >= 0 && _route.done[cur]) el.querySelector('.stp-route .st-cur').classList.add('is-done');
+  // a narrow window: the steps stay on one line and scroll, with the current one in view
+  const ol = el.querySelector('.stp-route');
+  if (ol) {
+    const c = ol.querySelector('.st-cur');
+    if (c && ol.scrollWidth > ol.clientWidth)
+      ol.scrollLeft = Math.max(0, c.offsetLeft - ol.offsetLeft - (ol.clientWidth - c.offsetWidth) / 2);
+    ol.classList.toggle('ovf-r', ol.scrollLeft + ol.clientWidth < ol.scrollWidth - 2);
+    ol.classList.toggle('ovf-l', ol.scrollLeft > 2);
+    ol.onscroll = () => {
+      ol.classList.toggle('ovf-r', ol.scrollLeft + ol.clientWidth < ol.scrollWidth - 2);
+      ol.classList.toggle('ovf-l', ol.scrollLeft > 2);
+    };
+  }
 
   // the second row: where you are inside the tool of the current step
   if (sub) {
@@ -315,7 +328,9 @@ function routeRender() {
       sub.style.paddingLeft = '';
       if (curEl) {
         const x = curEl.getBoundingClientRect().left - el.getBoundingClientRect().left;
-        const room = el.getBoundingClientRect().width - sub.scrollWidth;
+        const kids = [...sub.children];
+        const need = kids.reduce((w, k) => w + k.getBoundingClientRect().width, 0) + 12 * kids.length + 32;
+        const room = el.getBoundingClientRect().width - need;
         if (x > 0 && x < room + 16) sub.style.paddingLeft = Math.round(x) + 'px';
       }
     }

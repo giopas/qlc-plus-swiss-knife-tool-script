@@ -13,12 +13,14 @@ One way forward inside a guided route. The route at the top shows where you are;
 
 ### Changed
 - **The route strip only shows where you are**: *step 3 of 8*, each step done ✓, current, skipped (dashed) or still to do, the same look everywhere. *Skip this step* (a button, *Not needed? Skip it*, on optional steps such as *Bring functions*) and ✕ leave a step; they never finish it. *Done, next ›* is gone from the top.
-- **The current step opens into a second row** in the same colour, like a tab: the tool's own steps (*The rig, in Quick Start: Fixtures, Placement, Analysis, Console, Save*; *Bring functions, in Function Porter: Load, Select, Map, Validate, Apply*), or the panel you are in (*Looks, in Look & Chaser Builder › Rainbow*). Inside a route the tools no longer show a stepper of their own, so each level appears once. Outside a route, Quick Start and Function Porter show their steps with the same stepper.
+- **The current step opens into a second row** in the same colour, like a tab: the tool's own steps (*The rig, in Quick Start: Fixtures, Placement, Analysis, Console, Save*; *Bring functions, in Function Porter: Load, Select, Map, Validate, Apply*), or the panel you are in (*Looks, in Look Builder › Rainbow*). Inside a route the tools no longer show a stepper of their own, so each level appears once. Outside a route, Quick Start and Function Porter show their steps with the same stepper.
 - **The footer is the one way forward.** Inside a tool's steps its button says where it goes (*Next: Placement →*). Once the route step is done, or at the tool's last step, a route button joins the footer as the main one: *Go on: 4 Console ›*, *Finish the route* at the end. The tool's own main button turns secondary next to it.
 - **Quick Start ends the step itself**: at its last step, *Save and go on: 2 Groups ›* saves the new file, opens it as the show and ticks *The rig*.
 - **The Look Builder's effect panel** has one way back: *Cancel* and *Keep these settings* in the footer, the tool's name in the second row to go back. No second *Done* on screen.
 - A route step whose tool comes twice in the route (Groups and Stage, Check and Final check) is ticked where you are, not the first one still open.
 - The status line is cleared when you change screen, so a message from another tool no longer stays behind.
+- In a narrow window the route's steps stay on one line and slide so the current step is in view, instead of wrapping under the route's name.
+- The README screenshots, the route GIF and the tutorial pictures are retaken with the 3.3.0 Look Builder and the 3.4.0 route; `tools/make_route_gif.py` follows the route with the footer's button.
 
 ## [3.3.0] — 2026-10-15
 

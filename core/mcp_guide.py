@@ -135,21 +135,31 @@ GUIDE: Dict[str, dict] = {
     "looks_options": {
         "use": "See what the Looks builder offers for this show before `build_looks`.",
         "args": [],
-        "returns": "Fixture groups, palettes, patterns (all, alternate, chase, pingpong, buildup, random), "
-                   "note lengths (1/1 to 1/16), positions.",
+        "returns": "Fixture groups with `caps` (mix, wheel, gobo, strobe, moves, dimmer, grid), a suggested `role` "
+                   "and `gobo_names`; palettes, patterns (all, alternate, chase, pingpong, buildup, random), "
+                   "note lengths (1/1 to 1/16), positions, `places` on the stage, `efx_kinds`.",
     },
     "build_looks": {
         "use": "Build looks (scenes) and chasers with their Virtual Console buttons.",
-        "args": [("looks", "[{group, colours, level, position}]: group from `looks_options`, colours as names or #RRGGBB, level 0 to 1."),
-                 ("chasers", "[{group, pattern, colours, bpm, note, fade, fade_pct, name}]."),
-                 ("matrices", "RGB matrices, as in the Looks tool."),
+        "args": [("looks", "[{group, colours, level, position, place}]: group from `looks_options`, colours as names or #RRGGBB, level 0 to 1, place a name from `places` (the moving heads aim there)."),
+                 ("levels", "[{group}]: Full, Half and Off in white (or `levels` [{name, level}])."),
+                 ("strobes", "[{group}]: Strobe slow and fast, each fixture in its own strobe range (or `speeds` [{name, speed 0 to 1}])."),
+                 ("gobos", "[{group, colours, gobos}]: one look per gobo and colour; gobos are numbers from `gobo_names` (default all). Can make many buttons."),
+                 ("blinder", "{groups}: one flash button, every light of the groups at full."),
+                 ("chasers", "[{group, pattern, colours, bpm, note, fade, fade_pct, name, place}]."),
+                 ("efx", "[{group, kind}]: kind fly_out, fly_in, circle, eight or sweep. Circle, eight and sweep ride on the aim of the look playing."),
+                 ("matrices", "[{group, pattern}] on a group with a grid, or [{fixtures, pattern}] on pixel bars."),
+                 ("vc", "`pages` (a page per group, like the QLC+ wizard), `one` (one page) or `none`."),
+                 ("folders", "`group`: functions in <folder>/<group>/Looks and /Effects."),
+                 ("palettes", "true: also add QLC+ palettes (Dimmer, Shutter, Color, Position3D)."),
                  ("folder", "Function folder (default `Look Builder`)."),
-                 ("vc_page", "Page for the buttons (made when missing)."),
+                 ("vc_page", "Name of the page for the buttons."),
                  ("nomenclature", "`plain` (default) or a naming profile."),
                  ("check_only", "true: check and change nothing.")],
         "returns": "What was built and the Doctor counts after.",
         "example": '{"looks": [{"group": "all", "colours": ["amber", "blue"], "level": 1}], '
-                   '"chasers": [{"group": "all", "pattern": "pingpong", "colours": ["red"], "bpm": 120}], "vc_page": "Looks"}',
+                   '"chasers": [{"group": "all", "pattern": "pingpong", "colours": ["red"], "bpm": 120}], '
+                   '"efx": [{"group": "2", "kind": "circle"}], "vc": "pages", "vc_page": "Looks", "folders": "group"}',
     },
     "vc_pages": {
         "use": "List the Virtual Console pages and their frames (ids you need for `edit_vc`).",

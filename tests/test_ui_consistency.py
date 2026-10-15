@@ -154,7 +154,9 @@ def test_inspector_tabs_in_look_builder_and_stage():
     js = Path(os.path.dirname(HERE), "static", "js")
     looks = (js / "looks.js").read_text(encoding="utf-8")
     stage = (js / "stage3d.js").read_text(encoding="utf-8")
-    assert set(re.findall(r'data-lbpane="(\w+)"', looks)) == {"looks", "chaser", "matrix"}
+    # 3.3.0: the families of the QLC+ 5.3 wizard, and the effect panel for a chaser
+    assert {"colour", "intensity", "movement", "matrix"} <= set(re.findall(r"\{ id: '(\w+)', name: '[A-Z]", looks))
+    assert 'data-lbpane="chaser"' in looks
     assert set(re.findall(r'data-stpane="(\w+)"', stage)) == {"select", "place", "add", "stage", "groups"}
 
 

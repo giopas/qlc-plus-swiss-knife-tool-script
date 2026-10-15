@@ -1,27 +1,88 @@
 /**
- * Look and Chaser Builder tab (WORKPLAN Phase 2.3).
+ * Look and Chaser Builder (3.3.0: aligned with the QLC+ 5.3 Show Wizard).
  *
- * Looks: tick fixture groups and palette colours → one scene per group ×
- * colour, every channel declared.  Chasers: group + pattern + colours +
- * timing (ms or BPM × note) + cut / fade, with a simulated DMX preview
- * (one colour strip per fixture, ▶ plays it at the step time).  Song
- * presets load / save a chaser recipe.  Everything added goes to the batch;
- * 🔍 Check runs the Workspace Doctor; 💾 Build writes a NEW workspace.
+ * Three columns.  Groups: a card per fixture group with what it can do (read
+ * from the fixture definitions) and its role.  Families, as in the wizard:
+ * Colour, Intensity, Movement, Matrix; each effect is a card that says what
+ * it makes and on which groups, greyed with the reason when no picked group
+ * can do it.  "Start from" pre-ticks them the way the wizard does for a show
+ * type.  Will add: a stage seen from above, the counts (from the Doctor
+ * check, debounced), where the buttons go (a page per group, one page, none).
+ *
+ * A chaser card opens the effect panel: recipe, pattern, colours, speed and
+ * fade, a step preview with ▶ Play, and every expert setting under More.
+ * Every look declares every channel (Swiss Knife's rule).
  */
 
 let _lbOpts = null;              // /api/looks/options
-let _lbBatch = { looks: [], chasers: [], matrices: [] };
-let _lbLookCols = [];            // [{name, hex, white}] ticked for looks
-let _lbChCols = [];              // ordered colours of the chaser
-let _lbCustom = [];              // custom colours (both sections)
-let _lbPrevTimer = null, _lbPlay = null, _lbPrev = null;
+let _lbSel = new Set();          // picked groups
+let _lbRole = {};                // group id → role
+let _lbFx = new Map();           // effect id → Set of group ids it goes to
+let _lbCols = [];                // [{name, hex}] ticked colours
+let _lbCustom = [];              // custom colours
+let _lbGobos = {};               // group id → [gobo numbers]
+let _lbPlace = 'Centre';         // where the moving heads of the looks aim
+let _lbEdits = {};               // effect id → chaser recipe (from the effect panel)
+let _lbOwn = [];                 // chasers built in the effect panel ("+ New chaser")
+let _lbBars = [];                // pixel-bar matrices (as before 3.3.0)
+let _lbType = 'Custom';
+let _lbEditing = null;           // effect id open in the panel, or 'new'
+let _lbChCols = [];              // ordered colours of the chaser in the panel
+let _lbPrevTimer = null, _lbPlay = null, _lbPrev = null, _lbCheckTimer = null, _lbLast = null;
+let _lbBatch = { looks: [], chasers: [], matrices: [] };   // kept for older callers
+
+const LB_WHITE = { name: 'White', hex: '#FFFFFF' };
+const LB_RAINBOW = ['Red', 'Orange', 'Yellow', 'Green', 'Cyan', 'Blue', 'Magenta'];
+
+// The families and their effects.  need: what a group must be able to do;
+// fam: the role family ("Start from" gives an effect to the groups whose role has it).
+const LB_FAM = [
+  { id: 'colour', name: 'Colour', dot: '#a78bfa', items: [
+    { id: 'colour', name: 'Colour looks', need: g => g.supported > 0, fam: 'colour', why: 'needs a fixture definition' },
+    { id: 'rainbow', name: 'Rainbow', need: g => _lbHas(g, 'mix') || _lbHas(g, 'wheel'), fam: 'chase', chaser: true, why: 'needs colour' },
+    { id: 'split', name: 'Split colour', need: g => _lbHas(g, 'mix') || _lbHas(g, 'wheel'), fam: 'chase', chaser: true, why: 'needs colour' },
+    { id: 'gobo', name: 'Gobo looks', need: g => _lbHas(g, 'gobo'), fam: 'gobo', isNew: true, why: 'needs a gobo wheel' },
+    { id: 'ambient', name: 'Ambient loop', need: g => _lbHas(g, 'mix') && !_lbHas(g, 'moves'), fam: 'colour', chaser: true,
+      why: 'needs colour mixing on lights that don’t move' },
+  ] },
+  { id: 'intensity', name: 'Intensity', dot: '#f87171', items: [
+    { id: 'levels', name: 'Full · Half · Off', need: g => g.supported > 0, fam: 'levels', why: 'needs a fixture definition' },
+    { id: 'strobe', name: 'Strobe slow · fast', need: g => _lbHas(g, 'strobe'), fam: 'strobe', isNew: true, why: 'needs a strobe' },
+    { id: 'strobechase', name: 'Strobe chase', need: g => g.fixtures.length > 1 && g.supported > 0, fam: 'strobe', chaser: true,
+      why: 'needs two lights or more' },
+    { id: 'blinder', name: 'Blinder hit', need: g => g.supported > 0, fam: 'blinder', why: 'needs a fixture definition' },
+    { id: 'pulse', name: 'Pulse', need: g => g.supported > 0, fam: 'chase', chaser: true, why: 'needs a fixture definition' },
+  ] },
+  { id: 'movement', name: 'Movement', dot: '#60a5fa', items: [
+    { id: 'places', name: 'Places on the stage', need: g => _lbHas(g, 'moves'), fam: 'places', isNew: true, why: 'needs a moving head' },
+    { id: 'sweep', name: 'Audience sweep', need: g => _lbHas(g, 'moves'), fam: 'efx', why: 'needs a moving head' },
+    { id: 'fly', name: 'Fly out · Fly in', need: g => _lbHas(g, 'moves'), fam: 'efx', isNew: true, why: 'needs a moving head' },
+    { id: 'circle', name: 'Circle · Figure eight', need: g => _lbHas(g, 'moves'), fam: 'efx', isNew: true, why: 'needs a moving head' },
+  ] },
+  { id: 'matrix', name: 'Matrix', dot: '#34d399', items: [
+    { id: 'mchase', name: 'Pixel chase', need: g => _lbHas(g, 'grid'), fam: 'matrix', why: 'needs a group laid out as a grid' },
+    { id: 'mwave', name: 'Wave', need: g => _lbHas(g, 'grid'), fam: 'matrix', why: 'needs a group laid out as a grid' },
+    { id: 'mmore', name: 'Plasma · Gradient · Stripes', need: g => _lbHas(g, 'grid'), fam: 'matrix', why: 'needs a group laid out as a grid' },
+  ] },
+];
+const LB_ITEMS = Object.fromEntries(LB_FAM.flatMap(f => f.items.map(e => [e.id, e])));
+
+// The wizard's show types (stagewizard.cpp applyShowTypeDefaults)
+const LB_TYPES = {
+  'Club night': ['colour', 'rainbow', 'split', 'blinder', 'strobechase', 'pulse', 'fly', 'circle', 'mchase'],
+  'Concert': ['colour', 'rainbow', 'gobo', 'blinder', 'strobechase', 'places', 'fly', 'circle', 'sweep', 'ambient'],
+  'Theatre': ['colour', 'places', 'gobo', 'ambient'],
+  'Architectural': ['colour', 'mchase', 'mwave', 'mmore', 'ambient'],
+  'Custom': [],
+};
 
 function looksInit() {
   if (!_lbOpts) _lbLoad();
 }
 
 function invalidateLooks() {
-  _lbOpts = null; _lbBatch = { looks: [], chasers: [], matrices: [] };
+  _lbOpts = null; _lbSel = new Set(); _lbFx = new Map(); _lbEdits = {}; _lbOwn = []; _lbBars = [];
+  _lbEditing = null; _lbLast = null; _lbType = 'Custom';
   _lbStop();
   const b = document.getElementById('lb-body');
   if (b) b.innerHTML = '<div class="porter-placeholder">Open a workspace to build looks and chasers for its fixture groups.</div>';
@@ -35,10 +96,19 @@ async function _lbLoad() {
     const d = await r.json();
     if (!r.ok) return;
     _lbOpts = d;
-    _lbLookCols = []; _lbChCols = [_lbAllColours()[0]].filter(Boolean);
+    _lbRole = Object.fromEntries(d.groups.map(g => [g.id, g.role || 'Fill']));
+    _lbGobos = Object.fromEntries(d.groups.map(g => [g.id, (g.gobo_names || []).slice(0, 7).map((_, i) => i + 1)]));
+    _lbCols = ['Red', 'Blue', 'Amber'].map(_lbColour).filter(Boolean);
+    _lbPlace = (d.places[0] || {}).name || '';
     _lbRender();
   } catch (e) { /* no workspace */ }
 }
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+function _v(id) { return document.getElementById(id); }
+function _lbHas(g, cap) { return (g.caps || []).includes(cap); }
+function _lbGroup(id) { return _lbOpts.groups.find(g => g.id === id); }
+function _lbGName(id) { return (_lbGroup(id) || {}).name || id; }
 
 function _lbAllColours() {
   if (!_lbOpts) return [];
@@ -47,184 +117,191 @@ function _lbAllColours() {
   const seen = new Set();
   return out.concat(_lbCustom).filter(c => !seen.has(c.name) && seen.add(c.name));
 }
-
-function _lbGroupOpts(sel) {
-  return _lbOpts.groups.map(g =>
-    `<option value="${_esc(g.id)}" ${g.id === sel ? 'selected' : ''} ${g.supported ? '' : 'disabled'}>` +
-    `${_esc(g.name)} (${g.fixtures.length}${g.supported < g.fixtures.length ? `, ${g.supported} with .qxf` : ''})</option>`).join('');
-}
+function _lbColour(name) { return _lbAllColours().find(c => c.name === name) || (name === 'White' ? LB_WHITE : null); }
 
 function _lbChip(c, on, fn) {
   return `<button class="lb-chip ${on ? 'on' : ''}" style="--c:${c.hex}" title="${_esc(c.hex)}"
             onclick="${fn}('${_esc(c.name).replace(/'/g, "\\'")}')"><i></i><span data-i18n-ctx="colour">${_esc(c.name)}</span></button>`;
 }
 
-// moving-head position (v2.5): a name from the list, or pan / tilt in percent (50 = centre)
-function _lbPosHtml(id, onchange) {
-  return `<label>Position <select id="${id}" class="filter-input" onchange="_lbPosForm('${id}'); ${onchange}">
-      <option value="">— as it is —</option>${_lbOpts.positions.map(p => `<option value="${_esc(p.name)}">${_esc(p.name)} (pan ${p.pan} · tilt ${p.tilt} %)</option>`).join('')}
-      <option value="custom">custom…</option></select></label>
-    <span id="${id}-c" class="lb-poscustom" hidden>
-      pan <input type="number" id="${id}-pan" class="filter-input rr-num" min="0" max="100" value="50" oninput="${onchange}"> %
-      tilt <input type="number" id="${id}-tilt" class="filter-input rr-num" min="0" max="100" value="50" oninput="${onchange}"> %</span>`;
-}
-function _lbPosForm(id) { const c = _v(id + '-c'); if (c) c.hidden = _v(id).value !== 'custom'; }
-function _lbPosVal(id) {
-  const el = _v(id); if (!el || !el.value) return null;
-  if (el.value === 'custom') return { pan: +_v(id + '-pan').value, tilt: +_v(id + '-tilt').value };
-  return el.value;
-}
-function _lbPosName(p) { return !p ? '' : (typeof p === 'string' ? p : `pan ${p.pan}% tilt ${p.tilt}%`); }
+// groups an effect can go to: picked, able to do it
+function _lbCapable(eid) { return [..._lbSel].filter(id => LB_ITEMS[eid].need(_lbGroup(id))); }
 
-// Inspector tabs (2.6): Looks and Chasers one at a time, To build always visible
-let _lbTab = 'looks';
-function looksTab(t) {
-  _lbTab = t;
-  document.querySelectorAll('#lb-body [data-lbtab]').forEach(b => b.classList.toggle('active', b.dataset.lbtab === t));
-  document.querySelectorAll('#lb-body [data-lbpane]').forEach(p => { p.hidden = p.dataset.lbpane !== t; });
-}
-
+// ── render ──────────────────────────────────────────────────────────────────
 function _lbRender() {
-  const el = document.getElementById('lb-body');
+  const el = _v('lb-body');
   if (!el || !_lbOpts) return;
-  const pal = _lbOpts.palette_order.map(k => [k, _lbOpts.palettes[k]]);
-  const hasPick = _lbLookCols.map(c => c.name);
   el.innerHTML = `
-  <div class="lb-cols">
-   <div class="lb-left">
-    <div class="lb-tabs" role="tablist">
-      <button class="subtab-btn${_lbTab === 'looks' ? ' active' : ''}" data-lbtab="looks" onclick="looksTab('looks')"
-              title="A look = a fixture group in one colour: one scene each">🎨 Looks</button>
-      <button class="subtab-btn${_lbTab === 'chaser' ? ' active' : ''}" data-lbtab="chaser" onclick="looksTab('chaser')"
-              title="A chaser = a pattern across a fixture group, with BPM timing">🔁 Chasers</button>
-      <button class="subtab-btn${_lbTab === 'matrix' ? ' active' : ''}" data-lbtab="matrix" onclick="looksTab('matrix')"
-              title="An RGB-matrix pattern across the pixels of LED / pixel bars">▦ Matrix</button>
-      <span class="lb-tabs-note">both go into <b>To build</b> on the right</span>
-    </div>
-    <div class="lb-card" data-lbpane="looks"${_lbTab === 'looks' ? '' : ' hidden'}>
-      <h3>Looks <span class="p-desc">fixture group × palette — one scene each, every channel declared</span></h3>
-      <div class="lb-groups">${_lbOpts.groups.map(g => `
-        <label class="${g.supported ? '' : 'lb-dis'}"><input type="checkbox" class="lb-lg" value="${_esc(g.id)}"
-          ${g.supported ? '' : 'disabled'} onchange="_lbLookPreview()"> <span data-i18n="off">${_esc(g.name)}</span> <span class="lb-n">${g.fixtures.length}</span></label>`).join('')}
-      </div>
-      ${pal.map(([id, p]) => `<div class="lb-pal"><span class="lb-pal-h">${_esc(p.label)}</span>
-          ${p.colours.map(c => _lbChip(c, hasPick.includes(c.name), 'looksToggleLookColour')).join('')}
-          <button class="btn btn-surface btn-sm" onclick="looksPalette('${id}')">all</button></div>`).join('')}
-      <div class="lb-pal"><span class="lb-pal-h">Custom</span>
-        ${_lbCustom.map(c => _lbChip(c, hasPick.includes(c.name), 'looksToggleLookColour')).join('')}
-        <input type="color" id="lb-cust-hex" value="#ff8800" title="Pick a colour">
-        <input class="filter-input lb-cname" id="lb-cust-name" placeholder="name">
-        <button class="btn btn-surface btn-sm" onclick="looksAddCustom()">+ add</button></div>
-      <div class="lb-row">
-        ${_lbPosHtml('lb-lpos', '_lbLookPreview()')}
-        <input class="filter-input lb-cname" id="lb-palname" placeholder="palette name">
-        <button class="btn btn-surface btn-sm" onclick="looksSavePalette()" title="Keep the ticked colours as a palette of your own">★ Save ticked as palette</button>
-        <button class="btn btn-surface btn-sm" onclick="looksDeletePalette()" title="Delete the palette named in the box (yours only)">🗑</button>
-      </div>
-      <div class="lb-row">
-        <label>Level <input type="range" id="lb-level" min="5" max="100" step="5" value="100"
-          oninput="document.getElementById('lb-level-v').textContent=this.value+' %'; _lbLookPreview()"></label>
-        <span id="lb-level-v">100 %</span>
-        <div class="spacer"></div>
-        <button class="btn btn-surface" onclick="looksAddLooks()">+ Add looks</button>
-      </div>
-      <div id="lb-look-prev" class="lb-prev"></div>
-    </div>
-
-    <div class="lb-card" data-lbpane="chaser"${_lbTab === 'chaser' ? '' : ' hidden'}>
-      <h3>Chaser <span class="p-desc">a pattern across a fixture group</span></h3>
-      <div class="lb-row">
-        <label>Song preset <select id="lb-preset" class="filter-input" onchange="looksLoadPreset(this.value)">
-          <option value="">—</option>${_lbOpts.presets.map((p, i) =>
-            `<option value="${i}">${p.builtin ? '' : '★ '}${_esc(p.name)}</option>`).join('')}</select></label>
-        <input class="filter-input" id="lb-pname" placeholder="save as…">
-        <button class="btn btn-surface btn-sm" onclick="looksSavePreset()">💾 Save preset</button>
-        <button class="btn btn-surface btn-sm" onclick="looksDeletePreset()" title="Delete the selected preset (yours only)">🗑</button>
-      </div>
-      <div class="lb-grid">
-        <label>Group <select id="lb-cg" class="filter-input" onchange="_lbChPreview()">${_lbGroupOpts(
-          (_lbOpts.groups.find(g => g.id !== 'all' && g.supported) || _lbOpts.groups[0]).id)}</select></label>
-        <label>Pattern <select id="lb-pat" class="filter-input" onchange="_lbChForm()">${_lbOpts.patterns.map(p =>
-          `<option value="${p.id}" ${p.id === 'chase' ? 'selected' : ''}>${_esc(p.label)}</option>`).join('')}</select></label>
-        <label>Steps <input type="number" id="lb-steps" class="filter-input rr-num" min="1" max="256" placeholder="auto" oninput="_lbChPreview()"></label>
-        <label class="lb-rnd">Seed <input type="number" id="lb-seed" class="filter-input rr-num" value="1" oninput="_lbChPreview()"></label>
-        <label class="lb-rnd">On per step <input type="number" id="lb-on" class="filter-input rr-num" min="1" value="1" oninput="_lbChPreview()"></label>
-        <label class="lb-alt">Split <select id="lb-split" class="filter-input" onchange="_lbChPreview()">
-          <option value="halves">left / right halves</option><option value="odd_even">odd / even</option></select></label>
-        <label>Timing <select id="lb-tm" class="filter-input" onchange="_lbChForm()">
-          <option value="bpm">BPM + note</option><option value="ms">ms per step</option></select></label>
-        <label class="lb-bpm">BPM <input type="number" id="lb-bpm" class="filter-input rr-num" min="20" max="400" value="120" oninput="_lbChPreview()"></label>
-        <label class="lb-bpm">Note <select id="lb-note" class="filter-input" onchange="_lbChPreview()">${_lbOpts.notes.map(n =>
-          `<option ${n === '1/4' ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-        <label class="lb-bpm" title="The chaser follows the BPM of QLC+ itself (speed dial / tap) instead of a fixed time: steps are stored in beats">
-          <input type="checkbox" id="lb-beats" onchange="_lbChPreview()"> follow the QLC+ tempo (beats)</label>
-        <label class="lb-ms">Step ms <input type="number" id="lb-ms" class="filter-input rr-num" min="20" value="500" oninput="_lbChPreview()"></label>
-        ${_lbPosHtml('lb-cpos', '_lbChPreview()')}
-        <label>Fade <select id="lb-fade" class="filter-input" onchange="_lbChForm()">
-          <option value="cut">cut</option><option value="fade">fade</option></select></label>
-        <label class="lb-fd">% of step <input type="number" id="lb-fpct" class="filter-input rr-num" min="0" max="100" value="100" oninput="_lbChPreview()"></label>
-        <label>Colours <select id="lb-cmode" class="filter-input" onchange="_lbChPreview()">
-          <option value="step">change per step</option><option value="fixture">one per fixture</option></select></label>
-        <label>Type <select id="lb-kind" class="filter-input">
-          <option value="dynamic">dynamic</option><option value="pulse">pulse</option>
-          <option value="movement">movement</option><option value="fx">special FX</option></select></label>
-        <label><input type="checkbox" id="lb-bg" onchange="_lbChPreview()"> Background
-          <select id="lb-bgc" class="filter-input" onchange="_lbChPreview()">${_lbAllColours().map(c =>
-            `<option data-i18n-ctx="colour" ${c.name === 'Blue' ? 'selected' : ''}>${_esc(c.name)}</option>`).join('')}</select>
-          <input type="number" id="lb-bgl" class="filter-input rr-num" min="5" max="100" value="30" oninput="_lbChPreview()"> %</label>
-      </div>
-      <div class="lb-pal"><span class="lb-pal-h">Colours</span><span id="lb-chcols"></span></div>
-      <div class="lb-pal lb-small">${_lbAllColours().map(c => _lbChip(c, false, 'looksAddChColour')).join('')}</div>
-      <div class="lb-row">
-        <input class="filter-input" id="lb-cname" placeholder="name (default: pattern + colours)">
-        <div class="spacer"></div>
-        <button class="btn btn-surface btn-sm" id="lb-playbtn" onclick="looksPlay()">▶ Play</button>
-        <button class="btn btn-surface" onclick="looksAddChaser()">+ Add chaser</button>
-      </div>
-      <div id="lb-ch-prev" class="lb-prev"></div>
-    </div>
-
-    <div class="lb-card" data-lbpane="matrix"${_lbTab === 'matrix' ? '' : ' hidden'}>
-      <h3>Matrix pattern <span class="p-desc">an RGB-matrix pattern across the pixels of LED / pixel bars</span></h3>
-      ${_lbOpts.pixel_bars.length ? `
-      <div class="lb-groups">${_lbOpts.pixel_bars.map(b => `
-        <label><input type="checkbox" class="lb-mb" value="${_esc(b.id)}" checked> ${_esc(b.name)} <span class="lb-n">${b.heads} pixels</span></label>`).join('')}
-      </div>
-      <div class="lb-grid">
-        <label>Pattern <select id="lb-mpat" class="filter-input" onchange="_lbMatrixForm()">${_lbOpts.matrix_patterns.map(m =>
-          `<option value="${_esc(m.name)}">${_esc(m.name)}</option>`).join('')}</select></label>
-        <label>Colour 1 <input type="color" id="lb-mc1"></label>
-        <label>Colour 2 <input type="color" id="lb-mc2"></label>
-        <label>Speed <input type="number" id="lb-mdur" class="filter-input rr-num" min="20" max="600000" step="10"> ms</label>
-        <label>Name <input class="filter-input" id="lb-mname" placeholder="default: bars + pattern"></label>
-      </div>
-      <p class="p-desc">The bars in a row make one grid: the pattern runs across the pixels (and from bar to bar when you tick several).
-        A bar with a master dimmer gets it opened by the same button.</p>
-      <div class="lb-row"><div class="spacer"></div><button class="btn btn-surface" onclick="looksAddMatrix()">+ Add matrix pattern</button></div>`
-      : '<div class="porter-placeholder">No pixel bar in this show — a pixel bar is a fixture whose mode has several heads (pixels) in its definition.</div>'}
-    </div>
-   </div>
-
-   <div class="lb-right">
-    <div class="lb-card">
-      <h3>To build</h3>
-      <div id="lb-batch"></div>
-      <div class="lb-grid">
-        <label>Names <select id="lb-nom" class="filter-input">${_lbOpts.nomenclature.map(p =>
+  <div class="lbx-top">
+    <span class="lbx-lbl">Start from</span>
+    <div class="lbx-seg" role="group" aria-label="Show type">${Object.keys(LB_TYPES).map(t =>
+      `<button type="button" class="${_lbType === t ? 'on' : ''}" onclick="looksType('${t}')">${_esc(t)}</button>`).join('')}</div>
+    <span class="p-desc">pre-ticks effects the way the QLC+ 5.3 Show Wizard does; change anything after</span>
+  </div>
+  <div class="lbx-cols">
+    <section class="lbx-groups lb-card" aria-label="Groups">
+      <div class="lbx-h"><h3>Groups</h3><button class="btn btn-surface btn-sm" onclick="looksAllGroups()">Select all</button></div>
+      <div id="lbx-glist"></div>
+      <p class="p-desc">Roles are the QLC+ wizard’s, suggested from the group’s name and fixtures. <b>Start from</b> gives each effect to the groups whose role suits it.</p>
+    </section>
+    <section class="lbx-fams" id="lbx-fams" aria-label="Effects"></section>
+    <aside class="lbx-add lb-card" aria-label="What Apply will add">
+      <h3>Will add</h3>
+      <div id="lbx-stage" class="lbx-stage" aria-label="The stage seen from above"></div>
+      <div id="lb-batch" class="lbx-sum"></div>
+      <fieldset class="lbx-vc"><legend>On the console</legend>
+        <label><input type="radio" name="lb-vc" value="pages" checked onchange="_lbChanged()"> <span>A page per group, like the QLC+ wizard</span></label>
+        <label><input type="radio" name="lb-vc" value="one" onchange="_lbChanged()"> <span>One page with every button</span></label>
+        <label><input type="radio" name="lb-vc" value="none" onchange="_lbChanged()"> <span>No buttons</span></label>
+        <label class="lbx-inl">Page name <input class="filter-input" id="lb-vcname" value="Looks" oninput="_lbChanged()"></label>
+      </fieldset>
+      <div class="lbx-opts">
+        <label>Folder <input class="filter-input" id="lb-folder" value="Look Builder" oninput="_lbChanged()"></label>
+        <label><input type="checkbox" id="lb-bygroup" checked onchange="_lbChanged()"> <span>a folder per group</span></label>
+        <label>Names <select id="lb-nom" class="filter-input" onchange="_lbChanged()">${_lbOpts.nomenclature.map(p =>
           `<option value="${_esc(p.id)}">${_esc(p.label)}</option>`).join('')}</select></label>
-        <label>Function folder <input class="filter-input" id="lb-folder" value="Look Builder"></label>
-        <label><input type="checkbox" id="lb-vc" checked> Buttons on a new VC page
-          <input class="filter-input" id="lb-vcname" value="Looks"></label>
+        <label><input type="checkbox" id="lb-pal" onchange="_lbChanged()"> <span>also add QLC+ palettes</span></label>
       </div>
-      <div class="lb-row"><div class="spacer"></div><button class="btn btn-surface" onclick="looksCheck()">🔍 Check</button></div>
+      <div class="lbx-promise">Every look declares every channel. Strobe stays off unless the effect is a strobe. PANIC RESET stops every new effect.</div>
       <div id="lb-check"></div>
-    </div>
-   </div>
+    </aside>
+  </div>
+  <div id="lbx-panel" class="lbx-panel" hidden></div>`;
+  _lbRenderGroups();
+  _lbRenderFams();
+  _lbChanged();
+}
+
+function _lbRenderGroups() {
+  const el = _v('lbx-glist');
+  if (!el) return;
+  el.innerHTML = _lbOpts.groups.map(g => {
+    const on = _lbSel.has(g.id), dis = !g.supported;
+    return `<div class="lbx-g ${on ? 'on' : ''} ${dis ? 'dis' : ''}">
+      <label class="lbx-gh"><input type="checkbox" ${on ? 'checked' : ''} ${dis ? 'disabled' : ''} onchange="looksGroup('${_esc(g.id)}', this.checked)">
+        <b data-i18n="off">${_esc(g.name)}</b><span class="lb-n">${g.fixtures.length}</span></label>
+      <div class="lbx-gm"><label>Role <select class="filter-input" onchange="looksRole('${_esc(g.id)}', this.value)">${_lbOpts.roles.map(r =>
+        `<option ${_lbRole[g.id] === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        <span class="lbx-model" data-i18n="off" title="${_esc(g.model || '')}">${_esc(g.model || '')}</span></div>
+      <div class="lbx-caps">${(g.labels || []).map(c => `<span>${_esc(c)}</span>`).join('')}${dis ? '<span class="lbx-warn">no fixture definition</span>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// "1 look" / "12 looks": whole strings, so each language has its own form
+const LB_UNITS = { look: 'looks', chaser: 'chasers', 'movement effect': 'movement effects', 'RGB matrix': 'RGB matrices' };
+function _lbN(n, one) { return n === 1 ? `1 ${one}` : `${n} ${LB_UNITS[one]}`; }
+
+function _lbMakes(e, gids) {
+  const n = gids.length, nc = Math.max(_lbCols.length, 1);
+  switch (e.id) {
+    case 'colour': return [_lbN(_lbCols.length * n, 'look'), `${_lbCols.length} colours × ${n} groups`];
+    case 'gobo': { const k = gids.reduce((a, id) => a + (_lbGobos[id] || []).length, 0) * nc; return [_lbN(k, 'look'), 'a gobo in each ticked colour']; }
+    case 'levels': return [_lbN(3 * n, 'look'), 'white at 100, 50 and 0 %'];
+    case 'strobe': return [_lbN(2 * n, 'look'), 'each light in its own strobe range'];
+    case 'blinder': return ['1 flash button', 'every light at full'];
+    case 'places': return [`aim at ${_lbPlace}`, 'the looks of the moving heads'];
+    case 'fly': case 'circle': return [_lbN(2 * n, 'movement effect'), ''];
+    case 'sweep': return [_lbN(n, 'movement effect'), ''];
+    case 'mmore': return [_lbN(3 * n, 'RGB matrix'), ''];
+    case 'mchase': case 'mwave': return [_lbN(n, 'RGB matrix'), ''];
+    default: return [_lbN(n, 'chaser'), ''];
+  }
+}
+
+function _lbRenderFams() {
+  const el = _v('lbx-fams');
+  if (!el) return;
+  el.innerHTML = LB_FAM.map(f => {
+    const ticked = f.items.filter(e => (_lbFx.get(e.id) || new Set()).size).length;
+    return `<div class="lb-card lbx-fam">
+      <div class="lbx-h"><i class="lbx-dot" style="background:${f.dot}"></i><h3>${f.name}</h3>
+        <span class="lb-n">${ticked} of ${f.items.length} ticked</span><span class="lbx-sp"></span>
+        <button class="btn btn-surface btn-sm" onclick="looksFamily('${f.id}')">All / None</button></div>
+      <div class="lbx-cards">${f.items.map(e => _lbCard(e)).join('')}</div>
+      ${f.id === 'colour' ? _lbColourBar() : ''}
+      ${f.id === 'colour' && (_lbFx.get('gobo') || new Set()).size ? _lbGoboBar() : ''}
+      ${f.id === 'movement' && (_lbFx.get('places') || new Set()).size ? _lbPlaceBar() : ''}
+      ${f.id === 'matrix' && _lbOpts.pixel_bars.length ? _lbBarsBar() : ''}
+    </div>`;
+  }).join('') + `<div class="lb-card lbx-fam">
+      <div class="lbx-h"><i class="lbx-dot" style="background:#fbbf24"></i><h3>Your chasers</h3><span class="lb-n">${_lbOwn.length}</span>
+        <span class="lbx-sp"></span><button class="btn btn-surface btn-sm" onclick="looksEdit('new')">+ New chaser</button></div>
+      ${_lbOwn.map((c, i) => `<div class="lb-item"><span>🔁 ${_esc(c.name || (_lbOpts.patterns.find(p => p.id === c.pattern) || {}).label)} — ${_esc(_lbGName(c.group))}
+        ${c.colours.map(x => `<i class="lb-dot" style="background:${x.hex}"></i>`).join('')}</span>
+        <button class="btn btn-surface btn-sm" onclick="looksRemoveOwn(${i})" aria-label="Remove">✕</button></div>`).join('')
+        || '<p class="p-desc">A chaser of your own: any group, pattern, colours and timing, with the song presets.</p>'}
+    </div>`;
+}
+
+function _lbCard(e) {
+  const gids = _lbFx.get(e.id) || new Set();
+  const cap = _lbCapable(e.id);
+  const ok = cap.length > 0;
+  const on = gids.size > 0;
+  const [makes, sub] = on ? _lbMakes(e, [...gids]) : ok ? _lbMakes(e, cap) : ['', ''];
+  return `<div class="lbx-c ${on ? 'on' : ''} ${ok ? '' : 'dis'}">
+    <label class="lbx-ch"><input type="checkbox" ${on ? 'checked' : ''} ${ok ? '' : 'disabled'} onchange="looksTick('${e.id}', this.checked)">
+      <b>${e.name}</b>${e.isNew ? '<span class="lbx-new">NEW</span>' : ''}</label>
+    ${ok ? `<div class="lbx-mk"><span>${makes}</span>${sub ? `<span class="lb-n">${sub}</span>` : ''}</div>` :
+      `<div class="lbx-why">${_lbSel.size ? `<span>Not for these groups</span> <span>(${e.why})</span>` : '<span>Pick a group</span>'}</div>`}
+    ${on ? `<div class="lbx-on">${cap.map(id => `<button class="lbx-gchip ${gids.has(id) ? 'on' : ''}" onclick="looksFxGroup('${e.id}', '${_esc(id)}')" data-i18n="off">${_esc(_lbGName(id))}</button>`).join('')}
+      ${e.chaser ? `<button class="btn btn-surface btn-sm" onclick="looksEdit('${e.id}')">Edit…</button>` : ''}</div>` : ''}
   </div>`;
-  _lbChForm();
-  _lbRenderChCols();
-  _lbRenderBatch();
-  if (_lbOpts.pixel_bars.length) _lbMatrixForm();
+}
+
+function _lbColourBar() {
+  const on = c => _lbCols.some(x => x.name === c.name);
+  return _lbOpts.palette_order.map(k => { const p = _lbOpts.palettes[k];
+    return `<div class="lbx-bar"><span class="lbx-lbl">${_esc(p.label)}</span>
+      ${p.colours.map(c => _lbChip(c, on(c), 'looksColour')).join('')}
+      <button class="btn btn-surface btn-sm" onclick="looksPalette('${_esc(k)}')">all</button></div>`; }).join('') +
+  `<div class="lbx-bar"><span class="lbx-lbl">Custom</span>
+    ${_lbCustom.map(c => _lbChip(c, on(c), 'looksColour')).join('')}
+    <input type="color" id="lb-cust-hex" value="#ff8800" title="Pick a colour">
+    <input class="filter-input lb-cname" id="lb-cust-name" placeholder="name">
+    <button class="btn btn-surface btn-sm" onclick="looksAddCustom()">+ add</button>
+    <input class="filter-input lb-cname" id="lb-palname" placeholder="palette name">
+    <button class="btn btn-surface btn-sm" onclick="looksSavePalette()" title="Keep the ticked colours as a palette of your own">★ Save ticked as palette</button>
+    <button class="btn btn-surface btn-sm" onclick="looksDeletePalette()" title="Delete the palette named in the box (yours only)" aria-label="Delete palette">🗑</button>
+    <label class="lbx-inl">Level <input type="range" id="lb-level" min="5" max="100" step="5" value="100"
+      oninput="document.getElementById('lb-level-v').textContent=this.value+' %'; _lbChanged()"> <span id="lb-level-v">100 %</span></label>
+  </div>`;
+}
+
+function _lbGoboBar() {
+  const gids = [..._lbFx.get('gobo')];
+  return gids.map(id => {
+    const g = _lbGroup(id), names = g.gobo_names || [], pick = _lbGobos[id] || [];
+    return `<div class="lbx-bar"><span class="lbx-lbl" data-i18n="off">${_esc(g.name)}</span><span class="lb-n">gobos</span>
+      ${names.map((n, i) => `<button class="lbx-gchip ${pick.includes(i + 1) ? 'on' : ''}" onclick="looksGobo('${_esc(id)}', ${i + 1})" data-i18n="off">${_esc(n)}</button>`).join('')}
+      <button class="btn btn-surface btn-sm" onclick="looksGoboAll('${_esc(id)}')">All / None</button></div>`;
+  }).join('');
+}
+
+function _lbPlaceBar() {
+  return `<div class="lbx-bar"><span class="lbx-lbl">Aim at</span>
+    ${_lbOpts.places.map(p => `<button class="lbx-gchip ${_lbPlace === p.name ? 'on' : ''}" onclick="looksPlace('${_esc(p.name).replace(/'/g, "\\'")}')" data-i18n="off">${_esc(p.name)}</button>`).join('')}
+    <span class="p-desc">The colour and gobo looks of the moving heads aim here. Musicians come from the models placed in Stage &amp; Meshes.</span></div>`;
+}
+
+function _lbBarsBar() {
+  return `<details class="lbx-bars"><summary>Pixel bars (${_lbOpts.pixel_bars.length})</summary>
+    <div class="lb-groups">${_lbOpts.pixel_bars.map(b => `
+      <label><input type="checkbox" class="lb-mb" value="${_esc(b.id)}" checked> ${_esc(b.name)} <span class="lb-n">${b.heads} pixels</span></label>`).join('')}</div>
+    <div class="lb-grid">
+      <label>Pattern <select id="lb-mpat" class="filter-input" onchange="_lbMatrixForm()">${_lbOpts.matrix_patterns.map(m =>
+        `<option value="${_esc(m.name)}">${_esc(m.name)}</option>`).join('')}</select></label>
+      <label>Colour 1 <input type="color" id="lb-mc1"></label>
+      <label>Colour 2 <input type="color" id="lb-mc2"></label>
+      <label>Speed <input type="number" id="lb-mdur" class="filter-input rr-num" min="20" max="600000" step="10"> ms</label>
+      <label>Name <input class="filter-input" id="lb-mname" placeholder="default: bars + pattern"></label>
+    </div>
+    <div class="lb-row"><span class="p-desc">The bars ticked make one grid: the pattern runs across their pixels.</span><span class="lbx-sp"></span>
+      <button class="btn btn-surface btn-sm" onclick="looksAddMatrix()">+ Add matrix pattern</button></div>
+    ${_lbBars.map((m, i) => `<div class="lb-item"><span>▦ ${_esc(m.name || m.pattern)} — ${m.fixtures.length} bar(s)</span>
+      <button class="btn btn-surface btn-sm" onclick="looksRemoveBar(${i})" aria-label="Remove">✕</button></div>`).join('')}
+  </details>`;
 }
 
 function _lbMatrixForm() {
@@ -243,23 +320,132 @@ function looksAddMatrix() {
   if (m.colours.length > 1) cols.push(_v('lb-mc2').value);
   const spec = { fixtures: ids, pattern: m.name, colours: cols.map(h => ({ name: h.toUpperCase(), hex: h })), duration: +_v('lb-mdur').value };
   const nm = (_v('lb-mname').value || '').trim(); if (nm) spec.name = nm;
-  _lbBatch.matrices.push(spec);
-  _lbRenderBatch();
+  _lbBars.push(spec);
+  _lbRenderFams(); _lbChanged();
   setStatus('Matrix pattern added.', 'ok');
+}
+function looksRemoveBar(i) { _lbBars.splice(i, 1); _lbRenderFams(); _lbChanged(); }
+
+// ── stage preview: lights seen from above, lit by the first look ────────────
+function _lbRenderStage() {
+  const el = _v('lbx-stage');
+  if (!el) return;
+  const st = _lbOpts.stage || {}, fx = (st.fixtures || []).filter(f => f.x != null);
+  if (!fx.length) { el.innerHTML = '<div class="p-desc">Place the lights in Stage &amp; Meshes to see them here.</div>'; return; }
+  const w = (st.size && st.size.w ? st.size.w * 1000 : Math.max(...fx.map(f => f.x)) + 500);
+  const d = (st.size && st.size.d ? st.size.d * 1000 : Math.max(...fx.map(f => f.z)) + 500);
+  const lit = {};
+  const cols = _lbCols.length ? _lbCols : [LB_WHITE];
+  if ((_lbFx.get('colour') || new Set()).size) {
+    for (const id of _lbFx.get('colour')) (_lbGroup(id).fixtures || []).forEach((f, i) => { lit[f] = cols[i % cols.length].hex; });
+  }
+  for (const eid of ['levels', 'blinder', 'strobe']) for (const id of (_lbFx.get(eid) || [])) (_lbGroup(id).fixtures || []).forEach(f => { lit[f] = lit[f] || '#ffffff'; });
+  const sel = new Set([..._lbSel].flatMap(id => _lbGroup(id).fixtures));
+  el.innerHTML = `<div class="lbx-st-l"><span>BACK</span></div><div class="lbx-st-map">${fx.map(f => {
+    const c = lit[f.id];
+    return `<i style="left:${(100 * f.x / w).toFixed(1)}%;top:${(100 * f.z / d).toFixed(1)}%;${c ? `background:${c};box-shadow:0 0 8px ${c}` : ''}" class="${sel.has(f.id) ? 'sel' : ''}"></i>`;
+  }).join('')}</div><div class="lbx-st-l"><span>FRONT</span></div>`;
+}
+
+// ── actions ─────────────────────────────────────────────────────────────────
+function looksType(t) {
+  _lbType = t;
+  _lbFx = new Map();
+  if (!_lbSel.size && t !== 'Custom') _lbOpts.groups.filter(g => g.supported && g.id !== 'all').forEach(g => _lbSel.add(g.id));
+  const fams = _lbOpts.role_families || {};
+  for (const eid of LB_TYPES[t] || []) {
+    const cap = _lbCapable(eid);
+    const byRole = cap.filter(id => (fams[_lbRole[id]] || []).includes(LB_ITEMS[eid].fam));
+    const gs = byRole.length ? byRole : cap;
+    if (gs.length) _lbFx.set(eid, new Set(gs));
+  }
+  _lbRender();
+}
+
+function looksAllGroups() {
+  _lbOpts.groups.filter(g => g.supported && g.id !== 'all').forEach(g => looksGroup(g.id, true, true));
+  _lbRenderGroups(); _lbRenderFams(); _lbChanged();
+}
+
+function looksGroup(id, on, quiet) {
+  if (on) _lbSel.add(id); else _lbSel.delete(id);
+  for (const [eid, gs] of _lbFx) {
+    if (!on) gs.delete(id);
+    else if (gs.size && LB_ITEMS[eid].need(_lbGroup(id))) gs.add(id);
+    if (!gs.size) _lbFx.delete(eid);
+  }
+  if (!quiet) { _lbRenderGroups(); _lbRenderFams(); _lbChanged(); }
+}
+
+function looksRole(id, role) { _lbRole[id] = role; }
+
+function looksTick(eid, on) {
+  if (on) _lbFx.set(eid, new Set(_lbCapable(eid))); else _lbFx.delete(eid);
+  _lbRenderFams(); _lbChanged();
+}
+
+function looksFamily(fid) {
+  const f = LB_FAM.find(x => x.id === fid);
+  const all = f.items.every(e => !_lbCapable(e.id).length || (_lbFx.get(e.id) || new Set()).size);
+  f.items.forEach(e => { if (all) _lbFx.delete(e.id); else if (_lbCapable(e.id).length) _lbFx.set(e.id, new Set(_lbCapable(e.id))); });
+  _lbRenderFams(); _lbChanged();
+}
+
+function looksFxGroup(eid, gid) {
+  const s = _lbFx.get(eid);
+  if (!s) return;
+  if (s.has(gid)) s.delete(gid); else s.add(gid);
+  if (!s.size) _lbFx.delete(eid);
+  _lbRenderFams(); _lbChanged();
+}
+
+function looksColour(name) {
+  const i = _lbCols.findIndex(c => c.name === name);
+  if (i >= 0) _lbCols.splice(i, 1); else _lbCols.push(_lbColour(name));
+  _lbRenderFams(); _lbChanged();
+}
+
+function looksPalette(k) {
+  const cs = _lbOpts.palettes[k].colours;
+  const all = cs.every(c => _lbCols.some(x => x.name === c.name));
+  if (all) _lbCols = _lbCols.filter(x => !cs.some(c => c.name === x.name));
+  else cs.forEach(c => { if (!_lbCols.some(x => x.name === c.name)) _lbCols.push(c); });
+  _lbRenderFams(); _lbChanged();
+}
+
+function looksGobo(gid, n) {
+  const a = _lbGobos[gid] || (_lbGobos[gid] = []);
+  const i = a.indexOf(n);
+  if (i >= 0) a.splice(i, 1); else { a.push(n); a.sort((x, y) => x - y); }
+  _lbRenderFams(); _lbChanged();
+}
+function looksGoboAll(gid) {
+  const n = (_lbGroup(gid).gobo_names || []).length;
+  _lbGobos[gid] = (_lbGobos[gid] || []).length === n ? [] : Array.from({ length: n }, (_, i) => i + 1);
+  _lbRenderFams(); _lbChanged();
+}
+function looksPlace(name) { _lbPlace = name; _lbRenderFams(); _lbChanged(); }
+
+function looksAddCustom() {
+  const hex = _v('lb-cust-hex').value.toUpperCase();
+  const name = (_v('lb-cust-name').value || '').trim() || hex;
+  if (_lbAllColours().some(c => c.name.toLowerCase() === name.toLowerCase())) { setStatus(`'${name}' already exists.`, 'warn'); return; }
+  const c = { name, hex };
+  _lbCustom.push(c); _lbCols.push(c);
+  _lbRenderFams(); _lbChanged();
 }
 
 async function looksSavePalette() {
   const name = (_v('lb-palname').value || '').trim();
   if (!name) { setStatus('Type a name for the palette.', 'warn'); return; }
-  if (!_lbLookCols.length) { setStatus('Tick the colours to keep first.', 'warn'); return; }
+  if (!_lbCols.length) { setStatus('Tick the colours to keep.', 'warn'); return; }
   const r = await fetch('/api/looks/palettes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, colours: _lbLookCols }) });
+    body: JSON.stringify({ name, colours: _lbCols }) });
   const d = await r.json();
   if (!r.ok) { setStatus(d.error, 'error'); return; }
   _lbOpts.palettes = d.palettes; _lbOpts.palette_order = d.palette_order;
-  _lbGroupsTicked = [...document.querySelectorAll('.lb-lg:checked')].map(x => x.value);
-  _lbRender(); _lbRestoreLooks();
-  setStatus(`Palette '${name}' saved in ~/.qlc_swiss_knife/look_palettes.json.`, 'ok');
+  _lbRenderFams();
+  setStatus(`Palette '${name}' saved.`, 'ok');
 }
 
 async function looksDeletePalette() {
@@ -270,76 +456,135 @@ async function looksDeletePalette() {
   const d = await r.json();
   if (!r.ok) { setStatus(d.error, 'error'); return; }
   _lbOpts.palettes = d.palettes; _lbOpts.palette_order = d.palette_order;
-  _lbRender();
+  _lbRenderFams();
   setStatus(`Palette '${name}' deleted.`, 'ok');
 }
 
-// ── looks ──────────────────────────────────────────────────────────────────
-function _lbColour(name) { return _lbAllColours().find(c => c.name === name); }
+function looksRemoveOwn(i) { _lbOwn.splice(i, 1); _lbRenderFams(); _lbChanged(); }
 
-function looksToggleLookColour(name) {
-  const i = _lbLookCols.findIndex(c => c.name === name);
-  if (i >= 0) _lbLookCols.splice(i, 1); else _lbLookCols.push(_lbColour(name));
-  _lbRender(); _lbRestoreLooks();
+// ── chaser recipes of the cards ─────────────────────────────────────────────
+function _lbRecipe(eid) {
+  if (_lbEdits[eid]) return { ..._lbEdits[eid] };
+  const cols = _lbCols.length ? _lbCols : [LB_WHITE];
+  const named = n => _lbColour(n);
+  switch (eid) {
+    case 'rainbow': return { pattern: 'all', colours: LB_RAINBOW.map(named).filter(Boolean), step_ms: 1500, fade: 'fade', fade_pct: 33,
+      colour_mode: 'step', kind: 'dynamic', name: 'Rainbow' };
+    case 'split': return { pattern: 'alternate', colours: (cols.length > 1 ? cols : ['Red', 'Blue'].map(named)), step_ms: 1000, fade: 'cut',
+      colour_mode: 'step', kind: 'dynamic', name: 'Split colour' };
+    case 'ambient': return { pattern: 'all', colours: (cols.length > 1 ? cols : ['Warm White', 'Amber', 'Orange'].map(named)), step_ms: 6000,
+      fade: 'fade', fade_pct: 100, colour_mode: 'step', kind: 'dynamic', name: 'Ambient loop' };
+    case 'strobechase': return { pattern: 'chase', colours: [LB_WHITE], step_ms: 80, fade: 'cut', colour_mode: 'step', kind: 'fx', name: 'Strobe chase' };
+    case 'pulse': return { pattern: 'all', colours: [cols[0]], bpm: 120, note: '1/4', fade: 'fade', fade_pct: 50, colour_mode: 'step',
+      kind: 'pulse', name: 'Pulse' };
+    default: return { pattern: 'chase', colours: cols.slice(0, 4), bpm: 120, note: '1/4', fade: 'cut', colour_mode: 'step', kind: 'dynamic' };
+  }
 }
 
-function looksPalette(id) {
-  for (const c of _lbOpts.palettes[id].colours) if (!_lbLookCols.some(x => x.name === c.name)) _lbLookCols.push(c);
-  _lbRender(); _lbRestoreLooks();
+// ── the effect panel (chasers: basics, preview, More) ───────────────────────
+function looksEdit(eid) {
+  _lbEditing = eid;
+  const p = _v('lbx-panel');
+  const r = _lbRecipe(eid);
+  const title = eid === 'new' ? 'New chaser' : LB_ITEMS[eid].name;
+  const firstG = [...(_lbFx.get(eid) || _lbSel)][0] || (_lbOpts.groups.find(g => g.supported) || _lbOpts.groups[0]).id;
+  p.innerHTML = `<div class="lbx-ph">
+      <button class="btn btn-surface btn-sm" onclick="looksEditClose(false)">← Look &amp; Chaser Builder</button>
+      <h3>${_esc(title)}</h3><span class="lbx-sp"></span>
+      <button class="btn btn-surface" onclick="looksEditClose(false)">Cancel</button>
+      <button class="btn btn-surface" id="lb-edit-done" onclick="looksEditClose(true)">${eid === 'new' ? '+ Add chaser' : 'Done'}</button></div>
+    <div class="lbx-pcols"><div class="lb-card" data-lbpane="chaser">
+      <div class="lb-row"><span class="lbx-lbl">Recipe</span>
+        <select id="lb-preset" class="filter-input" onchange="looksLoadPreset(this.value)">
+          <option value="">—</option>${_lbOpts.presets.map((q, i) => `<option value="${i}">${q.builtin ? '' : '★ '}${_esc(q.name)}</option>`).join('')}</select>
+        <input class="filter-input" id="lb-pname" placeholder="save as…">
+        <button class="btn btn-surface btn-sm" onclick="looksSavePreset()">★ Save as recipe</button>
+        <button class="btn btn-surface btn-sm" onclick="looksDeletePreset()" title="Delete the selected recipe (yours only)" aria-label="Delete recipe">🗑</button></div>
+      <div class="lb-row" ${eid === 'new' ? '' : 'hidden'}><span class="lbx-lbl">Group</span>
+        <select id="lb-cg" class="filter-input" onchange="_lbChPreview()">${_lbOpts.groups.map(g =>
+          `<option value="${_esc(g.id)}" ${g.id === firstG ? 'selected' : ''} ${g.supported ? '' : 'disabled'}>${_esc(g.name)} (${g.fixtures.length})</option>`).join('')}</select></div>
+      <div class="lb-row"><span class="lbx-lbl">Pattern</span><div class="lbx-pats">${_lbOpts.patterns.map(q =>
+        `<button type="button" class="lbx-pat ${q.id === r.pattern ? 'on' : ''}" data-pat="${q.id}" onclick="looksPattern('${q.id}')"><i class="lbx-pic lbx-pic-${q.id}"></i><span>${_esc(q.label)}</span></button>`).join('')}</div>
+        <input type="hidden" id="lb-pat" value="${r.pattern}"></div>
+      <div class="lb-pal"><span class="lbx-lbl">Colours</span><span id="lb-chcols"></span></div>
+      <div class="lb-pal lb-small">${_lbAllColours().map(c => _lbChip(c, false, 'looksAddChColour')).join('')}${_lbChip(LB_WHITE, false, 'looksAddChColour')}</div>
+      <div class="lb-row"><span class="lbx-lbl">Speed</span>
+        <label class="lb-bpm">BPM <input type="number" id="lb-bpm" class="filter-input rr-num" min="20" max="400" value="${r.bpm || 120}" oninput="_lbChPreview()"></label>
+        <button class="btn btn-surface btn-sm lb-bpm" onclick="looksTap()">Tap</button>
+        <label class="lb-bpm">Note <select id="lb-note" class="filter-input" onchange="_lbChPreview()">${_lbOpts.notes.map(n =>
+          `<option ${n === (r.note || '1/4') ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="lb-ms">Step <input type="number" id="lb-ms" class="filter-input rr-num" min="20" value="${r.step_ms || 500}" oninput="_lbChPreview()"> ms</label>
+        <span class="lbx-sp"></span>
+        <label>Fade <select id="lb-fade" class="filter-input" onchange="_lbChForm()">
+          <option value="cut" ${r.fade !== 'fade' ? 'selected' : ''}>Cut</option><option value="fade" ${r.fade === 'fade' ? 'selected' : ''}>Soft</option></select></label></div>
+      <details class="lbx-more"><summary>More: the expert settings</summary><div class="lb-grid">
+        <label>Steps <input type="number" id="lb-steps" class="filter-input rr-num" min="1" max="256" placeholder="auto" value="${r.steps || ''}" oninput="_lbChPreview()"></label>
+        <label class="lb-rnd">Seed <input type="number" id="lb-seed" class="filter-input rr-num" value="${r.seed ?? 1}" oninput="_lbChPreview()"></label>
+        <label class="lb-rnd">On per step <input type="number" id="lb-on" class="filter-input rr-num" min="1" value="${r.on_count ?? 1}" oninput="_lbChPreview()"></label>
+        <label class="lb-alt">Split <select id="lb-split" class="filter-input" onchange="_lbChPreview()">
+          <option value="halves">left / right halves</option><option value="odd_even" ${r.split === 'odd_even' ? 'selected' : ''}>odd / even</option></select></label>
+        <label>Timing <select id="lb-tm" class="filter-input" onchange="_lbChForm()">
+          <option value="bpm" ${r.bpm ? 'selected' : ''}>BPM + note</option><option value="ms" ${r.bpm ? '' : 'selected'}>ms per step</option></select></label>
+        <label class="lb-bpm" title="The chaser follows the BPM of QLC+ itself (speed dial / tap) instead of a fixed time: steps are stored in beats">
+          <input type="checkbox" id="lb-beats" ${r.tempo === 'beats' ? 'checked' : ''} onchange="_lbChPreview()"> follow the QLC+ tempo (beats)</label>
+        <label class="lb-fd">% of step <input type="number" id="lb-fpct" class="filter-input rr-num" min="0" max="100" value="${r.fade_pct ?? 100}" oninput="_lbChPreview()"></label>
+        <label>Colours <select id="lb-cmode" class="filter-input" onchange="_lbChPreview()">
+          <option value="step">change per step</option><option value="fixture" ${r.colour_mode === 'fixture' ? 'selected' : ''}>one per fixture</option></select></label>
+        <label>Type <select id="lb-kind" class="filter-input">${['dynamic', 'pulse', 'movement', 'fx'].map(k =>
+          `<option value="${k}" ${r.kind === k ? 'selected' : ''}>${{ dynamic: 'dynamic', pulse: 'pulse', movement: 'movement', fx: 'special FX' }[k]}</option>`).join('')}</select></label>
+        <label><input type="checkbox" id="lb-bg" ${r.background ? 'checked' : ''} onchange="_lbChPreview()"> Background
+          <select id="lb-bgc" class="filter-input" onchange="_lbChPreview()">${_lbAllColours().map(c =>
+            `<option data-i18n-ctx="colour" ${c.name === ((r.background || {}).colour || {}).name || (!r.background && c.name === 'Blue') ? 'selected' : ''}>${_esc(c.name)}</option>`).join('')}</select>
+          <input type="number" id="lb-bgl" class="filter-input rr-num" min="5" max="100" value="${Math.round(((r.background || {}).level ?? 0.3) * 100)}" oninput="_lbChPreview()"> %</label>
+        <label>Position <select id="lb-cpos" class="filter-input" onchange="_lbChPreview()">
+          <option value="">— as it is —</option>${_lbOpts.places.map(q => `<option value="place:${_esc(q.name)}">${_esc(q.name)}</option>`).join('')}
+          ${_lbOpts.positions.map(q => `<option value="${_esc(q.name)}">${_esc(q.name)} (pan ${q.pan} · tilt ${q.tilt} %)</option>`).join('')}</select></label>
+        <label>Name <input class="filter-input" id="lb-cname" placeholder="name (default: pattern + colours)" value="${_esc(eid === 'new' ? '' : (r.name || ''))}"></label>
+      </div></details>
+    </div>
+    <div class="lb-card lbx-prevcard"><div class="lbx-h"><h3>Preview</h3><span class="lbx-sp"></span>
+      <button class="btn btn-surface btn-sm" id="lb-playbtn" onclick="looksPlay()">▶ Play</button></div>
+      <div id="lb-ch-prev" class="lb-prev"></div></div></div>`;
+  _lbChCols = (r.colours || []).map(c => typeof c === 'string' ? _lbColour(c) : c).filter(Boolean);
+  p.hidden = false;
+  document.querySelector('#lb-body .lbx-cols').hidden = true;
+  document.querySelector('#lb-body .lbx-top').hidden = true;
+  _lbRenderChCols();
+  _lbChForm();
 }
 
-let _lbGroupsTicked = [];
-function _lbRestoreLooks() {
-  document.querySelectorAll('.lb-lg').forEach(x => { x.checked = _lbGroupsTicked.includes(x.value); });
-  _lbLookPreview();
+function looksEditClose(save) {
+  _lbStop();
+  if (save) {
+    if (!_lbChCols.length) { setStatus('Pick at least one colour.', 'warn'); return; }
+    const s = _lbSpec();
+    if (_lbEditing === 'new') _lbOwn.push(s);
+    else { delete s.group; _lbEdits[_lbEditing] = s; }
+  }
+  _lbEditing = null;
+  _v('lbx-panel').hidden = true;
+  document.querySelector('#lb-body .lbx-cols').hidden = false;
+  document.querySelector('#lb-body .lbx-top').hidden = false;
+  _lbRenderFams(); _lbChanged();
 }
 
-function looksAddCustom() {
-  const hex = document.getElementById('lb-cust-hex').value.toUpperCase();
-  const name = (document.getElementById('lb-cust-name').value || '').trim() || hex;
-  if (_lbAllColours().some(c => c.name.toLowerCase() === name.toLowerCase())) { setStatus(`'${name}' already exists.`, 'warn'); return; }
-  const c = { name, hex };
-  _lbCustom.push(c); _lbLookCols.push(c);
-  _lbGroupsTicked = [...document.querySelectorAll('.lb-lg:checked')].map(x => x.value);
-  _lbRender(); _lbRestoreLooks();
+function looksPattern(id) {
+  _v('lb-pat').value = id;
+  document.querySelectorAll('.lbx-pat').forEach(b => b.classList.toggle('on', b.dataset.pat === id));
+  _lbChForm();
 }
 
-function _lbLookPreview() {
-  _lbGroupsTicked = [...document.querySelectorAll('.lb-lg:checked')].map(x => x.value);
-  clearTimeout(_lbPrevTimer);
-  _lbPrevTimer = setTimeout(async () => {
-    const el = document.getElementById('lb-look-prev');
-    if (!el) return;
-    if (!_lbGroupsTicked.length || !_lbLookCols.length) {
-      el.innerHTML = `<div class="porter-placeholder">${_lbGroupsTicked.length ? 'Tick' : 'Tick fixture groups and'} colours to preview the looks.</div>`;
-      return;
-    }
-    const g = _lbGroupsTicked[0];
-    const r = await fetch('/api/looks/preview-look', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group: g, colours: _lbLookCols, level: +document.getElementById('lb-level').value / 100, position: _lbPosVal('lb-lpos') }) });
-    const d = await r.json();
-    if (!r.ok) { el.innerHTML = `<div class="porter-warn">${_esc(d.error)}</div>`; return; }
-    const gn = _lbOpts.groups.find(x => x.id === g).name;
-    el.innerHTML = `<div class="lb-cap">Simulated output — ${_esc(gn)}${_lbGroupsTicked.length > 1 ? ` (+${_lbGroupsTicked.length - 1} more group(s))` : ''}:
-        ${_lbGroupsTicked.length * _lbLookCols.length} look(s)</div>
-      <table class="lb-strip"><tr><th></th>${d.fixtures.map(f => `<th title="${_esc(f)}">${_esc(f)}</th>`).join('')}</tr>
-      ${d.looks.map(l => `<tr><td data-i18n-ctx="colour">${_esc(l.colour.name)}</td>${l.cells.map(c =>
-        `<td><span class="lb-cell" style="background:${c || 'transparent'}" title="${c || 'no .qxf — skipped'}">${c ? '' : '–'}</span></td>`).join('')}</tr>`).join('')}</table>`;
-  }, 150);
+let _lbTaps = [];
+function looksTap() {
+  const t = performance.now();
+  _lbTaps = _lbTaps.filter(x => t - x < 3000).concat(t);
+  if (_lbTaps.length >= 2) {
+    const gaps = _lbTaps.slice(1).map((x, i) => x - _lbTaps[i]);
+    _v('lb-bpm').value = Math.round(60000 / (gaps.reduce((a, b) => a + b, 0) / gaps.length));
+    _v('lb-tm').value = 'bpm';
+    _lbChForm();
+  }
 }
-
-function looksAddLooks() {
-  const gs = [...document.querySelectorAll('.lb-lg:checked')].map(x => x.value);
-  if (!gs.length || !_lbLookCols.length) { setStatus('Tick at least one group and one colour.', 'warn'); return; }
-  const level = +document.getElementById('lb-level').value / 100;
-  const position = _lbPosVal('lb-lpos');
-  for (const g of gs) _lbBatch.looks.push({ group: g, colours: _lbLookCols.map(c => ({ ...c })), level, ...(position ? { position } : {}) });
-  _lbRenderBatch();
-  setStatus(`${gs.length * _lbLookCols.length} look(s) added.`, 'ok');
-}
-
-// ── chaser ─────────────────────────────────────────────────────────────────
-function _v(id) { return document.getElementById(id); }
 
 function _lbChForm() {
   const pat = _v('lb-pat').value, tm = _v('lb-tm').value, fade = _v('lb-fade').value;
@@ -373,9 +618,9 @@ function _lbSpec() {
   if (_v('lb-tm').value === 'bpm') {
     s.bpm = +_v('lb-bpm').value; s.note = _v('lb-note').value;
     if (_v('lb-beats').checked) s.tempo = 'beats';
-  }
-  const pos = _lbPosVal('lb-cpos'); if (pos) s.position = pos;
-  else s.step_ms = +_v('lb-ms').value;
+  } else s.step_ms = +_v('lb-ms').value;
+  const pos = _v('lb-cpos').value;
+  if (pos.startsWith('place:')) s.place = pos.slice(6); else if (pos) s.position = pos;
   if (s.fade === 'fade') s.fade_pct = +_v('lb-fpct').value;
   if (s.pattern === 'random') { s.seed = +_v('lb-seed').value || 0; s.on_count = +_v('lb-on').value || 1; }
   if (s.pattern === 'alternate') s.split = _v('lb-split').value;
@@ -391,8 +636,10 @@ function _lbChPreview() {
     const el = _v('lb-ch-prev');
     if (!el || !_lbOpts) return;
     if (!_lbChCols.length) { el.innerHTML = '<div class="porter-placeholder">Pick at least one colour.</div>'; return; }
+    const spec = _lbSpec();
+    if (_lbEditing && _lbEditing !== 'new') spec.group = [...(_lbFx.get(_lbEditing) || _lbSel)][0] || spec.group;
     const r = await fetch('/api/looks/preview-chaser', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(_lbSpec()) });
+      body: JSON.stringify(spec) });
     const d = await r.json();
     if (!r.ok) { el.innerHTML = `<div class="porter-warn">${_esc(d.error)}</div>`; return; }
     _lbPrev = d;
@@ -427,31 +674,23 @@ function looksPlay() {
   _v('lb-playbtn').textContent = '■ Stop';
 }
 
-function looksAddChaser() {
-  if (!_lbChCols.length) { setStatus('Pick at least one colour.', 'warn'); return; }
-  _lbBatch.chasers.push(_lbSpec());
-  _lbRenderBatch();
-  setStatus('Chaser added.', 'ok');
-}
-
 function looksLoadPreset(i) {
   if (i === '') return;
   const p = _lbOpts.presets[+i];
   const set = (id, v) => { if (v !== undefined && v !== null) _v(id).value = v; };
-  set('lb-pat', p.pattern || 'chase');
+  looksPattern(p.pattern || 'chase');
   _v('lb-steps').value = p.steps || '';
   if (p.bpm) { _v('lb-tm').value = 'bpm'; set('lb-bpm', p.bpm); set('lb-note', p.note || '1/4'); }
   else { _v('lb-tm').value = 'ms'; set('lb-ms', p.step_ms || 500); }
   _v('lb-beats').checked = p.tempo === 'beats';
-  set('lb-cpos', typeof p.position === 'string' ? p.position : ''); _lbPosForm('lb-cpos');
+  set('lb-cpos', typeof p.position === 'string' ? p.position : '');
   set('lb-fade', p.fade || 'cut'); set('lb-fpct', p.fade_pct ?? 100);
   set('lb-cmode', p.colour_mode || 'step'); set('lb-kind', p.kind || 'dynamic');
   set('lb-seed', p.seed ?? 1); set('lb-on', p.on_count ?? 1); set('lb-split', p.split || 'halves');
-  _lbChCols = (p.colours || []).map(c => typeof c === 'string' ? _lbColour(c) : (_lbColour(c.name) || c)).filter(Boolean);
+  if ((p.colours || []).length) _lbChCols = p.colours.map(c => typeof c === 'string' ? _lbColour(c) : (_lbColour(c.name) || c)).filter(Boolean);
   const bg = p.background;
   _v('lb-bg').checked = !!bg;
   if (bg) { set('lb-bgc', typeof bg.colour === 'string' ? bg.colour : bg.colour?.name); set('lb-bgl', Math.round((bg.level ?? 0.3) * 100)); }
-  _v('lb-cname').value = '';
   _v('lb-pname').value = p.builtin ? '' : p.name;
   _lbRenderChCols();
   _lbChForm();
@@ -459,7 +698,7 @@ function looksLoadPreset(i) {
 
 async function looksSavePreset() {
   const name = (_v('lb-pname').value || '').trim();
-  if (!name) { setStatus('Type a name for the preset.', 'warn'); return; }
+  if (!name) { setStatus('Type a name for the recipe.', 'warn'); return; }
   const s = _lbSpec();
   delete s.group; delete s.name;
   const r = await fetch('/api/looks/presets', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -470,14 +709,14 @@ async function looksSavePreset() {
   const sel = _v('lb-preset');
   sel.innerHTML = '<option value="">—</option>' + d.presets.map((p, i) =>
     `<option value="${i}" ${p.name === name ? 'selected' : ''}>${p.builtin ? '' : '★ '}${_esc(p.name)}</option>`).join('');
-  setStatus(`Preset '${name}' saved.`, 'ok');
+  setStatus(`Recipe '${name}' saved.`, 'ok');
 }
 
 async function looksDeletePreset() {
   const i = _v('lb-preset').value;
   if (i === '') return;
   const p = _lbOpts.presets[+i];
-  if (p.builtin) { setStatus('Built-in presets cannot be deleted.', 'warn'); return; }
+  if (p.builtin) { setStatus('Built-in recipes cannot be deleted.', 'warn'); return; }
   const r = await fetch('/api/looks/presets/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: p.name }) });
   const d = await r.json();
@@ -485,75 +724,93 @@ async function looksDeletePreset() {
   _lbOpts.presets = d.presets;
   _v('lb-preset').innerHTML = '<option value="">—</option>' + d.presets.map((q, k) =>
     `<option value="${k}">${q.builtin ? '' : '★ '}${_esc(q.name)}</option>`).join('');
-  setStatus(`Preset '${p.name}' deleted.`, 'ok');
+  setStatus(`Recipe '${p.name}' deleted.`, 'ok');
 }
 
-// ── batch, check, build ────────────────────────────────────────────────────
-function _lbGName(id) { return (_lbOpts.groups.find(g => g.id === id) || {}).name || id; }
+// ── the plan sent to the server ─────────────────────────────────────────────
+function _lbPlan() {
+  const P = { looks: [], levels: [], strobes: [], gobos: [], chasers: [], efx: [], matrices: [] };
+  if (!_lbOpts) return P;
+  const fx = id => [...(_lbFx.get(id) || [])];
+  const level = +(_v('lb-level')?.value || 100) / 100;
+  const place = fx('places').length ? _lbPlace : '';
+  const aimFor = gid => (place && (_lbFx.get('places') || new Set()).has(gid)) ? { place } : {};
+  if (_lbCols.length) for (const g of fx('colour')) P.looks.push({ group: g, colours: _lbCols.map(c => ({ ...c })), level, ...aimFor(g) });
+  for (const g of fx('gobo')) {
+    const gobos = _lbGobos[g] || [];
+    if (gobos.length) P.gobos.push({ group: g, colours: (_lbCols.length ? _lbCols : [LB_WHITE]).map(c => ({ ...c })), gobos, level, ...aimFor(g) });
+  }
+  for (const g of fx('levels')) P.levels.push({ group: g });
+  for (const g of fx('strobe')) P.strobes.push({ group: g });
+  if (fx('blinder').length) P.blinder = { groups: fx('blinder') };
+  for (const eid of ['rainbow', 'split', 'ambient', 'strobechase', 'pulse']) for (const g of fx(eid)) P.chasers.push({ ..._lbRecipe(eid), group: g });
+  P.chasers.push(..._lbOwn);
+  for (const g of fx('sweep')) P.efx.push({ group: g, kind: 'sweep' });
+  for (const g of fx('fly')) P.efx.push({ group: g, kind: 'fly_out' }, { group: g, kind: 'fly_in' });
+  for (const g of fx('circle')) P.efx.push({ group: g, kind: 'circle' }, { group: g, kind: 'eight' });
+  for (const g of fx('mchase')) P.matrices.push({ group: g, pattern: 'Chase' });
+  for (const g of fx('mwave')) P.matrices.push({ group: g, pattern: 'Waves' });
+  for (const g of fx('mmore')) ['Plasma', 'Gradient', 'Stripes'].forEach(pattern => P.matrices.push({ group: g, pattern }));
+  P.matrices.push(..._lbBars);
+  const vc = document.querySelector('input[name="lb-vc"]:checked')?.value || 'pages';
+  return { ...P, vc, vc_page: vc === 'none' ? '' : (_v('lb-vcname')?.value || 'Looks'),
+    folders: _v('lb-bygroup')?.checked ? 'group' : '', palettes: !!_v('lb-pal')?.checked,
+    nomenclature: _v('lb-nom')?.value || 'plain', folder: _v('lb-folder')?.value || '' };
+}
+
+function _lbEmpty(p) {
+  return !['looks', 'levels', 'strobes', 'gobos', 'chasers', 'efx', 'matrices'].some(k => p[k].length) && !(p.blinder || {}).groups;
+}
+
+// ── will add: counts from a debounced check ─────────────────────────────────
+function _lbChanged() {
+  _lbRenderStage();
+  _lbSync();
+  clearTimeout(_lbCheckTimer);
+  const el = _v('lb-batch');
+  const p = _lbPlan();
+  if (_lbEmpty(p)) { _lbLast = null; if (el) el.innerHTML = '<div class="p-desc">Pick a group and tick an effect.</div>'; _lbSync(); return; }
+  if (el) el.classList.add('busy');
+  _lbCheckTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/looks/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) });
+      const d = await r.json();
+      if (!r.ok) { _lbLast = null; el.innerHTML = `<div class="porter-warn">${_esc(d.error || 'Check failed.')}</div>`; _lbSync(); return; }
+      _lbLast = d;
+      _lbRenderBatch();
+    } catch (e) { /* the server went away */ } finally { el && el.classList.remove('busy'); }
+  }, 450);
+}
 
 function _lbRenderBatch() {
   const el = _v('lb-batch');
-  if (!el) { _lbSync(); return; }
-  const L = _lbBatch.looks.map((l, i) => `<div class="lb-item">
-      <span>🎨 ${_esc(_lbGName(l.group))} × ${l.colours.map(c => `<i class="lb-dot" style="background:${c.hex}"></i>${_esc(c.name)}`).join(' ')}
-        ${l.level < 1 ? ` @ ${Math.round(l.level * 100)} %` : ''}${l.position ? ` · ${_esc(_lbPosName(l.position))}` : ''}</span>
-      <button class="btn btn-surface btn-sm" onclick="looksRemove('looks', ${i})">✕</button></div>`);
-  const M = _lbBatch.matrices.map((m, i) => `<div class="lb-item">
-      <span>▦ ${_esc(m.name || m.pattern)} — ${_esc(m.pattern)} on ${m.fixtures.map(id => _esc((_lbOpts.pixel_bars.find(b => b.id === id) || {}).name || id)).join(', ')},
-        ${m.duration} ms ${m.colours.map(x => `<i class="lb-dot" style="background:${x.hex}"></i>`).join('')}</span>
-      <button class="btn btn-surface btn-sm" onclick="looksRemove('matrices', ${i})">✕</button></div>`);
-  const C = _lbBatch.chasers.map((c, i) => {
-    const pat = (_lbOpts.patterns.find(p => p.id === c.pattern) || {}).label;
-    const t = c.bpm ? (c.tempo === 'beats' ? `${c.note} beat (QLC+ tempo)` : `${c.bpm} BPM ${c.note}`) : `${c.step_ms} ms`;
-    return `<div class="lb-item">
-      <span>🔁 ${_esc(c.name || pat)} — ${_esc(_lbGName(c.group))}, ${_esc(pat)}, ${t}${c.position ? `, ${_esc(_lbPosName(c.position))}` : ''}, ${c.fade === 'fade' ? `fade ${c.fade_pct}%` : 'cut'}
-        ${c.colours.map(x => `<i class="lb-dot" style="background:${x.hex}"></i>`).join('')}</span>
-      <button class="btn btn-surface btn-sm" onclick="looksRemove('chasers', ${i})">✕</button></div>`;
-  });
-  el.innerHTML = (L.concat(C, M).join('')) || '<div class="porter-placeholder">Add looks or chasers on the left.</div>';
-  _v('lb-check').innerHTML = '';
+  if (!el || !_lbLast) return;
+  const c = _lbLast.created, doc = _lbLast.doctor;
+  const rows = [['Looks (every channel set)', c.looks], ['Chasers', c.chasers], ['Movement effects', c.efx || 0],
+    ['RGB matrices', c.matrices || 0], ['Buttons', c.buttons]].filter(x => x[1]);
+  el.innerHTML = rows.map(([w, n]) => `<div class="lbx-sumrow"><span>${w}</span><b>+${n}</b></div>`).join('') +
+    `<div class="lbx-doc ${doc.new_errors.length ? 'bad' : ''}">${doc.new_errors.length || doc.new_warnings.length
+      ? `<span>Doctor: new</span> <span>${doc.new_errors.length} error(s), ${doc.new_warnings.length} warning(s)</span>` : '<span>Doctor: nothing new</span>'}</div>` +
+    (_lbLast.blocked ? '<p class="porter-warn">⛔ The result has new Doctor errors — it will not be added.</p>' : '') +
+    `<details><summary>Changes (${_lbLast.log.length})</summary><div class="rr-log">${_lbLast.log.map(x => `<div>${_esc(x)}</div>`).join('')}</div></details>` +
+    (_lbLast.notes.length ? `<details><summary>Notes (${_lbLast.notes.length})</summary><div class="rr-log">${_lbLast.notes.map(x => `<div>${_esc(x)}</div>`).join('')}</div></details>` : '');
   _lbSync();
 }
 
-function looksRemove(kind, i) { _lbBatch[kind].splice(i, 1); _lbRenderBatch(); }
-
 function _lbSync() {
-  const s = _v('lb-summary'), b = _v('lb-go');
-  const nl = _lbBatch.looks.reduce((a, l) => a + l.colours.length, 0), nc = _lbBatch.chasers.length, nm = _lbBatch.matrices.length;
-  if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${nl} look(s)</span><span class="doc-chip">${nc} chaser(s)</span>${nm ? `<span class="doc-chip">${nm} matrix</span>` : ''}` : '';
-  if (b) b.disabled = !(nl || nc || nm);
-  const x = _v('lb-export'); if (x) x.disabled = !(nl || nc || nm);
-  if (typeof setOutcome === 'function') setOutcome('looks', nl || nc || nm
-    ? [nl ? `+${nl} look${nl > 1 ? 's' : ''}` : '', nc ? `+${nc} chaser${nc > 1 ? 's' : ''}` : '', nm ? `+${nm} matrix pattern${nm > 1 ? 's' : ''}` : ''].filter(Boolean)
-    : 'nothing yet — add looks, chasers or matrix patterns to the batch', '', nl || nc || nm ? 'Apply will add' : 'Apply will do');
+  const s = _v('lb-summary'), b = _v('lb-go'), x = _v('lb-export');
+  const c = _lbLast ? _lbLast.created : null;
+  const ok = !!c && !_lbLast.blocked;
+  if (s) s.innerHTML = _lbOpts ? `<span class="doc-chip">${_lbSel.size} group(s)</span><span class="doc-chip">${[..._lbFx.values()].filter(v => v.size).length} effect(s)</span>` : '';
+  if (b) b.disabled = !ok;
+  if (x) x.disabled = !ok;
+  if (typeof setOutcome === 'function') setOutcome('looks', c
+    ? [c.looks ? `+${c.looks} look${c.looks > 1 ? 's' : ''}` : '', c.chasers ? `+${c.chasers} chaser${c.chasers > 1 ? 's' : ''}` : '',
+       c.efx ? `+${c.efx} movement effect${c.efx > 1 ? 's' : ''}` : '', c.matrices ? `+${c.matrices} matrix pattern${c.matrices > 1 ? 's' : ''}` : ''].filter(Boolean)
+    : 'nothing yet — pick groups and tick effects', '', c ? 'Apply will add' : 'Apply will do');
 }
 
-function _lbPlan() {
-  return {
-    looks: _lbBatch.looks, chasers: _lbBatch.chasers, matrices: _lbBatch.matrices,
-    nomenclature: _v('lb-nom')?.value || 'plain', folder: _v('lb-folder')?.value || '',
-    vc_page: _v('lb-vc')?.checked ? (_v('lb-vcname').value || 'Looks') : '',
-  };
-}
-
-async function looksCheck() {
-  const el = _v('lb-check');
-  setStatus('Checking…', 'info');
-  const r = await fetch('/api/looks/check', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(_lbPlan()) });
-  const d = await r.json();
-  if (!r.ok) { setStatus(d.error || 'Check failed.', 'error'); return; }
-  const c = d.created, doc = d.doctor;
-  el.innerHTML = `<p><b>${c.looks}</b> look(s), <b>${c.chasers}</b> chaser(s) with <b>${c.step_scenes}</b> step scene(s),
-      ${c.matrices ? `<b>${c.matrices}</b> matrix pattern(s), ` : ''}<b>${c.buttons}</b> button(s).</p>
-    <p>Doctor on the result: ${doc.total_errors} error(s), ${doc.total_warnings} warning(s)
-      ${doc.new_errors.length || doc.new_warnings.length ? `— <b>new</b>: ${doc.new_errors.length} error(s), ${doc.new_warnings.length} warning(s)` : '— nothing new'}.</p>
-    ${d.blocked ? '<p class="porter-warn">⛔ The result has new Doctor errors — it will not be exported.</p>' : ''}
-    ${[...doc.new_errors, ...doc.new_warnings].slice(0, 20).map(x => `<div class="porter-warn">⚠ ${_esc(x)}</div>`).join('')}
-    <details open><summary>Changes (${d.log.length})</summary><div class="rr-log">${d.log.map(x => `<div>${_esc(x)}</div>`).join('')}</div></details>
-    ${d.notes.length ? `<details><summary>Notes (${d.notes.length})</summary><div class="rr-log">${d.notes.map(x => `<div>${_esc(x)}</div>`).join('')}</div></details>` : ''}`;
-  setStatus('Check done.', 'ok');
-}
+async function looksCheck() { _lbChanged(); }
 
 async function looksBuild() {
   setStatus('Building…', 'info');

@@ -142,7 +142,9 @@ def build(work: ET.Element, caption: str, pages: List[dict], names: Dict[str, st
                 ET.SubElement(lv, "Channel", {"Fixture": f}).text = str(c)
             fr.append(s)
             cx = MARGIN + SLIDER[0] + GAP
-        avail = fw - cx - MARGIN
+        # moving heads: the XY pad gets the right-hand column, under PANIC RESET
+        pad_col = XYPAD[0] + GAP if p.get("xypad") else 0
+        avail = fw - cx - MARGIN - pad_col
         y = y_col
         # looks: one at a time, in a solo frame; each list starts a new line
         if n_looks:
@@ -192,8 +194,8 @@ def build(work: ET.Element, caption: str, pages: List[dict], names: Dict[str, st
         # moving heads: an XY pad that aims at the stage floor in QLC+ 5.3
         pad = False
         if p.get("xypad"):
-            px = MARGIN
-            py = max(y_col + (SLIDER[1] + GAP if p.get("slider") else 0), y)
+            px = fw - MARGIN - XYPAD[0]
+            py = y_col
             if py + XYPAD[1] <= fh - MARGIN:
                 xy = ET.Element("XYPad", {"Caption": "Position", "ID": str(nid())})
                 if i:

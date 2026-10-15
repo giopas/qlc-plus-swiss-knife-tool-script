@@ -29,15 +29,21 @@ def _nom(ref):
         return nom.load_profile('plain')
 
 
+KINDS = ('looks', 'levels', 'strobes', 'gobos', 'chasers', 'efx', 'matrices')
+
+
 def _plan() -> dict:
     d = request.get_json(force=True) or {}
     looks = [{'group': str(x.get('group')), 'colours': list(x.get('colours') or []),
-              'level': x.get('level'), 'position': x.get('position')}
+              'level': x.get('level'), 'position': x.get('position'), 'place': x.get('place')}
              for x in (d.get('looks') or []) if isinstance(x, dict)]
-    matrices = [dict(x) for x in (d.get('matrices') or []) if isinstance(x, dict)]
-    chasers = [dict(x) for x in (d.get('chasers') or []) if isinstance(x, dict)]
+    out = {k: [dict(x) for x in (d.get(k) or []) if isinstance(x, dict)] for k in KINDS if k != 'looks'}
     vc = (d.get('vc_page') or '').strip() if isinstance(d.get('vc_page'), str) else ''
-    return {'looks': looks, 'chasers': chasers, 'matrices': matrices, 'folder': (d.get('folder') or '').strip(),
+    bl = d.get('blinder') if isinstance(d.get('blinder'), dict) else None
+    layout = d.get('vc') if d.get('vc') in ('pages', 'one', 'none') else None
+    return {'looks': looks, **out, 'blinder': bl, 'folder': (d.get('folder') or '').strip(),
+            'folders': 'group' if d.get('folders') == 'group' else None,
+            'palettes': bool(d.get('palettes')), 'vc': layout,
             'vc_page': vc or None, 'nomenclature': d.get('nomenclature') or 'plain'}
 
 
@@ -53,7 +59,24 @@ def options():
     root, path, name, err = _need_ws()
     if err:
         return err
-    return jsonify({'source': name, 'groups': lb.groups(root, _defs(path)),
+    from core import look_families as LF
+    from core import stage3d
+    defs = _defs(path)
+    gs = lb.groups(root, defs, caps=True)
+    r = lb._stripped(root)             # a copy: the show in progress keeps its namespace
+    info = lb._fixture_info(r, defs)
+    for g in gs:
+        g['gobo_names'] = LF.gobo_list([info[i] for i in g['fixtures']])
+    try:
+        st = stage3d.stage(r)
+        spots = [{'id': f['id'], 'x': f['place']['x'], 'z': f['place']['z']} for f in stage3d.fixtures(r, defs)]
+    except Exception:  # noqa: BLE001 — the preview map is optional
+        st, spots = {}, []
+    return jsonify({'source': name, 'groups': gs,
+                    'roles': list(LF.ROLES), 'role_families': {k: list(v) for k, v in LF.ROLE_FAMILIES.items()},
+                    'places': LF.places(r),
+                    'efx_kinds': [{'id': k, 'label': v[0], 'relative': v[2]} for k, v in LF.EFX_KINDS.items()],
+                    'stage': {'size': st, 'fixtures': spots},
                     'palettes': lb.palettes(), 'palette_order': list(lb.palettes()), 'presets': lb.presets(),
                     'patterns': [{'id': p, 'label': lb.PATTERN_LABELS[p]} for p in lb.PATTERNS],
                     'notes': list(lb.NOTES), 'nomenclature': nom.list_profiles(),
@@ -89,7 +112,7 @@ def preview_look():
 
 def _run(root, path, name, out_name=''):
     p = _plan()
-    if not p['looks'] and not p['chasers'] and not p['matrices']:
+    if not any(p[k] for k in KINDS) and not (p['blinder'] or {}).get('groups'):
         raise ValueError('Add at least one look, chaser or matrix pattern.')
     return lb.run(root, _defs(path), p, _nom(p['nomenclature']), name, out_name)
 

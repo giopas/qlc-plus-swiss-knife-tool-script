@@ -18,16 +18,16 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.1.0, 14 October 2026 (prepared, not yet merged).** Every phase of the plan is built and released up to 3.0.3; 3.1.0 adds support for shows made by the QLC+ 5.3 Show Wizard. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.2.0, 15 October 2026 (prepared, not yet merged).** Every phase of the plan is built and released up to 3.1.0, which added support for shows made by the QLC+ 5.3 Show Wizard. 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
-| Tools | Quick Start, Fixtures, Rig Reducer, Function Porter, Brightness, Look Builder, VC Visual Editor, Stage and Meshes, Library, Setlist, Trigger Manager, Dictionary, Workspace Doctor, Wizard Repair, Compare, ID Browser, Show Paperwork. |
+| Tools | Quick Start, Fixtures, Rig Reducer, Function Porter, Brightness, Look Builder, VC Visual Editor, Stage and Meshes, Library, Setlist, Trigger Manager, Dictionary, Workspace Doctor, Wizard Repair, Upgrade to QLC+ 5.3, Compare, ID Browser, Show Paperwork. |
 | Reuse | The recipe replays a session to the same file. Show Profiles apply the same changes to another show. |
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
-| Claude | Swiss Knife is an MCP server with 25 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 893 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Claude | Swiss Knife is an MCP server with 26 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
+| Tests | 913 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -47,6 +47,22 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | A library file moved between two machines | Built and tested, never tried between two computers. |
 | The SINCO MIDI patch and a real controller | The Inputs and MIDI tools are verified on show files and by tests, not with a controller connected. |
 | The v2.4.0 live check on the Mac | Doctor fixes with a choice, opened in real QLC+. |
+
+### Released in 3.2.0 (prepared 14 and 15 October, branch `feat/v3.2.0`)
+
+Item 3.3 of the alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`), *Upgrade a v5 show to 5.3*, released as 3.2.0 because 3.1 and 3.2 shipped together as 3.1.0. The source of QLC+ 5.2.2 and 5.3.0 (tags `QLC+_5.2.2` and `QLC+_5.3.0`) was compared first: an older show loads in 5.3 as it is (5.2.2 already runs the `Engine.*` script form), so the upgrade only adds. The XML keys new in 5.3 are `Locked`, the XY pad's `FloorControl`, `Group` and `FloorPosition`, `ControlBPM`, `Position3D` palettes and EFX `DimmerControl`.
+
+| Change | Where |
+|---|---|
+| Upgrade to QLC+ 5.3: folders, palettes (the wizard's names and values, only those that work on the rig, colours the looks use), All Fixtures group, grids from the stage (off by default), Position3D palettes from the stage and musician models (5.3), a page per group with intensity slider, looks, effects, PANIC RESET and floor XY pads, hide, lock (5.3); target 5.3 or 5.2.2; a wizard show goes to Wizard Repair | `core/upgrade53.py` |
+| Screen, route, guided route *Upgrade a show to QLC+ 5.3*, `upgrade_show` Claude tool and guide workflow | `routes/upgrade_routes.py`, `static/js/upgrade.js`, `core/mcp_server.py`, `core/mcp_guide.py` |
+| Doctor I008: what QLC+ 5.2.2 ignores in a 5.3 show | `core/doctor/checks.py` |
+| Translations in the seven languages | `static/i18n/*.json` |
+| 20 tests on Festival, Pub and Quick Start shows and on the wizard video show without its folders and frame (moving heads) | `tests/test_upgrade53.py` |
+| Wiki: new page *Upgrade Older Shows*; I008 on *Workspace Doctor*; *Claude's tools* regenerated; the route on *Home* and *Show in Progress* | wiki |
+| Check on the Mac: open an upgraded Festival or Pub show in QLC+ 5.3.0 (function tree folders, palettes in the palette panel, the Groups page, the frame's page selector) and in QLC+ 5.2.2; on a show with moving heads, the floor XY pads and the Position3D palettes | To do (giopas) |
+
+Decisions taken with it (14 October): no position-only or colour-only scenes are generated (principle 5 stays; positions are palettes and XY pads). No BPM speed dial (it only drives functions set to follow the beat, and Swiss Knife's chasers run on time). The XY pads list fixtures, not groups, so they work in 5.2.2. Folder names are English, like the wizard's. Next: aligning Quick Start and the Look Builder with the wizard (roles, capabilities from the definition, grids from the stage, placement by role), item 3.4 of the alignment plan.
 
 ### Released in 3.1.0 (prepared 14 October, branch `feat/v3.1.0`)
 
@@ -186,6 +202,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.0.2 | 8 Oct | German, Spanish, Portuguese, Japanese and Chinese. |
 | 3.0.3 | 9 Oct | Tool names translated; the gaps of the new languages filled. |
 | 3.1.0 | 14 Oct | QLC+ 5.3 Show Wizard shows: palettes read everywhere, Doctor D019 and D020, Wizard Repair. |
+| 3.2.0 | 15 Oct | Upgrade to QLC+ 5.3 for older shows; Doctor I008. |
 
 ## 4. Goal and the Pub test
 
@@ -300,4 +317,6 @@ These were left out on purpose or have no date.
 | Quick Start rig in memory as the Porter target | Only if the save-first hand-off feels clumsy. |
 | Rig Editor with rename, add and wiring | Wiring lives in the Porter. |
 | MIDI learn simulation | The simulator tells you what a message would trigger. |
+| Quick Start writes `4.13.1` as the QLC+ version in a new show | QLC+ never reads it (checked in the 5.3.0 source), so it does no harm, but *5.2.2* would be truthful. Changing it changes the golden files. |
+| Folder names in the user's language or naming profile | The upgrade writes English names, like the Show Wizard. |
 | Dropped | The audio-trigger helper, and the upstream bug reports to QLC+. |

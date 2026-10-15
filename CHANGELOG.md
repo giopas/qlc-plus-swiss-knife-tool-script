@@ -7,6 +7,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.2.0] — 2026-10-15
+
 Older QLC+ 5 shows get what QLC+ 5.3 offers. Checked against the source of QLC+ 5.2.2 and 5.3.0: an older show opens in 5.3 as it is, so the upgrade only adds.
 
 ### Added

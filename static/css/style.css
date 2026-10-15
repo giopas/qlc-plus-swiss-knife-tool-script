@@ -4306,3 +4306,5 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .lbx-panel .lb-row[hidden] { display: none; }
 .lbx-more .lb-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
 .lbx-more .lb-grid select.filter-input { min-width: 90px; }
+.lbx-vc, .lbx-opts, .lbx-opts label, .lbx-vc label { min-width: 0; }
+.lbx-vc label > span, .lbx-opts label > span { white-space: normal; overflow-wrap: anywhere; }

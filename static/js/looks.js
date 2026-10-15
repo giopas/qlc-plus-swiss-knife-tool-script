@@ -135,7 +135,7 @@ function _lbRender() {
   <div class="lbx-top">
     <span class="lbx-lbl">Start from</span>
     <div class="lbx-seg" role="group" aria-label="Show type">${Object.keys(LB_TYPES).map(t =>
-      `<button type="button" class="${_lbType === t ? 'on' : ''}" onclick="looksType('${t}')">${_esc(t)}</button>`).join('')}</div>
+      `<button type="button" class="${_lbType === t ? 'on' : ''}" onclick="looksType('${t}')" data-i18n-ctx="lb">${_esc(t)}</button>`).join('')}</div>
     <span class="p-desc">pre-ticks effects the way the QLC+ 5.3 Show Wizard does; change anything after</span>
   </div>
   <div class="lbx-cols">
@@ -181,9 +181,9 @@ function _lbRenderGroups() {
       <label class="lbx-gh"><input type="checkbox" ${on ? 'checked' : ''} ${dis ? 'disabled' : ''} onchange="looksGroup('${_esc(g.id)}', this.checked)">
         <b data-i18n="off">${_esc(g.name)}</b><span class="lb-n">${g.fixtures.length}</span></label>
       <div class="lbx-gm"><label>Role <select class="filter-input" onchange="looksRole('${_esc(g.id)}', this.value)">${_lbOpts.roles.map(r =>
-        `<option ${_lbRole[g.id] === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        `<option ${_lbRole[g.id] === r ? 'selected' : ''} data-i18n="off">${r}</option>`).join('')}</select></label>
         <span class="lbx-model" data-i18n="off" title="${_esc(g.model || '')}">${_esc(g.model || '')}</span></div>
-      <div class="lbx-caps">${(g.labels || []).map(c => `<span>${_esc(c)}</span>`).join('')}${dis ? '<span class="lbx-warn">no fixture definition</span>' : ''}</div>
+      <div class="lbx-caps">${(g.labels || []).map(c => `<span data-i18n-ctx="lb">${_esc(c)}</span>`).join('')}${dis ? '<span class="lbx-warn">no fixture definition</span>' : ''}</div>
     </div>`;
   }).join('');
 }
@@ -215,7 +215,7 @@ function _lbRenderFams() {
   el.innerHTML = LB_FAM.map(f => {
     const ticked = f.items.filter(e => (_lbFx.get(e.id) || new Set()).size).length;
     return `<div class="lb-card lbx-fam">
-      <div class="lbx-h"><i class="lbx-dot" style="background:${f.dot}"></i><h3>${f.name}</h3>
+      <div class="lbx-h"><i class="lbx-dot" style="background:${f.dot}"></i><h3 data-i18n-ctx="lb">${f.name}</h3>
         <span class="lb-n">${ticked} of ${f.items.length} ticked</span><span class="lbx-sp"></span>
         <button class="btn btn-surface btn-sm" onclick="looksFamily('${f.id}')">All / None</button></div>
       <div class="lbx-cards">${f.items.map(e => _lbCard(e)).join('')}</div>
@@ -242,9 +242,9 @@ function _lbCard(e) {
   const [makes, sub] = on ? _lbMakes(e, [...gids]) : ok ? _lbMakes(e, cap) : ['', ''];
   return `<div class="lbx-c ${on ? 'on' : ''} ${ok ? '' : 'dis'}">
     <label class="lbx-ch"><input type="checkbox" ${on ? 'checked' : ''} ${ok ? '' : 'disabled'} onchange="looksTick('${e.id}', this.checked)">
-      <b>${e.name}</b>${e.isNew ? '<span class="lbx-new">NEW</span>' : ''}</label>
+      <b data-i18n-ctx="lb">${e.name}</b>${e.isNew ? '<span class="lbx-new">NEW</span>' : ''}</label>
     ${ok ? `<div class="lbx-mk"><span>${makes}</span>${sub ? `<span class="lb-n">${sub}</span>` : ''}</div>` :
-      `<div class="lbx-why">${_lbSel.size ? `<span>Not for these groups</span> <span>(${e.why})</span>` : '<span>Pick a group</span>'}</div>`}
+      `<div class="lbx-why">${_lbSel.size ? `<span>Not for these groups</span> <span>${e.why}</span>` : '<span>Pick a group</span>'}</div>`}
     ${on ? `<div class="lbx-on">${cap.map(id => `<button class="lbx-gchip ${gids.has(id) ? 'on' : ''}" onclick="looksFxGroup('${e.id}', '${_esc(id)}')" data-i18n="off">${_esc(_lbGName(id))}</button>`).join('')}
       ${e.chaser ? `<button class="btn btn-surface btn-sm" onclick="looksEdit('${e.id}')">Edit…</button>` : ''}</div>` : ''}
   </div>`;
@@ -273,7 +273,7 @@ function _lbGoboBar() {
   const gids = [..._lbFx.get('gobo')];
   return gids.map(id => {
     const g = _lbGroup(id), names = g.gobo_names || [], pick = _lbGobos[id] || [];
-    return `<div class="lbx-bar"><span class="lbx-lbl" data-i18n="off">${_esc(g.name)}</span><span class="lb-n">gobos</span>
+    return `<div class="lbx-bar"><span class="lbx-lbl" data-i18n="off">${_esc(g.name)}</span><span class="lb-n" data-i18n-ctx="lb">gobos</span>
       ${names.map((n, i) => `<button class="lbx-gchip ${pick.includes(i + 1) ? 'on' : ''}" onclick="looksGobo('${_esc(id)}', ${i + 1})" data-i18n="off">${_esc(n)}</button>`).join('')}
       <button class="btn btn-surface btn-sm" onclick="looksGoboAll('${_esc(id)}')">All / None</button></div>`;
   }).join('');
@@ -490,7 +490,7 @@ function looksEdit(eid) {
   const firstG = [...(_lbFx.get(eid) || _lbSel)][0] || (_lbOpts.groups.find(g => g.supported) || _lbOpts.groups[0]).id;
   p.innerHTML = `<div class="lbx-ph">
       <button class="btn btn-surface btn-sm" onclick="looksEditClose(false)">← Look &amp; Chaser Builder</button>
-      <h3>${_esc(title)}</h3><span class="lbx-sp"></span>
+      <h3 data-i18n-ctx="lb">${_esc(title)}</h3><span class="lbx-sp"></span>
       <button class="btn btn-surface" onclick="looksEditClose(false)">Cancel</button>
       <button class="btn btn-surface" id="lb-edit-done" onclick="looksEditClose(true)">${eid === 'new' ? '+ Add chaser' : 'Done'}</button></div>
     <div class="lbx-pcols"><div class="lb-card" data-lbpane="chaser">

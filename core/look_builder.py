@@ -290,14 +290,18 @@ def _fixture_info(root: ET.Element, qxf_defs) -> Dict[str, dict]:
     return out
 
 
-def groups(root: ET.Element, qxf_defs=None) -> List[dict]:
-    """``[{id, name, fixtures: [ids in order], supported: n}]`` — "all" first
-    (every fixture, in patch order), then the workspace's fixture groups
-    (heads ordered by row, then column; a fixture listed once)."""
+def groups(root: ET.Element, qxf_defs=None, *, caps: bool = False) -> List[dict]:
+    """``[{id, name, fixtures: [ids in order], supported: n, grid: [x, y]}]`` —
+    "all" first (every fixture, in patch order), then the workspace's fixture
+    groups (heads ordered by row, then column; a fixture listed once).  With
+    *caps*, each also gets what it can do and a suggested role
+    (:mod:`core.look_families`)."""
+    from core import look_families as LF
     r = _stripped(root)
     info = _fixture_info(r, qxf_defs)
     ok = lambda ids: sum(1 for i in ids if info[i]["def"] or info[i]["generic"])  # noqa: E731
-    out = [{"id": ALL, "name": "All fixtures", "fixtures": list(info), "supported": ok(list(info))}]
+    out = [{"id": ALL, "name": "All fixtures", "fixtures": list(info), "supported": ok(list(info)),
+            "grid": [0, 0]}]
     for g in _engine(r).findall("FixtureGroup"):
         heads = sorted(g.findall("Head"), key=lambda h: (int(h.get("Y", "0") or 0), int(h.get("X", "0") or 0)))
         ids: List[str] = []
@@ -305,8 +309,18 @@ def groups(root: ET.Element, qxf_defs=None) -> List[dict]:
             fx = h.get("Fixture")
             if fx in info and fx not in ids:
                 ids.append(fx)
+        size = g.find("Size")
+        try:
+            grid = [int(size.get("X", 0)), int(size.get("Y", 0))] if size is not None else [0, 0]
+        except ValueError:
+            grid = [0, 0]
         out.append({"id": g.get("ID"), "name": (g.findtext("Name") or f"Group {g.get('ID')}").strip(),
-                    "fixtures": ids, "supported": ok(ids)})
+                    "fixtures": ids, "supported": ok(ids), "grid": grid})
+    if caps:
+        for g in out:
+            c = LF.group_caps([info[i] for i in g["fixtures"]], tuple(g["grid"]) if g["id"] != ALL else None)
+            g.update(c)
+            g["role"] = LF.suggest_role(g["name"], c["caps"])
     return out
 
 
@@ -322,18 +336,31 @@ def _group(root, qxf_defs, gid) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def fixture_values(fx: dict, col: Optional[dict], level: float,
-                   pos: Optional[dict] = None) -> Tuple[Dict[int, int], List[str]]:
+                   pos: Optional[dict] = None, *, strobe: Optional[float] = None,
+                   gobo: Optional[int] = None, aim: Optional[Dict[int, int]] = None
+                   ) -> Tuple[Dict[int, int], List[str]]:
     """Every channel of the fixture for *col* at *level* (0..1).  *col* None
     or level 0 → dark (dimmer 0, colour kept where it has one).  *pos* (see
-    :func:`position`) aims fixtures that have pan / tilt; others ignore it."""
+    :func:`position`) aims fixtures that have pan / tilt; others ignore it.
+    *strobe* (0..1) strobes at that speed inside the fixture's own strobe
+    range; *gobo* (1-based) puts that static gobo in; *aim* is pan/tilt
+    channel values (a place on the stage) that replace *pos*."""
     rgb = hex_rgb(col["hex"]) if col else (1.0, 1.0, 1.0)
     white = float(col.get("white") or 0.0) if col else 0.0
     if fx["def"] is not None:
         st = cm.LookState(level=level, colour=rgb, white=white or None,
-                          colour_source="mix", shutter="open")
-        if pos:
+                          colour_source="mix", shutter="open" if strobe is None else "strobe",
+                          strobe_speed=strobe or 0.0)
+        if pos and not aim:
             st.pan, st.tilt = pos["pan"] / 100.0 - 0.5, pos["tilt"] / 100.0 - 0.5
         vals, notes = cm.encode(fx["def"], fx["mode"], st)
+        if gobo:
+            from core import look_families as LF
+            gv = LF.gobo_value(fx, gobo)
+            if gv is not None:
+                vals[gv[0]] = gv[1]
+        if aim:
+            vals.update(aim)
         n = max(fx["channels"], len(mode_channels({"mode": fx["mode"]}, fx["def"])))
         for i in range(n):
             vals.setdefault(i, 0)
@@ -692,7 +719,7 @@ def _matrix_group(work: ET.Element, name: str, bars: List[dict], gid: int) -> ET
 
 
 def _rgbmatrix(fid: int, name: str, path: str, gid: int, script: str, colours: List[str],
-               duration: int, props: Dict[str, str]) -> ET.Element:
+               duration: int, props: Dict[str, str], control: str = "RGB") -> ET.Element:
     fn = ET.Element("Function", {"ID": str(fid), "Type": "RGBMatrix", "Name": name, "Path": path})
     ET.SubElement(fn, "Speed", {"FadeIn": "0", "FadeOut": "0", "Duration": str(duration)})
     ET.SubElement(fn, "Direction").text = "Forward"
@@ -701,7 +728,7 @@ def _rgbmatrix(fid: int, name: str, path: str, gid: int, script: str, colours: L
     ET.SubElement(fn, "DimmerControl").text = "1"
     for k, c in enumerate(colours[:5]):
         ET.SubElement(fn, "Color", {"Index": str(k)}).text = _qlc_colour(c)
-    ET.SubElement(fn, "ControlMode").text = "RGB"
+    ET.SubElement(fn, "ControlMode").text = control
     ET.SubElement(fn, "FixtureGroup").text = str(gid)
     for k, v in props.items():
         ET.SubElement(fn, "Property", {"Name": k, "Value": v})
@@ -711,22 +738,57 @@ def _rgbmatrix(fid: int, name: str, path: str, gid: int, script: str, colours: L
 # build
 # ─────────────────────────────────────────────────────────────────────────────
 
+WHITE = {"name": "White", "hex": "#FFFFFF"}
+DEFAULT_LEVELS = (("Full", 1.0), ("Half", 0.5), ("Off", 0.0))
+DEFAULT_STROBES = (("Strobe slow", 0.2), ("Strobe fast", 0.85))     # the wizard's 20 % and 85 %
+LOOK_KINDS = ("colour", "levels", "strobe", "gobo")
+
+
+def _resolve_place(spec, work) -> Optional[dict]:
+    """A place on the stage: a name (Centre, Audience, a musician model) or
+    ``{name, x, y, z}`` in metres.  None when *spec* is empty."""
+    if not spec:
+        return None
+    if isinstance(spec, dict) and "x" in spec and "z" in spec:
+        return {"name": str(spec.get("name") or "Place"), "x": float(spec["x"]),
+                "y": float(spec.get("y") or 0), "z": float(spec["z"])}
+    from core import look_families as LF
+    name = str(spec.get("name") if isinstance(spec, dict) else spec).strip().lower()
+    for p in LF.places(work):
+        if p["name"].lower() == name:
+            return p
+    raise ValueError(f"unknown place on the stage: {spec}")
+
+
 def build(root: ET.Element, qxf_defs, plan: dict, nomenclature=None) -> dict:
     """Add the planned looks and chasers to a copy of *root*.
 
     *plan*::
 
-        {"looks":   [{"group": gid, "colours": [...], "level": 1.0}],
-         "chasers": [{"group": gid, "name": "...", **chaser recipe}],
+        {"looks":   [{"group": gid, "colours": [...], "level": 1.0,
+                      "position": preset | {pan, tilt}, "place": name | {x, y, z}}],
+         "levels":  [{"group": gid, "levels": [{"name": "Full", "level": 1.0}, …]}],
+         "strobes": [{"group": gid, "speeds": [{"name": "Strobe slow", "speed": 0.2}, …]}],
+         "gobos":   [{"group": gid, "colours": [...], "gobos": [1, 2, …] | None, "place": …}],
+         "blinder": {"groups": [gid, …], "name": "Blinder hit"},
+         "chasers": [{"group": gid, "name": "...", **chaser recipe, "place": …}],
+         "efx":     [{"group": gid, "kind": "fly_out" | "fly_in" | "circle" | "eight" | "sweep"}],
+         "matrices": [{"fixtures": [pixel bars] | "group": gid, "pattern": …}],
          "folder":  "Look Builder",            # function folder (Path)
-         "vc_page": "Looks" | None}            # buttons on a new page
+         "folders": "group",                   # Looks/Effects per group under the folder
+         "palettes": False,                    # also add QLC+ palettes (Upgrade's steps)
+         "vc":      "pages" | "one" | "none",  # buttons: a page per group, one page, none
+         "vc_page": "Looks" | None}            # the page's name (alone: "one")
 
-    Returns ``{"root", "log", "notes", "created": {...}, "functions": [...]}``.
+    Every look is a whole state.  Returns ``{"root", "log", "notes",
+    "created": {...}, "functions": [...]}``.
     """
+    from core import look_families as LF
     work = qxw_io.strip_ns(copy.deepcopy(root))
     info = _fixture_info(work, qxf_defs)
     all_groups = {g["id"]: g for g in groups(work, qxf_defs)}
     folder = (plan.get("folder") or DEFAULT_FOLDER).strip().strip("/") or DEFAULT_FOLDER
+    by_group = plan.get("folders") == "group"
     next_id = max([int(f.get("ID")) for f in _functions(work) if (f.get("ID") or "").isdigit()] + [-1]) + 1
     taken = {(f.get("Name") or "").lower() for f in _functions(work)}
     log: List[str] = []
@@ -736,43 +798,179 @@ def build(root: ET.Element, qxf_defs, plan: dict, nomenclature=None) -> dict:
     vc_rows: List[Tuple[str, List[dict]]] = []
     summary: List[dict] = []
     pending: List[ET.Element] = []
+    pages: Dict[str, dict] = {}            # group id → page of the console (vc "pages")
 
-    for lk in plan.get("looks") or []:
-        g = all_groups.get(str(lk.get("group")))
+    def grp(gid) -> dict:
+        g = all_groups.get(str(gid))
         if g is None:
-            raise ValueError(f"fixture group {lk.get('group')} not found")
+            raise ValueError(f"fixture group {gid} not found")
+        return g
+
+    def path(g: dict, sub: str) -> str:
+        if by_group:
+            return f"{folder}/{g['name'].replace('/', '-')}/{sub}"
+        return f"{folder}/{sub}"
+
+    def page(g: dict) -> dict:
+        if g["id"] not in pages:
+            pages[g["id"]] = {"name": g["name"], "fixtures": g["fixtures"], "looks": {k: [] for k in LOOK_KINDS},
+                              "effects": [], "flash": set(), "colours": {}, "captions": {}}
+        return pages[g["id"]]
+
+    def on_page(g: dict, fid: int, caption: str, hx: Optional[str], kind: Optional[str] = None,
+                flash: bool = False, row: Optional[str] = None) -> None:
+        p = page(g)
+        f = str(fid)
+        p["captions"][f] = caption
+        if hx:
+            p["colours"][f] = hx
+        if kind:
+            p["looks"].setdefault(kind if row is None else f"{kind}:{row}", []).append(f)
+        else:
+            p["effects"].append(f)
+            if flash:
+                p["flash"].add(f)
+
+    def aims_for(g: dict, place: Optional[dict]) -> Dict[str, Dict[int, int]]:
+        if not place:
+            return {}
+        return LF.place_values(work, qxf_defs, g["fixtures"], place)
+
+    def add_scene(g: dict, base: str, kind: str, frame: dict, sub: str, hx: str, detail: str,
+                  page_kind: Optional[str] = None, row: Optional[str] = None, flash: bool = False) -> int:
+        nonlocal next_id
+        name = _unique_name(taken, _name(nomenclature, base, g, kind))
+        fid = next_id
+        next_id += 1
+        pending.append(_scene(fid, name, path(g, sub), frame))
+        log.append(f"look {fid} '{name}' — {len(frame)} fixture(s), {detail}")
+        summary.append({"id": str(fid), "type": "Scene", "name": name, "hex": hx})
+        top.append(str(fid))
+        created["looks"] += 1
+        on_page(g, fid, base, hx, None if flash else page_kind, flash=flash, row=row)
+        return fid
+
+    def frame_of(fxs, fn) -> dict:
+        frame = {}
+        for fx in fxs:
+            vals, nn = fn(fx)
+            if vals:
+                frame[fx["id"]] = vals
+            notes.extend(f"{fx['name']}: {x}" for x in nn)
+        return frame
+
+    # ── colour looks ─────────────────────────────────────────────────────────
+    for lk in plan.get("looks") or []:
+        g = grp(lk.get("group"))
         fxs = [info[i] for i in g["fixtures"]]
         level = float(lk.get("level") if lk.get("level") not in (None, "") else 1.0)
         pos = position(lk.get("position"))
+        place = _resolve_place(lk.get("place"), work)
+        aims = aims_for(g, place)
         row = []
         for cspec in lk.get("colours") or []:
             col = colour(cspec)
-            frame = {}
-            for fx in fxs:
-                vals, nn = fixture_values(fx, col, level, pos)
-                if vals:
-                    frame[fx["id"]] = vals
-                notes.extend(f"{fx['name']}: {x}" for x in nn)
+            frame = frame_of(fxs, lambda fx: fixture_values(fx, col, level, pos, aim=aims.get(fx["id"])))
             if not frame:
                 notes.append(f"{g['name']} · {col['name']}: no fixture with a definition — look not created")
                 continue
-            base = f"{col['name']} @ {pos['name']}" if pos else col["name"]
+            at = place or pos
+            base = f"{col['name']} @ {at['name']}" if at else col["name"]
             name = _unique_name(taken, _name(nomenclature, base, g, "static"))
-            pending.append(_scene(next_id, name, f"{folder}/Looks", frame))
+            pending.append(_scene(next_id, name, path(g, "Looks"), frame))
             log.append(f"look {next_id} '{name}' — {len(frame)} fixture(s), {col['hex']}"
-                       + (f", position {pos['name']} (pan {pos['pan']:g}%, tilt {pos['tilt']:g}%)" if pos else ""))
+                       + (f", position {pos['name']} (pan {pos['pan']:g}%, tilt {pos['tilt']:g}%)"
+                          if pos and not place else "")
+                       + (f", aimed at {place['name']}" if place else ""))
             summary.append({"id": str(next_id), "type": "Scene", "name": name, "hex": col["hex"]})
             row.append({"caption": base, "fid": next_id, "hex": col["hex"]})
+            on_page(g, next_id, base, col["hex"], "colour")
             top.append(str(next_id))
             created["looks"] += 1
             next_id += 1
         vc_rows.append((f"Looks · {g['name']}", row))
 
+    # ── levels: Full, Half, Off ──────────────────────────────────────────────
+    for it in plan.get("levels") or []:
+        g = grp(it.get("group"))
+        fxs = [info[i] for i in g["fixtures"]]
+        row = []
+        lvls = it.get("levels") or [{"name": n, "level": v} for n, v in DEFAULT_LEVELS]
+        for lv in lvls:
+            level = max(0.0, min(1.0, float(lv.get("level", 1.0))))
+            frame = frame_of(fxs, lambda fx: fixture_values(fx, WHITE, level))
+            if not frame:
+                continue
+            base = str(lv.get("name") or f"{round(level * 100)} %")
+            fid = add_scene(g, base, "static", frame, "Looks", "#FFFFFF", f"white at {round(level * 100)} %",
+                            page_kind="levels")
+            row.append({"caption": base, "fid": fid, "hex": "#FFFFFF"})
+        vc_rows.append((f"Levels · {g['name']}", row))
+
+    # ── strobe looks, each fixture's own strobe range ───────────────────────
+    for it in plan.get("strobes") or []:
+        g = grp(it.get("group"))
+        fxs = [info[i] for i in g["fixtures"] if "strobe" in LF.fixture_caps(info[i])]
+        if not fxs:
+            notes.append(f"{g['name']}: no fixture with a strobe — strobe looks not created")
+            continue
+        col = colour(it["colour"]) if it.get("colour") else WHITE
+        row = []
+        spds = it.get("speeds") or [{"name": n, "speed": v} for n, v in DEFAULT_STROBES]
+        for sp in spds:
+            speed = max(0.0, min(1.0, float(sp.get("speed", 0.5))))
+            frame = frame_of(fxs, lambda fx: fixture_values(fx, col, 1.0, strobe=speed))
+            base = str(sp.get("name") or f"Strobe {round(speed * 100)} %")
+            fid = add_scene(g, base, "fx", frame, "Looks", col["hex"], f"strobe at {round(speed * 100)} % of the range",
+                            page_kind="strobe")
+            row.append({"caption": base, "fid": fid, "hex": col["hex"]})
+        vc_rows.append((f"Strobe · {g['name']}", row))
+
+    # ── gobo looks: one per gobo and colour ─────────────────────────────────
+    for it in plan.get("gobos") or []:
+        g = grp(it.get("group"))
+        fxs = [info[i] for i in g["fixtures"]]
+        names = LF.gobo_list(fxs)
+        if not names:
+            notes.append(f"{g['name']}: no gobo wheel — gobo looks not created")
+            continue
+        picks = [int(n) for n in (it.get("gobos") or range(1, len(names) + 1)) if 1 <= int(n) <= len(names)]
+        cols = [colour(c) for c in (it.get("colours") or [WHITE])]
+        level = float(it.get("level") if it.get("level") not in (None, "") else 1.0)
+        place = _resolve_place(it.get("place"), work)
+        aims = aims_for(g, place)
+        for col in cols:
+            row = []
+            for n in picks:
+                frame = frame_of(fxs, lambda fx: fixture_values(fx, col, level, gobo=n, aim=aims.get(fx["id"])))
+                if not frame:
+                    continue
+                base = f"{names[n - 1]} · {col['name']}" if len(cols) > 1 or col is not WHITE else names[n - 1]
+                fid = add_scene(g, base, "static", frame, "Looks", col["hex"],
+                                f"gobo {n} ({names[n - 1]}), {col['hex']}" + (f", aimed at {place['name']}" if place else ""),
+                                page_kind="gobo", row=col["name"])
+                row.append({"caption": base, "fid": fid, "hex": col["hex"]})
+            vc_rows.append((f"Gobos · {g['name']} · {col['name']}", row))
+
+    # ── blinder hit: every light of the groups at full, a flash button ──────
+    bl = plan.get("blinder")
+    if bl and bl.get("groups"):
+        gs = [grp(x) for x in bl["groups"]]
+        ids: List[str] = []
+        for g in gs:
+            ids += [i for i in g["fixtures"] if i not in ids]
+        frame = frame_of([info[i] for i in ids], lambda fx: fixture_values(fx, WHITE, 1.0))
+        if frame:
+            base = str(bl.get("name") or "Blinder hit")
+            fid = add_scene(gs[0], base, "fx", frame, "Effects", "#FFFFFF",
+                            f"every light of {len(gs)} group(s) at full, white", flash=True)
+            for g in gs[1:]:
+                on_page(g, fid, base, "#FFFFFF", flash=True)
+            vc_rows.append(("Blinder", [{"caption": base, "fid": fid, "hex": "#FFFFFF"}]))
+
     ch_row = []
     for spec in plan.get("chasers") or []:
-        g = all_groups.get(str(spec.get("group")))
-        if g is None:
-            raise ValueError(f"fixture group {spec.get('group')} not found")
+        g = grp(spec.get("group"))
         s = chaser_spec(spec)
         fxs = [info[i] for i in g["fixtures"]]
         frames, nn = chaser_frames(fxs, s)
@@ -780,47 +978,78 @@ def build(root: ET.Element, qxf_defs, plan: dict, nomenclature=None) -> dict:
         if not frames or not any(frames[0].values()):
             notes.append(f"chaser on {g['name']}: no fixture with a definition — not created")
             continue
+        place = _resolve_place(spec.get("place"), work)
+        if place:
+            aims = aims_for(g, place)
+            for fr in frames:
+                for f, a in aims.items():
+                    if f in fr:
+                        fr[f].update(a)
         base = (spec.get("name") or "").strip() or \
             f"{PATTERN_LABELS[s['pattern']]} {'/'.join(c['name'] for c in s['colours'])}"
         name = _unique_name(taken, _name(nomenclature, base, g, s["kind"]))
         cid = next_id
         next_id += 1
-        path = f"{folder}/Chasers/{name.replace('/', '-')}"
+        cpath = (path(g, "Effects") if by_group else f"{folder}/Chasers") + f"/{name.replace('/', '-')}"
         seen: Dict[str, int] = {}
         step_ids = []
         for fr in frames:
             key = json.dumps({k: sorted(v.items()) for k, v in sorted(fr.items())})
             if key not in seen:
                 sname = _unique_name(taken, f"{name} · step {len(seen) + 1}")
-                pending.append(_scene(next_id, sname, path, fr))
+                pending.append(_scene(next_id, sname, cpath, fr))
                 seen[key] = next_id
                 created["step_scenes"] += 1
                 next_id += 1
             step_ids.append(seen[key])
         if s["tempo"] == "beats":
-            pending.append(_chaser(cid, name, path, step_ids, s["beat_units"], s["fade_units"], beats=True))
+            pending.append(_chaser(cid, name, cpath, step_ids, s["beat_units"], s["fade_units"], beats=True))
             timing = f"{s['note']} of a beat — follows the QLC+ tempo"
             fade_txt = f"fade {s['fade_units'] / 1000:g} beat" if s["fade_units"] else "cut"
         else:
-            pending.append(_chaser(cid, name, path, step_ids, s["step_ms"], s["fade_ms"]))
+            pending.append(_chaser(cid, name, cpath, step_ids, s["step_ms"], s["fade_ms"]))
             timing = f"{s['step_ms']} ms" + (f" ({s['bpm']} BPM, {s.get('note') or '1/4'})" if s.get("bpm") else "")
             fade_txt = f"fade {s['fade_ms']} ms" if s["fade_ms"] else "cut"
         log.append(f"chaser {cid} '{name}' — {PATTERN_LABELS[s['pattern']]}, {len(step_ids)} step(s), "
                    f"{len(seen)} scene(s), {timing}, "
-                   + fade_txt + (f", position {s['position']['name']}" if s.get("position") else ""))
+                   + fade_txt + (f", position {s['position']['name']}" if s.get("position") else "")
+                   + (f", aimed at {place['name']}" if place else ""))
         summary.append({"id": str(cid), "type": "Chaser", "name": name, "hex": s["colours"][0]["hex"]})
         ch_row.append({"caption": base, "fid": cid, "hex": s["colours"][0]["hex"]})
+        on_page(g, cid, base, s["colours"][0]["hex"])
         top.append(str(cid))
         created["chasers"] += 1
     vc_rows.append(("Chasers", ch_row))
 
+    # ── movement effects (EFX) ───────────────────────────────────────────────
+    fx_row = []
+    for spec in plan.get("efx") or []:
+        g = grp(spec.get("group"))
+        kind = spec.get("kind")
+        if kind not in LF.EFX_KINDS:
+            raise ValueError(f"unknown movement effect: {kind}")
+        movers = [info[i] for i in g["fixtures"] if "moves" in LF.fixture_caps(info[i])]
+        if not movers:
+            notes.append(f"{g['name']}: no moving head — {LF.EFX_KINDS[kind][0]} not created")
+            continue
+        base = (spec.get("name") or "").strip() or LF.EFX_KINDS[kind][0]
+        name = _unique_name(taken, _name(nomenclature, base, g, "movement"))
+        fid = next_id
+        next_id += 1
+        pending.append(LF.efx(work, fid, name, path(g, "Effects") if by_group else f"{folder}/Effects", kind, movers))
+        rel = LF.EFX_KINDS[kind][2]
+        log.append(f"movement effect {fid} '{name}' — {LF.EFX_KINDS[kind][1]} on {len(movers)} moving head(s), "
+                   + ("rides on the aim of the look playing" if rel else "sets the aim itself"))
+        summary.append({"id": str(fid), "type": "EFX", "name": name, "hex": "#3B82F6"})
+        fx_row.append({"caption": base, "fid": fid, "hex": "#1E3A8A"})
+        on_page(g, fid, base, "#1E3A8A")
+        top.append(str(fid))
+        created["efx"] = created.get("efx", 0) + 1
+    if fx_row:
+        vc_rows.append(("Movement", fx_row))
+
     mx_row = []
-    mx_groups = []
     for spec in plan.get("matrices") or []:
-        ids = [str(i) for i in (spec.get("fixtures") or [])]
-        bars = [b for b in pixel_bars(work, qxf_defs) if b["id"] in ids]
-        if not bars:
-            raise ValueError("matrix: pick at least one pixel bar (a fixture with several heads)")
         label = spec.get("pattern") or "Chase"
         if label not in MATRIX_PATTERNS:
             raise ValueError(f"unknown matrix pattern: {label}")
@@ -829,46 +1058,68 @@ def build(root: ET.Element, qxf_defs, plan: dict, nomenclature=None) -> dict:
         duration = int(spec.get("duration") or dur)
         if not 20 <= duration <= 600000:
             raise ValueError("matrix speed must be between 20 ms and 10 minutes")
-        bname = ", ".join(b["name"] for b in bars) if len(bars) <= 2 else f"{len(bars)} bars"
-        gname = _unique_name({(g.findtext("Name") or "").lower() for g in _engine(work).findall("FixtureGroup")},
-                             f"Matrix · {bname}")
-        gid = max([int(g.get("ID")) for g in _engine(work).findall("FixtureGroup") if (g.get("ID") or "").isdigit()] + [-1]) + 1
-        _matrix_group(work, gname, bars, gid)
-        mx_groups.append(gname)
+        if spec.get("group") not in (None, ""):
+            g = grp(spec["group"])
+            if g["id"] == ALL or g["grid"][0] * g["grid"][1] < 2:
+                raise ValueError(f"matrix: group '{g['name']}' has no grid")
+            gid = int(g["id"])
+            fids = list(g["fixtures"])
+            bname = g["name"]
+            control = "RGB" if all("mix" in LF.fixture_caps(info[i]) for i in fids) else "Dimmer"
+            mpath = path(g, "Effects") if by_group else f"{folder}/Matrices"
+            where = f"group '{g['name']}' ({g['grid'][0]} × {g['grid'][1]})"
+        else:
+            ids = [str(i) for i in (spec.get("fixtures") or [])]
+            bars = [b for b in pixel_bars(work, qxf_defs) if b["id"] in ids]
+            if not bars:
+                raise ValueError("matrix: pick at least one pixel bar (a fixture with several heads)")
+            bname = ", ".join(b["name"] for b in bars) if len(bars) <= 2 else f"{len(bars)} bars"
+            gname = _unique_name({(x.findtext("Name") or "").lower() for x in _engine(work).findall("FixtureGroup")},
+                                 f"Matrix · {bname}")
+            gid = max([int(x.get("ID")) for x in _engine(work).findall("FixtureGroup")
+                       if (x.get("ID") or "").isdigit()] + [-1]) + 1
+            _matrix_group(work, gname, bars, gid)
+            fids = [b["id"] for b in bars]
+            control = "RGB"
+            g = {"id": ALL, "name": ""}
+            mpath = f"{folder}/Matrices"
+            where = f"{bname}: {max(b['heads'] for b in bars)} × {len(bars)} pixels"
         base = (spec.get("name") or "").strip() or f"{bname} · {label}"
         name = _unique_name(taken, _name(nomenclature, base, {"id": ALL, "name": ""}, "matrix"))
-        path = f"{folder}/Matrices"
         mid = next_id
         next_id += 1
-        pending.append(_rgbmatrix(mid, f"{name} (matrix)", path, gid, script, cols, duration, props))
-        # RGB-mode matrices ignore DimmerControl: bars with a master dimmer need it opened first
+        pending.append(_rgbmatrix(mid, f"{name} (matrix)", mpath, gid, script, cols, duration, props, control))
+        # RGB-mode matrices ignore DimmerControl: lights with a master dimmer need it opened first
         dim_vals = {}
-        for b in bars:
-            fx = _fixture_info(work, qxf_defs)[b["id"]]
-            if any(((cd.get("group") or "") == "Intensity" and "dimmer" in n.lower())
-                   for n, cd in (fx["def"].get("channel_defs") or {}).items()):
-                st = cm.LookState(level=1.0, colour=None, colour_source="none", shutter="open")
-                vals, _n = cm.encode(fx["def"], fx["mode"], st)
-                n_ch = fx["channels"] or len(vals)
-                dim_vals[b["id"]] = {c: v for c, v in vals.items() if c < n_ch}
+        if control == "RGB":
+            for fid_ in fids:
+                fx = info[fid_]
+                if fx["def"] and any(((cd.get("group") or "") == "Intensity" and "dimmer" in n.lower())
+                                     for n, cd in (fx["def"].get("channel_defs") or {}).items()):
+                    st = cm.LookState(level=1.0, colour=None, colour_source="none", shutter="open")
+                    vals, _n = cm.encode(fx["def"], fx["mode"], st)
+                    n_ch = fx["channels"] or len(vals)
+                    dim_vals[fid_] = {c: v for c, v in vals.items() if c < n_ch}
         target = mid
         if dim_vals:
             sid = next_id
             next_id += 1
-            pending.append(_scene(sid, f"{name}: dimmers", path, dim_vals))
+            pending.append(_scene(sid, f"{name}: dimmers", mpath, dim_vals))
             target = next_id
             next_id += 1
-            coll = ET.Element("Function", {"ID": str(target), "Type": "Collection", "Name": name, "Path": path})
+            coll = ET.Element("Function", {"ID": str(target), "Type": "Collection", "Name": name, "Path": mpath})
             ET.SubElement(coll, "Speed", {"FadeIn": "0", "FadeOut": "0", "Duration": "0"})
             for n_, f_ in enumerate((sid, mid)):
                 ET.SubElement(coll, "Step", {"Number": str(n_)}).text = str(f_)
             pending.append(coll)
-        log.append(f"matrix {target} '{name}' — {label} ({script}) on {bname}: "
-                   f"{max(b['heads'] for b in bars)} × {len(bars)} pixels, {duration} ms"
-                   + (", dimmers opened by the button" if dim_vals else ""))
+        log.append(f"matrix {target} '{name}' — {label} ({script}) on {where}, {duration} ms"
+                   + (", dimmers opened by the button" if dim_vals else "")
+                   + (", on the dimmers (no colour mixing)" if control == "Dimmer" else ""))
         summary.append({"id": str(target), "type": "Collection" if dim_vals else "RGBMatrix",
                         "name": name, "hex": cols[0]})
         mx_row.append({"caption": base, "fid": target, "hex": cols[0]})
+        if g["id"] != ALL or spec.get("group") == ALL:
+            on_page(g, target, base, cols[0])
         top.append(str(target))
         created["matrices"] = created.get("matrices", 0) + 1
     if mx_row:
@@ -878,12 +1129,49 @@ def build(root: ET.Element, qxf_defs, plan: dict, nomenclature=None) -> dict:
     for fn in sorted(pending, key=lambda f: int(f.get("ID"))):
         _insert_function(work, fn)
     log += _panic_add_stops(work, top)
-    if plan.get("vc_page") and top:
-        vlog = _add_vc(work, str(plan["vc_page"]).strip() or "Looks", vc_rows)
+
+    if plan.get("palettes") and top:
+        from core import upgrade53 as U
+        work, pacts = U.upgrade(work, qxf_defs, ("palettes", "positions"), "5.3")
+        log += [f"QLC+ palettes: {a['action']}" for a in pacts]
+
+    layout = plan.get("vc") or ("one" if plan.get("vc_page") else "none")
+    if layout == "one" and top:
+        vlog = _add_vc(work, str(plan.get("vc_page") or "Looks").strip() or "Looks", vc_rows)
         created["buttons"] = sum(len(r[1]) for r in vc_rows)
         log += vlog
+    elif layout == "pages" and pages:
+        log += _vc_pages(work, qxf_defs, str(plan.get("vc_page") or "Looks").strip() or "Looks",
+                         pages, all_groups, info, created)
     return {"root": work, "log": log, "notes": sorted(set(notes)), "created": created,
             "functions": summary}
+
+
+def _vc_pages(work, qxf_defs, caption: str, pages: Dict[str, dict], all_groups, info, created) -> List[str]:
+    """The console: one VC page *caption*, a frame with a page per group (the
+    QLC+ 5.3 wizard's layout; :mod:`core.vc_group_pages`)."""
+    from core import look_families as LF
+    from core import upgrade53 as U
+    from core import vc_group_pages as VP
+    from core import wizard_repair as W
+    show = U._Show(work, qxf_defs)
+    order = [gid for gid in all_groups if gid in pages]
+    vpages, names = [], {}
+    for gid in order:
+        p = pages[gid]
+        names.update(p["captions"])
+        looks = [p["looks"][k] for k in ("colour", "levels", "strobe")]
+        looks += [v for k, v in p["looks"].items() if k.startswith("gobo")]
+        vpages.append({"name": p["name"], "slider": U._intensity_channels(show, p["fixtures"]),
+                       "looks": [r for r in looks if r], "effects": p["effects"], "flash": p["flash"],
+                       "colours": p["colours"],
+                       "xypad": [f for f in p["fixtures"] if "moves" in LF.fixture_caps(info[f])]})
+    st = show.R.stage
+    _pid, lines = VP.build(work, caption, vpages, names, floor=(st.grid[0] / 2, 0.0, st.grid[2] / 2),
+                           panic=W._panic_script(work))
+    created["buttons"] = sum(sum(len(r) for r in vp["looks"]) + len(vp["effects"]) for vp in vpages)
+    return [f"VC: page '{caption}' with a {len(vpages)}-page frame, one page per group"] + [f"VC: {x}" for x in lines]
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -237,7 +237,8 @@ def _swing(degrees: float, max_deg: float) -> int:
 
 
 def _rotation(root: ET.Element, fid: str) -> Tuple[float, float]:
-    mon = root.find("Monitor")
+    from core import stage3d
+    mon = stage3d._monitor(root)
     for it in (mon.findall("FxItem") if mon is not None else []):
         if it.get("ID") == fid:
             try:

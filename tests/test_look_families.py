@@ -275,3 +275,15 @@ def test_options_route_keeps_the_show_namespace(tmp_path):
     r = c.post("/api/looks/check", json={"strobes": [{"group": g["Back group"]["id"]}], "vc": "pages"}).get_json()
     assert r["created"]["looks"] == 2 and not r["blocked"]
     assert c.get("/api/vc/tree").status_code == 200
+
+
+def test_a_head_not_on_the_stage_keeps_its_aim(defs):
+    root = _root(CLUB)
+    mon = root.find("Engine").find("Monitor")
+    gone = next(it for it in mon.findall("FxItem")
+                if "Intimidator" in next(f.findtext("Model") for f in root.find("Engine").findall("Fixture")
+                                         if f.findtext("ID") == it.get("ID")))
+    mon.remove(gone)
+    aims = LF.place_values(root, defs, [f.findtext("ID") for f in root.find("Engine").findall("Fixture")],
+                           {"x": 3, "z": 4})
+    assert gone.get("ID") not in aims and len(aims) == 1

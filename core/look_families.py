@@ -217,9 +217,14 @@ def places(root: ET.Element) -> List[dict]:
 
 def place_values(root: ET.Element, defs, fids: Iterable[str], place: dict) -> Dict[str, Dict[int, int]]:
     """``{fixture id: {pan/tilt channel: value}}`` aiming each moving head of
-    *fids* at *place* (``{x, y, z}`` metres), like a QLC+ Position3D palette."""
+    *fids* at *place* (``{x, y, z}`` metres), like a QLC+ Position3D palette.
+    Heads not placed on the 3D stage are left out."""
+    from core import stage3d
     R = P.Resolver(root, defs)
-    models = [R.models[f] for f in fids if R.models.get(f) is not None]
+    mon = stage3d._monitor(root)
+    placed = {it.get("ID") for it in (mon.findall("FxItem") if mon is not None else [])}
+    # a head that was never placed on the stage keeps its own aim
+    models = [R.models[f] for f in fids if R.models.get(f) is not None and f in placed]
     val = f"{place['x']:g},{place.get('y', 0):g},{place['z']:g}"
     return P.palette_values(P.Palette("aim", "Position3D", "", val), models, R.stage)
 

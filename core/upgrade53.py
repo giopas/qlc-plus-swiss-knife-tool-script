@@ -42,7 +42,6 @@ position-only scenes.
 from __future__ import annotations
 
 import copy
-import math
 import os
 import re
 import xml.etree.ElementTree as ET  # nosec B405
@@ -98,14 +97,6 @@ PRIMITIVE_RE = re.compile(r"^(cube|sphere|cylinder|cone|plane|torus)\b", re.I)
 JUNK_WORDS = {"meshy", "ai", "char", "character", "model", "obj", "generic", "mesh", "final", "v1", "v2"}
 AUDIENCE_DEPTH = 1.2              # the wizard's "Audience" point: 1.2 × stage depth
 
-BUTTON = W.BUTTON
-GAP = W.GAP
-MARGIN = W.MARGIN
-TOP = 60                          # first row inside the frame (below its header)
-SLIDER = (75, 335)
-XYPAD = (295, 295)
-RED = "4294901760"
-LOOK_BG = "4282664004"
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -606,160 +597,14 @@ def page_plan(show: _Show) -> List[dict]:
     return out
 
 
-def _ws(el: ET.Element, x: int, y: int, w: int, h: int, visible: bool) -> None:
-    ET.SubElement(el, "WindowState", {"Visible": "True" if visible else "False", "X": str(x),
-                                      "Y": str(y), "Width": str(w), "Height": str(h)})
-
-
-def _frame_flags(el: ET.Element, header: bool = True) -> None:
-    for tag, val in (("AllowResize", "True"), ("ShowHeader", "True" if header else "False"),
-                     ("ShowEnableButton", "True"), ("Collapsed", "False"), ("Disabled", "False")):
-        ET.SubElement(el, tag).text = val
-
-
-def _btn(nid, caption: str, fid: str, x: int, y: int, *, page: Optional[int] = None,
-         visible: bool = True, bg: str = LOOK_BG) -> ET.Element:
-    attrs = {"Caption": caption[:32], "ID": str(nid())}
-    if page:
-        attrs["Page"] = str(page)
-    b = ET.Element("Button", attrs)
-    _ws(b, x, y, BUTTON, BUTTON, visible)
-    app = ET.SubElement(b, "Appearance")
-    ET.SubElement(app, "BackgroundColor").text = bg
-    ET.SubElement(b, "Function", {"ID": fid})
-    ET.SubElement(b, "Action").text = "Toggle"
-    return b
-
-
 def _build_frame(show: _Show, work, pages: List[dict], acts) -> None:
-    from core import vc_ops
-    vc = work.find("VirtualConsole")
-    if vc is None:
-        vc = ET.SubElement(work, "VirtualConsole")
-    page_id = vc_ops.new_page(work, FRAME_CAPTION)["page_id"]
-    page_el = next(p for p in vc if p.get("ID") == page_id)
-    pw, ph = 1920, 1080
-    st = page_el.find("WindowState")
-    if st is not None:
-        try:
-            pw, ph = int(st.get("Width", pw)), int(st.get("Height", ph))
-        except ValueError:
-            pass
-    counter = [vc_ops._next_id(vc)]
-
-    def nid():
-        counter[0] += 1
-        return counter[0] - 1
-
-    fw, fh = pw - 2 * MARGIN, ph - 2 * MARGIN
-    fr = ET.Element("Frame", {"Caption": FRAME_CAPTION, "ID": str(nid())})
-    _ws(fr, MARGIN, MARGIN, fw, fh, True)
-    _frame_flags(fr)
-    ET.SubElement(fr, "Multipage", {"PagesNum": str(len(pages)), "CurrentPage": "0"})
-    for i, p in enumerate(pages):
-        ET.SubElement(fr, "Shortcut", {"Page": str(i), "Name": p["name"]})
-    page_el.append(fr)
-    panic = W._panic_script(work)
+    from core import vc_group_pages as VP
     names = {fid: (show.fns[fid].get("Name") or "") for fid in show.fns}
     st_ = show.R.stage
     floor = (st_.grid[0] / 2, 0.0, st_.grid[2] / 2)
-    per_page: List[str] = []
-
-    for i, p in enumerate(pages):
-        vis = i == 0
-        placed_l, placed_e, lost = 0, 0, []
-        if panic:
-            fr.append(_btn(nid, "PANIC RESET", panic, fw - MARGIN - BUTTON, TOP, page=i, visible=vis, bg=RED))
-        cx = MARGIN
-        y_col = TOP + BUTTON + GAP
-        if p["slider"]:
-            s = ET.Element("Slider", {"Caption": "Intensity", "ID": str(nid()), "WidgetStyle": "Slider",
-                                      "InvertedAppearance": "false"})
-            if i:
-                s.set("Page", str(i))
-            _ws(s, MARGIN, y_col, SLIDER[0], SLIDER[1], vis)
-            app = ET.SubElement(s, "Appearance")
-            ET.SubElement(app, "BackgroundColor").text = LOOK_BG
-            ET.SubElement(s, "SliderMode", {"ValueDisplayStyle": "Exact"}).text = "Level"
-            lv = ET.SubElement(s, "Level", {"LowLimit": "0", "HighLimit": "255", "Value": "0"})
-            for f, c in p["slider"]:
-                ET.SubElement(lv, "Channel", {"Fixture": f}).text = str(c)
-            fr.append(s)
-            cx = MARGIN + SLIDER[0] + GAP
-        avail = fw - cx - MARGIN
-        y = y_col
-        # looks: one at a time, in a solo frame
-        if p["looks"]:
-            cols = max(1, min(len(p["looks"]), (avail - 2 * MARGIN + GAP) // (BUTTON + GAP)))
-            room_rows = max(0, (fh - MARGIN - y - MARGIN + GAP) // (BUTTON + GAP))
-            rows = min(math.ceil(len(p["looks"]) / cols), room_rows)
-            n = min(len(p["looks"]), rows * cols)
-            if n:
-                sw = 2 * MARGIN + cols * BUTTON + (cols - 1) * GAP
-                sh = 2 * MARGIN + rows * BUTTON + (rows - 1) * GAP
-                solo = ET.Element("SoloFrame", {"Caption": "Looks", "ID": str(nid())})
-                if i:
-                    solo.set("Page", str(i))
-                _ws(solo, cx, y, sw, sh, vis)
-                _frame_flags(solo, header=False)
-                for k, fid in enumerate(p["looks"][:n]):
-                    solo.append(_btn(nid, names[fid], fid, MARGIN + (k % cols) * (BUTTON + GAP),
-                                     MARGIN + (k // cols) * (BUTTON + GAP)))
-                fr.append(solo)
-                placed_l = n
-                y += sh + GAP
-            lost += p["looks"][n:]
-        # effects: toggles, row by row
-        if p["effects"]:
-            per_row = max(1, (avail + GAP) // (BUTTON + GAP))
-            k = 0
-            for fid in p["effects"]:
-                bx = cx + (k % per_row) * (BUTTON + GAP)
-                by = y + (k // per_row) * (BUTTON + GAP)
-                if by + BUTTON > fh - MARGIN:
-                    lost.append(fid)
-                    continue
-                fr.append(_btn(nid, names[fid], fid, bx, by, page=i, visible=vis))
-                k += 1
-            placed_e = k
-            if k:
-                y += math.ceil(k / per_row) * (BUTTON + GAP)
-        # moving heads: an XY pad that aims at the stage floor in QLC+ 5.3
-        pad = False
-        if p["xypad"]:
-            # below the slider and below everything right of it (the pad is wider)
-            px = MARGIN
-            py = max(y_col + (SLIDER[1] + GAP if p["slider"] else 0), y)
-            if py + XYPAD[1] <= fh - MARGIN:
-                xy = ET.Element("XYPad", {"Caption": "Position", "ID": str(nid())})
-                if i:
-                    xy.set("Page", str(i))
-                xy.set("InvertedAppearance", "0")
-                xy.set("FloorControl", "1")
-                _ws(xy, px, py, XYPAD[0], XYPAD[1], vis)
-                ET.SubElement(xy, "Appearance")
-                for f in p["xypad"]:
-                    ET.SubElement(xy, "Fixture", {"ID": f, "Head": "0"})
-                ET.SubElement(xy, "Window", {"hMin": "0", "hMax": "255", "vMin": "0", "vMax": "255"})
-                ET.SubElement(xy, "Pan", {"Position": "0"})
-                ET.SubElement(xy, "Tilt", {"Position": "0"})
-                ET.SubElement(xy, "FloorPosition", {"X": _fmt(floor[0]), "Y": "0", "Z": _fmt(floor[2])})
-                fr.append(xy)
-                pad = True
-            else:
-                lost.append("XY pad")
-        bits = []
-        if p["slider"]:
-            bits.append("intensity slider")
-        if placed_l:
-            bits.append(f"{placed_l} look(s)")
-        if placed_e:
-            bits.append(f"{placed_e} effect(s)")
-        if pad:
-            bits.append(f"XY pad for {len(p['xypad'])} moving head(s)")
-        per_page.append(f"page '{p['name']}': " + (", ".join(bits) or "empty"))
-        if lost:
-            per_page.append(f"page '{p['name']}': no room for " + ", ".join(names.get(x, x) for x in lost))
+    vpages = [{"name": p["name"], "slider": p["slider"], "looks": [p["looks"]], "effects": p["effects"],
+               "xypad": p["xypad"]} for p in pages]
+    _pid, per_page = VP.build(work, FRAME_CAPTION, vpages, names, floor=floor, panic=W._panic_script(work))
     acts.append({"step": "frame", "action": f"VC page '{FRAME_CAPTION}' with a {len(pages)}-page frame, "
                                             "one page per group (pick the page in the frame's header)"})
     acts.extend({"step": "frame", "action": t} for t in per_page)

@@ -602,7 +602,7 @@ def page_plan(show: _Show) -> List[dict]:
         out.append({"group": g.get("ID"), "name": g.findtext("Name") or "", "fixtures": ids,
                     "looks": looks, "effects": effects,
                     "slider": _intensity_channels(show, ids),
-                    "xypad": [f for f in ids if f in movers] if ids and all(f in movers for f in ids) else []})
+                    "xypad": [f for f in ids if f in movers]})
     return out
 
 

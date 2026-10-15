@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 26 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 913 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 915 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -58,7 +58,7 @@ Item 3.3 of the alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`), *Upgrade a 
 | Screen, route, guided route *Upgrade a show to QLC+ 5.3*, `upgrade_show` Claude tool and guide workflow | `routes/upgrade_routes.py`, `static/js/upgrade.js`, `core/mcp_server.py`, `core/mcp_guide.py` |
 | Doctor I008: what QLC+ 5.2.2 ignores in a 5.3 show | `core/doctor/checks.py` |
 | Translations in the seven languages | `static/i18n/*.json` |
-| 20 tests on Festival, Pub and Quick Start shows and on the wizard video show without its folders and frame (moving heads) | `tests/test_upgrade53.py` |
+| 21 tests on Festival, Pub and Quick Start shows (one with moving heads sharing a group with PARs) and on the wizard video show without its folders and frame (moving heads) | `tests/test_upgrade53.py` |
 | Wiki: new page *Upgrade Older Shows*; I008 on *Workspace Doctor*; *Claude's tools* regenerated; the route on *Home* and *Show in Progress* | wiki |
 | Check on the Mac: open an upgraded Festival or Pub show in QLC+ 5.3.0 (function tree folders, palettes in the palette panel, the Groups page, the frame's page selector) and in QLC+ 5.2.2; on a show with moving heads, the floor XY pads and the Position3D palettes | To do (giopas) |
 

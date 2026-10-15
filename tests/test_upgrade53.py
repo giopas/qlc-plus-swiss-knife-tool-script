@@ -220,10 +220,11 @@ def test_positions_and_xy_pads_for_moving_heads(defs):
     assert p3 == {"Centre": "5.5,0,4.5", "Audience": "5.5,0,10.8", "Drummer": "5.25,0,6.25"}
     fr = U.groups_frame(new)
     pads = fr.findall("XYPad")
-    assert len(pads) == 2                             # Back (Sharpy) and Front (Intimidator)
+    # Back (8 Sharpy), Front (8 Intimidator) and the mixed All Groups page (its 16 movers)
+    assert sorted(len(p.findall("Fixture")) for p in pads) == [8, 8, 16]
     for pad in pads:
         assert pad.get("FloorControl") == "1"
-        assert len(pad.findall("Fixture")) == 8 and not pad.findall("Group")   # works in 5.2.2 too
+        assert not pad.findall("Group")                   # fixtures one by one: works in 5.2.2 too
         assert pad.find("FloorPosition").attrib == {"X": "5.5", "Y": "0", "Z": "4.5"}
     _assert_layout(fr)
     assert not check(new, defs).errors
@@ -284,3 +285,18 @@ def test_upgrade_routes_apply_a_history_step(tmp_path, monkeypatch):
     assert r["step"]["tool"] == "upgrade" and r["step"]["tool_title"] == "Upgrade to QLC+ 5.3"
     again = c.get("/api/upgrade/analyse").get_json()
     assert _counts(again)["palettes"] == 0 and _counts(again)["folders"] == 0
+
+
+def test_xy_pad_on_a_mixed_group():
+    """Quick Start club: the two moving heads share *All Fixtures* with the PARs.
+    The page still gets a pad, for the moving heads only."""
+    d = load_qxf_defs([os.path.join(HERE, "corpus"), os.path.join(HERE, "fixtures")])
+    root = qxw_io.load_qxw(os.path.join(HERE, "corpus", "QuickStart_club.qxw"), strip_namespace=True).getroot()
+    new, _ = U.upgrade(root, d, U.STEPS)
+    fr = U.groups_frame(new)
+    pads = fr.findall("XYPad")
+    assert len(pads) == 1
+    movers = {f.findtext("ID") for f in new.find("Engine").findall("Fixture")
+              if "Intimidator" in (f.findtext("Model") or "")}
+    assert {f.get("ID") for f in pads[0].findall("Fixture")} == movers and len(movers) == 2
+    _assert_layout(fr)

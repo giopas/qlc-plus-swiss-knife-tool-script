@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.2.0, 15 October 2026 (prepared, not yet merged).** Every phase of the plan is built and released up to 3.1.0, which added support for shows made by the QLC+ 5.3 Show Wizard. 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.2.0, released 15 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, and 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -48,9 +48,20 @@ Nothing in the programme is open. What remains is testing on real systems and a 
 | The SINCO MIDI patch and a real controller | The Inputs and MIDI tools are verified on show files and by tests, not with a controller connected. |
 | The v2.4.0 live check on the Mac | Doctor fixes with a choice, opened in real QLC+. |
 
-### Released in 3.2.0 (prepared 14 and 15 October, branch `feat/v3.2.0`)
+### QLC+ 5.3 alignment: plan items and releases
 
-Item 3.3 of the alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`), *Upgrade a v5 show to 5.3*, released as 3.2.0 because 3.1 and 3.2 shipped together as 3.1.0. The source of QLC+ 5.2.2 and 5.3.0 (tags `QLC+_5.2.2` and `QLC+_5.3.0`) was compared first: an older show loads in 5.3 as it is (5.2.2 already runs the `Engine.*` script form), so the upgrade only adds. The XML keys new in 5.3 are `Locked`, the XY pad's `FloorControl`, `Group` and `FloorPosition`, `ControlBPM`, `Position3D` palettes and EFX `DimmerControl`.
+The alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`) numbered its items 3.1 to 3.4 before any of them was released. Items 3.1 and 3.2 were built together and shipped as one release, 3.1.0, so from there the release numbers run one behind the plan:
+
+| Plan item | What | Release |
+|---|---|---|
+| 3.1 | QLC+ 5.3 shows are safe in Swiss Knife (palettes read everywhere, layer scenes, Doctor D019 and D020) | 3.1.0, 14 October |
+| 3.2 | Finish a QLC+ wizard show (Wizard Repair) | 3.1.0, 14 October |
+| 3.3 | Upgrade a v5 show to QLC+ 5.3 | 3.2.0, 15 October |
+| 3.4 | Align Swiss Knife's own generators with the wizard (Quick Start, Look Builder) | next, 3.3.0 |
+
+### Released in 3.2.0 (15 October)
+
+Item 3.3 of the alignment plan, *Upgrade a v5 show to 5.3*. The source of QLC+ 5.2.2 and 5.3.0 (tags `QLC+_5.2.2` and `QLC+_5.3.0`) was compared first: an older show loads in 5.3 as it is (5.2.2 already runs the `Engine.*` script form), so the upgrade only adds. The XML keys new in 5.3 are `Locked`, the XY pad's `FloorControl`, `Group` and `FloorPosition`, `ControlBPM`, `Position3D` palettes and EFX `DimmerControl`.
 
 | Change | Where |
 |---|---|
@@ -59,15 +70,15 @@ Item 3.3 of the alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`), *Upgrade a 
 | Doctor I008: what QLC+ 5.2.2 ignores in a 5.3 show | `core/doctor/checks.py` |
 | Translations in the seven languages | `static/i18n/*.json` |
 | 21 tests on Festival, Pub and Quick Start shows (one with moving heads sharing a group with PARs) and on the wizard video show without its folders and frame (moving heads) | `tests/test_upgrade53.py` |
-| Wiki: new page *Upgrade Older Shows*; I008 on *Workspace Doctor*; *Claude's tools* regenerated; the route on *Home* and *Show in Progress* | wiki, commit `7433d54` (local, not pushed) |
+| Wiki: new page *Upgrade Older Shows*; I008 on *Workspace Doctor*; *Claude's tools* regenerated; the route on *Home* and *Show in Progress* | wiki, commit `7433d54` |
 | Check of the branch (15 October): 915 tests pass on the Mac. On all nine shows in the test data, for both targets, the upgrade gives the same file twice, a second run adds nothing, no widgets overlap and the Doctor reports no new warning or error. Fixed on the way: a group page that mixes moving heads with other lights got no XY pad | Done |
 | Check on the Mac: open an upgraded Festival or Pub show in QLC+ 5.3.0 (function tree folders, palettes in the palette panel, the Groups page, the frame's page selector) and in QLC+ 5.2.2; on a show with moving heads, the floor XY pads and the Position3D palettes | To do (giopas) |
 
-Decisions taken with it (14 October): no position-only or colour-only scenes are generated (principle 5 stays; positions are palettes and XY pads). No BPM speed dial (it only drives functions set to follow the beat, and Swiss Knife's chasers run on time). The XY pads list fixtures, not groups, so they work in 5.2.2. Folder names are English, like the wizard's. Next: aligning Quick Start and the Look Builder with the wizard (roles, capabilities from the definition, grids from the stage, placement by role), item 3.4 of the alignment plan.
+Decisions taken with it (14 October): no position-only or colour-only scenes are generated (principle 5 stays; positions are palettes and XY pads). No BPM speed dial (it only drives functions set to follow the beat, and Swiss Knife's chasers run on time). The XY pads list fixtures, not groups, so they work in 5.2.2. Folder names are English, like the wizard's. Next: aligning Quick Start and the Look Builder with the wizard (roles, capabilities from the definition, grids from the stage, placement by role), item 3.4 of the alignment plan, to be released as 3.3.0.
 
-### Released in 3.1.0 (prepared 14 October, branch `feat/v3.1.0`)
+### Released in 3.1.0 (14 October)
 
-Started from the QLC+ 5.3.0 highlights video and two wizard shows giopas made on the Mac. The analysis is in the Claude project (`claude/STAGE_WIZARD_ALIGNMENT.md`). Items 3.1 and 3.2 of that plan are done together.
+Started from the QLC+ 5.3.0 highlights video and two wizard shows giopas made on the Mac. The analysis is in the Claude project (`claude/STAGE_WIZARD_ALIGNMENT.md`). Items 3.1 and 3.2 of that plan were built together and released as one version, 3.1.0.
 
 | Change | Where |
 |---|---|
@@ -79,11 +90,11 @@ Started from the QLC+ 5.3.0 highlights video and two wizard shows giopas made on
 | Wizard Repair: lost chasers, palettes that do nothing, PANIC RESET per page, buttons, grids, hide, lock, captions; screen, route, `wizard_repair` Claude tool | `core/wizard_repair.py`, `routes/wizard_routes.py`, `static/js/wizard.js` |
 | Translations of the new strings in the seven languages | `static/i18n/*.json` |
 | Two scrubbed wizard shows and their definitions; 22 tests | `tests/corpus/Wizard530_*.qxw`, `tests/fixtures/wizard530/`, `tests/test_wizard530.py` |
-| Wiki: new page *Wizard Repair*; *Workspace Doctor* codes; *Claude's tools* regenerated; the wizard route on *Home* and *Show in Progress* | wiki, commit `3159647` (local, not pushed) |
+| Wiki: new page *Wizard Repair*; *Workspace Doctor* codes; *Claude's tools* regenerated; the wizard route on *Home* and *Show in Progress* | wiki, commit `3159647` |
 | Second check of the branch (14 October): 894 tests pass. On both shows the repair gives the same file twice, a second run changes nothing, no widgets overlap on any page, the Doctor finds no errors. Left on purpose: D020 on fixtures with no dimmer or shutter channel (nothing to fill), and D007 where the wizard's gobo cycle uses the gobo buttons' scenes (the Doctor's D007 fix handles it) | Done |
-| Check on the Mac: open both repaired shows in QLC+ 5.3.0 (buttons, chasers, PANIC RESET, matrices on the new grids, the strobe buttons on the Sharpys); open a wizard show in QLC+ 5.2.2 | To do (giopas) |
+| Check on the Mac: open both repaired shows in QLC+ 5.3.0 (buttons, chasers, PANIC RESET, matrices on the new grids, the strobe buttons on the Sharpys); open a wizard show in QLC+ 5.2.2 | Done: working, giopas, 15 October |
 
-Decisions taken with it (14 October): Swiss Knife's own output keeps declaring every channel (principle 5); the Doctor accepts layer scenes made by others. Supported range: QLC+ 5.2.2 to 5.3.x; QLC+ 4 is not a target. Next: 3.3.0 *Upgrade a v5 show to 5.3* and 3.4.0 aligning Quick Start with the wizard (roles, capabilities from the definition, grids from the stage, placement by role).
+Decisions taken with it (14 October): Swiss Knife's own output keeps declaring every channel (principle 5); the Doctor accepts layer scenes made by others. Supported range: QLC+ 5.2.2 to 5.3.x; QLC+ 4 is not a target. Next: *Upgrade a v5 show to 5.3* (released as 3.2.0) and aligning Quick Start with the wizard (to be released as 3.3.0) (roles, capabilities from the definition, grids from the stage, placement by role).
 
 Open question for giopas: report the `makeChaserFromScenes` bug upstream (one missing line in `stagewizard_functions.cpp`), although upstream reports were dropped.
 

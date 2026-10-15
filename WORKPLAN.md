@@ -59,7 +59,8 @@ Item 3.3 of the alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`), *Upgrade a 
 | Doctor I008: what QLC+ 5.2.2 ignores in a 5.3 show | `core/doctor/checks.py` |
 | Translations in the seven languages | `static/i18n/*.json` |
 | 21 tests on Festival, Pub and Quick Start shows (one with moving heads sharing a group with PARs) and on the wizard video show without its folders and frame (moving heads) | `tests/test_upgrade53.py` |
-| Wiki: new page *Upgrade Older Shows*; I008 on *Workspace Doctor*; *Claude's tools* regenerated; the route on *Home* and *Show in Progress* | wiki |
+| Wiki: new page *Upgrade Older Shows*; I008 on *Workspace Doctor*; *Claude's tools* regenerated; the route on *Home* and *Show in Progress* | wiki, commit `7433d54` (local, not pushed) |
+| Check of the branch (15 October): 915 tests pass on the Mac. On all nine shows in the test data, for both targets, the upgrade gives the same file twice, a second run adds nothing, no widgets overlap and the Doctor reports no new warning or error. Fixed on the way: a group page that mixes moving heads with other lights got no XY pad | Done |
 | Check on the Mac: open an upgraded Festival or Pub show in QLC+ 5.3.0 (function tree folders, palettes in the palette panel, the Groups page, the frame's page selector) and in QLC+ 5.2.2; on a show with moving heads, the floor XY pads and the Position3D palettes | To do (giopas) |
 
 Decisions taken with it (14 October): no position-only or colour-only scenes are generated (principle 5 stays; positions are palettes and XY pads). No BPM speed dial (it only drives functions set to follow the beat, and Swiss Knife's chasers run on time). The XY pads list fixtures, not groups, so they work in 5.2.2. Folder names are English, like the wizard's. Next: aligning Quick Start and the Look Builder with the wizard (roles, capabilities from the definition, grids from the stage, placement by role), item 3.4 of the alignment plan.

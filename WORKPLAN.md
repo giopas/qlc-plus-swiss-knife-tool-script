@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.3.0, 15 October 2026 (prepared, not yet merged).** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, and 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.4.0, 16 October 2026 (prepared on branch `feat/v3.4.0-steps`, not yet merged; 3.3.0 released 15 October).** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, and 3.4.0 gives the guided routes one way forward. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 26 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 933 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 938 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -57,10 +57,26 @@ The alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`) numbered its items 3.1 t
 | 3.1 | QLC+ 5.3 shows are safe in Swiss Knife (palettes read everywhere, layer scenes, Doctor D019 and D020) | 3.1.0, 14 October |
 | 3.2 | Finish a QLC+ wizard show (Wizard Repair) | 3.1.0, 14 October |
 | 3.3 | Upgrade a v5 show to QLC+ 5.3 | 3.2.0, 15 October |
-| 3.4 | Align Swiss Knife's own generators with the wizard: the Look Builder | 3.3.0, 15 October (prepared) |
+| 3.4 | Align Swiss Knife's own generators with the wizard: the Look Builder | 3.3.0, 15 October |
 | 3.4 | … and Quick Start (roles, capabilities from the definition, placement by role, the wizard's order) | next |
 
-### Released in 3.3.0 (prepared 15 October, branch `feat/v3.3.0`)
+### Released in 3.4.0 (prepared 16 October, branch `feat/v3.4.0-steps`)
+
+Not in the alignment plan: from the UX review of 15 October (`claude/UX_REVIEW_STEPS.md`, the Claude design canvas *Steps and routes UX review*). Inside a guided route there were two ways forward (*Done, next ›* at the top, the tool's *Next* at the bottom) and two step counters with the same look. giopas chose option C: the top shows where you are, the footer moves you on.
+
+| Change | Where |
+|---|---|
+| The route strip shows progress only (step N of M, done, current, skipped), *Skip this step* and ✕; the current step opens into a second row with the tool's steps or the panel you are in; one shared stepper | `static/js/route.js`, `static/css/style.css`, `templates/index.html` |
+| The footer's route button: *Go on: <step> ›* once the step is done, *<verb> and go on* at a tool's last step, *Finish the route*; the tool's own main button turns secondary next to it | `static/js/route.js` |
+| Quick Start: steps reported to the route, *Save and go on* saves, opens the show and ticks the step; its own stepper outside a route | `static/js/quickstart.js` |
+| Function Porter: steps reported to the route, its own stepper outside a route; *Bring functions* is an optional step | `static/js/porter.js` |
+| Look Builder effect panel: *Cancel* and *Keep these settings* in the footer, the panel shown in the second row | `static/js/looks.js` |
+| A step whose tool comes twice in the route is ticked where you are; the status line is cleared when the screen changes | `static/js/route.js`, `static/js/app.js` |
+| Seven translations; tests that keep the pieces in place | `static/i18n/*.json`, `tests/test_route_steps.py` |
+| Wiki: *Show in Progress* (guided routes), *Quick Start*, *Function Porter*, *Look Builder* | wiki |
+| Check on the Mac: each of the five routes from start to end, Quick Start's *Save and go on*, Skip, leaving and coming back to a route, the narrow window | To do (giopas) |
+
+### Released in 3.3.0 (15 October)
 
 The Look Builder part of item 3.4 of the alignment plan. Mockup first (the Claude design canvas *Look Builder redesign*, plan in `claude/LOOK_BUILDER_PLAN.md`), then built.
 

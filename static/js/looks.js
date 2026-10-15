@@ -489,10 +489,8 @@ function looksEdit(eid) {
   const title = eid === 'new' ? 'New chaser' : LB_ITEMS[eid].name;
   const firstG = [...(_lbFx.get(eid) || _lbSel)][0] || (_lbOpts.groups.find(g => g.supported) || _lbOpts.groups[0]).id;
   p.innerHTML = `<div class="lbx-ph">
-      <button class="btn btn-surface btn-sm" onclick="looksEditClose(false)">← Look &amp; Chaser Builder</button>
-      <h3 data-i18n-ctx="lb">${_esc(title)}</h3><span class="lbx-sp"></span>
-      <button class="btn btn-surface" onclick="looksEditClose(false)">Cancel</button>
-      <button class="btn btn-surface" id="lb-edit-done" onclick="looksEditClose(true)">${eid === 'new' ? '+ Add chaser' : 'Done'}</button></div>
+      <button class="btn btn-surface btn-sm lbx-back" onclick="looksEditClose(false)">← Look &amp; Chaser Builder</button>
+      <h3 data-i18n-ctx="lb">${_esc(title)}</h3><span class="lbx-sp"></span></div>
     <div class="lbx-pcols"><div class="lb-card" data-lbpane="chaser">
       <div class="lb-row"><span class="lbx-lbl">Recipe</span>
         <select id="lb-preset" class="filter-input" onchange="looksLoadPreset(this.value)">
@@ -551,6 +549,28 @@ function looksEdit(eid) {
   document.querySelector('#lb-body .lbx-top').hidden = true;
   _lbRenderChCols();
   _lbChForm();
+  _lbEditFooter(eid);
+  if (typeof toolPosition === 'function')
+    toolPosition('looks', { crumb: [title], modal: true, back: () => looksEditClose(false) });
+}
+
+/** 3.4.0: while the effect panel is open, the footer is the panel's: Cancel
+ *  and Keep these settings, the one way back; Add to the show waits. */
+function _lbEditFooter(eid) {
+  const foot = document.querySelector('#scr-looks .out-footer');
+  if (!foot) return;
+  const old = document.getElementById('lbx-foot-edit');
+  if (old) old.remove();
+  foot.classList.toggle('lbx-editing', !!eid);
+  if (!eid) return;
+  const box = document.createElement('span');
+  box.id = 'lbx-foot-edit';
+  box.className = 'lbx-foot-edit';
+  box.innerHTML = `<button class="btn btn-surface" onclick="looksEditClose(false)">Cancel</button>
+    <span class="lbx-foot-note">Nothing is added to the show yet.</span><span class="spacer"></span>
+    <button class="btn btn-accent" id="lb-edit-done" onclick="looksEditClose(true)"
+      title="Back to all the effects with these settings; Add to the show puts them in the show">${eid === 'new' ? '+ Add chaser' : 'Keep these settings ›'}</button>`;
+  foot.appendChild(box);
 }
 
 function looksEditClose(save) {
@@ -562,6 +582,8 @@ function looksEditClose(save) {
     else { delete s.group; _lbEdits[_lbEditing] = s; }
   }
   _lbEditing = null;
+  _lbEditFooter(null);
+  if (typeof toolPosition === 'function') toolPosition('looks', null);
   _v('lbx-panel').hidden = true;
   document.querySelector('#lb-body .lbx-cols').hidden = false;
   document.querySelector('#lb-body .lbx-top').hidden = false;

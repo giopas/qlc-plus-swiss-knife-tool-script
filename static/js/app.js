@@ -82,6 +82,11 @@ function go(screenId) {
     showFlushPending().then(() => go(screenId));
     return;
   }
+  // 3.4.0: a message belongs to the screen that wrote it
+  if (_activeScreenId() !== screenId) {
+    const sb = document.getElementById('app-statusbar');
+    if (sb) { sb.textContent = typeof t === 'function' ? t('Ready.') : 'Ready.'; sb.className = 'app-statusbar status-ok'; }
+  }
   // Update sidebar
   document.querySelectorAll('.sn-item').forEach(b => {
     b.classList.toggle('active', b.id === `sn-${screenId}`);

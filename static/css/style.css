@@ -3851,30 +3851,71 @@ body.nav-min .side-changes { display: none; }
 .sb-plot-lbl { font-size: 8.5px; fill: var(--text-dim); }
 @media (max-width: 1100px) { .sb-groups { grid-template-columns: 1fr; } }
 
-/* ── Guided route strip (2.6) ─────────────────────────────────────────────── */
+/* ── Guided route strip (2.6) and the shared stepper (3.4.0) ────────────────
+   One stepper for the route and for a tool's own steps.  Inside a route the
+   current step is a tab that opens into a second row (.route-sub) holding the
+   tool's steps or the panel you are in; the footer's .rs-go is the one way
+   forward.  */
 .route-strip {
-  display: flex; align-items: center; gap: 10px; padding: 6px 16px;
-  background: var(--surface-0); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  display: flex; align-items: flex-end; gap: 10px; padding: 6px 16px 0;
+  background: var(--surface-0); flex-wrap: nowrap;
 }
-.route-strip[hidden] { display: none; }
-.rs-title { font-size: var(--fs-ui); font-weight: 700; color: var(--accent); white-space: nowrap; }
-.rs-title small { color: var(--text-dim); font-weight: 500; margin-left: 4px; }
-.rs-steps { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; flex: 1; flex-wrap: wrap; }
-.rs-step {
-  display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; cursor: pointer;
-  border: 1px solid var(--border); border-radius: 999px; font-size: var(--fs-ui); color: var(--text-dim);
-  background: var(--surface-1);
-}
-.rs-step:hover { border-color: var(--accent); color: var(--text); }
-.rs-step.cur { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
-.rs-tick {
-  width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
-  font-size: var(--fs-micro); font-weight: 700; background: var(--surface-0); border: 1px solid var(--border);
-}
-.rs-step.done .rs-tick { background: var(--green); color: var(--accent-contrast); border-color: var(--green); }
-.rs-step.done .rs-lbl { text-decoration: line-through; text-decoration-color: var(--text-faint); }
-.rs-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: var(--fs-body); }
+.route-strip[hidden], .route-sub[hidden] { display: none; }
+.rs-title { font-size: var(--fs-ui); font-weight: 700; color: var(--accent); white-space: nowrap; padding-bottom: 8px; }
+.rs-pos { font-size: var(--fs-ui); color: var(--text-dim); white-space: nowrap; padding-bottom: 8px; }
+.rs-skip { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: var(--fs-ui);
+  text-decoration: underline; padding: 4px 4px 8px; margin-left: auto; }
+.rs-skip:hover { color: var(--text); }
+.rs-skip-btn { margin: 0 0 6px auto; }
+.rs-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: var(--fs-body); padding: 4px 4px 8px; }
 .rs-close:hover { color: var(--red); }
+.route-strip .stp-route { flex: 1 1 auto; min-width: 0; row-gap: 0; }
+.route-strip .rs-title, .route-strip .rs-pos, .route-strip .rs-skip, .route-strip .rs-skip-btn, .route-strip .rs-close { flex: none; }
+.route-sub {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 16px;
+  background: var(--accent-soft); border-bottom: 1px solid var(--border); font-size: var(--fs-ui);
+}
+.rsub-lbl { color: var(--text-dim); white-space: nowrap; }
+.rsub-lbl b { color: var(--text); }
+.rsub-tool { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: var(--accent);
+  text-decoration: underline; cursor: pointer; }
+.rsub-sep { color: var(--text-faint); }
+.rsub-crumb { color: var(--text); font-weight: 600; }
+
+.stp { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; align-items: center; }
+.stp-i { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; color: var(--text-dim); }
+.stp-n {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; flex: none; padding: 0;
+  font: 700 var(--fs-micro)/1 var(--font); background: transparent; color: inherit;
+  border: 1.5px solid var(--border-strong, var(--text-faint));
+}
+button.stp-n { cursor: pointer; }
+.stp-l { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; white-space: nowrap; }
+.stp-l:hover { color: var(--text); text-decoration: underline; }
+.stp-i.st-cur { color: var(--text); font-weight: 700; }
+.stp-i.st-cur .stp-n { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.stp-i.st-done .stp-n, .stp-i.st-cur.is-done .stp-n { background: var(--green); border-color: var(--green); color: var(--accent-contrast); }
+.stp-i.st-skip .stp-n { border-style: dashed; }
+.stp-i.st-skip .stp-l { text-decoration: line-through; text-decoration-color: var(--text-faint); }
+/* the route's current step: a tab that opens into the row below */
+.stp-route .stp-i { padding: 4px 7px 8px 5px; gap: 5px; border-radius: 8px 8px 0 0; }
+.stp-route .stp-i.st-cur { padding-left: 8px; padding-right: 10px; }
+.stp-route .stp-i.st-cur { background: var(--accent-soft); }
+/* a tool's own steps: a little smaller, with a line between them */
+.stp-tool .stp-i { padding: 2px 6px; }
+.stp-tool .stp-i + .stp-i::before { content: ''; width: 18px; height: 1px; background: var(--border); margin-right: 6px; }
+.stp-tool .stp-i.st-done + .stp-i::before { background: var(--green); height: 2px; }
+.stp-tool .stp-n { width: 18px; height: 18px; }
+.tool-stepper { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 16px;
+  border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.tool-stepper:empty { display: none; }
+.ts-pos { font-size: var(--fs-ui); color: var(--text-dim); }
+/* inside a route the tool's steps are on the route's second row instead */
+.screen.in-route-step .tool-stepper { display: none; }
+.screen.in-route-step .lbx-back { display: none; }
+/* the footer: one filled button */
+.btn.rs-demoted { background: var(--surface-1); color: var(--text); border: 1px solid var(--border); font-weight: 500; }
+.rs-go { white-space: nowrap; }
 
 /* ID Browser without the grid library (offline) */
 .plain-table-wrap { overflow: auto; height: calc(100% - 26px); }
@@ -4308,3 +4349,8 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .lbx-more .lb-grid select.filter-input { min-width: 90px; }
 .lbx-vc, .lbx-opts, .lbx-opts label, .lbx-vc label { min-width: 0; }
 .lbx-vc label > span, .lbx-opts label > span { white-space: normal; overflow-wrap: anywhere; }
+
+/* Look Builder effect panel (3.4.0): its Cancel and Keep in the footer */
+.out-footer.lbx-editing > :not(.lbx-foot-edit) { display: none; }
+.lbx-foot-edit { display: flex; align-items: center; gap: 10px; flex: 1; }
+.lbx-foot-note { font-size: var(--fs-ui); color: var(--text-dim); }

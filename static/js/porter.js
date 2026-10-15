@@ -335,6 +335,8 @@ function _pRenderStep() {
     const panel = document.getElementById(`porter-panel-${i}`);
     if (panel) panel.hidden = (i !== _pStep);
   }
+  // 3.4.0: the shared stepper (inside a route it sits under the route strip)
+  _pPosition();
   // Update header info
   const srcH = document.getElementById('porter-src-info');
   const tgtH = document.getElementById('porter-tgt-info');
@@ -1676,3 +1678,10 @@ function porterPickSet(srcId, what) {
 document.addEventListener('click', e => {
   document.querySelectorAll('details.porter-pick[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
 });
+
+/** 3.4.0: the Porter's steps on the shared stepper (under the route strip inside a route). */
+function _pPosition() {
+  if (typeof toolPosition === 'function') toolPosition('porter', {
+    steps: ['Load', 'Select', 'Map', 'Validate', 'Apply'], cur: _pStep - 1, go: i => porterGoStep(i + 1) });
+}
+document.addEventListener('DOMContentLoaded', _pPosition);

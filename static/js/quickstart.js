@@ -76,22 +76,34 @@ function _qsUpdateNav() {
 
   if (back) back.style.display = _qsStep > 1 ? '' : 'none';
   if (next) next.style.display = _qsStep < _qsTotalSteps ? '' : 'none';
+  if (next && _qsStep < _qsTotalSteps && typeof stepNextLabel === 'function') {
+    next.setAttribute('data-i18n', 'off');
+    next.textContent = stepNextLabel(QS_STEP_LABELS[_qsStep]);
+  }
   if (exp)  exp.style.display  = _qsStep === _qsTotalSteps ? '' : 'none';
   const port = document.getElementById('qs-btn-port');
   if (port) port.style.display = (_qsStep === _qsTotalSteps && _qsLastSavedPath) ? '' : 'none';
   const opn = document.getElementById('qs-btn-open');
   if (opn) opn.style.display = (_qsStep === _qsTotalSteps && _qsLastSavedPath) ? '' : 'none';
 
-  const ind = document.getElementById('qs-step-indicator');
-  if (ind) ind.textContent = `Step ${_qsStep} of ${_qsTotalSteps}`;
-
-  for (let i = 1; i <= _qsTotalSteps; i++) {
-    const dot = document.getElementById('qs-dot-' + i);
-    if (!dot) continue;
-    dot.classList.toggle('qs-dot-active', i === _qsStep);
-    dot.classList.toggle('qs-dot-done', i < _qsStep);
-  }
+  // 3.4.0: the shared stepper (inside a route it sits under the route strip,
+  // and at the last step the footer saves, opens the show and goes on)
+  if (typeof toolPosition === 'function') toolPosition('quickstart', {
+    steps: QS_STEP_LABELS, cur: _qsStep - 1, go: i => qsGoStep(i + 1),
+    finish: {
+      verb: 'Save',
+      tip: 'Saves the new show as a new file, opens it as the show in progress and ticks this step',
+      run: async () => {
+        if (!_qsLastSavedPath && !(await qsExport())) return false;
+        if (!_qsLastSavedPath) return false;
+        await qsOpenAsShow();
+        return true;
+      },
+    },
+  });
 }
+const QS_STEP_LABELS = ['Fixtures', 'Placement', 'Analysis', 'Console', 'Save'];
+document.addEventListener('DOMContentLoaded', () => _qsUpdateNav());
 
 /* ── navigation ─────────────────────────────────────────────────────────── */
 function qsGoStep(n) {
@@ -1523,12 +1535,13 @@ async function qsExport() {
         try {
           const r = await _qsApi('POST', '/save-qxf', { qxw_path: fullPath });
           if (r.files && r.files.length) msg += ' (+ fixture file(s) QLC+ lacks: ' + r.files.join(', ') + ')';
-          if (r.warnings && r.warnings.length) { setStatus(msg + ' — ⚠ ' + r.warnings.join(' | '), 'warn'); return; }
+          if (r.warnings && r.warnings.length) { setStatus(msg + ' — ⚠ ' + r.warnings.join(' | '), 'warn'); return true; }
         } catch (_) { /* non-fatal */ }
       } else {
         msg += ' — if a fixture is not in the QLC+ library, copy its .qxf next to the workspace';
       }
       setStatus(msg, 'ok');
+      return true;
     }
     // saved === null means user cancelled — no message needed
   } catch (err) {
@@ -1537,4 +1550,5 @@ async function qsExport() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '💾 Save as new file…'; }
   }
+  return false;
 }

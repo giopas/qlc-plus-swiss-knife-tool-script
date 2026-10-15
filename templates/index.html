@@ -261,6 +261,7 @@
 
   <!-- Guided route (Start: "Guided route: …"): steps above the tools -->
   <nav class="route-strip" id="route-strip" hidden aria-label="Guided route"></nav>
+  <nav class="route-sub" id="route-sub" hidden aria-label="Where you are in this step"></nav>
 
   <!-- Update card (v2.8.0): what is new, and how to get it -->
   <div class="upd-card" id="upd-card" hidden>
@@ -1629,14 +1630,8 @@
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
-    <!-- Wizard step indicators -->
-    <div class="porter-steps">
-      <button id="porter-step-1" class="porter-step active" onclick="porterGoStep(1)">1. Load</button>
-      <button id="porter-step-2" class="porter-step" onclick="porterGoStep(2)">2. Select</button>
-      <button id="porter-step-3" class="porter-step" onclick="porterGoStep(3)">3. Map</button>
-      <button id="porter-step-4" class="porter-step" onclick="porterGoStep(4)">4. Validate</button>
-      <button id="porter-step-5" class="porter-step" onclick="porterGoStep(5)">5. Apply</button>
-    </div>
+    <!-- Its steps (3.4.0: the shared stepper; inside a route they move up under the route strip) -->
+    <div class="tool-stepper" data-tool="porter"></div>
 
     <!-- Step 1: Load files -->
     <div id="porter-panel-1" class="porter-panel">
@@ -2220,15 +2215,8 @@
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
-    <!-- Step indicator dots -->
-    <div class="tab-toolbar" style="justify-content:center;gap:12px;padding:10px 0">
-      <span id="qs-step-indicator" style="font-weight:600;margin-right:12px">Step 1 of 5</span>
-      <span class="qs-dot qs-dot-active" id="qs-dot-1" onclick="qsGoStep(1)">1. Fixtures</span>
-      <span class="qs-dot" id="qs-dot-2" onclick="qsGoStep(2)">2. Placement</span>
-      <span class="qs-dot" id="qs-dot-3" onclick="qsGoStep(3)">3. Analysis</span>
-      <span class="qs-dot" id="qs-dot-4" onclick="qsGoStep(4)">4. VC Preview</span>
-      <span class="qs-dot" id="qs-dot-5" onclick="qsGoStep(5)">5. Export</span>
-    </div>
+    <!-- Its steps (3.4.0: the shared stepper; inside a route they move up under the route strip) -->
+    <div class="tool-stepper" data-tool="quickstart"></div>
 
     <!-- ── Step 1: Fixture Selection ──────────────────────────────────── -->
     <div class="qs-step" id="qs-step-1">

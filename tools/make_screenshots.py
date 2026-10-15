@@ -92,18 +92,14 @@ def main():
         pg.wait_for_timeout(1200)
         shot("05-function-porter.png", "porter", 1200)
         shot("06-brightness.png", "brightness")
-        # 07 · Look Builder: two groups, the warm palette, added to the batch
+        # 07 · Look Builder (3.3.0): every group, Start from Concert, the counts worked out
         pg.click("#sn-looks")
-        pg.wait_for_timeout(900)
+        pg.wait_for_timeout(1200)
         try:
-            pg.get_by_label("Ceiling").first.check()
-            pg.get_by_label("Floor", exact=False).first.check()
-            pg.get_by_text("Warm White").first.click()
-            pg.get_by_text("Amber").first.click()
-            pg.get_by_role("button", name="+ Add looks").click()
+            pg.evaluate("looksType('Concert')")
         except Exception as e:  # noqa: BLE001
             print("  ! looks:", str(e)[:120])
-        shot("07-look-builder.png", None, 900)
+        shot("07-look-builder.png", None, 2500)
         shot("08-vc-editor.png", "vceditor", 1500)
         shot("09-stage-meshes.png", "stage", 1200)
         # 10 · Setlist: a night's songs pasted into the first slot and matched

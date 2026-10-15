@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.2.0, released 15 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, and 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.3.0, 15 October 2026 (prepared, not yet merged).** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, and 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 26 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 915 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 932 automated tests pass. A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -57,7 +57,25 @@ The alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`) numbered its items 3.1 t
 | 3.1 | QLC+ 5.3 shows are safe in Swiss Knife (palettes read everywhere, layer scenes, Doctor D019 and D020) | 3.1.0, 14 October |
 | 3.2 | Finish a QLC+ wizard show (Wizard Repair) | 3.1.0, 14 October |
 | 3.3 | Upgrade a v5 show to QLC+ 5.3 | 3.2.0, 15 October |
-| 3.4 | Align Swiss Knife's own generators with the wizard (Quick Start, Look Builder) | next, 3.3.0 |
+| 3.4 | Align Swiss Knife's own generators with the wizard: the Look Builder | 3.3.0, 15 October (prepared) |
+| 3.4 | … and Quick Start (roles, capabilities from the definition, placement by role, the wizard's order) | next |
+
+### Released in 3.3.0 (prepared 15 October, branch `feat/v3.3.0`)
+
+The Look Builder part of item 3.4 of the alignment plan. Mockup first (the Claude design canvas *Look Builder redesign*, plan in `claude/LOOK_BUILDER_PLAN.md`), then built.
+
+| Change | Where |
+|---|---|
+| What a group can do (colour mixing, wheel, gobo, strobe, moves, dimmer, grid), the wizard's nine roles and a suggestion, static gobos, places on the stage, EFX in the wizard's form (5.2.2-safe) | `core/look_families.py` |
+| New plan kinds: levels, strobes, gobos (gobo × colour), blinder, place on looks and chasers, efx, matrices on a group (Dimmer mode without colour mixing), folders per group, QLC+ palettes, buttons on a page per group. A 3.2.0 plan builds byte for byte as before | `core/look_builder.py` |
+| The page-per-group console shared with Upgrade to QLC+ 5.3 (its output unchanged); the XY pad gets its own column | `core/vc_group_pages.py`, `core/upgrade53.py` |
+| The screen: groups, families, Start from, will add (live check), effect panel with More, in seven languages | `static/js/looks.js`, `static/css/style.css`, `static/i18n/*.json` |
+| Claude: `build_looks` and `looks_options` | `core/mcp_server.py`, `core/mcp_guide.py`, `routes/looks_routes.py` |
+| 17 tests on the wizard's concert show and the Quick Start club show | `tests/test_look_families.py` |
+| Fixed on the way: the options route stripped the namespace of the show in progress (the VC editor lost its pages); the fly out read the fixture rotation from the wrong place | Done |
+| Check on the Mac: on a show with moving heads, Start from Concert, Add to the show, then in QLC+ 5.3.0 the Looks page (one page per group, gobo looks, strobe looks on a Sharpy or JDC1, circle on a look aimed at a musician, fly out and in); the same show in QLC+ 5.2.2 | To do (giopas) |
+
+Decisions taken with it (15 October, giopas): the tool keeps its name; buttons on a page per group by default; gobo looks are one per gobo and colour; movement effects in 3.3.0. Roles are suggested and steer *Start from*, but are not stored in the show profile yet.
 
 ### Released in 3.2.0 (15 October)
 
@@ -215,6 +233,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.0.3 | 9 Oct | Tool names translated; the gaps of the new languages filled. |
 | 3.1.0 | 14 Oct | QLC+ 5.3 Show Wizard shows: palettes read everywhere, Doctor D019 and D020, Wizard Repair. |
 | 3.2.0 | 15 Oct | Upgrade to QLC+ 5.3 for older shows; Doctor I008. |
+| 3.3.0 | 15 Oct | The Look & Chaser Builder in the wizard's families: gobo, strobe and level looks, places, movement effects, a page per group. |
 
 ## 4. Goal and the Pub test
 

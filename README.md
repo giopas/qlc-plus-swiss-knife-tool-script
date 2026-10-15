@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.2.0
+# QLC+ Swiss Knife v3.3.0
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -40,7 +40,7 @@ The tools are grouped by job and numbered 1 to 6, like the side menu and the Sta
 | **2 · Adapt a show** | [Rig Reducer](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer) | Keep the fixtures of a smaller rig. Everything that used the others is cleaned up, and you can re-patch. |
 | | [Function Porter](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter) | Bring looks, chasers, effects and their buttons from another show, with fixtures, groups and meshes. Copied fixtures can join the show's own looks (*plays like*), other fixture types are translated by capability, 14 fixtures can fan in to 6, and key and MIDI bindings come along. |
 | | [Brightness](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Brightness) | Scale the master dimmer of each fixture type across every scene. Colours stay as they are. |
-| **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks from a palette for your fixture groups, and chasers from a pattern with BPM or beats timing, moving-head positions, your own palettes, pixel-bar matrices, song presets and a playable preview. |
+| **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks and effects for your fixture groups in the QLC+ 5.3 wizard's families: colours, gobos, strobes, chasers, movement effects and matrices, each greyed out when a group can't do it. Buttons on a page per group. Every look sets every channel. |
 | | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | The Virtual Console as a canvas: add and wire widgets, pages, templates and screen sizes, align, distribute and sort. |
 | | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage from above and from the front. Put band members and set pieces on the floor, aim fixtures at a mesh, hide meshes, and make and edit fixture groups. |
 | | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share VC templates, palettes, look presets, naming profiles, VC styles and Show Profiles as one plain file, and install what other QLC+ users shared. Items are checked first, and there is no server. |

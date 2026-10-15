@@ -7,6 +7,30 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.3.0] — 2026-10-15
+
+The Look & Chaser Builder works the way the QLC+ 5.3 Show Wizard thinks, and keeps everything it could do. Every look still sets every channel of its fixtures.
+
+### Changed
+- **One screen in three columns.** *Groups*: a card per fixture group with its fixtures, what they can do (colour mixing, colour wheel, gobo, strobe, moves, a grid for matrices, read from the fixture definitions) and a role, one of the wizard's nine, suggested from the group's name. *Effects*, in the wizard's families: Colour, Intensity, Movement, Matrix. Each effect is a card that says what it makes and on which groups; when no picked group can do it, it is greyed out with the reason. *Will add*: the stage seen from above, lit with the looks; the counts and the Doctor's verdict, worked out as you tick; where the buttons go.
+- **Start from** Club night, Concert, Theatre, Architectural or Custom ticks the effects the wizard ticks for that kind of show, and gives each one to the groups whose role suits it. Everything can be changed after.
+- **Buttons on a page per group**, like the wizard: one console page with a frame and a page per group, picked in the frame's header. Each page has an intensity slider, the group's looks in one solo frame (one at a time, a row per kind), its effects, PANIC RESET when the show has one, and an XY pad for moving heads in its own column. One page with every button, as before, or no buttons, are still there.
+- Functions go in a folder per group (`Look Builder/<group>/Looks` and `/Effects`), like the wizard's. The old single folder is still an option.
+- A chaser card opens the **effect panel**: the recipe (the song presets), pattern tiles with a picture of each, the colours in order, speed with Tap, cut or soft fade, and a large step preview with ▶ Play. Every other setting of the old chaser form is under *More*: steps, seed, lights on per step, split, milliseconds, the QLC+ tempo, fade percentage, colours per step or per fixture, type, background, where the moving heads aim, name. *+ New chaser* builds one of your own on any group.
+
+### Added
+- **Gobo looks**: one look per gobo and colour, in the colours you tick. Only the static gobos of the wheel are offered (no shake or scroll slots), and you pick which ones; the card says how many looks that makes.
+- **Full · Half · Off** and **Strobe slow · fast**: whole looks in white, the strobe inside each fixture's own strobe range (what the wizard's Shutter palettes cannot do on a Sharpy or a JDC1).
+- **Blinder hit**: every light of the groups at full, on a flash button.
+- **Places on the stage**: the stage centre, the audience and each musician model placed in Stage & Meshes. The colour and gobo looks of the moving heads aim there, worked out from each fixture's position like a QLC+ Position3D palette.
+- **Movement effects** (QLC+ EFX), as the wizard makes them: *Circle*, *Figure eight* and *Audience sweep* ride on the aim of the look that is playing; *Fly out* and *Fly in* set the aim themselves, mirrored for heads turned upstage. They work in QLC+ 5.2.2 too (no 5.3-only dimmer control).
+- **Matrices on any group laid out as a grid**, not only pixel bars; a group without colour mixing runs the matrix on its dimmers.
+- *Also add QLC+ palettes*: the Dimmer, Shutter, Color and Position3D palettes of Upgrade to QLC+ 5.3, for the looks just made.
+- Claude: `build_looks` takes the new kinds (levels, strobes, gobos, blinder, efx, matrices on a group, place, vc, folders, palettes) and `looks_options` returns what each group can do, its role, its gobos and the places on the stage.
+
+### Kept
+- Every control of the old screen (see *Look Builder* in the wiki for where each one went), the song presets, your palettes and custom colours, the pixel-bar matrices, Export a copy, and the same output for a plan written for 3.2.0.
+
 ## [3.2.0] — 2026-10-15
 
 Older QLC+ 5 shows get what QLC+ 5.3 offers. Checked against the source of QLC+ 5.2.2 and 5.3.0: an older show opens in 5.3 as it is, so the upgrade only adds.

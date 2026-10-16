@@ -7,7 +7,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
-## [3.4.0] — 2026-10-16
+## [3.4.0] — 2026-10-16 — One way forward
 
 One way forward inside a guided route. The route at the top shows where you are; the footer moves you on and says where to. From the UX review of 15 October (option C).
 
@@ -26,9 +26,10 @@ One way forward inside a guided route. The route at the top shows where you are;
   - The route's name, the effect panel's name in the route, and text a tool builds itself are rebuilt when you change language.
   - The words match across a language: *lo show* in Italian; *el show* in Spanish; European Portuguese with *tu*, *ficheiro*, *percurso*; *Weg* for a route in German; *流程*, *控制台* and *Chaser* in Chinese; *エフェクト* and *マトリックス* in Japanese.
   - Fixed on the way: the shared escape helper did not escape quotes, so a tooltip with quotes in it (Quick Start's naming profiles) was cut short.
+- For the maintainers: `tools/shots.py` retakes every picture in one command (it starts the app, says which pictures changed and makes a contact sheet), and `tools/release_notes.py` gives the GitHub release its title, *vX.Y.Z · Short title*, and its text, from this file. The release workflow uses it.
 - The README screenshots, the route GIF and the tutorial pictures are retaken with the 3.3.0 Look Builder and the 3.4.0 route; `tools/make_route_gif.py` follows the route with the footer's button.
 
-## [3.3.0] — 2026-10-15
+## [3.3.0] — 2026-10-15 — The Look Builder, the wizard's way
 
 The Look & Chaser Builder works the way the QLC+ 5.3 Show Wizard thinks, and keeps everything it could do. Every look still sets every channel of its fixtures.
 
@@ -52,7 +53,7 @@ The Look & Chaser Builder works the way the QLC+ 5.3 Show Wizard thinks, and kee
 ### Kept
 - Every control of the old screen (see *Look Builder* in the wiki for where each one went), the song presets, your palettes and custom colours, the pixel-bar matrices, Export a copy, and the same output for a plan written for 3.2.0.
 
-## [3.2.0] — 2026-10-15
+## [3.2.0] — 2026-10-15 — Upgrade to QLC+ 5.3
 
 Older QLC+ 5 shows get what QLC+ 5.3 offers. Checked against the source of QLC+ 5.2.2 and 5.3.0: an older show opens in 5.3 as it is, so the upgrade only adds.
 
@@ -76,7 +77,7 @@ Older QLC+ 5 shows get what QLC+ 5.3 offers. Checked against the source of QLC+ 
 - No BPM speed dial: in QLC+ 5.3 it only drives functions set to follow the beat, and Swiss Knife's chasers run on time.
 
 
-## [3.1.0] — 2026-10-14
+## [3.1.0] — 2026-10-14 — QLC+ 5.3 wizard shows
 
 QLC+ 5.3 shows made with the new Show Wizard: Swiss Knife reads them correctly, stops harming them, and can finish them. Measured on two wizard shows made in QLC+ 5.3.0, now part of the test data.
 

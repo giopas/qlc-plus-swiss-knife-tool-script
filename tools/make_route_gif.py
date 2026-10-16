@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run the guided route 'Adapt a show to a new venue' in the app and keep the pictures.
 
+Easier: python3 tools/shots.py gif (starts the app, compares, contact sheet).
+
     python3 app.py --browser &
     python3 tools/make_route_gif.py [OUT_DIR]
 
@@ -67,8 +69,9 @@ def main():
 
         pg.goto(BASE + "/")
         pg.wait_for_timeout(800)
-        pg.evaluate("p=>fetch('/api/load',{method:'POST',headers:{'Content-Type':'application/json'},"
-                    "body:JSON.stringify({path:p})})", os.path.join(CORPUS, "Festival_14fix.qxw"))
+        req = urllib.request.Request(BASE + "/api/load", json.dumps({"path": os.path.join(CORPUS, "Festival_14fix.qxw")}).encode(),
+                                     {"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=60).read()
         pg.reload()
         pg.wait_for_timeout(1500)
         frame()                                                       # the Start screen

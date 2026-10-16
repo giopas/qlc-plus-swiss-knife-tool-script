@@ -100,6 +100,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --notes "See the CHANGELOG."
+          # title "v3.4.0 · One way forward" and the text of that version in CHANGELOG.md
+          TITLE="$(python3 tools/release_notes.py "$TAG" --out notes.md)" || { TITLE="$TAG"; echo "See the CHANGELOG." > notes.md; }
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TITLE" --notes-file notes.md
+          else
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TITLE" --notes-file notes.md
+          fi
           gh release upload "$TAG" files/* --repo "$GITHUB_REPOSITORY" --clobber

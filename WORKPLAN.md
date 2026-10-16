@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 26 tools, among them `guide`, which explains the others. It also offers four ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files. The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 965 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 970 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (31 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -316,8 +316,8 @@ Run `python3 tools/ground_truth.py` before trusting this file or any note. It sa
 
 - Run the two `--missing` commands once more.
 - Bump `VERSION` in `core/workspace.py` (it must match the CHANGELOG), the installer version, the README title and the spec comment.
-- Move `[Unreleased]` to `[X.Y.Z] date`.
-- README stays a presentation; retake screenshots where a screen changed.
+- Move `[Unreleased]` to `[X.Y.Z] — date — Short title`: two to four words that say what the release is for (*One way forward*, *Upgrade to QLC+ 5.3*). The GitHub release is called `vX.Y.Z · Short title` and its text is that section of the CHANGELOG; `python3 tools/release_notes.py vX.Y.Z` shows both before the push.
+- README stays a presentation. Retake the pictures with `python3 tools/shots.py all`: it starts the app, retakes the README screenshots, the route GIF and the tutorial pictures, says which ones changed and writes `contact.png`, every picture small, to look at in one go. `--dry` leaves the repo alone, `--only 07` keeps one picture, and `python3 tools/shots.py state <name> "<js>" … --lang it` takes any other screen. Quit Swiss Knife first (the tool needs its port, 5731).
 - A wiki page for each new or changed tool. When a Claude tool changed, run `python tools/make_claude_tools_wiki.py` (the tests fail until the page matches).
 - Release notes in `docs/release-notes/RELEASE_NOTES_vX.Y.Z.md`.
 
@@ -332,7 +332,7 @@ git checkout main && git merge --ff-only feat/vX.Y.Z && git tag vX.Y.Z && git pu
 
 `git status --short` must print nothing first. For a change that is not a release, leave out the `git tag` part.
 
-Pushing runs `tests` once on `main` (version tags and documentation-only changes are ignored), `qlc-live-check` once (advisory) and `release` once on the tag (tests, build, installer test on macOS twice, Windows and Linux). When `release` finishes there is a draft release. Edit it: title `QLC+ Swiss Knife vX.Y.Z`, notes from the release-notes file, mark it *Latest*, keep only the `…-X.Y.Z-…` files plus `SHA256SUMS`, then publish. Then try *Update and restart* from the previous version.
+Pushing runs `tests` once on `main` (version tags and documentation-only changes are ignored), `qlc-live-check` once (advisory) and `release` once on the tag (tests, build, installer test on macOS twice, Windows and Linux). When `release` finishes the release is there with its title (`vX.Y.Z · Short title`) and text (the CHANGELOG section), both from `tools/release_notes.py`, and the files attached. Check it is marked *Latest* and keeps only the `…-X.Y.Z-…` files plus `SHA256SUMS`. Then try *Update and restart* from the previous version.
 
 The assets are: macOS arm64 and Intel (`.tar.gz` for the updater and `.dmg` for a first install), Windows (`-setup.exe` and `.zip`), Linux (`.tar.gz`) and the Claude Desktop connection file (`-claude.mcpb`).
 

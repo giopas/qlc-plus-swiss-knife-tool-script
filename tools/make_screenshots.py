@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Retake the README screenshots (screenshots/01..18) with Playwright.
 
+Easier: python3 tools/shots.py readme (starts the app, compares, contact sheet).
+
     python3 app.py --browser &            # the app on http://127.0.0.1:5731
     python3 tools/make_screenshots.py [OUT_DIR]
 
@@ -56,8 +58,7 @@ def main():
         pg.goto(BASE + "/")
         pg.wait_for_timeout(800)
         def load(path):
-            pg.evaluate("p=>fetch('/api/load',{method:'POST',headers:{'Content-Type':'application/json'},"
-                        "body:JSON.stringify({path:p})})", path)
+            post("/api/load", {"path": path})   # from here, not the page: a fresh server needs it before the page asks
             pg.reload()
             pg.wait_for_timeout(1500)
 

@@ -17,4 +17,8 @@ A guided route used to have two ways forward: *Done, next* at the top and the to
 
 Outside a route, Quick Start and Function Porter show their steps with the same stepper. Nothing changes in what any tool writes in the show.
 
+## Seven languages, checked
+
+The app was run in each of its languages, screen by screen. About 120 strings per language that were still in English are translated (the Doctor's fixes, what the Look Builder adds, the line after Apply, the History), sentences are no longer half translated, and each language uses the same words everywhere.
+
 Full details: [CHANGELOG](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/blob/main/CHANGELOG.md).

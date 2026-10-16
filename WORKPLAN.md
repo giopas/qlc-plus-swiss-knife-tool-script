@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.4.0, 16 October 2026 (prepared on branch `feat/v3.4.0-steps`, not yet merged; 3.3.0 released 15 October).** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, and 3.4.0 gives the guided routes one way forward. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.4.1, 16 October 2026 (merged into `main` on the Mac, to push; 3.4.0 released earlier the same day).** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, and 3.4.1 checks the seven languages screen by screen. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -60,7 +60,20 @@ The alignment plan (`claude/STAGE_WIZARD_ALIGNMENT.md`) numbered its items 3.1 t
 | 3.4 | Align Swiss Knife's own generators with the wizard: the Look Builder | 3.3.0, 15 October |
 | 3.4 | … and Quick Start (roles, capabilities from the definition, placement by role, the wizard's order) | next |
 
-### Released in 3.4.0 (prepared 16 October, branch `feat/v3.4.0-steps`)
+### Released in 3.4.1 (16 October)
+
+Right after 3.4.0: the translations checked by running the app in every language, the pictures retaken, and two tools so that the next releases cost less.
+
+| Change | Where |
+|---|---|
+| Translations reviewed by running the app in each language (every tool, the routes, Apply in Look Builder, Upgrade, Wizard Repair, Doctor): about 120 strings added per language, terms made consistent, one-word patterns no longer half-translate sentences, text rebuilt on a language change, the escape helper fixed for quotes | `static/i18n/*.json`, `static/js/i18n.js`, `static/js/show.js`, `static/js/doctor.js`, `tests/test_i18n_quality.py` |
+| The route steps stay on one line in a narrow window and slide to the current one | `static/js/route.js`, `static/css/style.css` |
+| README screenshots, route GIF and tutorial pictures retaken; the GIF script follows the 3.4.0 route | `screenshots/`, `tools/make_route_gif.py` |
+| `tools/shots.py`: every picture in one command, what changed, a contact sheet; any screen in any language | `tools/shots.py` |
+| `tools/release_notes.py`: the GitHub release is called `vX.Y.Z · Short title` and its text is the CHANGELOG section; the release workflow uses it | `tools/release_notes.py`, `.github/workflows/release.yml` |
+| Tests | `tests/test_i18n_quality.py`, `tests/test_release_tools.py` |
+
+### Released in 3.4.0 (16 October)
 
 Not in the alignment plan: from the UX review of 15 October (`claude/UX_REVIEW_STEPS.md`, the Claude design canvas *Steps and routes UX review*). Inside a guided route there were two ways forward (*Done, next ›* at the top, the tool's *Next* at the bottom) and two step counters with the same look. giopas chose option C: the top shows where you are, the footer moves you on.
 
@@ -73,7 +86,6 @@ Not in the alignment plan: from the UX review of 15 October (`claude/UX_REVIEW_S
 | Look Builder effect panel: *Cancel* and *Keep these settings* in the footer, the panel shown in the second row | `static/js/looks.js` |
 | A step whose tool comes twice in the route is ticked where you are; the status line is cleared when the screen changes | `static/js/route.js`, `static/js/app.js` |
 | Seven translations; tests that keep the pieces in place | `static/i18n/*.json`, `tests/test_route_steps.py` |
-| Translations reviewed by running the app in each language (every tool, the routes, Apply in Look Builder, Upgrade, Wizard Repair, Doctor): about 120 strings added per language, terms made consistent, one-word patterns no longer half-translate sentences, text rebuilt on a language change, the escape helper fixed for quotes | `static/i18n/*.json`, `static/js/i18n.js`, `static/js/show.js`, `static/js/doctor.js`, `tests/test_i18n_quality.py` |
 | Wiki: *Show in Progress* (guided routes), *Quick Start*, *Function Porter*, *Look Builder* | wiki |
 | Check on the Mac: each of the five routes from start to end, Quick Start's *Save and go on*, Skip, leaving and coming back to a route, the narrow window | To do (giopas) |
 

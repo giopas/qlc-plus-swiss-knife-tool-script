@@ -20,6 +20,12 @@ One way forward inside a guided route. The route at the top shows where you are;
 - A route step whose tool comes twice in the route (Groups and Stage, Check and Final check) is ticked where you are, not the first one still open.
 - The status line is cleared when you change screen, so a message from another tool no longer stays behind.
 - In a narrow window the route's steps stay on one line and slide so the current step is in view, instead of wrapping under the route's name.
+- **Translations reviewed** in the seven languages, screen by screen, with the app run in each language:
+  - Strings that were still English everywhere are translated: the Doctor's fix descriptions and options, what the Look Builder will add (looks, chasers, movement effects, matrices, console pages), the line after ✓ Apply and the History, the Stage & Meshes tab tips, the Upgrade folders step, the wizard roles and the places on the stage (Centre, Audience), *All fixtures*.
+  - A one-word pattern ("{0} scene") no longer half-translates a sentence that happens to end in that word ("PANIC RESET is a plain シーン"): such sentences now have their own translation.
+  - The route's name, the effect panel's name in the route, and text a tool builds itself are rebuilt when you change language.
+  - The words match across a language: *lo show* in Italian; *el show* in Spanish; European Portuguese with *tu*, *ficheiro*, *percurso*; *Weg* for a route in German; *流程*, *控制台* and *Chaser* in Chinese; *エフェクト* and *マトリックス* in Japanese.
+  - Fixed on the way: the shared escape helper did not escape quotes, so a tooltip with quotes in it (Quick Start's naming profiles) was cut short.
 - The README screenshots, the route GIF and the tutorial pictures are retaken with the 3.3.0 Look Builder and the 3.4.0 route; `tools/make_route_gif.py` follows the route with the footer's button.
 
 ## [3.3.0] — 2026-10-15

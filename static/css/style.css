@@ -4363,3 +4363,7 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .out-footer.lbx-editing > :not(.lbx-foot-edit) { display: none; }
 .lbx-foot-edit { display: flex; align-items: center; gap: 10px; flex: 1; }
 .lbx-foot-note { font-size: var(--fs-ui); color: var(--text-dim); }
+
+/* 3.4.0: the Doctor's "— deletes functions" is its own piece (translated on its own) */
+.doc-hint-warn { margin-left: .35em; }
+:lang(ja) .doc-hint-warn, :lang(zh) .doc-hint-warn { margin-left: 0; }

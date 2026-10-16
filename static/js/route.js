@@ -142,6 +142,8 @@ function _toolItems(tool, p) {
   }));
 }
 
+document.addEventListener('sk-lang', () => routeRender());
+
 /** Start a route (from the Start card) and open its first step. */
 function routeStart(id) {
   if (!ROUTES[id]) return;
@@ -285,7 +287,7 @@ function routeRender() {
   const opt = cur >= 0 && r.steps[cur].optional && !_route.done[cur];
   el.hidden = false;
   el.innerHTML =
-    `<span class="rs-title" title="${_rEsc(_rTr('A guide, not a lock: any step, any order. Every tool works on the show in progress.'))}">▶ ${_rEsc(r.title)}</span>` +
+    `<span class="rs-title" title="${_rEsc(_rTr('A guide, not a lock: any step, any order. Every tool works on the show in progress.'))}">▶ ${_rEsc(_rTr(r.title))}</span>` +
     `<span class="rs-pos" data-i18n="off">${_rEsc(allDone ? _rTr('all done') : pos)}</span>` +
     stepperHTML(items, 'stp-route') +
     (cur >= 0 && !_route.done[cur]

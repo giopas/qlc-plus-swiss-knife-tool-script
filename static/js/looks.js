@@ -108,7 +108,7 @@ async function _lbLoad() {
 function _v(id) { return document.getElementById(id); }
 function _lbHas(g, cap) { return (g.caps || []).includes(cap); }
 function _lbGroup(id) { return _lbOpts.groups.find(g => g.id === id); }
-function _lbGName(id) { return (_lbGroup(id) || {}).name || id; }
+function _lbGName(id) { return id === 'all' ? _lbTr('All fixtures') : (_lbGroup(id) || {}).name || id; }
 
 function _lbAllColours() {
   if (!_lbOpts) return [];
@@ -179,9 +179,9 @@ function _lbRenderGroups() {
     const on = _lbSel.has(g.id), dis = !g.supported;
     return `<div class="lbx-g ${on ? 'on' : ''} ${dis ? 'dis' : ''}">
       <label class="lbx-gh"><input type="checkbox" ${on ? 'checked' : ''} ${dis ? 'disabled' : ''} onchange="looksGroup('${_esc(g.id)}', this.checked)">
-        <b data-i18n="off">${_esc(g.name)}</b><span class="lb-n">${g.fixtures.length}</span></label>
+        <b data-i18n="off">${_esc(_lbGName(g.id))}</b><span class="lb-n">${g.fixtures.length}</span></label>
       <div class="lbx-gm"><label>Role <select class="filter-input" onchange="looksRole('${_esc(g.id)}', this.value)">${_lbOpts.roles.map(r =>
-        `<option ${_lbRole[g.id] === r ? 'selected' : ''} data-i18n="off">${r}</option>`).join('')}</select></label>
+        `<option value="${r}" ${_lbRole[g.id] === r ? 'selected' : ''} data-i18n="off">${_esc(_lbTr(r))}</option>`).join('')}</select></label>
         <span class="lbx-model" data-i18n="off" title="${_esc(g.model || '')}">${_esc(g.model || '')}</span></div>
       <div class="lbx-caps">${(g.labels || []).map(c => `<span data-i18n-ctx="lb">${_esc(c)}</span>`).join('')}${dis ? '<span class="lbx-warn">no fixture definition</span>' : ''}</div>
     </div>`;
@@ -200,7 +200,7 @@ function _lbMakes(e, gids) {
     case 'levels': return [_lbN(3 * n, 'look'), 'white at 100, 50 and 0 %'];
     case 'strobe': return [_lbN(2 * n, 'look'), 'each light in its own strobe range'];
     case 'blinder': return ['1 flash button', 'every light at full'];
-    case 'places': return [`aim at ${_lbPlace}`, 'the looks of the moving heads'];
+    case 'places': return [`aim at ${_lbPlaceName(_lbPlace)}`, 'the looks of the moving heads'];
     case 'fly': case 'circle': return [_lbN(2 * n, 'movement effect'), ''];
     case 'sweep': return [_lbN(n, 'movement effect'), ''];
     case 'mmore': return [_lbN(3 * n, 'RGB matrix'), ''];
@@ -273,7 +273,7 @@ function _lbGoboBar() {
   const gids = [..._lbFx.get('gobo')];
   return gids.map(id => {
     const g = _lbGroup(id), names = g.gobo_names || [], pick = _lbGobos[id] || [];
-    return `<div class="lbx-bar"><span class="lbx-lbl" data-i18n="off">${_esc(g.name)}</span><span class="lb-n" data-i18n-ctx="lb">gobos</span>
+    return `<div class="lbx-bar"><span class="lbx-lbl" data-i18n="off">${_esc(_lbGName(g.id))}</span><span class="lb-n" data-i18n-ctx="lb">gobos</span>
       ${names.map((n, i) => `<button class="lbx-gchip ${pick.includes(i + 1) ? 'on' : ''}" onclick="looksGobo('${_esc(id)}', ${i + 1})" data-i18n="off">${_esc(n)}</button>`).join('')}
       <button class="btn btn-surface btn-sm" onclick="looksGoboAll('${_esc(id)}')">All / None</button></div>`;
   }).join('');
@@ -281,7 +281,7 @@ function _lbGoboBar() {
 
 function _lbPlaceBar() {
   return `<div class="lbx-bar"><span class="lbx-lbl">Aim at</span>
-    ${_lbOpts.places.map(p => `<button class="lbx-gchip ${_lbPlace === p.name ? 'on' : ''}" onclick="looksPlace('${_esc(p.name).replace(/'/g, "\\'")}')" data-i18n="off">${_esc(p.name)}</button>`).join('')}
+    ${_lbOpts.places.map(p => `<button class="lbx-gchip ${_lbPlace === p.name ? 'on' : ''}" onclick="looksPlace('${_esc(p.name).replace(/'/g, "\\'")}')" data-i18n="off">${_esc(_lbPlaceName(p.name))}</button>`).join('')}
     <span class="p-desc">The colour and gobo looks of the moving heads aim here. Musicians come from the models placed in Stage &amp; Meshes.</span></div>`;
 }
 
@@ -347,8 +347,20 @@ function _lbRenderStage() {
   }).join('')}</div><div class="lbx-st-l"><span>FRONT</span></div>`;
 }
 
+document.addEventListener('sk-lang', () => { if (typeof _lbOpts !== 'undefined' && _lbOpts && !_lbEditing) _lbRender(); });
+
+/** A Look Builder word in the interface language (the lb| context), for text built with data-i18n="off". */
+function _lbTr(s) {
+  if (typeof t !== 'function') return s;
+  const o = t('lb|' + s);
+  return o.startsWith('lb|') ? s : o;
+}
+/** A place on the stage: the centre and the audience are words; musicians keep their model's name. */
+function _lbPlaceName(n) { return n === 'Centre' || n === 'Audience' ? _lbTr(n) : n; }
+
 // ── actions ─────────────────────────────────────────────────────────────────
 function looksType(t) {
+  if (!_lbOpts) return;                     // the options are still loading
   _lbType = t;
   _lbFx = new Map();
   if (!_lbSel.size && t !== 'Custom') _lbOpts.groups.filter(g => g.supported && g.id !== 'all').forEach(g => _lbSel.add(g.id));
@@ -500,7 +512,7 @@ function looksEdit(eid) {
         <button class="btn btn-surface btn-sm" onclick="looksDeletePreset()" title="Delete the selected recipe (yours only)" aria-label="Delete recipe">🗑</button></div>
       <div class="lb-row" ${eid === 'new' ? '' : 'hidden'}><span class="lbx-lbl">Group</span>
         <select id="lb-cg" class="filter-input" onchange="_lbChPreview()">${_lbOpts.groups.map(g =>
-          `<option value="${_esc(g.id)}" ${g.id === firstG ? 'selected' : ''} ${g.supported ? '' : 'disabled'}>${_esc(g.name)} (${g.fixtures.length})</option>`).join('')}</select></div>
+          `<option value="${_esc(g.id)}" ${g.id === firstG ? 'selected' : ''} ${g.supported ? '' : 'disabled'} data-i18n="off">${_esc(_lbGName(g.id))} (${g.fixtures.length})</option>`).join('')}</select></div>
       <div class="lb-row"><span class="lbx-lbl">Pattern</span><div class="lbx-pats">${_lbOpts.patterns.map(q =>
         `<button type="button" class="lbx-pat ${q.id === r.pattern ? 'on' : ''}" data-pat="${q.id}" onclick="looksPattern('${q.id}')"><i class="lbx-pic lbx-pic-${q.id}"></i><span>${_esc(q.label)}</span></button>`).join('')}</div>
         <input type="hidden" id="lb-pat" value="${r.pattern}"></div>
@@ -535,7 +547,7 @@ function looksEdit(eid) {
             `<option data-i18n-ctx="colour" ${c.name === ((r.background || {}).colour || {}).name || (!r.background && c.name === 'Blue') ? 'selected' : ''}>${_esc(c.name)}</option>`).join('')}</select>
           <input type="number" id="lb-bgl" class="filter-input rr-num" min="5" max="100" value="${Math.round(((r.background || {}).level ?? 0.3) * 100)}" oninput="_lbChPreview()"> %</label>
         <label>Position <select id="lb-cpos" class="filter-input" onchange="_lbChPreview()">
-          <option value="">— as it is —</option>${_lbOpts.places.map(q => `<option value="place:${_esc(q.name)}">${_esc(q.name)}</option>`).join('')}
+          <option value="">— as it is —</option>${_lbOpts.places.map(q => `<option value="place:${_esc(q.name)}" data-i18n="off">${_esc(_lbPlaceName(q.name))}</option>`).join('')}
           ${_lbOpts.positions.map(q => `<option value="${_esc(q.name)}">${_esc(q.name)} (pan ${q.pan} · tilt ${q.tilt} %)</option>`).join('')}</select></label>
         <label>Name <input class="filter-input" id="lb-cname" placeholder="name (default: pattern + colours)" value="${_esc(eid === 'new' ? '' : (r.name || ''))}"></label>
       </div></details>
@@ -551,7 +563,7 @@ function looksEdit(eid) {
   _lbChForm();
   _lbEditFooter(eid);
   if (typeof toolPosition === 'function')
-    toolPosition('looks', { crumb: [title], modal: true, back: () => looksEditClose(false) });
+    toolPosition('looks', { crumb: [_lbTr(title)], modal: true, back: () => looksEditClose(false) });
 }
 
 /** 3.4.0: while the effect panel is open, the footer is the panel's: Cancel

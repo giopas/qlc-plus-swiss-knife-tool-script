@@ -92,7 +92,9 @@ function doctorRender() {
     const ticked = fixable.filter(f => _docSel.has(f.key)).length;
     const sev = items[0].severity;
     const open = _docOpen.has(code);
-    const hint = fixable.length ? (fixable[0].hint + (items[0].removing ? ' — deletes functions' : '')) : 'no automatic fix';
+    // the hint and its warning in two pieces, so each is translated on its own
+    const hint = fixable.length ? fixable[0].hint : 'no automatic fix';
+    const hintWarn = fixable.length && items[0].removing ? '— deletes functions' : '';
     const box = fixable.length
       ? `<input type="checkbox" class="doc-group" data-code="${code}" ${ticked === fixable.length ? 'checked' : ''}
            onclick="event.stopPropagation()" onchange="doctorTickGroup('${code}', this.checked)">`
@@ -111,7 +113,7 @@ function doctorRender() {
         <span class="doc-code">${code}</span>
         <span class="doc-title">${_esc(_docData.titles[code] || '')}</span>
         <span class="doc-count">${items.length}${fixable.length ? ` · ${ticked}/${fixable.length} ticked` : ''}</span>
-        <span class="doc-hint">${_esc(hint)}</span>
+        <span class="doc-hint"><span>${_esc(hint)}</span>${hintWarn ? `<span class="doc-hint-warn">${hintWarn}</span>` : ''}</span>
         <span class="doc-caret">${open ? '▾' : '▸'}</span>
       </div>
       ${open && fixable.length ? _docOptBar(code) : ''}

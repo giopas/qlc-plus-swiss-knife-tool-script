@@ -35,7 +35,13 @@ const I18N = (() => {
         const lit = parts.join('').replace(/\s/g, '').length;
         if (!lit) continue;                 // a pattern of nothing but parts would match everything
         const re = new RegExp('^' + parts.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('(.*?)') + '$', 's');
-        pats.push({ re, tpl: v, lit });
+        // a pattern of one word and its parts ("{0} scene{1}") is meant for a count, not a sentence
+        // that happens to end in that word: those leave half the sentence in English
+        // (a name in quotes, "Function {0} '{1}'", is data and stays a pattern)
+        const litTxt = parts.join(' ').replace(/\(s\)/g, '');
+        const loose = litTxt.trim().split(/\s+/).filter(w => /[A-Za-z]{2}/.test(w)).length <= 1 &&
+          !/['"“”‘’:#\[\]()]/.test(litTxt);
+        pats.push({ re, tpl: v, lit, loose });
       } else {
         ex[key] = v;
       }
@@ -61,6 +67,7 @@ const I18N = (() => {
         if (tr === undefined) {
           for (const p of patterns) {
             const mm = p.re.exec(core);
+            if (mm && p.loose && mm.slice(1).some(g => (g.match(/[A-Za-z]{2,}/g) || []).length >= 3)) continue;
             if (mm) { tr = p.tpl.replace(/\{(\d+)\}/g, (_x, i) => mm[+i + 1] ?? ''); break; }
           }
         }
@@ -130,7 +137,14 @@ const I18N = (() => {
     }
   }
 
-  /** After a language switch: every node again, from the English it came from. */
+  /** After a language switch: every node again, from the English it came from.
+   *  Text a tool set already translated (textContent = t(…)) is found again in
+   *  the language it was in, so it does not stay behind in the old language. */
+  let _back = Object.create(null);         // the previous language's text → English
+  function _english(s) {
+    const k = _back[norm(s)];
+    return k === undefined ? s : k;
+  }
   function _reapply() {
     const w = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
     const nodes = [];
@@ -139,6 +153,10 @@ const I18N = (() => {
       if (n.nodeType === 3) {
         const rec = n.__i18n;
         if (rec && n.nodeValue === rec.out) n.nodeValue = rec.src;   // back to English first
+        if (n.nodeValue && n.nodeValue.trim() && n.parentElement && !_skip(n.parentElement)) {
+          const e = _english(n.nodeValue.trim());
+          if (e !== n.nodeValue.trim()) n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), e);
+        }
         n.__i18n = undefined;
         _text(n);
       } else {
@@ -178,6 +196,10 @@ const I18N = (() => {
 
   function set(code, remember = true) {
     if (!LANGS.some(l => l[0] === code)) code = 'en';
+    _back = Object.create(null);
+    for (const [k, v] of Object.entries(dict)) {
+      if (typeof v === 'string' && !/^[a-z]+\|/.test(k) && !(norm(v) in _back)) _back[norm(v)] = k;
+    }
     lang = code;
     [dict, patterns] = _compile(_load(code));
     if (remember) { try { localStorage.setItem('sk-lang', code); } catch { /* per-browser convenience only */ } }
@@ -188,6 +210,8 @@ const I18N = (() => {
       sel.setAttribute('aria-label', t('Language'));
       sel.title = t('Language of the interface (shows, reports and the wiki stay as they are)');
     }
+    // text a tool builds already translated (data-i18n="off") is built again in the new language
+    try { document.dispatchEvent(new CustomEvent('sk-lang', { detail: code })); } catch { /* old browser */ }
   }
 
   function init() {

@@ -69,6 +69,8 @@ function _qsShow(id) {
   if (el) el.style.display = '';
 }
 
+document.addEventListener('sk-lang', () => { if (document.getElementById('qs-btn-next')) _qsUpdateNav(); });
+
 function _qsUpdateNav() {
   const back = document.getElementById('qs-btn-back');
   const next = document.getElementById('qs-btn-next');
@@ -182,7 +184,10 @@ function _qsRenderFixtureSelect() {
   });
 }
 
-function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+// every tool's _esc is the same global (the last script wins): it must be safe in attributes too
+function _esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 /* ── Step 1: Fixture Selection ─────────────────────────────────────────── */
 function qsRefreshStatus() {

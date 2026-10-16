@@ -73,6 +73,7 @@ Not in the alignment plan: from the UX review of 15 October (`claude/UX_REVIEW_S
 | Look Builder effect panel: *Cancel* and *Keep these settings* in the footer, the panel shown in the second row | `static/js/looks.js` |
 | A step whose tool comes twice in the route is ticked where you are; the status line is cleared when the screen changes | `static/js/route.js`, `static/js/app.js` |
 | Seven translations; tests that keep the pieces in place | `static/i18n/*.json`, `tests/test_route_steps.py` |
+| Translations reviewed by running the app in each language (every tool, the routes, Apply in Look Builder, Upgrade, Wizard Repair, Doctor): about 120 strings added per language, terms made consistent, one-word patterns no longer half-translate sentences, text rebuilt on a language change, the escape helper fixed for quotes | `static/i18n/*.json`, `static/js/i18n.js`, `static/js/show.js`, `static/js/doctor.js`, `tests/test_i18n_quality.py` |
 | Wiki: *Show in Progress* (guided routes), *Quick Start*, *Function Porter*, *Look Builder* | wiki |
 | Check on the Mac: each of the five routes from start to end, Quick Start's *Save and go on*, Skip, leaving and coming back to a route, the narrow window | To do (giopas) |
 

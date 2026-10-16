@@ -175,10 +175,10 @@ async function _renderSideChanges() {
   const SHOW = 5;
   const more = steps.length - SHOW;
   list.innerHTML = (more > 0 ? `<li class="sc-more" onclick="showHistoryToggle(true)">+ ${more} earlier…</li>` : '') +
-    steps.slice(-SHOW).map(s => `<li class="sc-row${s.saved ? ' sc-saved' : ''}" title="${_esc(s.tool_title + ' — ' + s.title + (s.detail ? '\n' + s.detail : ''))}">
+    steps.slice(-SHOW).map(s => `<li class="sc-row${s.saved ? ' sc-saved' : ''}" title="${_esc(_tr(s.tool_title) + ' — ' + _stepTitle(s.title) + (s.detail ? '\n' + String(s.detail).split('; ').map(_tr).join('; ') : ''))}">
       <span class="sc-n" title="step ${s.n}">${s.saved ? '✓' : s.n}</span>
-      <span class="sc-t" onclick="go('${s.tool}')"><b>${_esc(s.tool_title)}</b> ${_esc(s.title)}</span>
-      ${s.undoable ? `<button class="sc-undo" title="Undo this step${s.n < steps.length ? ' and the ones after it' : ''}" onclick="showUndoFromSide(${s.n})">↶</button>` : ''}
+      <span class="sc-t" onclick="go('${s.tool}')"><b>${_esc(s.tool_title)}</b> <span data-i18n="off">${_esc(_stepTitle(s.title))}</span></span>
+      ${s.undoable ? `<button class="sc-undo" title="${s.n < steps.length ? 'Undo this step and the ones after it' : 'Undo this step'}" onclick="showUndoFromSide(${s.n})">↶</button>` : ''}
     </li>`).join('');
 }
 
@@ -212,7 +212,7 @@ async function showHistoryRender() {
     return `<li class="sh-step${s.saved ? ' sh-saved' : ''}">
       <span class="sh-n">${s.n}</span>
       <div class="sh-body">
-        <div class="sh-title"><b>${_esc(s.tool_title)}</b> — ${_esc(s.title)}${s.saved ? ' <span class="sh-tag">saved</span>' : ''}</div>
+        <div class="sh-title"><b>${_esc(s.tool_title)}</b> — <span data-i18n="off">${_esc(_stepTitle(s.title))}</span>${s.saved ? ' <span class="sh-tag">saved</span>' : ''}</div>
         <div class="sh-sub">${_esc(sub)}</div>
       </div>
       <div class="sh-acts">
@@ -453,6 +453,37 @@ function showConfirmDiscard(what) {
 
 document.addEventListener('DOMContentLoaded', () => showRefreshSoon(50));
 
+document.addEventListener('sk-lang', () => { try { _renderSideChanges(); } catch { /* not ready */ } });
+
+/** Separators for a list built in pieces: Japanese and Chinese have their own. */
+function _sep(x) {
+  const cjk = typeof I18N !== 'undefined' && (I18N.lang === 'ja' || I18N.lang === 'zh');
+  return cjk ? ({ ': ': '：', ', ': '、', ' ': '' }[x] ?? x) : x;
+}
+
+function _tr(x) { return typeof t === 'function' ? t(x) : x; }
+
+/** A step's title in the interface language.  "33 change(s): chasers, panic" is
+ *  translated in pieces: the count, then each repair or upgrade step (step|<id>). */
+function _stepTitle(title) {
+  const tr = (x, ...v) => (typeof t === 'function' ? t(x, ...v) : x.replace(/\{(\d+)\}/g, (_m, i) => v[+i] ?? ''));
+  const s = String(title || '');
+  const whole = tr(s);
+  if (whole !== s) return whole;
+  const m = /^(\d+) change\(s\): (.+)$/.exec(s);
+  if (m) {
+    return tr('{0} change(s)', m[1]) + _sep(': ') + m[2].split(', ').map(x => {
+      const o = tr('step|' + x);
+      return o.startsWith('step|') ? x : o;
+    }).join(_sep(', '));
+  }
+  // "3 functions, 2 fixtures from Pub.qxw", "40 looks, 17 chasers": each piece on its own
+  const f = /^(.*) from (.+)$/.exec(s);
+  const head = f ? f[1] : s;
+  if (!head.includes(', ') && !f) return s;
+  return head.split(', ').map(x => tr(x)).join(_sep(', ')) + (f ? _sep(' ') + tr('from {0}', f[2]) : '');
+}
+
 // ── Apply to the show (tools) ────────────────────────────────────────────────
 
 /** POST a tool's plan to its /apply route: the result becomes the show in
@@ -468,8 +499,11 @@ async function showApply(url, body, busy = 'Applying…') {
       return null;
     }
     const s = d.step || {};
-    const doc = d.show && d.show.doctor ? ` Doctor: ${d.show.doctor.error || 0} errors, ${d.show.doctor.warning || 0} warnings.` : '';
-    setStatus(`✓ Applied to the show — step ${s.n}: ${s.title}.${doc} 💾 Save as new file… (top right) when you're ready.`, 'ok');
+    // three sentences, each translated on its own (the step title is the tool's own words)
+    const tr = (x, ...v) => (typeof t === 'function' ? t(x, ...v) : x.replace(/\{(\d+)\}/g, (_m, i) => v[+i] ?? ''));
+    const doc = d.show && d.show.doctor ? _sep(' ') + tr('Doctor: {0} errors, {1} warnings.', d.show.doctor.error || 0, d.show.doctor.warning || 0) : '';
+    setStatus(tr('✓ Applied to the show — step {0}: {1}.', s.n, _stepTitle(s.title)) + doc + _sep(' ') +
+              tr("💾 Save as new file… (top right) when you're ready."), 'ok');
     await showRefresh();
     return d;
   } catch (e) {

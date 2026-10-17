@@ -3502,7 +3502,6 @@
  "▶ Serve": "▶ 提供",
  "Start QLC+ with web access:": "以网页访问方式启动 QLC+：",
  "The tablet joins the same network as this computer (on a Mac: Internet Sharing to Wi-Fi).": "平板加入与这台电脑相同的网络（Mac 上：互联网共享到 Wi-Fi）。",
- "Export, Serve, then open the address above on the tablet. Without Swiss Knife:": "导出、提供，然后在平板上打开上面的地址。不用 Swiss Knife 时：",
  "in the folder.": "在该文件夹中运行。",
  "The show is not changed; only the stage_monitor folder and the settings file are written": "演出不会被修改；只写入 stage_monitor 文件夹和设置文件",
  "Reads the show, writes only the page": "读取演出，只写入页面",
@@ -3569,5 +3568,12 @@
  "Preview opened in your browser.": "已在浏览器中打开预览。",
  "Open the page in your browser, talking to the QLC+ on this computer": "在浏览器中打开页面，连接到这台电脑上的 QLC+",
  "{0} asked for https://. On that device type the address with http://, as shown above.": "{0} 请求了 https://。请在该设备上按上面所示用 http:// 输入地址。",
- "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.": "演出时只需要 QLC+（加 -w）和这个服务器。不用 Swiss Knife 时：在文件夹中运行 python3 serve_stage.py。"
+ "The exported folder, with Start Stage Monitor to double-click at the gig": "导出的文件夹，演出时双击其中的 Start Stage Monitor",
+ "📂 Show the folder": "📂 显示文件夹",
+ "Export, Serve, then open the address above on the tablet, with": "导出、提供，然后在平板上打开上面的地址，使用",
+ "At the gig Swiss Knife can stay closed: double-click": "演出时 Swiss Knife 可以关闭：双击",
+ "in the exported folder.": "（在导出的文件夹中）",
+ "Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).": "页面已导出。演出时双击该文件夹中的 Start Stage Monitor（QLC+ 需以 -w 运行）。",
+ "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "演出时只需要 QLC+（加 -w）和这个服务器。不用 Swiss Knife 时：双击文件夹中的 Start Stage Monitor。",
+ "Could not open the folder": "无法打开文件夹"
 }

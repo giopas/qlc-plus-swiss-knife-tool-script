@@ -9,12 +9,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [3.5.3] — 2026-10-17 — Stage Monitor at the gig
 
-From the first try with a phone on the Mac's own Wi-Fi.
+From the first try with a phone on the Mac's own Wi-Fi: at the gig you now double-click one file.
+
+### Added
+- **Start Stage Monitor**: the export now also writes a file to double-click at the gig (`Start Stage Monitor.command` on macOS, `.bat` on Windows, `start-stage-monitor.sh` on Linux). It opens a window that serves the page, shows the address for the tablet, says whether QLC+ answers (and how to start it with `-w` and your show when it does not) and lists each device that opens the page. It uses the installed Swiss Knife, which can now serve a folder with `--serve-stage`, so the computer needs no Python. Without the app it falls back to Python 3.
+- *📂 Show the folder* on the Stage Monitor screen opens the exported folder.
 
 ### Changed
 - `serve_stage.py` lists every address of the computer, the one of its own Wi-Fi (Internet Sharing, a hotspot) first. Before, it printed a single guess, which could be the home network instead of the one the tablet was on.
 - When a phone or tablet asks for `https://` (Chrome on Android often does it by itself), the page cannot load and the browser shows `ERR_SSL_PROTOCOL_ERROR`. `serve_stage.py` now prints which device it was and the `http://` address to type, once, instead of lines of unreadable bytes, and *▶ Serve* in Swiss Knife shows the same note.
-- The Serve screen and the wiki say plainly what runs at the gig: QLC+ with `-w` and the page server. Swiss Knife is only needed to export the page.
+- The Serve screen and the wiki say plainly what runs at the gig: QLC+ with `-w` and Start Stage Monitor. Swiss Knife is only needed to export the page.
 - Wiki: what to run at home and at the gig, a check of what is listening, and the Mac's own Wi-Fi in more detail (the shared port needs a link, how to check that the network started, the alternatives).
 
 ## [3.5.2] — 2026-10-17 — macOS packages again

@@ -27,6 +27,14 @@ try:                                    # cp1252 consoles / windowed apps must n
 except Exception:                       # noqa: BLE001 — never block the start
     pass
 
+if __name__ == '__main__' and '--serve-stage' in sys.argv:   # Stage Monitor at the gig: serve an exported folder
+    _i = sys.argv.index('--serve-stage')
+    _dir = sys.argv[_i + 1] if len(sys.argv) > _i + 1 else '.'
+    import runpy
+    from core.stage_monitor import SERVE_SCRIPT
+    _mod = runpy.run_path(SERVE_SCRIPT, run_name='serve_stage')
+    sys.exit(_mod['main'](['--dir', _dir] + [a for a in sys.argv[_i + 2:] if a.isdigit()]))
+
 if __name__ == '__main__' and '--mcp' in sys.argv:        # Claude connects here: answer fast, import Flask on first use
     sys.argv.remove('--mcp')
     from core import mcp_server

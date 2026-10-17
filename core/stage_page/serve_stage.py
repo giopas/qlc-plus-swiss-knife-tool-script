@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Serve this folder to the tablet: the page of the QLC+ Swiss Knife — Stage Monitor.
 
+Double-click "Start Stage Monitor" in this folder, or:
+
     python3 serve_stage.py            (Windows: py serve_stage.py)
     python3 serve_stage.py 8090       another port
+    python3 serve_stage.py --dir DIR  serve another exported folder
 
 At the gig this and QLC+ are all you need: QLC+ started with web access
-(qlcplus -w), and this script in the exported folder.  Swiss Knife can stay
-closed.  The script prints the addresses to open on the tablet, the one of the
-computer's own Wi-Fi (Internet Sharing, a hotspot) first.  Open it with
-http://, not https://.  Standard library only.  Ctrl+C stops it.
+(qlcplus -w), and this server.  Swiss Knife can stay closed.  It prints the
+address to open on the tablet (the computer's own Wi-Fi first) and says
+whether QLC+ can be reached.  Open the address with http://, not https://.
+Standard library only.  Close the window (or Ctrl+C) to stop.
 """
 import ipaddress
 import os
@@ -18,14 +21,17 @@ import socket
 import subprocess  # nosec B404 — fixed commands, no shell, for the address list
 import sys
 import threading
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_PORT = 8080
-HERE = os.path.dirname(os.path.abspath(__file__))
+QLC_PORT = 9999                       # QLC+ web access (set at export)
+SHOW = ""                             # the show the page was exported from (set at export)
 HOTSPOT = ("192.168.2.", "10.42.0.", "192.168.137.")   # macOS Internet Sharing, Linux hotspot, Windows hotspot
 _IPV4 = re.compile(r"(?<![\d.])(\d{1,3}(?:\.\d{1,3}){3})(?![\d.])")
 _warned = set()
 _lock = threading.Lock()
+FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 
 def _usable(ip):
@@ -69,9 +75,23 @@ def addresses():
     return sorted(found, key=lambda ip: 0 if ip.startswith(HOTSPOT) else 1)
 
 
+def best_address():
+    ips = addresses()
+    return ips[0] if ips else "<this computer's address>"
+
+
+def qlc_reachable(port=None):
+    """True when QLC+ web access answers on this computer."""
+    try:
+        with socket.create_connection(("127.0.0.1", port or QLC_PORT), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
-        super().__init__(*a, directory=HERE, **k)
+        super().__init__(*a, directory=FOLDER, **k)
 
     def handle_one_request(self):
         # A browser that asks for https:// sends a TLS handshake (first byte 0x16), which a plain
@@ -86,8 +106,8 @@ class Handler(SimpleHTTPRequestHandler):
                 new = ip not in _warned
                 _warned.add(ip)
             if new:
-                host = self.server.server_address
-                print(f"  ! {ip} asked for https://. Type http://{best_address()}:{host[1]}/ "
+                port = self.server.server_address[1]
+                print(f"  ! {ip} asked for https://. Type http://{best_address()}:{port}/ "
                       "on that device (with http, not https).", flush=True)
             self.close_connection = True
             return
@@ -95,35 +115,86 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         if args and str(args[0]).startswith("GET / "):
-            print(f"  {self.client_address[0]} opened the page", flush=True)
+            print(f"  {time.strftime('%H:%M:%S')}  {self.client_address[0]} opened the page", flush=True)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
 
-def best_address():
-    ips = addresses()
-    return ips[0] if ips else "<this computer's address>"
+def watch_qlc(stop):
+    """Say when QLC+ web access comes and goes."""
+    last = None
+    while not stop.is_set():
+        up = qlc_reachable()
+        if up != last:
+            if up:
+                print(f"  {time.strftime('%H:%M:%S')}  QLC+ web access: OK (port {QLC_PORT})", flush=True)
+            else:
+                print(f"  {time.strftime('%H:%M:%S')}  QLC+ web access: not reachable. Start QLC+ with -w, for example:", flush=True)
+                print(f"       {qlc_command()}", flush=True)
+            last = up
+        stop.wait(3)
 
 
-def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
-    srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)  # nosec B104 — the tablet is on the LAN
+def qlc_command():
+    show = f' -o "{SHOW}"' if SHOW else ""
+    system = platform.system()
+    if system == "Darwin":
+        base = "/Applications/QLC+.app/Contents/MacOS"
+        for name in ("qlcplus5", "qlcplus-qml", "qlcplus"):
+            if os.path.exists(os.path.join(base, name)):
+                return f'"{base}/{name}" -w{show}'
+        return f'"{base}/qlcplus" -w{show}'
+    if system == "Windows":
+        return f'"C:\\QLC+\\qlcplus.exe" -w{show}'
+    return f"qlcplus -w{show}"
+
+
+def parse_args(argv):
+    port, folder = DEFAULT_PORT, FOLDER
+    it = iter(argv)
+    for a in it:
+        if a == "--dir":
+            folder = os.path.abspath(os.path.expanduser(next(it, folder)))
+        elif a.isdigit():
+            port = int(a)
+    return port, folder
+
+
+def main(argv=None):
+    global FOLDER
+    port, FOLDER = parse_args(sys.argv[1:] if argv is None else argv)
+    if not os.path.isfile(os.path.join(FOLDER, "index.html")):
+        print(f"No index.html in {FOLDER}: export the page from Swiss Knife first.", flush=True)
+        return 1
+    try:
+        srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)  # nosec B104 — the tablet is on the LAN
+    except OSError as e:
+        print(f"Port {port} is busy ({e.strerror or e}). Is the Stage Monitor already running in another window?", flush=True)
+        return 1
     srv.daemon_threads = True
     ips = addresses()
-    print("Stage Monitor is served. Open on the tablet (with http://):")
-    for i, ip in enumerate(ips or ["<this computer's address>"]):
+    print("QLC+ Swiss Knife — Stage Monitor")
+    print(f"Serving {FOLDER}")
+    print("Open on the tablet (with http://):")
+    for ip in ips or ["<this computer's address>"]:
         note = "   ← this computer's own Wi-Fi" if ip.startswith(HOTSPOT) else ""
         print(f"  http://{ip}:{port}/{note}")
-    print("QLC+ must run with web access (qlcplus -w). Ctrl+C to stop.", flush=True)
+    if not any(ip.startswith(HOTSPOT) for ip in ips):
+        print("  (no hotspot address: the tablet must be on the same network as this computer)")
+    print("Close this window (or press Ctrl+C) to stop.", flush=True)
+    stop = threading.Event()
+    threading.Thread(target=watch_qlc, args=(stop,), daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        stop.set()
         srv.server_close()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

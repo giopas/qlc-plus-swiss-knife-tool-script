@@ -462,7 +462,7 @@ def test_claude_stage_monitor_tool(tmp_path, monkeypatch):
     page = d["exported"]["page"]
     assert page == str(shows / "stage_monitor" / "index.html")
     assert _inlined(open(page, encoding="utf-8").read())["t"]["NEXT"] == "NÄCHSTE"
-    assert "serve_stage.py" in d["next"]
+    assert "Start Stage Monitor" in d["next"] and len(d["exported"]["launchers"]) == 3
 
     with pytest.raises(mcp_server.ToolError, match="outside the folders"):
         srv.t_stage_monitor({"export": True, "folder": str(tmp_path / "elsewhere")})
@@ -521,31 +521,87 @@ def test_swiss_knife_server_notices_https(tmp_path):
         srv.stop()
 
 
-def test_serve_stage_script_lists_addresses_and_explains_https(tmp_path):
+def _run_server(cmd, port, cwd=None):
+    """Start a server command, wait until it answers, return (process, first lines)."""
     import subprocess
     import time
-    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), sm.cuelists(_small()))
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cwd)
+    for _ in range(100):
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1).read()
+            break
+        except OSError:
+            time.sleep(0.1)
+    return p
+
+
+def test_serve_stage_script_lists_addresses_and_explains_https(tmp_path):
+    import time
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), sm.cuelists(_small()), show_path="/shows/Gig_v7.qxw")
     port = _free_port()
-    p = subprocess.Popen([sys.executable, "-u", out["script"], str(port)], stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT, text=True)
+    p = _run_server([sys.executable, "-u", out["script"], str(port)], port)
     try:
-        first = [p.stdout.readline() for _ in range(2)]
-        assert first[0].startswith("Stage Monitor is served") and "http://" in first[1]
-        for _ in range(50):
-            try:
-                urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1).read()
-                break
-            except OSError:
-                time.sleep(0.1)
         _tls_hello(port)
         _tls_hello(port)                                    # said once per device
-        time.sleep(0.3)
+        time.sleep(0.5)
     finally:
         p.terminate()
         text = p.communicate(timeout=5)[0]
-    assert "Open on the tablet (with http://)" in first[0]
+    assert "Open on the tablet (with http://):" in text and f":{port}/" in text
     assert text.count("asked for https://") == 1
     assert "opened the page" in text and "Bad request" not in text
+    assert "QLC+ web access:" in text                     # says whether QLC+ answers
+    assert "Close this window" in text
+
+
+def test_the_server_names_the_show_when_qlc_is_missing(tmp_path):
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(ws_port=_free_port()), sm.cuelists(_small()),
+                    show_path="/shows/Gig_v7.qxw")
+    body = open(out["script"], encoding="utf-8").read()
+    assert 'SHOW = "/shows/Gig_v7.qxw"' in body and "QLC_PORT = 9999" not in body
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("sst", out["script"])
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.qlc_reachable() is False
+    assert mod.qlc_command().endswith('-w -o "/shows/Gig_v7.qxw"')
+    assert mod.parse_args(["8090", "--dir", str(tmp_path)]) == (8090, str(tmp_path))
+
+
+def test_export_writes_double_click_launchers(tmp_path):
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), sm.cuelists(_small()))
+    names = sorted(os.path.basename(x) for x in out["launchers"])
+    assert names == sorted(sm.LAUNCHERS)
+    for p in out["launchers"]:
+        assert sm.is_own_file(p), p
+        if not p.endswith(".bat"):
+            assert os.access(p, os.X_OK), p
+    mac = open(out["launchers"][0], encoding="utf-8").read()
+    assert '"/Applications/QLC Swiss Knife.app"' in mac and "--serve-stage" in mac
+    assert "xcode-select -p" in mac                    # never pops the Command Line Tools installer
+    bat = open(os.path.join(out["folder"], "Start Stage Monitor.bat"), "rb").read()
+    assert b"\r\n" in bat and b"QLC Swiss Knife MCP.exe" in bat and bat.isascii()
+    # a launcher someone else wrote is never replaced
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "start-stage-monitor.sh").write_text("#!/bin/sh\necho mine\n")
+    with pytest.raises(ValueError, match="not made by the Stage Monitor"):
+        sm.export(str(other), _cfg(), sm.cuelists(_small()))
+
+
+def test_swiss_knife_serves_a_folder_with_serve_stage(tmp_path):
+    """What the launchers call when Swiss Knife is installed: no Python needed."""
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), sm.cuelists(_small()))
+    port = _free_port()
+    p = _run_server([sys.executable, "-u", os.path.join(ROOT, "app.py"), "--serve-stage", out["folder"], str(port)],
+                    port, cwd=str(tmp_path))
+    try:
+        body = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=5).read().decode()
+    finally:
+        p.terminate()
+        text = p.communicate(timeout=5)[0]
+    assert "const CFG" in body
+    assert f"Serving {out['folder']}" in text
 
 
 def test_serve_stage_script_puts_the_hotspot_first(monkeypatch):

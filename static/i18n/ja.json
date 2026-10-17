@@ -3502,7 +3502,6 @@
  "▶ Serve": "▶ 配信",
  "Start QLC+ with web access:": "Web アクセス付きで QLC+ を起動：",
  "The tablet joins the same network as this computer (on a Mac: Internet Sharing to Wi-Fi).": "タブレットをこのコンピューターと同じネットワークに接続します（Mac ではインターネット共有で Wi-Fi へ）。",
- "Export, Serve, then open the address above on the tablet. Without Swiss Knife:": "書き出し、配信してから、上のアドレスをタブレットで開きます。Swiss Knife なしの場合：",
  "in the folder.": "をフォルダー内で実行。",
  "The show is not changed; only the stage_monitor folder and the settings file are written": "ショーは変更されません。書き込むのは stage_monitor フォルダーと設定ファイルだけです",
  "Reads the show, writes only the page": "ショーを読み、ページだけを書き込みます",
@@ -3569,5 +3568,12 @@
  "Preview opened in your browser.": "プレビューをブラウザーで開きました。",
  "Open the page in your browser, talking to the QLC+ on this computer": "このコンピューターの QLC+ につないで、ブラウザーでページを開きます",
  "{0} asked for https://. On that device type the address with http://, as shown above.": "{0} が https:// を要求しました。その端末では上のとおり http:// でアドレスを入力してください。",
- "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.": "本番で必要なのは QLC+（-w 付き）とこのサーバーだけです。Swiss Knife なしの場合：フォルダー内で python3 serve_stage.py。"
+ "The exported folder, with Start Stage Monitor to double-click at the gig": "書き出したフォルダー。本番では Start Stage Monitor をダブルクリック",
+ "📂 Show the folder": "📂 フォルダーを表示",
+ "Export, Serve, then open the address above on the tablet, with": "書き出し、配信してから、上のアドレスをタブレットで開きます。使うのは",
+ "At the gig Swiss Knife can stay closed: double-click": "本番では Swiss Knife を閉じたままで構いません。ダブルクリック：",
+ "in the exported folder.": "（書き出したフォルダー内）",
+ "Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).": "ページを書き出しました。本番ではそのフォルダーの Start Stage Monitor をダブルクリックしてください（QLC+ は -w 付きで起動）。",
+ "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "本番で必要なのは QLC+（-w 付き）とこのサーバーだけです。Swiss Knife なしの場合：フォルダー内の Start Stage Monitor をダブルクリック。",
+ "Could not open the folder": "フォルダーを開けませんでした"
 }

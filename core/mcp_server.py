@@ -641,10 +641,11 @@ class Server:
                 raise ToolError(str(e))
             r = self.api("POST", "/api/stagemon/export", {"config": cfg, "folder": folder,
                                                             "lang": str(a.get("lang") or "en")})
-            out["exported"] = {"folder": r["folder"], "page": r["page"], "script": r["script"]}
-            out["next"] = ("Start QLC+ with web access (qlcplus -w), then serve the folder: ▶ Serve on the "
-                           "Stage Monitor screen, or python3 serve_stage.py in that folder, and open "
-                           "http://<this computer>:%d/ on the tablet." % cfg["http_port"])
+            out["exported"] = {"folder": r["folder"], "page": r["page"], "script": r["script"],
+                               "launchers": r.get("launchers", [])}
+            out["next"] = ("Start QLC+ with web access (qlcplus -w), then serve the folder: double-click "
+                           "Start Stage Monitor in it (or ▶ Serve on the Stage Monitor screen), and open "
+                           "http://<this computer>:%d/ on the tablet, with http://." % cfg["http_port"])
         return out
 
     def t_show_history(self, a: dict) -> Any:

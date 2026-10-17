@@ -264,7 +264,7 @@ async function stagemonExport() {
     setOutcome('stagemon', [_esc(`Exported to ${d.folder.split(/[\\/]/).pop()}`)], 'ok', '');
     setStatus(d.server && d.server.running
       ? `Stage Monitor page written: ${d.page}. The tablet gets it when the page is reloaded.`
-      : `Stage Monitor page written: ${d.page}`);
+      : 'Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).');
   } catch (e) { setStatus('Export failed', 'error'); }
 }
 
@@ -277,6 +277,14 @@ async function stagemonServe() {
   const d = await r.json();
   if (!r.ok) setStatus(d.error || 'Could not serve the page', 'error');
   _sm.server = d.server; _smServer(d.server);
+}
+
+async function stagemonOpenFolder() {
+  const r = await fetch('/api/stagemon/open-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({folder: _sm ? _sm.folder : ''}),
+  });
+  const d = await r.json();
+  if (!r.ok) setStatus(d.error || 'Could not open the folder', 'error');
 }
 
 async function stagemonStop() {
@@ -308,7 +316,7 @@ function _smServer(sv) {
     el.innerHTML = `<div>${_esc('Serving — open on the tablet:')}</div>` + urls.map(u =>
       `<div class="sm-url"><code>${_esc(u)}</code><button class="btn btn-surface btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${_esc(u)}')">${_esc('Copy')}</button></div>`).join('');
     if (sv.https_from) el.innerHTML += `<div class="sm-warn">${_esc(`${sv.https_from} asked for https://. On that device type the address with http://, as shown above.`)}</div>`;
-    el.innerHTML += `<div class="sm-meta" style="margin:6px 0 0">${_esc('At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.')}</div>`;
+    el.innerHTML += `<div class="sm-meta" style="margin:6px 0 0">${_esc('At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.')}</div>`;
   } else {
     const ips = sv.addresses || [];
     const where = ips.length ? _esc(`This computer: ${ips.join(', ')}`)

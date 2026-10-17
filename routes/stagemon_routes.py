@@ -145,7 +145,7 @@ def export():
     if not os.path.isdir(folder) and not os.path.isdir(parent):
         return jsonify({'error': 'That folder does not exist.'}), 400
     try:
-        out = sm.export(folder, cfg, cls, str(body.get('lang') or 'en'))
+        out = sm.export(folder, cfg, cls, str(body.get('lang') or 'en'), show_path=_real_path())
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except OSError as e:
@@ -159,6 +159,7 @@ def export():
         except OSError:
             side = ''
     return jsonify({'folder': out['folder'], 'page': out['page'], 'script': out['script'],
+                    'launchers': [os.path.basename(x) for x in out['launchers']],
                     'sidecar': os.path.basename(side) if side else '',
                     'lists': len(cfg['lists']), 'server': sm.server.status()})
 
@@ -175,6 +176,27 @@ def serve():
     except ValueError as e:
         return jsonify({'error': str(e), 'server': sm.server.status()}), 400
     return jsonify({'server': sm.server.status()})
+
+
+@bp.route('/open-folder', methods=['POST'])
+def open_folder():
+    """Show the exported folder in Finder / Explorer, with its Start Stage Monitor launcher."""
+    import subprocess
+    import sys
+    body = request.get_json(silent=True) or {}
+    folder = os.path.abspath(os.path.expanduser((body.get('folder') or '').strip() or _mem['folder'] or _default_folder()))
+    if not os.path.isfile(os.path.join(folder, 'index.html')):
+        return jsonify({'error': 'Export the page first.'}), 400
+    try:
+        if sys.platform == 'darwin':
+            subprocess.Popen(['open', folder])  # nosec B603 B607
+        elif sys.platform.startswith('win'):
+            os.startfile(folder)  # type: ignore[attr-defined]  # nosec B606
+        else:
+            subprocess.Popen(['xdg-open', folder])  # nosec B603 B607
+    except OSError as e:
+        return jsonify({'error': _safe_err(e)}), 500
+    return jsonify({'ok': True})
 
 
 @bp.route('/stop', methods=['POST'])

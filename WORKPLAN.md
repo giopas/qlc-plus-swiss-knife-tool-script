@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.5.3, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, and 3.5.3 makes the page server easier to use at a gig. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.5.3, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, and 3.5.3 adds Start Stage Monitor, one file to double-click at the gig. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 27 tools, among them `guide`, which explains the others. It also offers five ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files (the Stage Monitor's own page and settings are replaced). The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 1013 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 1016 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (32 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -70,6 +70,7 @@ Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms. When QLC+ qui
 - Control mode: *Previous* and *Next* at the bottom act after a 600 ms press. With several lists the page has tabs and follows the list that just moved.
 - The preview opens in a browser: from the app's own window Swiss Knife opens the default browser (3.5.1; that window opens no new windows), and from a browser tab the page opens a new tab in the same browser (3.5.2), which also works when Swiss Knife runs on another machine and gets its own Content-Security-Policy, which lets it reach QLC+ on this computer and nothing else.
 - Claude: a `stage_monitor` tool (list, settings, export) and a ready request, *A tablet page for the stage*. Claude may replace the Stage Monitor's own page and settings; everything else it writes is still a new file.
+- At the gig (3.5.3): the export also writes Start Stage Monitor (`.command`, `.bat`, `.sh`). It runs `--serve-stage` on the installed app (no Python needed), else Python 3, and its window shows the address, whether QLC+ answers (with the command to start it) and who opened the page. The release build checks that the bundle can do it. A separate packaged server app was considered and left out: another unsigned download on four systems for what the installed app already does.
 - Pictures: `tools/make_stage_shots.py`, run by `python3 tools/shots.py stage` and by `all`, takes `19-stage-monitor.png`, `20-stage-page.png`, `21-stage-page-black.png` and `stage-monitor.gif`. A stand-in answers the page's web socket, so no QLC+ is needed. The contact sheet keeps a portrait picture upright.
 
 | Phase | What | State |
@@ -318,7 +319,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.5.0 | 17 Oct | Stage Monitor: the current cue live on a tablet on stage, black colours for a dark stage, a Claude tool, its pictures in `shots.py`. |
 | 3.5.1 | 17 Oct | Stage Monitor: *Preview* opens in the browser; the app's own window opens no new windows. |
 | 3.5.2 | 17 Oct | The macOS packages that 3.5.1 lacked: a test opened a real browser on the macOS build machines. The preview opens a browser only when the button asks, and from a browser tab it opens a tab in that browser. |
-| 3.5.3 | 17 Oct | Stage Monitor at the gig: `serve_stage.py` lists every address, its own Wi-Fi first, and says what to type when a browser asks for https://; what runs at the gig, in the app and the wiki. |
+| 3.5.3 | 17 Oct | Stage Monitor at the gig: Start Stage Monitor to double-click (on the installed app via `--serve-stage`, no Python needed), every address listed, a hint when a browser asks for https://, what runs at the gig in the app and the wiki. |
 
 ## 4. Goal and the Pub test
 

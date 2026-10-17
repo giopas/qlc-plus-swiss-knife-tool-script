@@ -2264,12 +2264,14 @@
           <div class="sm-actions">
             <button class="btn btn-surface" id="sm-serve" onclick="stagemonServe()" data-tooltip="Serve the exported folder to the tablet from this computer">▶ Serve</button>
             <button class="btn btn-surface" id="sm-stop" onclick="stagemonStop()" hidden>■ Stop</button>
+            <button class="btn btn-surface" onclick="stagemonOpenFolder()" data-tooltip="The exported folder, with Start Stage Monitor to double-click at the gig">📂 Show the folder</button>
           </div>
           <div id="sm-server" class="sm-server"></div>
           <ol class="sm-how">
             <li>Start QLC+ with web access: <code>qlcplus -w</code>.</li>
             <li>The tablet joins the same network as this computer (on a Mac: Internet Sharing to Wi-Fi).</li>
-            <li>Export, Serve, then open the address above on the tablet. Without Swiss Knife: <code>python3 serve_stage.py</code> in the folder.</li>
+            <li>Export, Serve, then open the address above on the tablet, with <code>http://</code>.</li>
+            <li>At the gig Swiss Knife can stay closed: double-click <b>Start Stage Monitor</b> in the exported folder.</li>
           </ol>
         </div>
       </div>

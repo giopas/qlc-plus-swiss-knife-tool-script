@@ -57,6 +57,9 @@ jobs:
           esac
           "$MCP" --mcp --selftest
           echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | "$MCP" --mcp | grep -q '"result"'
+          # the Stage Monitor launchers call the app with --serve-stage: the server script is in the bundle
+          out=$("$MCP" --serve-stage "$RUNNER_TEMP/no-stage-page" 2>&1 || true)
+          echo "$out" | grep -q "No index.html"
       - name: Inno Setup (Windows installer)
         if: runner.os == 'Windows'
         run: choco install innosetup -y --no-progress

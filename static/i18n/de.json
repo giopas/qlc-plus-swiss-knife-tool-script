@@ -3502,7 +3502,6 @@
  "▶ Serve": "▶ Bereitstellen",
  "Start QLC+ with web access:": "QLC+ mit Webzugang starten:",
  "The tablet joins the same network as this computer (on a Mac: Internet Sharing to Wi-Fi).": "Das Tablet ist im selben Netz wie dieser Computer (am Mac: Internetfreigabe an WLAN).",
- "Export, Serve, then open the address above on the tablet. Without Swiss Knife:": "Exportieren, Bereitstellen, dann die Adresse oben auf dem Tablet öffnen. Ohne Swiss Knife:",
  "in the folder.": "im Ordner.",
  "The show is not changed; only the stage_monitor folder and the settings file are written": "Die Show wird nicht geändert; nur der Ordner stage_monitor und die Einstellungsdatei werden geschrieben",
  "Reads the show, writes only the page": "Liest die Show, schreibt nur die Seite",
@@ -3569,5 +3568,12 @@
  "Preview opened in your browser.": "Vorschau im Browser geöffnet.",
  "Open the page in your browser, talking to the QLC+ on this computer": "Die Seite im Browser öffnen, verbunden mit dem QLC+ dieses Computers",
  "{0} asked for https://. On that device type the address with http://, as shown above.": "{0} hat https:// angefragt. Gib auf diesem Gerät die Adresse mit http:// ein, wie oben.",
- "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.": "Beim Gig braucht es nur QLC+ (mit -w) und diesen Server. Ohne Swiss Knife: python3 serve_stage.py im Ordner."
+ "The exported folder, with Start Stage Monitor to double-click at the gig": "Der exportierte Ordner, mit Start Stage Monitor zum Doppelklicken beim Gig",
+ "📂 Show the folder": "📂 Ordner zeigen",
+ "Export, Serve, then open the address above on the tablet, with": "Exportieren, Bereitstellen, dann die Adresse oben auf dem Tablet öffnen, mit",
+ "At the gig Swiss Knife can stay closed: double-click": "Beim Gig kann Swiss Knife geschlossen bleiben: Doppelklick auf",
+ "in the exported folder.": "im exportierten Ordner.",
+ "Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).": "Seite exportiert. Beim Gig Start Stage Monitor in diesem Ordner doppelklicken (QLC+ muss mit -w laufen).",
+ "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "Beim Gig braucht es nur QLC+ (mit -w) und diesen Server. Ohne Swiss Knife: Start Stage Monitor im Ordner doppelklicken.",
+ "Could not open the folder": "Der Ordner konnte nicht geöffnet werden"
 }

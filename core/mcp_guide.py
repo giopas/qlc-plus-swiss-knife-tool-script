@@ -196,7 +196,7 @@ GUIDE: Dict[str, dict] = {
                             "Also `title`, `font` (S, M, L, XL), `theme` (`dark`, `contrast`, `black` for a white song "
                             "on black, `dim` for a grey song on black), `show_next`, `show_clock`, `show_numbers`, "
                             "`ws_port` (QLC+, 9999), `http_port` (the page, 8080)."),
-                 ("export", "true writes `index.html` and `serve_stage.py`."),
+                 ("export", "true writes `index.html`, `serve_stage.py` and the Start Stage Monitor launchers."),
                  ("folder", "Where to export, inside a shared folder. Default: `stage_monitor` next to the show."),
                  ("lang", "Language of the words on the page: en, it, fr, de, es, pt, ja or zh.")],
         "returns": "`cuelists` [{id, caption, where, chaser, steps, inputs}], `config`, `missing` (configured lists "
@@ -204,8 +204,8 @@ GUIDE: Dict[str, dict] = {
         "example": '{"config": {"theme": "black", "lists": [{"id": "4001", "label": "Set 1", "mode": "read", '
                    '"steps": {"0": {"label": "Walk-in"}}}]}, "export": true}',
         "notes": "The show is never changed. Settings go to <show>.stage.json next to the show. An export replaces "
-                 "only a page and server the Stage Monitor wrote. The tablet needs QLC+ started with `-w`; serve "
-                 "the folder with ▶ Serve in the Swiss Knife window or `python3 serve_stage.py`.",
+                 "only a page and server the Stage Monitor wrote. The tablet needs QLC+ started with `-w`; at the gig, "
+                 "double-click Start Stage Monitor in the exported folder (or ▶ Serve in the Swiss Knife window).",
     },
     "compare": {
         "use": "Compare the show in progress with another .qxw (read only).",

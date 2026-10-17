@@ -369,27 +369,34 @@ def build_page(cfg: dict, lists: List[dict], lang: str = "en") -> str:
     return tpl.replace("/*__CONFIG__*/null", _inline_json(data)).replace("__TITLE__", _esc(title))
 
 
-MARK = "QLC+ Swiss Knife — Stage Monitor"     # in the page and in serve_stage.py
+MARK = "QLC+ Swiss Knife"     # in the page, serve_stage.py and the launchers
 
 
 def is_own_file(path: str) -> bool:
     """True when *path* is a page or server the Stage Monitor wrote (it may replace those)."""
     try:
         with open(path, encoding="utf-8", errors="replace") as fh:
-            return MARK in fh.read(4096)
+            head = fh.read(4096)
+        return MARK in head and "Stage Monitor" in head
     except OSError:
         return False
 
 
-def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en") -> dict:
-    """Write ``index.html`` and ``serve_stage.py`` into *folder* (created if
-    needed).  Returns the paths written."""
+# Double-click to serve the folder: macOS, Windows, Linux.
+LAUNCHERS = ("Start Stage Monitor.command", "Start Stage Monitor.bat", "start-stage-monitor.sh")
+
+
+def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en", show_path: str = "") -> dict:
+    """Write ``index.html``, ``serve_stage.py`` and the "Start Stage Monitor"
+    launchers into *folder* (created if needed).  *show_path* is named in the
+    hint the server prints when QLC+ is not reachable.  Returns the paths written."""
     cfg = clean_config(cfg)
     if not cfg["lists"]:
         raise ValueError("Tick at least one cue list.")
     page = os.path.join(folder, "index.html")
     script = os.path.join(folder, "serve_stage.py")
-    for p in (page, script):     # replace only what the Stage Monitor wrote itself
+    launchers = [os.path.join(folder, n) for n in LAUNCHERS]
+    for p in [page, script] + launchers:     # replace only what the Stage Monitor wrote itself
         if os.path.exists(p) and not is_own_file(p):
             raise ValueError(f"{os.path.basename(p)} in that folder was not made by the Stage Monitor. "
                              "Choose another folder.")
@@ -397,14 +404,20 @@ def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en") -> dict:
     with open(page, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(build_page(cfg, lists, lang))
     with open(SERVE_SCRIPT, encoding="utf-8") as src:
-        body = src.read().replace("DEFAULT_PORT = 8080", f"DEFAULT_PORT = {cfg['http_port']}")
+        body = (src.read().replace("DEFAULT_PORT = 8080", f"DEFAULT_PORT = {cfg['http_port']}")
+                .replace("QLC_PORT = 9999", f"QLC_PORT = {cfg['ws_port']}")
+                .replace('SHOW = ""', f"SHOW = {json.dumps(show_path or '')}"))
     with open(script, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(body)
-    try:
-        os.chmod(script, 0o755)
-    except OSError:
-        pass
-    return {"folder": folder, "page": page, "script": script}
+    for name, dest in zip(LAUNCHERS, launchers):     # double-click to start the server at the gig
+        with open(os.path.join(_HERE, "stage_page", name), "rb") as src, open(dest, "wb") as fh:
+            fh.write(src.read())
+    for p in [script] + [d for d in launchers if not d.endswith(".bat")]:
+        try:
+            os.chmod(p, 0o755)
+        except OSError:
+            pass
+    return {"folder": folder, "page": page, "script": script, "launchers": launchers}
 
 
 # ── the network ──────────────────────────────────────────────────────────────

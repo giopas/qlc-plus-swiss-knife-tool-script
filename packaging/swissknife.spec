@@ -15,6 +15,7 @@ datas = [
     (os.path.join(ROOT, 'templates'), 'templates'),
     (os.path.join(ROOT, 'static'), 'static'),
     (os.path.join(ROOT, 'core', 'looks'), os.path.join('core', 'looks')),
+    (os.path.join(ROOT, 'core', 'stage_page'), os.path.join('core', 'stage_page')),   # Stage Monitor page and server
     (os.path.join(ROOT, 'core', 'quick_start', 'profiles'), os.path.join('core', 'quick_start', 'profiles')),
 ]
 # data files inside other core packages, if any

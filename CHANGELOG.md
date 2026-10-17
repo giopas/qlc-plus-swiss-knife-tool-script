@@ -7,6 +7,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added
+- **Stage Monitor** (4 · Run the show): a page for a tablet on stage that shows the cue that is playing, in big type, and the next one, live from QLC+. For the player who steps through the setlist with a MIDI pedal and cannot see the laptop.
+  - Choose the show's CueLists, give them labels and an order, hide steps or give them another name, pick the text size, dark or high-contrast colours, the next cue, the time and step numbers.
+  - **⤓ Export the page** writes `index.html` (one file, nothing from the internet) and `serve_stage.py` into a `stage_monitor` folder next to the show. **▶ Serve** shares it on the network and shows the address to open on the tablet; without Swiss Knife, `python3 serve_stage.py` does the same.
+  - The page talks to QLC+ (started with `-w`) directly. It turns grey with a red dot when the connection drops and comes back by itself; it never shows an old position as live. Several lists get tabs and the page follows the one that moved. Control mode adds *Previous* and *Next* buttons that need a long press.
+  - The settings are kept in `<show>.stage.json`, shared by every version of the show, and matched to the CueLists by widget ID.
+  - The show is only read.
+- `docs/STAGE_MONITOR_PROTOCOL.md`: the QLC+ web socket messages the page relies on, checked against QLC+ 5.3.0. `tools/stage_probe.html` logs them live.
+
 ## [3.4.1] — 2026-10-16 — Seven languages checked
 
 The interface was run in each of its seven languages, screen by screen, and fixed where it was still in English, half translated or used two words for one thing. Also new pictures and two tools for the maintainers.

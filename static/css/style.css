@@ -4367,3 +4367,43 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 /* 3.4.0: the Doctor's "— deletes functions" is its own piece (translated on its own) */
 .doc-hint-warn { margin-left: .35em; }
 :lang(ja) .doc-hint-warn, :lang(zh) .doc-hint-warn { margin-left: 0; }
+
+/* ── Stage Monitor (3.5.0) ─────────────────────────────────────────────── */
+.sm-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 12px; padding: 0 12px 8px; }
+.sm-lists, .sm-side { min-height: 0; overflow: auto; }
+.sm-card { background: var(--surface-1); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+.sm-cl { background: var(--surface-1); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid transparent; }
+.sm-cl.on { border-left-color: var(--accent); }
+.sm-cl-h { display: flex; align-items: center; gap: 8px; }
+.sm-cl-h .sm-cap { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-meta { font-size: var(--fs-ui); color: var(--text-dim); margin: 4px 0 0 24px; }
+.sm-cfg { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 0 24px; }
+.sm-cfg .field-input { width: 220px; }
+.sm-ord { padding: 2px 8px; }
+.sm-steps { margin: 8px 0 0 24px; max-height: 340px; overflow: auto; }
+.sm-steps table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+.sm-steps td { padding: 2px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.sm-steps td.sm-n { color: var(--text-dim); width: 2.5em; text-align: right; }
+.sm-steps tr.sm-hidden td.sm-fn { opacity: .45; text-decoration: line-through; }
+.sm-steps .field-input { width: 100%; }
+.sm-row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-body); }
+.sm-row > span:first-child { width: 80px; color: var(--text-dim); flex: none; }
+.sm-row > input.field-input { flex: 1; }
+.sm-seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.sm-seg button { background: transparent; border: 0; color: var(--text); padding: 4px 10px; cursor: pointer; font: inherit; }
+.sm-seg button + button { border-left: 1px solid var(--border-strong); }
+.sm-seg button.on { background: var(--accent); color: var(--accent-contrast); }
+.sm-check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-body); cursor: pointer; }
+.sm-ports label { display: flex; align-items: center; gap: 4px; font-size: var(--fs-ui); color: var(--text-dim); }
+.sm-ports .field-input { width: 80px; }
+.sm-saved { font-size: var(--fs-ui); color: var(--text-dim); min-height: 1.2em; }
+.sm-folder-in { width: 100%; }
+body:not(.no-native-picker) .sm-folder-in { display: none; }
+.sm-actions { display: flex; gap: 8px; }
+.sm-server { font-size: var(--fs-body); }
+.sm-url { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.sm-url code { font-size: 1.35em; font-weight: 700; color: var(--accent); user-select: all; -webkit-user-select: all; }
+.sm-how { font-size: var(--fs-ui); color: var(--text-dim); margin: 4px 0 0; padding-left: 18px; }
+.sm-how code, .sm-meta code { font-family: var(--font-mono); }
+.sm-warn { font-size: var(--fs-ui); color: var(--orange, #ff9800); background: var(--surface-1); border-radius: var(--radius); padding: 6px 10px; margin-bottom: 8px; }
+@media (max-width: 1100px) { .sm-body { grid-template-columns: 1fr; } }

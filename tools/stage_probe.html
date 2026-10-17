@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QLC+ web socket probe</title>
+<!-- Stage Monitor, phase 0 (docs/STAGE_MONITOR_PROTOCOL.md).  Open this file in a
+     browser on the computer running QLC+ (qlcplus -w) or on the tablet (?qlc=<ip>:9999).
+     It logs every raw message with the time since the last one sent. -->
+<style>
+body { font: 14px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; margin: 12px; background: #111; color: #eee; }
+input, button { font: inherit; padding: 6px 10px; margin: 2px; background: #222; color: #eee; border: 1px solid #444; border-radius: 6px; }
+#log { font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; background: #000; padding: 8px; height: 65vh; overflow: auto; }
+.in { color: #8fe3a0; } .out { color: #7cc4ff; } .sys { color: #f5b301; }
+</style>
+</head>
+<body>
+<div>
+  QLC+ <input id="host" size="22"> <button id="bConn">Connect</button>
+  <button id="bArm" title="Ask /vc.json: QLC+ 5 sends cue pushes only after it">Ask vc.json</button>
+  <button id="bClear">Clear</button>
+</div>
+<div>
+  CueList ID <input id="wid" size="6" value="">
+  <button data-c="status">getWidgetStatus</button>
+  <button data-c="PREV">PREV</button><button data-c="NEXT">NEXT</button>
+  <button data-c="PLAY">PLAY</button><button data-c="STOP">STOP</button>
+  step <input id="step" size="3" value="0"><button data-c="STEP">STEP</button>
+  <button data-c="list">getWidgetsList</button>
+</div>
+<div>Raw <input id="raw" size="48" placeholder="any message, e.g. QLC+API|isProjectLoaded"><button id="bRaw">Send</button></div>
+<div id="log"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+$("host").value = q.get("qlc") || `${location.hostname || "localhost"}:9999`;
+let ws = null, lastSent = 0;
+function line(cls, text) {
+  const t = new Date().toISOString().slice(11, 23);
+  const d = lastSent && cls === "in" ? ` (+${Date.now() - lastSent} ms)` : "";
+  const el = document.createElement("div"); el.className = cls;
+  el.textContent = `${t} ${cls === "in" ? "<<" : cls === "out" ? ">>" : "--"} ${text}${d}`;
+  $("log").appendChild(el); $("log").scrollTop = 1e9;
+}
+function send(m) { if (ws && ws.readyState === 1) { lastSent = Date.now(); ws.send(m); line("out", m); } else line("sys", "not connected"); }
+$("bConn").onclick = () => {
+  if (ws) ws.close();
+  ws = new WebSocket(`ws://${$("host").value}/qlcplusWS`);
+  ws.onopen = () => line("sys", "open");
+  ws.onclose = () => line("sys", "closed");
+  ws.onerror = () => line("sys", "error");
+  ws.onmessage = e => line("in", String(e.data));
+};
+$("bArm").onclick = () => fetch(`http://${$("host").value}/vc.json`, {mode: "no-cors", cache: "no-store"})
+  .then(() => line("sys", "vc.json asked")).catch(e => line("sys", "vc.json: " + e.message));
+$("bClear").onclick = () => { $("log").textContent = ""; };
+$("bRaw").onclick = () => send($("raw").value);
+document.querySelectorAll("button[data-c]").forEach(b => b.onclick = () => {
+  const id = $("wid").value.trim(), c = b.dataset.c;
+  if (c === "list") return send("QLC+API|getWidgetsList");
+  if (!id) return line("sys", "type a CueList ID (Swiss Knife shows it, #4001)");
+  if (c === "status") return send(`QLC+API|getWidgetStatus|${id}`);
+  if (c === "STEP") return send(`${id}|STEP|${$("step").value}`);
+  send(`${id}|${c}`);
+});
+</script>
+</body>
+</html>

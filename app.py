@@ -143,6 +143,7 @@ from routes.update_routes import bp as update_bp
 from routes.mcp_routes import bp as mcp_bp
 from routes.wizard_routes import bp as wizard_bp
 from routes.upgrade_routes import bp as upgrade_bp
+from routes.stagemon_routes import bp as stagemon_bp
 
 PORT = 5731
 
@@ -194,6 +195,7 @@ def create_app():
     app.register_blueprint(mcp_bp)
     app.register_blueprint(wizard_bp)
     app.register_blueprint(upgrade_bp)
+    app.register_blueprint(stagemon_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request
@@ -254,6 +256,13 @@ def create_app():
             "object-src 'none'; "
             "base-uri 'self';"
         )
+        if request.path == '/api/stagemon/preview':
+            # the Stage Monitor preview talks to QLC+ on this computer (its own port)
+            response.headers['Content-Security-Policy'] = (
+                "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                "connect-src ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*; "
+                "base-uri 'none'; form-action 'none';"
+            )
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options']        = 'DENY'
         response.headers['Referrer-Policy']        = 'no-referrer'

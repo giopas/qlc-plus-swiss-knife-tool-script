@@ -131,6 +131,10 @@
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Dictionary</span>
     </button>
+    <button class="sn-item" id="sn-stagemon" data-tip="Stage Monitor" data-desc="A page for a tablet on stage: the cue that is playing, big, and the next one, live from QLC+. For the player who steps through the setlist with a pedal and cannot see the laptop." onclick="go('stagemon')">
+      <svg class="ic"><use href="/static/icons.svg#tablet"/></svg>
+      <span>Stage Monitor</span>
+    </button>
 
     <!-- 5 · Check &amp; fix -->
     <div class="sn-group-label" id="sn-grp-5"><span class="sn-gnum">5</span><span class="sn-gtxt">Check &amp; fix</span></div>
@@ -494,8 +498,8 @@
         </div>
         <div class="wf-card" data-grp="4">
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
-          <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button></div>
+          <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Stage Monitor</button></div>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -2199,6 +2203,88 @@
   </section>
 
   <!-- ======================================================================
+       STAGE MONITOR (3.5.0)
+  ====================================================================== -->
+  <section class="screen" id="scr-stagemon">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#tablet"/></svg></div>
+      <div><h2>Stage Monitor</h2><div class="p-desc">The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Stage-Monitor')" title="How this tool works — opens the Stage Monitor page of the wiki">?</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="doc-toolbar">
+      <span id="sm-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" onclick="stagemonLoad()" data-tooltip="Read the cue lists of the show again">↻ Refresh</button>
+    </div>
+
+    <div class="sm-body">
+      <div class="sm-lists">
+        <div class="pane-header">Cue lists</div>
+        <div id="sm-notice"></div>
+        <div id="sm-lists"><div class="porter-placeholder">Open a workspace with a CueList on its Virtual Console.</div></div>
+      </div>
+
+      <div class="sm-side">
+        <div class="pane-header">The page</div>
+        <div class="sm-card">
+          <label class="sm-row"><span>Title</span>
+            <input id="sm-title" class="field-input" maxlength="120" placeholder="The show’s name" oninput="stagemonSet('title', this.value)"></label>
+          <div class="sm-row"><span>Text size</span>
+            <div class="sm-seg" id="sm-font">
+              <button data-v="S" onclick="stagemonSet('font','S')">S</button><button data-v="M" onclick="stagemonSet('font','M')">M</button><button data-v="L" onclick="stagemonSet('font','L')">L</button><button data-v="XL" onclick="stagemonSet('font','XL')">XL</button>
+            </div></div>
+          <div class="sm-row"><span>Colours</span>
+            <div class="sm-seg" id="sm-theme">
+              <button data-v="dark" onclick="stagemonSet('theme','dark')">Dark</button><button data-v="contrast" onclick="stagemonSet('theme','contrast')">High contrast</button>
+            </div></div>
+          <label class="sm-check"><input type="checkbox" id="sm-next" onchange="stagemonSet('show_next', this.checked)"> Show the next cue</label>
+          <label class="sm-check"><input type="checkbox" id="sm-clock" onchange="stagemonSet('show_clock', this.checked)"> Show the time</label>
+          <label class="sm-check"><input type="checkbox" id="sm-numbers" onchange="stagemonSet('show_numbers', this.checked)"> Show step numbers</label>
+          <div class="sm-row sm-ports"><span>Ports</span>
+            <label data-tooltip="QLC+ web access listens here (qlcplus -w); 9999 unless you changed it">QLC+ <input id="sm-wsport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('ws_port', +this.value)"></label>
+            <label data-tooltip="Where the page is served to the tablet">Page <input id="sm-httpport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('http_port', +this.value)"></label>
+          </div>
+          <div class="sm-saved" id="sm-saved"></div>
+        </div>
+
+        <div class="pane-header">On the tablet</div>
+        <div class="sm-card">
+          <div class="sm-row"><span>Folder</span>
+            <span class="file-chip" id="sm-folder-chip">—</span>
+            <button class="btn btn-surface btn-sm" onclick="stagemonPickFolder()">Choose…</button></div>
+          <input id="sm-folder" class="field-input sm-folder-in" placeholder="Folder for the page (a stage_monitor folder next to the show by default)" onchange="stagemonFolder(this.value)">
+          <div class="sm-actions">
+            <button class="btn btn-surface" id="sm-serve" onclick="stagemonServe()" data-tooltip="Serve the exported folder to the tablet from this computer">▶ Serve</button>
+            <button class="btn btn-surface" id="sm-stop" onclick="stagemonStop()" hidden>■ Stop</button>
+          </div>
+          <div id="sm-server" class="sm-server"></div>
+          <ol class="sm-how">
+            <li>Start QLC+ with web access: <code>qlcplus -w</code>.</li>
+            <li>The tablet joins the same network as this computer (on a Mac: Internet Sharing to Wi-Fi).</li>
+            <li>Export, Serve, then open the address above on the tablet. Without Swiss Knife: <code>python3 serve_stage.py</code> in the folder.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new" title="The show is not changed; only the stage_monitor folder and the settings file are written">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Reads the show, writes only the page
+      </span>
+      <span class="out-outcome" id="oc-stagemon" aria-live="polite"></span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" id="sm-preview" onclick="stagemonPreview()" data-tooltip="Open the page here, talking to the QLC+ on this computer">👁 Preview</button>
+      <button id="sm-go" class="btn btn-accent" onclick="stagemonExport()" disabled>⤓ Export the page</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        QUICK START QXW WIZARD
   ====================================================================== -->
   <section class="screen" id="scr-quickstart">
@@ -2547,6 +2633,7 @@
 <script src="/static/js/reducer.js?v={{ asset_v }}"></script>
 <script src="/static/js/wizard.js?v={{ asset_v }}"></script>
 <script src="/static/js/upgrade.js?v={{ asset_v }}"></script>
+<script src="/static/js/stagemon.js?v={{ asset_v }}"></script>
 <script src="/static/js/looks.js?v={{ asset_v }}"></script>
 <script src="/static/js/stage3d.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>

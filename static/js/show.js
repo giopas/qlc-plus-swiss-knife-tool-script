@@ -16,6 +16,7 @@ const _SHOW_INVALIDATE = {
   doctor: 'invalidateDoctor', reducer: 'invalidateReducer', looks: 'invalidateLooks',
   stage: 'invalidateStage', vceditor: 'invalidateVcEditor', porter: 'invalidatePorter',
   compare: 'invalidateCompare', inputs: 'invalidateInputs', wizard: 'invalidateWizard', upgrade: 'invalidateUpgrade',
+  stagemon: 'invalidateStagemon',
 };
 
 function _activeScreen() {

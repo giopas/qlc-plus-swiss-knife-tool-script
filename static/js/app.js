@@ -46,6 +46,7 @@ const _LAZY = {
   reducer:    () => typeof reducerInit            === 'function' && reducerInit(),
   wizard:     () => typeof wizardInit             === 'function' && wizardInit(),
   upgrade:    () => typeof upgradeInit            === 'function' && upgradeInit(),
+  stagemon:   () => typeof stagemonInit           === 'function' && stagemonInit(),
   looks:      () => typeof looksInit              === 'function' && looksInit(),
   stage:      () => typeof stageInit              === 'function' && stageInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
@@ -598,6 +599,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateStage === 'function') invalidateStage();
   if (typeof invalidateVcEditor === 'function') invalidateVcEditor();
   if (typeof invalidatePorter === 'function') invalidatePorter();
+  if (typeof invalidateStagemon === 'function') invalidateStagemon();
   // Re-load whichever screen is currently visible
   const activeScr = document.querySelector('.screen.active');
   if (activeScr) {
@@ -644,7 +646,7 @@ function _updateHeader(state) {
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
-                     'wizard', 'upgrade'];
+                     'wizard', 'upgrade', 'stagemon'];
 
 function _updateNeedWsBanners(loaded) {
   _WS_SCREENS.forEach(id => {

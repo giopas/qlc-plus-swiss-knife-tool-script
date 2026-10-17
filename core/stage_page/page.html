@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>__TITLE__</title>
+<!-- QLC+ Swiss Knife — Stage Monitor.  One file, no outside resources.
+     Talks to QLC+ (started with -w) on ws://<host>:<wsPort>/qlcplusWS.
+     ?qlc=host:port overrides where QLC+ is.  Triple tap on the title: debug. -->
+<style>
+:root {
+  --k: 1;
+  --bg: #0b0d10; --fg: #f4f6f8; --dim: #8a929c; --line: #1f242b;
+  --cur-bg: #f5b301; --cur-fg: #0b0d10;
+  --ready: #f5b301; --next: #7cc4ff; --ok: #2ecc71; --warn: #f5b301; --bad: #ff4d4d;
+  --bar: #14181d;
+}
+:root[data-theme="contrast"] {
+  --bg: #000; --fg: #fff; --dim: #c8c8c8; --line: #333;
+  --cur-bg: #ffff00; --cur-fg: #000; --ready: #ffff00; --next: #00e5ff; --bar: #000;
+}
+:root[data-font="S"]  { --k: .85; }
+:root[data-font="L"]  { --k: 1.25; }
+:root[data-font="XL"] { --k: 1.5; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+
+header { display: flex; align-items: center; gap: calc(14px * var(--k));
+  padding: calc(10px * var(--k)) calc(16px * var(--k)); border-bottom: 1px solid var(--line); flex: none; }
+#title { font-size: calc(22px * var(--k)); font-weight: 700; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; flex: 1; min-width: 0; }
+#conn { display: flex; align-items: center; gap: 8px; font-size: calc(16px * var(--k)); color: var(--dim); white-space: nowrap; }
+#dot { width: calc(16px * var(--k)); height: calc(16px * var(--k)); border-radius: 50%; background: var(--bad); flex: none; }
+#dot.ok { background: var(--ok); } #dot.wait { background: var(--warn); }
+#clock { font-size: calc(22px * var(--k)); font-variant-numeric: tabular-nums; font-weight: 600; }
+button { font: inherit; color: inherit; background: none; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+#fs { padding: 6px 10px; font-size: calc(18px * var(--k)); }
+
+#tabs { display: flex; gap: 8px; padding: 8px calc(16px * var(--k)) 0; flex: none; overflow-x: auto; }
+#tabs:empty { display: none; }
+#tabs button { padding: calc(8px * var(--k)) calc(14px * var(--k)); font-size: calc(18px * var(--k)); white-space: nowrap; position: relative; }
+#tabs button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 700; }
+
+#status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: calc(8px * var(--k)) calc(16px * var(--k)); color: var(--dim); font-size: calc(18px * var(--k)); flex: none; }
+#state { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+#state.play { color: var(--ok); } #state.pause, #state.stop { color: var(--warn); }
+
+#list { flex: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; padding: 30vh 0; }
+.step { display: flex; gap: calc(14px * var(--k)); align-items: baseline;
+  padding: calc(10px * var(--k)) calc(18px * var(--k)); border-bottom: 1px solid var(--line);
+  font-size: calc(28px * var(--k)); line-height: 1.2; }
+.step .n { color: var(--dim); min-width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; flex: none; }
+.step .t { min-width: 0; overflow-wrap: anywhere; }
+.step .note { display: block; font-size: .62em; color: var(--dim); margin-top: 2px; }
+.step.past { opacity: .45; }
+.step.cur { background: var(--cur-bg); color: var(--cur-fg); font-size: calc(52px * var(--k)); font-weight: 800;
+  padding-top: calc(22px * var(--k)); padding-bottom: calc(22px * var(--k)); border-radius: 6px; border: 0; }
+.step.cur .n, .step.cur .note { color: var(--cur-fg); opacity: .75; }
+.step.ready { outline: 4px dashed var(--ready); outline-offset: -4px; font-weight: 700; }
+.step.nxt .t { color: var(--next); }
+body.stale .step.cur { background: #3a3f46; color: #c7ccd2; }
+body.stale .step.cur .n, body.stale .step.cur .note { color: #c7ccd2; }
+
+#nextbar { flex: none; padding: calc(12px * var(--k)) calc(18px * var(--k)); background: var(--bar);
+  border-top: 2px solid var(--line); font-size: calc(34px * var(--k)); font-weight: 700; display: flex; gap: 14px; align-items: baseline; }
+#nextbar .lbl { color: var(--next); font-size: .6em; letter-spacing: .1em; flex: none; }
+#nextbar .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#nextbar[hidden] { display: none; }
+
+#ctrl { flex: none; display: flex; gap: 12px; padding: 12px calc(16px * var(--k)) calc(12px + env(safe-area-inset-bottom)); background: var(--bar); }
+#ctrl[hidden] { display: none; }
+#ctrl button { flex: 1; height: calc(84px * var(--k)); font-size: calc(30px * var(--k)); font-weight: 800; position: relative; overflow: hidden; border-width: 2px; }
+#ctrl button .fill, .step .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(124,196,255,.35); pointer-events: none; }
+#ctrl .hint { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 12px; font-weight: 400; color: var(--dim); }
+.step { position: relative; }
+
+#banner { flex: none; margin: 0 calc(16px * var(--k)) calc(8px * var(--k)); background: #2a0d0d; color: #ffd5d5;
+  border: 2px solid var(--bad); border-radius: 12px; padding: calc(10px * var(--k)) calc(14px * var(--k));
+  font-size: calc(22px * var(--k)); font-weight: 700; }
+#banner small { display: block; font-size: .6em; font-weight: 400; margin-top: 6px; color: #f0b9b9; }
+#banner[hidden] { display: none; }
+#empty { padding: 30px 20px; color: var(--dim); font-size: calc(22px * var(--k)); text-align: center; }
+
+#debug { position: fixed; inset: 0; background: rgba(0,0,0,.92); color: #b7f7c4; z-index: 10; padding: 14px;
+  font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow: auto; white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
+#debug[hidden] { display: none; }
+#debug button { color: #fff; padding: 6px 12px; margin: 0 8px 10px 0; font: 14px sans-serif; }
+</style>
+</head>
+<body>
+<header>
+  <div id="title"></div>
+  <div id="conn"><span id="dot"></span><span id="connText"></span></div>
+  <div id="clock" hidden></div>
+  <button id="fs" type="button" hidden aria-label="Full screen">⛶</button>
+</header>
+<nav id="tabs"></nav>
+<div id="status"><span id="listName"></span><span><span id="pos"></span> <span id="state"></span></span></div>
+<div id="banner" hidden></div>
+<main id="list"></main>
+<div id="nextbar" hidden><span class="lbl"></span><span class="t"></span></div>
+<div id="ctrl" hidden>
+  <button id="bPrev" type="button"><span class="fill"></span>◀ <span class="lb"></span><span class="hint"></span></button>
+  <button id="bNext" type="button"><span class="fill"></span><span class="lb"></span> ▶<span class="hint"></span></button>
+</div>
+<div id="debug" hidden></div>
+
+<script>
+"use strict";
+const CFG = /*__CONFIG__*/null || {title: "Stage Monitor", font: "M", theme: "dark", showNext: true,
+  showClock: true, showNumbers: true, wsPort: 9999, lists: [], t: {}};
+
+// ── Protocol: every QLC+ message format in one place (docs/STAGE_MONITOR_PROTOCOL.md) ──
+const PROTOCOL = {
+  path: "/qlcplusWS",
+  // QLC+ 5 sends the pushes below only for widgets it has drawn for a web client:
+  // fetching /vc.json once (after every QLC+ start or project load) switches them on.
+  arm: "/vc.json",
+  status: id => `QLC+API|getWidgetStatus|${id}`,      // → QLC+API|getWidgetStatus|<id>|PLAY|<n>  or  …|<id>|STOP
+  next: id => `${id}|NEXT`, prev: id => `${id}|PREV`,
+  // <id>|STEP|<n> exists but in QLC+ 5.3.0 it only moves the selection, not what plays: not used.
+  // pushed to every client: <id>|CUE|<n>   <id>|CUE_STATE|<status 0 stop 1 play 2 pause>|<n>|<next>|<side>|<top>
+  parse(msg) {
+    const p = msg.split("|");
+    if (p[0] === "QLC+API" && p[1] === "getWidgetStatus") {
+      if (p[2] === undefined || p[2] === "") return {kind: "status", id: null};
+      if (p[3] === "PLAY") return {kind: "status", id: +p[2], status: 1, idx: +p[4]};
+      if (p[3] === "STOP") return {kind: "status", id: +p[2], status: 0};
+      return {kind: "status", id: +p[2], status: null};   // not a cue list
+    }
+    if (/^\d+$/.test(p[0])) {
+      if (p[1] === "CUE") return {kind: "cue", id: +p[0], idx: +p[2]};
+      if (p[1] === "CUE_STATE") return {kind: "state", id: +p[0], status: +p[2], idx: +p[3], next: +p[4]};
+    }
+    return null;
+  },
+};
+const POLL_MS = 2000, STALE_MS = 7000, ARM_MS = 60000, BACKOFF = [1000, 2000, 5000], HOLD_MS = 600;
+
+const T = s => (CFG.t && CFG.t[s]) || s;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const params = new URLSearchParams(location.search);
+const qlcHost = params.get("qlc") || `${location.hostname || "localhost"}:${CFG.wsPort}`;
+const wsUrl = `ws://${qlcHost}${PROTOCOL.path}`;
+
+document.documentElement.dataset.theme = CFG.theme;
+document.documentElement.dataset.font = CFG.font;
+document.documentElement.lang = CFG.lang || "en";
+
+const lists = CFG.lists;
+const st = {};            // id → {status: null|0|1|2, idx, next, missing, seen}
+lists.forEach(l => { st[l.id] = {status: null, idx: -1, next: -1, missing: false}; });
+let cur = 0;              // shown list
+let ws = null, connected = false, lastMsg = 0, tries = 0, pollT = null, reconnT = null;
+const pending = [];       // ids of getWidgetStatus asked, in order
+const log = [];
+
+function dlog(dir, text) {
+  log.push(`${new Date().toISOString().slice(11, 23)} ${dir} ${text}`);
+  if (log.length > 30) log.shift();
+  if (!$("debug").hidden) renderDebug();
+}
+
+// ── connection ───────────────────────────────────────────────────────────────
+function connect() {
+  clearTimeout(reconnT);
+  setConn("wait", T("Connecting…"));
+  try { ws = new WebSocket(wsUrl); } catch (e) { dlog("!!", e.message); return scheduleReconnect(); }
+  const me = ws;
+  ws.onopen = () => {
+    if (me !== ws) return;
+    connected = true; tries = 0; lastMsg = Date.now(); pending.length = 0;
+    setConn("ok", T("Connected"));
+    dlog("--", "open " + wsUrl);
+    arm();
+    pollAll();
+    clearInterval(pollT); pollT = setInterval(tick, 1000);
+    render();
+  };
+  ws.onmessage = ev => { if (me === ws) onMessage(String(ev.data)); };
+  ws.onclose = () => { if (me !== ws) return; dlog("--", "closed"); lost(); };
+  ws.onerror = () => dlog("!!", "socket error");
+}
+function send(text) {
+  if (ws && ws.readyState === 1) { ws.send(text); dlog(">>", text); return true; }
+  return false;
+}
+function pollAll() {
+  lists.forEach(l => { if (send(PROTOCOL.status(l.id))) pending.push(l.id); });
+  if (pending.length > 60) pending.splice(0, pending.length - 60);
+}
+// The response is not readable from another port (no CORS header); the request is what counts.
+let lastArm = 0;
+function arm() {
+  lastArm = Date.now();
+  fetch(`http://${qlcHost}${PROTOCOL.arm}`, {mode: "no-cors", cache: "no-store"})
+    .then(() => dlog("--", "vc.json asked: QLC+ pushes cue changes"))
+    .catch(e => dlog("!!", "vc.json: " + e.message));
+}
+let lastPoll = 0;
+function tick() {
+  const now = Date.now();
+  if (connected && now - lastArm >= ARM_MS) arm();
+  if (connected && now - lastMsg > STALE_MS) { dlog("!!", "no answer from QLC+"); try { ws.close(); } catch (e) {} lost(); return; }
+  if (now - lastPoll >= POLL_MS) { lastPoll = now; pollAll(); }
+  if (CFG.showClock) clock();
+}
+function lost() {
+  clearInterval(pollT); pollT = null;
+  const was = connected; connected = false; ws = null;
+  setConn("bad", T("Not connected"));
+  if (was) render();
+  scheduleReconnect();
+}
+function scheduleReconnect() {
+  const d = BACKOFF[Math.min(tries, BACKOFF.length - 1)]; tries++;
+  setConn("bad", `${T("Not connected")} · ${T("retry in")} ${Math.round(d / 1000)} s`);
+  clearTimeout(reconnT); reconnT = setTimeout(connect, d);
+  render();
+}
+function setConn(kind, text) {
+  $("dot").className = kind === "ok" ? "ok" : kind === "wait" ? "wait" : "";
+  $("connText").textContent = text;
+  document.body.classList.toggle("stale", kind !== "ok");
+}
+
+function onMessage(msg) {
+  lastMsg = Date.now();
+  dlog("<<", msg);
+  const m = PROTOCOL.parse(msg);
+  if (!m) return;
+  if (m.kind === "status") {
+    const asked = pending.shift();
+    const id = m.id === null ? asked : m.id;
+    const s = st[id];
+    if (!s) return;
+    s.missing = m.id === null || m.status === null;
+    if (m.status === 1) { s.status = s.status === 2 ? 2 : 1; s.idx = m.idx; }
+    else if (m.status === 0) { if (s.status !== 2) { s.status = 0; } }
+  } else {
+    const s = st[m.id];
+    if (!s) return;
+    s.missing = false;
+    if (m.kind === "cue") {
+      const moved = s.idx !== m.idx;
+      s.idx = m.idx; s.next = -1;
+      if (moved && m.idx >= 0) follow(m.id);
+    } else {
+      s.status = m.status; s.idx = m.idx; s.next = m.next;
+    }
+  }
+  render();
+}
+// The pedal drives one list at a time: show the list that just moved.
+function follow(id) {
+  const i = lists.findIndex(l => l.id === id);
+  if (i >= 0 && i !== cur) { cur = i; renderTabs(); }
+}
+
+// ── drawing ──────────────────────────────────────────────────────────────────
+function visibleAfter(l, idx) {
+  for (let i = idx + 1; i < l.steps.length; i++) if (!l.steps[i].hide) return i;
+  return -1;
+}
+function render() {
+  const l = lists[cur];
+  if (!l) { $("list").innerHTML = `<div id="empty">${esc(T("No cue list chosen. Choose one in Swiss Knife and export again."))}</div>`; return; }
+  const s = st[l.id];
+  const playing = s.status === 1 || s.status === 2;
+  const idx = s.idx;
+  let nxt = s.next >= 0 && s.next < l.steps.length ? s.next : -1;
+  if (nxt >= 0 && l.steps[nxt].hide) nxt = visibleAfter(l, nxt);
+  if (nxt < 0) nxt = idx >= 0 ? visibleAfter(l, idx) : visibleAfter(l, -1);
+
+  $("listName").textContent = lists.length > 1 ? "" : l.label;   // the tabs already name it
+  const shown = l.steps.filter(x => !x.hide).length;
+  const posN = idx >= 0 ? l.steps.slice(0, idx + 1).filter(x => !x.hide).length : 0;
+  $("pos").textContent = idx >= 0 && !l.steps[idx].hide ? `${posN} / ${shown}` : `— / ${shown}`;
+  const stEl = $("state");
+  stEl.className = !connected ? "" : s.status === 1 ? "play" : s.status === 2 ? "pause" : "stop";
+  stEl.textContent = !connected ? T("Unknown") : s.missing ? T("Not in the show QLC+ has open")
+    : s.status === 1 ? T("Playing") : s.status === 2 ? T("Paused") : s.status === 0 ? T("Stopped") : "";
+
+  const rows = l.steps.map(x => {
+    if (x.hide && x.i !== idx) return "";
+    let cls = "step";
+    if (x.i === idx) cls += playing ? " cur" : " ready";
+    else if (idx >= 0 && x.i < idx) cls += " past";
+    if (x.i === nxt && x.i !== idx) cls += " nxt";
+    const n = CFG.showNumbers ? `<span class="n">${x.i + 1}</span>` : "";
+    const note = x.note ? `<span class="note">${esc(x.note)}</span>` : "";
+    return `<div class="${cls}" data-i="${x.i}">${n}<span class="t">${esc(x.name)}${note}</span></div>`;
+  }).join("");
+  const list = $("list");
+  list.innerHTML = rows || `<div id="empty">${esc(T("Every step of this list is hidden."))}</div>`;
+
+  const nb = $("nextbar");
+  nb.hidden = !CFG.showNext;
+  nb.querySelector(".lbl").textContent = T("NEXT");
+  nb.querySelector(".t").textContent = nxt >= 0 ? l.steps[nxt].name : "—";
+
+  const ctrl = l.mode === "control";
+  $("ctrl").hidden = !ctrl;
+  if (ctrl) {
+    $("bPrev").querySelector(".lb").textContent = T("Previous");
+    $("bNext").querySelector(".lb").textContent = T("Next");
+    $("bPrev").querySelector(".hint").textContent = $("bNext").querySelector(".hint").textContent = T("hold");
+  }
+
+  const b = $("banner");
+  if (!connected) {
+    b.hidden = false;
+    b.innerHTML = `${esc(T("Not connected to QLC+"))}<small>${esc(T("Start QLC+ with web access (qlcplus -w). Trying again by itself."))}<br>${esc(wsUrl)}</small>`;
+  } else b.hidden = true;
+
+  const target = list.querySelector(".cur, .ready");
+  if (target) {
+    const top = target.offsetTop - list.clientHeight / 2 + target.offsetHeight / 2;
+    if (Math.abs(list.scrollTop - top) > 2) list.scrollTop = top;
+  }
+}
+function renderTabs() {
+  const nav = $("tabs");
+  nav.innerHTML = lists.length < 2 ? "" : lists.map((l, i) =>
+    `<button type="button" class="${i === cur ? "on" : ""}" data-i="${i}">${esc(l.label)}</button>`).join("");
+  render();
+}
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-i]");
+  if (b) { cur = +b.dataset.i; renderTabs(); }
+});
+function clock() {
+  const d = new Date();
+  $("clock").textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// ── control mode: a long press, so a stray tap does nothing ──────────────────
+function hold(el, fire) {
+  let t = null, fill = null;
+  const start = e => {
+    if (!connected) return;
+    e.preventDefault();
+    fill = el.querySelector(".fill");
+    if (!fill) { fill = document.createElement("span"); fill.className = "fill"; el.prepend(fill); }
+    fill.style.transition = "none"; fill.style.width = "0";
+    void fill.offsetWidth;
+    fill.style.transition = `width ${HOLD_MS}ms linear`; fill.style.width = "100%";
+    t = setTimeout(() => { t = null; fire(); if (navigator.vibrate) navigator.vibrate(40); end(); }, HOLD_MS);
+  };
+  const end = () => {
+    if (t) { clearTimeout(t); t = null; }
+    if (fill) { fill.style.transition = "none"; fill.style.width = "0"; }
+  };
+  el.addEventListener("pointerdown", start);
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => el.addEventListener(ev, end));
+  el.addEventListener("contextmenu", e => e.preventDefault());
+}
+hold($("bPrev"), () => send(PROTOCOL.prev(lists[cur].id)));
+hold($("bNext"), () => send(PROTOCOL.next(lists[cur].id)));
+// ── full screen, wake lock, debug ────────────────────────────────────────────
+const fsEl = document.documentElement;
+const fsReq = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;
+if (fsReq) {
+  $("fs").hidden = false;
+  $("fs").addEventListener("click", () => {
+    const on = document.fullscreenElement || document.webkitFullscreenElement;
+    if (on) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else fsReq.call(fsEl);
+    wake();
+  });
+}
+async function wake() {   // only on https or localhost; elsewhere set a long screen timeout
+  try { if (navigator.wakeLock) await navigator.wakeLock.request("screen"); } catch (e) { /* not allowed here */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { wake(); if (connected) pollAll(); else connect(); }
+});
+let taps = [];
+$("title").addEventListener("pointerdown", () => {
+  const now = Date.now();
+  taps = taps.filter(t => now - t < 700); taps.push(now);
+  if (taps.length >= 3) { taps = []; $("debug").hidden = !$("debug").hidden; renderDebug(); }
+});
+function renderDebug() {
+  const d = $("debug");
+  if (d.hidden) return;
+  const ids = lists.map(l => `${l.id} ${l.label} (${l.steps.length} steps, ${l.mode})`).join("\n  ");
+  d.innerHTML = `<button type="button" onclick="this.parentNode.hidden=true">${esc(T("Close"))}</button>` +
+    `<button type="button" onclick="pollAll()">getWidgetStatus</button>\n` +
+    esc(`QLC+     ${wsUrl}\nsocket   ${connected ? "open" : "closed"}  last message ${lastMsg ? Math.round((Date.now() - lastMsg) / 1000) + " s ago" : "never"}\n` +
+      `widgets  ${ids}\nstate    ${JSON.stringify(st)}\n\nlast ${log.length} messages\n${log.join("\n")}`);
+}
+
+$("title").textContent = CFG.title || T("Stage Monitor");
+$("clock").hidden = !CFG.showClock;
+if (CFG.showClock) clock();
+renderTabs();
+wake();
+connect();
+</script>
+</body>
+</html>

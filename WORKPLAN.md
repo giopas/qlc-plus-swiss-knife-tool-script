@@ -34,7 +34,53 @@ Release 3.0.0 was the milestone: installing, updating, three languages and the C
 
 ## 2. What is left
 
-Nothing in the programme is open. What remains is testing on real systems and a few decisions.
+One feature is in progress, the Stage Monitor (3.5.0, below), on the branch `feat/v3.5.0`. Apart from it, what remains is testing on real systems and a few decisions.
+
+### In progress: Stage Monitor (3.5.0)
+
+Added on 17 October 2026 after a gig. The spec is the Claude doc *Swiss Knife — Stage Monitor tab (spec)*; this section is the plan as built, with what the work changed in it.
+
+**The use case.** The setlist changed during the show. The operator plays an instrument, cannot move from the spot and steps through the setlist CueList with a MIDI pedalboard, but cannot see the laptop screen, so loses track of which cue is live. What is needed is a view of the current and the next cue, with song names, readable from 1 to 1.5 m under stage light, on a tablet at the player's feet or on a mic stand. Read-only by default; the pedal stays the controller.
+
+**What already exists, and why it does not cover the case** (checked 17 October in the forum and in the QLC+ 5.2.2 and 5.3.0 source):
+
+| Existing | What it is | Why it is not enough here |
+|---|---|---|
+| QLC+'s own web page (`qlcplus -w`, port 9999) | The whole Virtual Console in a browser, live, with the CueList as a table (fade, hold, note columns) and Play, Stop, Previous, Next buttons | It draws the console at its desktop layout and scales it down on tablets (0.65 to 0.75). The cue name is small, every widget is live and unlocked, and there is no current/next view. |
+| QLC+ 5 for Android (beta, autumn 2026) | The full QLC+ on a tablet, paid, network plugins only; it can run as a client of the QLC+ on the laptop | A second operator console. The developer says the interface does not fit small screens yet, and reconnecting is still unstable in the beta. |
+| Generic OSC or MIDI tablet apps | Remote controls | They send; they do not show what QLC+ is playing. |
+| Swiss Knife's own *📱 Tablet page* in the Setlist (2.6.0) | One offline HTML file with the setlists in big type; songs are ticked by hand | Not linked to QLC+, so it cannot follow a pedal. It stays for shows with no network; the two wiki pages point to each other. |
+
+**What Phase 0 found** (17 October: the QLC+ 5.2.2 and 5.3.0 source, then QLC+ 5.3.0 built from its tag and run headless with `-w` in the sandbox; details in `docs/STAGE_MONITOR_PROTOCOL.md`). The web socket is `ws://<host>:9999/qlcplusWS`. `QLC+API|getWidgetStatus|<id>` answers `…|<id>|PLAY|<n>` or `…|<id>|STOP`, and an empty reply for an ID the show does not have. Every client gets `<id>|CUE|<n>` when the cue list moves, whoever moved it, and `<id>|CUE_STATE|<status>|<n>|<next>|…` when it starts, stops or pauses. Steps count from 0; −1 means none. QLC+ does not check the Origin header, so a page from port 8080 can connect. Two findings changed the design:
+
+- QLC+ 5 sends those pushes only after a web client has asked for `/vc.json` (its own web page does). The stage page asks for it on every connection and every minute (no CORS header, so it cannot read the answer, but the request is enough), and asks every list's status every 2 seconds as a fallback. Without the request, a pedal press gives no `CUE` message at all.
+- `<id>|STEP|<n>` moves the selection but not what plays while the list runs (step 5 shown, step 2 still playing). So Control mode has *Previous* and *Next* and no jump to a step.
+
+Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms; QLC+ quit is seen at once and the page is back 5 ms after QLC+ is, with pushes; a frozen QLC+ (socket open, no answers) is shown as not connected after 7.6 s.
+
+**Design** (as built):
+
+- A screen *Stage Monitor* in group 4 *Run the show* (Swiss Knife is a web app now; the spec's Tkinter tab is the old branch). It reads the show in progress and never changes it, so it adds nothing to the History.
+- At design time Swiss Knife lists every CueList with its frame path, page, chaser and steps; you tick the lists, give labels and an order, hide steps or rename them, choose the look (font size, dark or high contrast, next cue, clock, step numbers) and the mode (read-only by default, or control).
+- *Export* writes a folder `stage_monitor/` (next to the show by default): `index.html`, one self-contained page with the cue names inlined and no outside resources, and `serve_stage.py`, a standard-library server for the folder.
+- At run time the tablet talks to QLC+ directly. Swiss Knife does not relay; it can serve the folder (*Serve* and *Stop*) or `python3 serve_stage.py` does it with no Swiss Knife running. The screen shows the computer's addresses and the full URL.
+- The settings are kept in `<show>.stage.json` next to the show, without the `_vN` suffix, so a new version of the show keeps them. Lists are matched by widget ID; a list that disappeared and a new one not set up yet are flagged.
+- The page asks for the status every few seconds; with no answer it turns the dot red and greys the highlight, then reconnects (1 s, 2 s, then every 5 s). It never shows a stale position silently.
+- Control mode: *Previous* and *Next* at the bottom need a long press (600 ms). With several lists the page shows tabs and follows the list that just moved.
+- The Swiss Knife preview gets its own Content-Security-Policy that lets it reach QLC+ on this computer and nothing else.
+
+**Phases**
+
+| Phase | What | State |
+|---|---|---|
+| 0 | Protocol from the QLC+ source and a live QLC+ 5.3.0; `docs/STAGE_MONITOR_PROTOCOL.md`; a probe page (`tools/stage_probe.html`) for the Mac | Done in the sandbox; the probe with the pedal on the Mac to do |
+| 1 | Read-only page: list, configure, export, serve, reconnect, debug overlay (triple tap on the title); seven languages; wiki page *Stage Monitor* (with Linux and Windows); 35 tests | Built on `feat/v3.5.0`, 1005 tests pass |
+| 2 | Control mode: *Previous* and *Next* with a 600 ms long press; no jump (see above) | Built with phase 1, off by default |
+| 3 (optional) | Chosen VC buttons (PANIC RESET) as big tiles; the Setlist screen's order; a QR code for the URL if a small pure-Python encoder fits | Not started |
+
+**Not in 3.5.0, possible later**: a Claude tool (`stage_monitor`) to choose lists and export; the binding names on the cards (*next*, *previous*) are English.
+
+**Checks only giopas can do**: the probe and the page against QLC+ 5.3.0 on the Mac with the MIDI pedal (current cue moves within 300 ms), the computer's own Wi-Fi network (Internet Sharing on macOS), a 10-inch Android tablet and an iPad in portrait, tablet Wi-Fi off and on, QLC+ quit and restarted, a two-hour soak. A cue list on a hidden page of a multipage frame should still report (QLC+ connects every widget at load), to confirm live.
 
 ### Tests only giopas can do
 

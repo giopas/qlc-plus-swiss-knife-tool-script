@@ -49,6 +49,7 @@ SKIP = [
     r"^/api/vc/export-qxw$", r"^/api/triggers/save", r"^/api/setlist/.*/generate-qxw$",
     r"^/api/setlist/generate-all-qxw$", r"^/api/setlist/save$", r"^/api/stage/library-dirs$",
     r"^/api/brightness/apply$", r"^/api/brightness/fetch-github$", r"^/api/brightness/upload-qxf$",
+    r"^/api/stagemon/",            # the Stage Monitor only reads the show
 ]
 _SKIP = [re.compile(p) for p in SKIP]
 

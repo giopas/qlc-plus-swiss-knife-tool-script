@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.5.1, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, and 3.5.1 opens its preview in the browser, since the app's window opens no new windows. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.5.2, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, and 3.5.2 brings back the macOS packages that 3.5.1 lacked. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -315,6 +315,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.4.1 | 16 Oct | The seven languages checked screen by screen; `tools/shots.py` and `tools/release_notes.py`. |
 | 3.5.0 | 17 Oct | Stage Monitor: the current cue live on a tablet on stage, black colours for a dark stage, a Claude tool, its pictures in `shots.py`. |
 | 3.5.1 | 17 Oct | Stage Monitor: *Preview* opens in the browser; the app's own window opens no new windows. |
+| 3.5.2 | 17 Oct | The macOS packages that 3.5.1 lacked: a test opened a real browser on the macOS build machines. The preview opens a browser only when the button asks. |
 
 ## 4. Goal and the Pub test
 

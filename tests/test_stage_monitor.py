@@ -474,7 +474,16 @@ def test_preview_opens_in_the_system_browser(tmp_path):
     c, _ = _client(tmp_path)
     cfg = c.get("/api/stagemon/lists").get_json()["config"]
     d = c.post("/api/stagemon/preview", json={"config": cfg}).get_json()
-    assert d["url"] == "/api/stagemon/preview" and d["opened"] is False      # tests never start a browser
+    assert d["url"] == "/api/stagemon/preview" and d["opened"] is False      # not asked: no browser
+    opened = []
+    import webbrowser
+    orig = webbrowser.open
+    webbrowser.open = lambda url, *a, **k: opened.append(url) or True       # never a real browser in a test
+    try:
+        d = c.post("/api/stagemon/preview", json={"config": cfg, "open": True}).get_json()
+    finally:
+        webbrowser.open = orig
+    assert d["opened"] is True and opened == ["http://localhost/api/stagemon/preview"]
     js = open(os.path.join(ROOT, "static", "js", "stagemon.js"), encoding="utf-8").read()
     body = js[js.index("async function stagemonPreview"):js.index("async function stagemonExport")]
-    assert "window.open(''" not in body and "d.opened" in body
+    assert "window.open(''" not in body and "d.opened" in body and "open: true" in body

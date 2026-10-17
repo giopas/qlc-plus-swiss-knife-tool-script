@@ -16,7 +16,7 @@ show's CueLists, live from QLC+.  The show is only read.
 import os
 import re
 
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 from core import stage_monitor as sm
 from core import workspace
@@ -106,7 +106,7 @@ def preview_set():
     url = request.host_url.rstrip('/') + '/api/stagemon/preview'
     # Opened by the system browser: the app's own window (pywebview) opens no new windows,
     # and a real browser is what the tablet runs anyway.
-    if current_app.config.get('TESTING') or body.get('open') is False:
+    if body.get('open') is not True:          # only the page's Preview button asks for a browser
         return jsonify({'url': '/api/stagemon/preview', 'opened': False})
     try:
         import webbrowser

@@ -238,7 +238,7 @@ async function stagemonPreview() {
     // the server opens the page in the system browser (the app's window opens no new windows)
     const r = await fetch('/api/stagemon/preview', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({config: _smCfg(), lang: _smLang()}),
+      body: JSON.stringify({config: _smCfg(), lang: _smLang(), open: true}),
     });
     const d = await r.json();
     if (!r.ok) { setStatus(d.error || 'Preview failed', 'error'); return; }

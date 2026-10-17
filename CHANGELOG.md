@@ -7,6 +7,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.5.2] — 2026-10-17 — macOS packages again
+
+3.5.1 was released without its macOS packages: one of its tests opened a real browser on the macOS build machines and failed there. 3.5.2 has the same fix as 3.5.1 and every package.
+
+### Fixed
+- Stage Monitor: the preview opens the browser only when *👁 Preview* asks for it. Before, any request for a preview opened one, including the test, which is why the macOS builds of 3.5.1 stopped. Tests never open a real browser now.
+
 ## [3.5.1] — 2026-10-17 — Preview in the app window
 
 ### Fixed

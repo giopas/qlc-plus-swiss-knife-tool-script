@@ -3577,11 +3577,18 @@
  "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "Beim Gig braucht es nur QLC+ (mit -w) und diesen Server. Ohne Swiss Knife: Start Stage Monitor im Ordner doppelklicken.",
  "Could not open the folder": "Der Ordner konnte nicht geöffnet werden",
  "Read-only: shows the cues": "Nur lesen: zeigt die Cues",
- "Control: adds Previous / Next (hold)": "Steuern: mit Zurück / Weiter (halten)",
- "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.": "Nur lesen: Das Tablet zeigt nur die Cues; nichts darauf ändert die Show. Steuern: Die Seite hat zusätzlich die Tasten Zurück und Weiter, die diese Cue-Liste in QLC+ bewegen wie das Pedal, jeweils nach langem Drücken.",
+ "Control: adds Previous / Stop / Next (hold)": "Steuern: mit Zurück / Stopp / Weiter (halten)",
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set under The page, Stop after a longer one.": "Nur lesen: Das Tablet zeigt nur die Cues; nichts darauf ändert die Show. Steuern: Die Seite hat zusätzlich die Tasten Zurück, Stopp und Weiter, die diese Cue-Liste in QLC+ bedienen wie ihre eigenen Tasten oder das Pedal. Zurück und Weiter nach der unter Die Seite gewählten Sicherheits-Haltezeit, Stopp nach einer längeren.",
  "The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\nReplace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor's own; the show and every other file in the folder stay as they are.": "Der Ordner enthält bereits eine Stage-Monitor-Seite aus einem früheren Export:\n\n{0}\n\nDiese Dateien ersetzen? Nur hier schreibt Swiss Knife über Dateien. Es sind die eigenen Dateien des Stage Monitors; die Show und alle anderen Dateien im Ordner bleiben, wie sie sind.",
  "Export cancelled: the earlier page was kept.": "Export abgebrochen: Die frühere Seite bleibt.",
  "Exported to {0}, replacing {1} file(s)": "Exportiert nach {0}, {1} Datei(en) ersetzt",
  "Show step notes": "Schrittnotizen zeigen",
- "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "Die Notizen an den Schritten der CueList in QLC+ (eine Tonart, ein Kapodaster, wer anfängt), klein unter jedem Namen"
+ "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "Die Notizen an den Schritten der CueList in QLC+ (eine Tonart, ein Kapodaster, wer anfängt), klein unter jedem Namen",
+ "Stop": "Stopp",
+ "Pause": "Pause",
+ "Resume": "Fortsetzen",
+ "hold longer": "länger halten",
+ "Safety hold": "Sicherheits-Haltezeit",
+ "Off: a tap acts": "Aus: Antippen genügt",
+ "Control mode: how long Previous and Next must be held before they act, so a stray touch does nothing. Off: a tap acts at once, handy for skipping several songs. Stop always needs a longer hold (at least 1.2 s).": "Steuern: Wie lange Zurück und Weiter gehalten werden müssen, bevor sie wirken, damit eine versehentliche Berührung nichts tut. Aus: Antippen wirkt sofort, praktisch zum Überspringen mehrerer Songs. Stopp braucht immer länger (mindestens 1,2 s)."
 }

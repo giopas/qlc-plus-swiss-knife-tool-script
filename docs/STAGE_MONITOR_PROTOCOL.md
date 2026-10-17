@@ -48,6 +48,12 @@ From the probe to the page showing the new step: 35 to 50 ms on one computer.
 
 The first `STOP` stops the chaser and keeps the step selected (`CUE_STATE|0|1|2|…`): *Play* would start from it, and the page shows it with a dashed outline. A second `STOP` clears it (`CUE|-1`). `getWidgetStatus` says only `STOP` in both cases, so after a reconnect a stopped list shows no selected step until it moves.
 
+Control mode's *Stop* button (3.5.5) sends `<id>|STOP` only while the list plays or is paused, so it never does that second, rewinding `STOP`. In a CueList whose layout is *Play/Stop/Pause* (`<PlaybackLayout>1</PlaybackLayout>` in the show; absent means *Play/Pause/Stop*), `STOP` on a running list toggles pause instead (`VCCueList::stopClicked`), so the button reads *Pause* or *Resume*. Checked live on QLC+ 5.3.0: a 1.2 s hold stopped a playing list; on a list with layout 1 it paused it and a second hold resumed it. `getWidgetStatus` reports a paused list as `STOP`; the page keeps *paused* from the last `CUE_STATE` push.
+
+### No blackout
+
+QLC+ 5's web socket has no blackout command. A Virtual Console button whose action is *Blackout* can be pressed (`<id>|255`), but in the QML interface (`qlcplus5`) both the press and the release toggle blackout and the button's state is only the last value sent, so a page could show the wrong state after a blackout from the QLC+ toolbar. The page does not offer one.
+
 ### Why the page has no jump to a step
 
 `<id>|STEP|<n>` sets the selected step but, while the chaser plays, does not change what plays: checked live, `STEP|5` reported step 5 while step 2 kept playing, and the next `PREV` went to step 1. Jumping would need `STOP`, `STEP|n`, `PLAY`, which goes through a stop on stage. The page offers *Previous* and *Next* only.

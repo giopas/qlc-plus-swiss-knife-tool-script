@@ -7,6 +7,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.5.5] — 2026-10-17 — Stop on the tablet, safety hold
+
+### Added
+- Stage Monitor, Control mode: a *Stop* button between *Previous* and *Next*. It is the CueList's own Stop, so it stops that list the way the Stop button in QLC+ does. It needs a longer press than the other two (1.2 s) and works only while the list plays or is paused; otherwise it is greyed out, because in QLC+ a Stop on a stopped list sends it back to its first step. On a CueList with the *Play/Stop/Pause* layout the button reads *Pause* and *Resume*, as in QLC+. Checked live against QLC+ 5.3.0.
+- *Safety hold*, a new setting under *The page*: how long *Previous* and *Next* must be held in Control mode. Choose 0.3, 0.6 (the default, as before), 1 or 1.5 s, or *Off: a tap acts*, for skipping several songs quickly when the setlist changes mid-show. *Stop* always needs twice the hold and at least 1.2 s, so a tap never stops a list. Also in Claude's `stage_monitor` tool (`hold_ms`).
+- There is no blackout button: QLC+ 5's web connection has no blackout command (see `docs/STAGE_MONITOR_PROTOCOL.md`).
+
 ## [3.5.4] — 2026-10-17 — Ask before replacing, step notes
 
 ### Changed

@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.5.4
+# QLC+ Swiss Knife v3.5.5
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 

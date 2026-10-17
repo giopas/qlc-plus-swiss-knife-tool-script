@@ -46,6 +46,8 @@ CONFIG_VERSION = 1
 FONT_SCALES = ("S", "M", "L", "XL")
 THEMES = ("dark", "contrast", "black", "dim")   # black: white song on black; dim: grey song on black
 MODES = ("read", "control")
+HOLD_CHOICES = (0, 300, 600, 1000, 1500)   # ms a Control button must be held; 0 = a tap acts
+STOP_HOLD_MIN = 1200                       # Stop needs at least this, and twice the hold
 DEFAULT_WS_PORT = 9999
 DEFAULT_HTTP_PORT = 8080
 
@@ -58,6 +60,7 @@ DEFAULTS = {
     "show_clock": True,
     "show_numbers": True,
     "show_notes": True,       # the step notes of the CueList, under each name
+    "hold_ms": 600,           # Control mode: hold Previous / Next this long (0: a tap acts)
     "ws_port": DEFAULT_WS_PORT,
     "http_port": DEFAULT_HTTP_PORT,
     "lists": [],          # [{id, label, mode, steps: {"<index>": {hide, label}}}] in display order
@@ -132,7 +135,7 @@ def cuelists(root) -> List[dict]:
     it, the console page first), ``page`` (console page, 0-based),
     ``frame_page`` (page inside the nearest multipage frame, with its name,
     or ``None``), ``chaser`` (``{id, name}`` or ``None``), ``steps``
-    (``[{index, fid, name, note}]``) and ``inputs``.
+    (``[{index, fid, name, note}]``), ``layout`` (``stop`` or ``pause``) and ``inputs``.
     """
     vc = None
     for el in root.iter():
@@ -166,6 +169,13 @@ def cuelists(root) -> List[dict]:
     return out
 
 
+def _layout(cl) -> str:
+    """What the CueList's second button does: ``stop`` (QLC+'s default, Play/Pause/Stop)
+    or ``pause`` (layout Play/Stop/Pause, saved as ``<PlaybackLayout>1``)."""
+    el = _child(cl, "PlaybackLayout")
+    return "pause" if el is not None and (el.text or "").strip() == "1" else "stop"
+
+
 def _one(cl, path, page, fpage, funcs) -> dict:
     cid = (_child(cl, "Chaser").text or "").strip() if _child(cl, "Chaser") is not None else ""
     ch = funcs.get(cid)
@@ -187,6 +197,7 @@ def _one(cl, path, page, fpage, funcs) -> dict:
         "frame_page": fpage,
         "chaser": {"id": cid, "name": ch.get("Name", "")} if ch is not None else None,
         "steps": steps,
+        "layout": _layout(cl),
         "inputs": _bindings(cl),
     }
 
@@ -220,6 +231,11 @@ def clean_config(cfg: Optional[dict]) -> dict:
     for k in ("show_next", "show_clock", "show_numbers", "show_notes"):
         if k in cfg:
             out[k] = bool(cfg[k])
+    try:
+        hold = int(cfg.get("hold_ms", DEFAULTS["hold_ms"]))
+    except (TypeError, ValueError):
+        hold = DEFAULTS["hold_ms"]
+    out["hold_ms"] = hold if hold in HOLD_CHOICES else DEFAULTS["hold_ms"]
     out["ws_port"] = _port(cfg.get("ws_port"), DEFAULT_WS_PORT)
     out["http_port"] = _port(cfg.get("http_port"), DEFAULT_HTTP_PORT)
     seen = set()
@@ -307,7 +323,7 @@ def reconcile(cfg: dict, lists: List[dict]) -> dict:
 PAGE_STRINGS = (
     "Stage Monitor", "Connecting…", "Connected", "Not connected", "retry in", "Unknown",
     "Not in the show QLC+ has open", "Playing", "Paused", "Stopped", "NEXT", "Previous", "Next",
-    "hold", "Not connected to QLC+",
+    "hold", "Stop", "Pause", "Resume", "hold longer", "Not connected to QLC+",
     "Start QLC+ with web access (qlcplus -w). Trying again by itself.",
     "No cue list chosen. Choose one in Swiss Knife and export again.",
     "Every step of this list is hidden.", "Close",
@@ -342,10 +358,11 @@ def page_data(cfg: dict, lists: List[dict], lang: str = "en") -> dict:
                           "note": st["note"], "hide": bool(s.get("hide"))})
         out_lists.append({"id": int(item["id"]),
                           "label": item["label"] or cl["caption"] or (cl["chaser"] or {}).get("name") or f"Cue list {item['id']}",
-                          "mode": item["mode"], "steps": steps})
+                          "mode": item["mode"], "layout": cl.get("layout", "stop"), "steps": steps})
     return {"title": cfg["title"], "font": cfg["font"], "theme": cfg["theme"],
             "showNext": cfg["show_next"], "showClock": cfg["show_clock"],
-            "showNumbers": cfg["show_numbers"], "showNotes": cfg["show_notes"], "wsPort": cfg["ws_port"],
+            "showNumbers": cfg["show_numbers"], "showNotes": cfg["show_notes"], "holdMs": cfg["hold_ms"],
+            "stopHoldMs": max(STOP_HOLD_MIN, 2 * cfg["hold_ms"]), "wsPort": cfg["ws_port"],
             "lists": out_lists, "lang": lang if lang in LANGS else "en", "t": page_strings(lang)}
 
 

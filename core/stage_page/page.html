@@ -89,6 +89,9 @@ body.stale .step.cur .n, body.stale .step.cur .note { color: var(--stale-fg); }
 #ctrl[hidden] { display: none; }
 #ctrl button { flex: 1; height: calc(84px * var(--k)); font-size: calc(30px * var(--k)); font-weight: 800; position: relative; overflow: hidden; border-width: 2px; }
 #ctrl button .fill, .step .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(124,196,255,.35); pointer-events: none; }
+#ctrl #bStop { flex: 0.7; border-color: var(--bad); color: var(--bad); }
+#ctrl #bStop .fill { background: rgba(255,90,90,.35); }
+#ctrl button:disabled { opacity: .35; }
 #ctrl .hint { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 12px; font-weight: 400; color: var(--dim); }
 .step { position: relative; }
 
@@ -119,6 +122,7 @@ body.stale .step.cur .n, body.stale .step.cur .note { color: var(--stale-fg); }
 <div id="nextbar" hidden><span class="lbl"></span><span class="t"></span></div>
 <div id="ctrl" hidden>
   <button id="bPrev" type="button"><span class="fill"></span>◀ <span class="lb"></span><span class="hint"></span></button>
+  <button id="bStop" type="button"><span class="fill"></span>■ <span class="lb"></span><span class="hint"></span></button>
   <button id="bNext" type="button"><span class="fill"></span><span class="lb"></span> ▶<span class="hint"></span></button>
 </div>
 <div id="debug" hidden></div>
@@ -136,6 +140,10 @@ const PROTOCOL = {
   arm: "/vc.json",
   status: id => `QLC+API|getWidgetStatus|${id}`,      // → QLC+API|getWidgetStatus|<id>|PLAY|<n>  or  …|<id>|STOP
   next: id => `${id}|NEXT`, prev: id => `${id}|PREV`,
+  // the CueList's own Stop button. On a list that is already stopped it sends the list back to its first
+  // step, so the page sends it only while the list plays or is paused. With the CueList layout
+  // "Play/Stop/Pause" (PlaybackLayout 1) the same button pauses and resumes instead.
+  stop: id => `${id}|STOP`,
   // <id>|STEP|<n> exists but in QLC+ 5.3.0 it only moves the selection, not what plays: not used.
   // pushed to every client: <id>|CUE|<n>   <id>|CUE_STATE|<status 0 stop 1 play 2 pause>|<n>|<next>|<side>|<top>
   parse(msg) {
@@ -153,7 +161,10 @@ const PROTOCOL = {
     return null;
   },
 };
-const POLL_MS = 2000, STALE_MS = 7000, ARM_MS = 60000, BACKOFF = [1000, 2000, 5000], HOLD_MS = 600;
+const POLL_MS = 2000, STALE_MS = 7000, ARM_MS = 60000, BACKOFF = [1000, 2000, 5000];
+// Control mode: how long Previous / Next must be held (0: a tap acts) and Stop (at least 1.2 s, twice the hold)
+const HOLD_MS = Number.isFinite(CFG.holdMs) ? CFG.holdMs : 600;
+const STOP_HOLD_MS = Number.isFinite(CFG.stopHoldMs) ? CFG.stopHoldMs : Math.max(1200, 2 * HOLD_MS);
 
 const T = s => (CFG.t && CFG.t[s]) || s;
 const $ = id => document.getElementById(id);
@@ -323,7 +334,11 @@ function render() {
   if (ctrl) {
     $("bPrev").querySelector(".lb").textContent = T("Previous");
     $("bNext").querySelector(".lb").textContent = T("Next");
-    $("bPrev").querySelector(".hint").textContent = $("bNext").querySelector(".hint").textContent = T("hold");
+    $("bPrev").querySelector(".hint").textContent = $("bNext").querySelector(".hint").textContent = HOLD_MS > 0 ? T("hold") : "";
+    const pause = l.layout === "pause", sb = $("bStop");
+    sb.querySelector(".lb").textContent = !pause ? T("Stop") : s.status === 2 ? T("Resume") : T("Pause");
+    sb.querySelector(".hint").textContent = T("hold longer");
+    sb.disabled = !connected || !playing;   // a Stop on a stopped list would rewind it
   }
 
   const b = $("banner");
@@ -354,17 +369,18 @@ function clock() {
 }
 
 // ── control mode: a long press, so a stray tap does nothing ──────────────────
-function hold(el, fire) {
+function hold(el, fire, ms = HOLD_MS) {
   let t = null, fill = null;
   const start = e => {
-    if (!connected) return;
+    if (!connected || el.disabled) return;
     e.preventDefault();
+    if (ms <= 0) { fire(); if (navigator.vibrate) navigator.vibrate(20); return; }   // safety hold off: a tap acts
     fill = el.querySelector(".fill");
     if (!fill) { fill = document.createElement("span"); fill.className = "fill"; el.prepend(fill); }
     fill.style.transition = "none"; fill.style.width = "0";
     void fill.offsetWidth;
-    fill.style.transition = `width ${HOLD_MS}ms linear`; fill.style.width = "100%";
-    t = setTimeout(() => { t = null; fire(); if (navigator.vibrate) navigator.vibrate(40); end(); }, HOLD_MS);
+    fill.style.transition = `width ${ms}ms linear`; fill.style.width = "100%";
+    t = setTimeout(() => { t = null; fire(); if (navigator.vibrate) navigator.vibrate(40); end(); }, ms);
   };
   const end = () => {
     if (t) { clearTimeout(t); t = null; }
@@ -376,6 +392,10 @@ function hold(el, fire) {
 }
 hold($("bPrev"), () => send(PROTOCOL.prev(lists[cur].id)));
 hold($("bNext"), () => send(PROTOCOL.next(lists[cur].id)));
+hold($("bStop"), () => {
+  const s = st[lists[cur].id];
+  if (s.status === 1 || s.status === 2) send(PROTOCOL.stop(lists[cur].id));
+}, STOP_HOLD_MS);
 // ── full screen, wake lock, debug ────────────────────────────────────────────
 const fsEl = document.documentElement;
 const fsReq = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;

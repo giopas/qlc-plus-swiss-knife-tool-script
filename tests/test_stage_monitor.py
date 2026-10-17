@@ -654,3 +654,37 @@ def test_step_notes_can_be_hidden():
     assert off["lists"][0]["steps"][1]["note"] == "capo 2"          # kept in the data, hidden by the page
     html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
     assert "CFG.showNotes !== false" in html
+
+
+def test_control_has_the_cuelists_own_stop():
+    root = _small()
+    cl = [e for e in root.iter() if e.tag.endswith("CueList") and e.get("ID") == "22"][0]
+    ET.SubElement(cl, "PlaybackLayout").text = "1"            # Play/Stop/Pause: the button pauses
+    cls = sm.cuelists(root)
+    assert [c["layout"] for c in cls] == ["stop", "pause", "stop", "stop"]
+    cfg = _cfg()
+    cfg["lists"] = [{"id": "21", "label": "", "mode": "control", "steps": {}},
+                    {"id": "22", "label": "", "mode": "control", "steps": {}}]
+    data = _inlined(sm.build_page(cfg, cls))
+    assert [l["layout"] for l in data["lists"]] == ["stop", "pause"]
+    html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
+    assert "stop: id => `${id}|STOP`" in html
+    assert 'id="bStop"' in html and "STOP_HOLD_MS = Number.isFinite(CFG.stopHoldMs)" in html
+    # never sent to a stopped list: QLC+ would send it back to its first step
+    assert "if (s.status === 1 || s.status === 2) send(PROTOCOL.stop(" in html
+    assert "sb.disabled = !connected || !playing" in html
+    for w in ("Stop", "Pause", "Resume", "hold longer"):
+        assert w in sm.PAGE_STRINGS
+    assert sm.page_strings("it")["Resume"] == "Riprendi"
+
+
+def test_the_safety_hold_can_be_set_or_switched_off():
+    assert sm.clean_config({})["hold_ms"] == 600
+    for given, kept in ((0, 0), ("300", 300), (1500, 1500), (450, 600), ("x", 600), (None, 600)):
+        assert sm.clean_config({"hold_ms": given})["hold_ms"] == kept
+    cls = sm.cuelists(_small())
+    for hold, stop in ((600, 1200), (0, 1200), (300, 1200), (1000, 2000), (1500, 3000)):
+        d = _inlined(sm.build_page(_cfg(hold_ms=hold), cls))
+        assert (d["holdMs"], d["stopHoldMs"]) == (hold, stop)    # Stop: at least 1.2 s, twice the hold
+    html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
+    assert "if (ms <= 0) { fire();" in html                       # off: a tap acts at once

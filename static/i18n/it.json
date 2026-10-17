@@ -3549,11 +3549,18 @@
  "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "Al concerto servono solo QLC+ (con -w) e questo server. Senza Swiss Knife: doppio clic su Start Stage Monitor nella cartella.",
  "Could not open the folder": "Impossibile aprire la cartella",
  "Read-only: shows the cues": "Sola lettura: mostra le cue",
- "Control: adds Previous / Next (hold)": "Controllo: aggiunge Precedente / Successiva (tieni premuto)",
- "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.": "Sola lettura: il tablet mostra soltanto le cue e nulla sul tablet cambia lo show. Controllo: la pagina ha anche i pulsanti Precedente e Successiva, che muovono questa cue list in QLC+ come la pedaliera, ciascuno dopo una pressione lunga.",
+ "Control: adds Previous / Stop / Next (hold)": "Controllo: aggiunge Precedente / Stop / Successiva (tieni premuto)",
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set under The page, Stop after a longer one.": "Sola lettura: il tablet mostra soltanto le cue e nulla sul tablet cambia lo show. Controllo: la pagina ha anche i pulsanti Precedente, Stop e Successiva, che agiscono su questa cue list in QLC+ come i suoi pulsanti o la pedaliera. Precedente e Successiva dopo la pressione di sicurezza scelta in La pagina, Stop dopo una più lunga.",
  "The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\nReplace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor's own; the show and every other file in the folder stay as they are.": "La cartella contiene già una pagina Stage Monitor di un’esportazione precedente:\n\n{0}\n\nSostituire questi file? È l’unico caso in cui Swiss Knife scrive sopra dei file. Sono file dello Stage Monitor; lo show e ogni altro file nella cartella restano come sono.",
  "Export cancelled: the earlier page was kept.": "Esportazione annullata: la pagina precedente è stata mantenuta.",
  "Exported to {0}, replacing {1} file(s)": "Esportata in {0}, sostituendo {1} file",
  "Show step notes": "Mostra le note degli step",
- "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "Le note scritte sugli step della CueList in QLC+ (una tonalità, un capotasto, chi attacca), in piccolo sotto ogni nome"
+ "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "Le note scritte sugli step della CueList in QLC+ (una tonalità, un capotasto, chi attacca), in piccolo sotto ogni nome",
+ "Stop": "Stop",
+ "Pause": "Pausa",
+ "Resume": "Riprendi",
+ "hold longer": "tieni premuto più a lungo",
+ "Safety hold": "Pressione di sicurezza",
+ "Off: a tap acts": "No: basta un tocco",
+ "Control mode: how long Previous and Next must be held before they act, so a stray touch does nothing. Off: a tap acts at once, handy for skipping several songs. Stop always needs a longer hold (at least 1.2 s).": "Modalità Controllo: per quanto tenere premuti Precedente e Successiva prima che agiscano, così un tocco accidentale non fa nulla. No: un tocco agisce subito, comodo per saltare più canzoni. Stop richiede sempre una pressione più lunga (almeno 1,2 s)."
 }

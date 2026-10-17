@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.5.4, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, 3.5.3 adds Start Stage Monitor, one file to double-click at the gig, and 3.5.4 asks before an export replaces an earlier page. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.5.5, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, 3.5.3 adds Start Stage Monitor, one file to double-click at the gig, 3.5.4 asks before an export replaces an earlier page, and 3.5.5 adds the CueList's own Stop to Control mode and a *Safety hold* setting (or none) for its buttons. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 27 tools, among them `guide`, which explains the others. It also offers five ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files (the Stage Monitor's own page and settings are replaced). The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 1018 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 1020 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (32 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -54,7 +54,7 @@ Added after a gig. The spec is the Claude doc *Swiss Knife — Stage Monitor tab
 **What Phase 0 found** (the QLC+ 5.2.2 and 5.3.0 source, then QLC+ 5.3.0 built from its tag and run headless with `-w` in the sandbox; details in `docs/STAGE_MONITOR_PROTOCOL.md`). The web socket is `ws://<host>:9999/qlcplusWS`. `QLC+API|getWidgetStatus|<id>` answers `…|<id>|PLAY|<n>` or `…|<id>|STOP`, and an empty reply for an ID the show does not have. Every client gets `<id>|CUE|<n>` when the cue list moves, whoever moved it, and `<id>|CUE_STATE|<status>|<n>|<next>|…` when it starts, stops or pauses. Steps count from 0, and −1 means none. QLC+ does not check the Origin header, so a page from port 8080 can connect. Two findings changed the design:
 
 - QLC+ 5 sends those pushes only after a web client has asked for `/vc.json`, which its own web page does. Without that request a pedal press sends no `CUE` message at all. The stage page asks for it on every connection and every minute (QLC+ sends no CORS header, so the page cannot read the answer, but the request is enough) and also asks every list's status every 2 seconds.
-- `<id>|STEP|<n>` moves the selection but not what plays while the list runs: step 5 was shown while step 2 kept playing. Control mode therefore has *Previous* and *Next* and no jump to a step.
+- `<id>|STEP|<n>` moves the selection but not what plays while the list runs: step 5 was shown while step 2 kept playing. Control mode therefore has *Previous* and *Next* and no jump to a step. *Stop* (3.5.5) is the CueList's own `STOP`, sent only while the list plays or is paused, since a `STOP` on a stopped list rewinds it to the first step.
 
 Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms. When QLC+ quits the page shows it at once, and it is back 5 ms after QLC+ is, with pushes. A frozen QLC+ (socket open, no answers) shows as not connected after 7.6 s.
 
@@ -67,7 +67,7 @@ Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms. When QLC+ qui
 - At run time the tablet talks to QLC+ directly and Swiss Knife does not relay. Swiss Knife can serve the folder (*Serve*, *Stop*), or `python3 serve_stage.py` does it without Swiss Knife. The screen shows the computer's addresses and the full address for the tablet.
 - The settings are kept in `<show>.stage.json` next to the show, without the `_vN` suffix, so every version of the show shares them. Lists are matched by widget ID, and the screen names a list that disappeared and a new one not set up yet.
 - If the status answers stop, the dot turns red and the current song greys out, then the page reconnects after 1 s, 2 s and every 5 s.
-- Control mode: *Previous* and *Next* at the bottom act after a 600 ms press. With several lists the page has tabs and follows the list that just moved.
+- Control mode: *Previous* and *Next* at the bottom act after a 600 ms press, or the *Safety hold* chosen (3.5.5: off, 300, 600, 1000, 1500 ms; off is for skipping several songs when the setlist changes); *Stop* (3.5.5) after twice that and at least 1200 ms, and it reads *Pause*/*Resume* on a CueList with the Play/Stop/Pause layout. No blackout: QLC+ 5's web socket has no blackout command, and a VC Blackout button pressed from the web can get out of step with the real blackout. With several lists the page has tabs and follows the list that just moved.
 - The preview opens in a browser: from the app's own window Swiss Knife opens the default browser (3.5.1; that window opens no new windows), and from a browser tab the page opens a new tab in the same browser (3.5.2), which also works when Swiss Knife runs on another machine and gets its own Content-Security-Policy, which lets it reach QLC+ on this computer and nothing else.
 - Claude: a `stage_monitor` tool (list, settings, export) and a ready request, *A tablet page for the stage*. Replacing an earlier export needs `replace=true`, which the tool asks Claude to get from the user (3.5.4); everything else Claude writes is still a new file.
 - At the gig (3.5.3): the export also writes Start Stage Monitor (`.command`, `.bat`, `.sh`). It runs `--serve-stage` on the installed app (no Python needed), else Python 3, and its window shows the address, whether QLC+ answers (with the command to start it) and who opened the page. The release build checks that the bundle can do it. A separate packaged server app was considered and left out: another unsigned download on four systems for what the installed app already does.
@@ -77,7 +77,7 @@ Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms. When QLC+ qui
 |---|---|---|
 | 0 | Protocol from the QLC+ source and a live QLC+ 5.3.0; `docs/STAGE_MONITOR_PROTOCOL.md`; a probe page (`tools/stage_probe.html`) for the Mac | Done in the sandbox; the probe with the pedal on the Mac is still to do |
 | 1 | Read-only page: list, configure, export, serve, reconnect, debug overlay (triple tap on the title), black colours, seven languages, wiki page *Stage Monitor* with Linux and Windows, Claude tool, pictures | Released in 3.5.0 |
-| 2 | Control mode: *Previous* and *Next* with a 600 ms press; no jump (see above) | Released in 3.5.0, off by default |
+| 2 | Control mode: *Previous* and *Next* with a 600 ms press; no jump (see above). *Stop* with a 1200 ms press | Released in 3.5.0, off by default; *Stop* in 3.5.5 |
 | 3 (optional) | Chosen VC buttons (PANIC RESET) as big tiles; the Setlist screen's order; a QR code for the address if a small pure-Python encoder fits | Not started |
 
 Left as it is: the binding names on the cards (*next*, *previous*) are in English.
@@ -321,6 +321,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.5.2 | 17 Oct | The macOS packages that 3.5.1 lacked: a test opened a real browser on the macOS build machines. The preview opens a browser only when the button asks, and from a browser tab it opens a tab in that browser. |
 | 3.5.3 | 17 Oct | Stage Monitor at the gig: Start Stage Monitor to double-click (on the installed app via `--serve-stage`, no Python needed), every address listed, a hint when a browser asks for https://, what runs at the gig in the app and the wiki. |
 | 3.5.4 | 17 Oct | Stage Monitor asks before an export replaces an earlier page (the one exception to never overwriting), in the app and for Claude; the two modes explained; *Show step notes* on or off. |
+| 3.5.5 | 17 Oct | Stage Monitor: Control mode gets the CueList's own *Stop* (1.2 s press, only while the list plays; *Pause*/*Resume* on the Play/Stop/Pause layout) and a *Safety hold* setting for Previous / Next, which can be off. |
 
 ## 4. Goal and the Pub test
 

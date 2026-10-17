@@ -3577,11 +3577,18 @@
  "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "本番で必要なのは QLC+（-w 付き）とこのサーバーだけです。Swiss Knife なしの場合：フォルダー内の Start Stage Monitor をダブルクリック。",
  "Could not open the folder": "フォルダーを開けませんでした",
  "Read-only: shows the cues": "読み取り専用：キューを表示",
- "Control: adds Previous / Next (hold)": "操作：前へ／次へを追加（長押し）",
- "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.": "読み取り専用：タブレットはキューを表示するだけで、タブレットからショーは変わりません。操作：ページに前へ・次へボタンが加わり、長押しするとペダルと同じように QLC+ のこのキューリストを動かします。",
+ "Control: adds Previous / Stop / Next (hold)": "操作：前へ／停止／次へを追加（長押し）",
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set under The page, Stop after a longer one.": "読み取り専用：タブレットはキューを表示するだけで、タブレットからショーは変わりません。操作：ページに前へ・停止・次へボタンが加わり、キューリスト自身のボタンやペダルと同じように QLC+ のこのキューリストを操作します。前へと次へは「ページ」で設定した安全長押しのあとに、停止はさらに長く押すと動きます。",
  "The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\nReplace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor's own; the show and every other file in the folder stay as they are.": "このフォルダーには以前の書き出しによるステージモニターのページがあります：\n\n{0}\n\nこれらのファイルを置き換えますか？ Swiss Knife がファイルを上書きするのはこの場合だけです。どれもステージモニター自身のファイルで、ショーやフォルダー内のほかのファイルはそのままです。",
  "Export cancelled: the earlier page was kept.": "書き出しを取り消しました：以前のページはそのままです。",
  "Exported to {0}, replacing {1} file(s)": "{0} に書き出しました（{1} 件を置き換え）",
  "Show step notes": "ステップのメモを表示",
- "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "QLC+ で CueList のステップに書いたメモ（キー、カポ、誰から始めるか）を各名前の下に小さく表示"
+ "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "QLC+ で CueList のステップに書いたメモ（キー、カポ、誰から始めるか）を各名前の下に小さく表示",
+ "Stop": "停止",
+ "Pause": "一時停止",
+ "Resume": "再開",
+ "hold longer": "さらに長押し",
+ "Safety hold": "安全長押し",
+ "Off: a tap acts": "オフ：タップで動作",
+ "Control mode: how long Previous and Next must be held before they act, so a stray touch does nothing. Off: a tap acts at once, handy for skipping several songs. Stop always needs a longer hold (at least 1.2 s).": "操作モード：前へと次へが動くまでに押し続ける時間。うっかり触れても何も起きません。オフ：タップですぐ動き、何曲も飛ばすときに便利です。停止は常により長い長押し（1.2 秒以上）が必要です。"
 }

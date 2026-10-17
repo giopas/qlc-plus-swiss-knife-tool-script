@@ -41,7 +41,7 @@ LIST_ID = "4001"
 CONFIG = {
     "title": "Festival", "font": "M", "theme": "dark", "show_next": True, "show_clock": False,
     "show_numbers": True,
-    "lists": [{"id": LIST_ID, "label": "Set A", "mode": "read",
+    "lists": [{"id": LIST_ID, "label": "Set A", "mode": "control",
                "steps": {"0": {"label": "Walk-in"}, "1": {"label": "Intro"}, "3": {"hide": True},
                          "4": {"hide": True}, "7": {"hide": True}}},
               {"id": "4101", "label": "Set B", "mode": "read", "steps": {}}],

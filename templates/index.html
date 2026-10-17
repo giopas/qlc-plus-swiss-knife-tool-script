@@ -2248,6 +2248,15 @@
           <label class="sm-check"><input type="checkbox" id="sm-next" onchange="stagemonSet('show_next', this.checked)"> Show the next cue</label>
           <label class="sm-check"><input type="checkbox" id="sm-clock" onchange="stagemonSet('show_clock', this.checked)"> Show the time</label>
           <label class="sm-check"><input type="checkbox" id="sm-numbers" onchange="stagemonSet('show_numbers', this.checked)"> Show step numbers</label>
+          <div class="sm-row"><span>Safety hold</span>
+            <select id="sm-hold" class="field-input sm-theme" onchange="stagemonSet('hold_ms', +this.value)"
+                    data-tooltip="Control mode: how long Previous and Next must be held before they act, so a stray touch does nothing. Off: a tap acts at once, handy for skipping several songs. Stop always needs a longer hold (at least 1.2 s).">
+              <option value="0">Off: a tap acts</option>
+              <option value="300">0.3 s</option>
+              <option value="600">0.6 s</option>
+              <option value="1000">1 s</option>
+              <option value="1500">1.5 s</option>
+            </select></div>
           <label class="sm-check" data-tooltip="The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name"><input type="checkbox" id="sm-notes" onchange="stagemonSet('show_notes', this.checked)"> Show step notes</label>
           <div class="sm-row sm-ports"><span>Ports</span>
             <label data-tooltip="QLC+ web access listens here (qlcplus -w); 9999 unless you changed it">QLC+ <input id="sm-wsport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('ws_port', +this.value)"></label>

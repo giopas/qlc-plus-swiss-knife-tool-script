@@ -78,9 +78,9 @@ function _smRender() {
         <input class="field-input" maxlength="80" value="${_esc(it.label)}" placeholder="${_esc(cl.caption || 'Label on the page')}" data-i18n="${cl.caption ? 'off' : ''}"
                oninput="stagemonList('${cl.id}', 'label', this.value)" title="Label on the page (the CueList's caption when empty)">
         <select class="field-input" style="width:auto" onchange="stagemonList('${cl.id}', 'mode', this.value)"
-                title="Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.">
+                title="Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set under The page, Stop after a longer one.">
           <option value="read"${it.mode === 'read' ? ' selected' : ''}>${_esc('Read-only: shows the cues')}</option>
-          <option value="control"${it.mode === 'control' ? ' selected' : ''}>${_esc('Control: adds Previous / Next (hold)')}</option>
+          <option value="control"${it.mode === 'control' ? ' selected' : ''}>${_esc('Control: adds Previous / Stop / Next (hold)')}</option>
         </select>
         <button class="btn btn-surface btn-sm sm-ord" onclick="stagemonMove('${cl.id}', -1)" ${pos <= 0 ? 'disabled' : ''} title="Earlier on the page">↑</button>
         <button class="btn btn-surface btn-sm sm-ord" onclick="stagemonMove('${cl.id}', 1)" ${pos >= cfg.lists.length - 1 ? 'disabled' : ''} title="Later on the page">↓</button>
@@ -131,6 +131,7 @@ function _smSettings() {
   document.getElementById('sm-notes').checked = c.show_notes;
   document.querySelectorAll('#sm-font button').forEach(b => b.classList.toggle('on', b.dataset.v === c.font));
   set('sm-theme', c.theme);
+  set('sm-hold', String(c.hold_ms));
   set('sm-folder', _sm.folder || '');
   setFileChip('sm-folder-chip', _sm.folder, 'no folder yet');
   _smServer(_sm.server);

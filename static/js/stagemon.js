@@ -294,7 +294,11 @@ async function _smStatus() {
   } catch (e) { /* later */ }
 }
 
+let _smPoll = null;
 function _smServer(sv) {
+  clearTimeout(_smPoll);
+  if (sv && sv.running && !sv.https_from && document.getElementById('scr-stagemon')?.classList.contains('active'))
+    _smPoll = setTimeout(_smStatus, 4000);
   const el = document.getElementById('sm-server');
   if (!el || !sv) return;
   document.getElementById('sm-serve').hidden = sv.running;
@@ -303,6 +307,8 @@ function _smServer(sv) {
     const urls = sv.urls.length ? sv.urls : [`http://localhost:${sv.port}/`];
     el.innerHTML = `<div>${_esc('Serving — open on the tablet:')}</div>` + urls.map(u =>
       `<div class="sm-url"><code>${_esc(u)}</code><button class="btn btn-surface btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${_esc(u)}')">${_esc('Copy')}</button></div>`).join('');
+    if (sv.https_from) el.innerHTML += `<div class="sm-warn">${_esc(`${sv.https_from} asked for https://. On that device type the address with http://, as shown above.`)}</div>`;
+    el.innerHTML += `<div class="sm-meta" style="margin:6px 0 0">${_esc('At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.')}</div>`;
   } else {
     const ips = sv.addresses || [];
     const where = ips.length ? _esc(`This computer: ${ips.join(', ')}`)

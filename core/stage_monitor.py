@@ -470,6 +470,21 @@ def local_addresses() -> List[str]:
 
 
 class _Quiet(SimpleHTTPRequestHandler):
+    def handle_one_request(self):
+        # A browser asking for https:// sends a TLS handshake (0x16) that plain http cannot
+        # answer; remember who, so the screen can say "type http://".
+        try:
+            first = self.rfile.peek(1)[:1]
+        except (OSError, ValueError):
+            first = b""
+        if first == b"\x16":
+            owner = getattr(self.server, "owner", None)
+            if owner is not None:
+                owner.https_from = self.client_address[0]
+            self.close_connection = True
+            return
+        super().handle_one_request()
+
     def log_message(self, *_a):   # no request log in Swiss Knife's console
         pass
 
@@ -487,6 +502,7 @@ class StageServer:
         self.folder = ""
         self.port = 0
         self.error = ""
+        self.https_from = ""      # a device that asked for https:// (cannot work)
 
     @property
     def running(self) -> bool:
@@ -506,7 +522,8 @@ class StageServer:
             self.error = f"Port {port} is busy or not allowed ({e.strerror or e})."
             raise ValueError(self.error) from e
         srv.daemon_threads = True
-        self._srv, self.folder, self.port, self.error = srv, folder, port, ""
+        srv.owner = self
+        self._srv, self.folder, self.port, self.error, self.https_from = srv, folder, port, "", ""
         self._thread = threading.Thread(target=srv.serve_forever, name="stage-monitor", daemon=True)
         self._thread.start()
 
@@ -520,7 +537,7 @@ class StageServer:
     def status(self) -> dict:
         ips = local_addresses()
         return {"running": self.running, "folder": self.folder, "port": self.port,
-                "error": self.error, "addresses": ips,
+                "error": self.error, "addresses": ips, "https_from": self.https_from,
                 "urls": [f"http://{ip}:{self.port}/" for ip in ips] if self.running else []}
 
 

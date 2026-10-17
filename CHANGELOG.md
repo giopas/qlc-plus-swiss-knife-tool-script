@@ -7,6 +7,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.5.3] — 2026-10-17 — Stage Monitor at the gig
+
+From the first try with a phone on the Mac's own Wi-Fi.
+
+### Changed
+- `serve_stage.py` lists every address of the computer, the one of its own Wi-Fi (Internet Sharing, a hotspot) first. Before, it printed a single guess, which could be the home network instead of the one the tablet was on.
+- When a phone or tablet asks for `https://` (Chrome on Android often does it by itself), the page cannot load and the browser shows `ERR_SSL_PROTOCOL_ERROR`. `serve_stage.py` now prints which device it was and the `http://` address to type, once, instead of lines of unreadable bytes, and *▶ Serve* in Swiss Knife shows the same note.
+- The Serve screen and the wiki say plainly what runs at the gig: QLC+ with `-w` and the page server. Swiss Knife is only needed to export the page.
+- Wiki: what to run at home and at the gig, a check of what is listening, and the Mac's own Wi-Fi in more detail (the shared port needs a link, how to check that the network started, the alternatives).
+
 ## [3.5.2] — 2026-10-17 — macOS packages again
 
 3.5.1 was released without its macOS packages: one of its tests opened a real browser on the macOS build machines and failed there. 3.5.2 has the same fix as 3.5.1 and every package.

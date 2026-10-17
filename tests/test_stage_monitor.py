@@ -5,6 +5,7 @@ import os
 import py_compile
 import re
 import shutil
+import sys
 import socket
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -493,3 +494,68 @@ def test_preview_opens_in_the_system_browser(tmp_path):
     js = open(os.path.join(ROOT, "static", "js", "stagemon.js"), encoding="utf-8").read()
     body = js[js.index("async function stagemonPreview"):js.index("async function stagemonExport")]
     assert "window.open(''" not in body and "d.opened" in body and "open: true" in body
+
+
+# ── the server says "type http://" when a browser asks for https:// ─────────
+
+def _tls_hello(port):
+    with socket.create_connection(("127.0.0.1", port), timeout=3) as s:
+        s.sendall(b"\x16\x03\x01\x00\x05hello")
+        try:
+            return s.recv(100)
+        except OSError:
+            return b""
+
+
+def test_swiss_knife_server_notices_https(tmp_path):
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), sm.cuelists(_small()))
+    srv = sm.StageServer()
+    port = _free_port()
+    srv.start(out["folder"], port, host="127.0.0.1")
+    try:
+        assert srv.status()["https_from"] == ""
+        assert _tls_hello(port) == b""                     # closed, no 400 page full of bytes
+        assert srv.status()["https_from"] == "127.0.0.1"
+        assert b"const CFG" in urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=5).read()
+    finally:
+        srv.stop()
+
+
+def test_serve_stage_script_lists_addresses_and_explains_https(tmp_path):
+    import subprocess
+    import time
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), sm.cuelists(_small()))
+    port = _free_port()
+    p = subprocess.Popen([sys.executable, "-u", out["script"], str(port)], stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True)
+    try:
+        first = [p.stdout.readline() for _ in range(2)]
+        assert first[0].startswith("Stage Monitor is served") and "http://" in first[1]
+        for _ in range(50):
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1).read()
+                break
+            except OSError:
+                time.sleep(0.1)
+        _tls_hello(port)
+        _tls_hello(port)                                    # said once per device
+        time.sleep(0.3)
+    finally:
+        p.terminate()
+        text = p.communicate(timeout=5)[0]
+    assert "Open on the tablet (with http://)" in first[0]
+    assert text.count("asked for https://") == 1
+    assert "opened the page" in text and "Bad request" not in text
+
+
+def test_serve_stage_script_puts_the_hotspot_first(monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("serve_stage", sm.SERVE_SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    class R:
+        stdout = IFCONFIG
+    monkeypatch.setattr(mod.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: R())
+    assert mod.addresses() == ["192.168.2.1", "192.168.1.23"]

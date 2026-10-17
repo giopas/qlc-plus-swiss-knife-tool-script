@@ -3567,5 +3567,7 @@
  "Port {0} is busy or not allowed ({1}).": "端口 {0} 已被占用或不允许（{1}）。",
  "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "舞台监视器页面已写入：{0}。平板刷新页面后即可获得。",
  "Preview opened in your browser.": "已在浏览器中打开预览。",
- "Open the page in your browser, talking to the QLC+ on this computer": "在浏览器中打开页面，连接到这台电脑上的 QLC+"
+ "Open the page in your browser, talking to the QLC+ on this computer": "在浏览器中打开页面，连接到这台电脑上的 QLC+",
+ "{0} asked for https://. On that device type the address with http://, as shown above.": "{0} 请求了 https://。请在该设备上按上面所示用 http:// 输入地址。",
+ "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.": "演出时只需要 QLC+（加 -w）和这个服务器。不用 Swiss Knife 时：在文件夹中运行 python3 serve_stage.py。"
 }

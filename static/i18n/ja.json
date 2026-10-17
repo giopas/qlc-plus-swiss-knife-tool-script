@@ -3567,5 +3567,7 @@
  "Port {0} is busy or not allowed ({1}).": "ポート {0} は使用中か許可されていません（{1}）。",
  "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "ステージモニターのページを書き込みました：{0}。タブレットはページを再読み込みすると受け取ります。",
  "Preview opened in your browser.": "プレビューをブラウザーで開きました。",
- "Open the page in your browser, talking to the QLC+ on this computer": "このコンピューターの QLC+ につないで、ブラウザーでページを開きます"
+ "Open the page in your browser, talking to the QLC+ on this computer": "このコンピューターの QLC+ につないで、ブラウザーでページを開きます",
+ "{0} asked for https://. On that device type the address with http://, as shown above.": "{0} が https:// を要求しました。その端末では上のとおり http:// でアドレスを入力してください。",
+ "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.": "本番で必要なのは QLC+（-w 付き）とこのサーバーだけです。Swiss Knife なしの場合：フォルダー内で python3 serve_stage.py。"
 }

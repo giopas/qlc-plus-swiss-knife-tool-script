@@ -3567,5 +3567,7 @@
  "Port {0} is busy or not allowed ({1}).": "Port {0} ist belegt oder nicht erlaubt ({1}).",
  "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "Stage-Monitor-Seite geschrieben: {0}. Das Tablet bekommt sie, wenn die Seite neu geladen wird.",
  "Preview opened in your browser.": "Vorschau im Browser geöffnet.",
- "Open the page in your browser, talking to the QLC+ on this computer": "Die Seite im Browser öffnen, verbunden mit dem QLC+ dieses Computers"
+ "Open the page in your browser, talking to the QLC+ on this computer": "Die Seite im Browser öffnen, verbunden mit dem QLC+ dieses Computers",
+ "{0} asked for https://. On that device type the address with http://, as shown above.": "{0} hat https:// angefragt. Gib auf diesem Gerät die Adresse mit http:// ein, wie oben.",
+ "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: python3 serve_stage.py in the folder.": "Beim Gig braucht es nur QLC+ (mit -w) und diesen Server. Ohne Swiss Knife: python3 serve_stage.py im Ordner."
 }

@@ -51,9 +51,11 @@ def _default_folder() -> str:
 
 
 def _lists():
-    root, _path, name = _open_workspace()
+    root, path, name = _open_workspace()
     if root is None:
         return None, None
+    if _mem.get('for') != (path, name):      # another show: its own folder and settings
+        _mem.update({'config': None, 'preview': None, 'folder': '', 'for': (path, name)})
     return sm.cuelists(root), name
 
 

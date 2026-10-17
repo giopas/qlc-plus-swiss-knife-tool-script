@@ -16,12 +16,22 @@
   --bg: #0b0d10; --fg: #f4f6f8; --dim: #8a929c; --line: #1f242b;
   --cur-bg: #f5b301; --cur-fg: #0b0d10;
   --ready: #f5b301; --next: #7cc4ff; --ok: #2ecc71; --warn: #f5b301; --bad: #ff4d4d;
-  --bar: #14181d;
+  --bar: #14181d; --tab-bg: var(--fg); --tab-fg: var(--bg);
+  --stale-bg: #3a3f46; --stale-fg: #c7ccd2; --banner-bg: #2a0d0d; --banner-fg: #ffd5d5;
 }
 :root[data-theme="contrast"] {
   --bg: #000; --fg: #fff; --dim: #c8c8c8; --line: #333;
   --cur-bg: #ffff00; --cur-fg: #000; --ready: #ffff00; --next: #00e5ff; --bar: #000;
 }
+/* black: as little light as possible on a dark stage; only the current song is bright */
+:root[data-theme="black"], :root[data-theme="dim"] {
+  --bg: #000; --fg: #5c5c5c; --dim: #3d3d3d; --line: #0f0f0f;
+  --cur-bg: transparent; --cur-fg: #f2f2f2; --ready: #8c8c8c; --next: #8c8c8c;
+  --ok: #1b5e36; --warn: #6e5400; --bad: #8f2020; --bar: #000;
+  --tab-bg: #161616; --tab-fg: #9a9a9a; --stale-bg: transparent; --stale-fg: #333;
+  --banner-bg: #0d0000; --banner-fg: #9a5c5c;
+}
+:root[data-theme="dim"] { --fg: #404040; --dim: #2c2c2c; --cur-fg: #8f8f8f; --ready: #5e5e5e; --next: #5e5e5e; --tab-fg: #6a6a6a; }
 :root[data-font="S"]  { --k: .85; }
 :root[data-font="L"]  { --k: 1.25; }
 :root[data-font="XL"] { --k: 1.5; }
@@ -46,7 +56,7 @@ button { font: inherit; color: inherit; background: none; border: 1px solid var(
 #tabs { display: flex; gap: 8px; padding: 8px calc(16px * var(--k)) 0; flex: none; overflow-x: auto; }
 #tabs:empty { display: none; }
 #tabs button { padding: calc(8px * var(--k)) calc(14px * var(--k)); font-size: calc(18px * var(--k)); white-space: nowrap; position: relative; }
-#tabs button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 700; }
+#tabs button.on { background: var(--tab-bg); color: var(--tab-fg); border-color: var(--tab-bg); font-weight: 700; }
 
 #status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
   padding: calc(8px * var(--k)) calc(16px * var(--k)); color: var(--dim); font-size: calc(18px * var(--k)); flex: none; }
@@ -66,8 +76,8 @@ button { font: inherit; color: inherit; background: none; border: 1px solid var(
 .step.cur .n, .step.cur .note { color: var(--cur-fg); opacity: .75; }
 .step.ready { outline: 4px dashed var(--ready); outline-offset: -4px; font-weight: 700; }
 .step.nxt .t { color: var(--next); }
-body.stale .step.cur { background: #3a3f46; color: #c7ccd2; }
-body.stale .step.cur .n, body.stale .step.cur .note { color: #c7ccd2; }
+body.stale .step.cur { background: var(--stale-bg); color: var(--stale-fg); }
+body.stale .step.cur .n, body.stale .step.cur .note { color: var(--stale-fg); }
 
 #nextbar { flex: none; padding: calc(12px * var(--k)) calc(18px * var(--k)); background: var(--bar);
   border-top: 2px solid var(--line); font-size: calc(34px * var(--k)); font-weight: 700; display: flex; gap: 14px; align-items: baseline; }
@@ -82,10 +92,10 @@ body.stale .step.cur .n, body.stale .step.cur .note { color: #c7ccd2; }
 #ctrl .hint { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 12px; font-weight: 400; color: var(--dim); }
 .step { position: relative; }
 
-#banner { flex: none; margin: 0 calc(16px * var(--k)) calc(8px * var(--k)); background: #2a0d0d; color: #ffd5d5;
+#banner { flex: none; margin: 0 calc(16px * var(--k)) calc(8px * var(--k)); background: var(--banner-bg); color: var(--banner-fg);
   border: 2px solid var(--bad); border-radius: 12px; padding: calc(10px * var(--k)) calc(14px * var(--k));
   font-size: calc(22px * var(--k)); font-weight: 700; }
-#banner small { display: block; font-size: .6em; font-weight: 400; margin-top: 6px; color: #f0b9b9; }
+#banner small { display: block; font-size: .6em; font-weight: 400; margin-top: 6px; opacity: .85; }
 #banner[hidden] { display: none; }
 #empty { padding: 30px 20px; color: var(--dim); font-size: calc(22px * var(--k)); text-align: center; }
 

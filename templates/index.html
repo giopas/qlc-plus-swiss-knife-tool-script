@@ -2238,9 +2238,13 @@
               <button data-v="S" onclick="stagemonSet('font','S')">S</button><button data-v="M" onclick="stagemonSet('font','M')">M</button><button data-v="L" onclick="stagemonSet('font','L')">L</button><button data-v="XL" onclick="stagemonSet('font','XL')">XL</button>
             </div></div>
           <div class="sm-row"><span>Colours</span>
-            <div class="sm-seg" id="sm-theme">
-              <button data-v="dark" onclick="stagemonSet('theme','dark')">Dark</button><button data-v="contrast" onclick="stagemonSet('theme','contrast')">High contrast</button>
-            </div></div>
+            <select id="sm-theme" class="field-input sm-theme" onchange="stagemonSet('theme', this.value)"
+                    data-tooltip="Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.">
+              <option value="dark">Dark</option>
+              <option value="contrast">High contrast</option>
+              <option value="black">Black, white song</option>
+              <option value="dim">Black, grey song</option>
+            </select></div>
           <label class="sm-check"><input type="checkbox" id="sm-next" onchange="stagemonSet('show_next', this.checked)"> Show the next cue</label>
           <label class="sm-check"><input type="checkbox" id="sm-clock" onchange="stagemonSet('show_clock', this.checked)"> Show the time</label>
           <label class="sm-check"><input type="checkbox" id="sm-numbers" onchange="stagemonSet('show_numbers', this.checked)"> Show step numbers</label>

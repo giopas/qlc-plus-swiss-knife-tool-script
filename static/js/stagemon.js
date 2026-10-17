@@ -129,7 +129,7 @@ function _smSettings() {
   document.getElementById('sm-clock').checked = c.show_clock;
   document.getElementById('sm-numbers').checked = c.show_numbers;
   document.querySelectorAll('#sm-font button').forEach(b => b.classList.toggle('on', b.dataset.v === c.font));
-  document.querySelectorAll('#sm-theme button').forEach(b => b.classList.toggle('on', b.dataset.v === c.theme));
+  set('sm-theme', c.theme);
   set('sm-folder', _sm.folder || '');
   setFileChip('sm-folder-chip', _sm.folder, 'no folder yet');
   _smServer(_sm.server);
@@ -260,7 +260,9 @@ async function stagemonExport() {
     _sm.missing = [];
     _smSettings();
     setOutcome('stagemon', [_esc(`Exported to ${d.folder.split(/[\\/]/).pop()}`)], 'ok', '');
-    setStatus(`Stage Monitor page written: ${d.page}` + (d.server && d.server.running ? ' — the tablet gets it on its next reload' : ''));
+    setStatus(d.server && d.server.running
+      ? `Stage Monitor page written: ${d.page}. The tablet gets it when the page is reloaded.`
+      : `Stage Monitor page written: ${d.page}`);
   } catch (e) { setStatus('Export failed', 'error'); }
 }
 

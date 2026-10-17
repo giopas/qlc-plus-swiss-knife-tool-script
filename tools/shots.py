@@ -5,7 +5,9 @@ at once.
 
     python3 tools/shots.py readme                 # screenshots/01..18 (README and wiki)
     python3 tools/shots.py gif                    # screenshots/route.gif + screenshots/tutorial/*
-    python3 tools/shots.py all                    # both
+    python3 tools/shots.py stage                  # screenshots/19..21 + stage-monitor.gif (the tablet page)
+    python3 tools/shots.py stage --lang it --dry  # the Stage Monitor pictures in Italian, to look at
+    python3 tools/shots.py all                    # all three
     python3 tools/shots.py readme --only 07 13    # keep only these (the others are still taken, not written)
     python3 tools/shots.py all --dry              # into a scratch folder: compare, do not replace
     python3 tools/shots.py state looks "go('looks')" "looksType('Concert')" --lang it --show Wizard530_video.qxw
@@ -15,7 +17,7 @@ After a run it prints, for each picture, whether it changed and by how much, and
 writes contact.png (every new picture, small) next to them, so a reviewer opens
 one image instead of twenty.
 
-Options: --out DIR (where the pictures go), --lang it|fr|de|es|pt|ja|zh,
+Options: --out DIR (where the pictures go), --lang it|fr|de|es|pt|ja|zh (state and stage),
 --width/--height (default 1440 x 900), --url (use an app that is already running).
 Needs Playwright with a Chromium and Pillow.  The app it starts uses the scrubbed
 corpus shows in tests/corpus, so nothing private is shown.
@@ -101,7 +103,9 @@ def contact_sheet(paths, out, cols=3, w=720):
     d = ImageDraw.Draw(sheet)
     for i, p in enumerate(paths):
         x, y = (i % cols) * w, (i // cols) * (h + 22)
-        sheet.paste(Image.open(p).convert("RGB").resize((w, h)), (x, y + 22))
+        im = Image.open(p).convert("RGB")
+        im.thumbnail((w, h))                 # keeps the shape: a tablet page in portrait stays upright
+        sheet.paste(im, (x + (w - im.width) // 2, y + 22))
         d.text((x + 6, y + 5), os.path.basename(p), fill=(232, 236, 245))
     sheet.save(out)
     return out
@@ -115,8 +119,10 @@ def report(new_dir, ref_dir, names):
 
 # ── the runs ─────────────────────────────────────────────────────────────────
 
-def run_script(script, out, url):
+def run_script(script, out, url, lang=None):
     env = dict(os.environ, SWK_URL=url)
+    if lang:
+        env["SWK_LANG"] = lang
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", script), out], cwd=ROOT, env=env)
     if r.returncode:
         raise SystemExit(f"{script} failed")
@@ -162,7 +168,7 @@ def run_states(url, out, steps, lang, show, width, height, name):
 def main(argv=None) -> int:
     sys.path.insert(0, ROOT)
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("what", choices=["readme", "gif", "all", "state"])
+    ap.add_argument("what", choices=["readme", "gif", "stage", "all", "state"])
     ap.add_argument("steps", nargs="*", help="state: a name, then one JavaScript step per picture")
     ap.add_argument("--only", nargs="*", default=None, help="readme/gif: keep only pictures starting with these")
     ap.add_argument("--dry", action="store_true", help="into a scratch folder; the repo is not touched")
@@ -188,12 +194,12 @@ def main(argv=None) -> int:
 
     # each script gets a fresh app: one leaves the show changed for the next
     scratch = tempfile.mkdtemp(prefix="sk-shots-")
-    jobs = [("readme", "make_screenshots.py"), ("gif", "make_route_gif.py")]
+    jobs = [("readme", "make_screenshots.py"), ("gif", "make_route_gif.py"), ("stage", "make_stage_shots.py")]
     for kind, script in jobs:
         if a.what in (kind, "all"):
             print(f"── {script}")
             with App(a.url) as app:
-                run_script(script, scratch, app.url)
+                run_script(script, scratch, app.url, a.lang if kind == "stage" else None)
 
     # what was made, compared with the repo, then written (unless --dry or --out)
     made = []

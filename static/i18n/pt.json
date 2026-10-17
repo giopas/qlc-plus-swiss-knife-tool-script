@@ -3560,5 +3560,11 @@
  "No cue list chosen. Choose one in Swiss Knife and export again.": "Nenhuma cue list escolhida. Escolha uma no Swiss Knife e exporte de novo.",
  "Every step of this list is hidden.": "Todos os passos desta lista estão ocultos.",
  "Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.": "O alinhamento desta noite numa CueList, atribuições de teclado e MIDI sem conflitos, uma descrição de cada função, a cue em curso num tablet em palco.",
- "The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.": "A cue em curso e a seguinte, em direto do QLC+, num tablet em palco. O espetáculo é só lido."
+ "The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.": "A cue em curso e a seguinte, em direto do QLC+, num tablet em palco. O espetáculo é só lido.",
+ "Black, white song": "Preto, música a branco",
+ "Black, grey song": "Preto, música a cinzento",
+ "Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.": "Preto, música a branco e Preto, música a cinzento deixam o tablet o mais escuro possível em palco: só a música em curso fica acesa.",
+ "{0} in that folder was not made by the Stage Monitor. Choose another folder.": "{0} nessa pasta não foi criado pelo Stage Monitor. Escolha outra pasta.",
+ "Port {0} is busy or not allowed ({1}).": "A porta {0} está ocupada ou não é permitida ({1}).",
+ "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "Página Stage Monitor escrita: {0}. O tablet recebe-a quando a página for recarregada."
 }

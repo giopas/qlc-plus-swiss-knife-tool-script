@@ -7,14 +7,21 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-10-17 — Stage Monitor
+
+A page for a tablet on stage that shows the cue playing now, in big type, and the one after it, live from QLC+. It is for the player who steps through the setlist with a MIDI pedal and cannot see the laptop: when the order changes during the show, a glance down says where the lights are.
+
 ### Added
-- **Stage Monitor** (4 · Run the show): a page for a tablet on stage that shows the cue that is playing, in big type, and the next one, live from QLC+. For the player who steps through the setlist with a MIDI pedal and cannot see the laptop.
-  - Choose the show's CueLists, give them labels and an order, hide steps or give them another name, pick the text size, dark or high-contrast colours, the next cue, the time and step numbers.
-  - **⤓ Export the page** writes `index.html` (one file, nothing from the internet) and `serve_stage.py` into a `stage_monitor` folder next to the show. **▶ Serve** shares it on the network and shows the address to open on the tablet; without Swiss Knife, `python3 serve_stage.py` does the same.
-  - The page talks to QLC+ (started with `-w`) directly. It turns grey with a red dot when the connection drops and comes back by itself; it never shows an old position as live. Several lists get tabs and the page follows the one that moved. Control mode adds *Previous* and *Next* buttons that need a long press.
-  - The settings are kept in `<show>.stage.json`, shared by every version of the show, and matched to the CueLists by widget ID.
-  - The show is only read.
-- `docs/STAGE_MONITOR_PROTOCOL.md`: the QLC+ web socket messages the page relies on, checked against QLC+ 5.3.0. `tools/stage_probe.html` logs them live.
+- **Stage Monitor** (4 · Run the show). Tick the show's CueLists, give each a label and a place on the page, hide the steps that are not songs or give them another name, and pick the text size, the colours, the next cue, the time and step numbers.
+  - Two colour choices are for a dark stage: *Black, white song* and *Black, grey song*. The screen is black and only the current song is lit, so the tablet gives off as little light as it can.
+  - *⤓ Export the page* writes `index.html` (one file that needs nothing from the internet) and `serve_stage.py` into a `stage_monitor` folder next to the show. *▶ Serve* shares the folder on the network and shows the address to type on the tablet. Without Swiss Knife, `python3 serve_stage.py` in the folder does the same.
+  - The page talks to QLC+ (started with `-w`) directly. If the connection drops, the dot turns red, the current song greys out and the page reconnects by itself, so an old position never passes for a live one. With several lists the page has tabs and follows the list that moved. Control mode adds *Previous* and *Next*, which act only after a long press.
+  - The settings go to `<show>.stage.json`. Every version of the show shares the file, and lists are matched by widget ID, so a new version keeps your labels.
+  - An export replaces only a page and server the Stage Monitor wrote; another `index.html` in the folder is left alone. The show is only read.
+- **Claude**: a `stage_monitor` tool lists the cue lists, changes the settings and exports the page, and a ready request, *A tablet page for the stage*, does it all for the setlist. Swiss Knife now has 27 tools for Claude and five ready requests.
+- **Pictures**: `python3 tools/shots.py stage` takes the Stage Monitor screen, the tablet page in the dark and black colours, and a GIF of a pedal moving through the setlist, with no QLC+ running (a stand-in answers the page). `--lang it` takes them in another language; `all` includes them.
+- `docs/STAGE_MONITOR_PROTOCOL.md` lists the QLC+ web socket messages the page uses, checked against QLC+ 5.3.0, and `tools/stage_probe.html` logs them live.
+- Wiki: a *Stage Monitor* page, with the network setup on macOS, Linux and Windows. Seven languages.
 
 ## [3.4.1] — 2026-10-16 — Seven languages checked
 

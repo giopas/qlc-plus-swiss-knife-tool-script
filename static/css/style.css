@@ -4407,3 +4407,4 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .sm-how code, .sm-meta code { font-family: var(--font-mono); }
 .sm-warn { font-size: var(--fs-ui); color: var(--orange, #ff9800); background: var(--surface-1); border-radius: var(--radius); padding: 6px 10px; margin-bottom: 8px; }
 @media (max-width: 1100px) { .sm-body { grid-template-columns: 1fr; } }
+.sm-theme { width: auto; flex: 1; }

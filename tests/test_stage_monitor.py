@@ -403,3 +403,67 @@ def test_the_screen_is_wired():
     assert "stagemonInit" in app_js and "'stagemon'" in app_js
     spec = open(os.path.join(ROOT, "packaging", "swissknife.spec"), encoding="utf-8").read()
     assert "stage_page" in spec
+
+
+# ── 3.5.0 additions: black themes, own files only, Claude ───────────────────
+
+@pytest.mark.parametrize("theme", ["black", "dim"])
+def test_black_themes(theme):
+    assert sm.clean_config({"theme": theme})["theme"] == theme
+    html = sm.build_page(_cfg(theme=theme), sm.cuelists(_small()))
+    assert _inlined(html)["theme"] == theme
+    css = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
+    assert f':root[data-theme="{theme}"]' in css
+    block = css[css.index(':root[data-theme="black"], :root[data-theme="dim"]'):]
+    block = block[:block.index("}")]
+    assert "--bg: #000" in block and "--cur-bg: transparent" in block
+
+
+def test_export_replaces_only_its_own_files(tmp_path):
+    cls = sm.cuelists(_small())
+    other = tmp_path / "site"
+    other.mkdir()
+    (other / "index.html").write_text("<html>my band's website</html>")
+    with pytest.raises(ValueError, match="not made by the Stage Monitor"):
+        sm.export(str(other), _cfg(), cls)
+    assert (other / "index.html").read_text() == "<html>my band's website</html>"
+    out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), cls)
+    assert sm.is_own_file(out["page"]) and sm.is_own_file(out["script"])
+    sm.export(str(tmp_path / "stage_monitor"), _cfg(theme="black"), cls)      # again: allowed
+
+
+def test_claude_stage_monitor_tool(tmp_path, monkeypatch):
+    from core import mcp_config, mcp_server
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
+    monkeypatch.delenv("QSK_MCP_FOLDERS", raising=False)
+    shows = tmp_path / "shows"
+    shows.mkdir()
+    shutil.copy(os.path.join(CORPUS, "Festival_14fix.qxw"), shows)
+    srv = mcp_server.Server(mcp_config.Allowlist([str(shows)]))
+    srv.t_open_show({"path": str(shows / "Festival_14fix.qxw")})
+    before = (shows / "Festival_14fix.qxw").read_bytes()
+
+    d = srv.t_stage_monitor({})
+    assert [c["id"] for c in d["cuelists"]] == ["4001", "4101", "4201"]
+    assert d["cuelists"][0]["steps"][1] == "- Intro (Silhouette)"
+    assert d["settings_file"] == "Festival_14fix.stage.json"
+
+    d = srv.t_stage_monitor({"config": {"theme": "dim", "lists": [
+        {"id": "4101", "label": "Set B", "steps": {"0": {"hide": True}}}]}})
+    assert d["config"]["theme"] == "dim" and [i["id"] for i in d["config"]["lists"]] == ["4101"]
+    assert json.loads((shows / "Festival_14fix.stage.json").read_text())["theme"] == "dim"
+
+    with pytest.raises(mcp_server.ToolError, match="No CueList with id 99"):
+        srv.t_stage_monitor({"config": {"lists": [{"id": "99"}]}})
+
+    d = srv.t_stage_monitor({"export": True, "lang": "de"})
+    page = d["exported"]["page"]
+    assert page == str(shows / "stage_monitor" / "index.html")
+    assert _inlined(open(page, encoding="utf-8").read())["t"]["NEXT"] == "NÄCHSTE"
+    assert "serve_stage.py" in d["next"]
+
+    with pytest.raises(mcp_server.ToolError, match="outside the folders"):
+        srv.t_stage_monitor({"export": True, "folder": str(tmp_path / "elsewhere")})
+    assert (shows / "Festival_14fix.qxw").read_bytes() == before
+    assert mcp_server.TITLES["stage_monitor"] and "stage_monitor" not in mcp_server.READ_ONLY

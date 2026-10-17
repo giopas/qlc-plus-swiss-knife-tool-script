@@ -3560,5 +3560,11 @@
  "No cue list chosen. Choose one in Swiss Knife and export again.": "尚未选择 cue 列表。请在 Swiss Knife 中选择一个后重新导出。",
  "Every step of this list is hidden.": "此列表的所有步骤都已隐藏。",
  "Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.": "将今晚的曲目表放进 CueList，键盘和 MIDI 绑定互不冲突，并为每个功能写好描述，舞台上平板显示当前 cue。",
- "The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.": "在舞台上的平板上实时显示 QLC+ 正在播放的 cue 和下一个 cue。演出文件只读不改。"
+ "The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.": "在舞台上的平板上实时显示 QLC+ 正在播放的 cue 和下一个 cue。演出文件只读不改。",
+ "Black, white song": "黑底，白色曲名",
+ "Black, grey song": "黑底，灰色曲名",
+ "Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.": "“黑底，白色曲名”和“黑底，灰色曲名”让平板在舞台上尽量暗：只有当前歌曲是亮的。",
+ "{0} in that folder was not made by the Stage Monitor. Choose another folder.": "该文件夹中的 {0} 不是舞台监视器生成的。请选择其他文件夹。",
+ "Port {0} is busy or not allowed ({1}).": "端口 {0} 已被占用或不允许（{1}）。",
+ "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "舞台监视器页面已写入：{0}。平板刷新页面后即可获得。"
 }

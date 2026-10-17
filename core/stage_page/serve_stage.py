@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve this folder to the tablet: the QLC+ Swiss Knife Stage Monitor page.
+"""Serve this folder to the tablet: the page of the QLC+ Swiss Knife — Stage Monitor.
 
     python3 serve_stage.py            (Windows: py serve_stage.py)
     python3 serve_stage.py 8090       another port

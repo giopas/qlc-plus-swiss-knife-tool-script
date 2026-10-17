@@ -150,6 +150,10 @@ TOOLS: List[dict] = [
      "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out}. With apply=false only shows the matches.",
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
                           "apply": {"type": "boolean"}, "target_chaser_id": _S})},
+    {"name": "stage_monitor", "handler": "t_stage_monitor",
+     "description": "The Stage Monitor: a page for a tablet on stage that shows the current and the next cue of chosen CueLists, live from QLC+. Without arguments, lists the show's CueLists (id, caption, where, chaser, step names) and the saved settings (read only). `config` changes the settings and keeps them in <show>.stage.json: title, font (S M L XL), theme (dark, contrast, black = white song on black, dim = grey song on black), show_next, show_clock, show_numbers, ws_port, http_port, and lists [{id, label, mode (read | control), steps {\"<index>\": {hide, label}}}] in page order (give the whole list). export=true writes index.html and serve_stage.py into `folder` (default: a stage_monitor folder next to the show); it replaces only files the Stage Monitor wrote. The show itself is never changed. Serving the page to the tablet is done in the Swiss Knife window (▶ Serve) or with python3 serve_stage.py.",
+     "inputSchema": _obj({"config": {"type": "object"}, "export": {"type": "boolean"}, "folder": _S,
+                          "lang": {"type": "string", "enum": ["en", "it", "fr", "de", "es", "pt", "ja", "zh"]}})},
     {"name": "compare", "handler": "t_compare",
      "description": "Compare the show in progress with another .qxw and return the differences (read only).",
      "inputSchema": _obj({"path": _S}, ["path"])},
@@ -194,6 +198,7 @@ TITLES = {
     "build_looks": "Build looks and chasers", "vc_pages": "Virtual Console pages",
     "edit_vc": "Edit the Virtual Console", "setlist": "Setlist to chaser", "compare": "Compare shows",
     "dictionary_context": "Dictionary: read functions", "dictionary_set": "Dictionary: set descriptions",
+    "stage_monitor": "Stage Monitor page",
     "dictionary_load": "Dictionary: load", "dictionary_save": "Dictionary: save as new file",
     "show_history": "History", "undo": "Undo", "redo": "Redo", "save_show": "Save as a new file",
 }
@@ -596,6 +601,51 @@ class Server:
             raise ToolError(str(e))
         self.api("POST", "/api/dictionary/save", {"path": path})
         return {"saved": path, "note": "A new file; the show and any earlier dictionary are untouched."}
+
+    def t_stage_monitor(self, a: dict) -> Any:
+        self.need_show()
+        d = self.api("GET", "/api/stagemon/lists")
+        cfg = d["config"]
+        if a.get("config"):
+            new = dict(cfg)
+            new.update({k: v for k, v in dict(a["config"]).items() if k in cfg})
+            known = {c["id"] for c in d["lists"]}
+            bad = [str(x.get("id")) for x in new.get("lists") or [] if isinstance(x, dict) and str(x.get("id")) not in known]
+            if bad:
+                raise ToolError(f"No CueList with id {', '.join(bad)} in this show. Call stage_monitor without arguments for the ids.")
+            r = self.api("POST", "/api/stagemon/config", {"config": new})
+            d = self.api("GET", "/api/stagemon/lists")
+            cfg = d["config"]
+            if not r.get("saved"):
+                d["note"] = r.get("note", "")
+        out: Dict[str, Any] = {
+            "cuelists": [{"id": c["id"], "caption": c["caption"],
+                          "where": " › ".join(c["path"] + ([c["frame_page"]["name"] or f"page {c['frame_page']['page'] + 1}"]
+                                                           if c.get("frame_page") else [])),
+                          "chaser": (c.get("chaser") or {}).get("name"),
+                          "steps": [s["name"] for s in c["steps"]][:60],
+                          "inputs": c.get("inputs") or {}} for c in d["lists"]],
+            "config": cfg, "missing": d["missing"], "not_on_page": d["new"],
+            "settings_file": d.get("sidecar") or "(none: the show was not opened from a folder)",
+        }
+        if d.get("note"):
+            out["note"] = d["note"]
+        if a.get("export"):
+            folder = str(a.get("folder") or d.get("folder") or "")
+            if not folder:
+                raise ToolError("Say where to write the page: a folder inside a shared folder.")
+            try:
+                chk = folder if os.path.exists(folder) else os.path.dirname(os.path.abspath(os.path.expanduser(folder)))
+                self.allow.check(chk)
+            except mcp_config.NotAllowed as e:
+                raise ToolError(str(e))
+            r = self.api("POST", "/api/stagemon/export", {"config": cfg, "folder": folder,
+                                                            "lang": str(a.get("lang") or "en")})
+            out["exported"] = {"folder": r["folder"], "page": r["page"], "script": r["script"]}
+            out["next"] = ("Start QLC+ with web access (qlcplus -w), then serve the folder: ▶ Serve on the "
+                           "Stage Monitor screen, or python3 serve_stage.py in that folder, and open "
+                           "http://<this computer>:%d/ on the tablet." % cfg["http_port"])
+        return out
 
     def t_show_history(self, a: dict) -> Any:
         self.need_show()

@@ -3560,5 +3560,11 @@
  "No cue list chosen. Choose one in Swiss Knife and export again.": "キューリストが選ばれていません。Swiss Knife で選んで、もう一度書き出してください。",
  "Every step of this list is hidden.": "このリストのステップはすべて非表示です。",
  "Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.": "今夜のセットリストを CueList に、衝突のないキーボードと MIDI の割り当て、すべてのファンクションの説明、ステージ上のタブレットに再生中のキュー。",
- "The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.": "再生中のキューと次のキューを、QLC+ からライブでステージ上のタブレットに表示します。ショーは読み取るだけです。"
+ "The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.": "再生中のキューと次のキューを、QLC+ からライブでステージ上のタブレットに表示します。ショーは読み取るだけです。",
+ "Black, white song": "黒・曲は白",
+ "Black, grey song": "黒・曲はグレー",
+ "Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.": "「黒・曲は白」と「黒・曲はグレー」はステージ上のタブレットをできるだけ暗く保ちます。明るいのは再生中の曲だけです。",
+ "{0} in that folder was not made by the Stage Monitor. Choose another folder.": "そのフォルダーの {0} はステージモニターが作成したものではありません。別のフォルダーを選んでください。",
+ "Port {0} is busy or not allowed ({1}).": "ポート {0} は使用中か許可されていません（{1}）。",
+ "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "ステージモニターのページを書き込みました：{0}。タブレットはページを再読み込みすると受け取ります。"
 }

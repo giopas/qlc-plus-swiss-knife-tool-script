@@ -187,6 +187,26 @@ GUIDE: Dict[str, dict] = {
         "returns": "The matches, then what was built and `left_out` (songs with no function).",
         "notes": "Show the matches to the user before applying. Each cue note names the button that plays the same look.",
     },
+    "stage_monitor": {
+        "use": "Make the Stage Monitor page: a tablet on stage shows the cue that is playing and the next one, "
+               "live from QLC+, for a player who steps through the setlist with a pedal and cannot see the laptop.",
+        "args": [("config", "Settings to change; leave out to read them. `lists` [{id, label, mode, steps}] in page "
+                            "order (the whole list): `mode` is `read` (default) or `control` (Previous and Next with "
+                            "a long press); `steps` maps a step index (from 0) to `{hide: true}` or `{label: \"…\"}`. "
+                            "Also `title`, `font` (S, M, L, XL), `theme` (`dark`, `contrast`, `black` for a white song "
+                            "on black, `dim` for a grey song on black), `show_next`, `show_clock`, `show_numbers`, "
+                            "`ws_port` (QLC+, 9999), `http_port` (the page, 8080)."),
+                 ("export", "true writes `index.html` and `serve_stage.py`."),
+                 ("folder", "Where to export, inside a shared folder. Default: `stage_monitor` next to the show."),
+                 ("lang", "Language of the words on the page: en, it, fr, de, es, pt, ja or zh.")],
+        "returns": "`cuelists` [{id, caption, where, chaser, steps, inputs}], `config`, `missing` (configured lists "
+                   "gone from the show), `not_on_page`, `settings_file`, and after an export `exported` and `next`.",
+        "example": '{"config": {"theme": "black", "lists": [{"id": "4001", "label": "Set 1", "mode": "read", '
+                   '"steps": {"0": {"label": "Walk-in"}}}]}, "export": true}',
+        "notes": "The show is never changed. Settings go to <show>.stage.json next to the show. An export replaces "
+                 "only a page and server the Stage Monitor wrote. The tablet needs QLC+ started with `-w`; serve "
+                 "the folder with ▶ Serve in the Swiss Knife window or `python3 serve_stage.py`.",
+    },
     "compare": {
         "use": "Compare the show in progress with another .qxw (read only).",
         "args": [("path", "The other .qxw.")],
@@ -277,8 +297,9 @@ WORKFLOWS = """Usual sequences:
 - Buttons for existing functions: vc_pages → edit_vc new_page → edit_vc create (SoloFrame) → edit_vc create (Button, func_id) → save_show.
 - Tonight's setlist: setlist (apply=false) → show the matches → setlist → save_show.
 - Dictionary: dictionary_context → dictionary_set (auto_steps, draft_missing) → dictionary_save.
+- A tablet on stage: stage_monitor (to see the cue lists) → stage_monitor config → stage_monitor export.
 
-Every change is a History step (show_history, undo). Only save_show and dictionary_save write files, always new ones."""
+Every change is a History step (show_history, undo). Only save_show and dictionary_save write files, always new ones; stage_monitor writes only its settings and its own page."""
 
 # ── ready requests (MCP prompts) ──────────────────────────────────────────────
 
@@ -301,6 +322,12 @@ PROMPTS: List[dict] = [
                    {"name": "keep", "description": "The fixtures to keep (ids or names)", "required": True}],
      "text": ('Using the QLC+ Swiss Knife tool, open "{show}" and list its fixtures. I keep these: {keep}. '
               "Show me what would be removed, wait for my OK, then reduce the rig, fix what the Doctor finds and save.")},
+    {"name": "stage_monitor", "title": "A tablet page for the stage",
+     "description": "Choose the setlist cue list, set up the Stage Monitor page and export it next to the show.",
+     "arguments": [{"name": "show", "description": "Path or name of the .qxw", "required": True}],
+     "text": ('Using the QLC+ Swiss Knife tool, open "{show}" and look at its cue lists with stage_monitor. Put the '
+              "setlist cue list on the Stage Monitor page, read-only, with the black theme and a white song, hide the "
+              "steps that are not songs, show me what you chose, then export the page and tell me how to open it on the tablet.")},
     {"name": "song_buttons", "title": "Buttons for looks that have none",
      "description": "Find the chasers and scenes the setlist uses that have no button and put them on a page.",
      "arguments": [{"name": "show", "description": "Path or name of the .qxw", "required": True}],

@@ -44,7 +44,7 @@ EXPORT_DIR = "stage_monitor"
 SIDECAR_SUFFIX = ".stage.json"
 CONFIG_VERSION = 1
 FONT_SCALES = ("S", "M", "L", "XL")
-THEMES = ("dark", "contrast")
+THEMES = ("dark", "contrast", "black", "dim")   # black: white song on black; dim: grey song on black
 MODES = ("read", "control")
 DEFAULT_WS_PORT = 9999
 DEFAULT_HTTP_PORT = 8080
@@ -369,15 +369,31 @@ def build_page(cfg: dict, lists: List[dict], lang: str = "en") -> str:
     return tpl.replace("/*__CONFIG__*/null", _inline_json(data)).replace("__TITLE__", _esc(title))
 
 
+MARK = "QLC+ Swiss Knife — Stage Monitor"     # in the page and in serve_stage.py
+
+
+def is_own_file(path: str) -> bool:
+    """True when *path* is a page or server the Stage Monitor wrote (it may replace those)."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return MARK in fh.read(4096)
+    except OSError:
+        return False
+
+
 def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en") -> dict:
     """Write ``index.html`` and ``serve_stage.py`` into *folder* (created if
     needed).  Returns the paths written."""
     cfg = clean_config(cfg)
     if not cfg["lists"]:
         raise ValueError("Tick at least one cue list.")
-    os.makedirs(folder, exist_ok=True)
     page = os.path.join(folder, "index.html")
     script = os.path.join(folder, "serve_stage.py")
+    for p in (page, script):     # replace only what the Stage Monitor wrote itself
+        if os.path.exists(p) and not is_own_file(p):
+            raise ValueError(f"{os.path.basename(p)} in that folder was not made by the Stage Monitor. "
+                             "Choose another folder.")
+    os.makedirs(folder, exist_ok=True)
     with open(page, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(build_page(cfg, lists, lang))
     with open(SERVE_SCRIPT, encoding="utf-8") as src:

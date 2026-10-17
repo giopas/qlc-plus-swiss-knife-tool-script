@@ -3575,5 +3575,13 @@
  "in the exported folder.": "（書き出したフォルダー内）",
  "Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).": "ページを書き出しました。本番ではそのフォルダーの Start Stage Monitor をダブルクリックしてください（QLC+ は -w 付きで起動）。",
  "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "本番で必要なのは QLC+（-w 付き）とこのサーバーだけです。Swiss Knife なしの場合：フォルダー内の Start Stage Monitor をダブルクリック。",
- "Could not open the folder": "フォルダーを開けませんでした"
+ "Could not open the folder": "フォルダーを開けませんでした",
+ "Read-only: shows the cues": "読み取り専用：キューを表示",
+ "Control: adds Previous / Next (hold)": "操作：前へ／次へを追加（長押し）",
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.": "読み取り専用：タブレットはキューを表示するだけで、タブレットからショーは変わりません。操作：ページに前へ・次へボタンが加わり、長押しするとペダルと同じように QLC+ のこのキューリストを動かします。",
+ "The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\nReplace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor's own; the show and every other file in the folder stay as they are.": "このフォルダーには以前の書き出しによるステージモニターのページがあります：\n\n{0}\n\nこれらのファイルを置き換えますか？ Swiss Knife がファイルを上書きするのはこの場合だけです。どれもステージモニター自身のファイルで、ショーやフォルダー内のほかのファイルはそのままです。",
+ "Export cancelled: the earlier page was kept.": "書き出しを取り消しました：以前のページはそのままです。",
+ "Exported to {0}, replacing {1} file(s)": "{0} に書き出しました（{1} 件を置き換え）",
+ "Show step notes": "ステップのメモを表示",
+ "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "QLC+ で CueList のステップに書いたメモ（キー、カポ、誰から始めるか）を各名前の下に小さく表示"
 }

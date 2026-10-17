@@ -57,6 +57,7 @@ DEFAULTS = {
     "show_next": True,
     "show_clock": True,
     "show_numbers": True,
+    "show_notes": True,       # the step notes of the CueList, under each name
     "ws_port": DEFAULT_WS_PORT,
     "http_port": DEFAULT_HTTP_PORT,
     "lists": [],          # [{id, label, mode, steps: {"<index>": {hide, label}}}] in display order
@@ -216,7 +217,7 @@ def clean_config(cfg: Optional[dict]) -> dict:
     out["title"] = str(cfg.get("title") or "")[:120]
     out["font"] = cfg.get("font") if cfg.get("font") in FONT_SCALES else "M"
     out["theme"] = cfg.get("theme") if cfg.get("theme") in THEMES else "dark"
-    for k in ("show_next", "show_clock", "show_numbers"):
+    for k in ("show_next", "show_clock", "show_numbers", "show_notes"):
         if k in cfg:
             out[k] = bool(cfg[k])
     out["ws_port"] = _port(cfg.get("ws_port"), DEFAULT_WS_PORT)
@@ -344,7 +345,7 @@ def page_data(cfg: dict, lists: List[dict], lang: str = "en") -> dict:
                           "mode": item["mode"], "steps": steps})
     return {"title": cfg["title"], "font": cfg["font"], "theme": cfg["theme"],
             "showNext": cfg["show_next"], "showClock": cfg["show_clock"],
-            "showNumbers": cfg["show_numbers"], "wsPort": cfg["ws_port"],
+            "showNumbers": cfg["show_numbers"], "showNotes": cfg["show_notes"], "wsPort": cfg["ws_port"],
             "lists": out_lists, "lang": lang if lang in LANGS else "en", "t": page_strings(lang)}
 
 
@@ -386,10 +387,31 @@ def is_own_file(path: str) -> bool:
 LAUNCHERS = ("Start Stage Monitor.command", "Start Stage Monitor.bat", "start-stage-monitor.sh")
 
 
-def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en", show_path: str = "") -> dict:
+class ReplaceNeeded(Exception):
+    """The folder already holds a page from an earlier export: replacing it needs a yes."""
+
+    def __init__(self, files: List[str]):
+        super().__init__("The folder already has a Stage Monitor page: " + ", ".join(files))
+        self.files = files
+
+
+def export_files(folder: str) -> List[str]:
+    """The files an export writes that already exist in *folder* (names)."""
+    names = ["index.html", "serve_stage.py"] + list(LAUNCHERS)
+    return [n for n in names if os.path.exists(os.path.join(folder, n))]
+
+
+def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en", show_path: str = "",
+           replace: bool = False) -> dict:
     """Write ``index.html``, ``serve_stage.py`` and the "Start Stage Monitor"
     launchers into *folder* (created if needed).  *show_path* is named in the
-    hint the server prints when QLC+ is not reachable.  Returns the paths written."""
+    hint the server prints when QLC+ is not reachable.
+
+    This is the one place Swiss Knife writes over files: a page and server the
+    Stage Monitor wrote earlier.  It refuses files it did not write
+    (``ValueError``) and replaces its own only with ``replace=True``
+    (``ReplaceNeeded`` otherwise, so the caller can ask).  Returns the paths
+    written and ``replaced``, the names that existed before."""
     cfg = clean_config(cfg)
     if not cfg["lists"]:
         raise ValueError("Tick at least one cue list.")
@@ -400,6 +422,9 @@ def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en", show_pat
         if os.path.exists(p) and not is_own_file(p):
             raise ValueError(f"{os.path.basename(p)} in that folder was not made by the Stage Monitor. "
                              "Choose another folder.")
+    existing = export_files(folder)
+    if existing and not replace:
+        raise ReplaceNeeded(existing)
     os.makedirs(folder, exist_ok=True)
     with open(page, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(build_page(cfg, lists, lang))
@@ -417,7 +442,7 @@ def export(folder: str, cfg: dict, lists: List[dict], lang: str = "en", show_pat
             os.chmod(p, 0o755)
         except OSError:
             pass
-    return {"folder": folder, "page": page, "script": script, "launchers": launchers}
+    return {"folder": folder, "page": page, "script": script, "launchers": launchers, "replaced": existing}
 
 
 # ── the network ──────────────────────────────────────────────────────────────

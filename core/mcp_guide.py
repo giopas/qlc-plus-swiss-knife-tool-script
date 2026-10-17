@@ -194,17 +194,20 @@ GUIDE: Dict[str, dict] = {
                             "order (the whole list): `mode` is `read` (default) or `control` (Previous and Next with "
                             "a long press); `steps` maps a step index (from 0) to `{hide: true}` or `{label: \"…\"}`. "
                             "Also `title`, `font` (S, M, L, XL), `theme` (`dark`, `contrast`, `black` for a white song "
-                            "on black, `dim` for a grey song on black), `show_next`, `show_clock`, `show_numbers`, "
+                            "on black, `dim` for a grey song on black), `show_next`, `show_clock`, `show_numbers`, `show_notes` (the CueList step notes), "
                             "`ws_port` (QLC+, 9999), `http_port` (the page, 8080)."),
                  ("export", "true writes `index.html`, `serve_stage.py` and the Start Stage Monitor launchers."),
                  ("folder", "Where to export, inside a shared folder. Default: `stage_monitor` next to the show."),
+                 ("replace", "true replaces a page from an earlier export in that folder. Without it the export stops "
+                             "and names the files: ask the user first."),
                  ("lang", "Language of the words on the page: en, it, fr, de, es, pt, ja or zh.")],
         "returns": "`cuelists` [{id, caption, where, chaser, steps, inputs}], `config`, `missing` (configured lists "
                    "gone from the show), `not_on_page`, `settings_file`, and after an export `exported` and `next`.",
         "example": '{"config": {"theme": "black", "lists": [{"id": "4001", "label": "Set 1", "mode": "read", '
                    '"steps": {"0": {"label": "Walk-in"}}}]}, "export": true}',
         "notes": "The show is never changed. Settings go to <show>.stage.json next to the show. An export replaces "
-                 "only a page and server the Stage Monitor wrote. The tablet needs QLC+ started with `-w`; at the gig, "
+                 "a page and server the Stage Monitor wrote only with replace=true, after asking the user; files it did "
+                 "not write are never replaced. The tablet needs QLC+ started with `-w`; at the gig, "
                  "double-click Start Stage Monitor in the exported folder (or ▶ Serve in the Swiss Knife window).",
     },
     "compare": {

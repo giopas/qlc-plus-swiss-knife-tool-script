@@ -3575,5 +3575,13 @@
  "in the exported folder.": "na pasta exportada.",
  "Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).": "Página exportada. No concerto, faça duplo clique em Start Stage Monitor nessa pasta (o QLC+ tem de correr com -w).",
  "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "No concerto só são precisos o QLC+ (com -w) e este servidor. Sem o Swiss Knife: duplo clique em Start Stage Monitor na pasta.",
- "Could not open the folder": "Não foi possível abrir a pasta"
+ "Could not open the folder": "Não foi possível abrir a pasta",
+ "Read-only: shows the cues": "Só leitura: mostra as cues",
+ "Control: adds Previous / Next (hold)": "Controlo: acrescenta Anterior / Seguinte (manter)",
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.": "Só leitura: o tablet só mostra as cues; nada nele altera o espetáculo. Controlo: a página tem também os botões Anterior e Seguinte, que movem esta cue list no QLC+ como a pedaleira, cada um após um toque longo.",
+ "The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\nReplace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor's own; the show and every other file in the folder stay as they are.": "A pasta já tem uma página Stage Monitor de uma exportação anterior:\n\n{0}\n\nSubstituir estes ficheiros? É o único caso em que o Swiss Knife escreve por cima de ficheiros. São os do próprio Stage Monitor; o espetáculo e todos os outros ficheiros da pasta ficam como estão.",
+ "Export cancelled: the earlier page was kept.": "Exportação cancelada: a página anterior foi mantida.",
+ "Exported to {0}, replacing {1} file(s)": "Exportada para {0}, substituindo {1} ficheiro(s)",
+ "Show step notes": "Mostrar as notas dos passos",
+ "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "As notas escritas nos passos da CueList no QLC+ (um tom, um capotraste, quem começa), em pequeno por baixo de cada nome"
 }

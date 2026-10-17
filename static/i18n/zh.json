@@ -3575,5 +3575,13 @@
  "in the exported folder.": "（在导出的文件夹中）",
  "Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).": "页面已导出。演出时双击该文件夹中的 Start Stage Monitor（QLC+ 需以 -w 运行）。",
  "At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.": "演出时只需要 QLC+（加 -w）和这个服务器。不用 Swiss Knife 时：双击文件夹中的 Start Stage Monitor。",
- "Could not open the folder": "无法打开文件夹"
+ "Could not open the folder": "无法打开文件夹",
+ "Read-only: shows the cues": "只读：显示 cue",
+ "Control: adds Previous / Next (hold)": "控制：增加上一个 / 下一个（长按）",
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.": "只读：平板只显示 cue，平板上的任何操作都不会改变演出。控制：页面还会有上一个和下一个按钮，长按后像踏板一样在 QLC+ 中移动这个 cue 列表。",
+ "The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\nReplace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor's own; the show and every other file in the folder stay as they are.": "该文件夹中已有之前导出的舞台监视器页面：\n\n{0}\n\n要替换这些文件吗？这是 Swiss Knife 唯一会覆盖文件的情况。这些都是舞台监视器自己的文件；演出和文件夹中的其他文件保持不变。",
+ "Export cancelled: the earlier page was kept.": "已取消导出：保留了之前的页面。",
+ "Exported to {0}, replacing {1} file(s)": "已导出到 {0}，替换了 {1} 个文件",
+ "Show step notes": "显示步骤备注",
+ "The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name": "在 QLC+ 中写在 CueList 步骤上的备注（调、变调夹、谁先开始），以小字显示在每个名称下"
 }

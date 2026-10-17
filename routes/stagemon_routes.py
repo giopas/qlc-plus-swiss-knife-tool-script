@@ -145,7 +145,11 @@ def export():
     if not os.path.isdir(folder) and not os.path.isdir(parent):
         return jsonify({'error': 'That folder does not exist.'}), 400
     try:
-        out = sm.export(folder, cfg, cls, str(body.get('lang') or 'en'), show_path=_real_path())
+        out = sm.export(folder, cfg, cls, str(body.get('lang') or 'en'), show_path=_real_path(),
+                        replace=body.get('replace') is True)
+    except sm.ReplaceNeeded as e:
+        # The one place Swiss Knife writes over files: ask first (409), then the page sends replace: true
+        return jsonify({'error': str(e), 'replace': e.files, 'folder': folder}), 409
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except OSError as e:
@@ -160,6 +164,7 @@ def export():
             side = ''
     return jsonify({'folder': out['folder'], 'page': out['page'], 'script': out['script'],
                     'launchers': [os.path.basename(x) for x in out['launchers']],
+                    'replaced': out['replaced'],
                     'sidecar': os.path.basename(side) if side else '',
                     'lists': len(cfg['lists']), 'server': sm.server.status()})
 

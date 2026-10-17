@@ -78,9 +78,9 @@ function _smRender() {
         <input class="field-input" maxlength="80" value="${_esc(it.label)}" placeholder="${_esc(cl.caption || 'Label on the page')}" data-i18n="${cl.caption ? 'off' : ''}"
                oninput="stagemonList('${cl.id}', 'label', this.value)" title="Label on the page (the CueList's caption when empty)">
         <select class="field-input" style="width:auto" onchange="stagemonList('${cl.id}', 'mode', this.value)"
-                title="Read-only shows where the show is. Control adds Previous and Next buttons that need a long press.">
-          <option value="read"${it.mode === 'read' ? ' selected' : ''}>${_esc('Read-only')}</option>
-          <option value="control"${it.mode === 'control' ? ' selected' : ''}>${_esc('Control (long press)')}</option>
+                title="Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous and Next buttons that move this cue list in QLC+, like the pedal, each after a long press.">
+          <option value="read"${it.mode === 'read' ? ' selected' : ''}>${_esc('Read-only: shows the cues')}</option>
+          <option value="control"${it.mode === 'control' ? ' selected' : ''}>${_esc('Control: adds Previous / Next (hold)')}</option>
         </select>
         <button class="btn btn-surface btn-sm sm-ord" onclick="stagemonMove('${cl.id}', -1)" ${pos <= 0 ? 'disabled' : ''} title="Earlier on the page">↑</button>
         <button class="btn btn-surface btn-sm sm-ord" onclick="stagemonMove('${cl.id}', 1)" ${pos >= cfg.lists.length - 1 ? 'disabled' : ''} title="Later on the page">↓</button>
@@ -128,6 +128,7 @@ function _smSettings() {
   document.getElementById('sm-next').checked = c.show_next;
   document.getElementById('sm-clock').checked = c.show_clock;
   document.getElementById('sm-numbers').checked = c.show_numbers;
+  document.getElementById('sm-notes').checked = c.show_notes;
   document.querySelectorAll('#sm-font button').forEach(b => b.classList.toggle('on', b.dataset.v === c.font));
   set('sm-theme', c.theme);
   set('sm-folder', _sm.folder || '');
@@ -248,20 +249,33 @@ async function stagemonPreview() {
   } catch (e) { setStatus('Preview failed', 'error'); }
 }
 
-async function stagemonExport() {
+// Replacing an earlier export is the one place Swiss Knife writes over files: it asks first.
+const _SM_REPLACE = 'The folder already has a Stage Monitor page from an earlier export:\n\n{0}\n\n'
+  + 'Replace these files? This is the only time Swiss Knife writes over files. They are the Stage Monitor\'s own; '
+  + 'the show and every other file in the folder stay as they are.';
+
+async function stagemonExport(replace = false) {
   if (!_sm) return;
   try {
     const r = await fetch('/api/stagemon/export', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({config: _smCfg(), folder: _sm.folder, lang: _smLang()}),
+      body: JSON.stringify({config: _smCfg(), folder: _sm.folder, lang: _smLang(), replace}),
     });
     const d = await r.json();
+    if (r.status === 409 && d.replace && !replace) {
+      const files = d.replace.map(f => '   ' + f).join('\n');
+      if (confirm(t(_SM_REPLACE, files))) return stagemonExport(true);
+      setStatus('Export cancelled: the earlier page was kept.', 'warn');
+      return;
+    }
     if (!r.ok) { setStatus(d.error || 'Export failed', 'error'); return; }
     _sm.folder = d.folder;
     _sm.saved = !!d.sidecar;
     _sm.missing = [];
     _smSettings();
-    setOutcome('stagemon', [_esc(`Exported to ${d.folder.split(/[\\/]/).pop()}`)], 'ok', '');
+    setOutcome('stagemon', [_esc(d.replaced && d.replaced.length
+      ? `Exported to ${d.folder.split(/[\\/]/).pop()}, replacing ${d.replaced.length} file(s)`
+      : `Exported to ${d.folder.split(/[\\/]/).pop()}`)], 'ok', '');
     setStatus(d.server && d.server.running
       ? `Stage Monitor page written: ${d.page}. The tablet gets it when the page is reloaded.`
       : 'Page exported. At the gig, double-click Start Stage Monitor in that folder (QLC+ must run with -w).');

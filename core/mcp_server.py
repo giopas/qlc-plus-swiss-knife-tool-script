@@ -151,8 +151,9 @@ TOOLS: List[dict] = [
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
                           "apply": {"type": "boolean"}, "target_chaser_id": _S})},
     {"name": "stage_monitor", "handler": "t_stage_monitor",
-     "description": "The Stage Monitor: a page for a tablet on stage that shows the current and the next cue of chosen CueLists, live from QLC+. Without arguments, lists the show's CueLists (id, caption, where, chaser, step names) and the saved settings (read only). `config` changes the settings and keeps them in <show>.stage.json: title, font (S M L XL), theme (dark, contrast, black = white song on black, dim = grey song on black), show_next, show_clock, show_numbers, ws_port, http_port, and lists [{id, label, mode (read | control), steps {\"<index>\": {hide, label}}}] in page order (give the whole list). export=true writes index.html and serve_stage.py into `folder` (default: a stage_monitor folder next to the show); it replaces only files the Stage Monitor wrote. The show itself is never changed. Serving the page to the tablet is done in the Swiss Knife window (▶ Serve) or with python3 serve_stage.py.",
+     "description": "The Stage Monitor: a page for a tablet on stage that shows the current and the next cue of chosen CueLists, live from QLC+. Without arguments, lists the show's CueLists (id, caption, where, chaser, step names) and the saved settings (read only). `config` changes the settings and keeps them in <show>.stage.json: title, font (S M L XL), theme (dark, contrast, black = white song on black, dim = grey song on black), show_next, show_clock, show_numbers, show_notes (the CueList step notes), ws_port, http_port, and lists [{id, label, mode (read | control), steps {\"<index>\": {hide, label}}}] in page order (give the whole list). export=true writes index.html, serve_stage.py and the Start Stage Monitor launchers into `folder` (default: a stage_monitor folder next to the show). When the folder already has a page from an earlier export, the export stops and names the files: ask the user, then call again with replace=true (the only case where Swiss Knife writes over files; it never touches files the Stage Monitor did not write). The show itself is never changed. Serving the page to the tablet is done with Start Stage Monitor in the exported folder or ▶ Serve in the Swiss Knife window.",
      "inputSchema": _obj({"config": {"type": "object"}, "export": {"type": "boolean"}, "folder": _S,
+                          "replace": {"type": "boolean"},
                           "lang": {"type": "string", "enum": ["en", "it", "fr", "de", "es", "pt", "ja", "zh"]}})},
     {"name": "compare", "handler": "t_compare",
      "description": "Compare the show in progress with another .qxw and return the differences (read only).",
@@ -639,10 +640,17 @@ class Server:
                 self.allow.check(chk)
             except mcp_config.NotAllowed as e:
                 raise ToolError(str(e))
-            r = self.api("POST", "/api/stagemon/export", {"config": cfg, "folder": folder,
-                                                            "lang": str(a.get("lang") or "en")})
+            try:
+                r = self.api("POST", "/api/stagemon/export", {"config": cfg, "folder": folder,
+                                                                "lang": str(a.get("lang") or "en"),
+                                                                "replace": a.get("replace") is True})
+            except ToolError as e:
+                if "already has a Stage Monitor page" in str(e):
+                    raise ToolError(f"{e}. These files come from an earlier export. Ask the user whether to "
+                                    "replace them, then call stage_monitor again with export=true and replace=true.")
+                raise
             out["exported"] = {"folder": r["folder"], "page": r["page"], "script": r["script"],
-                               "launchers": r.get("launchers", [])}
+                               "launchers": r.get("launchers", []), "replaced": r.get("replaced", [])}
             out["next"] = ("Start QLC+ with web access (qlcplus -w), then serve the folder: double-click "
                            "Start Stage Monitor in it (or ▶ Serve on the Stage Monitor screen), and open "
                            "http://<this computer>:%d/ on the tablet, with http://." % cfg["http_port"])

@@ -2248,6 +2248,7 @@
           <label class="sm-check"><input type="checkbox" id="sm-next" onchange="stagemonSet('show_next', this.checked)"> Show the next cue</label>
           <label class="sm-check"><input type="checkbox" id="sm-clock" onchange="stagemonSet('show_clock', this.checked)"> Show the time</label>
           <label class="sm-check"><input type="checkbox" id="sm-numbers" onchange="stagemonSet('show_numbers', this.checked)"> Show step numbers</label>
+          <label class="sm-check" data-tooltip="The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name"><input type="checkbox" id="sm-notes" onchange="stagemonSet('show_notes', this.checked)"> Show step notes</label>
           <div class="sm-row sm-ports"><span>Ports</span>
             <label data-tooltip="QLC+ web access listens here (qlcplus -w); 9999 unless you changed it">QLC+ <input id="sm-wsport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('ws_port', +this.value)"></label>
             <label data-tooltip="Where the page is served to the tablet">Page <input id="sm-httpport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('http_port', +this.value)"></label>

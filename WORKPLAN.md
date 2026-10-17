@@ -18,7 +18,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.5.3, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, and 3.5.3 adds Start Stage Monitor, one file to double-click at the gig. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.5.4, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, 3.5.3 adds Start Stage Monitor, one file to double-click at the gig, and 3.5.4 asks before an export replaces an earlier page. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -27,7 +27,7 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | Swiss Knife is an MCP server with 27 tools, among them `guide`, which explains the others. It also offers five ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files (the Stage Monitor's own page and settings are replaced). The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 1016 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 1018 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (32 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
@@ -63,13 +63,13 @@ Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms. When QLC+ qui
 - A screen *Stage Monitor* in group 4, *Run the show*. Swiss Knife is a web app now, so the spec's Tkinter tab became a screen. It reads the show in progress and never changes it, so it adds nothing to the History.
 - The screen lists every CueList with its frame path, page, chaser, steps and bindings. You tick the lists, give labels and an order, hide or rename steps, and choose the text size, the colours, the next cue, the time, step numbers and the mode (read-only by default, or control).
 - Colours: dark, high contrast, *Black, white song* and *Black, grey song*. In the two black ones the screen is black and only the current song is lit.
-- *Export* writes a `stage_monitor/` folder, next to the show by default: `index.html`, one page with the cue names inside and nothing from the internet, and `serve_stage.py`, a standard-library server for the folder. An export replaces only files the Stage Monitor wrote (they carry a mark), so another `index.html` in that folder is refused.
+- *Export* writes a `stage_monitor/` folder, next to the show by default: `index.html`, one page with the cue names inside and nothing from the internet, and `serve_stage.py`, a standard-library server for the folder. An export replaces only files the Stage Monitor wrote (they carry a mark), so another `index.html` in that folder is refused, and since 3.5.4 it asks before replacing even those.
 - At run time the tablet talks to QLC+ directly and Swiss Knife does not relay. Swiss Knife can serve the folder (*Serve*, *Stop*), or `python3 serve_stage.py` does it without Swiss Knife. The screen shows the computer's addresses and the full address for the tablet.
 - The settings are kept in `<show>.stage.json` next to the show, without the `_vN` suffix, so every version of the show shares them. Lists are matched by widget ID, and the screen names a list that disappeared and a new one not set up yet.
 - If the status answers stop, the dot turns red and the current song greys out, then the page reconnects after 1 s, 2 s and every 5 s.
 - Control mode: *Previous* and *Next* at the bottom act after a 600 ms press. With several lists the page has tabs and follows the list that just moved.
 - The preview opens in a browser: from the app's own window Swiss Knife opens the default browser (3.5.1; that window opens no new windows), and from a browser tab the page opens a new tab in the same browser (3.5.2), which also works when Swiss Knife runs on another machine and gets its own Content-Security-Policy, which lets it reach QLC+ on this computer and nothing else.
-- Claude: a `stage_monitor` tool (list, settings, export) and a ready request, *A tablet page for the stage*. Claude may replace the Stage Monitor's own page and settings; everything else it writes is still a new file.
+- Claude: a `stage_monitor` tool (list, settings, export) and a ready request, *A tablet page for the stage*. Replacing an earlier export needs `replace=true`, which the tool asks Claude to get from the user (3.5.4); everything else Claude writes is still a new file.
 - At the gig (3.5.3): the export also writes Start Stage Monitor (`.command`, `.bat`, `.sh`). It runs `--serve-stage` on the installed app (no Python needed), else Python 3, and its window shows the address, whether QLC+ answers (with the command to start it) and who opened the page. The release build checks that the bundle can do it. A separate packaged server app was considered and left out: another unsigned download on four systems for what the installed app already does.
 - Pictures: `tools/make_stage_shots.py`, run by `python3 tools/shots.py stage` and by `all`, takes `19-stage-monitor.png`, `20-stage-page.png`, `21-stage-page-black.png` and `stage-monitor.gif`. A stand-in answers the page's web socket, so no QLC+ is needed. The contact sheet keeps a portrait picture upright.
 
@@ -204,7 +204,7 @@ Open question for giopas: report the `makeChaserFromScenes` bug upstream (one mi
 | The update on macOS is tested and works (several runs). | 8 Oct |
 | Forum: no post per release. A post for 2.0 and one for 3.0. | 1 Oct, 8 Oct |
 | Only Claude is connected. The Gemini app, Gems and other assistants that run on their makers' servers cannot start a local program, and putting Swiss Knife online is not planned. Gemini CLI may work with `--mcp` but is untested and unsupported. The wiki page *Connect Claude to Swiss Knife* explains why (wiki only, no release). | 10 Oct |
-| Claude may replace one kind of file: the Stage Monitor's own page and server (they carry a mark) and its settings file `<show>.stage.json`. Every other file it writes is new. | 17 Oct |
+| The one exception to "never overwrite": a page from an earlier Stage Monitor export (`index.html`, `serve_stage.py`, Start Stage Monitor; they carry a mark) is replaced only after a yes. The app asks with a dialog; Claude's tool stops and needs `replace=true` after asking the user (3.5.4). Files the Stage Monitor did not write are refused. Its settings file `<show>.stage.json` is saved without asking, since it holds only those settings. | 17 Oct |
 
 ### Released in 3.0.3
 
@@ -320,6 +320,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.5.1 | 17 Oct | Stage Monitor: *Preview* opens in the browser; the app's own window opens no new windows. |
 | 3.5.2 | 17 Oct | The macOS packages that 3.5.1 lacked: a test opened a real browser on the macOS build machines. The preview opens a browser only when the button asks, and from a browser tab it opens a tab in that browser. |
 | 3.5.3 | 17 Oct | Stage Monitor at the gig: Start Stage Monitor to double-click (on the installed app via `--serve-stage`, no Python needed), every address listed, a hint when a browser asks for https://, what runs at the gig in the app and the wiki. |
+| 3.5.4 | 17 Oct | Stage Monitor asks before an export replaces an earlier page (the one exception to never overwriting), in the app and for Claude; the two modes explained; *Show step notes* on or off. |
 
 ## 4. Goal and the Pub test
 

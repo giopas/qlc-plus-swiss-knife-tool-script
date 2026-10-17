@@ -96,8 +96,12 @@ def tablet_page(b, url, fake):
 def main():
     os.makedirs(OUT, exist_ok=True)
     show_dir = tempfile.mkdtemp(prefix="sk-stage-show-")      # the settings file goes next to the show
-    shutil.copy(os.path.join(CORPUS, "Festival_14fix.qxw"), show_dir)
-    api("POST", "/api/load", {"path": os.path.join(show_dir, "Festival_14fix.qxw")})
+    show = os.path.join(show_dir, "Festival_14fix.qxw")
+    shutil.copy(os.path.join(CORPUS, "Festival_14fix.qxw"), show)
+    add_notes(show)
+    global SHOW_PATH
+    SHOW_PATH = show
+    api("POST", "/api/load", {"path": show})
     api("GET", "/api/stagemon/lists")
     api("POST", "/api/stagemon/config", {"config": CONFIG})
     folder = tempfile.mkdtemp(prefix="sk-stage-")
@@ -159,9 +163,25 @@ def main():
         shutil.rmtree(show_dir, ignore_errors=True)
 
 
+SHOW_PATH = os.path.join(CORPUS, "Festival_14fix.qxw")
+NOTES = {"2": "Capo 2 · drums count in", "5": "Key of E", "6": "Slow start, bass alone"}   # step number → note
+
+
+def add_notes(path):
+    """Step notes on the setlist chaser of the copy, so the pictures show them."""
+    import re
+    text = open(path, encoding="utf-8").read()
+    start = text.index('<Function ID="1756"')
+    end = text.index("</Function>", start)
+    block = text[start:end]
+    for num, note in NOTES.items():
+        block = re.sub(rf'(<Step Number="{num}")', rf'\1 Note="{note}"', block, count=1)
+    open(path, "w", encoding="utf-8").write(text[:start] + block + text[end:])
+
+
 def sm_lists():
     import xml.etree.ElementTree as ET
-    return sm.cuelists(ET.parse(os.path.join(CORPUS, "Festival_14fix.qxw")).getroot())
+    return sm.cuelists(ET.parse(SHOW_PATH).getroot())
 
 
 def free_port():

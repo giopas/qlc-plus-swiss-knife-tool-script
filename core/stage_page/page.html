@@ -126,7 +126,7 @@ body.stale .step.cur .n, body.stale .step.cur .note { color: var(--stale-fg); }
 <script>
 "use strict";
 const CFG = /*__CONFIG__*/null || {title: "Stage Monitor", font: "M", theme: "dark", showNext: true,
-  showClock: true, showNumbers: true, wsPort: 9999, lists: [], t: {}};
+  showClock: true, showNumbers: true, showNotes: true, wsPort: 9999, lists: [], t: {}};
 
 // ── Protocol: every QLC+ message format in one place (docs/STAGE_MONITOR_PROTOCOL.md) ──
 const PROTOCOL = {
@@ -307,7 +307,7 @@ function render() {
     else if (idx >= 0 && x.i < idx) cls += " past";
     if (x.i === nxt && x.i !== idx) cls += " nxt";
     const n = CFG.showNumbers ? `<span class="n">${x.i + 1}</span>` : "";
-    const note = x.note ? `<span class="note">${esc(x.note)}</span>` : "";
+    const note = x.note && CFG.showNotes !== false ? `<span class="note">${esc(x.note)}</span>` : "";
     return `<div class="${cls}" data-i="${x.i}">${n}<span class="t">${esc(x.name)}${note}</span></div>`;
   }).join("");
   const list = $("list");

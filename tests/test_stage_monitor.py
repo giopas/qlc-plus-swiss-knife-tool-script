@@ -242,9 +242,9 @@ def test_export_writes_the_page_and_the_server(tmp_path):
     script = open(out["script"], encoding="utf-8").read()
     assert "DEFAULT_PORT = 8090" in script
     py_compile.compile(out["script"], doraise=True)
-    # again: the same bytes
+    # again: the same bytes (replacing needs a yes)
     first = open(out["page"], "rb").read()
-    sm.export(str(tmp_path / "stage_monitor"), _cfg(http_port=8090), sm.cuelists(_small()))
+    sm.export(str(tmp_path / "stage_monitor"), _cfg(http_port=8090), sm.cuelists(_small()), replace=True)
     assert open(out["page"], "rb").read() == first
 
 
@@ -430,7 +430,12 @@ def test_export_replaces_only_its_own_files(tmp_path):
     assert (other / "index.html").read_text() == "<html>my band's website</html>"
     out = sm.export(str(tmp_path / "stage_monitor"), _cfg(), cls)
     assert sm.is_own_file(out["page"]) and sm.is_own_file(out["script"])
-    sm.export(str(tmp_path / "stage_monitor"), _cfg(theme="black"), cls)      # again: allowed
+    with pytest.raises(sm.ReplaceNeeded) as e:                                  # again: only with a yes
+        sm.export(str(tmp_path / "stage_monitor"), _cfg(theme="black"), cls)
+    assert e.value.files == ["index.html", "serve_stage.py", *sm.LAUNCHERS]
+    assert '"theme":"dark"' in open(out["page"], encoding="utf-8").read()       # nothing written without it
+    again = sm.export(str(tmp_path / "stage_monitor"), _cfg(theme="black"), cls, replace=True)
+    assert again["replaced"] == e.value.files and '"theme":"black"' in open(out["page"], encoding="utf-8").read()
 
 
 def test_claude_stage_monitor_tool(tmp_path, monkeypatch):
@@ -615,3 +620,37 @@ def test_serve_stage_script_puts_the_hotspot_first(monkeypatch):
     monkeypatch.setattr(mod.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: R())
     assert mod.addresses() == ["192.168.2.1", "192.168.1.23"]
+
+
+def test_replacing_an_export_asks_first_in_the_app_and_for_claude(tmp_path, monkeypatch):
+    c, _ = _client(tmp_path)
+    cfg = c.get("/api/stagemon/lists").get_json()["config"]
+    first = c.post("/api/stagemon/export", json={"config": cfg}).get_json()
+    assert first["replaced"] == []
+    r = c.post("/api/stagemon/export", json={"config": cfg})
+    assert r.status_code == 409 and r.get_json()["replace"][0] == "index.html"
+    ok = c.post("/api/stagemon/export", json={"config": cfg, "replace": True}).get_json()
+    assert len(ok["replaced"]) == 5
+    js = open(os.path.join(ROOT, "static", "js", "stagemon.js"), encoding="utf-8").read()
+    assert "confirm(t(_SM_REPLACE" in js and "r.status === 409" in js
+
+    from core import mcp_config, mcp_server
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.delenv("QSK_MCP_FOLDERS", raising=False)
+    srv = mcp_server.Server(mcp_config.Allowlist([str(tmp_path)]))
+    srv.t_open_show({"path": str(tmp_path / "Festival_14fix.qxw")})
+    with pytest.raises(mcp_server.ToolError, match="Ask the user whether to replace them"):
+        srv.t_stage_monitor({"export": True})
+    d = srv.t_stage_monitor({"export": True, "replace": True})
+    assert len(d["exported"]["replaced"]) == 5
+
+
+def test_step_notes_can_be_hidden():
+    cls = sm.cuelists(_small())
+    assert sm.clean_config({})["show_notes"] is True
+    on = _inlined(sm.build_page(_cfg(), cls))
+    off = _inlined(sm.build_page(_cfg(show_notes=False), cls))
+    assert on["showNotes"] is True and off["showNotes"] is False
+    assert off["lists"][0]["steps"][1]["note"] == "capo 2"          # kept in the data, hidden by the page
+    html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
+    assert "CFG.showNotes !== false" in html

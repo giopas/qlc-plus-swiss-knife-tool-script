@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.5.3
+# QLC+ Swiss Knife v3.5.4
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -65,7 +65,7 @@ Swiss Knife can act as an MCP server, which is the way Claude Desktop and Claude
 
 Claude has a `guide` tool that explains any other tool, with its arguments and an example, and the connection offers Claude Desktop a few ready requests (write the Dictionary, check and fix a show, adapt a show to fewer fixtures, add buttons for looks that have none, make the Stage Monitor page). The wiki page [Claude's tools](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Claude-Tools) lists every tool with the same text Claude reads.
 
-**What Claude can reach.** Claude gets the folders you list and Swiss Knife's tools, nothing else on your computer. It cannot browse your disk, run commands, open other programs or use the network. A path outside your folders is refused. Claude only writes new files (the show, its report, its recipe, a dictionary `.txt`), never overwrites or deletes one (the one exception: the Stage Monitor page and its settings, which it replaces only when the Stage Monitor wrote them), and every change is a History step you can undo. The Doctor refuses a result with new errors, as it does in the window.
+**What Claude can reach.** Claude gets the folders you list and Swiss Knife's tools, nothing else on your computer. It cannot browse your disk, run commands, open other programs or use the network. A path outside your folders is refused. Claude only writes new files (the show, its report, its recipe, a dictionary `.txt`), never overwrites or deletes one (the one exception: a page from an earlier Stage Monitor export, which it replaces only after asking you), and every change is a History step you can undo. The Doctor refuses a result with new errors, as it does in the window.
 
 **To connect Claude Desktop**, start Swiss Knife once, open *🔌 Connect to Claude* in the menu and click **Connect Claude Desktop**. Claude Desktop opens an install window and asks which folders to share. The same `…-claude.mcpb` file is attached to every release if you prefer to double-click it. The wiki page [Connect Claude to Swiss Knife](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Connect-Claude-to-Swiss-Knife) has the steps, example requests and troubleshooting, including the way for Claude Code.
 

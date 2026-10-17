@@ -7,6 +7,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.5.4] — 2026-10-17 — Ask before replacing, step notes
+
+### Changed
+- Stage Monitor: exporting into a folder that already has a page from an earlier export now lists the files and asks before replacing them. It is the only place where Swiss Knife writes over files, so it asks every time; *Cancel* keeps the earlier page. Claude's `stage_monitor` tool stops in the same case, names the files and replaces them only when called again with `replace=true` after you agreed.
+- *Show step notes*: the notes written on the CueList's steps in QLC+ (a key, a capo, who counts in) appear in small type under each name, as before, and can now be switched off for a cleaner page. Also in Claude's `stage_monitor` tool (`show_notes`).
+- The mode of each cue list reads *Read-only: shows the cues* or *Control: adds Previous / Next (hold)*, with a tooltip that says what each does.
+- Wiki: *Read-only or Control* explains the two modes and when to use each; *Exporting again* explains the one exception to "Swiss Knife never writes over a file" and its limits.
+
 ## [3.5.3] — 2026-10-17 — Stage Monitor at the gig
 
 From the first try with a phone on the Mac's own Wi-Fi: at the gig you now double-click one file.

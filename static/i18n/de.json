@@ -3506,7 +3506,6 @@
  "in the folder.": "im Ordner.",
  "The show is not changed; only the stage_monitor folder and the settings file are written": "Die Show wird nicht geändert; nur der Ordner stage_monitor und die Einstellungsdatei werden geschrieben",
  "Reads the show, writes only the page": "Liest die Show, schreibt nur die Seite",
- "Open the page here, talking to the QLC+ on this computer": "Die Seite hier öffnen, verbunden mit dem QLC+ dieses Computers",
  "👁 Preview": "👁 Vorschau",
  "⤓ Export the page": "⤓ Seite exportieren",
  "Gone from the show since the last export: {0}": "Seit dem letzten Export aus der Show verschwunden: {0}",
@@ -3566,5 +3565,7 @@
  "Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.": "Schwarz, Song in Weiß und Schwarz, Song in Grau halten das Tablet auf der Bühne so dunkel wie möglich: Nur der laufende Song leuchtet.",
  "{0} in that folder was not made by the Stage Monitor. Choose another folder.": "{0} in diesem Ordner stammt nicht vom Stage Monitor. Wähle einen anderen Ordner.",
  "Port {0} is busy or not allowed ({1}).": "Port {0} ist belegt oder nicht erlaubt ({1}).",
- "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "Stage-Monitor-Seite geschrieben: {0}. Das Tablet bekommt sie, wenn die Seite neu geladen wird."
+ "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "Stage-Monitor-Seite geschrieben: {0}. Das Tablet bekommt sie, wenn die Seite neu geladen wird.",
+ "Preview opened in your browser.": "Vorschau im Browser geöffnet.",
+ "Open the page in your browser, talking to the QLC+ on this computer": "Die Seite im Browser öffnen, verbunden mit dem QLC+ dieses Computers"
 }

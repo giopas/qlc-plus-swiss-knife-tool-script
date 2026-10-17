@@ -234,16 +234,17 @@ function _smLang() {
 
 async function stagemonPreview() {
   if (!_sm) return;
-  const w = window.open('', 'stage-monitor-preview', 'width=600,height=960');
   try {
+    // the server opens the page in the system browser (the app's window opens no new windows)
     const r = await fetch('/api/stagemon/preview', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({config: _smCfg(), lang: _smLang()}),
     });
     const d = await r.json();
-    if (!r.ok) { if (w) w.close(); setStatus(d.error || 'Preview failed', 'error'); return; }
-    if (w) w.location = d.url; else window.open(d.url, '_blank');
-  } catch (e) { if (w) w.close(); setStatus('Preview failed', 'error'); }
+    if (!r.ok) { setStatus(d.error || 'Preview failed', 'error'); return; }
+    if (d.opened) setStatus('Preview opened in your browser.');
+    else window.open(d.url, '_blank');
+  } catch (e) { setStatus('Preview failed', 'error'); }
 }
 
 async function stagemonExport() {

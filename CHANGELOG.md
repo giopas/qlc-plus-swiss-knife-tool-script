@@ -7,6 +7,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.5.1] — 2026-10-17 — Preview in the app window
+
+### Fixed
+- Stage Monitor: *👁 Preview* did nothing in the app's own window, which opens no new windows. The page now opens in your browser, as the wiki pages do.
+
 ## [3.5.0] — 2026-10-17 — Stage Monitor
 
 A page for a tablet on stage that shows the cue playing now, in big type, and the one after it, live from QLC+. It is for the player who steps through the setlist with a MIDI pedal and cannot see the laptop: when the order changes during the show, a glance down says where the lights are.

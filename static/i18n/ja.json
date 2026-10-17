@@ -3506,7 +3506,6 @@
  "in the folder.": "をフォルダー内で実行。",
  "The show is not changed; only the stage_monitor folder and the settings file are written": "ショーは変更されません。書き込むのは stage_monitor フォルダーと設定ファイルだけです",
  "Reads the show, writes only the page": "ショーを読み、ページだけを書き込みます",
- "Open the page here, talking to the QLC+ on this computer": "このコンピューターの QLC+ につないで、ここでページを開きます",
  "👁 Preview": "👁 プレビュー",
  "⤓ Export the page": "⤓ ページを書き出す",
  "Gone from the show since the last export: {0}": "前回の書き出し以降ショーから消えたもの：{0}",
@@ -3566,5 +3565,7 @@
  "Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.": "「黒・曲は白」と「黒・曲はグレー」はステージ上のタブレットをできるだけ暗く保ちます。明るいのは再生中の曲だけです。",
  "{0} in that folder was not made by the Stage Monitor. Choose another folder.": "そのフォルダーの {0} はステージモニターが作成したものではありません。別のフォルダーを選んでください。",
  "Port {0} is busy or not allowed ({1}).": "ポート {0} は使用中か許可されていません（{1}）。",
- "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "ステージモニターのページを書き込みました：{0}。タブレットはページを再読み込みすると受け取ります。"
+ "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "ステージモニターのページを書き込みました：{0}。タブレットはページを再読み込みすると受け取ります。",
+ "Preview opened in your browser.": "プレビューをブラウザーで開きました。",
+ "Open the page in your browser, talking to the QLC+ on this computer": "このコンピューターの QLC+ につないで、ブラウザーでページを開きます"
 }

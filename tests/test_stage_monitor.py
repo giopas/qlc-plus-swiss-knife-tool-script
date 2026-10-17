@@ -467,3 +467,14 @@ def test_claude_stage_monitor_tool(tmp_path, monkeypatch):
         srv.t_stage_monitor({"export": True, "folder": str(tmp_path / "elsewhere")})
     assert (shows / "Festival_14fix.qxw").read_bytes() == before
     assert mcp_server.TITLES["stage_monitor"] and "stage_monitor" not in mcp_server.READ_ONLY
+
+
+def test_preview_opens_in_the_system_browser(tmp_path):
+    """The app's own window (pywebview) opens no popups: the server opens the browser."""
+    c, _ = _client(tmp_path)
+    cfg = c.get("/api/stagemon/lists").get_json()["config"]
+    d = c.post("/api/stagemon/preview", json={"config": cfg}).get_json()
+    assert d["url"] == "/api/stagemon/preview" and d["opened"] is False      # tests never start a browser
+    js = open(os.path.join(ROOT, "static", "js", "stagemon.js"), encoding="utf-8").read()
+    body = js[js.index("async function stagemonPreview"):js.index("async function stagemonExport")]
+    assert "window.open(''" not in body and "d.opened" in body

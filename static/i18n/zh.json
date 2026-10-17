@@ -3506,7 +3506,6 @@
  "in the folder.": "在该文件夹中运行。",
  "The show is not changed; only the stage_monitor folder and the settings file are written": "演出不会被修改；只写入 stage_monitor 文件夹和设置文件",
  "Reads the show, writes only the page": "读取演出，只写入页面",
- "Open the page here, talking to the QLC+ on this computer": "在这里打开页面，连接到这台电脑上的 QLC+",
  "👁 Preview": "👁 预览",
  "⤓ Export the page": "⤓ 导出页面",
  "Gone from the show since the last export: {0}": "自上次导出后已从演出中消失：{0}",
@@ -3566,5 +3565,7 @@
  "Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.": "“黑底，白色曲名”和“黑底，灰色曲名”让平板在舞台上尽量暗：只有当前歌曲是亮的。",
  "{0} in that folder was not made by the Stage Monitor. Choose another folder.": "该文件夹中的 {0} 不是舞台监视器生成的。请选择其他文件夹。",
  "Port {0} is busy or not allowed ({1}).": "端口 {0} 已被占用或不允许（{1}）。",
- "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "舞台监视器页面已写入：{0}。平板刷新页面后即可获得。"
+ "Stage Monitor page written: {0}. The tablet gets it when the page is reloaded.": "舞台监视器页面已写入：{0}。平板刷新页面后即可获得。",
+ "Preview opened in your browser.": "已在浏览器中打开预览。",
+ "Open the page in your browser, talking to the QLC+ on this computer": "在浏览器中打开页面，连接到这台电脑上的 QLC+"
 }

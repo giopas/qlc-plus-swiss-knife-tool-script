@@ -68,7 +68,7 @@ Measured in the sandbox: a `NEXT` reaches the page in 35 to 50 ms. When QLC+ qui
 - The settings are kept in `<show>.stage.json` next to the show, without the `_vN` suffix, so every version of the show shares them. Lists are matched by widget ID, and the screen names a list that disappeared and a new one not set up yet.
 - If the status answers stop, the dot turns red and the current song greys out, then the page reconnects after 1 s, 2 s and every 5 s.
 - Control mode: *Previous* and *Next* at the bottom act after a 600 ms press. With several lists the page has tabs and follows the list that just moved.
-- The preview opens in the system browser (from 3.5.1; the app's own window opens no new windows) and gets its own Content-Security-Policy, which lets it reach QLC+ on this computer and nothing else.
+- The preview opens in a browser: from the app's own window Swiss Knife opens the default browser (3.5.1; that window opens no new windows), and from a browser tab the page opens a new tab in the same browser (3.5.2), which also works when Swiss Knife runs on another machine and gets its own Content-Security-Policy, which lets it reach QLC+ on this computer and nothing else.
 - Claude: a `stage_monitor` tool (list, settings, export) and a ready request, *A tablet page for the stage*. Claude may replace the Stage Monitor's own page and settings; everything else it writes is still a new file.
 - Pictures: `tools/make_stage_shots.py`, run by `python3 tools/shots.py stage` and by `all`, takes `19-stage-monitor.png`, `20-stage-page.png`, `21-stage-page-black.png` and `stage-monitor.gif`. A stand-in answers the page's web socket, so no QLC+ is needed. The contact sheet keeps a portrait picture upright.
 
@@ -315,7 +315,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.4.1 | 16 Oct | The seven languages checked screen by screen; `tools/shots.py` and `tools/release_notes.py`. |
 | 3.5.0 | 17 Oct | Stage Monitor: the current cue live on a tablet on stage, black colours for a dark stage, a Claude tool, its pictures in `shots.py`. |
 | 3.5.1 | 17 Oct | Stage Monitor: *Preview* opens in the browser; the app's own window opens no new windows. |
-| 3.5.2 | 17 Oct | The macOS packages that 3.5.1 lacked: a test opened a real browser on the macOS build machines. The preview opens a browser only when the button asks. |
+| 3.5.2 | 17 Oct | The macOS packages that 3.5.1 lacked: a test opened a real browser on the macOS build machines. The preview opens a browser only when the button asks, and from a browser tab it opens a tab in that browser. |
 
 ## 4. Goal and the Pub test
 

@@ -13,6 +13,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Fixed
 - Stage Monitor: the preview opens the browser only when *👁 Preview* asks for it. Before, any request for a preview opened one, including the test, which is why the macOS builds of 3.5.1 stopped. Tests never open a real browser now.
+- Stage Monitor: the server opens your browser only when Swiss Knife runs in its own window, which is always on the same computer as you. In a browser tab the preview opens in a new tab of that browser, so it also lands in front of you when Swiss Knife runs on another machine through an SSH tunnel.
 
 ## [3.5.1] — 2026-10-17 — Preview in the app window
 

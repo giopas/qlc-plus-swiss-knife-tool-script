@@ -480,9 +480,15 @@ def test_preview_opens_in_the_system_browser(tmp_path):
     orig = webbrowser.open
     webbrowser.open = lambda url, *a, **k: opened.append(url) or True       # never a real browser in a test
     try:
+        # browser mode: the page opens a tab in the browser you use, which may be on another computer
+        d = c.post("/api/stagemon/preview", json={"config": cfg, "open": True}).get_json()
+        assert d["opened"] is False and opened == []
+        # the app's own window runs on this computer: the server opens the browser here
+        c.application._webview_window = object()
         d = c.post("/api/stagemon/preview", json={"config": cfg, "open": True}).get_json()
     finally:
         webbrowser.open = orig
+        c.application._webview_window = None
     assert d["opened"] is True and opened == ["http://localhost/api/stagemon/preview"]
     js = open(os.path.join(ROOT, "static", "js", "stagemon.js"), encoding="utf-8").read()
     body = js[js.index("async function stagemonPreview"):js.index("async function stagemonExport")]

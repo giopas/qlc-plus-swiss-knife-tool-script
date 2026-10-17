@@ -235,7 +235,8 @@ function _smLang() {
 async function stagemonPreview() {
   if (!_sm) return;
   try {
-    // the server opens the page in the system browser (the app's window opens no new windows)
+    // In the app's own window the server opens your browser (that window opens no new windows);
+    // in a browser the preview opens in a new tab of that same browser, wherever Swiss Knife runs.
     const r = await fetch('/api/stagemon/preview', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({config: _smCfg(), lang: _smLang(), open: true}),

@@ -16,7 +16,7 @@ show's CueLists, live from QLC+.  The show is only read.
 import os
 import re
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 
 from core import stage_monitor as sm
 from core import workspace
@@ -96,6 +96,11 @@ def config():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+def in_app_window() -> bool:
+    """True when Swiss Knife shows its own native window (not a browser tab)."""
+    return getattr(current_app._get_current_object(), '_webview_window', None) is not None
+
+
 @bp.route('/preview', methods=['POST'])
 def preview_set():
     cls, _name = _lists()
@@ -104,9 +109,11 @@ def preview_set():
     body = request.get_json(silent=True) or {}
     _mem['preview'] = sm.build_page(sm.clean_config(body.get('config')), cls, str(body.get('lang') or 'en'))
     url = request.host_url.rstrip('/') + '/api/stagemon/preview'
-    # Opened by the system browser: the app's own window (pywebview) opens no new windows,
-    # and a real browser is what the tablet runs anyway.
-    if body.get('open') is not True:          # only the page's Preview button asks for a browser
+    # The app's own window (pywebview) opens no new windows, so there the server opens the
+    # system browser: that window always runs on this computer, so the browser opens where
+    # you are looking.  In browser mode the page opens the preview in your own browser
+    # instead, which also works when Swiss Knife runs on another machine (an SSH tunnel).
+    if body.get('open') is not True or not in_app_window():
         return jsonify({'url': '/api/stagemon/preview', 'opened': False})
     try:
         import webbrowser

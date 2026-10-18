@@ -17,7 +17,7 @@ STEP = {"title": "Check the show", "method": "POST", "path": "/api/doctor/apply"
 def _stores(tmp_path, monkeypatch):
     for var, name in (("QSK_VC_TEMPLATES", "tpl"), ("QSK_LOOK_PRESETS", "presets.json"),
                       ("QSK_NOMENCLATURE", "nom"), ("QSK_VC_STYLES", "styles"), ("QSK_PROFILES", "profiles"),
-                      ("QSK_LOOK_PALETTES", "pal.json")):
+                      ("QSK_LOOK_PALETTES", "pal.json"), ("QSK_CABLING_KIT", "kit.json")):
         monkeypatch.setenv(var, str(tmp_path / name))
 
 
@@ -212,7 +212,7 @@ def test_routes_flow(tmp_path):
     _fill()
     c = app.create_app().test_client()
     st = c.get("/api/library/state").get_json()
-    assert len(st["items"]) == 6 and len(st["kinds"]) == 6 and "Palettes" in st["folders"]
+    assert len(st["items"]) == 6 and len(st["kinds"]) == 7 and "Palettes" in st["folders"]
     sel = [{"kind": i["kind"], "name": i["name"]} for i in st["items"] if i["kind"] in ("palette", "vc_style")]
     r = c.post("/api/library/pack", json={"selection": sel, "title": "Two things"})
     assert r.status_code == 200
@@ -239,3 +239,32 @@ def test_routes_flow(tmp_path):
 def test_library_calls_are_not_recorded_in_the_recipe():
     from core import recipe
     assert not recipe.recordable("POST", "/api/library/install")
+
+
+def test_cabling_kit_is_shared_and_merged(tmp_path, monkeypatch):
+    from core.cabling import kit as kit_mod
+    p = kit_mod.presets()
+    item = {x["id"]: x["item"] for x in p}
+    lixada, enttec = dict(item["lixada_1x8"]), dict(item["enttec_usb_pro"])
+    venue = dict(item["splitter_1x4"], owner="venue")
+    kit_mod.save_base({"items": [lixada, enttec, venue]})
+    row = next(i for i in lib.inventory() if i["kind"] == "cabling_kit")
+    assert row["name"] == "My kit" and row["summary"] == "3 item(s)"
+    pack = lib.export_pack([{"kind": "cabling_kit", "name": "My kit"}], "Kit")
+    pv = lib.preview(pack)
+    assert pv["items"][0]["status"] == "same" and pv["items"][0]["summary"] == "2 item(s)"   # venue left out
+    # another computer, with a kit of its own: a copy adds what is missing
+    monkeypatch.setenv("QSK_CABLING_KIT", str(tmp_path / "other.json"))
+    kit_mod.save_base({"items": [dict(item["enttec_usb_pro"])]})
+    assert lib.preview(pack)["items"][0]["status"] == "exists"
+    res = lib.install(pack, default="copy")
+    assert res["copied"] == 1
+    names = sorted(i["name"] for i in kit_mod.load_base()["items"])
+    assert names == sorted([enttec["name"], lixada["name"]])
+    # replace makes it your kit
+    kit_mod.save_base({"items": [dict(item["terminator_3"])]})
+    lib.install(pack, default="replace")
+    assert sorted(i["name"] for i in kit_mod.load_base()["items"]) == sorted([enttec["name"], lixada["name"]])
+    # an empty or broken kit is refused
+    bad = {**pack, "items": [{"kind": "cabling_kit", "name": "X", "data": {"items": [{"kind": "cable"}]}}]}
+    assert lib.preview(bad)["items"][0]["status"] == "invalid"

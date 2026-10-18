@@ -564,3 +564,37 @@ def test_route_exports_and_crew_checklist(tmp_path):
     assert cab["steps"][0].startswith("Computer") and cab["svg"].startswith("<svg")
     pdf = c.post("/api/showbook/export/pdf", json={"presets": ["checklist"]})
     assert pdf.status_code == 200 and pdf.data.startswith(b"%PDF")
+
+
+@pytest.mark.parametrize("show", ["Pub_6fix.qxw", "FloorShow_8fix.qxw", "QuickStart_multiuni.qxw"])
+@pytest.mark.parametrize("mode", ["stand", "foh", "auto"])
+def test_other_shows_plan_in_every_mode(show, mode):
+    """Every fixture lands on a chain, whatever the show and the controller."""
+    path = os.path.join(CORPUS, show)
+    r = rig.read_rig(qxw_io.load_qxw(path, strip_namespace=True).getroot(), load_qxf_defs([CORPUS]), path)
+    p = plan.new_plan(lixada_kit())
+    p["controller"]["mode"] = mode
+    alts = auto.alternatives(p, r)
+    assert alts and alts[0]["best"]
+    ev = alts[0]["evaluation"]
+    for a in alts:
+        if a["name"] != "Node on the network":     # a node output per universe; 64 fixtures do not fit one
+            assert not [i for i in a["evaluation"]["issues"] if i["code"] in ("C004", "C006")], a["name"]
+    assert outputs.plot_svg(ev, alts[0]["plan"], r, show).startswith("<svg")
+    assert outputs.load_in(ev, alts[0]["plan"])
+
+
+def test_a_second_universe_gets_its_own_interface():
+    """One Enttec has one output: universe 2 needs a second one (missing, to buy)."""
+    path = os.path.join(CORPUS, "QuickStart_multiuni.qxw")
+    r = rig.read_rig(qxw_io.load_qxw(path, strip_namespace=True).getroot(), load_qxf_defs([CORPUS]), path)
+    a = next(a for a in auto.alternatives(plan.new_plan(lixada_kit()), r) if a["name"] == "Splitter on stage")
+    srcs = {(c["source"]["item"], c["source"]["port"]) for c in a["plan"]["chains"]}
+    assert len(srcs) == len(a["plan"]["chains"])            # one chain per socket
+    assert any("(universe 2)" in i["text"] and i["code"] == "C005" for i in a["evaluation"]["issues"])
+    # two chains from one socket are reported
+    p = copy.deepcopy(a["plan"])
+    p["chains"].append(copy.deepcopy(p["chains"][-1]))
+    p["chains"][-1]["devices"] = []
+    ev = plan.evaluate(p, r)
+    assert any(i["code"] == "C006" and "one socket" in i["text"] for i in ev["issues"])

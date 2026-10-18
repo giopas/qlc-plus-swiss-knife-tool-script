@@ -44,7 +44,9 @@ KINDS = [
     ("nomenclature", "Naming profile", "How functions are named"),
     ("vc_style", "VC style", "Button size, gaps, fonts"),
     ("show_profile", "Show Profile", "The changes of a show, to do again"),
+    ("cabling_kit", "Cabling kit", "Your DMX kit for the Cabling planner"),
 ]
+KIT_NAME = "My kit"
 _KIND_IDS = [k for k, _l, _d in KINDS]
 _PATH_RE = re.compile(r"^(?:/(?:Users|home|root|private|Volumes|mnt)/|[A-Za-z]:\\)")
 
@@ -133,6 +135,11 @@ def _own(kind: str) -> Dict[str, dict]:
         for fn, p in _read_json_files(prof.profiles_dir(), ".profile.json"):
             if isinstance(p, dict) and p.get("format") == prof.FORMAT:
                 out[str(p.get("name") or fn)] = p
+    elif kind == "cabling_kit":
+        from core.cabling import kit as kit_mod
+        base = kit_mod.load_base()
+        if base["items"]:
+            out[KIT_NAME] = {"name": KIT_NAME, "items": base["items"]}
     else:
         raise LibraryError(f"Unknown kind: {kind}")
     return out
@@ -154,6 +161,8 @@ def _summary(kind: str, d: dict) -> str:
         if d.get("start"):
             bits.append("with its rig")
         return ", ".join(bits)
+    if kind == "cabling_kit":
+        return f"{len(d.get('items') or [])} item(s)"
     return ""
 
 
@@ -309,7 +318,38 @@ def _check_show_profile(d: dict) -> dict:
     return clean
 
 
-_CHECKS = {"vc_template": _check_vc_template, "palette": _check_palette, "look_preset": _check_look_preset,
+def _check_cabling_kit(d: dict) -> dict:
+    from core.cabling import kit as kit_mod
+    if not _size_ok(d, 1024 * 1024):
+        raise LibraryError("the kit is too large")
+    raw = d.get("items")
+    if not isinstance(raw, list) or not raw:
+        raise LibraryError("the kit has no items")
+    inv = kit_mod.clean_inventory({"items": raw})
+    if inv.get("dropped"):
+        raise LibraryError(f"an item of the kit is not valid ({inv['dropped'][0]['reason']})")
+    # a shared kit holds what is owned: venue and borrowed items stay out
+    items = [it for it in inv["items"] if it.get("owner", "mine") == "mine"]
+    if not items:
+        raise LibraryError("the kit has no items of your own")
+    return {"name": d.get("name"), "items": items}
+
+
+def _install_kit(name: str, clean: dict) -> None:
+    """*My kit* replaced is your kit replaced; any other name (or a copy) adds
+    the items you do not have yet (same kind and name) to your kit."""
+    from core.cabling import kit as kit_mod
+    if name.lower() == KIT_NAME.lower():
+        kit_mod.save_base({"items": clean["items"]})
+        return
+    base = kit_mod.load_base()
+    have = {(it["kind"], it["name"].lower()) for it in base["items"]}
+    add = [{k: v for k, v in it.items() if k != "id"} for it in clean["items"]
+           if (it["kind"], it["name"].lower()) not in have]
+    kit_mod.save_base({"items": base["items"] + add})
+
+
+_CHECKS = {"cabling_kit": _check_cabling_kit, "vc_template": _check_vc_template, "palette": _check_palette, "look_preset": _check_look_preset,
            "nomenclature": _check_nomenclature, "vc_style": _check_vc_style, "show_profile": _check_show_profile}
 
 
@@ -450,6 +490,8 @@ def _write_item(kind: str, name: str, clean: dict) -> None:
     elif kind == "show_profile":
         from core import profile as prof
         prof.save({**clean, "name": name})
+    elif kind == "cabling_kit":
+        _install_kit(name, clean)
 
 
 def install(pack: dict, choices: Optional[Dict[str, str]] = None, default: str = "skip") -> dict:

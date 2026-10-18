@@ -34,7 +34,7 @@ import copy
 import json
 import os
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from core.cabling import cables as cables_mod
 from core.cabling import chain as chain_mod
@@ -397,6 +397,19 @@ def evaluate(plan: dict, rig: dict) -> dict:
                 "C012", f"{w['name']}: {nfx} fixtures and {total:g} m on one daisy chain: "
                 "one that fails darkens every one after it.", w["name"],
                 "Use a splitter output for each group."))
+    # one cable per socket: an output starts at most one chain per unit you own
+    starts: Dict[Tuple[str, int], int] = {}
+    for ch in plan["chains"]:
+        k = (ch["source"]["item"], ch["source"]["port"])
+        starts[k] = starts.get(k, 0) + 1
+    for (iid, port), n in sorted(starts.items()):
+        it = items.get(iid)
+        if it is not None and n > max(it["count"], 1):
+            outs = [q for q in it["ports"] if q["role"] in ("out", "thru")]
+            pname = outs[port].get("name") or f"output {port + 1}" if port < len(outs) else f"output {port + 1}"
+            issues.append(chain_mod._issue(
+                "C006", f"{n} chains start from {it['name']}, {pname}: one socket takes one cable.", it["name"],
+                "Move a chain to a free output, or add another interface or splitter."))
     issues += chain_mod.check(walked, inv)
     # interfaces: USB reach, and the show's output
     for it in kit_mod.by_kind(inv, "interface"):

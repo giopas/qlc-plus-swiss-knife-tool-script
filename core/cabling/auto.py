@@ -244,6 +244,28 @@ def _interface_for_uni(rig, uni_id, tonight) -> str:
     return it["id"] if it else _ensure(tonight, "interface", "enttec_usb_pro")
 
 
+def _free_outs(item: dict, used: Dict[Tuple[str, int], int]) -> List[int]:
+    """Outputs of *item* with a socket left (one per unit you own)."""
+    units = max(item.get("count", 0), 1)
+    return [o for o in _outs(item) if used.get((item["id"], o), 0) < units]
+
+
+def _interface_with_room(rig, uni_id, tonight, used) -> str:
+    """The interface for a universe that still has a free output: the one the
+    show names first, then any other; when every one is taken, one more is
+    added from the preset with count 0 (shown as missing)."""
+    first = _interface_for_uni(rig, uni_id, tonight)
+    items = {it["id"]: it for it in tonight["items"]}
+    for iid in [first] + [it["id"] for it in kit_mod.by_kind(tonight, "interface") if it["id"] != first]:
+        if _free_outs(items[iid], used):
+            return iid
+    item = copy.deepcopy(kit_mod.PRESETS["enttec_usb_pro"])
+    item.update(count=0, owner="mine", name=f"{item['name']} (universe {int(uni_id) + 1})")
+    tonight["items"].append(kit_mod.clean_item(item))
+    kit_mod._number(tonight["items"])
+    return tonight["items"][-1]["id"]
+
+
 def splitter_spots(stage: dict, ctl: dict) -> List[Tuple[str, dict]]:
     w, d = stage["w"], stage["d"]
     return [("at the computer", None),
@@ -264,22 +286,29 @@ def _fill(plan: dict, rig: dict, src_item: str, src_point_key: Optional[str], vi
     if via and via_place:
         p["places"][via] = dict(via_place)
     unis = rig_mod.used_universes(rig)
+    used: Dict[Tuple[str, int], int] = {}
     for n, u in enumerate(unis):
         fxs = [f for f in rig["fixtures"] if f["universe"] == u]
-        iface = _interface_for_uni(rig, u, p["tonight"]) if n == 0 or not src_item else src_item
         items = {it["id"]: it for it in p["tonight"]["items"]}
-        use_via = via if (via and n == 0) else None
+        use_via = via if (via and (n == 0 or items[via]["kind"] == "node")) else None
+        if use_via and n == 0 and items[use_via]["kind"] == "splitter":
+            iface = _interface_with_room(rig, u, p["tonight"], used)
+            items = {it["id"]: it for it in p["tonight"]["items"]}
+            port = _free_outs(items[iface], used)[0]
+            used[(iface, port)] = used.get((iface, port), 0) + 1
+            p["chains"].append({"source": {"item": iface, "port": port}, "devices": [{"item": use_via}],
+                                "label": "Feed"})
         if use_via:
-            start = plan_mod.item_point(p, rig, use_via, items)
-            if items[use_via]["kind"] == "splitter":
-                p["chains"].append({"source": {"item": iface, "port": 0}, "devices": [{"item": use_via}],
-                                    "label": "Feed"})
-            outs = _outs(items[use_via])
             source = use_via
+        elif src_item and items.get(src_item, {}).get("kind") == "node":
+            source = src_item
         else:
-            start = plan_mod.item_point(p, rig, iface, items)
-            outs = _outs(items[iface])
-            source = iface
+            source = _interface_with_room(rig, u, p["tonight"], used)
+            items = {it["id"]: it for it in p["tonight"]["items"]}
+        start = plan_mod.item_point(p, rig, source, items)
+        outs = _free_outs(items[source], used) or _outs(items[source])[-1:]
+        if items[source]["kind"] == "node":
+            outs = outs[:1]                        # each output of a node is one universe
         pts = {"S": start}
         for f in fxs:
             pts[f["id"]] = plan_mod._fixture_point(f, rig, trs)
@@ -292,6 +321,7 @@ def _fill(plan: dict, rig: dict, src_item: str, src_point_key: Optional[str], vi
             chains = build_groups("S", fxs, rig["stage"], trs, cost, len(outs), drive)
         for k, (ids, _c) in enumerate(chains):
             port = outs[k] if k < len(outs) else outs[-1]
+            used[(source, port)] = used.get((source, port), 0) + 1
             p["chains"].append({"source": {"item": source, "port": port},
                                 "devices": [{"fixture": i} for i in ids], "label": ""})
     return plan_mod.clean_plan(p)

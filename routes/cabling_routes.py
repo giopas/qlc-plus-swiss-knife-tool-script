@@ -13,6 +13,9 @@ in settings.
     GET  /api/cabling/kit          your kit and the presets
     POST /api/cabling/kit          {kit}: keep your kit (settings)
     POST /api/cabling/kit/item     {item}: check one kit item (the clean item or the error)
+    GET  /api/cabling/fixtures?q=  fixture models of the installed QLC+ library
+    POST /api/cabling/fixture-item {manufacturer, model} or {gh_manufacturer, filename}:
+                                   a kit item for that model (connector from its definition)
 """
 
 import copy
@@ -25,6 +28,7 @@ from flask import Blueprint, Response, jsonify, request
 
 from core import qxw_io, workspace
 from core.cabling import auto as auto_mod
+from core.cabling import fixtures as fixtures_mod
 from core.cabling import kit as kit_mod
 from core.cabling import outputs as out_mod
 from core.cabling import plan as plan_mod
@@ -189,9 +193,17 @@ def save_plan():
     return jsonify({'ok': True, 'saved': True, 'sidecar': os.path.basename(side), 'plan': p})
 
 
+def _kit_where() -> str:
+    """Where your kit is kept, with your home folder as ~."""
+    p = kit_mod.kit_path()
+    home = os.path.expanduser('~')
+    return '~' + p[len(home):] if p.startswith(home + os.sep) else p
+
+
 @bp.route('/kit', methods=['GET'])
 def get_kit():
-    return jsonify({'kit': kit_mod.load_base(), 'presets': kit_mod.presets(),
+    return jsonify({'kit': kit_mod.load_base(), 'presets': kit_mod.presets(), 'path': _kit_where(),
+                    'library': fixtures_mod.has_library(),
                     'connectors': list(kit_mod.CONNECTORS), 'kinds': list(kit_mod.KINDS)})
 
 
@@ -205,7 +217,7 @@ def save_kit():
         kit_mod.save_base(inv)
     except OSError as e:
         return jsonify({'error': _safe_err(e)}), 500
-    return jsonify({'ok': True, 'kit': kit_mod.load_base()})
+    return jsonify({'ok': True, 'kit': kit_mod.load_base(), 'path': _kit_where()})
 
 
 @bp.route('/kit/item', methods=['POST'])
@@ -214,3 +226,34 @@ def check_item():
         return jsonify({'item': kit_mod.clean_item((request.get_json(silent=True) or {}).get('item'))})
     except kit_mod.KitError as e:
         return jsonify({'error': str(e)}), 400
+
+
+@bp.route('/fixtures')
+def search_fixtures():
+    q = (request.args.get('q') or '')[:80]
+    return jsonify({'results': fixtures_mod.search(q), 'library': fixtures_mod.has_library()})
+
+
+@bp.route('/fixture-item', methods=['POST'])
+def fixture_item():
+    """A kit item for a fixture model: from the installed library, or from the
+    QLC+ library on GitHub (the screen says so before it goes on the internet)."""
+    d = request.get_json(silent=True) or {}
+    try:
+        if d.get('gh_manufacturer'):
+            mfg, fn = str(d['gh_manufacturer']).strip(), str(d.get('filename') or '').strip()
+            if not re.match(r'^[\w\s\-\.&]+$', mfg) or not fn.lower().endswith('.qxf') or '/' in fn or '..' in fn:
+                return jsonify({'error': 'Not a QLC+ fixture file.'}), 400
+            from core.gh_fetch import gh_get_raw, GH_RAW_BASE
+            raw = gh_get_raw(f"{GH_RAW_BASE}/{mfg.replace(' ', '%20')}/{fn.replace(' ', '%20')}")
+            item = fixtures_mod.item_from_qxf_bytes(raw)
+        else:
+            mf, md = str(d.get('manufacturer') or '').strip()[:80], str(d.get('model') or '').strip()[:80]
+            if not md:
+                return jsonify({'error': 'A fixture needs its model.'}), 400
+            item = fixtures_mod.item_from_library(mf, md)
+    except kit_mod.KitError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:                       # GitHub unreachable, a broken file
+        return jsonify({'error': _safe_err(e)}), 502
+    return jsonify({'item': item})

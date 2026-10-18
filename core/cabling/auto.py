@@ -266,6 +266,24 @@ def _interface_with_room(rig, uni_id, tonight, used) -> str:
     return tonight["items"][-1]["id"]
 
 
+CLEAR_MM = 700
+
+
+def _clear_of_fixtures(spot: dict, rig: dict) -> dict:
+    """*spot*, moved a little when a fixture (or what hangs above) is on it,
+    so the plot shows both."""
+    pts = [(f["place"]["x"], f["place"]["z"]) for f in rig["fixtures"] if f.get("place")]
+    w, d = rig["stage"]["w"], rig["stage"]["d"]
+    on_stage = 0 <= spot["x"] <= w and 0 <= spot["z"] <= d
+    for dx, dz in ((0, 0), (0, 600), (600, 0), (-600, 0), (600, 600), (-600, 600), (1200, 0), (-1200, 0), (0, 1200)):
+        x, z = spot["x"] + dx, spot["z"] + dz
+        if on_stage:                               # a splitter on the stage stays on it
+            x, z = min(max(x, 150), w - 150), min(max(z, 150), d - 150)
+        if all((x - a) ** 2 + (z - b) ** 2 >= CLEAR_MM ** 2 for a, b in pts):
+            return {**spot, "x": x, "z": z}
+    return spot
+
+
 def splitter_spots(stage: dict, ctl: dict) -> List[Tuple[str, dict]]:
     w, d = stage["w"], stage["d"]
     return [("at the computer", None),
@@ -284,7 +302,7 @@ def _fill(plan: dict, rig: dict, src_item: str, src_point_key: Optional[str], vi
     p["chains"] = []
     items = {it["id"]: it for it in p["tonight"]["items"]}
     if via and via_place:
-        p["places"][via] = dict(via_place)
+        p["places"][via] = _clear_of_fixtures(dict(via_place), rig)
     unis = rig_mod.used_universes(rig)
     used: Dict[Tuple[str, int], int] = {}
     for n, u in enumerate(unis):
@@ -332,8 +350,11 @@ def score(ev: dict) -> float:
     missing = sum(1 for i in ev["issues"] if i["code"] == "C005")
     devices = sum(1 for i in ev["issues"] if i["code"] == "C005" and i.get("where"))
     errors = ev["summary"]["error"]
+    allis = ev["issues"] + [i for c in ev["chains"] for i in c["issues"]]
+    daisy = sum(1 for i in allis if i["code"] == "C012")      # one failing fixture darkens the rest
+    band = sum(l["route"].get("band_m", 0) for c in ev["chains"] for l in c["links"] if l.get("route"))
     return round(t["cable_m"] + 0.5 * t["open_floor_m"] + 4 * t["crossings"] + 3 * t["joined"]
-                 + 15 * missing + 40 * devices + 5 * errors, 2)
+                 + 15 * missing + 40 * devices + 5 * errors + 10 * daisy + 2 * band, 2)
 
 
 def _alt(key, name, p, rig, note="") -> dict:

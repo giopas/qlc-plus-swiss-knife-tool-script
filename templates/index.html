@@ -2247,7 +2247,11 @@
 
     <!-- 1 · Kit -->
     <div class="cb-step" id="cb-step-0">
-      <div class="cb-cols">
+      <div class="cb-seg" id="cb-kit-mode">
+        <button data-v="tonight" onclick="cablingKitMode('tonight')">Tonight's kit · this show</button>
+        <button data-v="mine" onclick="cablingKitMode('mine')">My kit · every show</button>
+      </div>
+      <div class="cb-cols" id="cb-kit-tonight">
         <div class="cb-main">
           <div class="pane-header">Tonight's kit <span class="cb-hint">a copy of your kit, for this show only</span></div>
           <div id="cb-kit"></div>
@@ -2270,10 +2274,56 @@
         <div class="cb-side">
           <div class="pane-header">Found in the show</div>
           <div id="cb-found"></div>
-          <div class="pane-header">Your fixtures</div>
+          <div class="pane-header">Your fixtures <span class="cb-hint">whose each fixture of the show is</span></div>
           <div id="cb-owners" class="cb-card"></div>
         </div>
       </div>
+      <div class="cb-cols" id="cb-kit-mine" hidden>
+        <div class="cb-main">
+          <div class="pane-header">My kit <span class="cb-hint">what you own; every plan starts from a copy of it</span></div>
+          <div class="cb-hint cb-kit-path" id="cb-kit-path"></div>
+          <div id="cb-mykit"></div>
+          <div class="cb-card cb-add">
+            <div class="cb-row"><span>Add</span>
+              <select id="cb-preset-m" class="field-input"></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingAddPreset('m')">+ Add</button></div>
+            <div class="cb-row"><span>Cables</span>
+              <select id="cb-cab-conn-m" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option></select>
+              <input id="cb-cab-len-m" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length in m"> m
+              × <input id="cb-cab-n-m" class="field-input cb-narrow" type="number" min="1" max="99" value="1" title="How many">
+              <select id="cb-cab-type-m" class="field-input cb-narrow"><option value="dmx">DMX 110 Ω</option><option value="mic">Microphone</option></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingAddCable('m')">+ Add</button></div>
+          </div>
+        </div>
+        <div class="cb-side">
+          <div class="pane-header">Add your fixtures</div>
+          <div class="cb-card">
+            <div class="cb-sub-h">From the QLC+ fixture library on this computer</div>
+            <input id="cb-fx-q" class="field-input" type="search" placeholder="Manufacturer or model, e.g. eurolite spot" oninput="cablingFxSearch(this.value)">
+            <div id="cb-fx-res" class="cb-fx-res"></div>
+          </div>
+          <div class="cb-card">
+            <div class="cb-sub-h">From the show in progress</div>
+            <div id="cb-fx-show"></div>
+          </div>
+          <div class="cb-card">
+            <div class="cb-sub-h">From the QLC+ library on GitHub <span class="cb-hint">goes on the internet</span></div>
+            <div class="cb-row"><select id="cb-gh-mfg" class="field-input" onchange="cablingGhFixtures(this.value)"><option value="">Load the manufacturers…</option></select></div>
+            <div class="cb-row"><select id="cb-gh-fx" class="field-input"></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingGhAdd()">+ Add</button></div>
+          </div>
+          <div class="cb-card">
+            <div class="cb-sub-h">By hand</div>
+            <div class="cb-row"><input id="cb-hand-mf" class="field-input" placeholder="Manufacturer">
+              <input id="cb-hand-md" class="field-input" placeholder="Model"></div>
+            <div class="cb-row"><select id="cb-hand-conn" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option><option value="xlr3,xlr5">3- and 5-pin</option></select>
+              × <input id="cb-hand-n" class="field-input cb-narrow" type="number" min="1" max="99" value="1">
+              <button class="btn btn-surface btn-sm" onclick="cablingHandAdd()">+ Add</button></div>
+            <div class="cb-hint">Not sure of the connector? <button class="btn btn-link btn-sm" onclick="cablingAskClaudeModel()">Ask Claude…</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="cb-hint cb-term-help"><b>Termination.</b> The last device on each DMX line needs a 120 Ω terminator across its data pins, or the signal echoes and fixtures flicker. <i>No switch</i>: put a terminator plug in its free DMX out when it is last. <i>Has a termination switch</i>: set it to ON when it is last. <i>Terminates by itself</i>: it has one built in and can only be last. <i>Not sure</i>: the plan assumes it needs a terminator plug.</div>
     </div>
 
     <!-- 2 · Places -->
@@ -2289,6 +2339,8 @@
             <button data-v="extra" onclick="cablingPlaceMode('extra')">+ Fixture found here</button>
           </div>
           <div class="cb-stage" id="cb-places"></div>
+          <div class="cb-legend"><span class="cb-lg cb-lg-band"></span> Band floor: every mesh of Stage &amp; Meshes plus 50 cm. Cables go round it, or along the stage edge (taped); crossing it is reported.
+            <span class="cb-lg cb-lg-fx"></span> Fixture <span class="cb-lg cb-lg-split"></span> Splitter <span class="cb-lg cb-lg-ctl"></span> Computer</div>
         </div>
         <div class="cb-side">
           <div class="pane-header">The computer</div>
@@ -2305,7 +2357,12 @@
               <select id="cb-foh-route" class="field-input" onchange="cablingCtl('route', this.value)">
                 <option value="unknown">Not decided</option><option value="wall">Along a wall</option>
                 <option value="taped">Taped across the floor</option><option value="overhead">Overhead</option></select></div>
-            <label class="cb-check"><input type="radio" name="cb-ctl" value="auto" onchange="cablingCtl('mode', 'auto')"> Let the planner choose (Raspberry Pi)</label>
+            <label class="cb-check"><input type="radio" name="cb-ctl" value="auto" onchange="cablingCtl('mode', 'auto')"> Let the planner choose</label>
+            <div class="cb-row cb-sub cb-hint">the wings, behind the stage or under the truss, wherever the cables are shortest</div>
+            <div class="cb-row"><span>QLC+ runs on</span>
+              <select id="cb-computer" class="field-input" onchange="cablingCtl('computer', this.value)">
+                <option value="laptop">A laptop</option><option value="pi">A Raspberry Pi (needs an outlet)</option>
+                <option value="other">Another computer (needs an outlet)</option></select></div>
             <button class="btn btn-surface btn-sm" onclick="cablingClearPlace('controller')">Put the computer back where the setting says</button>
           </div>
           <div class="pane-header">On the floor</div>

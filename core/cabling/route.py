@@ -14,8 +14,11 @@ What a cell costs a cable:
 * open floor costs 3, so cables keep to runs where they can;
 * the audience floor (in front of the stage) costs 3 and is reported;
 * a **walkway** costs 3 and is reported unless it has a ramp;
-* the **keep-out** (the band floor: meshes plus 50 cm) is closed, except a
-  small way in to a device that stands inside it.
+* the **band floor** (meshes plus 50 cm) costs 10, so cables go round it,
+  but where it covers a stage edge the edge still costs 2: a cable may run
+  along the front lip under the singer's feet, taped, rather than make a
+  long detour.  The metres crossed are reported (away from the two ends:
+  a fixture standing in the band floor has to be reached).
 
 Height: a device has a height (its underside, mm).  Two devices on the same
 **truss** (hung fixtures in a row at one height) are joined along it; any
@@ -36,6 +39,8 @@ BACK = 1000                # mm behind the stage
 FRONT = 1500               # mm in front of the stage (more for front of house)
 RUN_EDGE = 300             # mm from an edge that counts as on the edge run
 COST_RUN, COST_FLOOR, COST_ENTRY = 1.0, 3.0, 20.0
+COST_BAND, COST_BAND_EDGE = 10.0, 2.0
+BAND_FREE_MM = 1000         # band floor this close to an end is not reported
 TRUSS_GAP = 2500           # mm: hung fixtures closer than this, at one height, share a truss
 TRUSS_DZ = 400
 TRUSS_DH = 250
@@ -87,6 +92,7 @@ class Floor:
         self.closed = [False] * n
         self.walk = [None] * n          # index of the walkway a cell is on
         self.audience = [False] * n
+        self.band = [False] * n
         for i in range(self.nx):
             for k in range(self.nz):
                 x, z = self.pos(i, k)
@@ -103,7 +109,9 @@ class Floor:
                     self.audience[c] = True
                 for (a, b, e, f) in self.keep_out:
                     if a <= x <= e and b <= z <= f:
-                        self.closed[c] = True
+                        self.band[c] = True
+                        self.cost[c] = COST_BAND_EDGE if (near_edge or off_edge) else COST_BAND
+                        break
                 for wi, wk in enumerate(self.walkways):
                     if wk["x0"] <= x <= wk["x1"] and wk["z0"] <= z <= wk["z1"]:
                         self.walk[c] = wi
@@ -119,7 +127,7 @@ class Floor:
             z = za + (zb - za) * s / steps
             i, k = self.cell(x, z)
             c = self.idx(i, k)
-            if not self.closed[c]:
+            if not self.closed[c] and not self.band[c]:
                 self.cost[c] = COST_RUN
 
     # grid helpers
@@ -206,9 +214,17 @@ class Floor:
         length = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts, pts[1:]))
         walks = sorted({self.walk[c] for c in cells if self.walk[c] is not None})
         floor_cells = sum(1 for c in cells if self.cost[c] > COST_RUN and not self.audience[c])
+        band_cells = 0
+        for c in cells:
+            if self.band[c]:
+                x, z = self.pos(c % self.nx, c // self.nx)
+                if min(math.hypot(x - start_xz[0], z - start_xz[1]),
+                       math.hypot(x - end_xz[0], z - end_xz[1])) > BAND_FREE_MM:
+                    band_cells += 1
         return {"length": round(length), "points": [[round(p[0]), round(p[1])] for p in pts],
                 "walkways": walks, "audience": any(self.audience[c] for c in cells),
-                "open_floor_m": round(floor_cells * CELL / 1000, 2)}
+                "open_floor_m": round(floor_cells * CELL / 1000, 2),
+                "band_m": round(band_cells * CELL / 1000, 2)}
 
 
 def _simplify(pts):
@@ -249,13 +265,13 @@ class Router:
             climb = abs(a.get("h", 0) - b.get("h", 0))
             return {"length": round(flat + climb), "flat": round(flat), "climb": round(climb),
                     "points": [[a["x"], a["z"]], [b["x"], b["z"]]], "walkways": [],
-                    "audience": False, "open_floor_m": 0.0, "truss": a["truss"]}
+                    "audience": False, "open_floor_m": 0.0, "band_m": 0.0, "truss": a["truss"]}
         tree = self._tree(a["x"], a["z"])
         cells = self.floor.path(tree, b["x"], b["z"])
         if cells is None:
             flat = math.hypot(b["x"] - a["x"], b["z"] - a["z"]) * 1.5
             d = {"length": round(flat), "points": [[a["x"], a["z"]], [b["x"], b["z"]]], "walkways": [],
-                 "audience": False, "open_floor_m": round(flat / 1000, 2), "estimated": True}
+                 "audience": False, "open_floor_m": round(flat / 1000, 2), "band_m": 0.0, "estimated": True}
         else:
             d = self.floor.describe(cells, (a["x"], a["z"]), (b["x"], b["z"]))
         climb = _climb(a.get("h", 0)) + _climb(b.get("h", 0))

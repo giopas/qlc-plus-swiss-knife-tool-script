@@ -96,6 +96,9 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     sh.append(("rect", 0, 0, st["w"], st["d"], "#f1f5f9", "#475569", None))
     for k in rig["keep_out"]:
         sh.append(("rect", k["x0"], k["z0"], k["x1"], k["z1"], "#fee2e2", "#ef4444", (4, 3)))
+    for k in rig["keep_out"]:                      # names on top of every box
+        if k.get("label"):
+            sh.append(("text", k["x0"] + 80, k["z0"] + 170, k["label"][:24], 110, "#b91c1c", "start"))
     for w in plan.get("walkways", []):
         sh.append(("rect", w["x0"], w["z0"], w["x1"], w["z1"], "#dbeafe", "#3b82f6", (2, 2)))
     for t in ev.get("trusses", []):
@@ -131,9 +134,9 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     for iid, p in sorted(plan.get("places", {}).items()):
         if iid == "controller":
             continue
-        sh.append(("rect", p["x"] - 260, p["z"] - 160, p["x"] + 260, p["z"] + 160, "#ccfbf1", "#0f766e", None))
+        sh.append(("rect", p["x"] - 180, p["z"] - 110, p["x"] + 180, p["z"] + 110, "#ccfbf1", "#0f766e", None))
         name = next((it["name"] for it in plan["tonight"]["items"] if it["id"] == iid), iid)
-        sh.append(("text", p["x"], p["z"] + 340, name.split(" ")[0], 120, "#0f766e", "middle"))
+        sh.append(("text", p["x"], p["z"] + 300, name.split(" ")[0], 120, "#0f766e", "middle"))
     xs = [s[1] for s in sh if s[0] in ("rect", "circle", "text")] + [s[3] for s in sh if s[0] == "rect"]
     zs = [s[2] for s in sh if s[0] in ("rect", "circle", "text")] + [s[4] for s in sh if s[0] == "rect"]
     for s in sh:
@@ -141,7 +144,13 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
             xs += [p[0] for p in s[1]]
             zs += [p[1] for p in s[1]]
     pad = 500
-    return sh, (min(xs) - pad, min(zs) - pad, max(xs) + pad, max(zs) + pad)
+    x0, z0, x1, z1 = min(xs) - pad, min(zs) - pad, max(xs) + pad, max(zs) + pad
+    if rig["keep_out"]:                            # the legend, bottom right
+        z1 += 250
+        sh.append(("rect", x1 - 3700, z1 - 330, x1 - 3450, z1 - 170, "#fee2e2", "#ef4444", (4, 3)))
+        sh.append(("text", x1 - 3380, z1 - 190, "Band floor (meshes + 50 cm): cables go round it", 120,
+                   "#475569", "start"))
+    return sh, (x0, z0, x1, z1)
 
 
 def _esc(s) -> str:

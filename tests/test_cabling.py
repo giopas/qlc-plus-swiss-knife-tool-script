@@ -236,7 +236,8 @@ def test_plan_round_trip_is_deterministic(tmp_path):
 
 def test_clean_controller():
     c = plan.clean_controller({"mode": "foh", "distance_m": "15", "route": "wall"})
-    assert c == {"mode": "foh", "side": "stage-left", "distance_m": 15.0, "route": "wall"}
+    assert c == {"mode": "foh", "side": "stage-left", "distance_m": 15.0, "route": "wall", "computer": "laptop"}
+    assert plan.clean_controller({"computer": "pi"})["computer"] == "pi"
     assert plan.clean_controller({"mode": "space", "distance_m": -1})["mode"] == "stand"
 
 
@@ -459,7 +460,26 @@ def test_planner_chooses_the_computer(festival):
     alts = _alts(festival, "auto")
     assert len(alts) == 3 and all(a["name"].startswith("Computer ") for a in alts)
     assert all("controller" in a["plan"]["places"] for a in alts)
-    assert any(i["code"] == "C016" for i in alts[0]["evaluation"]["issues"])   # no outlet marked
+    assert not any(i["code"] == "C016" for i in alts[0]["evaluation"]["issues"])   # a laptop needs no outlet
+    p = plan.new_plan(lixada_kit())
+    p["controller"].update(mode="auto", computer="pi")
+    pi = auto.alternatives(p, festival)
+    assert any(i["code"] == "C016" and "Raspberry Pi" in i["text"] for i in pi[0]["evaluation"]["issues"])
+    p["controller"]["mode"] = "stand"                    # a Pi where you stand needs an outlet too
+    assert any(i["code"] == "C016" for i in plan.evaluate(pi[0]["plan"] | {"controller": p["controller"]},
+                                                          festival)["issues"])
+
+
+def test_band_floor_is_crossed_at_a_cost_not_walled(festival):
+    """A fixture in the band floor is reached along the stage edge; metres
+    crossed in the middle of the band floor are reported (C007)."""
+    from core.cabling import route
+    fl = route.Floor({"w": 6000, "d": 4000}, [(-500, 2500, 6500, 4500)])    # the whole front is band floor
+    r = route.Router(fl).hop({"x": 500, "z": 3800, "h": 0}, {"x": 5500, "z": 3800, "h": 0})
+    assert r["length"] < 6500                            # along the front lip, no detour round the back
+    assert all(abs(p[1] - 3800) <= 400 or p[1] >= 3700 for p in r["points"])
+    far = route.Router(fl).hop({"x": 3000, "z": 1000, "h": 0}, {"x": 3000, "z": 5000, "h": 0})
+    assert far["band_m"] >= 1.0
 
 
 def test_route_auto(tmp_path):
@@ -598,3 +618,24 @@ def test_a_second_universe_gets_its_own_interface():
     p["chains"][-1]["devices"] = []
     ev = plan.evaluate(p, r)
     assert any(i["code"] == "C006" and "one socket" in i["text"] for i in ev["issues"])
+
+
+def test_my_kit_fixture_search_and_item(tmp_path, monkeypatch):
+    """My kit: fixture models from the QLC+ library on this computer, with
+    their connector from the definition; where the kit is kept."""
+    monkeypatch.setenv("QLCPLUS_FIXTURES", CORPUS)
+    from core.cabling import fixtures as fx_mod
+    fx_mod._names.clear()
+    import app
+    c = app.create_app().test_client()
+    k = c.get("/api/cabling/kit").get_json()
+    assert k["path"] and k["library"] is True
+    res = c.get("/api/cabling/fixtures?q=eurolite spot").get_json()["results"]
+    assert res == [{"manufacturer": "Eurolite", "model": "LED 4C-12 Silent Slim Spot"}]
+    it = c.post("/api/cabling/fixture-item", json=res[0]).get_json()["item"]
+    assert it["kind"] == "fixture" and it["sources"]["connector"] == "QLC+ definition" and it["power"] == "55 W"
+    unknown = c.post("/api/cabling/fixture-item", json={"manufacturer": "Nobody", "model": "X1"}).get_json()["item"]
+    assert unknown["sources"]["connector"] == "guess"
+    assert c.post("/api/cabling/fixture-item", json={"gh_manufacturer": "../x", "filename": "a.qxf"}).status_code == 400
+    saved = c.post("/api/cabling/kit", json={"kit": {"items": [it]}}).get_json()
+    assert saved["path"] == k["path"] and saved["kit"]["items"][0]["model"] == "LED 4C-12 Silent Slim Spot"

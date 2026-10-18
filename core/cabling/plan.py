@@ -47,9 +47,12 @@ PLAN_VERSION = 1
 CONTROLLER_MODES = ("stand", "foh", "auto")
 SIDES = ("stage-left", "stage-right", "back", "front")
 ROUTES = ("wall", "taped", "overhead", "unknown")
+COMPUTERS = ("laptop", "pi", "other")      # what runs QLC+: a Pi or a desktop needs an outlet
 
-DEFAULT_CONTROLLER = {"mode": "stand", "side": "stage-left", "distance_m": 12.0, "route": "unknown"}
+DEFAULT_CONTROLLER = {"mode": "stand", "side": "stage-left", "distance_m": 12.0, "route": "unknown",
+                      "computer": "laptop"}
 USB_MAX_MM = 5000
+BAND_REPORT_M = 1.0              # m of band floor crossed before it is reported
 LONG_CHAIN_M = 300
 DAISY_FIXTURES, DAISY_M = 8, 30
 OFFSTAGE = 1000             # mm beside / behind / in front of the stage for the controller
@@ -75,6 +78,8 @@ def clean_controller(c) -> dict:
         pass
     if c.get("route") in ROUTES:
         out["route"] = c["route"]
+    if c.get("computer") in COMPUTERS:
+        out["computer"] = c["computer"]
     return out
 
 
@@ -372,8 +377,12 @@ def evaluate(plan: dict, rig: dict) -> dict:
                     w["issues"].append(chain_mod._issue("C010", f"{link['from']} → {link['to']}: a microphone "
                                                         "cable is used for DMX.", link["to"],
                                                         "Use a 110 Ω DMX cable."))
-            total += sum(c["length"] for c in link.get("cables", []))
+            total += sum(c["length"] for c in link.get("cables", [])) + (link.get("missing_m") or 0)
             r = link["route"]
+            if r.get("band_m", 0) >= BAND_REPORT_M:
+                w["issues"].append(chain_mod._issue(
+                    "C007", f"{link['from']} → {link['to']} crosses {r['band_m']:g} m of the band floor.",
+                    link["to"], "Tape it down where the band stands, or move the device or the splitter."))
             for wi in r.get("walkways", []):
                 wk = plan["walkways"][wi]
                 if not wk["ramp"]:
@@ -420,10 +429,11 @@ def evaluate(plan: dict, rig: dict) -> dict:
                 issues.append(chain_mod._issue(
                     "C016", f"{it['name']} is {dist / 1000:.1f} m from the computer: USB reaches 5 m.",
                     it["name"], "Keep the interface by the computer and run DMX instead."))
-    if plan["controller"]["mode"] == "auto":
+    if plan["controller"]["computer"] != "laptop":
         near = [o for o in plan["outlets"] if ((o["x"] - ctl["x"]) ** 2 + (o["z"] - ctl["z"]) ** 2) ** 0.5 <= 3000]
         if not near:
-            issues.append(chain_mod._issue("C016", "No power outlet marked within 3 m of the controller.",
+            issues.append(chain_mod._issue("C016", ("No power outlet marked within 3 m of the "
+                                           + ("Raspberry Pi." if plan["controller"]["computer"] == "pi" else "computer.")),
                                            fix="Mark the outlets on Places, or bring an extension."))
     issues += _universe_checks(plan, rig, fx, items)
     used_dev = sorted({c["source"]["item"] for c in plan["chains"]}

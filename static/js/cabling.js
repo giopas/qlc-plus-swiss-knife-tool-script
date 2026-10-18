@@ -21,8 +21,11 @@ const CB_OWNERS = { mine: 'Mine', borrowed: 'Borrowed', venue: 'Venue' };
 const CB_CONN = { xlr3: '3-pin', xlr5: '5-pin', rj45: 'RJ45', usb: 'USB', wireless: 'radio', jack35: 'jack' };
 const CB_KIND = { interface: 'Interface', splitter: 'Splitter', node: 'Node', wireless_tx: 'Wireless TX',
   wireless_rx: 'Wireless RX', cable: 'Cable', adapter: 'Adapter', terminator: 'Terminator', fixture: 'Fixture' };
-const CB_TERM = { none: 'No switch: needs a terminator', switch: 'Has a termination switch',
-  auto: 'Terminates itself', unknown: 'Termination unknown' };
+const CB_TERM = { none: 'No switch: needs a terminator plug', switch: 'Has a termination switch',
+  auto: 'Terminates by itself (built in)', unknown: 'Not sure' };
+let _cbBase = null;           // /api/cabling/kit: your kit (every show), where it is kept, presets
+let _cbKitModeV = 'tonight';  // Kit step: tonight's kit or my kit
+let _cbBaseT = null, _cbFxT = null;
 
 const _cbE = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const _cbT = (s, ...v) => (typeof t === 'function' ? t(s, ...v) : s.replace(/\{(\d+)\}/g, (_x, i) => v[+i] ?? ''));
@@ -46,6 +49,7 @@ async function cablingLoad() {
     const d = await r.json();
     _cb = r.ok ? d : null;
   } catch (e) { _cb = null; }
+  try { _cbBase = await (await fetch('/api/cabling/kit')).json(); } catch (e) { _cbBase = null; }
   _cbRender();
 }
 
@@ -112,14 +116,19 @@ function _cbRender() {
       next.textContent = typeof stepNextLabel === 'function' ? stepNextLabel(CB_STEPS[_cbStepN + 1]) : 'Next ›';
   }
   _cbPosition();
-  if (!_cb) {
-    const k = document.getElementById('cb-kit');
-    if (k) k.innerHTML = `<div class="porter-placeholder">${_cbE(_cbT('Open a workspace with fixtures to plan its cables.'))}</div>`;
+  if (!_cb) {                                  // no show: only your kit can be edited
+    _cbStepN = 0;
+    CB_STEPS.forEach((_s, i) => { const el = document.getElementById('cb-step-' + i); if (el) el.hidden = i !== 0; });
+    if (next) next.hidden = true;
+    _cbKitModeV = 'mine';
+    const s = document.getElementById('cb-summary');
+    if (s) s.innerHTML = `<span class="doc-chip">${_cbE(_cbT('Open a show to plan its cables; your kit can be edited now.'))}</span>`;
     if (typeof setOutcome === 'function') setOutcome('cabling', '');
+    _cbKitView();
     return;
   }
   _cbSummary();
-  if (_cbStepN === 0) _cbKit();
+  if (_cbStepN === 0) _cbKitView();
   if (_cbStepN === 1) _cbPlaces();
   if (_cbStepN === 2) _cbPlan();
   if (_cbStepN === 3) _cbCheck();
@@ -154,31 +163,53 @@ function _cbItemText(it) {
           outs.length && `${outs.length} × ${_cbT('out')} ${CB_CONN[outs[0].conn]}${_cbG(outs[0].gender)}`].filter(Boolean).join(' · ');
 }
 
-function _cbKit() {
-  const inv = _cb.plan.tonight.items;
-  const el = document.getElementById('cb-kit');
+function _cbTable(inv, w) {
   const order = Object.keys(CB_KIND);
   const rows = inv.map((it, i) => ({ it, i })).sort((a, b) => order.indexOf(a.it.kind) - order.indexOf(b.it.kind)
     || (a.it.length || 0) - (b.it.length || 0) || a.it.name.localeCompare(b.it.name));
-  el.innerHTML = inv.length ? `<table class="cb-table"><thead><tr><th>${_cbE(_cbT('Item'))}</th><th>${_cbE(_cbT('Sockets'))}</th>
-    <th>${_cbE(_cbT('Count'))}</th><th>${_cbE(_cbT('Whose'))}</th><th></th></tr></thead><tbody>` + rows.map(({ it, i }) => `
+  const mine = w === 'm';
+  return `<table class="cb-table"><thead><tr><th>${_cbE(_cbT('Item'))}</th><th>${_cbE(_cbT('Sockets'))}</th>
+    <th>${_cbE(_cbT('Count'))}</th>${mine ? '' : `<th>${_cbE(_cbT('Whose'))}</th>`}<th></th></tr></thead><tbody>` + rows.map(({ it, i }) => `
     <tr class="${it.count < 1 ? 'cb-zero' : ''}">
       <td><span class="cb-kind">${_cbE(_cbT(CB_KIND[it.kind]))}</span> <span data-i18n="off">${_cbE(it.name)}</span>
-        ${['splitter', 'node', 'fixture'].includes(it.kind) ? `<select class="field-input cb-term" onchange="cablingItem(${i}, 'termination', this.value)">${Object.entries(CB_TERM).map(([k, v]) =>
+        ${['splitter', 'node', 'fixture'].includes(it.kind) ? `<select class="field-input cb-term" title="${_cbE(_cbT('How the end of a DMX line is terminated at this device (see Termination below)'))}" onchange="cablingItem(${i}, 'termination', this.value, '${w}')">${Object.entries(CB_TERM).map(([k, v]) =>
           `<option value="${k}"${(it.termination || 'unknown') === k ? ' selected' : ''}>${_cbE(_cbT(v))}</option>`).join('')}</select>` : ''}</td>
-      <td class="cb-dim">${_cbE(_cbItemText(it))}</td>
-      <td class="cb-count"><button class="btn btn-surface btn-sm" onclick="cablingItem(${i}, 'count', ${it.count - 1})" aria-label="${_cbE(_cbT('One less'))}">−</button>
-        <span>${it.count}</span><button class="btn btn-surface btn-sm" onclick="cablingItem(${i}, 'count', ${it.count + 1})" aria-label="${_cbE(_cbT('One more'))}">+</button></td>
-      <td><select class="field-input cb-narrow" onchange="cablingItem(${i}, 'owner', this.value)">${Object.entries(CB_OWNERS).map(([k, v]) =>
-          `<option value="${k}"${(it.owner || 'mine') === k ? ' selected' : ''}>${_cbE(_cbT(v))}</option>`).join('')}</select></td>
-      <td><button class="btn btn-surface btn-sm" onclick="cablingItemRemove(${i})" title="${_cbE(_cbT('Remove from tonight'))}">✕</button></td>
-    </tr>`).join('') + '</tbody></table>'
-    : `<div class="porter-placeholder">${_cbE(_cbT('Tonight\'s kit is empty. Add your interface, splitter, cables, adapters and terminators below, then keep it as your kit.'))}</div>`;
-  const sel = document.getElementById('cb-preset');
+      <td class="cb-dim">${_cbE(_cbItemText(it))}${it.kind === 'fixture' && it.power ? ' · ' + _cbE(it.power) : ''}</td>
+      <td class="cb-count"><button class="btn btn-surface btn-sm" onclick="cablingItem(${i}, 'count', ${it.count - 1}, '${w}')" aria-label="${_cbE(_cbT('One less'))}">−</button>
+        <span>${it.count}</span><button class="btn btn-surface btn-sm" onclick="cablingItem(${i}, 'count', ${it.count + 1}, '${w}')" aria-label="${_cbE(_cbT('One more'))}">+</button></td>
+      ${mine ? '' : `<td><select class="field-input cb-narrow" onchange="cablingItem(${i}, 'owner', this.value)">${Object.entries(CB_OWNERS).map(([k, v]) =>
+          `<option value="${k}"${(it.owner || 'mine') === k ? ' selected' : ''}>${_cbE(_cbT(v))}</option>`).join('')}</select></td>`}
+      <td><button class="btn btn-surface btn-sm" onclick="cablingItemRemove(${i}, '${w}')" title="${_cbE(_cbT(mine ? 'Remove from my kit' : 'Remove from tonight'))}">✕</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+function _cbPresetOptions(sel, presets) {
   if (sel && !sel.options.length) {
-    sel.innerHTML = (_cb.presets || []).filter(p => p.item.kind !== 'cable').map(p =>
+    sel.innerHTML = (presets || []).filter(p => p.item.kind !== 'cable').map(p =>
       `<option value="${_cbE(p.id)}">${_cbE(_cbT(CB_KIND[p.item.kind]))}: ${_cbE(p.item.name)}</option>`).join('');
   }
+}
+
+function cablingKitMode(m) {
+  if (m === 'tonight' && !_cb) { setStatus(_cbT('Open a show first: tonight\'s kit belongs to a show.'), 'warn'); return; }
+  _cbKitModeV = m;
+  _cbKitView();
+}
+
+function _cbKitView() {
+  document.querySelectorAll('#cb-kit-mode button').forEach(bt => bt.classList.toggle('on', bt.dataset.v === _cbKitModeV));
+  const t = document.getElementById('cb-kit-tonight'), m = document.getElementById('cb-kit-mine');
+  if (t) t.hidden = _cbKitModeV !== 'tonight';
+  if (m) m.hidden = _cbKitModeV !== 'mine';
+  if (_cbKitModeV === 'mine') _cbMyKit(); else _cbKit();
+}
+
+function _cbKit() {
+  const inv = _cb.plan.tonight.items;
+  const el = document.getElementById('cb-kit');
+  el.innerHTML = inv.length ? _cbTable(inv, 't')
+    : `<div class="porter-placeholder">${_cbE(_cbT('Tonight\'s kit is empty. Add your interface, splitter, cables, adapters and terminators below, then keep it as your kit.'))}</div>`;
+  _cbPresetOptions(document.getElementById('cb-preset'), _cb.presets);
   // found in the show
   const f = document.getElementById('cb-found');
   f.innerHTML = (_cb.found || []).length ? _cb.found.map((g, k) => `<div class="cb-card cb-found">
@@ -198,21 +229,22 @@ function _cbKit() {
   document.getElementById('cb-owners').innerHTML = `<div class="cb-dim">${_cbE(_cbT('Mine {0} · borrowed {1} · venue {2} · not in the kit {3}',
     counts.mine, counts.borrowed, counts.venue, counts.none))}</div>` + _cb.evaluation.fixtures.map(x => `
     <div class="cb-row cb-fx"><span data-i18n="off" title="${_cbE(x.manufacturer + ' ' + x.model)}">${_cbE(x.name)}</span>
-      <select class="field-input cb-narrow" onchange="cablingOwner('${x.id}', this.value)">
-        <option value=""${!_cb.plan.owners[x.id] ? ' selected' : ''}>${_cbE(_cbT('From the kit'))}</option>
+      <select class="field-input cb-narrow" onchange="cablingOwner('${x.id}', this.value)" title="${_cbE(_cbT('Matched with your kit by manufacturer and model; choose to say otherwise'))}">
+        <option value=""${!_cb.plan.owners[x.id] ? ' selected' : ''}>${_cbE(x.item_id && !_cb.plan.owners[x.id] ? _cbT('{0} (in my kit)', _cbT(CB_OWNERS[x.owner] || 'Mine')) : _cbT('Not in my kit'))}</option>
         ${Object.entries(CB_OWNERS).map(([k, v]) => `<option value="${k}"${_cb.plan.owners[x.id] === k ? ' selected' : ''}>${_cbE(_cbT(v))}</option>`).join('')}
       </select></div>`).join('');
 }
 
-function cablingItem(i, key, value) {
-  const it = _cb.plan.tonight.items[i];
+function cablingItem(i, key, value, w) {
+  const it = (w === 'm' ? _cbBase.kit.items : _cb.plan.tonight.items)[i];
   if (!it) return;
   if (key === 'count') value = Math.max(0, Math.min(999, value));
   it[key] = value;
-  _cbChanged();
+  if (w === 'm') _cbBaseChanged(); else _cbChanged();
 }
 
-function cablingItemRemove(i) {
+function cablingItemRemove(i, w) {
+  if (w === 'm') { _cbBase.kit.items.splice(i, 1); _cbBaseChanged(); return; }
   const it = _cb.plan.tonight.items[i];
   if (!it) return;
   _cb.plan.tonight.items.splice(i, 1);
@@ -222,35 +254,170 @@ function cablingItemRemove(i) {
   _cbChanged();
 }
 
-function _cbNewId(kind) {
-  const used = new Set(_cb.plan.tonight.items.map(x => x.id));
+function _cbNewId(kind, w) {
+  const used = new Set((w === 'm' ? _cbBase.kit.items : _cb.plan.tonight.items).map(x => x.id));
   let n = 1;
   while (used.has(kind + n)) n += 1;
   return kind + n;
 }
 
-function cablingAddPreset() {
-  const id = document.getElementById('cb-preset').value;
-  const p = (_cb.presets || []).find(x => x.id === id);
-  if (!p) return;
-  const same = _cb.plan.tonight.items.find(x => x.name === p.item.name && x.kind === p.item.kind);
-  if (same) same.count += 1;
-  else _cb.plan.tonight.items.push({ ...JSON.parse(JSON.stringify(p.item)), id: _cbNewId(p.item.kind), owner: 'mine' });
-  _cbChanged();
+function _cbAddItem(item, w, n = 1) {
+  const items = w === 'm' ? _cbBase.kit.items : _cb.plan.tonight.items;
+  const same = items.find(x => x.name === item.name && x.kind === item.kind);
+  if (same) same.count += n;
+  else {
+    const it = { ...JSON.parse(JSON.stringify(item)), id: _cbNewId(item.kind, w), count: n };
+    if (w !== 'm') it.owner = 'mine'; else delete it.owner;
+    items.push(it);
+  }
+  if (w === 'm') _cbBaseChanged(); else _cbChanged();
 }
 
-function cablingAddCable() {
-  const conn = document.getElementById('cb-cab-conn').value;
-  const length = Math.round(parseFloat(document.getElementById('cb-cab-len').value) * 100) / 100;
-  const n = parseInt(document.getElementById('cb-cab-n').value, 10) || 1;
-  const type = document.getElementById('cb-cab-type').value;
+function cablingAddPreset(w) {
+  const id = document.getElementById(w === 'm' ? 'cb-preset-m' : 'cb-preset').value;
+  const p = ((w === 'm' ? _cbBase : _cb).presets || []).find(x => x.id === id);
+  if (p) _cbAddItem(p.item, w);
+}
+
+function cablingAddCable(w) {
+  const g = id => document.getElementById(id + (w === 'm' ? '-m' : ''));
+  const conn = g('cb-cab-conn').value;
+  const length = Math.round(parseFloat(g('cb-cab-len').value) * 100) / 100;
+  const n = parseInt(g('cb-cab-n').value, 10) || 1;
+  const type = g('cb-cab-type').value;
   if (!(length >= 0.1 && length <= 500)) { setStatus(_cbT('A cable is 0.1 to 500 m long.'), 'warn'); return; }
   const name = `${CB_CONN[conn]} ${type === 'mic' ? 'mic' : 'DMX'} cable ${length} m`;
-  const same = _cb.plan.tonight.items.find(x => x.kind === 'cable' && x.a.conn === conn && x.length === length && (x.type || 'dmx') === type);
-  if (same) same.count += n;
-  else _cb.plan.tonight.items.push({ kind: 'cable', id: _cbNewId('cable'), name, a: { conn, gender: 'm' }, b: { conn, gender: 'f' },
-    length, type, count: n, owner: 'mine' });
-  _cbChanged();
+  _cbAddItem({ kind: 'cable', name, a: { conn, gender: 'm' }, b: { conn, gender: 'f' }, length, type }, w, n);
+}
+
+// ── my kit (every show) ──────────────────────────────────────────────────────
+function _cbMyKit() {
+  const el = document.getElementById('cb-mykit');
+  if (!el) return;
+  if (!_cbBase || !_cbBase.kit) { el.innerHTML = `<div class="porter-placeholder">${_cbE(_cbT('Your kit could not be read.'))}</div>`; return; }
+  const inv = _cbBase.kit.items;
+  el.innerHTML = inv.length ? _cbTable(inv, 'm')
+    : `<div class="porter-placeholder">${_cbE(_cbT('Your kit is empty. Add what you own: the interface, splitters, cables, adapters, terminators and your fixtures.'))}</div>`;
+  document.getElementById('cb-kit-path').textContent = _cbT('Kept in {0}, saved as you change it. Share it as a file through the Library (Cabling kit).', _cbBase.path || '');
+  _cbPresetOptions(document.getElementById('cb-preset-m'), _cbBase.presets);
+  const res = document.getElementById('cb-fx-res');
+  if (res && !res.innerHTML && _cbBase.library === false)
+    res.innerHTML = `<div class="cb-dim">${_cbE(_cbT('QLC+\'s fixture library was not found on this computer: use GitHub or By hand.'))}</div>`;
+  const sh = document.getElementById('cb-fx-show');
+  if (sh) {
+    const groups = _cbShowModels();
+    sh.innerHTML = !_cb ? `<div class="cb-dim">${_cbE(_cbT('Open a show to take its fixtures.'))}</div>`
+      : groups.map((g, k) => `<div class="cb-row"><span data-i18n="off">${g.n} × ${_cbE(g.manufacturer)} ${_cbE(g.model)}</span>
+          <button class="btn btn-surface btn-sm" onclick="cablingShowAdd(${k})">+ ${_cbE(_cbT('Add'))}</button></div>`).join('')
+        || `<div class="cb-dim">${_cbE(_cbT('The show has no fixtures.'))}</div>`;
+  }
+  const gh = document.getElementById('cb-gh-mfg');
+  if (gh && gh.options.length === 1 && gh.options[0].value === '')
+    gh.innerHTML = `<option value="">${_cbE(_cbT('Manufacturer…'))}</option><option value="__load">${_cbE(_cbT('Load the list from github.com…'))}</option>`;
+}
+
+function _cbBaseChanged() {
+  _cbMyKit();
+  clearTimeout(_cbBaseT);
+  _cbBaseT = setTimeout(_cbBaseSave, 500);
+}
+
+async function _cbBaseSave() {
+  const r = await fetch('/api/cabling/kit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kit: { items: _cbBase.kit.items } }) });
+  const d = await r.json();
+  if (!r.ok) {
+    setStatus((d.error ? _cbT(d.error) : _cbT('Could not keep your kit.'))
+      + (d.dropped ? ' ' + d.dropped.map(x => x.reason).join(' ') : ''), 'error');
+    return;
+  }
+  _cbBase.kit = d.kit;
+  _cbBase.path = d.path;
+  if (_cb) _cb.base = d.kit;
+  _cbMyKit();
+}
+
+function _cbShowModels() {
+  if (!_cb) return [];
+  const by = {};
+  _cb.rig.fixtures.forEach(f => {
+    const k = (f.manufacturer + '|' + f.model).toLowerCase();
+    (by[k] = by[k] || { manufacturer: f.manufacturer, model: f.model, conns: f.conns, known: f.connector_known, n: 0 }).n += 1;
+  });
+  return Object.values(by).sort((a, b) => (a.manufacturer + a.model).localeCompare(b.manufacturer + b.model));
+}
+
+function _cbFixtureItem(mf, md, conns, source) {
+  const ports = conns.map(c => ({ role: 'in', conn: c, gender: 'm', name: 'DMX IN' }))
+    .concat(conns.map(c => ({ role: 'thru', conn: c, gender: 'f', name: 'DMX THRU' })));
+  return { kind: 'fixture', name: `${mf} ${md}`.trim(), manufacturer: mf, model: md, ports, termination: 'unknown',
+    sources: { connector: source } };
+}
+
+function cablingShowAdd(k) {
+  const g = _cbShowModels()[k];
+  if (g) _cbAddItem(_cbFixtureItem(g.manufacturer, g.model, g.conns, g.known ? 'QLC+ definition' : 'guess'), 'm', g.n);
+}
+
+function cablingFxSearch(q) {
+  clearTimeout(_cbFxT);
+  _cbFxT = setTimeout(async () => {
+    const res = document.getElementById('cb-fx-res');
+    if (!q.trim()) { res.innerHTML = ''; return; }
+    const d = await _apiJson('/api/cabling/fixtures?q=' + encodeURIComponent(q));
+    const list = d.results || [];
+    res.innerHTML = list.length ? list.map(x => `<div class="cb-row"><span data-i18n="off">${_cbE(x.manufacturer)} ${_cbE(x.model)}</span>
+        <button class="btn btn-surface btn-sm" data-mf="${_cbE(x.manufacturer)}" data-md="${_cbE(x.model)}" onclick="cablingFxAdd(this.dataset.mf, this.dataset.md)">+ ${_cbE(_cbT('Add'))}</button></div>`).join('')
+      : `<div class="cb-dim">${_cbE(d.library === false ? _cbT('QLC+\'s fixture library was not found on this computer: use GitHub or By hand.') : _cbT('Nothing found.'))}</div>`;
+  }, 250);
+}
+
+async function cablingFxAdd(mf, md) {
+  const d = await _apiJson('/api/cabling/fixture-item', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ manufacturer: mf, model: md }) });
+  if (d.error) { setStatus(_cbT(d.error), 'error'); return; }
+  _cbAddItem(d.item, 'm');
+  setStatus(_cbT('{0} added to your kit.', d.item.name), 'ok');
+}
+
+async function cablingGhFixtures(mfg) {
+  const sel = document.getElementById('cb-gh-fx');
+  if (mfg === '__load') {
+    document.getElementById('cb-gh-mfg').value = '';
+    if (!confirm(_cbT('This reads the list of fixtures from the QLC+ project on github.com (the internet). Go on?'))) return;
+    const d = await _apiJson('/api/quickstart/gh/manufacturers');
+    if (d.error) { setStatus(_cbT(d.error), 'error'); return; }
+    document.getElementById('cb-gh-mfg').innerHTML = `<option value="">${_cbE(_cbT('Manufacturer…'))}</option>`
+      + d.manufacturers.map(m => `<option value="${_cbE(m)}">${_cbE(m)}</option>`).join('');
+    return;
+  }
+  if (!mfg) { sel.innerHTML = ''; return; }
+  const d = await _apiJson('/api/quickstart/gh/fixtures?manufacturer=' + encodeURIComponent(mfg));
+  if (d.error) { setStatus(_cbT(d.error), 'error'); return; }
+  sel.innerHTML = d.fixtures.map(f => `<option value="${_cbE(f.name)}">${_cbE(f.display)}</option>`).join('');
+}
+
+async function cablingGhAdd() {
+  const mfg = document.getElementById('cb-gh-mfg').value, fn = document.getElementById('cb-gh-fx').value;
+  if (!mfg || mfg === '__load' || !fn) { setStatus(_cbT('Choose a manufacturer and a fixture first.'), 'warn'); return; }
+  const d = await _apiJson('/api/cabling/fixture-item', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gh_manufacturer: mfg, filename: fn }) });
+  if (d.error) { setStatus(_cbT(d.error), 'error'); return; }
+  _cbAddItem(d.item, 'm');
+  setStatus(_cbT('{0} added to your kit.', d.item.name), 'ok');
+}
+
+function cablingHandAdd() {
+  const mf = document.getElementById('cb-hand-mf').value.trim(), md = document.getElementById('cb-hand-md').value.trim();
+  if (!md) { setStatus(_cbT('A fixture needs its model.'), 'warn'); return; }
+  const conns = document.getElementById('cb-hand-conn').value.split(',');
+  const n = Math.max(1, parseInt(document.getElementById('cb-hand-n').value, 10) || 1);
+  _cbAddItem(_cbFixtureItem(mf, md, conns, 'you'), 'm', n);
+}
+
+function cablingAskClaudeModel() {
+  _cbAskClaude({ manufacturer: document.getElementById('cb-hand-mf').value.trim(),
+    model: document.getElementById('cb-hand-md').value.trim() });
 }
 
 async function cablingSaveBase() {
@@ -261,7 +428,8 @@ async function cablingSaveBase() {
   const d = await r.json();
   if (!r.ok) { setStatus(d.error || _cbT('Could not keep your kit.'), 'error'); return; }
   _cb.base = d.kit;
-  setStatus(_cbT('Your kit has {0} items now, for every show.', d.kit.items.length), 'ok');
+  if (_cbBase) { _cbBase.kit = d.kit; _cbBase.path = d.path; }
+  setStatus(_cbT('Kept as your kit, for every show: {0} items in {1}. See and change it in My kit.', d.kit.items.length, d.path), 'ok');
 }
 
 function cablingFromBase() {
@@ -283,10 +451,8 @@ function cablingFound(k, owner) {
   if (!g) return;
   if (owner === 'mine') {
     const fx = _cb.rig.fixtures.find(x => x.id === g.ids[0]) || { conns: ['xlr3'] };
-    const ports = fx.conns.map(c => ({ role: 'in', conn: c, gender: 'm', name: 'DMX IN' }))
-      .concat(fx.conns.map(c => ({ role: 'thru', conn: c, gender: 'f', name: 'DMX THRU' })));
-    _cb.plan.tonight.items.push({ kind: 'fixture', id: _cbNewId('fixture'), name: `${g.manufacturer} ${g.model}`.trim(),
-      manufacturer: g.manufacturer, model: g.model, ports, termination: 'unknown', count: g.ids.length, owner: 'mine' });
+    _cb.plan.tonight.items.push({ ..._cbFixtureItem(g.manufacturer, g.model, fx.conns, fx.connector_known ? 'QLC+ definition' : 'guess'),
+      id: _cbNewId('fixture'), count: g.ids.length, owner: 'mine' });
   } else {
     g.ids.forEach(id => { _cb.plan.owners[id] = owner; });
   }
@@ -294,8 +460,9 @@ function cablingFound(k, owner) {
   _cbChanged();
 }
 
-async function cablingAskClaude(k) {
-  const g = (_cb.found || [])[k] || {};
+function cablingAskClaude(k) { _cbAskClaude((_cb.found || [])[k] || {}); }
+
+async function _cbAskClaude(g) {
   const card = document.getElementById('cb-claude-card');
   if (!card) return;
   card.hidden = false;
@@ -328,18 +495,21 @@ function _cbStageSvg(clickable) {
     ${clickable ? 'onclick="cablingStageClick(event)"' : ''}>`];
   parts.push(`<rect x="0" y="0" width="${st.w}" height="${st.d}" class="cb-s-stage"/>`);
   parts.push(`<text x="${st.w / 2}" y="${st.d + 700}" class="cb-s-lbl" text-anchor="middle">${_cbE(_cbT('AUDIENCE'))}</text>`);
-  _cb.rig.keep_out.forEach(k => parts.push(`<rect x="${k.x0}" y="${k.z0}" width="${k.x1 - k.x0}" height="${k.z1 - k.z0}" class="cb-s-keep"/>`));
+  _cb.rig.keep_out.forEach(k => parts.push(`<rect x="${k.x0}" y="${k.z0}" width="${k.x1 - k.x0}" height="${k.z1 - k.z0}" class="cb-s-keep"><title>${_cbE(_cbT('Band floor: {0} plus 50 cm', k.label || ''))}</title></rect>`));
+  _cb.rig.keep_out.forEach(k => { if (k.label) parts.push(`<text x="${k.x0 + 80}" y="${k.z0 + 180}" class="cb-s-klbl">${_cbE(k.label.slice(0, 24))}</text>`); });
   (p.walkways || []).forEach(w => parts.push(`<rect x="${w.x0}" y="${w.z0}" width="${w.x1 - w.x0}" height="${w.z1 - w.z0}" class="cb-s-walk${w.ramp ? ' ramp' : ''}"/>`));
   (ev.trusses || []).forEach(tr => parts.push(`<line x1="${tr.x0 - 200}" y1="${tr.z}" x2="${tr.x1 + 200}" y2="${tr.z}" class="cb-s-truss"/>`));
   ev.fixtures.forEach(f => {
     if (!f.place) return;
     parts.push(`<circle cx="${f.place.x}" cy="${f.place.z}" r="150" class="cb-s-fx${f.owner === 'venue' ? ' venue' : ''}${f.patched === false ? ' extra' : ''}"><title>${_cbE(f.name)}</title></circle>`);
+    parts.push(`<text x="${f.place.x}" y="${f.place.z + 330}" text-anchor="middle" class="cb-s-name">${_cbE(f.name.slice(0, 22))}</text>`);
   });
   (p.outlets || []).forEach(o => parts.push(`<rect x="${o.x - 120}" y="${o.z - 120}" width="240" height="240" class="cb-s-outlet"><title>${_cbE(_cbT('Power outlet'))}</title></rect>`));
   Object.entries(p.places || {}).forEach(([id, q]) => {
     if (id === 'controller') return;
     const it = p.tonight.items.find(x => x.id === id);
-    parts.push(`<rect x="${q.x - 250}" y="${q.z - 150}" width="500" height="300" class="cb-s-split"><title>${_cbE(it ? it.name : id)}</title></rect>`);
+    parts.push(`<rect x="${q.x - 180}" y="${q.z - 110}" width="360" height="220" class="cb-s-split"><title>${_cbE(it ? it.name : id)}</title></rect>`);
+    parts.push(`<text x="${q.x}" y="${q.z + 320}" text-anchor="middle" class="cb-s-sname">${_cbE(it ? it.name.split(' ')[0] : id)}</text>`);
   });
   const c = ev.controller;
   parts.push(`<rect x="${c.x - 300}" y="${c.z - 200}" width="600" height="400" class="cb-s-ctl"><title>${_cbE(_cbT('Computer'))}</title></rect>`);
@@ -354,7 +524,7 @@ function _cbPlaces() {
   const c = _cb.plan.controller;
   document.querySelectorAll('input[name="cb-ctl"]').forEach(r => { r.checked = r.value === c.mode; });
   const set = (id, v) => { const e = document.getElementById(id); if (e && document.activeElement !== e) e.value = v; };
-  set('cb-side-sel', c.side); set('cb-foh-d', c.distance_m); set('cb-foh-route', c.route); set('cb-slack', _cb.plan.slack_m);
+  set('cb-side-sel', c.side); set('cb-computer', c.computer || 'laptop'); set('cb-foh-d', c.distance_m); set('cb-foh-route', c.route); set('cb-slack', _cb.plan.slack_m);
   const p = _cb.plan, items = Object.fromEntries(p.tonight.items.map(x => [x.id, x]));
   const rows = [];
   Object.entries(p.places || {}).forEach(([id, q]) => rows.push(`<div class="cb-row"><span>${_cbE(id === 'controller' ? _cbT('Computer') : (items[id] || {}).name || id)}</span>

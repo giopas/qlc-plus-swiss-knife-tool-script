@@ -4412,6 +4412,7 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 /* ── Cabling (3.6.0) ───────────────────────────────────────────────────────── */
 .cb-step { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }
 .cb-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 12px; }
+.cb-cols[hidden] { display: none; }
 .cb-cols-3 { grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr) minmax(280px, 1.4fr); }
 @media (max-width: 1100px) { .cb-cols, .cb-cols-3 { grid-template-columns: minmax(0, 1fr); } }
 .cb-main, .cb-side, .cb-alts { min-width: 0; }
@@ -4453,6 +4454,21 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .cb-s-outlet { fill: #fef3c7; stroke: #b45309; stroke-width: 25; }
 .cb-s-corner { fill: #3b82f6; }
 .cb-s-lbl { fill: var(--text-faint); font-size: 220px; letter-spacing: 40px; }
+.cb-s-klbl { fill: #ef4444; font-size: 130px; opacity: .85; }
+.cb-s-name { fill: var(--text); font-size: 140px; }
+.cb-s-sname { fill: #0f766e; font-size: 140px; font-weight: 600; }
+.cb-legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; color: var(--text-dim); font-size: var(--fs-small); }
+.cb-lg { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-left: 6px; }
+.cb-lg-band { background: rgba(239, 68, 68, .2); border: 1px dashed #ef4444; margin-left: 0; }
+.cb-lg-fx { background: #fca5a5; border-radius: 50%; width: 10px; }
+.cb-lg-split { background: #ccfbf1; border: 1px solid #0f766e; }
+.cb-lg-ctl { background: var(--surface-0); border: 1px solid var(--text); }
+.cb-term-help { margin: 4px 0 12px; max-width: 1000px; line-height: 1.5; }
+.cb-kit-path { margin: 2px 0 8px; }
+.cb-sub-h { font-size: var(--fs-small); font-weight: 600; color: var(--text); }
+.cb-fx-res { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow: auto; }
+.cb-fx-res .cb-row, #cb-fx-show .cb-row { justify-content: space-between; font-size: var(--fs-small); }
+.cb-fx-res .cb-row > span:first-child, #cb-fx-show .cb-row > span:first-child { min-width: 0; color: var(--text); }
 .cb-propose { margin-bottom: 8px; width: 100%; }
 .cb-alt { display: block; width: 100%; text-align: left; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; color: var(--text); }
 .cb-alt.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }

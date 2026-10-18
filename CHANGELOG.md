@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added
+
+- **Cabling** (in progress): a DMX cabling planner for the show in progress. First part, the model under the screen (`core/cabling/`): every device is ports (in, out, thru; 3-pin, 5-pin, RJ45, USB, wireless; male or female), presets to copy and correct (Enttec DMX USB Pro, splitters 1→4 and 1→8, an Art-Net node, a wireless pair, adapters, gender changers, terminators, cables), your kit in settings and tonight's copy per show; the show's fixtures with their place, patch and DMX connector, matched to your kit (mine, borrowed, venue); the walk along a chain that finds the adapters and terminators it needs (C001 to C004, C006, C008 to C010, C014, C101 to C103); the plan file `<show>.cabling.json` next to the show.
+
 ## [3.5.5] — 2026-10-17 — Stop on the tablet, safety hold
 
 ### Added

@@ -20,6 +20,8 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 **Version 3.5.5, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, 3.5.3 adds Start Stage Monitor, one file to double-click at the gig, 3.5.4 asks before an export replaces an earlier page, and 3.5.5 adds the CueList's own Stop to Control mode and a *Safety hold* setting (or none) for its buttons. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
+**Next: 3.6.0, Cabling** (in progress), then **3.7.0, stage layouts and per-song tempo** (both in section 2).
+
 | Area | State |
 |---|---|
 | Tools | Quick Start, Fixtures, Rig Reducer, Function Porter, Brightness, Look Builder, VC Visual Editor, Stage and Meshes, Library, Setlist, Trigger Manager, Dictionary, Stage Monitor, Workspace Doctor, Wizard Repair, Upgrade to QLC+ 5.3, Compare, ID Browser, Show Paperwork. |
@@ -34,7 +36,68 @@ Release 3.0.0 was the milestone: installing, updating, three languages and the C
 
 ## 2. What is left
 
-Nothing in the programme is open. What remains is testing on real systems and a few decisions.
+The programme up to 3.5.5 is closed. What is open: 3.6.0 (Cabling, in progress on `feat/v3.6.0`), 3.7.0 (stage layouts and per-song tempo), testing on real systems and a few decisions.
+
+### Planned for 3.6.0: Cabling (DMX cabling planner)
+
+Decided 18 October, after giopas bought a Lixada DMX512 splitter (3-pin) to stop running one long daisy chain around the stage. The interface is an Enttec DMX USB Pro, whose output is 5-pin, so a 5-to-3-pin adapter is part of every gig. The spec is the Claude doc *Swiss Knife — DMX Cabling Planner (spec)*; the mockup is the Claude design canvas *DMX Cabling Planner* (Plan, Kit, and Check and export screens). The test show is `tests/corpus/Festival_14fix.qxw`: 6 spots on a truss at 2.9 m, 8 RGB PARs on the floor and on the PA, one universe on the Enttec, band members as meshes. For the venue case (own fixtures plus house fixtures) the tests mark the 6 spots as *Venue*. **Everything below ships in 3.6.0**, on one branch `feat/v3.6.0`; power is left out.
+
+**What it is.** A screen *Cabling* in group 4, *Run the show*, next to the Stage Monitor. It reads the show in progress (3D positions, patch, universes and their output in `InputOutputMap`, `DmxConnector` and `PowerConsumption` in the `.qxf`) and never changes it, so it adds nothing to the History. It plans the DMX cabling with the kit you own: which splitter output feeds which fixtures, in what order, which cable goes where, which adapters and terminators are needed and what is missing. The plan is kept in `<show>.cabling.json` next to the show, without `_vN`, like `<show>.stage.json`. Four steps in the shared stepper of 3.4: Kit, Places, Plan, Check and export. The code lives in `core/cabling/`.
+
+- **Kit model.** Every device is ports: role (in, out, thru), connector (`xlr3`, `xlr5`, `rj45`, `usb`, `wireless`), gender, and for outputs whether they are isolated and how many devices they drive (32 by default). Every check is a rule on ports, so nothing is specific to one product: the Enttec's 5-pin female out and the Lixada's 3-pin male in are what make the adapter appear. Presets to copy and correct: Enttec DMX USB Pro, splitters 1→4 and 1→8, an Art-Net node, a wireless pair, adapters, gender changers. Cables have a type (DMX 110 Ω or mic), so mic cable used for DMX is flagged.
+- **Inventory.** A base inventory in settings (`~/.qlc_swiss_knife/cabling_kit.json`: what you own, devices, cables, adapters, terminators and your fixtures, shareable through the Library) and tonight's copy per show. The fixtures in the patch are matched by manufacturer and model. One with no match is listed as *Not in your inventory* and is marked **Venue**, **Borrowed** or added to the kit (for example 8 own RGB PARs plus 6 house spots on the venue's truss). Venue items are cabled and labelled HOUSE but never packed; a venue DMX socket can end a chain (C104, house cabling not checked). A fixture found on the day is added on the Plan step (*+ Fixture found here*); *Patch it…* hands off to Fixtures, and the fixture carries C015 until it is patched.
+- **Fixture details from Claude.** From a name, a link (product page, manual) or a photo of the back panel, Claude proposes connectors in and thru, termination, socket side, power draw and connector, modes, weight, IP rating and the matching QLC+ definition. Each value shows its source (manual, photo, QLC+ definition, guess) and nothing is saved before you confirm. The QLC+ definition wins for channels and modes. A value from a photo or a guess stays *to check* (C105) until confirmed at load-in. It runs through the `cabling` tool's *fixture* action in Claude Desktop, and from the app through an *Ask Claude…* window like the Dictionary's. Swiss Knife itself still never calls the internet or an AI.
+- **Controller.** A preference kept in settings and changeable per show:
+  - **Where I stand**, the default (for giopas: the stage-left wing, beside him). The alternatives vary the splitter.
+  - **Front of house**, with a distance from the stage edge and a route (along a wall, taped, overhead). This is the case where the laptop also runs the remote of a digital mixer such as the CQ18T. Alternatives: one long DMX feed to a splitter on stage, an Art-Net or sACN node on the mixer's network, a wireless pair. C017 flags a feed across the audience floor by an unconfirmed route.
+  - **Let the planner choose**, natural for a Raspberry Pi: it tries each wing, the back centre, under the truss, front of house and the point that makes the chains shortest, outside the keep-out and near a power outlet.
+  - Limits (C016): at most 5 m of USB between a laptop and its interface, a laptop within the operator's reach, power for a Pi.
+- **Planning.** Stage as a 25 cm grid. The keep-out is the band floor from Stage & Meshes plus 50 cm. Runs (edges, back wall, trusses, stands) cost 1, open floor 3, a walkway needs a ramp, and a truss adds the climb. One chain per splitter output and per universe, grouped by where the fixtures hang. The order in a chain is exact up to 12 fixtures, then nearest neighbour plus 2-opt. Cables come from tonight's stock, longest hops first, with 0.5 m slack at each end; two cables are joined when none is long enough. Adapters and terminators are found by walking the ports from the interface to the last fixture. Two or three alternatives are compared on total cable, longest hop, crossings, adapters and what is missing. A hand change re-runs cables and checks at once. Deterministic (principle 3).
+- **Checks**, Doctor-style. Errors C001 to C006: plug without adapter, no terminator, too many devices, two universes on a chain, cables missing, a universe not fed. Warnings C007 to C017: band floor or walkway, auto-termination mid-chain, splitter input unterminated, mic cable, joined or long chain, long daisy chain without splitter, fixture with no position, interface not matching the show's output, fixture not patched, controller limits, front-of-house feed. Information C101 to C105: connector assumed, thru assumed, what is left in the bag, house cabling, value to check. Each has a fix or a shopping-list line. The full table is in the spec.
+- **Outputs**, each a new file next to the show: cabling plot, pick list (PDF, CSV, thermal ticket; venue items left out; shopping list and spares), cable labels (A4 label sheet or ticket, a stripe in the chain's colour), load-in order. The plot and the load-in order also go into Show Paperwork's crew checklist. Cabling becomes a step of *Get ready for the gig* before Show Paperwork.
+- **Claude.** A `cabling` tool with four actions: *kit*, *fixture*, *plan*, *check*. It writes only the inventory, the plan file and the outputs, as new files. Two ready requests: *Plan the DMX cabling for tonight* and *Add a fixture to my kit*. Claude's tool count becomes 28 and the *Claude's tools* wiki page is regenerated.
+
+| Part | What | Depends on | State |
+|---|---|---|---|
+| 1 · Inventory | Kit model and ports, presets, base inventory in settings, tonight's copy, owners (mine, borrowed, venue), matching the show's fixtures, venue DMX points; reading positions, patch, `InputOutputMap` and `DmxConnector`; the connector walk (C001, C002, C101, C102) | — | In progress |
+| 2 · Fixture details | *Ask Claude…* window, the `cabling` tool's *fixture* action, the confirm card with sources, C105 | 1 | |
+| 3 · Manual plan | Controller preference (stand, front of house, planner), placing controller and splitter by hand, building chains by clicking, lengths on the grid with runs and keep-out, cables from stock, adapters, terminators, every C check | 1 | |
+| 4 · Automatic plan | Chains, order, splitter placement, controller placement when the planner chooses, front-of-house alternatives, two or three alternatives, re-plan on a hand change, *+ Fixture found here* | 3 | |
+| 5 · Outputs | Plot, pick list, labels, load-in order, the step in *Get ready for the gig*, crew checklist | 3 | |
+| 6 · Release | Seven languages, wiki page *Cabling*, *Claude's tools* regenerated, Library kind for the kit, pictures in `shots.py`, tests on the Festival and Pub shows | all | |
+
+Left out of 3.6.0: power (circuits and powerCON chains from `PowerConsumption`, possible later on the same model), Art-Net nodes beyond one preset, cables in QLC+'s own 3D view, a full 3D model of trusses, links to shops.
+
+Open questions for giopas:
+
+- The Lixada: number of outputs, thru, isolated outputs, termination switch. It becomes the first real preset, and a first test of *Ask Claude…* with a photo of its back. Until then the preset is a generic 1→4 splitter with thru, termination unknown.
+- The real cable bag: lengths, counts, any mic cables.
+- Group 4 *Run the show*, or group 6 *Document* next to Show Paperwork.
+
+### Planned for 3.7.0: stage layouts and per-song tempo
+
+Decided 18 October, after a review of the wiki of mjcmatrix's fork of QLC+ (https://github.com/mjcmatrix/qlcplus/wiki, by Matt C). giopas chose two ideas from it for Swiss Knife.
+
+Swiss Knife works on the show file for QLC+ 5.2.2 to 5.3.x, so it borrows **ideas, not code**, and writes only what upstream QLC+ reads. Both features credit mjcmatrix by name, with a link to the fork's wiki page, in the CHANGELOG, the release notes and their wiki pages.
+
+**1. Stage layouts.** A saved layout of the stage and the band, used as the base of a new show, the way the cabling inventory is the base of tonight's kit.
+
+- What it holds: stage size and type, drum riser, backline (amps, keyboard stand), members by role (vocals, guitar, bass, drums, keys) and where they stand, wedges, curtain or backdrop, the band floor (keep-out) and walkways.
+- Where it lives: in the user's settings, shared through the Library. Several layouts (full band, acoustic, festival). *Save as layout* takes one from the current show's meshes.
+- Who uses it: Quick Start and Stage & Meshes start a new show from it; Cabling takes its band floor as the keep-out, so it is defined once; the Look Builder's *places on the stage* aim at its members.
+- What is written in the show: the meshes and their positions, as Stage & Meshes writes them today. Stage and item colours and the curtain are written only if upstream QLC+ 5 stores them; otherwise they stay in the layout.
+- Origin: the base to start from is giopas's idea; the curtain mesh and the colours come from the fork's *3D View* page.
+- Builds on the 3.6.0 inventory code (base in settings, per-show copy, Library sharing).
+
+**2. Per-song tempo in the setlist.** From the fork's *Show Tempo Sections*.
+
+- The setlist text takes an optional tempo at the end of a line: `Song name | 128BPM`. Spaces, case and the `BPM` word are optional (`| 128`, `|128 bpm`). Lines without it work as today, and *Save setlist…* writes the tempo back.
+- On the Setlist screen a *BPM* column shows each song's tempo. A check compares it with the function the song is matched to: a chaser whose step timing does not fit that tempo is flagged.
+- *Apply tempo* sets the chaser to the song's tempo. Swiss Knife's chasers run on time (decision of 14 October: no BPM speed dial), so hold and fade of each step are recomputed from the BPM and the beats per step.
+- Beats per step (decided 18 October): what Swiss Knife recorded when it built the chaser (Look Builder), otherwise 1 beat per step, changeable per song in the *BPM* column.
+- A chaser that two songs use at different tempos is copied per song (`<name> · 128 BPM`), and the setlist CueList step of each song points to its copy; the original stays as it is.
+- Scenes and other functions with no steps ignore the tempo. Every change goes through the show in progress, the History and the Doctor before saving.
+- Claude: the `setlist` tool reads and writes the tempo.
 
 ### Released in 3.5.0 (17 October): Stage Monitor
 
@@ -205,6 +268,11 @@ Open question for giopas: report the `makeChaserFromScenes` bug upstream (one mi
 | Forum: no post per release. A post for 2.0 and one for 3.0. | 1 Oct, 8 Oct |
 | Only Claude is connected. The Gemini app, Gems and other assistants that run on their makers' servers cannot start a local program, and putting Swiss Knife online is not planned. Gemini CLI may work with `--mcp` but is untested and unsupported. The wiki page *Connect Claude to Swiss Knife* explains why (wiki only, no release). | 10 Oct |
 | The one exception to "never overwrite": a page from an earlier Stage Monitor export (`index.html`, `serve_stage.py`, Start Stage Monitor; they carry a mark) is replaced only after a yes. The app asks with a dialog; Claude's tool stops and needs `replace=true` after asking the user (3.5.4). Files the Stage Monitor did not write are refused. Its settings file `<show>.stage.json` is saved without asking, since it holds only those settings. | 17 Oct |
+| Cabling ships whole in 3.6.0 (inventory, fixture details from Claude, manual and automatic plan, outputs); power is left out. | 18 Oct |
+| Swiss Knife never calls the internet or an AI itself. Fixture details come from Claude through the MCP tool or an *Ask Claude…* window, and are saved only after the user confirms, each value with its source. | 18 Oct |
+| The controller's place starts from the user's preference (where I stand, front of house with a distance, or chosen by the planner). | 18 Oct |
+| From the review of mjcmatrix's QLC+ fork, only stage layouts and per-song tempo are taken, both in 3.7.0. The per-song tempo is written as `| <n>BPM` at the end of a setlist line and applied from the Setlist screen; beats per step come from the chaser as built, else 1. | 18 Oct |
+| Ideas taken from other projects are credited by name, with a link, in the CHANGELOG, the release notes and the wiki page of the feature. Ideas only, no code. | 18 Oct |
 
 ### Released in 3.0.3
 
@@ -362,6 +430,8 @@ The complete decision log, with the reasons, is in section 3 of the archive. The
 | Forum | One complete post at 2.0, one at 3.0. No post per release. Drafts stay out of the repository. |
 | Claude | Full tool set, writes only to new files (except the Stage Monitor's own page and settings), only the folders giopas lists, nothing else on the computer. Connection by one `.mcpb` file for Claude Desktop. |
 | Signing | The apps are not signed or notarised. No AppImage unless someone asks. |
+| Side files | Settings that belong to a show but not to QLC+ live next to it without `_vN`: `<show>.stage.json` (Stage Monitor), `<show>.cabling.json` (Cabling, 3.6.0). Personal kit and stage layouts live in the user's settings and travel through the Library. |
+| Credit | Ideas from other projects are credited by name and link in the CHANGELOG, the release notes and the wiki. |
 
 ## 7. How we work
 
@@ -434,8 +504,9 @@ These were left out on purpose or have no date.
 | Porter: an option to replace all of a widget's bindings when a ported widget takes over | |
 | Fan-in ordering by Left, Right, Front and Back words in fixture names | |
 | Quick Start rig in memory as the Porter target | Only if the save-first hand-off feels clumsy. |
-| Rig Editor with rename, add and wiring | Wiring lives in the Porter. |
+| Rig Editor with rename, add and wiring | Wiring lives in the Porter; DMX cabling becomes Cabling in 3.6.0. |
 | MIDI learn simulation | The simulator tells you what a message would trigger. |
 | Quick Start writes `4.13.1` as the QLC+ version in a new show | QLC+ never reads it (checked in the 5.3.0 source), so it does no harm, but *5.2.2* would be truthful. Changing it changes the golden files. |
 | Folder names in the user's language or naming profile | The upgrade writes English names, like the Show Wizard. |
+| Power planning (circuits, powerCON chains) | Left out of 3.6.0; the Cabling kit model can carry it later. |
 | Dropped | The audio-trigger helper, and the upstream bug reports to QLC+. |

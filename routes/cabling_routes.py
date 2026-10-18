@@ -7,6 +7,7 @@ in settings.
     GET  /api/cabling/state        rig, tonight's plan, evaluation, found in the show
     POST /api/cabling/plan         {plan}: keep tonight's plan (<show>.cabling.json)
     POST /api/cabling/evaluate     {plan}: check a plan without keeping it
+    POST /api/cabling/auto         {plan}: two or three alternatives, best first
     GET  /api/cabling/kit          your kit and the presets
     POST /api/cabling/kit          {kit}: keep your kit (settings)
     POST /api/cabling/kit/item     {item}: check one kit item (the clean item or the error)
@@ -19,6 +20,7 @@ import re
 from flask import Blueprint, jsonify, request
 
 from core import qxw_io, workspace
+from core.cabling import auto as auto_mod
 from core.cabling import kit as kit_mod
 from core.cabling import plan as plan_mod
 from core.cabling import rig as rig_mod
@@ -81,6 +83,17 @@ def evaluate():
     p = plan_mod.clean_plan((request.get_json(silent=True) or {}).get('plan'))
     return jsonify({'plan': p, 'evaluation': plan_mod.evaluate(p, r),
                     'found': plan_mod.not_in_inventory(p, r)})
+
+
+@bp.route('/auto', methods=['POST'])
+def auto():
+    r = _rig()
+    if r is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    p = plan_mod.clean_plan((request.get_json(silent=True) or {}).get('plan'))
+    if not r['fixtures']:
+        return jsonify({'error': 'The show has no fixtures.'}), 400
+    return jsonify({'alternatives': auto_mod.alternatives(p, r)})
 
 
 @bp.route('/plan', methods=['POST'])

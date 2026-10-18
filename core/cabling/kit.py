@@ -160,6 +160,10 @@ PRESETS: Dict[str, dict] = {
     "usb_dmx_3pin": _device("interface", "USB–DMX interface (3-pin)",
                             [port("in", "usb", name="USB"), port("out", "xlr3", "f", name="DMX OUT")],
                             plugin="DMX USB", match=["dmx usb"], power="usb"),
+    "lixada_1x8": _device("splitter", "Lixada DMX512 splitter 1 → 8",
+                          [port("in", "xlr3", "m", name="DMX IN"), port("thru", "xlr3", "f", name="DMX OUT")]
+                          + [port("out", "xlr3", "f", name=f"DMX OUT {i}") for i in range(1, 9)],
+                          termination="none", power="dc adapter", match=["lixada"]),
     "splitter_1x4": _splitter(4),
     "splitter_1x8": _splitter(8),
     "artnet_node_2": _device("node", "Art-Net / sACN node, 2 universes",

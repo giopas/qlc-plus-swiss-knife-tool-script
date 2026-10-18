@@ -23,8 +23,12 @@ def festival():
     return rig.read_rig(root, load_qxf_defs([CORPUS]), FESTIVAL)
 
 
+CABLE_BAG = [dict(P["cable_3_1.5"], count=2), dict(P["cable_3_3"], count=12), dict(P["cable_3_5"], count=4),
+             dict(P["cable_3_10"], count=3), dict(P["cable_3_20"], count=1)]
+
+
 def bag(**extra):
-    items = [P["enttec_usb_pro"], P["splitter_1x4"], P["adapter_5m_3f"], P["cable_3_3"],
+    items = [P["enttec_usb_pro"], P["splitter_1x4"], P["adapter_5m_3f"]] + CABLE_BAG + [
              dict(P["terminator_3"], count=2), kit.fixture_item(*PAR, count=8)]
     items += extra.get("more", [])
     return kit.tonight_from({"items": items})
@@ -295,7 +299,7 @@ def test_routes_kit_state_evaluate_and_save(tmp_path):
     k = c.get("/api/cabling/kit").get_json()
     assert k["kit"]["items"] == [] and len(k["presets"]) >= 15
     r = c.post("/api/cabling/kit", json={"kit": {"items": bag()["items"]}})
-    assert r.status_code == 200 and len(r.get_json()["kit"]["items"]) == 6
+    assert r.status_code == 200 and len(r.get_json()["kit"]["items"]) == 10
     assert c.post("/api/cabling/kit", json={"kit": {"items": [{"kind": "nope"}]}}).status_code == 400
 
     s = c.get("/api/cabling/state").get_json()
@@ -328,3 +332,139 @@ def test_routes_need_a_show(monkeypatch):
     monkeypatch.setitem(workspace._state, "loaded", False)
     c = app.create_app().test_client()
     assert c.get("/api/cabling/state").status_code == 400
+
+
+# ── routes on the floor, cables, the automatic plan (parts 3 and 4) ─────────
+
+from core.cabling import auto, cables, route  # noqa: E402
+
+
+def lixada_kit():
+    return {"items": [P["enttec_usb_pro"], P["lixada_1x8"], P["adapter_5m_3f"]] + CABLE_BAG
+            + [dict(P["terminator_3"], count=3), kit.fixture_item(*PAR, count=8)]}
+
+
+def test_lixada_preset():
+    it = kit.clean_item(P["lixada_1x8"])
+    roles = [(p["role"], p["conn"], p["gender"]) for p in it["ports"]]
+    assert roles[:2] == [("in", "xlr3", "m"), ("thru", "xlr3", "f")]
+    assert roles.count(("out", "xlr3", "f")) == 8
+    assert it["termination"] == "none"
+
+
+def test_the_truss_is_found(festival):
+    ts = route.trusses(festival["fixtures"])
+    assert len(ts) == 1 and ts[0]["fixtures"] == [str(i) for i in range(6)]
+    assert 2800 < ts[0]["h"] < 3000
+
+
+def test_routes_avoid_the_keep_out_and_add_the_climb(festival):
+    p = plan.new_plan(lixada_kit())
+    floor, router, trs = plan.floor_for(p, festival)
+    a = {"x": 0, "z": 2000, "h": 0}
+    b = {"x": 6000, "z": 2000, "h": 0}
+    h = router.hop(a, b)
+    assert h["length"] >= 6000 and h["climb"] == 0
+    up = router.hop(a, {"x": 900, "z": 140, "h": 2900})
+    assert up["climb"] == 2900
+    on = router.hop({"x": 892, "z": 142, "h": 2900, "truss": "truss1"}, {"x": 1792, "z": 142, "h": 2900, "truss": "truss1"})
+    assert on["length"] == 900 and on["truss"] == "truss1"
+
+
+def test_walkway_crossing_is_c007(festival):
+    p = plan.new_plan(lixada_kit())
+    p["walkways"] = [{"x0": 6000, "z0": -1000, "x1": 6600, "z1": 6000, "label": "wing"}]
+    p["places"] = {"splitter1": {"x": 3000, "z": 150}}
+    p["chains"] = [{"source": {"item": "interface1", "port": 0}, "devices": [{"item": "splitter1"}]}]
+    ev = plan.evaluate(p, festival)
+    assert any(i["code"] == "C007" for i in ev["chains"][0]["issues"])
+    p["walkways"][0]["ramp"] = True
+    assert not any(i["code"] == "C007" for i in plan.evaluate(p, festival)["chains"][0]["issues"])
+
+
+def test_cables_longest_first_shortest_that_fits():
+    inv = kit.tonight_from({"items": [dict(P["cable_3_3"], count=2), P["cable_3_10"], P["cable_3_5"]]})
+    r = cables.assign([{"key": "a", "need": 4, "conn": "xlr3"}, {"key": "b", "need": 2, "conn": "xlr3"},
+                       {"key": "c", "need": 9, "conn": "xlr3"}], inv)
+    got = {k: [c["length"] for c in v["cables"]] for k, v in r["by_hop"].items()}
+    assert got == {"c": [10.0], "a": [5.0], "b": [3.0]}
+
+
+def test_cables_join_two_then_say_what_is_missing():
+    inv = kit.tonight_from({"items": [dict(P["cable_3_3"], count=1), P["cable_3_10"]]})
+    r = cables.assign([{"key": "a", "need": 12, "conn": "xlr3"}, {"key": "b", "need": 2, "conn": "xlr3"}], inv)
+    assert r["by_hop"]["a"]["joined"] and r["by_hop"]["b"]["missing"] == 3
+    assert r["missing"] == [{"conn": "xlr3", "length": 3, "count": 1}]
+
+
+def test_mic_cable_only_when_nothing_else_fits():
+    inv = kit.tonight_from({"items": [dict(P["cable_3_5"], type="mic", name="Mic 5 m"), P["cable_3_3"]]})
+    r = cables.assign([{"key": "a", "need": 2, "conn": "xlr3"}, {"key": "b", "need": 4, "conn": "xlr3"}], inv)
+    assert r["by_hop"]["b"]["mic"] and not r["by_hop"]["a"]["mic"]
+
+
+def test_order_is_exact_for_small_groups():
+    pts = {"S": 0, "a": 1, "b": 5, "c": 2, "d": 9}
+    dist = lambda x, y: abs(pts[x] - pts[y])
+    path, c = auto.order("S", ["d", "b", "a", "c"], dist)
+    assert path == ["a", "c", "b", "d"] and c == 9
+
+
+def test_order_large_groups_still_visit_all():
+    pts = {"S": 0, **{str(i): (i * 7) % 23 for i in range(12)}}
+    dist = lambda x, y: abs(pts[x] - pts[y])
+    path, _ = auto.order("S", [str(i) for i in range(12)], dist)
+    assert sorted(path) == sorted(str(i) for i in range(12))
+
+
+def _alts(festival, mode):
+    p = plan.new_plan(lixada_kit())
+    p["controller"]["mode"] = mode
+    return auto.alternatives(p, festival)
+
+
+def test_alternatives_where_i_stand(festival):
+    alts = _alts(festival, "stand")
+    names = [a["name"] for a in alts]
+    assert sorted(names) == ["One daisy chain", "Splitter at the computer", "Splitter on stage"]
+    assert alts[0]["best"] and [a["key"] for a in alts] == ["A", "B", "C"]
+    daisy = next(a for a in alts if a["name"] == "One daisy chain")
+    assert any(i["code"] == "C012" for c in daisy["evaluation"]["chains"] for i in c["issues"])
+    best = alts[0]["evaluation"]
+    truss = next(c for c in best["chains"] if c["links"] and c["links"][0]["to"].startswith("Ceiling"))
+    assert sorted(l["to"] for l in truss["links"]) == [f"Ceiling {i}" for i in range(1, 7)]
+    # every fixture on exactly one chain, the Enttec takes its adapter
+    tos = [l["to"] for c in best["chains"] for l in c["links"]]
+    assert sum(1 for t in tos if not t.startswith("Lixada")) == 14
+    assert best["totals"]["adapters"] == 1
+
+
+def test_alternatives_are_deterministic(festival):
+    a = [(x["name"], x["cable_m"], x["plan"]["chains"]) for x in _alts(festival, "stand")]
+    b = [(x["name"], x["cable_m"], x["plan"]["chains"]) for x in _alts(festival, "stand")]
+    assert a == b
+
+
+def test_front_of_house(festival):
+    alts = _alts(festival, "foh")
+    by = {a["name"]: a for a in alts}
+    feed = by["One long DMX feed"]["evaluation"]
+    assert any(i["code"] == "C017" for c in feed["chains"] for i in c["issues"])
+    node = by["Node on the network"]
+    assert any(s["what"].startswith("Art-Net") for s in node["missing"])     # proposed, not owned
+    assert alts[0]["name"] == "One long DMX feed"                            # the feasible one first
+
+
+def test_planner_chooses_the_computer(festival):
+    alts = _alts(festival, "auto")
+    assert len(alts) == 3 and all(a["name"].startswith("Computer ") for a in alts)
+    assert all("controller" in a["plan"]["places"] for a in alts)
+    assert any(i["code"] == "C016" for i in alts[0]["evaluation"]["issues"])   # no outlet marked
+
+
+def test_route_auto(tmp_path):
+    c, _ = _client(tmp_path)
+    p = plan.new_plan(lixada_kit())
+    alts = c.post("/api/cabling/auto", json={"plan": p}).get_json()["alternatives"]
+    assert [a["key"] for a in alts] == ["A", "B", "C"]
+    assert alts[0]["evaluation"]["chains"]

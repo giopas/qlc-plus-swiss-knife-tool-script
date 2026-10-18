@@ -50,6 +50,10 @@ def _ports(dev: dict, role: str) -> List[dict]:
 
 
 def _generic_cable(conn: str) -> dict:
+    if conn in ("rj45", "usb", "wireless"):
+        return {"kind": "cable", "id": "", "name": {"rj45": "network", "usb": "USB",
+                                                    "wireless": "radio"}[conn],
+                "a": kit_mod.end(conn, "m"), "b": kit_mod.end(conn, "m"), "type": conn, "generic": True}
     return {"kind": "cable", "id": "", "name": f"{kit_mod.CONNECTOR_LABEL[conn]} DMX cable",
             "a": kit_mod.end(conn, "m"), "b": kit_mod.end(conn, "f"), "type": "dmx", "generic": True}
 
@@ -58,6 +62,8 @@ def pick_cable_conn(from_sock: dict, to_dev: dict, inventory: dict) -> str:
     """Which connector a cable should have when none is chosen: the one the
     device ahead takes if the kit has such cables (adapter at the source,
     as with a 5-pin interface feeding 3-pin fixtures), else the source's."""
+    if from_sock["conn"] in ("rj45", "usb", "wireless"):
+        return from_sock["conn"]
     have = {c["a"]["conn"] for c in kit_mod.by_kind(inventory, "cable")}
     ins = [p["conn"] for p in _ports(to_dev, "in")]
     for c in ins:
@@ -76,13 +82,25 @@ def _fit(plug: dict, socket: dict, inventory: dict) -> Optional[dict]:
     return {"adapter": ad} if ad else None
 
 
-def _issue(code: str, text: str, where: str = "", fix: str = "") -> dict:
+def _issue(code: str, text: str, where: str = "", fix: str = "", buy: Optional[dict] = None) -> dict:
+    """One check result.  ``buy`` (``{"what", "count"}``) puts it on the
+    shopping list."""
     d = {"code": code, "severity": SEVERITY.get(code, "warning"), "text": text}
     if where:
         d["where"] = where
     if fix:
         d["fix"] = fix
+    if buy:
+        d["buy"] = buy
     return d
+
+
+def adapter_name(socket: dict, plug: dict) -> str:
+    """The adapter that takes *plug* into *socket*: its end into the socket,
+    its other end facing the plug."""
+    a = kit_mod.end(socket["conn"], kit_mod.other(socket["gender"]))
+    b = kit_mod.end(plug["conn"], kit_mod.other(plug["gender"]))
+    return f"Adapter {kit_mod.label(a)} → {kit_mod.label(b)}"
 
 
 def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
@@ -105,7 +123,7 @@ def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
     for i, dev in enumerate(devices):
         cab = cables[i] or _generic_cable(pick_cable_conn(behind_sock, dev, inventory))
         link = {"from": behind_dev["name"], "to": dev["name"], "cable": cab.get("id") or None,
-                "cable_name": cab["name"], "adapters": []}
+                "cable_name": cab["name"], "conn": cab["a"]["conn"], "adapters": []}
         if cab.get("type") == "mic":
             issues.append(_issue("C010", f"{cab['name']} is a microphone cable.", dev["name"],
                                  "Use a 110 Ω DMX cable of the same length."))
@@ -114,9 +132,9 @@ def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
         if f is None:
             issues.append(_issue("C001", f"{kit_mod.label(cab['a'])} plug does not fit the "
                                  f"{kit_mod.label(behind_sock)} socket of {behind_dev['name']}.",
-                                 behind_dev["name"],
-                                 f"Add an adapter {kit_mod.label(kit_mod.end(behind_sock['conn'], kit_mod.other(behind_sock['gender'])))}"
-                                 f" → {kit_mod.label(kit_mod.end(cab['a']['conn'], kit_mod.other(cab['a']['gender'])))}."))
+                                 behind_dev["name"], f"Add an {adapter_name(behind_sock, cab['a'])[0].lower()}"
+                                 f"{adapter_name(behind_sock, cab['a'])[1:]}.",
+                                 {"what": adapter_name(behind_sock, cab["a"]), "count": 1}))
         elif f.get("adapter"):
             link["adapters"].append({"at": behind_dev["name"], "id": f["adapter"]["id"], "name": f["adapter"]["name"]})
             adapters.append(f["adapter"]["id"])
@@ -135,8 +153,8 @@ def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
                 sock = ins[0]
                 issues.append(_issue("C001", f"{kit_mod.label(cab['b'])} plug does not fit the "
                                      f"{kit_mod.label(sock)} socket of {dev['name']}.", dev["name"],
-                                     f"Add an adapter {kit_mod.label(kit_mod.end(sock['conn'], kit_mod.other(sock['gender'])))}"
-                                     f" → {kit_mod.label(kit_mod.end(cab['b']['conn'], kit_mod.other(cab['b']['gender'])))}."))
+                                     f"Add an {adapter_name(sock, cab['b'])[0].lower()}{adapter_name(sock, cab['b'])[1:]}.",
+                                     {"what": adapter_name(sock, cab["b"]), "count": 1}))
         if dev.get("assumed_conn"):
             assumed_conn.append(dev["name"])
         link["socket"] = sock
@@ -200,7 +218,8 @@ def check(chains: List[dict], inventory: dict) -> List[dict]:
     for a, n in sorted(used.items()):
         if n > stock.get(a, 0):
             issues.append(_issue("C001", f"The plan needs {n} × {names.get(a, a)}, the kit has {stock.get(a, 0)}.",
-                                 fix=f"Add {n - stock.get(a, 0)} to the shopping list."))
+                                 fix=f"Add {n - stock.get(a, 0)} to the shopping list.",
+                                 buy={"what": names.get(a, a), "count": n - stock.get(a, 0)}))
     need = [ch["terminator"] for ch in chains if ch.get("terminator")]
     by_plug: Dict[str, List[dict]] = {}
     for t in need:
@@ -212,7 +231,8 @@ def check(chains: List[dict], inventory: dict) -> List[dict]:
             short = ts[have:]
             issues.append(_issue("C002", f"{len(ts)} chain ends need a {lab} terminator, the kit has {have}: "
                                  + ", ".join(t["at"] for t in short) + " without one.",
-                                 short[0]["at"], f"Add {len(ts) - have} × terminator {lab} to the shopping list."))
+                                 short[0]["at"], f"Add {len(ts) - have} × Terminator {lab} to the shopping list.",
+                                 {"what": f"Terminator {lab}", "count": len(ts) - have}))
     left = []
     for it in inventory.get("items", []):
         if it["kind"] in ("adapter", "terminator"):

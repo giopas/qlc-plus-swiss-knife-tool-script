@@ -468,3 +468,99 @@ def test_route_auto(tmp_path):
     alts = c.post("/api/cabling/auto", json={"plan": p}).get_json()["alternatives"]
     assert [a["key"] for a in alts] == ["A", "B", "C"]
     assert alts[0]["evaluation"]["chains"]
+
+
+# ── outputs (part 5) ────────────────────────────────────────────────────────
+
+from core.cabling import outputs  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def best(festival):
+    a = auto.alternatives(plan.new_plan(lixada_kit()), festival)[0]
+    return a["evaluation"], a["plan"], festival
+
+
+def test_numbered_cables_feed_first(best):
+    ev, p, _ = best
+    nums = outputs.numbered(ev, p)
+    assert nums[0]["chain"] == "Feed" and nums[0]["from"] == "Enttec" and nums[0]["to"] == "Lixada"
+    assert [c["n"] for c in nums] == list(range(1, len(nums) + 1))
+    assert len({c["colour"] for c in nums}) >= 3
+
+
+def test_lixada_without_a_switch_needs_a_terminator_on_its_thru(best):
+    ev, _p, _ = best
+    feed = next(w for w in ev["chains"] if w["name"] == "Feed")
+    assert feed["terminator"]["at"].startswith("Lixada")
+    assert not any(i["code"] == "C009" for i in feed["issues"])
+
+
+def test_pick_list_and_shopping(best):
+    ev, p, _ = best
+    pl = outputs.pick_list(ev, p)
+    whats = [r["what"] for r in pl["bag"]]
+    assert "Enttec DMX USB Pro" in whats and "Adapter 5-pin ♂ → 3-pin ♀" in whats
+    assert any(w.startswith("Lixada") and "power supply" in w for w in whats)
+    assert pl["buy"] == [{"what": "Terminator 3-pin ♂", "count": 2}]      # 5 ends, 3 in the kit
+    csv_text = outputs.pick_list_csv(pl)
+    assert csv_text.startswith("Section,Item,Count\n") and "To buy,Terminator" in csv_text
+    assert "IN THE BAG" in outputs.pick_list_text(pl, "Festival", "2026-10-18")
+
+
+def test_venue_items_are_labelled_house_and_not_packed(festival):
+    p = plan.new_plan(lixada_kit())
+    p["owners"] = {str(i): "venue" for i in range(6)}
+    a = auto.alternatives(p, festival)[0]
+    nums = outputs.numbered(a["evaluation"], a["plan"])
+    assert any(c["house"] for c in nums) and "(HOUSE)" in outputs.labels_text(nums)
+
+
+def test_plot_and_pdfs_are_deterministic(best):
+    ev, p, r = best
+    svg = outputs.plot_svg(ev, p, r, "Festival")
+    assert svg.startswith("<svg") and "Ceiling 1" in svg and "Computer" in svg
+    assert outputs.plot_svg(ev, p, r, "Festival") == svg
+    for b in (outputs.plot_pdf(ev, p, r, "Festival"), outputs.labels_pdf(outputs.numbered(ev, p), "Festival"),
+              outputs.pick_list_pdf(outputs.pick_list(ev, p), "Festival", "2026-10-18")):
+        assert b.startswith(b"%PDF")
+
+
+def test_load_in_order(best):
+    ev, p, _ = best
+    steps = outputs.load_in(ev, p)
+    assert steps[0].startswith("Computer and Enttec DMX USB Pro at the stage left wing")
+    assert any("Terminator on Lixada" in s for s in steps)
+    assert steps[-1].startswith("Start QLC+ and run PANIC RESET")
+
+
+def test_fixture_found_on_the_day(festival):
+    p = plan.new_plan(lixada_kit())
+    p["extras"] = [{"name": "Spare PAR", "manufacturer": "Generic", "model": "7-Ch RGB LED PAR",
+                    "x": 3000, "z": 3800, "h": 0}]
+    alts = auto.alternatives(p, festival)
+    ev = alts[0]["evaluation"]
+    assert any(i["code"] == "C015" and "Spare PAR" in i["text"] for i in ev["issues"])
+    tos = [l["to"] for c in ev["chains"] for l in c["links"]]
+    assert tos.count("Spare PAR") == 1                       # cabled once, not twice
+    assert plan.clean_plan(alts[0]["plan"])["extras"][0]["id"] == "x1"
+
+
+def test_route_exports_and_crew_checklist(tmp_path):
+    c, p = _client(tmp_path)
+    alts = c.post("/api/cabling/auto", json={"plan": plan.new_plan(lixada_kit())}).get_json()["alternatives"]
+    assert alts[0]["svg"].startswith("<svg")
+    best = alts[0]["plan"]
+    for what, head in (("plot_pdf", b"%PDF"), ("plot_svg", b"<svg"), ("pick_pdf", b"%PDF"), ("pick_csv", b"Section"),
+                       ("pick_txt", b"FESTIVAL"), ("labels_pdf", b"%PDF"), ("labels_txt", b"#1"), ("loadin_txt", b"1. ")):
+        r = c.post("/api/cabling/export", json={"plan": best, "what": what})
+        assert r.status_code == 200 and r.data.startswith(head), what
+        assert r.headers["X-Suggested-Filename"].startswith("Festival_14fix_")
+    assert c.post("/api/cabling/export", json={"plan": best, "what": "nope"}).status_code == 400
+    # once kept next to the show, the crew checklist carries it
+    c.post("/api/cabling/plan", json={"plan": best})
+    doc = c.post("/api/showbook/preview", json={"presets": ["checklist"]}).get_json()
+    cab = doc["document"]["sections"]["cabling"]
+    assert cab["steps"][0].startswith("Computer") and cab["svg"].startswith("<svg")
+    pdf = c.post("/api/showbook/export/pdf", json={"presets": ["checklist"]})
+    assert pdf.status_code == 200 and pdf.data.startswith(b"%PDF")

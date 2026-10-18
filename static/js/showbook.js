@@ -15,6 +15,7 @@ const _SB_SECTIONS = [
   { id: 'rider',       label: 'Tech rider (fixture types)', icon: '🎟' },
   { id: 'stage_plan',  label: 'Stage plot',     icon: '🗺' },
   { id: 'checklist',   label: 'Load-in checklist', icon: '✅' },
+  { id: 'cabling',     label: 'DMX cabling',    icon: '🧵' },
   { id: 'summary',     label: 'Summary',       icon: '📊' },
   { id: 'patch',       label: 'Patch List',     icon: '🔌' },
   { id: 'functions',   label: 'Function Index', icon: '📋' },
@@ -33,12 +34,12 @@ const _SB_SECTIONS = [
 // Presets by reader (Show Paperwork, 1.9) — mirror of core/showbook.PRESETS
 const _SB_PRESETS = {
   rider:     ['rider', 'stage_plan'],
-  checklist: ['checklist', 'stage_plan'],
+  checklist: ['checklist', 'cabling', 'stage_plan'],
   patch:     ['patch_sheet'],
   operator:  ['summary', 'patch', 'functions', 'scenes', 'chasers', 'collections', 'efx',
               'shows', 'scripts', 'vc_layout', 'doctor'],
 };
-const _SB_VENUE_SAFE = new Set(['rider', 'stage_plan', 'checklist', 'patch', 'patch_sheet']);
+const _SB_VENUE_SAFE = new Set(['rider', 'stage_plan', 'checklist', 'cabling', 'patch', 'patch_sheet']);
 let _sbPresets = new Set(['operator']);
 
 function showbookInit() {
@@ -176,7 +177,7 @@ function invalidateShowbook() {
 // The sections in three groups (giopas, 30 Sep: the flat list was chaotic)
 const _SB_GROUPS = [
   { title: 'The rig', hint: 'what the venue and the crew need',
-    ids: ['patch_sheet', 'rider', 'patch', 'checklist', 'stage_plan'] },
+    ids: ['patch_sheet', 'rider', 'patch', 'checklist', 'cabling', 'stage_plan'] },
   { title: 'The show', hint: 'for you — stays with you',
     ids: ['summary', 'functions', 'scenes', 'chasers', 'collections', 'efx', 'shows', 'scripts'] },
   { title: 'Console & checks', hint: 'for you — stays with you',
@@ -304,6 +305,12 @@ function _sbRenderPreview(doc) {
     parts.push(_sbTable('✅ Load-in checklist', secs.checklist,
       ['☐', 'ID', 'Name', 'Model', 'Mode', 'Patch', 'Groups', '3D position'],
       c => ['☐', c.id, c.name, c.model, c.mode, c.patch, c.groups, c.position], 'sb-sec-checklist'));
+  }
+  if (secs.cabling) {
+    const cb = secs.cabling;
+    parts.push(`<div class="sb-section" id="sb-sec-cabling"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🧵 DMX cabling <span class="sb-toggle-icon">▾</span></h3>
+      <div class="sb-section-body"><ol class="sb-steps">${cb.steps.map(st => `<li>${_esc(st)}</li>`).join('')}</ol>
+      <div class="sb-cabling-plot">${cb.svg}</div></div></div>`);
   }
   if (secs.stage_plan) {
     const sp = secs.stage_plan;

@@ -183,13 +183,14 @@ def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
     term = None
     if devices:
         last = devices[-1]
-        if _ports(last, "out") and last.get("fixture") is None:
-            # a splitter or node: its input must be terminated, by its switch
-            # or a terminator on the unused thru (C009, not counted as C002)
-            if last.get("termination") not in ("switch", "auto"):
-                issues.append(_issue("C009", f"{last['name']}: thru unused and input termination "
-                                     f"{'unknown' if last.get('termination', 'unknown') == 'unknown' else 'off'}.",
-                                     last["name"], "Switch its termination on, or put a terminator on its thru."))
+        splitter_end = bool(_ports(last, "out")) and last.get("fixture") is None
+        if splitter_end and last.get("termination") == "unknown":
+            # a splitter or node whose termination we do not know (C009, not counted)
+            issues.append(_issue("C009", f"{last['name']}: thru unused and input termination unknown.",
+                                 last["name"], "Say in the kit whether it has a termination switch; "
+                                 "without one, put a terminator on its thru."))
+        elif splitter_end and last.get("termination") in ("switch", "auto"):
+            pass
         elif last.get("termination") not in ("auto", "switch"):
             thrus = _ports(last, "thru")
             sock = thrus[0] if thrus else None

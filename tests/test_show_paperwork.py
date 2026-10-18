@@ -40,9 +40,9 @@ def _pdf_text(data: bytes) -> str:
 
 def test_presets_pick_sections():
     assert showbook.resolve_sections(["rider"], None) == (["rider", "stage_plan"], "Tech Rider")
-    assert showbook.resolve_sections(["checklist"], None)[0] == ["stage_plan", "checklist"]
+    assert showbook.resolve_sections(["checklist"], None)[0] == ["stage_plan", "checklist", "cabling"]
     secs, title = showbook.resolve_sections(["rider", "checklist"], None)
-    assert secs == ["rider", "stage_plan", "checklist"] and title == "Tech Rider + Crew Checklist"
+    assert secs == ["rider", "stage_plan", "checklist", "cabling"] and title == "Tech Rider + Crew Checklist"
 
 
 def test_rider_never_carries_show_internals(c):
@@ -94,7 +94,7 @@ def test_operator_book_unchanged(c):
     a = showbook.export_pdf(showbook.generate(presets=["operator"], date="2026-09-30"))
     b = showbook.export_pdf(showbook.generate(date="2026-09-30"))
     assert len(a) > 10000 and a.replace(b"Show Book", b"") == b.replace(b"Show Book", b"")
-    assert c.get("/api/showbook/presets").get_json()["venue_safe"] == ["checklist", "patch", "patch_sheet", "rider", "stage_plan"]
+    assert c.get("/api/showbook/presets").get_json()["venue_safe"] == ["cabling", "checklist", "patch", "patch_sheet", "rider", "stage_plan"]
 
 
 @pytest.mark.parametrize("paper,size", [("A3 Landscape", b"1190 842"), ("US Letter Portrait", b"612 792"),

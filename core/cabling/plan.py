@@ -88,7 +88,7 @@ def _clean_chain(ch) -> Optional[dict]:
         return None
     devs = []
     for d in ch.get("devices") or []:
-        if isinstance(d, dict) and str(d.get("fixture", "")).strip().isdigit():
+        if isinstance(d, dict) and re.match(r"^(\d+|x\d+)$", str(d.get("fixture", "")).strip()):
             devs.append({"fixture": str(d["fixture"]).strip()})
         elif isinstance(d, dict) and d.get("item"):
             devs.append({"item": str(d["item"])[:60]})
@@ -141,6 +141,42 @@ def _clean_places(v) -> dict:
     return out
 
 
+def _clean_extra(v, i: int) -> Optional[dict]:
+    """A fixture found on the day, not (yet) patched in the show (C015)."""
+    if not isinstance(v, dict):
+        return None
+    pt = _clean_point(v)
+    name = str(v.get("name") or "").strip()[:80]
+    if not pt or not name:
+        return None
+    fid = str(v.get("id") or "")
+    fid = fid if re.match(r"^x\d+$", fid) else f"x{i + 1}"
+    conns, known = kit_mod.connectors_from_qxf(str(v.get("connector") or ""))
+    return {"id": fid, "name": name, "manufacturer": str(v.get("manufacturer") or "").strip()[:80],
+            "model": str(v.get("model") or "").strip()[:80], "x": pt["x"], "z": pt["z"], "h": pt.get("h", 0),
+            "universe": str(v.get("universe") or "0") if str(v.get("universe") or "0").isdigit() else "0",
+            "connector": str(v.get("connector") or "")[:30]}
+
+
+def with_extras(rig: dict, plan: dict) -> dict:
+    """The rig plus the plan's fixtures found on the day (``patched: False``)."""
+    if not plan.get("extras"):
+        return rig
+    r = dict(rig)
+    r["fixtures"] = list(rig["fixtures"])
+    have = {f["id"] for f in r["fixtures"]}
+    for e in plan["extras"]:
+        if e["id"] in have:
+            continue
+        conns, known = kit_mod.connectors_from_qxf(e["connector"])
+        r["fixtures"].append({"id": e["id"], "name": e["name"], "manufacturer": e["manufacturer"],
+                              "model": e["model"], "mode": "", "universe": e["universe"], "address": 0,
+                              "channels": 0, "place": {"x": e["x"], "z": e["z"], "bottom": e["h"]},
+                              "hung": e["h"] > rig_mod.TRUSS_MM, "conns": conns, "connector_known": known,
+                              "definition": False, "power": None, "patched": False})
+    return r
+
+
 def clean_plan(p) -> dict:
     p = p if isinstance(p, dict) else {}
     out = {"version": PLAN_VERSION,
@@ -150,7 +186,8 @@ def clean_plan(p) -> dict:
            "slack_m": _num(p.get("slack_m"), cables_mod.SLACK_M, 0, 3),
            "tonight": kit_mod.clean_inventory(p.get("tonight") or {}),
            "owners": {str(k): v for k, v in (p.get("owners") or {}).items()
-                      if str(k).isdigit() and v in kit_mod.OWNERS},
+                      if re.match(r"^(\d+|x\d+)$", str(k)) and v in kit_mod.OWNERS},
+           "extras": [e for e in (_clean_extra(x, i) for i, x in enumerate(p.get("extras") or [])) if e][:40],
            "controller": clean_controller(p.get("controller")),
            "chains": [c for c in (_clean_chain(x) for x in p.get("chains") or []) if c]}
     out["tonight"].pop("dropped", None)
@@ -258,6 +295,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
     "controller", "trusses", "shopping"}``.  Each walked chain has its
     ``links`` with ``route`` (points, length), ``need_m`` and ``cables``."""
     plan = clean_plan(plan)
+    rig = with_extras(rig, plan)
     inv = plan["tonight"]
     items = _items(inv)
     owners = {m["id"]: m for m in rig_mod.match_inventory(rig, inv, plan["owners"])}
@@ -387,6 +425,9 @@ def evaluate(plan: dict, rig: dict) -> dict:
         issues.append(chain_mod._issue("C006", "Not on any chain: " + ", ".join(f["name"] for f in missing) + ".",
                                        fix="Add them to a chain."))
     for f in fx.values():
+        if f.get("patched") is False:
+            issues.append(chain_mod._issue("C015", f"{f['name']} is on the plan but not patched in the show.",
+                                           f["name"], "Patch it… in Fixtures (the show in progress)."))
         if f["place"] is None:
             issues.append(chain_mod._issue("C013", f"{f['name']} is not on the 3D stage; its route is estimated.",
                                            f["name"], "Place it in Stage & Meshes."))

@@ -6,6 +6,8 @@ in settings.
 
     GET  /api/cabling/state        rig, tonight's plan, evaluation, found in the show
     POST /api/cabling/plan         {plan}: keep tonight's plan (<show>.cabling.json)
+    POST /api/cabling/export       {plan, what}: a download — plot (pdf, svg), pick list
+                                   (pdf, csv, txt), labels (pdf, txt), load-in order (txt)
     POST /api/cabling/evaluate     {plan}: check a plan without keeping it
     POST /api/cabling/auto         {plan}: two or three alternatives, best first
     GET  /api/cabling/kit          your kit and the presets
@@ -17,11 +19,14 @@ import copy
 import os
 import re
 
-from flask import Blueprint, jsonify, request
+import datetime
+
+from flask import Blueprint, Response, jsonify, request
 
 from core import qxw_io, workspace
 from core.cabling import auto as auto_mod
 from core.cabling import kit as kit_mod
+from core.cabling import outputs as out_mod
 from core.cabling import plan as plan_mod
 from core.cabling import rig as rig_mod
 from routes.doctor_routes import _defs, _open_workspace
@@ -63,16 +68,31 @@ def _current_plan() -> tuple:
     return (saved or _mem['plan'] or plan_mod.new_plan()), bool(saved)
 
 
+def _show_name() -> str:
+    _root, path, name = _open_workspace()
+    stem = os.path.splitext(name or os.path.basename(path or '') or 'show')[0]
+    return re.sub(r'_v\d+$', '', stem)
+
+
+def _view(p: dict, r: dict) -> dict:
+    """The evaluation, the numbered cables and the plot of a plan."""
+    ev = plan_mod.evaluate(p, r)
+    rig = plan_mod.with_extras(r, p)
+    nums = out_mod.numbered(ev, p)
+    return {'evaluation': ev, 'cables': nums, 'svg': out_mod.plot_svg(ev, p, rig, _show_name()),
+            'pick': out_mod.pick_list(ev, p), 'load_in': out_mod.load_in(ev, p)}
+
+
 @bp.route('/state')
 def state():
     r = _rig()
     if r is None:
         return jsonify({'error': 'No workspace open.'}), 400
     p, saved = _current_plan()
-    return jsonify({'rig': r, 'plan': p, 'saved': saved,
+    return jsonify({'rig': r, 'plan': p, 'saved': saved, 'show': _show_name(),
                     'sidecar': os.path.basename(_sidecar()) if _sidecar() else '',
-                    'evaluation': plan_mod.evaluate(p, r),
-                    'found': plan_mod.not_in_inventory(p, r)})
+                    'base': kit_mod.load_base(), 'presets': kit_mod.presets(),
+                    'found': plan_mod.not_in_inventory(p, r), **_view(p, r)})
 
 
 @bp.route('/evaluate', methods=['POST'])
@@ -81,8 +101,7 @@ def evaluate():
     if r is None:
         return jsonify({'error': 'No workspace open.'}), 400
     p = plan_mod.clean_plan((request.get_json(silent=True) or {}).get('plan'))
-    return jsonify({'plan': p, 'evaluation': plan_mod.evaluate(p, r),
-                    'found': plan_mod.not_in_inventory(p, r)})
+    return jsonify({'plan': p, 'found': plan_mod.not_in_inventory(p, r), **_view(p, r)})
 
 
 @bp.route('/auto', methods=['POST'])
@@ -93,7 +112,64 @@ def auto():
     p = plan_mod.clean_plan((request.get_json(silent=True) or {}).get('plan'))
     if not r['fixtures']:
         return jsonify({'error': 'The show has no fixtures.'}), 400
-    return jsonify({'alternatives': auto_mod.alternatives(p, r)})
+    alts = auto_mod.alternatives(p, r)
+    rig = plan_mod.with_extras(r, p)
+    for a in alts:
+        a['svg'] = out_mod.plot_svg(a['evaluation'], a['plan'], rig, _show_name())
+    return jsonify({'alternatives': alts})
+
+
+_EXPORTS = {
+    'plot_pdf': ('Cabling_plot', 'pdf', 'application/pdf'),
+    'plot_svg': ('Cabling_plot', 'svg', 'image/svg+xml'),
+    'pick_pdf': ('Pick_list', 'pdf', 'application/pdf'),
+    'pick_csv': ('Pick_list', 'csv', 'text/csv; charset=utf-8'),
+    'pick_txt': ('Pick_list', 'txt', 'text/plain; charset=utf-8'),
+    'labels_pdf': ('Cable_labels', 'pdf', 'application/pdf'),
+    'labels_txt': ('Cable_labels', 'txt', 'text/plain; charset=utf-8'),
+    'loadin_txt': ('Load-in_order', 'txt', 'text/plain; charset=utf-8'),
+}
+
+
+@bp.route('/export', methods=['POST'])
+def export():
+    r = _rig()
+    if r is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    data = request.get_json(silent=True) or {}
+    what = data.get('what')
+    if what not in _EXPORTS:
+        return jsonify({'error': 'Unknown export.'}), 400
+    p = plan_mod.clean_plan(data.get('plan'))
+    if not p['chains']:
+        return jsonify({'error': 'The plan has no chains yet.'}), 400
+    ev = plan_mod.evaluate(p, r)
+    rig = plan_mod.with_extras(r, p)
+    show = _show_name()
+    date = str(data.get('date') or datetime.date.today().isoformat())[:10]
+    nums = out_mod.numbered(ev, p)
+    width = 32 if str(data.get('width')) == '58' else 42
+    if what == 'plot_pdf':
+        body = out_mod.plot_pdf(ev, p, rig, f'{show} - DMX cabling')
+    elif what == 'plot_svg':
+        body = out_mod.plot_svg(ev, p, rig, f'{show} - DMX cabling').encode('utf-8')
+    elif what.startswith('pick_'):
+        pl = out_mod.pick_list(ev, p)
+        body = {'pick_pdf': lambda: out_mod.pick_list_pdf(pl, show, date),
+                'pick_csv': lambda: out_mod.pick_list_csv(pl).encode('utf-8'),
+                'pick_txt': lambda: out_mod.pick_list_text(pl, show, date, width).encode('utf-8')}[what]()
+    elif what == 'labels_pdf':
+        body = out_mod.labels_pdf(nums, show)
+    elif what == 'labels_txt':
+        body = out_mod.labels_text(nums, width).encode('utf-8')
+    else:
+        body = ('\n'.join(f'{i + 1}. {s}' for i, s in enumerate(out_mod.load_in(ev, p))) + '\n').encode('utf-8')
+    stem, ext, mime = _EXPORTS[what]
+    safe = re.sub(r'[^\w-]', '_', show).strip('_') or 'show'
+    name = f'{safe}_{stem}.{ext}'
+    return Response(body, mimetype=mime, headers={
+        'Content-Disposition': f'attachment; filename="{name}"', 'X-Suggested-Filename': name,
+        'Access-Control-Expose-Headers': 'X-Suggested-Filename'})
 
 
 @bp.route('/plan', methods=['POST'])

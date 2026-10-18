@@ -43,6 +43,12 @@ from core.cabling import rig as rig_mod
 EXACT_MAX = 9
 
 
+def fid_key(fid: str):
+    """Fixture ids in order: the show's (numbers) first, then the ones found
+    on the day (``x1``, ``x2``…)."""
+    return (0, int(fid)) if fid.isdigit() else (1, int(fid[1:]) if fid[1:].isdigit() else 0)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ordering
 # ─────────────────────────────────────────────────────────────────────────────
@@ -163,7 +169,7 @@ def _chain_cost(src, ids, cost):
 def build_groups(src: str, fixtures: List[dict], stage: dict, trusses, cost, outputs: int,
                  drive: int = kit_mod.DEFAULT_DRIVE) -> List[Tuple[List[str], float]]:
     """Ordered chains ``[(fixture ids, metres)]`` for one source point."""
-    gs = [sorted(g, key=lambda x: int(x)) for g in zones(fixtures, stage, trusses)]
+    gs = [sorted(g, key=fid_key) for g in zones(fixtures, stage, trusses)]
     trussy = {fid for t in trusses for fid in t["fixtures"]}
 
     def merged_cost(a, b):
@@ -204,7 +210,7 @@ def build_groups(src: str, fixtures: List[dict], stage: dict, trusses, cost, out
     for g in gs:
         path, c = _chain_cost(src, g, cost)
         out.append((path, c))
-    out.sort(key=lambda pc: (int(pc[0][0]) if pc[0] else 0))
+    out.sort(key=lambda pc: fid_key(pc[0][0]) if pc[0] else (0, 0))
     return out
 
 
@@ -327,6 +333,7 @@ def alternatives(plan: dict, rig: dict) -> List[dict]:
     first.  The input plan's tonight, owners, walkways, outlets and slack are
     kept; its chains and places are replaced (a placed controller stays)."""
     base = plan_mod.clean_plan(plan)
+    rig = plan_mod.with_extras(rig, base)
     base["chains"] = []
     base["places"] = {k: v for k, v in base["places"].items() if k == "controller"}
     tonight = base["tonight"]

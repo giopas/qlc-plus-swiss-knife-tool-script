@@ -43,6 +43,7 @@ ALL_SECTIONS = [
     "rider",
     "stage_plan",
     "checklist",
+    "cabling",
     "summary",
     "patch",
     "functions",
@@ -63,7 +64,7 @@ PRESETS = {
     "rider":     {"label": "Tech rider", "reader": "for the venue",
                   "title": "Tech Rider", "sections": ["rider", "stage_plan"]},
     "checklist": {"label": "Crew checklist", "reader": "for load-in",
-                  "title": "Crew Checklist", "sections": ["checklist", "stage_plan"]},
+                  "title": "Crew Checklist", "sections": ["checklist", "cabling", "stage_plan"]},
     "patch":     {"label": "Patch sheet", "reader": "for the crew at the rig",
                   "title": "Patch Sheet", "sections": ["patch_sheet"]},
     "operator":  {"label": "Operator show book", "reader": "for you at the desk",
@@ -75,7 +76,7 @@ PRESETS = {
 # What may leave your hands: a document made only of the venue / crew presets
 # never carries function names, key / MIDI maps, the Virtual Console or the
 # Doctor — a rule, not a tick box.
-VENUE_SAFE = {"rider", "stage_plan", "checklist", "patch", "patch_sheet"}
+VENUE_SAFE = {"rider", "stage_plan", "checklist", "cabling", "patch", "patch_sheet"}
 
 
 def resolve_sections(presets: list[str] | None, sections: list[str] | None) -> tuple[list[str], str]:
@@ -194,6 +195,11 @@ def generate(sections: list[str] | None = None,
 
     if "checklist" in sections:
         doc["sections"]["checklist"] = _build_checklist(rig)
+
+    if "cabling" in sections:
+        cab = _build_cabling(state)
+        if cab:
+            doc["sections"]["cabling"] = cab
 
     if "summary" in sections:
         doc["sections"]["summary"] = _build_summary(rig, root)
@@ -491,6 +497,37 @@ def _build_checklist(state: dict) -> list[dict]:
                f"{info.get('z_mm', 0) / 1000:.2f} m") if info.get("in_3d") else ""
         rows.append({**p, "position": pos})
     return rows
+
+
+def _cabling_context(state: dict):
+    """``(evaluation, plan, rig)`` of the show's cabling plan
+    (``<show>.cabling.json`` next to it, 3.6.0), or ``None`` without one."""
+    path = state.get("path") or ""
+    if not path or not os.path.isfile(path):
+        return None
+    from core import qxw_io
+    from core.cabling import plan as cplan, rig as crig
+    from core.doctor import load_qxf_defs
+    p = cplan.load_plan(cplan.sidecar_path(path))
+    if not p or not p["chains"]:
+        return None
+    root = qxw_io.strip_ns(copy.deepcopy(state["qxw_root"]))
+    r = crig.read_rig(root, load_qxf_defs([os.path.dirname(os.path.abspath(path))]), path)
+    return cplan.evaluate(p, r), p, r
+
+
+def _build_cabling(state: dict):
+    """The DMX cabling for the crew: load-in order, cables by number, the
+    pick list and the plot (SVG).  ``None`` when the show has no plan."""
+    ctx = _cabling_context(state)
+    if ctx is None:
+        return None
+    from core.cabling import outputs
+    ev, p, r = ctx
+    nums = outputs.numbered(ev, p)
+    return {"steps": outputs.load_in(ev, p), "pick": outputs.pick_list(ev, p),
+            "cables": [{k: c[k] for k in ("n", "length", "chain", "from", "to", "house")} for c in nums],
+            "svg": outputs.plot_svg(ev, p, r, "DMX cabling"), "summary": ev["summary"]}
 
 
 def _build_function_index(state: dict) -> list[dict]:
@@ -964,6 +1001,11 @@ def export_csv(document: dict) -> bytes:
                 [["", c["id"], c["name"], c["model"], c["mode"], c["patch"], c["groups"],
                   c["position"]] for c in sections["checklist"]],
                 ["Done", "ID", "Name", "Model", "Mode", "Patch", "Groups", "3D position"]))
+        if "cabling" in sections:
+            zf.writestr("cabling.csv", _csv_write(
+                [[c["n"], c["length"], c["chain"], c["from"], c["to"], "house" if c["house"] else ""]
+                 for c in sections["cabling"]["cables"]],
+                ["#", "Length m", "Chain", "From", "To", "Owner"]))
         if "patch" in sections:
             zf.writestr("patch.csv", _csv_patch(sections["patch"]))
         if "patch_sheet" in sections:
@@ -1378,6 +1420,8 @@ def _export_pdf(document: dict, logo=None) -> bytes:
         _pdf_rider(pdf, sections["rider"], show_name, date)
     if "checklist" in sections:
         _pdf_checklist(pdf, sections["checklist"])
+    if "cabling" in sections:
+        _pdf_cabling(pdf, sections["cabling"], show_name)
     if "stage_plan" in sections:
         _pdf_stage_plan(pdf, sections["stage_plan"], show_name, date)
 
@@ -1554,6 +1598,37 @@ def _pdf_checklist(pdf: _PdfBuilder, rows: list[dict]):
     for i, c in enumerate(rows):
         pdf.table_row(["[ ]", c["id"], c["name"], c["model"], c["mode"], c["patch"],
                        c["groups"], c["position"]], col_w, i)
+
+
+def _pdf_cabling(pdf: _PdfBuilder, cab: dict, show_name: str):
+    """DMX cabling: the load-in order, the cables by number, then the plot on
+    a page of its own."""
+    pdf.section_heading("DMX cabling - load-in order")
+    headers = ["Done", "Step"]
+    col_w = _auto_col_widths(headers, {"Done": 34})
+    pdf.table_header(headers, col_w)
+    for i, st in enumerate(cab["steps"]):
+        pdf.table_row(["[ ]", st[:160]], col_w, i)
+    pdf.spacer()
+    pdf.section_heading("DMX cables")
+    headers = ["#", "Length", "Chain", "From", "To"]
+    col_w = _auto_col_widths(headers, {"#": 30, "Length": 50})
+    pdf.table_header(headers, col_w)
+    for i, c in enumerate(cab["cables"]):
+        pdf.table_row([c["n"], f"{c['length']:g} m", c["chain"], c["from"],
+                       c["to"] + (" (house)" if c["house"] else "")], col_w, i)
+    ctx = _cabling_context(workspace._state)
+    if ctx is not None:
+        from core.cabling import outputs
+        ev, p, r = ctx
+        outputs.numbered(ev, p)
+        if pdf.cy >= _H - _TITLE_H - 6:
+            pdf.ops.clear()
+            pdf.page_num -= 1
+        pdf.finish_page()
+        pdf.pages.append(outputs._plot_stream(ev, p, r, f"{show_name} - DMX cabling", _W, _H))
+        pdf.page_num += 1
+        pdf.cy = 0
 
 
 def _pdf_stage_plan(pdf: _PdfBuilder, plan: dict, show_name: str, date: str):

@@ -119,7 +119,7 @@ def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
     assumed_conn: List[str] = []
     assumed_thru: List[str] = []
     behind_dev, behind_sock = source, out_port
-    where_chain = name or f"{source['name']} {out_port.get('name', 'out')}"
+    where_chain = name or f"{source['name'].split(' ')[0]} {out_port.get('name', 'out')}"
     for i, dev in enumerate(devices):
         cab = cables[i] or _generic_cable(pick_cable_conn(behind_sock, dev, inventory))
         link = {"from": behind_dev["name"], "to": dev["name"], "cable": cab.get("id") or None,

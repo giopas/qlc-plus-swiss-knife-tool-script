@@ -211,6 +211,36 @@ GUIDE: Dict[str, dict] = {
                  "not write are never replaced. The tablet needs QLC+ started with `-w`; at the gig, "
                  "double-click Start Stage Monitor in the exported folder (or ▶ Serve in the Swiss Knife window).",
     },
+    "cabling": {
+        "use": "Plan the DMX cables of the show with the user's kit: which splitter output feeds which fixtures, in "
+               "what order, which cable goes where, the adapters and terminators, the pick list and the labels.",
+        "args": [("action", "`kit`, `fixture`, `plan` or `check`."),
+                 ("kit", "kit: `{items: [...]}` to keep as the user's kit (leave out to read it and the presets)."),
+                 ("manufacturer", "fixture: the maker."), ("model", "fixture: the model."),
+                 ("connectors", "fixture: DMX connectors, e.g. `[\"xlr3\"]` or `[\"xlr3\", \"xlr5\"]`."),
+                 ("thru", "fixture: false when it has no DMX thru."),
+                 ("termination", "fixture: `none`, `switch`, `auto` (terminates itself) or `unknown`."),
+                 ("power_w", "fixture: power draw in watts."),
+                 ("sources", "fixture: where each value comes from: `{\"connectors\": \"photo\", \"power_w\": \"manual\"}` "
+                             "(manual, photo, qxf, guess)."),
+                 ("count", "fixture: how many the user owns."),
+                 ("confirmed", "fixture: true only after the user said the proposal is right."),
+                 ("controller", "plan: `{mode: stand | foh | auto, side: stage-left | stage-right | back | front, "
+                                "distance_m, route: wall | taped | overhead | unknown}`."),
+                 ("owners", "plan: `{fixture id: mine | borrowed | venue}` for fixtures not in the kit (a venue's house rig)."),
+                 ("choose", "plan: the key of the alternative to keep (A, B, C)."),
+                 ("export", "check: files to write: plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt."),
+                 ("folder", "check: where to write them (a shared folder; default next to the show).")],
+        "returns": "kit: the kit and presets. fixture: the proposal, or what was added. plan: the alternatives "
+                   "(cable, longest hop, crossings, adapters, missing, chains) and `kept` after choose. check: totals, "
+                   "issues (C codes), load-in order, pick list, numbered cables, `written`.",
+        "example": '{"action": "fixture", "manufacturer": "Eurolite", "model": "LED PAR-64 RGB", "connectors": ["xlr3"], '
+                   '"termination": "none", "power_w": 18, "sources": {"connectors": "photo", "power_w": "manual"}}',
+        "notes": "The show is never changed: the plan is kept in <show>.cabling.json next to it, the kit in Swiss "
+                 "Knife's settings. For a fixture, read the back-panel photo or the manual; mark every value you "
+                 "could not see as `guess`; show the proposal and wait for the user's OK before confirmed=true. "
+                 "The QLC+ definition stays the reference for channels and modes.",
+    },
     "compare": {
         "use": "Compare the show in progress with another .qxw (read only).",
         "args": [("path", "The other .qxw.")],
@@ -302,8 +332,10 @@ WORKFLOWS = """Usual sequences:
 - Tonight's setlist: setlist (apply=false) → show the matches → setlist → save_show.
 - Dictionary: dictionary_context → dictionary_set (auto_steps, draft_missing) → dictionary_save.
 - A tablet on stage: stage_monitor (to see the cue lists) → stage_monitor config → stage_monitor export.
+- DMX cables for tonight: cabling kit → cabling plan (show the alternatives) → cabling plan choose → cabling check (export).
+- A fixture for the kit: cabling fixture (proposal, shown to the user) → cabling fixture confirmed=true.
 
-Every change is a History step (show_history, undo). Only save_show and dictionary_save write files, always new ones; stage_monitor writes only its settings and its own page."""
+Every change is a History step (show_history, undo). Only save_show and dictionary_save write files, always new ones; stage_monitor writes only its settings and its own page; cabling writes only the kit, the plan next to the show and new export files."""
 
 # ── ready requests (MCP prompts) ──────────────────────────────────────────────
 
@@ -332,6 +364,18 @@ PROMPTS: List[dict] = [
      "text": ('Using the QLC+ Swiss Knife tool, open "{show}" and look at its cue lists with stage_monitor. Put the '
               "setlist cue list on the Stage Monitor page, read-only, with the black theme and a white song, hide the "
               "steps that are not songs, show me what you chose, then export the page and tell me how to open it on the tablet.")},
+    {"name": "plan_cabling", "title": "Plan the DMX cabling for tonight",
+     "description": "Kit, where the computer stands, alternatives, then the pick list and labels.",
+     "arguments": [{"name": "show", "description": "Path or name of the .qxw", "required": True}],
+     "text": ('Using the QLC+ Swiss Knife tool, open "{show}" and plan its DMX cabling. Look at my kit with cabling '
+              "action=kit and tell me what is missing for this show. Ask me where the computer stands (beside me, "
+              "front of house and how far, or let the planner choose) and which fixtures belong to the venue. Then "
+              "show me the alternatives from cabling action=plan, keep the one I choose, and write the plot, the pick "
+              "list and the labels next to the show with cabling action=check.")},
+    {"name": "fixture_to_kit", "title": "Add a fixture to my kit",
+     "description": "From a name, a link or a photo of the back panel: connectors, termination, power.",
+     "arguments": [{"name": "fixture", "description": "Name or link of the fixture", "required": True}],
+     "text": ""},
     {"name": "song_buttons", "title": "Buttons for looks that have none",
      "description": "Find the chasers and scenes the setlist uses that have no button and put them on a page.",
      "arguments": [{"name": "show", "description": "Path or name of the .qxw", "required": True}],
@@ -375,6 +419,19 @@ def dictionary_request(show: str, mode: str = "buttons", review: bool = True, di
 
 
 PROMPTS[0]["text"] = dictionary_request("{show}")          # one text for the prompt and the app's window
+
+
+def fixture_request(fixture: str) -> str:
+    """The request the Cabling screen's *Ask Claude…* window copies (3.6.0)."""
+    return (f'Using the QLC+ Swiss Knife tool, add the fixture "{fixture}" to my Cabling kit. I may attach a photo of '
+            "its back panel or a link to its manual. Find its DMX connectors (in and thru, 3-pin or 5-pin), whether "
+            "it terminates itself or has a termination switch, its power draw, and the QLC+ definition that matches "
+            "it. Mark each value with where it comes from (manual, photo, QLC+ definition, or guess) and leave out "
+            "what you cannot find. Show me the proposal with cabling action=fixture, wait for my OK, then call it "
+            "again with confirmed=true.")
+
+
+next(p for p in PROMPTS if p["name"] == "fixture_to_kit")["text"] = fixture_request("{fixture}")
 
 
 # ── rendering ─────────────────────────────────────────────────────────────────

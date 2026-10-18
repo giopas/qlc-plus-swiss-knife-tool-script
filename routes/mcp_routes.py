@@ -135,6 +135,15 @@ def install_bundle():
     return jsonify({"ok": True, "path": path, "opened": opened})
 
 
+@bp.route("/api/mcp/fixture-request", methods=["POST"])
+def fixture_request():
+    """The request the Cabling screen's Ask Claude… window shows (3.6.0)."""
+    from core import mcp_guide
+    d = request.get_json(silent=True) or {}
+    name = " ".join(x for x in (str(d.get("manufacturer") or "").strip(), str(d.get("model") or "").strip()) if x)
+    return jsonify({"text": mcp_guide.fixture_request(name or "<the fixture's name or link>")})
+
+
 @bp.route("/api/mcp/dictionary-request", methods=["POST"])
 def dictionary_request():
     """The request the Dictionary's Ask Claude… window shows (v3.0.1)."""

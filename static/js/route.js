@@ -59,7 +59,8 @@ const ROUTES = {
       { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — tonight’s songs into the CueList' },
       { tool: 'triggers', label: 'Keys & MIDI',   hint: 'Trigger Manager — no clashes, every button reachable' },
       { tool: 'doctor',   label: 'Check',         hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
-      { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — tech rider for the venue, crew checklist' },
+      { tool: 'cabling',  label: 'Cabling',       hint: 'Cabling — the DMX cables for tonight: kit, places, plan, pick list and labels' },
+      { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — tech rider for the venue, crew checklist (with the cabling)' },
     ],
   },
 };

@@ -403,3 +403,30 @@ def test_list_shows_names_unreadable_and_missing_folders(tmp_path):
         assert d["shows"] == [] and d["problems"]
     finally:
         os.chmod(locked, 0o755)
+
+
+def test_cabling_tool(work):
+    """3.6.0: kit, a fixture proposal then confirmed, alternatives, choose, check and export."""
+    from core.cabling import kit as kit_mod
+    P = kit_mod.PRESETS
+    items = [P["enttec_usb_pro"], P["lixada_1x8"], P["adapter_5m_3f"], dict(P["terminator_3"], count=5),
+             dict(P["cable_3_3"], count=12), dict(P["cable_3_5"], count=4), dict(P["cable_3_10"], count=3)]
+    assert work.ok("cabling", action="kit", kit={"items": items})["kept"] == 7
+    assert any(p["id"] == "lixada_1x8" for p in work.ok("cabling", action="kit")["presets"])
+    prop = work.ok("cabling", action="fixture", manufacturer="Generic", model="7-Ch RGB LED PAR",
+                   connectors=["xlr3"], termination="none", count=8, sources={"connectors": "photo"})
+    assert prop["to_check"] == ["connectors"] and "proposal" in prop
+    assert len(work.ok("cabling", action="kit")["kit"]["items"]) == 7          # nothing kept yet
+    work.ok("cabling", action="fixture", manufacturer="Generic", model="7-Ch RGB LED PAR",
+            connectors=["xlr3"], termination="none", count=8, confirmed=True)
+    assert len(work.ok("cabling", action="kit")["kit"]["items"]) == 8
+    work.ok("open_show", path=str(work.folder / "Festival_14fix.qxw"))
+    alts = work.ok("cabling", action="plan", owners={str(i): "venue" for i in range(6)})
+    assert [a["key"] for a in alts["alternatives"]] == ["A", "B", "C"] and "next" in alts
+    kept = work.ok("cabling", action="plan", choose="A")
+    assert kept["kept"] == "Festival_14fix.cabling.json"
+    chk = work.ok("cabling", action="check", export=["pick_csv", "labels_txt"], folder=str(work.folder))
+    assert chk["load_in"][0].startswith("Computer") and len(chk["written"]) == 2
+    assert all(os.path.isfile(p) for p in chk["written"])
+    err, msg = work.tool("cabling", action="plan", choose="Z")
+    assert err and "choose must be" in str(msg)

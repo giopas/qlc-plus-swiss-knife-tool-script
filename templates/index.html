@@ -135,6 +135,10 @@
       <svg class="ic"><use href="/static/icons.svg#tablet"/></svg>
       <span>Stage Monitor</span>
     </button>
+    <button class="sn-item" id="sn-cabling" data-tip="Cabling" data-desc="Plan the DMX cables with the kit you own: which splitter output feeds which fixtures, in what order, which cable goes where, the adapters and terminators, and the pick list and labels for the crew." onclick="go('cabling')">
+      <svg class="ic"><use href="/static/icons.svg#cable"/></svg>
+      <span>Cabling</span>
+    </button>
 
     <!-- 5 · Check &amp; fix -->
     <div class="sn-group-label" id="sn-grp-5"><span class="sn-gnum">5</span><span class="sn-gtxt">Check &amp; fix</span></div>
@@ -326,6 +330,23 @@
     <button class="sc-link" onclick="openHelp('Claude-Tools')">Every tool Claude can use (wiki)</button>
   </div>
 
+  <!-- Ask Claude about a fixture for the Cabling kit (3.6.0) -->
+  <div class="upd-card mcp-card" id="cb-claude-card" hidden>
+    <div class="upd-head"><b>Ask Claude about a fixture</b><button class="btn btn-surface btn-sm" onclick="document.getElementById('cb-claude-card').hidden = true">✕</button></div>
+    <div class="upd-sub">Swiss Knife cannot start Claude: Claude Desktop starts Swiss Knife. Copy this request, paste it in a new chat in Claude Desktop, and attach a photo of the fixture's back panel or a link to its manual if you have one.</div>
+    <div class="upd-msg" id="cb-claude-status"></div>
+    <div class="mcp-h">The request</div>
+    <pre class="upd-notes mcp-snip" id="cb-claude-text"></pre>
+    <button class="btn btn-accent btn-sm" onclick="mcpCopy('cb-claude-text', this)">Copy</button>
+    <div class="mcp-h">Then</div>
+    <ol class="dict-claude-steps">
+      <li>Claude shows what it found, each value with where it comes from (manual, photo, QLC+ definition or guess).</li>
+      <li>Correct what is wrong and say OK: only then is the fixture added to your kit.</li>
+      <li>Back here, ↻ Refresh: the fixture is matched to your kit.</li>
+    </ol>
+    <button class="sc-link" onclick="openHelp('Cabling')">Cabling (wiki)</button>
+  </div>
+
   <!-- Command palette (⌘K / Ctrl+K) -->
   <div class="cp" id="cp" hidden onclick="if(event.target===this)cpClose()">
     <div class="cp-box" role="dialog" aria-label="Go to a tool or action">
@@ -450,7 +471,7 @@
         <div class="rt-card">
           <div class="rt-title">Get ready for the gig</div>
           <div class="rt-meta" data-route-meta="gig"></div>
-          <div class="rt-desc">The show is built: tonight's songs into the cue list, keys and MIDI without clashes, a last check, the paper for the crew.</div>
+          <div class="rt-desc">The show is built: tonight's songs into the cue list, keys and MIDI without clashes, a last check, the DMX cables, the paper for the crew.</div>
           <ol class="rt-steps" data-route="gig"></ol>
           <button class="btn btn-accent btn-sm" onclick="routeStart('gig')">▶ Start the route</button>
         </div>
@@ -499,7 +520,7 @@
         <div class="wf-card" data-grp="4">
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Stage Monitor</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Stage Monitor</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -2203,6 +2224,169 @@
   </section>
 
   <!-- ======================================================================
+       CABLING (3.6.0)
+  ====================================================================== -->
+  <section class="screen" id="scr-cabling">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#cable"/></svg></div>
+      <div><h2>Cabling</h2><div class="p-desc">Plan the DMX cables for tonight with the kit you own: chains, cables, adapters, terminators, and what to pack. The show is only read.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Cabling')" title="How this tool works — opens the Cabling page of the wiki">?</button>
+      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    </div>
+
+    <div class="tool-stepper" data-tool="cabling"></div>
+
+    <div class="doc-toolbar">
+      <span id="cb-summary" class="doc-summary"></span>
+      <div class="spacer"></div>
+      <span class="cb-saved" id="cb-saved"></span>
+      <button class="btn btn-surface" onclick="cablingLoad()" data-tooltip="Read the show again (fixtures moved on the stage move their cables)">↻ Refresh</button>
+    </div>
+
+    <!-- 1 · Kit -->
+    <div class="cb-step" id="cb-step-0">
+      <div class="cb-cols">
+        <div class="cb-main">
+          <div class="pane-header">Tonight's kit <span class="cb-hint">a copy of your kit, for this show only</span></div>
+          <div id="cb-kit"></div>
+          <div class="cb-card cb-add">
+            <div class="cb-row"><span>Add</span>
+              <select id="cb-preset" class="field-input"></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingAddPreset()">+ Add</button></div>
+            <div class="cb-row"><span>Cables</span>
+              <select id="cb-cab-conn" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option></select>
+              <input id="cb-cab-len" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length in m"> m
+              × <input id="cb-cab-n" class="field-input cb-narrow" type="number" min="1" max="99" value="1" title="How many">
+              <select id="cb-cab-type" class="field-input cb-narrow"><option value="dmx">DMX 110 Ω</option><option value="mic">Microphone</option></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingAddCable()">+ Add</button></div>
+          </div>
+          <div class="cb-actions">
+            <button class="btn btn-surface btn-sm" onclick="cablingFromBase()" data-tooltip="Tonight's kit becomes a copy of your kit again">⟲ Start from my kit</button>
+            <button class="btn btn-surface btn-sm" onclick="cablingSaveBase()" data-tooltip="Keep tonight's kit as your kit, for every show (venue items stay out)">💾 Keep as my kit</button>
+          </div>
+        </div>
+        <div class="cb-side">
+          <div class="pane-header">Found in the show</div>
+          <div id="cb-found"></div>
+          <div class="pane-header">Your fixtures</div>
+          <div id="cb-owners" class="cb-card"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · Places -->
+    <div class="cb-step" id="cb-step-1" hidden>
+      <div class="cb-cols">
+        <div class="cb-main">
+          <div class="pane-header">The stage from above <span class="cb-hint">audience at the bottom · click to place</span></div>
+          <div class="cb-seg" id="cb-place-mode">
+            <button data-v="controller" onclick="cablingPlaceMode('controller')">Computer</button>
+            <button data-v="splitter" onclick="cablingPlaceMode('splitter')">Splitter</button>
+            <button data-v="outlet" onclick="cablingPlaceMode('outlet')">Power outlet</button>
+            <button data-v="walkway" onclick="cablingPlaceMode('walkway')">Walkway (2 corners)</button>
+            <button data-v="extra" onclick="cablingPlaceMode('extra')">+ Fixture found here</button>
+          </div>
+          <div class="cb-stage" id="cb-places"></div>
+        </div>
+        <div class="cb-side">
+          <div class="pane-header">The computer</div>
+          <div class="cb-card">
+            <label class="cb-check"><input type="radio" name="cb-ctl" value="stand" onchange="cablingCtl('mode', 'stand')"> Where I stand</label>
+            <div class="cb-row cb-sub"><span>Side</span>
+              <select id="cb-side-sel" class="field-input" onchange="cablingCtl('side', this.value)">
+                <option value="stage-left">Stage left wing</option><option value="stage-right">Stage right wing</option>
+                <option value="back">Behind the stage</option><option value="front">In front of the stage</option></select></div>
+            <label class="cb-check"><input type="radio" name="cb-ctl" value="foh" onchange="cablingCtl('mode', 'foh')"> Front of house, with the mixer remote</label>
+            <div class="cb-row cb-sub"><span>Distance</span>
+              <input id="cb-foh-d" class="field-input cb-narrow" type="number" min="1" max="200" step="0.5" onchange="cablingCtl('distance_m', +this.value)"> m from the stage edge</div>
+            <div class="cb-row cb-sub"><span>Route</span>
+              <select id="cb-foh-route" class="field-input" onchange="cablingCtl('route', this.value)">
+                <option value="unknown">Not decided</option><option value="wall">Along a wall</option>
+                <option value="taped">Taped across the floor</option><option value="overhead">Overhead</option></select></div>
+            <label class="cb-check"><input type="radio" name="cb-ctl" value="auto" onchange="cablingCtl('mode', 'auto')"> Let the planner choose (Raspberry Pi)</label>
+            <button class="btn btn-surface btn-sm" onclick="cablingClearPlace('controller')">Put the computer back where the setting says</button>
+          </div>
+          <div class="pane-header">On the floor</div>
+          <div class="cb-card" id="cb-floor-list"></div>
+          <div class="cb-card">
+            <div class="cb-row"><span>Slack</span>
+              <input id="cb-slack" class="field-input cb-narrow" type="number" min="0" max="3" step="0.25" onchange="cablingSet('slack_m', +this.value)"> m at each cable end</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · Plan -->
+    <div class="cb-step" id="cb-step-2" hidden>
+      <div class="cb-cols cb-cols-3">
+        <div class="cb-alts">
+          <div class="pane-header">Alternatives</div>
+          <button class="btn btn-accent btn-sm cb-propose" onclick="cablingPropose()">✨ Propose</button>
+          <div id="cb-alts"><div class="porter-placeholder">Propose two or three ways to cable the show, then pick one and change it as you like.</div></div>
+        </div>
+        <div class="cb-main">
+          <div class="pane-header">The plan <span class="cb-hint" id="cb-plan-totals"></span></div>
+          <div class="cb-stage" id="cb-plot"></div>
+        </div>
+        <div class="cb-side">
+          <div class="pane-header">Chains</div>
+          <div id="cb-chains"></div>
+          <div class="cb-card cb-add">
+            <div class="cb-row"><span>New chain</span>
+              <select id="cb-new-src" class="field-input"></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingNewChain()">+ Add</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 · Check and export -->
+    <div class="cb-step" id="cb-step-3" hidden>
+      <div class="cb-cols">
+        <div class="cb-main">
+          <div class="pane-header">Checks</div>
+          <div id="cb-checks"></div>
+          <div class="pane-header">Load-in order</div>
+          <ol id="cb-loadin" class="cb-loadin"></ol>
+        </div>
+        <div class="cb-side">
+          <div class="pane-header">For the crew</div>
+          <div class="cb-card" id="cb-pick"></div>
+          <div class="cb-card cb-exports">
+            <div class="cb-row"><span>Plot</span>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('plot_pdf')">PDF</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('plot_svg')">SVG</button></div>
+            <div class="cb-row"><span>Pick list</span>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_pdf')">PDF</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_csv')">CSV</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_txt')" data-tooltip="Plain text for a thermal printer">Ticket</button></div>
+            <div class="cb-row"><span>Labels</span>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('labels_pdf')" data-tooltip="A4 sheets of 3 × 8 labels, a stripe in the chain's colour">PDF</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('labels_txt')" data-tooltip="Plain text for a thermal printer">Ticket</button></div>
+            <div class="cb-row"><span>Load-in</span>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('loadin_txt')">Text</button></div>
+            <div class="cb-hint">Show Paperwork's crew checklist also carries the plot and the load-in order once the plan is kept next to the show.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note new" title="The show is not changed; the plan is kept in <show>.cabling.json next to it and your kit in your settings">
+        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
+        Reads the show, keeps the plan next to it
+      </span>
+      <span class="out-outcome" id="oc-cabling" aria-live="polite"></span>
+      <div class="spacer"></div>
+      <button class="btn btn-surface" id="cb-back" onclick="cablingStep(-1)">‹ Back</button>
+      <button id="cb-next" class="btn btn-accent" onclick="cablingStep(1)">Next ›</button>
+    </div>
+
+  </section>
+
+  <!-- ======================================================================
        STAGE MONITOR (3.5.0)
   ====================================================================== -->
   <section class="screen" id="scr-stagemon">
@@ -2650,6 +2834,7 @@
 <script src="/static/js/wizard.js?v={{ asset_v }}"></script>
 <script src="/static/js/upgrade.js?v={{ asset_v }}"></script>
 <script src="/static/js/stagemon.js?v={{ asset_v }}"></script>
+<script src="/static/js/cabling.js?v={{ asset_v }}"></script>
 <script src="/static/js/looks.js?v={{ asset_v }}"></script>
 <script src="/static/js/stage3d.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>

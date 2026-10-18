@@ -155,6 +155,14 @@ TOOLS: List[dict] = [
      "inputSchema": _obj({"config": {"type": "object"}, "export": {"type": "boolean"}, "folder": _S,
                           "replace": {"type": "boolean"},
                           "lang": {"type": "string", "enum": ["en", "it", "fr", "de", "es", "pt", "ja", "zh"]}})},
+    {"name": "cabling", "handler": "t_cabling",
+     "description": "The DMX cabling planner: tonight's kit, chains, cables, adapters, terminators, the pick list and labels. `action` is one of kit, fixture, plan, check. kit: without `kit` lists your kit and the presets; with `kit` {items:[...]} keeps it as your kit (settings). fixture: a fixture model for the kit from what you found (a name, a link, a photo of the back panel): give manufacturer, model, connectors (e.g. [\"xlr3\"]), thru, termination (none, switch, auto, unknown), power_w, sources {field: manual|photo|qxf|guess} and count; without confirmed=true it only returns the proposal to show the user; with confirmed=true it adds it to your kit. plan (needs an open show): `controller` {mode: stand|foh|auto, side, distance_m, route}, `owners` {fixture id: mine|borrowed|venue}; returns two or three alternatives; choose=\"A\" keeps that one next to the show as <show>.cabling.json. check: the checks, totals, load-in order and pick list of the kept plan; export=[plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt] with `folder` writes those as NEW files. The show itself is never changed.",
+     "inputSchema": _obj({"action": {"type": "string", "enum": ["kit", "fixture", "plan", "check"]},
+                          "kit": {"type": "object"}, "manufacturer": _S, "model": _S, "connectors": _IDS,
+                          "thru": {"type": "boolean"}, "termination": _S, "power_w": {"type": "number"},
+                          "sources": {"type": "object"}, "count": {"type": "integer"},
+                          "confirmed": {"type": "boolean"}, "controller": {"type": "object"},
+                          "owners": {"type": "object"}, "choose": _S, "export": _IDS, "folder": _S}, ["action"])},
     {"name": "compare", "handler": "t_compare",
      "description": "Compare the show in progress with another .qxw and return the differences (read only).",
      "inputSchema": _obj({"path": _S}, ["path"])},
@@ -199,7 +207,7 @@ TITLES = {
     "build_looks": "Build looks and chasers", "vc_pages": "Virtual Console pages",
     "edit_vc": "Edit the Virtual Console", "setlist": "Setlist to chaser", "compare": "Compare shows",
     "dictionary_context": "Dictionary: read functions", "dictionary_set": "Dictionary: set descriptions",
-    "stage_monitor": "Stage Monitor page",
+    "stage_monitor": "Stage Monitor page", "cabling": "Cabling: DMX cables",
     "dictionary_load": "Dictionary: load", "dictionary_save": "Dictionary: save as new file",
     "show_history": "History", "undo": "Undo", "redo": "Redo", "save_show": "Save as a new file",
 }
@@ -655,6 +663,95 @@ class Server:
                            "Start Stage Monitor in it (or ▶ Serve on the Stage Monitor screen), and open "
                            "http://<this computer>:%d/ on the tablet, with http://." % cfg["http_port"])
         return out
+
+    def t_cabling(self, a: dict) -> Any:
+        act = a.get("action")
+        if act == "kit":
+            if a.get("kit"):
+                r = self.api("POST", "/api/cabling/kit", {"kit": a["kit"]})
+                return {"kept": len(r["kit"]["items"]), "kit": r["kit"],
+                        "note": "Kept as your kit, in Swiss Knife's settings; every new plan starts from it."}
+            d = self.api("GET", "/api/cabling/kit")
+            return {"kit": d["kit"], "presets": [{"id": p["id"], "kind": p["item"]["kind"], "name": p["item"]["name"]}
+                                                 for p in d["presets"]]}
+        if act == "fixture":
+            from core.cabling import kit as kit_mod
+            model = str(a.get("model") or "").strip()
+            if not model:
+                raise ToolError("Give the fixture's model (and its manufacturer).")
+            conns = [c for c in (a.get("connectors") or ["xlr3"]) if c in kit_mod.CONNECTORS] or ["xlr3"]
+            term = a.get("termination") if a.get("termination") in kit_mod.TERMINATION else "unknown"
+            srcs = {str(k): str(v) for k, v in dict(a.get("sources") or {}).items()}
+            item = kit_mod.fixture_item(str(a.get("manufacturer") or "").strip(), model,
+                                        count=max(1, int(a.get("count") or 1)), conns=conns,
+                                        thru=a.get("thru", True) is not False, termination=term, sources=srcs)
+            if a.get("power_w"):
+                item["power_w"] = float(a["power_w"])
+            to_check = sorted(k for k, v in srcs.items() if v in ("photo", "guess"))
+            if not a.get("confirmed"):
+                return {"proposal": item, "to_check": to_check,
+                        "next": "Show this to the user, value by value with its source. Only after they confirm, "
+                                "call cabling action=fixture again with the same values and confirmed=true."}
+            kit = self.api("GET", "/api/cabling/kit")["kit"]
+            key = (item["manufacturer"].lower(), item["model"].lower())
+            items = [i for i in kit["items"] if not (i["kind"] == "fixture" and
+                                                    (i.get("manufacturer", "").lower(), i.get("model", "").lower()) == key)]
+            items.append(item)
+            self.api("POST", "/api/cabling/kit", {"kit": {"items": items}})
+            return {"added": item["name"], "to_check": to_check,
+                    "note": "In your kit now. Values from a photo or a guess stay to check (C105) until seen at load-in."}
+        if act in ("plan", "check"):
+            self.need_show()
+            st = self.api("GET", "/api/cabling/state")
+            plan = st["plan"]
+            if act == "plan":
+                if a.get("controller"):
+                    plan["controller"].update(dict(a["controller"]))
+                if a.get("owners"):
+                    plan["owners"].update({str(k): v for k, v in dict(a["owners"]).items()})
+                alts = self.api("POST", "/api/cabling/auto", {"plan": plan})["alternatives"]
+                out: Dict[str, Any] = {"alternatives": [
+                    {k: x[k] for k in ("key", "name", "note", "cable_m", "longest_m", "crossings", "adapters",
+                                       "joined", "summary", "missing")}
+                    | {"chains": [{"name": c["name"], "to": [l["to"] for l in c["links"]]}
+                                  for c in x["evaluation"]["chains"]]} for x in alts]}
+                pick = next((x for x in alts if x["key"] == str(a.get("choose") or "").upper()), None)
+                if a.get("choose") and pick is None:
+                    raise ToolError("choose must be one of " + ", ".join(x["key"] for x in alts) + ".")
+                if pick is not None:
+                    r = self.api("POST", "/api/cabling/plan", {"plan": pick["plan"]})
+                    out["kept"] = r.get("sidecar") or "(in memory: the show has no folder)"
+                else:
+                    out["next"] = "Show the alternatives to the user; call again with choose to keep one."
+                return out
+            ev = self.api("POST", "/api/cabling/evaluate", {"plan": plan})
+            issues = [i for c in ev["evaluation"]["chains"] for i in c["issues"]] + ev["evaluation"]["issues"]
+            out = {"totals": ev["evaluation"]["totals"], "summary": ev["evaluation"]["summary"],
+                   "issues": [{k: i.get(k) for k in ("code", "severity", "text", "fix")} for i in issues],
+                   "load_in": ev["load_in"], "pick_list": ev["pick"],
+                   "cables": [{k: c[k] for k in ("n", "length", "chain", "from", "to")} for c in ev["cables"]]}
+            if a.get("export"):
+                if not plan["chains"]:
+                    raise ToolError("No plan kept for this show yet: call cabling action=plan with choose first.")
+                folder = str(a.get("folder") or os.path.dirname(self.opened_path or "") or "")
+                if not folder:
+                    raise ToolError("Say where to write: a folder inside a shared folder.")
+                written = []
+                for what in a["export"]:
+                    r = self.client.post("/api/cabling/export", json={"plan": plan, "what": what})
+                    if r.status_code >= 400:
+                        raise ToolError((r.get_json(silent=True) or {}).get("error") or f"Export {what} failed.")
+                    name = r.headers.get("X-Suggested-Filename") or f"cabling_{what}"
+                    try:
+                        path = self.allow.new_file_path(folder, name, ext=os.path.splitext(name)[1])
+                    except mcp_config.NotAllowed as e:
+                        raise ToolError(str(e))
+                    with open(path, "wb") as fh:
+                        fh.write(r.data)
+                    written.append(path)
+                out["written"] = written
+            return out
+        raise ToolError("action must be kit, fixture, plan or check.")
 
     def t_show_history(self, a: dict) -> Any:
         self.need_show()

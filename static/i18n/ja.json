@@ -3825,5 +3825,6 @@
  "Load the list from github.com…": "github.com から一覧を読み込む…",
  "Nothing found.": "見つかりませんでした。",
  "Open a show to plan its cables; your kit can be edited now.": "ショーを開くとケーブルを計画できます。キットは今すぐ編集できます。",
- "Band floor: {0} plus 50 cm": "バンドエリア: {0}＋50 cm"
+ "Band floor: {0} plus 50 cm": "バンドエリア: {0}＋50 cm",
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "スプリッターの場合は入力側の話です。コンピューターからのラインはそこで終わるので、スルーに何も挿さなければそこに終端を付けます。各出力は新しいラインで、最後のフィクスチャーで終端します。空いている出力には何も要りません。"
 }

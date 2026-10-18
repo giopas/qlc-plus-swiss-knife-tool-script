@@ -3825,5 +3825,6 @@
  "Load the list from github.com…": "从 github.com 加载列表…",
  "Nothing found.": "未找到。",
  "Open a show to plan its cables; your kit can be edited now.": "打开一场演出来规划线缆；你的套件现在就可以编辑。",
- "Band floor: {0} plus 50 cm": "乐队区域：{0} 加 50 cm"
+ "Band floor: {0} plus 50 cm": "乐队区域：{0} 加 50 cm",
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "对分配器而言，这指的是它的输入：来自电脑的线路在此结束，因此直通口空着时要插终端。每个输出都是一条新线路，在最后一台灯具处终端；空着的输出不需要任何东西。"
 }

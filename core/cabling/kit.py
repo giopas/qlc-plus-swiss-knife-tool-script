@@ -161,8 +161,11 @@ PRESETS: Dict[str, dict] = {
                             [port("in", "usb", name="USB"), port("out", "xlr3", "f", name="DMX OUT")],
                             plugin="DMX USB", match=["dmx usb"], power="usb"),
     "lixada_1x8": _device("splitter", "Lixada DMX512 splitter 1 → 8",
-                          [port("in", "xlr3", "m", name="DMX IN"), port("thru", "xlr3", "f", name="DMX OUT")]
-                          + [port("out", "xlr3", "f", name=f"DMX OUT {i}") for i in range(1, 9)],
+                          # the spec: 1 input, 1 output directly (thru, not buffered), 8 independent
+                          # outputs, 1000 V isolation between input and outputs and between outputs,
+                          # DC 9-12 V; no termination switch, so its thru takes a terminator when unused
+                          [port("in", "xlr3", "m", name="DMX IN"), port("thru", "xlr3", "f", name="DMX THRU")]
+                          + [port("out", "xlr3", "f", name=f"DMX OUT {i}", isolated=True) for i in range(1, 9)],
                           termination="none", power="dc adapter", match=["lixada"]),
     "splitter_1x4": _splitter(4),
     "splitter_1x8": _splitter(8),

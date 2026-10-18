@@ -3825,5 +3825,6 @@
  "Load the list from github.com…": "Cargar la lista desde github.com…",
  "Nothing found.": "No se encontró nada.",
  "Open a show to plan its cables; your kit can be edited now.": "Abre un show para planificar sus cables; tu kit ya se puede editar.",
- "Band floor: {0} plus 50 cm": "Zona de la banda: {0} más 50 cm"
+ "Band floor: {0} plus 50 cm": "Zona de la banda: {0} más 50 cm",
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "En un splitter se refiere a su entrada: la línea del ordenador termina ahí, así que si no hay nada en su thru, el terminador va ahí. Cada salida es una línea nueva, terminada en su último aparato; las salidas vacías no necesitan nada."
 }

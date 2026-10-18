@@ -54,7 +54,10 @@ async function cablingLoad() {
 }
 
 // ── keeping and checking ─────────────────────────────────────────────────────
+let _cbEdits = 0, _cbBaseEdits = 0;   // edits since a request left: its answer must not undo them
+
 function _cbChanged(redraw = true) {
+  _cbEdits += 1;
   if (redraw) _cbRender();
   clearTimeout(_cbEvalT);
   _cbEvalT = setTimeout(_cbEvaluate, 200);
@@ -64,12 +67,14 @@ function _cbChanged(redraw = true) {
 
 async function _cbEvaluate() {
   if (!_cb) return;
+  const sent = _cbEdits;
   try {
     const r = await fetch('/api/cabling/evaluate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: _cb.plan }),
     });
     const d = await r.json();
     if (!r.ok) return;
+    if (sent !== _cbEdits) return;           // changed meanwhile: the next answer is the one to show
     Object.assign(_cb, d);
     _cbRender();
   } catch (e) { /* the last result stays */ }
@@ -261,9 +266,17 @@ function _cbNewId(kind, w) {
   return kind + n;
 }
 
+// what makes two kit items the same thing: kind, name and every socket with its gender
+function _cbSpec(it) {
+  const end = e => e ? `${e.conn}${e.gender || ''}` : '';
+  const ports = (it.ports || []).map(p => `${p.role}:${end(p)}`).join(',');
+  return [it.kind, it.name, end(it.a), end(it.b), end(it.plug), it.length || '', it.type || '', ports].join('|');
+}
+
 function _cbAddItem(item, w, n = 1) {
   const items = w === 'm' ? _cbBase.kit.items : _cb.plan.tonight.items;
-  const same = items.find(x => x.name === item.name && x.kind === item.kind);
+  const key = _cbSpec(item);
+  const same = items.find(x => _cbSpec(x) === key);
   if (same) same.count += n;
   else {
     const it = { ...JSON.parse(JSON.stringify(item)), id: _cbNewId(item.kind, w), count: n };
@@ -317,12 +330,14 @@ function _cbMyKit() {
 }
 
 function _cbBaseChanged() {
+  _cbBaseEdits += 1;
   _cbMyKit();
   clearTimeout(_cbBaseT);
   _cbBaseT = setTimeout(_cbBaseSave, 500);
 }
 
 async function _cbBaseSave() {
+  const sent = _cbBaseEdits;
   const r = await fetch('/api/cabling/kit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ kit: { items: _cbBase.kit.items } }) });
   const d = await r.json();
@@ -331,8 +346,9 @@ async function _cbBaseSave() {
       + (d.dropped ? ' ' + d.dropped.map(x => x.reason).join(' ') : ''), 'error');
     return;
   }
-  _cbBase.kit = d.kit;
   _cbBase.path = d.path;
+  if (sent !== _cbBaseEdits) return;        // changed meanwhile: another save follows
+  _cbBase.kit = d.kit;
   if (_cb) _cb.base = d.kit;
   _cbMyKit();
 }

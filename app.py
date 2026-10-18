@@ -152,6 +152,7 @@ from routes.mcp_routes import bp as mcp_bp
 from routes.wizard_routes import bp as wizard_bp
 from routes.upgrade_routes import bp as upgrade_bp
 from routes.stagemon_routes import bp as stagemon_bp
+from routes.cabling_routes import bp as cabling_bp
 
 PORT = 5731
 
@@ -204,6 +205,7 @@ def create_app():
     app.register_blueprint(wizard_bp)
     app.register_blueprint(upgrade_bp)
     app.register_blueprint(stagemon_bp)
+    app.register_blueprint(cabling_bp)
 
     # ── Security: CSRF origin check ───────────────────────────────────────────
     @app.before_request

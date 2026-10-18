@@ -273,3 +273,58 @@ def test_evaluate_does_not_change_the_show():
     root = qxw_io.load_qxw(FESTIVAL, strip_namespace=True).getroot()
     plan.evaluate(festival_plan(), rig.read_rig(root, load_qxf_defs([CORPUS])))
     assert open(FESTIVAL, "rb").read() == before
+
+
+# ── through the Flask routes ─────────────────────────────────────────────────
+
+def _client(tmp_path):
+    import shutil
+    import app
+    for f in os.listdir(CORPUS):
+        if f.endswith(".qxf"):
+            shutil.copy(os.path.join(CORPUS, f), tmp_path)
+    p = tmp_path / "Festival_14fix_v3.qxw"
+    shutil.copy(FESTIVAL, p)
+    c = app.create_app().test_client()
+    assert c.post("/api/load", json={"path": str(p)}).status_code == 200
+    return c, p
+
+
+def test_routes_kit_state_evaluate_and_save(tmp_path):
+    c, p = _client(tmp_path)
+    k = c.get("/api/cabling/kit").get_json()
+    assert k["kit"]["items"] == [] and len(k["presets"]) >= 15
+    r = c.post("/api/cabling/kit", json={"kit": {"items": bag()["items"]}})
+    assert r.status_code == 200 and len(r.get_json()["kit"]["items"]) == 6
+    assert c.post("/api/cabling/kit", json={"kit": {"items": [{"kind": "nope"}]}}).status_code == 400
+
+    s = c.get("/api/cabling/state").get_json()
+    assert len(s["rig"]["fixtures"]) == 14 and not s["saved"]
+    assert s["found"][0]["model"] == "LED 4C-12 Silent Slim Spot"
+    assert s["sidecar"] == "Festival_14fix.cabling.json"
+
+    fp = festival_plan()
+    e = c.post("/api/cabling/evaluate", json={"plan": fp}).get_json()
+    assert [i["code"] for i in e["evaluation"]["issues"]] == ["C002"] and e["found"] == []
+
+    before = p.read_bytes()
+    r = c.post("/api/cabling/plan", json={"plan": fp}).get_json()
+    assert r["saved"] and (tmp_path / "Festival_14fix.cabling.json").is_file()
+    assert p.read_bytes() == before                   # the show is never written
+    assert c.get("/api/cabling/state").get_json()["saved"]
+
+
+def test_routes_check_one_item(tmp_path):
+    c, _ = _client(tmp_path)
+    ok = c.post("/api/cabling/kit/item", json={"item": P["cable_3_5"]}).get_json()
+    assert ok["item"]["length"] == 5
+    bad = c.post("/api/cabling/kit/item", json={"item": {"kind": "cable", "name": "x"}})
+    assert bad.status_code == 400 and "end A" in bad.get_json()["error"]
+
+
+def test_routes_need_a_show(monkeypatch):
+    import app
+    from core import workspace
+    monkeypatch.setitem(workspace._state, "loaded", False)
+    c = app.create_app().test_client()
+    assert c.get("/api/cabling/state").status_code == 400

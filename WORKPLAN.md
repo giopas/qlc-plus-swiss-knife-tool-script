@@ -59,7 +59,7 @@ Decided 18 October, after giopas bought a Lixada DMX512 splitter (3-pin) to stop
 
 | Part | What | Depends on | State |
 |---|---|---|---|
-| 1 · Inventory | Kit model and ports, presets, base inventory in settings, tonight's copy, owners (mine, borrowed, venue), matching the show's fixtures, venue DMX points; reading positions, patch, `InputOutputMap` and `DmxConnector`; the connector walk (C001, C002, C101, C102) | — | In progress |
+| 1 · Inventory | Kit model and ports, presets, base inventory in settings, tonight's copy, owners (mine, borrowed, venue), matching the show's fixtures, venue DMX points; reading positions, patch, `InputOutputMap` and `DmxConnector`; the connector walk (C001, C002, C101, C102) | — | Model, plan file and routes done (`core/cabling/`, `routes/cabling_routes.py`, 35 tests); the Kit screen to do |
 | 2 · Fixture details | *Ask Claude…* window, the `cabling` tool's *fixture* action, the confirm card with sources, C105 | 1 | |
 | 3 · Manual plan | Controller preference (stand, front of house, planner), placing controller and splitter by hand, building chains by clicking, lengths on the grid with runs and keep-out, cables from stock, adapters, terminators, every C check | 1 | |
 | 4 · Automatic plan | Chains, order, splitter placement, controller placement when the planner chooses, front-of-house alternatives, two or three alternatives, re-plan on a hand change, *+ Fixture found here* | 3 | |

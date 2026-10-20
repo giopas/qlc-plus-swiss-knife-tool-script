@@ -74,6 +74,8 @@ B. Before the next release (the tools)
 | B5 | Claude Desktop with the packaged macOS app (so far only from the sources) | 3.0 |
 | B6 | Dictionary *Ask Claude…*, a dictionary written by Claude, cue notes seen in QLC+ | 3.0.1 |
 | B7 | Doctor fixes with a choice, output opened in QLC+ | 2.4.0 |
+| B8 | Fit a console to the real tablet and to a Pi touchscreen: *Fit*, *Check* with its list of small buttons, the result in QLC+'s web page (port 9999) on the device; the iPad sizes against what Safari reports | 3.7.0 |
+| B9 | *Take the show elsewhere (.zip)*: unzip on a computer without your user definitions, open the show in QLC+ and see the fixtures as moving heads, not dimmers | 3.7.0 |
 
 C. For other users (when there is a chance)
 
@@ -85,6 +87,14 @@ C. For other users (when there is a chance)
 | C4 | The SINCO MIDI patch with a real controller | 2.6.0 |
 
 ### 3.7.0 · Another computer, another screen
+
+**Status (20 October, branch `feat/v3.7.0`, not released).** Both parts are built and committed locally; the wiki (separate repository) has its commit too. 1145 tests pass (1 skipped without the `websocket` module). Left for the release: the pictures with `python3 tools/shots.py all`, release notes, the version bump and the merge as in section 8.
+
+- Part 1 is `core/definitions.py` (where each definition was found; the zip), `core/quick_start/qlc_library.py` (`stock_dirs()`, `user_dirs()`, `in_stock()`), Doctor D021 to D023 and I009 in `core/doctor/checks.py`, `/api/show/definitions` and `/api/show/travel`, the button in the Doctor and Show Paperwork, and `save_show` with `with_definitions`. Severities, confirmed from QLC+'s `Fixture::loadXML`: D021 to D023 are warnings (a missing mode becomes a generic dimmer sized by the file's channel count). The *chosen folder* source is in `source_of()` but no screen offers a chosen folder yet.
+- Part 2 is `core/vc_screens.py` (the sizes; your own in `~/.qlc_swiss_knife/vc_screens/`; Library kind `vc_screen`), `apply_screen()` and `preview_screen()` in `core/vc_builder.py`, `/api/vc/screen-preview`, the panel in `static/js/vc_builder.js`, the outline in `static/js/vc_editor.js`, and `edit_vc` `screen` with `preview` for Claude. A call with no `mode` behaves as before 3.7.0 (text unchanged), so recorded sessions replay to the same file.
+- Pixel values: the 7-inch touchscreens (800 × 480, 1024 × 600) and the Pi Touch Display 2 (720 × 1280 native, 1280 × 720 turned to landscape) were checked against shop and maker pages. The iPad sizes (CSS points, landscape) come from memory and are to be checked on the device (B8).
+- Tap size: 44 px on the short side (Apple asks for 44 pt, Material for 48 dp), `vc_screens.TAP_MIN`.
+
 
 For moving a show to another machine (a stage laptop, a Raspberry Pi) or another screen (a tablet, a small touchscreen). giopas plays from his MacBook Pro, so this is mainly for other users, and for the day the show moves.
 

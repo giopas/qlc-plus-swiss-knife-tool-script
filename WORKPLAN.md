@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.6.0, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.6.1, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -30,14 +30,14 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux, with an update check and *Update and restart*. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | An MCP server with 28 tools (among them `guide`), seven ready requests, the guide as resources. Claude Desktop connects with one `.mcpb` file, Claude Code with one command. Claude gets only the folders you list and writes only new files (the Stage Monitor's own page and settings are the exception). |
-| Tests | 1100 automated tests pass (1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 1102 automated tests pass (1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
 **Order agreed on 20 October** (giopas): 3.6.1 gig-ready pass, 3.7.0 another computer and another screen, 3.8.0 stage layouts and per-song tempo, 3.9.0 Stage Monitor song cards, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye.
 
 ## 2. Next releases
 
-### 3.6.1 · Gig ready (in progress, branch `fix/v3.6.1`)
+### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 
 No new screens. Fix what a real gig would show, and do the checks on the Mac that 3.0.1 to 3.6.0 left open.
 
@@ -49,18 +49,18 @@ No new screens. Fix what a real gig would show, and do the checks on the Mac tha
 
 **Automated checks done (20 October)**: the full test suite (1102 passed after the fixes above), `tools/ground_truth.py` clean apart from two stale `maintenance.lock` files (removed), the Doctor on the nine test shows (only the known D002 in the raw `Festival_14fix.qxw`, which the tests expect).
 
-**Checks on the Mac** (giopas). Tick them here; anything that fails becomes a fix in 3.6.1.
+**Checks on the Mac** (giopas). A1 to A6 passed on 20 October; A7 is done right after the push (*Update and restart* from 3.6.0). The B and C checks stay open and move with the next releases; anything that fails becomes a fix.
 
 A. Before the next gig (the show path)
 
 | # | Check | From |
 |---|---|---|
-| A1 | Open the gig show in Swiss Knife, Doctor at 0 errors, save, open in the QLC+ used on stage (5.2.2 or 5.3.0); PANIC RESET, a scene, a chaser, the setlist CueList with DMX on | 3.x |
-| A2 | Stage Monitor with QLC+ and the MIDI pedal: `tools/stage_probe.html` first, then the exported page; current and next cue follow every press | 3.5.0 |
-| A3 | Stage Monitor on the real tablet (10-inch Android and/or iPad, portrait), via *Start Stage Monitor* on the installed app; tablet Wi-Fi off and on; QLC+ quit and restarted | 3.5.0, 3.5.3 |
-| A4 | Stage Monitor: a two-hour soak; the two black colours under stage light; control mode *Previous*, *Next*, *Stop* with the chosen *Safety hold* | 3.5.0, 3.5.5 |
-| A5 | Stage Monitor: a CueList on a hidden page of a multipage frame still reports | 3.5.0 |
-| A6 | Cabling with the real cable bag (lengths, counts, any mic cables): a plan for the next venue, plot and labels printed, pick list used to pack | 3.6.0 |
+| A1 | ✓ Open the gig show in Swiss Knife, Doctor at 0 errors, save, open in the QLC+ used on stage (5.2.2 or 5.3.0); PANIC RESET, a scene, a chaser, the setlist CueList with DMX on | 3.x |
+| A2 | ✓ Stage Monitor with QLC+ and the MIDI pedal: `tools/stage_probe.html` first, then the exported page; current and next cue follow every press | 3.5.0 |
+| A3 | ✓ Stage Monitor on the real tablet (10-inch Android and/or iPad, portrait), via *Start Stage Monitor* on the installed app; tablet Wi-Fi off and on; QLC+ quit and restarted | 3.5.0, 3.5.3 |
+| A4 | ✓ Stage Monitor: a two-hour soak; the two black colours under stage light; control mode *Previous*, *Next*, *Stop* with the chosen *Safety hold* | 3.5.0, 3.5.5 |
+| A5 | ✓ Stage Monitor: a CueList on a hidden page of a multipage frame still reports | 3.5.0 |
+| A6 | ✓ Cabling with the real cable bag (lengths, counts, any mic cables): a plan for the next venue, plot and labels printed, pick list used to pack | 3.6.0 |
 | A7 | *Update and restart* from 3.6.0 to 3.6.1 | release |
 
 B. Before the next release (the tools)
@@ -209,6 +209,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.4.0, 3.4.1 | 16 Oct | One way forward in the guided routes; the languages checked screen by screen; `tools/shots.py` and `tools/release_notes.py`. |
 | 3.5.0 to 3.5.5 | 17 Oct | Stage Monitor: the current cue live on a tablet on stage, black colours, preview in the browser, Start Stage Monitor, asking before replacing a page, Stop and *Safety hold* in control mode. |
 | 3.6.0 | 20 Oct | Cabling: a DMX cabling planner with the kit you own, 24 checks, plot, pick list, labels and load-in order; Claude's `cabling` tool. |
+| 3.6.1 | 20 Oct | Ready for the gig: the show path checked on stage (A1 to A6); fixture definitions and input profiles found in every folder QLC+ uses. |
 
 ## 5. Goal and the Pub test
 

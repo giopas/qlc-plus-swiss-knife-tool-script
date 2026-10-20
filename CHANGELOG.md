@@ -7,6 +7,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+## [3.6.1] — 2026-10-20 — Ready for the gig
+
 ### Fixed
 
 - Brightness now finds fixture definitions in the macOS user folder (`~/Library/Application Support/QLC+/Fixtures`), where QLC+'s Fixture Editor saves them. It uses the same lookup as the Porter, the Doctor, Quick Start, Show Paperwork and Cabling.

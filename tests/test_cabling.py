@@ -522,7 +522,8 @@ def test_pick_list_and_shopping(best):
     whats = [r["what"] for r in pl["bag"]]
     assert "Enttec DMX USB Pro" in whats and "Adapter 5-pin ♂ → 3-pin ♀" in whats
     assert any(w.startswith("Lixada") and "power supply" in w for w in whats)
-    assert pl["buy"] == [{"what": "Terminator 3-pin ♂", "count": 2}]      # 5 ends, 3 in the kit
+    assert [{k: b[k] for k in ("what", "count")} for b in pl["buy"]] == [{"what": "Terminator 3-pin ♂", "count": 2}]  # 5 ends, 3 in the kit
+    assert pl["buy"][0]["item"]["kind"] == "terminator" and pl["buy"][0]["item"]["plug"] == {"conn": "xlr3", "gender": "m"}
     csv_text = outputs.pick_list_csv(pl)
     assert csv_text.startswith("Section,Item,Count\n") and "To buy,Terminator" in csv_text
     assert "IN THE BAG" in outputs.pick_list_text(pl, "Festival", "2026-10-18")
@@ -718,3 +719,41 @@ def test_stage_size_for_tonight(festival):
     r = plan.with_extras(festival, p)
     assert r["stage"]["w"] == w + 4000 and r["stage_show"]["w"] == w and festival["stage"]["w"] == w
     assert "stage" not in plan.clean_plan({"stage": {"w": 5, "d": 5}})
+
+
+
+def test_wishlist_in_the_kit(festival, tmp_path, monkeypatch):
+    """What a plan lacks goes to the wishlist with its kit item; the wishlist
+    is kept with your kit, survives saves that do not mention it, and an item
+    from it is a clean kit item."""
+    monkeypatch.setenv("QSK_CABLING_KIT", str(tmp_path / "kit.json"))
+    ev = plan.evaluate(festival_plan(), festival)
+    buy = ev["shopping"]
+    assert buy and all("item" in b for b in buy if b["what"].startswith(("3-pin", "Terminator", "Adapter")))
+    wl = kit.clean_wishlist(buy + [{"what": "Gaffer tape", "count": 3}, {"what": ""}, "junk"])
+    assert {"what": "Gaffer tape", "count": 3} in wl and all(r["what"] for r in wl)
+    kit.save_base({"items": [P["enttec_usb_pro"]], "wishlist": wl})
+    assert kit.load_base()["wishlist"] == wl
+    import app
+    c = app.create_app().test_client()
+    c.post("/api/cabling/kit", json={"kit": {"items": [P["enttec_usb_pro"], P["terminator_3"]]}})
+    assert kit.load_base()["wishlist"] == wl                              # kept
+    got = next(r for r in wl if "item" in r)
+    assert kit.clean_item({**got["item"], "count": got["count"]})["kind"] in ("cable", "terminator", "adapter")
+
+
+def test_band_floor_margin_and_left_out(festival):
+    """Tonight's space round the meshes, and meshes left out of the band floor."""
+    ko = festival["keep_out"]
+    assert ko and all("mx0" in k for k in ko)
+    p = festival_plan()
+    p["band"] = {"margin_m": 0.1, "ignore": [ko[0]["id"]]}
+    p = plan.clean_plan(p)
+    assert p["band"] == {"margin_m": 0.1, "ignore": [ko[0]["id"]]}
+    r = plan.with_extras(festival, p)
+    assert len(r["keep_out"]) == len(ko) - 1
+    k = r["keep_out"][0]
+    assert k["x0"] == k["mx0"] - 100 and k["z1"] == k["mz1"] + 100
+    assert "band" not in plan.clean_plan({"band": {"margin_m": 0.5}})        # the default
+    ev = plan.evaluate(p, festival)
+    assert len(ev["keep_out"]) == len(ko) - 1

@@ -524,14 +524,14 @@ def _build_cabling(state: dict):
     ctx = _cabling_context(state)
     if ctx is None:
         return None
-    from core.cabling import kit as ckit, outputs, units as cunits
+    from core.cabling import kit as ckit, outputs, units as cunits, plan as cplan_mod
     ev, p, r = ctx
     with cunits.use(ckit.load_units()):
         nums = outputs.numbered(ev, p)
         return {"steps": outputs.load_in(ev, p), "pick": outputs.pick_list(ev, p),
                 "cables": [{**{k: c[k] for k in ("n", "length", "chain", "from", "to", "house")},
                             "len": cunits.fmt(c["length"])} for c in nums],
-                "svg": outputs.plot_svg(ev, p, r, "DMX cabling"), "summary": ev["summary"]}
+                "svg": outputs.plot_svg(ev, p, cplan_mod.with_extras(r, p), "DMX cabling"), "summary": ev["summary"]}
 
 
 def _build_function_index(state: dict) -> list[dict]:

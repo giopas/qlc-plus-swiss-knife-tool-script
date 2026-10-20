@@ -152,7 +152,7 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     if rig["keep_out"]:                            # the legend, bottom right
         z1 += 250
         sh.append(("rect", x1 - 3700, z1 - 330, x1 - 3450, z1 - 170, "#fee2e2", "#ef4444", (4, 3)))
-        sh.append(("text", x1 - 3380, z1 - 190, "Band floor (meshes + 50 cm): cables go round it", 120,
+        sh.append(("text", x1 - 3380, z1 - 190, "Band floor (meshes and the space round them): cables go round it", 120,
                    "#475569", "start"))
     return sh, (x0, z0, x1, z1)
 

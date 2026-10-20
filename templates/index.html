@@ -2325,6 +2325,8 @@
                 <button class="btn btn-surface btn-sm" onclick="cablingOwnAdd()">+ Add</button></div>
             </details>
           </div>
+          <div class="pane-header">Wishlist <span class="cb-hint">what you mean to get; ✓ puts it in your kit</span></div>
+          <div class="cb-card" id="cb-wish"></div>
         </div>
         <div class="cb-side">
           <div class="pane-header">Add your fixtures</div>
@@ -2371,7 +2373,7 @@
             <button data-v="extra" onclick="cablingPlaceMode('extra')">+ Fixture found here</button>
           </div>
           <div class="cb-stage" id="cb-places"></div>
-          <div class="cb-legend"><span class="cb-lg cb-lg-band"></span> Band floor: every mesh of Stage &amp; Meshes plus 50 cm. Cables go round it, or along the stage edge (taped); crossing it is reported.
+          <div class="cb-legend"><span class="cb-lg cb-lg-band"></span> Band floor: every mesh of Stage &amp; Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.
             <span class="cb-lg cb-lg-fx"></span> Fixture <span class="cb-lg cb-lg-split"></span> Splitter <span class="cb-lg cb-lg-ctl"></span> Computer</div>
         </div>
         <div class="cb-side">
@@ -2397,6 +2399,8 @@
                 <option value="other">Another computer (needs an outlet)</option></select></div>
             <button class="btn btn-surface btn-sm" onclick="cablingClearPlace('controller')">Put the computer back where the setting says</button>
           </div>
+          <div class="pane-header">The band floor <span class="cb-hint">the space kept clear round the meshes</span></div>
+          <div class="cb-card" id="cb-band"></div>
           <div class="pane-header">The stage <span class="cb-hint">tonight's size; the show keeps its own</span></div>
           <div class="cb-card">
             <div class="cb-row"><span>Width</span><input id="cb-stage-w" class="field-input cb-narrow" type="number" min="1" step="0.5" onchange="cablingStage()"> <span class="cb-u">m</span>

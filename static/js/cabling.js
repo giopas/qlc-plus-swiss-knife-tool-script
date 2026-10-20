@@ -334,6 +334,7 @@ function _cbMyKit() {
     : `<div class="porter-placeholder">${_cbE(_cbT('Your kit is empty. Add what you own: the interface, splitters, cables, adapters, terminators and your fixtures.'))}</div>`;
   document.getElementById('cb-kit-path').textContent = _cbT('Kept in {0}, saved as you change it. Share it as a file through the Library (Cabling kit).', _cbBase.path || '');
   _cbPresetOptions(document.getElementById('cb-preset-m'), _cbBase.presets);
+  _cbWish();
   const us = document.getElementById('cb-units');
   if (us) us.value = _cbUnits();
   const res = document.getElementById('cb-fx-res');
@@ -363,7 +364,7 @@ async function _cbBaseSave() {
   const sent = _cbBaseEdits;
   const units = _cbUnits();
   const r = await fetch('/api/cabling/kit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kit: { items: _cbBase.kit.items, units } }) });
+    body: JSON.stringify({ kit: { items: _cbBase.kit.items, units, wishlist: _cbBase.kit.wishlist || [] } }) });
   const d = await r.json();
   if (!r.ok) {
     setStatus((d.error ? _cbT(d.error) : _cbT('Could not keep your kit.'))
@@ -448,6 +449,98 @@ function cablingOwnAdd() {
   if (kind === 'wireless_tx') item.range_m = _cbToM(g('cb-own-range')) || 100;
   _cbAddItem(item, 'm');
   setStatus(_cbT('{0} added to your kit.', name), 'ok');
+}
+
+// ── the wishlist (kept with your kit) ────────────────────────────────────────
+function _cbWish() {
+  const el = document.getElementById('cb-wish');
+  if (!el || !_cbBase || !_cbBase.kit) return;
+  const wl = _cbBase.kit.wishlist || [];
+  el.innerHTML = (wl.length ? wl.map((r, i) => `<div class="cb-row cb-wish-row">
+      <span data-i18n="off">${r.count} × ${_cbE(r.what)}</span>
+      <button class="btn btn-surface btn-sm" onclick="cablingWishGot(${i})" title="${_cbE(_cbT(r.item ? 'I have it now: into my kit' : 'I have it now: off the list (add it to the kit with a preset or Your own device)'))}">✓ ${_cbE(_cbT('Got it'))}</button>
+      <button class="btn btn-surface btn-sm" onclick="cablingWishRemove(${i})" title="${_cbE(_cbT('Off the list'))}">✕</button></div>`).join('')
+    : `<div class="cb-dim">${_cbE(_cbT('Nothing yet. What a plan lacks can be added here from Check and export, or type it below.'))}</div>`)
+    + `<div class="cb-row"><input id="cb-wish-what" class="field-input" placeholder="${_cbE(_cbT('e.g. a second splitter, gaffer tape'))}">
+       × <input id="cb-wish-n" class="field-input cb-narrow" type="number" min="1" max="99" value="1">
+       <button class="btn btn-surface btn-sm" onclick="cablingWishAdd()">+ ${_cbE(_cbT('Add'))}</button></div>`;
+}
+
+function _cbWishPut(rows) {
+  if (!_cbBase || !_cbBase.kit) return 0;
+  const wl = _cbBase.kit.wishlist = _cbBase.kit.wishlist || [];
+  rows.forEach(r => {
+    const same = wl.find(x => x.what === r.what);
+    if (same) same.count = Math.max(same.count, r.count);
+    else wl.push({ what: r.what, count: r.count || 1, ...(r.item ? { item: r.item } : {}) });
+  });
+  _cbBaseChanged();
+  return rows.length;
+}
+
+function cablingWishAdd() {
+  const what = document.getElementById('cb-wish-what').value.trim();
+  if (!what) return;
+  _cbWishPut([{ what, count: Math.max(1, parseInt(document.getElementById('cb-wish-n').value, 10) || 1) }]);
+}
+
+function cablingWishFromBuy(k) {
+  const buy = ((_cb && _cb.pick) || {}).buy || [];
+  const rows = k === 'all' ? buy : [buy[k]].filter(Boolean);
+  const n = _cbWishPut(rows);
+  if (n) setStatus(_cbT('{0} line(s) on your wishlist (My kit).', n), 'ok');
+  if (_cbStepN === 3) _cbCheck();
+}
+
+function cablingWishGot(i) {
+  const wl = (_cbBase.kit.wishlist || []);
+  const r = wl[i];
+  if (!r) return;
+  wl.splice(i, 1);
+  if (r.item) {
+    _cbAddItem(r.item, 'm', r.count);          // into my kit (and tonight's, with a show open)
+    setStatus(_cbT('{0} added to your kit.', r.what), 'ok');
+  } else {
+    _cbBaseChanged();
+    setStatus(_cbT('Off the list. Add it to your kit with a preset or Your own device.'), 'ok');
+  }
+}
+
+function cablingWishRemove(i) {
+  (_cbBase.kit.wishlist || []).splice(i, 1);
+  _cbBaseChanged();
+}
+
+// ── the band floor: tonight's space round the meshes ─────────────────────────
+function _cbBand() {
+  const el = document.getElementById('cb-band');
+  if (!el) return;
+  const band = _cb.plan.band || { margin_m: 0.5, ignore: [] };
+  const all = _cb.rig.keep_out;
+  if (!all.length) { el.innerHTML = `<div class="cb-dim">${_cbE(_cbT('No meshes on the stage: no band floor.'))}</div>`; return; }
+  el.innerHTML = `<div class="cb-row"><span>${_cbE(_cbT('Space round each'))}</span>
+      <input id="cb-band-m" class="field-input cb-narrow" type="number" min="0" max="2" step="0.1" value="${_cbNum(band.margin_m)}" onchange="cablingBand()">
+      <span class="cb-u">${_cbUnits()}</span><span class="cb-hint">${_cbE(_cbT('0 keeps only the mesh itself'))}</span></div>
+    <div class="cb-hint">${_cbE(_cbT('Untick a mesh the cables may cross (a rug, a low riser, a flat object):'))}</div>
+    <div class="cb-band-list">${all.map((k, n) => `<label class="cb-check"><input type="checkbox" ${band.ignore.includes(k.id) ? '' : 'checked'}
+      onchange="cablingBandMesh('${_cbE(k.id)}', this.checked)"> <span data-i18n="off">${_cbE((k.label || k.id) + (all.filter(x => x.label === k.label).length > 1 ? ` ${n + 1}` : ''))}</span></label>`).join('')}</div>`;
+}
+
+function cablingBand() {
+  const v = parseFloat(document.getElementById('cb-band-m').value);
+  const m = Math.max(0, Math.min(2, _cbToM(isNaN(v) ? 0.5 : v)));
+  _cb.plan.band = { margin_m: m, ignore: (_cb.plan.band || {}).ignore || [] };
+  _cbAlts = null;
+  _cbChanged();
+}
+
+function cablingBandMesh(id, keep) {
+  const b = _cb.plan.band || { margin_m: 0.5, ignore: [] };
+  b.ignore = (b.ignore || []).filter(x => x !== id);
+  if (!keep) b.ignore.push(id);
+  _cb.plan.band = b;
+  _cbAlts = null;
+  _cbChanged();
 }
 
 function cablingUnits(u) {
@@ -572,7 +665,7 @@ async function cablingSaveBase() {
   const items = _cb.plan.tonight.items.filter(x => x.owner !== 'venue' && x.count > 0)
     .map(x => { const c = { ...x }; delete c.owner; return c; });
   const r = await fetch('/api/cabling/kit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kit: { items, units: _cbUnits() } }) });
+    body: JSON.stringify({ kit: { items, units: _cbUnits(), wishlist: (_cbBase && _cbBase.kit && _cbBase.kit.wishlist) || [] } }) });
   const d = await r.json();
   if (!r.ok) { setStatus(d.error || _cbT('Could not keep your kit.'), 'error'); return; }
   _cb.base = d.kit;
@@ -645,8 +738,9 @@ function _cbStageSvg(clickable) {
     ${clickable ? 'onclick="cablingStageClick(event)"' : ''}>`];
   parts.push(`<rect x="0" y="0" width="${st.w}" height="${st.d}" class="cb-s-stage"/>`);
   parts.push(`<text x="${st.w / 2}" y="${st.d + 700}" class="cb-s-lbl" text-anchor="middle">${_cbE(_cbT('AUDIENCE'))}</text>`);
-  _cb.rig.keep_out.forEach(k => parts.push(`<rect x="${k.x0}" y="${k.z0}" width="${k.x1 - k.x0}" height="${k.z1 - k.z0}" class="cb-s-keep"><title>${_cbE(_cbT('Band floor: {0} plus 50 cm', k.label || ''))}</title></rect>`));
-  _cb.rig.keep_out.forEach(k => { if (k.label) parts.push(`<text x="${k.x0 + 80}" y="${k.z0 + 180}" class="cb-s-klbl">${_cbE(k.label.slice(0, 24))}</text>`); });
+  const kout = _cb.evaluation.keep_out || _cb.rig.keep_out;
+  kout.forEach(k => parts.push(`<rect x="${k.x0}" y="${k.z0}" width="${k.x1 - k.x0}" height="${k.z1 - k.z0}" class="cb-s-keep"><title>${_cbE(_cbT('Band floor: {0}', k.label || ''))}</title></rect>`));
+  kout.forEach(k => { if (k.label) parts.push(`<text x="${k.x0 + 80}" y="${k.z0 + 180}" class="cb-s-klbl">${_cbE(k.label.slice(0, 24))}</text>`); });
   (p.walkways || []).forEach(w => parts.push(`<rect x="${w.x0}" y="${w.z0}" width="${w.x1 - w.x0}" height="${w.z1 - w.z0}" class="cb-s-walk${w.ramp ? ' ramp' : ''}"/>`));
   (ev.trusses || []).forEach(tr => parts.push(`<line x1="${tr.x0 - 200}" y1="${tr.z}" x2="${tr.x1 + 200}" y2="${tr.z}" class="cb-s-truss"/>`));
   ev.fixtures.forEach(f => {
@@ -674,6 +768,7 @@ function _cbPlaces() {
   const c = _cb.plan.controller;
   document.querySelectorAll('input[name="cb-ctl"]').forEach(r => { r.checked = r.value === c.mode; });
   const set = (id, v) => { const e = document.getElementById(id); if (e && document.activeElement !== e) e.value = v; };
+  _cbBand();
   const st = _cbStageNow(), sh = _cb.rig.stage;
   set('cb-stage-w', _cbNum(st.w / 1000)); set('cb-stage-d', _cbNum(st.d / 1000));
   const shw = document.getElementById('cb-stage-show');
@@ -883,7 +978,13 @@ function _cbCheck() {
   const pk = _cb.pick || { bag: [], spares: [], buy: [] };
   const sec = (title, rows) => rows.length ? `<div class="cb-dim">${_cbE(_cbT(title))}</div><ul class="cb-pick">${rows.map(r =>
     `<li data-i18n="off">${r.count} × ${_cbE(r.what)}</li>`).join('')}</ul>` : '';
-  document.getElementById('cb-pick').innerHTML = (sec('In the bag', pk.bag) + sec('Spares', pk.spares) + sec('To buy', pk.buy))
+  const wl = new Set(((_cbBase && _cbBase.kit && _cbBase.kit.wishlist) || []).map(x => x.what));
+  const buy = (pk.buy || []).length ? `<div class="cb-dim">${_cbE(_cbT('To buy'))}</div><ul class="cb-pick">${pk.buy.map((r, k) =>
+    `<li class="cb-buy-row"><span data-i18n="off">${r.count} × ${_cbE(r.what)}</span>${wl.has(r.what)
+      ? `<span class="cb-dim">${_cbE(_cbT('on the wishlist'))}</span>`
+      : `<button class="btn btn-surface btn-sm" onclick="cablingWishFromBuy(${k})">+ ${_cbE(_cbT('wishlist'))}</button>`}</li>`).join('')}</ul>
+    <button class="btn btn-surface btn-sm" onclick="cablingWishFromBuy('all')">${_cbE(_cbT('Put it all on my wishlist'))}</button>` : '';
+  document.getElementById('cb-pick').innerHTML = (sec('In the bag', pk.bag) + sec('Spares', pk.spares) + buy)
     || `<div class="cb-dim">${_cbE(_cbT('Make a plan first.'))}</div>`;
 }
 

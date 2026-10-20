@@ -221,6 +221,8 @@ def save_kit():
     data = (request.get_json(silent=True) or {}).get('kit')
     if isinstance(data, dict) and 'units' not in data:     # keep the unit you chose
         data = {**data, 'units': kit_mod.load_units()}
+    if isinstance(data, dict) and 'wishlist' not in data:  # and the wishlist
+        data = {**data, 'wishlist': kit_mod.load_base().get('wishlist', [])}
     inv = kit_mod.clean_inventory(data)
     if inv.get('dropped'):
         return jsonify({'error': 'Some items cannot be used.', 'dropped': inv['dropped']}), 400
@@ -327,11 +329,12 @@ def import_kit():
         return jsonify({'items': len(got['items']), 'new': len(new), 'names': [it['name'] for it in new][:20],
                         'units': got['units']})
     units = got['units'] or base.get('units', 'm')
+    wish = base.get('wishlist', [])
     if mode == 'replace':
-        inv = {'items': got['items'], 'units': units}
+        inv = {'items': got['items'], 'units': units, 'wishlist': wish}
     elif mode == 'add':
         inv = {'items': base['items'] + [{k: v for k, v in it.items() if k != 'id'} for it in new],
-               'units': base.get('units', 'm')}
+               'units': base.get('units', 'm'), 'wishlist': wish}
     else:
         return jsonify({'error': 'Choose add or replace.'}), 400
     try:

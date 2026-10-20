@@ -14,7 +14,8 @@ What a cell costs a cable:
 * open floor costs 3, so cables keep to runs where they can;
 * the audience floor (in front of the stage) costs 3 and is reported;
 * a **walkway** costs 3 and is reported unless it has a ramp;
-* the **band floor** (meshes plus 50 cm) costs 10, so cables go round it,
+* the **band floor** (meshes plus the space round them, 50 cm unless the plan
+  says otherwise) costs 10, so cables go round it,
   but where it covers a stage edge the edge still costs 2: a cable may run
   along the front lip under the singer's feet, taped, rather than make a
   long detour.  The metres crossed are reported (away from the two ends:

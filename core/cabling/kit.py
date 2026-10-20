@@ -325,6 +325,42 @@ def clean_item(item) -> dict:
     return out
 
 
+def clean_wishlist(rows) -> List[dict]:
+    """``[{what, count, item?}]``: what you mean to buy or borrow.  ``item``,
+    when known (a cable, an adapter, a terminator, a device a plan proposed),
+    goes into your kit as it is when you have it."""
+    out: List[dict] = []
+    for r in rows[:200] if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        what = " ".join(str(r.get("what") or "").split())[:120]
+        try:
+            n = max(1, min(999, int(r.get("count", 1))))
+        except (TypeError, ValueError):
+            n = 1
+        row = {"what": what, "count": n}
+        if isinstance(r.get("item"), dict):
+            try:
+                it = clean_item({**r["item"], "count": 1})
+                it.pop("id", None)
+                it.pop("owner", None)
+                row["item"] = it
+                row["what"] = row["what"] or it["name"]
+            except KitError:
+                pass
+        if row["what"]:
+            out.append(row)
+    return out
+
+
+def terminator_item(plug: dict) -> dict:
+    """The terminator that plugs into *plug*'s socket: a preset when one fits."""
+    for p in PRESETS.values():
+        if p["kind"] == "terminator" and p["plug"] == plug:
+            return copy.deepcopy(p)
+    return {"kind": "terminator", "name": f"Terminator {label(plug)} 120 Ω", "plug": dict(plug), "count": 1}
+
+
 def clean_inventory(inv) -> dict:
     """``{"version", "items": [...]}``; items that cannot be used are dropped
     and listed in ``"dropped"`` with the reason."""
@@ -339,6 +375,8 @@ def clean_inventory(inv) -> dict:
     out = {"version": KIT_VERSION, "items": items}
     if inv.get("units") in ("m", "ft"):            # lengths shown in metres or feet
         out["units"] = inv["units"]
+    if isinstance(inv.get("wishlist"), list):     # what you mean to get: kept with your kit
+        out["wishlist"] = clean_wishlist(inv["wishlist"])
     if dropped:
         out["dropped"] = dropped
     return out

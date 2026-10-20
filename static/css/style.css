@@ -4504,6 +4504,10 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .cb-sync { cursor: pointer; border: 1px solid var(--orange); }
 #cb-kit-import { cursor: default; }
 .cb-own { margin-top: 4px; }
+.cb-wish-row > span:first-child { flex: 1; color: var(--text); min-width: 0; }
+.cb-band-list { display: flex; flex-wrap: wrap; gap: 4px 14px; max-height: 160px; overflow: auto; }
+.cb-buy-row { display: flex; align-items: center; gap: 8px; }
+.cb-buy-row span { flex: 1; }
 .cb-own summary { cursor: pointer; font-size: var(--fs-body); color: var(--text); margin-bottom: 6px; }
 .cb-own .cb-row { margin-bottom: 6px; }
 .cb-own-range { display: inline-flex; align-items: center; gap: 6px; }

@@ -169,6 +169,17 @@ def _clean_extra(v, i: int) -> Optional[dict]:
 def with_extras(rig: dict, plan: dict) -> dict:
     """The rig plus the plan's fixtures found on the day (``patched: False``),
     on tonight's stage size when the plan sets one (the show keeps its own)."""
+    band = plan.get("band")
+    if band and rig.get("keep_out"):              # tonight's space round the meshes, some left out
+        mg = round(band.get("margin_m", BAND_MARGIN_M) * 1000)
+        ign = set(band.get("ignore") or [])
+        ko = []
+        for k in rig["keep_out"]:
+            if k["id"] in ign:
+                continue
+            m0 = {c: k.get("m" + c, k[c] + (500 if c in ("x0", "z0") else -500)) for c in ("x0", "z0", "x1", "z1")}
+            ko.append({**k, "x0": m0["x0"] - mg, "z0": m0["z0"] - mg, "x1": m0["x1"] + mg, "z1": m0["z1"] + mg})
+        rig = {**rig, "keep_out": ko, "keep_out_all": rig["keep_out"]}
     st = plan.get("stage")
     if st and (st.get("w"), st.get("d")) != (rig["stage"]["w"], rig["stage"]["d"]):
         rig = {**rig, "stage": {**rig["stage"], "w": st["w"], "d": st["d"]}, "stage_show": rig["stage"]}
@@ -187,6 +198,24 @@ def with_extras(rig: dict, plan: dict) -> dict:
                               "hung": e["h"] > rig_mod.TRUSS_MM, "conns": conns, "connector_known": known,
                               "definition": False, "power": None, "patched": False})
     return r
+
+
+BAND_MARGIN_M = 0.5        # space kept round a mesh, by default
+
+
+def _clean_band(b) -> Optional[dict]:
+    """How the band floor is drawn tonight: ``{margin_m, ignore: [mesh ids]}``;
+    ``None`` when it is the default (every mesh plus 50 cm, none left out)."""
+    if not isinstance(b, dict):
+        return None
+    try:
+        m = round(min(max(float(b.get("margin_m", BAND_MARGIN_M)), 0.0), 2.0), 2)
+    except (TypeError, ValueError):
+        m = BAND_MARGIN_M
+    ign = sorted({str(x)[:200] for x in b.get("ignore") or [] if str(x).strip()})[:100]
+    if m == BAND_MARGIN_M and not ign:
+        return None
+    return {"margin_m": m, "ignore": ign}
 
 
 def _clean_stage(st) -> Optional[dict]:
@@ -213,6 +242,7 @@ def clean_plan(p) -> dict:
            "extras": [e for e in (_clean_extra(x, i) for i, x in enumerate(p.get("extras") or [])) if e][:40],
            "controller": clean_controller(p.get("controller")),
            **({"stage": _clean_stage(p.get("stage"))} if _clean_stage(p.get("stage")) else {}),
+           **({"band": _clean_band(p.get("band"))} if _clean_band(p.get("band")) else {}),
            "chains": [c for c in (_clean_chain(x) for x in p.get("chains") or []) if c]}
     out["tonight"].pop("dropped", None)
     return out
@@ -482,7 +512,9 @@ def evaluate(plan: dict, rig: dict) -> dict:
         it = items.get(iid)
         if it is not None and it["count"] < 1:
             issues.append(chain_mod._issue("C005", f"{it['name']} is not in tonight's kit.", it["name"],
-                                           f"Add it to the kit, or buy one.", {"what": it["name"], "count": 1}))
+                                           f"Add it to the kit, or buy one.",
+                                           {"what": it["name"], "count": 1,
+                                            "item": {k: v for k, v in it.items() if k not in ("id", "owner")}}))
     missing = [f for f in fx.values() if f["id"] not in on_chain]
     if plan["chains"] and missing:
         issues.append(chain_mod._issue("C006", "Not on any chain: " + ", ".join(f["name"] for f in missing) + ".",
@@ -510,7 +542,8 @@ def evaluate(plan: dict, rig: dict) -> dict:
               "adapters": sum(len(w["adapters"]) for w in walked),
               "chains": len(walked)}
     return {"fixtures": list(fx.values()), "chains": walked, "issues": issues, "summary": summary,
-            "totals": totals, "controller": ctl, "trusses": trs, "shopping": shopping(walked, issues, assigned)}
+            "totals": totals, "controller": ctl, "trusses": trs, "shopping": shopping(walked, issues, assigned),
+            "keep_out": rig.get("keep_out", [])}
 
 
 def _universe_checks(plan, rig, fx, items) -> List[dict]:
@@ -542,15 +575,20 @@ def _universe_checks(plan, rig, fx, items) -> List[dict]:
 def shopping(walked: List[dict], issues: List[dict], assigned: dict) -> List[dict]:
     """What to buy: the cables missing, and everything a check put on the
     list (adapters, terminators, a device the kit lacks): ``[{what, count}]``."""
-    out = [{"what": f"{kit_mod.cable_word(m['conn'])} {fmt(m['length'])}", "count": m["count"]}
+    out = [{"what": f"{kit_mod.cable_word(m['conn'])} {fmt(m['length'])}", "count": m["count"],
+            "item": {**kit_mod._cable(m["length"], m["conn"]), "name": f"{kit_mod.cable_word(m['conn'])} {fmt(m['length'])}"}}
            for m in assigned["missing"]]
     for i in issues + [i for w in walked for i in w["issues"]]:
         if i.get("buy"):
             out.append(dict(i["buy"]))
     merged: Dict[str, int] = {}
+    item_of: Dict[str, dict] = {}
     for o in out:
         merged[o["what"]] = merged.get(o["what"], 0) + o["count"]
-    return [{"what": k, "count": v} for k, v in sorted(merged.items())]
+        if o.get("item") and o["what"] not in item_of:
+            item_of[o["what"]] = o["item"]
+    return [{"what": k, "count": v, **({"item": item_of[k]} if k in item_of else {})}
+            for k, v in sorted(merged.items())]
 
 
 def not_in_inventory(plan: dict, rig: dict) -> List[dict]:

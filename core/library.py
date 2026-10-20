@@ -343,13 +343,15 @@ def _install_kit(name: str, clean: dict) -> None:
     the items you do not have yet (same kind and name) to your kit."""
     from core.cabling import kit as kit_mod
     if name.lower() == KIT_NAME.lower():
-        kit_mod.save_base({"items": clean["items"], "units": clean.get("units") or kit_mod.load_units()})
+        kit_mod.save_base({"items": clean["items"], "units": clean.get("units") or kit_mod.load_units(),
+                           "wishlist": kit_mod.load_base().get("wishlist", [])})
         return
     base = kit_mod.load_base()
     have = {(it["kind"], it["name"].lower()) for it in base["items"]}
     add = [{k: v for k, v in it.items() if k != "id"} for it in clean["items"]
            if (it["kind"], it["name"].lower()) not in have]
-    kit_mod.save_base({"items": base["items"] + add, "units": base.get("units", "m")})
+    kit_mod.save_base({"items": base["items"] + add, "units": base.get("units", "m"),
+                       "wishlist": base.get("wishlist", [])})
 
 
 _CHECKS = {"cabling_kit": _check_cabling_kit, "vc_template": _check_vc_template, "palette": _check_palette, "look_preset": _check_look_preset,

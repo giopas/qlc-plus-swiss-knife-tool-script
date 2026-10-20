@@ -105,7 +105,8 @@ def read_rig(root: ET.Element, qxf_defs: Optional[dict] = None, qxw_path: str = 
         keep_out.append({"id": m["id"], "label": m["label"],
                          "x0": pl["x0"] - KEEP_OUT_MARGIN, "z0": pl["z0"] - KEEP_OUT_MARGIN,
                          "x1": pl["x0"] + pl["w"] + KEEP_OUT_MARGIN,
-                         "z1": pl["z0"] + pl["d"] + KEEP_OUT_MARGIN})
+                         "z1": pl["z0"] + pl["d"] + KEEP_OUT_MARGIN,
+                         "mx0": pl["x0"], "mz0": pl["z0"], "mx1": pl["x0"] + pl["w"], "mz1": pl["z0"] + pl["d"]})
     return {"stage": {"w": round(st["w"] * 1000), "d": round(st["d"] * 1000),
                       "h": round(st["h"] * 1000), "type": st["type_name"]},
             "fixtures": fixtures, "universes": universes(root), "keep_out": keep_out}

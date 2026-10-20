@@ -18,9 +18,9 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 
 ## 1. Where we are
 
-**Version 3.5.5, 17 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, 3.5.3 adds Start Stage Monitor, one file to double-click at the gig, 3.5.4 asks before an export replaces an earlier page, and 3.5.5 adds the CueList's own Stop to Control mode and a *Safety hold* setting (or none) for its buttons. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.6.0, 20 October 2026.** 3.1.0 added support for shows made by the QLC+ 5.3 Show Wizard, 3.2.0 gives older QLC+ 5 shows what QLC+ 5.3 offers, 3.3.0 rebuilds the Look & Chaser Builder in the wizard's terms, 3.4.0 gives the guided routes one way forward, 3.4.1 checks the seven languages screen by screen, 3.5.0 adds the Stage Monitor, a page for a tablet on stage that follows QLC+ live, 3.5.1 opens its preview in the browser, since the app's window opens no new windows, 3.5.2 brings back the macOS packages that 3.5.1 lacked, 3.5.3 adds Start Stage Monitor, one file to double-click at the gig, 3.5.4 asks before an export replaces an earlier page, 3.5.5 adds the CueList's own Stop to Control mode and a *Safety hold* setting (or none) for its buttons, and 3.6.0 adds Cabling, a DMX cabling planner with the kit you own. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
-**Next: 3.6.0, Cabling** (built on `feat/v3.6.0`, to check on the Mac before release), then **3.7.0, stage layouts and per-song tempo** (both in section 2).
+**Next: 3.7.0, stage layouts and per-song tempo** (section 2).
 
 | Area | State |
 |---|---|
@@ -28,17 +28,17 @@ This is the living plan for Swiss Knife. It says where the project stands, what 
 | Reuse | The recipe replays a session to the same file. Show Profiles apply the same changes to another show. |
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux. An update check with *Update and restart*, tested on macOS several times. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
-| Claude | Swiss Knife is an MCP server with 27 tools, among them `guide`, which explains the others. It also offers five ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files (the Stage Monitor's own page and settings are replaced). The *Connect to Claude* card and the menu item show whether the connection exists. |
-| Tests | 1020 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
-| Documentation | README, wiki (32 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
+| Claude | Swiss Knife is an MCP server with 28 tools, among them `guide`, which explains the others. It also offers seven ready requests (MCP prompts) and the guide as resources. Claude Desktop connects with one file (`.mcpb`), Claude Code with one command. Claude gets only the folders you list and Swiss Knife itself, and it writes only new files (the Stage Monitor's own page and settings are replaced). The *Connect to Claude* card and the menu item show whether the connection exists. |
+| Tests | 1096 automated tests pass (in the sandbox; 3 skipped there). A live check against a real QLC+ 5.2.2 runs in CI (advisory). |
+| Documentation | README, wiki (35 pages, *Claude's tools* written from the code), CHANGELOG, one set of release notes per version. |
 
 Release 3.0.0 was the milestone: installing, updating, three languages and the Claude connection all in place, with the documentation rewritten to match. Release 3.0.1 follows a test on a real show with Claude: the Dictionary drafts descriptions itself and can hand the job to Claude, cue notes name the button, and Claude's tools are documented where Claude reads them. Release 3.0.2 adds German, Spanish, Portuguese, Japanese and Chinese, and 3.0.3 translates the tool names and fills the gaps found on the first look.
 
 ## 2. What is left
 
-The programme up to 3.5.5 is closed. What is open: 3.6.0 (Cabling, in progress on `feat/v3.6.0`), 3.7.0 (stage layouts and per-song tempo), testing on real systems and a few decisions.
+The programme up to 3.6.0 is closed. What is open: 3.7.0 (stage layouts and per-song tempo), testing on real systems and a few decisions.
 
-### Planned for 3.6.0: Cabling (DMX cabling planner)
+### Released in 3.6.0: Cabling (DMX cabling planner)
 
 Decided 18 October, after giopas bought a Lixada DMX512 splitter (3-pin, 1 → 8, with a thru and no termination switch) to stop running one long daisy chain around the stage. The interface is an Enttec DMX USB Pro, whose output is 5-pin, so a 5-to-3-pin adapter is part of every gig. The spec is the Claude doc *Swiss Knife — DMX Cabling Planner (spec)*; the mockup is the Claude design canvas *DMX Cabling Planner* (Plan, Kit, and Check and export screens). The test show is `tests/corpus/Festival_14fix.qxw`: 6 spots on a truss at 2.9 m, 8 RGB PARs on the floor and on the PA, one universe on the Enttec, band members as meshes. For the venue case (own fixtures plus house fixtures) the tests mark the 6 spots as *Venue*. **Everything below ships in 3.6.0**, on one branch `feat/v3.6.0`; power is left out.
 
@@ -64,11 +64,13 @@ Decided 18 October, after giopas bought a Lixada DMX512 splitter (3-pin, 1 → 8
 | 3 · Manual plan | Controller preference (stand, front of house, planner), placing controller and splitter by hand, building chains by clicking, lengths on the grid with runs and keep-out, cables from stock, adapters, terminators, every C check | 1 | Built (`route.py`, `cables.py`, the Places and Plan steps) |
 | 4 · Automatic plan | Chains, order, splitter placement, controller placement when the planner chooses, front-of-house alternatives, two or three alternatives, re-plan on a hand change, *+ Fixture found here* | 3 | Built (`auto.py`) |
 | 5 · Outputs | Plot, pick list, labels, load-in order, the step in *Get ready for the gig*, crew checklist | 3 | Built (`outputs.py`, Show Paperwork's *cabling* section) |
-| 6 · Release | Seven languages, wiki page *Cabling*, *Claude's tools* regenerated, Library kind for the kit, pictures in `shots.py`, tests on the Festival and Pub shows | all | Built except the pictures (at release time); 67 cabling tests on the Festival, Pub, FloorShow and two-universe shows; full suite green |
+| 6 · Release | Seven languages, wiki page *Cabling*, *Claude's tools* regenerated, Library kind for the kit, pictures in `shots.py`, tests on the Festival and Pub shows | all | Built, with the pictures (`tools/shots.py cabling`: 22–24 and `cabling.gif`); released in 3.6.0. Was: built except the pictures (at release time); 67 cabling tests on the Festival, Pub, FloorShow and two-universe shows; full suite green |
 
 To check on the Mac before releasing 3.6.0: the screen in the app window (four steps, dark and light), the plot and the labels printed, the Claude tool and both ready requests in Claude Desktop, *Ask Claude…* with a photo of a fixture's back, the Library round trip of the kit, and a real gig plan with the real cable bag.
 
-Left out of 3.6.0: power (circuits and powerCON chains from `PowerConsumption`, possible later on the same model), Art-Net nodes beyond one preset, cables in QLC+'s own 3D view, a full 3D model of trusses, links to shops.
+Added after the first looks on the Mac (18–20 October): My kit (editable without a show; fixtures from the installed QLC+ library, the show, GitHub or by hand), import and export of the kit, *Your own device*, metres or feet, tonight's stage size kept in the plan, the band floor crossed at a cost (C007) instead of walled off, Art-Net / sACN nodes fed by a network cable (C019 over 100 m), wireless pairs with a radio hop checked against range (C018) and a *Wireless to the stage* alternative, items added to My kit going into tonight's kit.
+
+Left out of 3.6.0: power (circuits and powerCON chains from `PowerConsumption`, possible later on the same model), a network switch or Wi-Fi between the computer and a node, cables in QLC+'s own 3D view, a full 3D model of trusses, links to shops.
 
 Open questions for giopas:
 
@@ -392,6 +394,7 @@ Dates are the CHANGELOG dates. Details of each release are in [CHANGELOG.md](CHA
 | 3.5.3 | 17 Oct | Stage Monitor at the gig: Start Stage Monitor to double-click (on the installed app via `--serve-stage`, no Python needed), every address listed, a hint when a browser asks for https://, what runs at the gig in the app and the wiki. |
 | 3.5.4 | 17 Oct | Stage Monitor asks before an export replaces an earlier page (the one exception to never overwriting), in the app and for Claude; the two modes explained; *Show step notes* on or off. |
 | 3.5.5 | 17 Oct | Stage Monitor: Control mode gets the CueList's own *Stop* (1.2 s press, only while the list plays; *Pause*/*Resume* on the Play/Stop/Pause layout) and a *Safety hold* setting for Previous / Next, which can be off. |
+| 3.6.0 | 20 Oct | Cabling: a DMX cabling planner with the kit you own (My kit and tonight's copy, metres or feet, import/export), the computer where you stand, at front of house or chosen, alternatives with splitters, nodes and wireless pairs, 24 checks, plot, pick list, labels and load-in order; Claude's `cabling` tool. |
 
 ## 4. Goal and the Pub test
 

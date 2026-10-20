@@ -4412,7 +4412,7 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 /* ── Cabling (3.6.0) ───────────────────────────────────────────────────────── */
 .cb-step { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }
 .cb-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 12px; }
-.cb-cols[hidden] { display: none; }
+.cb-cols[hidden], .cb-card[hidden] { display: none; }
 .cb-cols-3 { grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr) minmax(280px, 1.4fr); }
 @media (max-width: 1100px) { .cb-cols, .cb-cols-3 { grid-template-columns: minmax(0, 1fr); } }
 .cb-main, .cb-side, .cb-alts { min-width: 0; }

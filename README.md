@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.5.5
+# QLC+ Swiss Knife v3.6.0
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -90,6 +90,8 @@ Claude has a `guide` tool that explains any other tool, with its arguments and a
 | Start: what do you want to do? | Compare: the rebuilt show next to the hand-made one | Library |
 | ![Stage Monitor](screenshots/19-stage-monitor.png) | ![The Stage Monitor page on a tablet](screenshots/20-stage-page.png) | ![The Stage Monitor page, black with a white song](screenshots/21-stage-page-black.png) |
 | Stage Monitor: the cue lists and the page | On the tablet, live from QLC+ | Black, white song: for a dark stage |
+| ![Cabling: the plan](screenshots/22-cabling-plan.png) | ![Cabling: my kit](screenshots/23-cabling-kit.png) | ![Cabling: checks and export](screenshots/24-cabling-check.png) |
+| Cabling: three alternatives and the chains on the stage | Cabling: my kit, every show | Cabling: the checks, the load-in order and the files for the crew |
 
 ---
 

@@ -639,3 +639,23 @@ def test_my_kit_fixture_search_and_item(tmp_path, monkeypatch):
     assert c.post("/api/cabling/fixture-item", json={"gh_manufacturer": "../x", "filename": "a.qxf"}).status_code == 400
     saved = c.post("/api/cabling/kit", json={"kit": {"items": [it]}}).get_json()
     assert saved["path"] == k["path"] and saved["kit"]["items"][0]["model"] == "LED 4C-12 Silent Slim Spot"
+
+
+def test_lengths_in_feet(festival, tmp_path, monkeypatch):
+    """Lengths are kept in metres and shown in the unit of your kit."""
+    from core.cabling import units, cables
+    assert units.fmt(3.048, "ft") == "10 ft" and units.fmt(10, "m") == "10 m" and units.fmt(0.5, "ft") == "1.6 ft"
+    with units.use("ft"):
+        assert units.fmt(15.24) == "50 ft"
+        assert abs(cables.buy_length(9.5) - 35 * units.FT) < 0.01      # 9.5 m = 31 ft: 35 ft is sold
+    assert cables.buy_length(9.5) == 10                                    # back in metres
+    assert kit.clean_inventory({"items": [], "units": "ft"})["units"] == "ft"
+    assert "units" not in kit.clean_inventory({"items": [], "units": "yd"})
+    monkeypatch.setenv("QSK_CABLING_KIT", str(tmp_path / "kit.json"))
+    kit.save_base({"items": [P["enttec_usb_pro"]], "units": "ft"})
+    assert kit.load_units() == "ft"
+    with units.use(kit.load_units()):
+        ev = plan.evaluate(festival_plan(), festival)
+    texts = [i["text"] for w in ev["chains"] for i in w["issues"]] + [i["text"] for i in ev["issues"]]
+    assert not any(" m " in t or t.endswith(" m.") for t in texts if "missing" in t or "joined" in t)
+    assert any(" ft" in t for t in texts)

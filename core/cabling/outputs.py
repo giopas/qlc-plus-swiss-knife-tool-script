@@ -25,6 +25,7 @@ import zlib
 from typing import Dict, List, Tuple
 
 from core.cabling import kit as kit_mod
+from core.cabling.units import fmt
 from core.pdf import _pdf_str, assemble_pdf
 
 COLOURS = ["#14b8a6", "#d97706", "#7c3aed", "#2563eb", "#db2777", "#65a30d", "#dc2626", "#0891b2"]
@@ -70,7 +71,7 @@ def numbered(ev: dict, plan: dict) -> List[dict]:
         for i, link in enumerate(w["links"]):
             cabs = link.get("cables") or []
             if not cabs and link.get("missing_m"):
-                cabs = [{"name": f"(to buy) {link['missing_m']:g} m", "length": link["missing_m"], "type": "dmx",
+                cabs = [{"name": f"(to buy) {fmt(link['missing_m'])}", "length": link["missing_m"], "type": "dmx",
                          "missing": True}]
             for j, c in enumerate(cabs):
                 n += 1
@@ -109,10 +110,13 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
         for link in w["links"]:
             pts = [tuple(p) for p in link["route"]["points"]]
             sh.append(("line", pts, colour, 45, (6, 3) if link["conn"] in ("rj45", "wireless") else None))
-            if len(pts) >= 2 and link.get("cables"):
+            if len(pts) >= 2 and (link.get("cables") or link.get("missing_m")):
                 a, b = pts[len(pts) // 2 - 1], pts[len(pts) // 2]
-                L = " + ".join(f"{c['length']:g}" for c in link["cables"]) + " m"
-                sh.append(("text", (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 80, L, 150, colour, "middle"))
+                if link.get("cables"):
+                    L, col = " + ".join(fmt(c["length"]) for c in link["cables"]), colour
+                else:                              # none in the kit is long enough: the length to buy
+                    L, col = f"{fmt(link['missing_m'])} to buy", "#dc2626"
+                sh.append(("text", (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 80, L, 150, col, "middle"))
         if w.get("terminator"):
             last = w["links"][-1]["route"]["points"][-1] if w["links"] else None
             if last:
@@ -357,7 +361,7 @@ def pick_list_pdf(pl: dict, show: str, date: str) -> bytes:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def label_lines(c: dict) -> Tuple[str, str]:
-    top = f"#{c['n']} · {c['length']:g} m · {c['chain'].split(' ')[-2] + ' ' + c['chain'].split(' ')[-1] if ' OUT ' in c['chain'] else c['chain']}"
+    top = f"#{c['n']} · {fmt(c['length'])} · {c['chain'].split(' ')[-2] + ' ' + c['chain'].split(' ')[-1] if ' OUT ' in c['chain'] else c['chain']}"
     bottom = f"{c['from']} → {c['to']}" + (" (HOUSE)" if c["house"] else "") + (
         f" · part {c['part']}" if c["part"] else "")
     return top, bottom
@@ -406,7 +410,7 @@ def load_in(ev: dict, plan: dict) -> List[str]:
     steps = []
     ctl = plan["controller"]
     where = {"stand": ctl["side"].replace("-", " ") + (" wing" if "stage" in ctl["side"] else ""),
-             "foh": f"front of house, {ctl['distance_m']:g} m from the stage", "auto": "where the plan puts it"}
+             "foh": f"front of house, {fmt(ctl['distance_m'])} from the stage", "auto": "where the plan puts it"}
     ifaces = sorted({c["source"]["item"] for c in plan["chains"] if items.get(c["source"]["item"], {}).get("kind") == "interface"})
     names = ", ".join(items[i]["name"] for i in ifaces) or "the interface"
     steps.append(f"Computer and {names} at the {where[ctl['mode']]}.")
@@ -415,15 +419,15 @@ def load_in(ev: dict, plan: dict) -> List[str]:
             steps.append(f"{a['name']} on {a['at']}.")
     for iid, p in sorted(plan.get("places", {}).items()):
         if iid != "controller" and iid in items:
-            steps.append(f"{items[iid]['name']} at {p['x'] / 1000:.1f} m from the left, {p['z'] / 1000:.1f} m "
-                         "from the back; power it.")
+            steps.append(f"{items[iid]['name']} at {fmt(round(p['x'] / 1000, 1))} from the left, "
+                         f"{fmt(round(p['z'] / 1000, 1))} from the back; power it.")
     by_chain: Dict[int, List[dict]] = {}
     for c in nums:
         by_chain.setdefault(c["chain_n"], []).append(c)
     for k in sorted(by_chain, key=lambda k: by_chain[k][0]["n"]):
         cs = by_chain[k]
         w = ev["chains"][k]
-        hops = ", ".join(f"#{c['n']} {c['length']:g} m to {c['to']}" for c in cs)
+        hops = ", ".join(f"#{c['n']} {fmt(c['length'])} to {c['to']}" for c in cs)
         line = f"{cs[0]['chain']}: {hops}."
         t = w.get("terminator")
         if t:

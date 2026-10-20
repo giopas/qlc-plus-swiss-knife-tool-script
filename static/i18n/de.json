@@ -3826,5 +3826,18 @@
  "Nothing found.": "Nichts gefunden.",
  "Open a show to plan its cables; your kit can be edited now.": "Öffne eine Show, um ihre Kabel zu planen; dein Kit kannst du schon jetzt bearbeiten.",
  "Band floor: {0} plus 50 cm": "Bandfläche: {0} plus 50 cm",
- "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "Bei einem Splitter betrifft das seinen Eingang: Die Linie vom Computer endet dort, also kommt bei freiem Thru der Abschlussstecker dorthin. Jeder Ausgang ist eine neue Linie, abgeschlossen an ihrer letzten Leuchte; leere Ausgänge brauchen nichts."
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "Bei einem Splitter betrifft das seinen Eingang: Die Linie vom Computer endet dort, also kommt bei freiem Thru der Abschlussstecker dorthin. Jeder Ausgang ist eine neue Linie, abgeschlossen an ihrer letzten Leuchte; leere Ausgänge brauchen nichts.",
+ "{0} of cable": "{0} Kabel",
+ "{0} of cable · longest hop {1} · {2} adapter(s)": "{0} Kabel · längste Strecke {1} · {2} Adapter",
+ "{0} to buy": "{0} zu kaufen",
+ "A cable is 0.1 to 500 m (1 to 1600 ft) long.": "Ein Kabel ist 0,1 bis 500 m (1 bis 1600 ft) lang.",
+ "Tonight's kit is a copy of My kit made earlier": "Das Kit für heute Abend ist eine frühere Kopie von Mein Kit",
+ "{0} item(s) of My kit are not in tonight's kit:": "{0} Teil(e) aus Mein Kit fehlen im Kit für heute Abend:",
+ "Add them to tonight": "Für heute Abend hinzufügen",
+ "Tonight's kit now has everything in My kit.": "Das Kit für heute Abend hat jetzt alles aus Mein Kit.",
+ "Lengths in": "Längen in",
+ "metres (m)": "Meter (m)",
+ "feet (ft)": "Fuß (ft)",
+ "Export": "Exportieren",
+ "each a new file, downloaded": "jeweils eine neue Datei, heruntergeladen"
 }

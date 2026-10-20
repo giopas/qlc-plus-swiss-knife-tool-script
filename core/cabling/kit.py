@@ -309,6 +309,8 @@ def clean_inventory(inv) -> dict:
             dropped.append({"index": i, "reason": str(e)})
     _number(items)
     out = {"version": KIT_VERSION, "items": items}
+    if inv.get("units") in ("m", "ft"):            # lengths shown in metres or feet
+        out["units"] = inv["units"]
     if dropped:
         out["dropped"] = dropped
     return out
@@ -346,6 +348,11 @@ def load_base() -> dict:
             return clean_inventory(json.load(fh))
     except (OSError, ValueError):
         return {"version": KIT_VERSION, "items": []}
+
+
+def load_units() -> str:
+    """``m`` or ``ft``: how your kit shows lengths."""
+    return load_base().get("units", "m")
 
 
 def save_base(inv: dict) -> str:

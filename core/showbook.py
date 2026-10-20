@@ -513,7 +513,9 @@ def _cabling_context(state: dict):
         return None
     root = qxw_io.strip_ns(copy.deepcopy(state["qxw_root"]))
     r = crig.read_rig(root, load_qxf_defs([os.path.dirname(os.path.abspath(path))]), path)
-    return cplan.evaluate(p, r), p, r
+    from core.cabling import kit as ckit, units as cunits
+    with cunits.use(ckit.load_units()):
+        return cplan.evaluate(p, r), p, r
 
 
 def _build_cabling(state: dict):
@@ -522,12 +524,14 @@ def _build_cabling(state: dict):
     ctx = _cabling_context(state)
     if ctx is None:
         return None
-    from core.cabling import outputs
+    from core.cabling import kit as ckit, outputs, units as cunits
     ev, p, r = ctx
-    nums = outputs.numbered(ev, p)
-    return {"steps": outputs.load_in(ev, p), "pick": outputs.pick_list(ev, p),
-            "cables": [{k: c[k] for k in ("n", "length", "chain", "from", "to", "house")} for c in nums],
-            "svg": outputs.plot_svg(ev, p, r, "DMX cabling"), "summary": ev["summary"]}
+    with cunits.use(ckit.load_units()):
+        nums = outputs.numbered(ev, p)
+        return {"steps": outputs.load_in(ev, p), "pick": outputs.pick_list(ev, p),
+                "cables": [{**{k: c[k] for k in ("n", "length", "chain", "from", "to", "house")},
+                            "len": cunits.fmt(c["length"])} for c in nums],
+                "svg": outputs.plot_svg(ev, p, r, "DMX cabling"), "summary": ev["summary"]}
 
 
 def _build_function_index(state: dict) -> list[dict]:
@@ -1003,9 +1007,9 @@ def export_csv(document: dict) -> bytes:
                 ["Done", "ID", "Name", "Model", "Mode", "Patch", "Groups", "3D position"]))
         if "cabling" in sections:
             zf.writestr("cabling.csv", _csv_write(
-                [[c["n"], c["length"], c["chain"], c["from"], c["to"], "house" if c["house"] else ""]
+                [[c["n"], c.get("len") or c["length"], c["chain"], c["from"], c["to"], "house" if c["house"] else ""]
                  for c in sections["cabling"]["cables"]],
-                ["#", "Length m", "Chain", "From", "To", "Owner"]))
+                ["#", "Length", "Chain", "From", "To", "Owner"]))
         if "patch" in sections:
             zf.writestr("patch.csv", _csv_patch(sections["patch"]))
         if "patch_sheet" in sections:
@@ -1615,7 +1619,7 @@ def _pdf_cabling(pdf: _PdfBuilder, cab: dict, show_name: str):
     col_w = _auto_col_widths(headers, {"#": 30, "Length": 50})
     pdf.table_header(headers, col_w)
     for i, c in enumerate(cab["cables"]):
-        pdf.table_row([c["n"], f"{c['length']:g} m", c["chain"], c["from"],
+        pdf.table_row([c["n"], c.get("len") or f"{c['length']:g} m", c["chain"], c["from"],
                        c["to"] + (" (house)" if c["house"] else "")], col_w, i)
     ctx = _cabling_context(workspace._state)
     if ctx is not None:

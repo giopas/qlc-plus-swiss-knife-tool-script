@@ -3826,5 +3826,18 @@
  "Nothing found.": "見つかりませんでした。",
  "Open a show to plan its cables; your kit can be edited now.": "ショーを開くとケーブルを計画できます。キットは今すぐ編集できます。",
  "Band floor: {0} plus 50 cm": "バンドエリア: {0}＋50 cm",
- "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "スプリッターの場合は入力側の話です。コンピューターからのラインはそこで終わるので、スルーに何も挿さなければそこに終端を付けます。各出力は新しいラインで、最後のフィクスチャーで終端します。空いている出力には何も要りません。"
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "スプリッターの場合は入力側の話です。コンピューターからのラインはそこで終わるので、スルーに何も挿さなければそこに終端を付けます。各出力は新しいラインで、最後のフィクスチャーで終端します。空いている出力には何も要りません。",
+ "{0} of cable": "ケーブル {0}",
+ "{0} of cable · longest hop {1} · {2} adapter(s)": "ケーブル {0} · 最長区間 {1} · アダプター {2} 個",
+ "{0} to buy": "{0} 要購入",
+ "A cable is 0.1 to 500 m (1 to 1600 ft) long.": "ケーブルの長さは 0.1〜500 m（1〜1600 ft）です。",
+ "Tonight's kit is a copy of My kit made earlier": "今夜のキットは以前に作ったマイキットのコピーです",
+ "{0} item(s) of My kit are not in tonight's kit:": "マイキットの {0} 点が今夜のキットにありません:",
+ "Add them to tonight": "今夜に追加",
+ "Tonight's kit now has everything in My kit.": "今夜のキットにマイキットのすべてが入りました。",
+ "Lengths in": "長さの単位",
+ "metres (m)": "メートル (m)",
+ "feet (ft)": "フィート (ft)",
+ "Export": "書き出し",
+ "each a new file, downloaded": "それぞれ新しいファイルとしてダウンロード"
 }

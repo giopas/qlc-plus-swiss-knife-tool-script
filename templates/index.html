@@ -2261,7 +2261,7 @@
               <button class="btn btn-surface btn-sm" onclick="cablingAddPreset()">+ Add</button></div>
             <div class="cb-row"><span>Cables</span>
               <select id="cb-cab-conn" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option></select>
-              <input id="cb-cab-len" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length in m"> m
+              <input id="cb-cab-len" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length"> <span class="cb-u">m</span>
               × <input id="cb-cab-n" class="field-input cb-narrow" type="number" min="1" max="99" value="1" title="How many">
               <select id="cb-cab-type" class="field-input cb-narrow"><option value="dmx">DMX 110 Ω</option><option value="mic">Microphone</option></select>
               <button class="btn btn-surface btn-sm" onclick="cablingAddCable()">+ Add</button></div>
@@ -2281,7 +2281,9 @@
       <div class="cb-cols" id="cb-kit-mine" hidden>
         <div class="cb-main">
           <div class="pane-header">My kit <span class="cb-hint">what you own; every plan starts from a copy of it</span></div>
-          <div class="cb-hint cb-kit-path" id="cb-kit-path"></div>
+          <div class="cb-row cb-kit-units"><span>Lengths in</span>
+            <select id="cb-units" class="field-input cb-narrow" onchange="cablingUnits(this.value)"><option value="m">metres (m)</option><option value="ft">feet (ft)</option></select>
+            <span class="cb-hint cb-kit-path" id="cb-kit-path"></span></div>
           <div id="cb-mykit"></div>
           <div class="cb-card cb-add">
             <div class="cb-row"><span>Add</span>
@@ -2289,7 +2291,7 @@
               <button class="btn btn-surface btn-sm" onclick="cablingAddPreset('m')">+ Add</button></div>
             <div class="cb-row"><span>Cables</span>
               <select id="cb-cab-conn-m" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option></select>
-              <input id="cb-cab-len-m" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length in m"> m
+              <input id="cb-cab-len-m" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length"> <span class="cb-u">m</span>
               × <input id="cb-cab-n-m" class="field-input cb-narrow" type="number" min="1" max="99" value="1" title="How many">
               <select id="cb-cab-type-m" class="field-input cb-narrow"><option value="dmx">DMX 110 Ω</option><option value="mic">Microphone</option></select>
               <button class="btn btn-surface btn-sm" onclick="cablingAddCable('m')">+ Add</button></div>
@@ -2352,7 +2354,7 @@
                 <option value="back">Behind the stage</option><option value="front">In front of the stage</option></select></div>
             <label class="cb-check"><input type="radio" name="cb-ctl" value="foh" onchange="cablingCtl('mode', 'foh')"> Front of house, with the mixer remote</label>
             <div class="cb-row cb-sub"><span>Distance</span>
-              <input id="cb-foh-d" class="field-input cb-narrow" type="number" min="1" max="200" step="0.5" onchange="cablingCtl('distance_m', +this.value)"> m from the stage edge</div>
+              <input id="cb-foh-d" class="field-input cb-narrow" type="number" min="1" max="200" step="0.5" onchange="cablingCtl('distance_m', _cbToM(this.value))"> <span class="cb-u">m</span> from the stage edge</div>
             <div class="cb-row cb-sub"><span>Route</span>
               <select id="cb-foh-route" class="field-input" onchange="cablingCtl('route', this.value)">
                 <option value="unknown">Not decided</option><option value="wall">Along a wall</option>
@@ -2369,7 +2371,7 @@
           <div class="cb-card" id="cb-floor-list"></div>
           <div class="cb-card">
             <div class="cb-row"><span>Slack</span>
-              <input id="cb-slack" class="field-input cb-narrow" type="number" min="0" max="3" step="0.25" onchange="cablingSet('slack_m', +this.value)"> m at each cable end</div>
+              <input id="cb-slack" class="field-input cb-narrow" type="number" min="0" max="3" step="0.25" onchange="cablingSet('slack_m', _cbToM(this.value))"> <span class="cb-u">m</span> at each cable end</div>
           </div>
         </div>
       </div>
@@ -2411,19 +2413,20 @@
         <div class="cb-side">
           <div class="pane-header">For the crew</div>
           <div class="cb-card" id="cb-pick"></div>
+          <div class="pane-header">Export <span class="cb-hint">each a new file, downloaded</span></div>
           <div class="cb-card cb-exports">
             <div class="cb-row"><span>Plot</span>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('plot_pdf')">PDF</button>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('plot_svg')">SVG</button></div>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('plot_pdf')"><span aria-hidden="true">⬇ </span>PDF</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('plot_svg')"><span aria-hidden="true">⬇ </span>SVG</button></div>
             <div class="cb-row"><span>Pick list</span>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_pdf')">PDF</button>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_csv')">CSV</button>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_txt')" data-tooltip="Plain text for a thermal printer">Ticket</button></div>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_pdf')"><span aria-hidden="true">⬇ </span>PDF</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_csv')"><span aria-hidden="true">⬇ </span>CSV</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('pick_txt')" data-tooltip="Plain text for a thermal printer"><span aria-hidden="true">⬇ </span>Ticket</button></div>
             <div class="cb-row"><span>Labels</span>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('labels_pdf')" data-tooltip="A4 sheets of 3 × 8 labels, a stripe in the chain's colour">PDF</button>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('labels_txt')" data-tooltip="Plain text for a thermal printer">Ticket</button></div>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('labels_pdf')" data-tooltip="A4 sheets of 3 × 8 labels, a stripe in the chain's colour"><span aria-hidden="true">⬇ </span>PDF</button>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('labels_txt')" data-tooltip="Plain text for a thermal printer"><span aria-hidden="true">⬇ </span>Ticket</button></div>
             <div class="cb-row"><span>Load-in</span>
-              <button class="btn btn-surface btn-sm" onclick="cablingExport('loadin_txt')">Text</button></div>
+              <button class="btn btn-surface btn-sm" onclick="cablingExport('loadin_txt')"><span aria-hidden="true">⬇ </span>Text</button></div>
             <div class="cb-hint">Show Paperwork's crew checklist also carries the plot and the load-in order once the plan is kept next to the show.</div>
           </div>
         </div>

@@ -40,6 +40,13 @@ bp = Blueprint('cabling', __name__, url_prefix='/api/cabling')
 _mem = {'for': None, 'plan': None}   # when the show has no folder of its own
 
 
+@bp.before_request
+def _units():
+    """Every text of this request shows lengths in the unit of your kit."""
+    from core.cabling import units as units_mod
+    units_mod._cur.set(kit_mod.load_units())
+
+
 def _safe_err(exc: Exception) -> str:
     return re.sub(r'(/[\w/.\- ]+|[A-Za-z]:\\[\w\\.\- ]+)', '<path>', str(exc))
 
@@ -210,6 +217,8 @@ def get_kit():
 @bp.route('/kit', methods=['POST'])
 def save_kit():
     data = (request.get_json(silent=True) or {}).get('kit')
+    if isinstance(data, dict) and 'units' not in data:     # keep the unit you chose
+        data = {**data, 'units': kit_mod.load_units()}
     inv = kit_mod.clean_inventory(data)
     if inv.get('dropped'):
         return jsonify({'error': 'Some items cannot be used.', 'dropped': inv['dropped']}), 400

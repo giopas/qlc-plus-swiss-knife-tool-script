@@ -3826,5 +3826,18 @@
  "Nothing found.": "未找到。",
  "Open a show to plan its cables; your kit can be edited now.": "打开一场演出来规划线缆；你的套件现在就可以编辑。",
  "Band floor: {0} plus 50 cm": "乐队区域：{0} 加 50 cm",
- "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "对分配器而言，这指的是它的输入：来自电脑的线路在此结束，因此直通口空着时要插终端。每个输出都是一条新线路，在最后一台灯具处终端；空着的输出不需要任何东西。"
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "对分配器而言，这指的是它的输入：来自电脑的线路在此结束，因此直通口空着时要插终端。每个输出都是一条新线路，在最后一台灯具处终端；空着的输出不需要任何东西。",
+ "{0} of cable": "线缆 {0}",
+ "{0} of cable · longest hop {1} · {2} adapter(s)": "线缆 {0} · 最长一段 {1} · 转接头 {2} 个",
+ "{0} to buy": "需购买 {0}",
+ "A cable is 0.1 to 500 m (1 to 1600 ft) long.": "线缆长度为 0.1 至 500 m（1 至 1600 ft）。",
+ "Tonight's kit is a copy of My kit made earlier": "今晚的套件是之前复制的“我的套件”",
+ "{0} item(s) of My kit are not in tonight's kit:": "“我的套件”中有 {0} 项不在今晚的套件里：",
+ "Add them to tonight": "加入今晚",
+ "Tonight's kit now has everything in My kit.": "今晚的套件已包含“我的套件”的全部内容。",
+ "Lengths in": "长度单位",
+ "metres (m)": "米 (m)",
+ "feet (ft)": "英尺 (ft)",
+ "Export": "导出",
+ "each a new file, downloaded": "每项都下载为新文件"
 }

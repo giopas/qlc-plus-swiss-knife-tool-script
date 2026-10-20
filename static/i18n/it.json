@@ -3799,5 +3799,18 @@
  "Nothing found.": "Nessun risultato.",
  "Open a show to plan its cables; your kit can be edited now.": "Apri uno show per pianificarne i cavi; il tuo kit si può modificare già ora.",
  "Band floor: {0} plus 50 cm": "Zona band: {0} più 50 cm",
- "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "Per uno splitter riguarda il suo ingresso: la linea dal computer finisce lì, quindi se il thru è libero ci va il terminatore. Ogni uscita è una linea nuova, terminata sull'ultima fixture; le uscite vuote non richiedono nulla."
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "Per uno splitter riguarda il suo ingresso: la linea dal computer finisce lì, quindi se il thru è libero ci va il terminatore. Ogni uscita è una linea nuova, terminata sull'ultima fixture; le uscite vuote non richiedono nulla.",
+ "{0} of cable": "{0} di cavo",
+ "{0} of cable · longest hop {1} · {2} adapter(s)": "{0} di cavo · tratta più lunga {1} · {2} adattatore/i",
+ "{0} to buy": "{0} da comprare",
+ "A cable is 0.1 to 500 m (1 to 1600 ft) long.": "Un cavo è lungo da 0,1 a 500 m (da 1 a 1600 ft).",
+ "Tonight's kit is a copy of My kit made earlier": "Il kit di stasera è una copia del mio kit fatta prima",
+ "{0} item(s) of My kit are not in tonight's kit:": "{0} elemento/i del mio kit non sono nel kit di stasera:",
+ "Add them to tonight": "Aggiungili a stasera",
+ "Tonight's kit now has everything in My kit.": "Il kit di stasera ora ha tutto ciò che c'è nel mio kit.",
+ "Lengths in": "Lunghezze in",
+ "metres (m)": "metri (m)",
+ "feet (ft)": "piedi (ft)",
+ "Export": "Esporta",
+ "each a new file, downloaded": "ognuno un file nuovo, scaricato"
 }

@@ -3767,5 +3767,18 @@
  "Nothing found.": "Rien trouvé.",
  "Open a show to plan its cables; your kit can be edited now.": "Ouvrez un spectacle pour planifier ses câbles ; votre kit peut être modifié dès maintenant.",
  "Band floor: {0} plus 50 cm": "Zone du groupe : {0} plus 50 cm",
- "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "Pour un splitter, cela concerne son entrée : la ligne venant de l'ordinateur s'y termine, donc si rien n'est branché sur son thru, le bouchon y va. Chaque sortie est une nouvelle ligne, terminée à son dernier projecteur ; les sorties vides ne demandent rien."
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "Pour un splitter, cela concerne son entrée : la ligne venant de l'ordinateur s'y termine, donc si rien n'est branché sur son thru, le bouchon y va. Chaque sortie est une nouvelle ligne, terminée à son dernier projecteur ; les sorties vides ne demandent rien.",
+ "{0} of cable": "{0} de câble",
+ "{0} of cable · longest hop {1} · {2} adapter(s)": "{0} de câble · plus long tronçon {1} · {2} adaptateur(s)",
+ "{0} to buy": "{0} à acheter",
+ "A cable is 0.1 to 500 m (1 to 1600 ft) long.": "Un câble mesure de 0,1 à 500 m (1 à 1600 ft).",
+ "Tonight's kit is a copy of My kit made earlier": "Le kit de ce soir est une copie de mon kit faite plus tôt",
+ "{0} item(s) of My kit are not in tonight's kit:": "{0} élément(s) de mon kit ne sont pas dans le kit de ce soir :",
+ "Add them to tonight": "Les ajouter à ce soir",
+ "Tonight's kit now has everything in My kit.": "Le kit de ce soir contient maintenant tout mon kit.",
+ "Lengths in": "Longueurs en",
+ "metres (m)": "mètres (m)",
+ "feet (ft)": "pieds (ft)",
+ "Export": "Exporter",
+ "each a new file, downloaded": "chacun un nouveau fichier, téléchargé"
 }

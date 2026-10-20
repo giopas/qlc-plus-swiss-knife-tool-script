@@ -4497,6 +4497,10 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .cb-code { font-family: var(--mono); font-size: var(--fs-small); color: var(--text-dim); min-width: 44px; }
 .cb-loadin { font-size: var(--fs-body); line-height: 1.5; padding-left: 22px; }
 .cb-pick { margin: 2px 0 8px; padding-left: 18px; font-size: var(--fs-body); }
-.cb-exports .btn { min-width: 56px; }
+.cb-exports .btn { min-width: 64px; border: 1px solid var(--accent); color: var(--accent); }
+.cb-exports .btn:hover { background: var(--accent); color: var(--accent-contrast); }
+.cb-kit-units { margin: 2px 0 8px; }
+.cb-kit-units .cb-kit-path { margin: 0; }
+.cb-sync { cursor: pointer; border: 1px solid var(--orange); }
 .sb-cabling-plot svg { width: 100%; max-height: 520px; }
 .sb-steps { padding-left: 22px; line-height: 1.5; }

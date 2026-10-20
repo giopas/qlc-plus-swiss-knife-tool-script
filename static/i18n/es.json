@@ -3826,5 +3826,18 @@
  "Nothing found.": "No se encontró nada.",
  "Open a show to plan its cables; your kit can be edited now.": "Abre un show para planificar sus cables; tu kit ya se puede editar.",
  "Band floor: {0} plus 50 cm": "Zona de la banda: {0} más 50 cm",
- "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "En un splitter se refiere a su entrada: la línea del ordenador termina ahí, así que si no hay nada en su thru, el terminador va ahí. Cada salida es una línea nueva, terminada en su último aparato; las salidas vacías no necesitan nada."
+ "For a splitter this is about its input: the line from the computer ends there, so with nothing plugged in its thru it takes the terminator. Each output starts a new line, terminated at its last fixture; empty outputs need nothing.": "En un splitter se refiere a su entrada: la línea del ordenador termina ahí, así que si no hay nada en su thru, el terminador va ahí. Cada salida es una línea nueva, terminada en su último aparato; las salidas vacías no necesitan nada.",
+ "{0} of cable": "{0} de cable",
+ "{0} of cable · longest hop {1} · {2} adapter(s)": "{0} de cable · tramo más largo {1} · {2} adaptador(es)",
+ "{0} to buy": "{0} por comprar",
+ "A cable is 0.1 to 500 m (1 to 1600 ft) long.": "Un cable mide de 0,1 a 500 m (1 a 1600 ft).",
+ "Tonight's kit is a copy of My kit made earlier": "El kit de esta noche es una copia de mi kit hecha antes",
+ "{0} item(s) of My kit are not in tonight's kit:": "{0} elemento(s) de mi kit no están en el kit de esta noche:",
+ "Add them to tonight": "Añadirlos a esta noche",
+ "Tonight's kit now has everything in My kit.": "El kit de esta noche ya tiene todo lo de mi kit.",
+ "Lengths in": "Longitudes en",
+ "metres (m)": "metros (m)",
+ "feet (ft)": "pies (ft)",
+ "Export": "Exportar",
+ "each a new file, downloaded": "cada uno un archivo nuevo, descargado"
 }

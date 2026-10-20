@@ -30,6 +30,16 @@ let _cbBaseT = null, _cbFxT = null;
 const _cbE = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const _cbT = (s, ...v) => (typeof t === 'function' ? t(s, ...v) : s.replace(/\{(\d+)\}/g, (_x, i) => v[+i] ?? ''));
 const _cbG = g => (g === 'm' ? '♂' : g === 'f' ? '♀' : '');
+const CB_FT = 0.3048;
+// lengths are kept in metres; shown in the unit of your kit (My kit › Lengths in)
+const _cbUnits = () => (_cbBase && _cbBase.kit && _cbBase.kit.units) || 'm';
+function _cbNum(m) {                           // metres → a number in the user's unit
+  if (_cbUnits() !== 'ft') return Math.round(m * 100) / 100;
+  const ft = m / CB_FT;
+  return ft >= 10 || Math.abs(ft - Math.round(ft)) < 0.05 ? Math.round(ft) : Math.round(ft * 10) / 10;
+}
+const _cbLen = m => `${_cbNum(m)} ${_cbUnits()}`;
+const _cbToM = v => Math.round((_cbUnits() === 'ft' ? +v * CB_FT : +v) * 100) / 100;
 
 function cablingInit() {
   if (!_cb) cablingLoad(); else _cbRender();
@@ -121,6 +131,7 @@ function _cbRender() {
       next.textContent = typeof stepNextLabel === 'function' ? stepNextLabel(CB_STEPS[_cbStepN + 1]) : 'Next ›';
   }
   _cbPosition();
+  _cbUnitLabels();
   if (!_cb) {                                  // no show: only your kit can be edited
     _cbStepN = 0;
     CB_STEPS.forEach((_s, i) => { const el = document.getElementById('cb-step-' + i); if (el) el.hidden = i !== 0; });
@@ -145,12 +156,12 @@ function _cbSummary() {
   if (s) s.innerHTML = [
     `<span class="doc-chip">${_cbE(_cbT('{0} fixtures', _cb.rig.fixtures.length + (_cb.plan.extras || []).length))}</span>`,
     `<span class="doc-chip">${_cbE(_cbT('{0} chains', tt.chains))}</span>`,
-    `<span class="doc-chip">${_cbE(_cbT('{0} m of cable', tt.cable_m))}</span>`,
+    `<span class="doc-chip">${_cbE(_cbT('{0} of cable', _cbLen(tt.cable_m)))}</span>`,
     sm.error ? `<span class="doc-chip doc-error">${_cbE(_cbT('{0} error(s)', sm.error))}</span>` : '',
     sm.warning ? `<span class="doc-chip doc-warning">${_cbE(_cbT('{0} warning(s)', sm.warning))}</span>` : '',
   ].join(' ');
   const chips = _cb.plan.chains.length
-    ? [_cbE(_cbT('{0} m of cable', tt.cable_m)), _cbE(_cbT('{0} chains', tt.chains)),
+    ? [_cbE(_cbT('{0} of cable', _cbLen(tt.cable_m))), _cbE(_cbT('{0} chains', tt.chains)),
        sm.error ? _cbE(_cbT('{0} error(s)', sm.error)) : _cbE(_cbT('no errors'))]
     : [_cbE(_cbT('no chains yet'))];
   setOutcome('cabling', chips, sm.error ? 'warn' : (_cb.plan.chains.length ? 'ok' : ''), 'The plan:');
@@ -158,7 +169,7 @@ function _cbSummary() {
 
 // ── 1 · Kit ──────────────────────────────────────────────────────────────────
 function _cbItemText(it) {
-  if (it.kind === 'cable') return `${CB_CONN[it.a.conn]} · ${it.length} m${it.type === 'mic' ? ' · ' + _cbT('microphone') : ''}`;
+  if (it.kind === 'cable') return `${CB_CONN[it.a.conn]} · ${_cbLen(it.length)}${it.type === 'mic' ? ' · ' + _cbT('microphone') : ''}`;
   if (it.kind === 'adapter') return `${CB_CONN[it.a.conn]}${_cbG(it.a.gender)} → ${CB_CONN[it.b.conn]}${_cbG(it.b.gender)}`;
   if (it.kind === 'terminator') return `${CB_CONN[it.plug.conn]}${_cbG(it.plug.gender)} · 120 Ω`;
   const ports = it.ports || [];
@@ -212,8 +223,8 @@ function _cbKitView() {
 function _cbKit() {
   const inv = _cb.plan.tonight.items;
   const el = document.getElementById('cb-kit');
-  el.innerHTML = inv.length ? _cbTable(inv, 't')
-    : `<div class="porter-placeholder">${_cbE(_cbT('Tonight\'s kit is empty. Add your interface, splitter, cables, adapters and terminators below, then keep it as your kit.'))}</div>`;
+  el.innerHTML = _cbSyncHtml() + (inv.length ? _cbTable(inv, 't')
+    : `<div class="porter-placeholder">${_cbE(_cbT('Tonight\'s kit is empty. Add your interface, splitter, cables, adapters and terminators below, then keep it as your kit.'))}</div>`);
   _cbPresetOptions(document.getElementById('cb-preset'), _cb.presets);
   // found in the show
   const f = document.getElementById('cb-found');
@@ -283,7 +294,10 @@ function _cbAddItem(item, w, n = 1) {
     if (w !== 'm') it.owner = 'mine'; else delete it.owner;
     items.push(it);
   }
-  if (w === 'm') _cbBaseChanged(); else _cbChanged();
+  if (w === 'm') {
+    _cbBaseChanged();
+    if (_cb && !same) _cbAddItem(item, 't', n);   // tonight gets it as well
+  } else _cbChanged();
 }
 
 function cablingAddPreset(w) {
@@ -295,11 +309,12 @@ function cablingAddPreset(w) {
 function cablingAddCable(w) {
   const g = id => document.getElementById(id + (w === 'm' ? '-m' : ''));
   const conn = g('cb-cab-conn').value;
-  const length = Math.round(parseFloat(g('cb-cab-len').value) * 100) / 100;
+  const typed = parseFloat(g('cb-cab-len').value);
+  const length = _cbToM(typed);
   const n = parseInt(g('cb-cab-n').value, 10) || 1;
   const type = g('cb-cab-type').value;
-  if (!(length >= 0.1 && length <= 500)) { setStatus(_cbT('A cable is 0.1 to 500 m long.'), 'warn'); return; }
-  const name = `${CB_CONN[conn]} ${type === 'mic' ? 'mic' : 'DMX'} cable ${length} m`;
+  if (!(length >= 0.1 && length <= 500)) { setStatus(_cbT('A cable is 0.1 to 500 m (1 to 1600 ft) long.'), 'warn'); return; }
+  const name = `${CB_CONN[conn]} ${type === 'mic' ? 'mic' : 'DMX'} cable ${Math.round(typed * 100) / 100} ${_cbUnits()}`;
   _cbAddItem({ kind: 'cable', name, a: { conn, gender: 'm' }, b: { conn, gender: 'f' }, length, type }, w, n);
 }
 
@@ -313,6 +328,8 @@ function _cbMyKit() {
     : `<div class="porter-placeholder">${_cbE(_cbT('Your kit is empty. Add what you own: the interface, splitters, cables, adapters, terminators and your fixtures.'))}</div>`;
   document.getElementById('cb-kit-path').textContent = _cbT('Kept in {0}, saved as you change it. Share it as a file through the Library (Cabling kit).', _cbBase.path || '');
   _cbPresetOptions(document.getElementById('cb-preset-m'), _cbBase.presets);
+  const us = document.getElementById('cb-units');
+  if (us) us.value = _cbUnits();
   const res = document.getElementById('cb-fx-res');
   if (res && !res.innerHTML && _cbBase.library === false)
     res.innerHTML = `<div class="cb-dim">${_cbE(_cbT('QLC+\'s fixture library was not found on this computer: use GitHub or By hand.'))}</div>`;
@@ -338,8 +355,9 @@ function _cbBaseChanged() {
 
 async function _cbBaseSave() {
   const sent = _cbBaseEdits;
+  const units = _cbUnits();
   const r = await fetch('/api/cabling/kit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kit: { items: _cbBase.kit.items } }) });
+    body: JSON.stringify({ kit: { items: _cbBase.kit.items, units } }) });
   const d = await r.json();
   if (!r.ok) {
     setStatus((d.error ? _cbT(d.error) : _cbT('Could not keep your kit.'))
@@ -349,8 +367,43 @@ async function _cbBaseSave() {
   _cbBase.path = d.path;
   if (sent !== _cbBaseEdits) return;        // changed meanwhile: another save follows
   _cbBase.kit = d.kit;
-  if (_cb) _cb.base = d.kit;
+  if (_cb) { _cb.base = d.kit; _cbEvaluate(); }   // the checks speak in the kit's unit
   _cbMyKit();
+}
+
+function cablingUnits(u) {
+  if (!_cbBase || !_cbBase.kit) return;
+  _cbBase.kit.units = u === 'ft' ? 'ft' : 'm';
+  _cbUnitLabels();
+  _cbBaseChanged();
+  _cbRender();
+}
+
+function _cbUnitLabels() {
+  document.querySelectorAll('#scr-cabling .cb-u').forEach(e => { e.textContent = _cbUnits(); });
+  const len = document.getElementById('cb-cab-len'), lenm = document.getElementById('cb-cab-len-m');
+  [len, lenm].forEach(e => { if (e) e.step = _cbUnits() === 'ft' ? '1' : '0.5'; });
+}
+
+// items of My kit that tonight's kit does not have (added to My kit after tonight was copied)
+function _cbNotTonight() {
+  if (!_cb || !_cbBase || !_cbBase.kit) return [];
+  const have = new Set(_cb.plan.tonight.items.map(_cbSpec));
+  return _cbBase.kit.items.filter(x => x.count > 0 && !have.has(_cbSpec(x)));
+}
+
+function _cbSyncHtml() {
+  const miss = _cbNotTonight();
+  if (!miss.length) return '';
+  return `<div class="cb-card cb-sync" onclick="cablingSyncTonight()" title="${_cbE(_cbT('Tonight\'s kit is a copy of My kit made earlier'))}">
+    <div><b>${_cbE(_cbT('{0} item(s) of My kit are not in tonight\'s kit:', miss.length))}</b>
+    <span data-i18n="off">${_cbE(miss.map(x => `${x.count} × ${x.name}`).join(', '))}</span></div>
+    <div><button class="btn btn-accent btn-sm">${_cbE(_cbT('Add them to tonight'))}</button></div></div>`;
+}
+
+function cablingSyncTonight() {
+  _cbNotTonight().forEach(x => _cbAddItem(x, 't', x.count));
+  setStatus(_cbT('Tonight\'s kit now has everything in My kit.'), 'ok');
 }
 
 function _cbShowModels() {
@@ -440,7 +493,7 @@ async function cablingSaveBase() {
   const items = _cb.plan.tonight.items.filter(x => x.owner !== 'venue' && x.count > 0)
     .map(x => { const c = { ...x }; delete c.owner; return c; });
   const r = await fetch('/api/cabling/kit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kit: { items } }) });
+    body: JSON.stringify({ kit: { items, units: _cbUnits() } }) });
   const d = await r.json();
   if (!r.ok) { setStatus(d.error || _cbT('Could not keep your kit.'), 'error'); return; }
   _cb.base = d.kit;
@@ -540,16 +593,16 @@ function _cbPlaces() {
   const c = _cb.plan.controller;
   document.querySelectorAll('input[name="cb-ctl"]').forEach(r => { r.checked = r.value === c.mode; });
   const set = (id, v) => { const e = document.getElementById(id); if (e && document.activeElement !== e) e.value = v; };
-  set('cb-side-sel', c.side); set('cb-computer', c.computer || 'laptop'); set('cb-foh-d', c.distance_m); set('cb-foh-route', c.route); set('cb-slack', _cb.plan.slack_m);
+  set('cb-side-sel', c.side); set('cb-computer', c.computer || 'laptop'); set('cb-foh-d', _cbNum(c.distance_m)); set('cb-foh-route', c.route); set('cb-slack', _cbNum(_cb.plan.slack_m));
   const p = _cb.plan, items = Object.fromEntries(p.tonight.items.map(x => [x.id, x]));
   const rows = [];
   Object.entries(p.places || {}).forEach(([id, q]) => rows.push(`<div class="cb-row"><span>${_cbE(id === 'controller' ? _cbT('Computer') : (items[id] || {}).name || id)}</span>
-    <span class="cb-dim">${(q.x / 1000).toFixed(1)} / ${(q.z / 1000).toFixed(1)} m</span><button class="btn btn-surface btn-sm" onclick="cablingClearPlace('${id}')">✕</button></div>`));
+    <span class="cb-dim">${_cbLen(q.x / 1000)} / ${_cbLen(q.z / 1000)}</span><button class="btn btn-surface btn-sm" onclick="cablingClearPlace('${id}')">✕</button></div>`));
   (p.walkways || []).forEach((w, i) => rows.push(`<div class="cb-row"><span>${_cbE(_cbT('Walkway'))} ${i + 1}</span>
     <label class="cb-check"><input type="checkbox" ${w.ramp ? 'checked' : ''} onchange="cablingWalk(${i}, 'ramp', this.checked)"> ${_cbE(_cbT('cable ramp'))}</label>
     <button class="btn btn-surface btn-sm" onclick="cablingWalk(${i}, 'remove')">✕</button></div>`));
   (p.outlets || []).forEach((o, i) => rows.push(`<div class="cb-row"><span>${_cbE(_cbT('Outlet'))} ${i + 1}</span>
-    <span class="cb-dim">${(o.x / 1000).toFixed(1)} / ${(o.z / 1000).toFixed(1)} m</span><button class="btn btn-surface btn-sm" onclick="cablingOutlet(${i})">✕</button></div>`));
+    <span class="cb-dim">${_cbLen(o.x / 1000)} / ${_cbLen(o.z / 1000)}</span><button class="btn btn-surface btn-sm" onclick="cablingOutlet(${i})">✕</button></div>`));
   (p.extras || []).forEach((x, i) => rows.push(`<div class="cb-row"><span data-i18n="off">${_cbE(x.name)}</span>
     <button class="btn btn-surface btn-sm" onclick="go('fixtures')" title="${_cbE(_cbT('Patch it in Fixtures (the show in progress)'))}">${_cbE(_cbT('Patch it…'))}</button>
     <button class="btn btn-surface btn-sm" onclick="cablingExtra(${i})">✕</button></div>`));
@@ -629,7 +682,7 @@ function _cbPlan() {
     <button class="cb-alt${a.chosen ? ' on' : ''}" onclick="cablingPickAlt(${k})">
       <div class="cb-alt-h"><b>${a.key}</b> ${_cbE(_cbT(a.name))}${a.best ? ` <span class="cb-best">${_cbE(_cbT('SUGGESTED'))}</span>` : ''}</div>
       <div class="cb-dim">${_cbE(_cbT(a.note || ''))}</div>
-      <div class="cb-alt-n"><span>${_cbE(_cbT('Cable'))}</span><b>${a.cable_m} m</b><span>${_cbE(_cbT('Longest hop'))}</span><b>${a.longest_m} m</b>
+      <div class="cb-alt-n"><span>${_cbE(_cbT('Cable'))}</span><b>${_cbLen(a.cable_m)}</b><span>${_cbE(_cbT('Longest hop'))}</span><b>${_cbLen(a.longest_m)}</b>
         <span>${_cbE(_cbT('Crossings'))}</span><b>${a.crossings}</b><span>${_cbE(_cbT('Adapters'))}</span><b>${a.adapters}</b></div>
       <div class="${a.missing.length ? 'cb-bad' : 'cb-good'}">${a.missing.length
         ? _cbE(_cbT('Missing: {0}', a.missing.map(m => `${m.count} × ${m.what}`).join(', '))) : _cbE(_cbT('Nothing missing'))}</div>
@@ -638,7 +691,7 @@ function _cbPlan() {
     : `<div class="porter-placeholder">${_cbE(_cbT('No chains yet: ✨ Propose, or start a chain by hand.'))}</div>`;
   const tt = _cb.evaluation.totals;
   document.getElementById('cb-plan-totals').textContent = _cb.plan.chains.length
-    ? _cbT('{0} m of cable · longest hop {1} m · {2} adapter(s)', tt.cable_m, tt.longest_m, tt.adapters) : '';
+    ? _cbT('{0} of cable · longest hop {1} · {2} adapter(s)', _cbLen(tt.cable_m), _cbLen(tt.longest_m), tt.adapters) : '';
   const ev = _cb.evaluation, p = _cb.plan;
   const byN = Object.fromEntries(ev.chains.map(w => [w.n, w]));
   const names = Object.fromEntries(ev.fixtures.map(f => [f.id, f.name]));
@@ -650,7 +703,7 @@ function _cbPlan() {
     const rows = c.devices.map((d, i) => {
       const l = w.links[i] || {};
       const nm = d.fixture != null ? (names[d.fixture] || d.fixture) : ((items[d.item] || {}).name || d.item);
-      const cab = (l.cables || []).map(x => `${x.length} m`).join(' + ') || (l.missing_m ? _cbT('missing {0} m', l.missing_m) : '');
+      const cab = (l.cables || []).map(x => _cbLen(x.length)).join(' + ') || (l.missing_m ? _cbT('{0} to buy', _cbLen(l.missing_m)) : '');
       return `<div class="cb-link"><span class="cb-n">${i + 1}</span><span class="cb-to" data-i18n="off">${_cbE(nm)}</span>
         <span class="cb-dim">${_cbE(cab)}</span>
         <button class="btn btn-surface btn-sm" onclick="cablingDev(${n}, ${i}, -1)" ${i === 0 ? 'disabled' : ''} title="${_cbE(_cbT('Earlier'))}">↑</button>
@@ -659,7 +712,7 @@ function _cbPlan() {
     }).join('');
     const iss = (w.issues || []).filter(x => x.severity !== 'info').map(x => `<div class="cb-iss sev-${x.severity}"><b>${x.code}</b> ${_cbE(x.text)}</div>`).join('');
     return `<div class="cb-chain" style="border-left-color:${_cbE(col)}">
-      <div class="cb-chain-h"><b data-i18n="off">${n + 1}. ${_cbE(c.label || w.name)}</b><span class="cb-dim">${w.total_m != null ? w.total_m + ' m' : ''}</span>
+      <div class="cb-chain-h"><b data-i18n="off">${n + 1}. ${_cbE(c.label || w.name)}</b><span class="cb-dim">${w.total_m != null ? _cbLen(w.total_m) : ''}</span>
         <button class="btn btn-surface btn-sm" onclick="cablingChainRemove(${n})" title="${_cbE(_cbT('Remove the chain'))}">✕</button></div>${rows}${iss}</div>`;
   }).join('');
   const on = new Set(p.chains.flatMap(c => c.devices.filter(d => d.fixture != null).map(d => String(d.fixture))));
@@ -714,9 +767,9 @@ function _cbCheck() {
   const all = ev.chains.flatMap(w => w.issues.map(i => ({ ...i, chain: w.name }))).concat(ev.issues);
   const rank = { error: 0, warning: 1, info: 2 };
   all.sort((a, b) => rank[a.severity] - rank[b.severity] || a.code.localeCompare(b.code));
-  document.getElementById('cb-checks').innerHTML = all.length ? all.map(i => `<div class="cb-check-row sev-${i.severity}">
+  document.getElementById('cb-checks').innerHTML = _cbSyncHtml() + (all.length ? all.map(i => `<div class="cb-check-row sev-${i.severity}">
       <span class="cb-code">${i.code}</span><div><div>${_cbE(i.text)}</div>${i.fix ? `<div class="cb-dim">${_cbE(i.fix)}</div>` : ''}</div></div>`).join('')
-    : `<div class="cb-card cb-good">${_cbE(_cbT('Nothing to fix.'))}</div>`;
+    : `<div class="cb-card cb-good">${_cbE(_cbT('Nothing to fix.'))}</div>`);
   document.getElementById('cb-loadin').innerHTML = (_cb.load_in || []).map(s => `<li data-i18n="off">${_cbE(s)}</li>`).join('');
   const pk = _cb.pick || { bag: [], spares: [], buy: [] };
   const sec = (title, rows) => rows.length ? `<div class="cb-dim">${_cbE(_cbT(title))}</div><ul class="cb-pick">${rows.map(r =>

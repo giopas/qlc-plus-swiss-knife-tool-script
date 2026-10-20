@@ -41,6 +41,7 @@ from core.cabling import chain as chain_mod
 from core.cabling import kit as kit_mod
 from core.cabling import rig as rig_mod
 from core.cabling import route as route_mod
+from core.cabling.units import fmt
 
 SIDECAR_SUFFIX = ".cabling.json"
 PLAN_VERSION = 1
@@ -354,7 +355,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
                 if fixed[i]["length"] < link["need_m"]:
                     w["issues"].append(chain_mod._issue(
                         "C005", f"{fixed[i]['name']} is too short for {link['from']} → {link['to']} "
-                        f"({link['need_m']:g} m needed).", link["to"], "Let the planner pick the cable."))
+                        f"({fmt(link['need_m'])} needed).", link["to"], "Let the planner pick the cable."))
             else:
                 link["cables"] = []
         w["points"] = pts
@@ -371,7 +372,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
                 if got["joined"]:
                     w["issues"].append(chain_mod._issue(
                         "C011", f"{link['from']} → {link['to']}: two cables joined ("
-                        + " + ".join(f"{c['length']:g} m" for c in got["cables"]) + ").", link["to"],
+                        + " + ".join(fmt(c['length']) for c in got["cables"]) + ").", link["to"],
                         "A single longer cable, or a shorter route."))
                 if got["mic"]:
                     w["issues"].append(chain_mod._issue("C010", f"{link['from']} → {link['to']}: a microphone "
@@ -381,7 +382,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
             r = link["route"]
             if r.get("band_m", 0) >= BAND_REPORT_M:
                 w["issues"].append(chain_mod._issue(
-                    "C007", f"{link['from']} → {link['to']} crosses {r['band_m']:g} m of the band floor.",
+                    "C007", f"{link['from']} → {link['to']} crosses {fmt(r['band_m'])} of the band floor.",
                     link["to"], "Tape it down where the band stands, or move the device or the splitter."))
             for wi in r.get("walkways", []):
                 wk = plan["walkways"][wi]
@@ -392,18 +393,18 @@ def evaluate(plan: dict, rig: dict) -> dict:
                         "Tape it, use a cable ramp, or go round."))
             if r.get("audience") and plan["controller"]["mode"] == "foh" and plan["controller"]["route"] == "unknown":
                 w["issues"].append(chain_mod._issue(
-                    "C017", f"{link['from']} → {link['to']} runs {round(r['flat'] / 1000)} m across the audience "
+                    "C017", f"{link['from']} → {link['to']} runs {fmt(round(r['flat'] / 1000))} across the audience "
                     "floor by a route not confirmed.", link["to"],
                     "Say how it goes (along a wall, taped, overhead), or use a node or a wireless pair."))
         w["total_m"] = round(total, 1)
         if total > LONG_CHAIN_M:
-            w["issues"].append(chain_mod._issue("C011", f"{w['name']}: {total:g} m of cable on one chain.",
+            w["issues"].append(chain_mod._issue("C011", f"{w['name']}: {fmt(total)} of cable on one chain.",
                                                 w["name"], "Split it with a splitter output."))
         src = items.get(w["source"]["item"])
         nfx = sum(1 for d in plan["chains"][w["n"]]["devices"] if "fixture" in d)
         if src and src["kind"] in ("interface", "node") and (nfx > DAISY_FIXTURES or (nfx and total > DAISY_M)):
             w["issues"].append(chain_mod._issue(
-                "C012", f"{w['name']}: {nfx} fixtures and {total:g} m on one daisy chain: "
+                "C012", f"{w['name']}: {nfx} fixtures and {fmt(total)} on one daisy chain: "
                 "one that fails darkens every one after it.", w["name"],
                 "Use a splitter output for each group."))
     # one cable per socket: an output starts at most one chain per unit you own
@@ -427,12 +428,12 @@ def evaluate(plan: dict, rig: dict) -> dict:
             dist = ((p["x"] - ctl["x"]) ** 2 + (p["z"] - ctl["z"]) ** 2) ** 0.5
             if dist > USB_MAX_MM and "usb" in [q["conn"] for q in it["ports"]]:
                 issues.append(chain_mod._issue(
-                    "C016", f"{it['name']} is {dist / 1000:.1f} m from the computer: USB reaches 5 m.",
+                    "C016", f"{it['name']} is {fmt(round(dist / 1000, 1))} from the computer: USB reaches {fmt(5)}.",
                     it["name"], "Keep the interface by the computer and run DMX instead."))
     if plan["controller"]["computer"] != "laptop":
         near = [o for o in plan["outlets"] if ((o["x"] - ctl["x"]) ** 2 + (o["z"] - ctl["z"]) ** 2) ** 0.5 <= 3000]
         if not near:
-            issues.append(chain_mod._issue("C016", ("No power outlet marked within 3 m of the "
+            issues.append(chain_mod._issue("C016", (f"No power outlet marked within {fmt(3)} of the "
                                            + ("Raspberry Pi." if plan["controller"]["computer"] == "pi" else "computer.")),
                                            fix="Mark the outlets on Places, or bring an extension."))
     issues += _universe_checks(plan, rig, fx, items)
@@ -456,8 +457,8 @@ def evaluate(plan: dict, rig: dict) -> dict:
                                            f["name"], "Place it in Stage & Meshes."))
     for m in assigned["missing"]:
         issues.append(chain_mod._issue(
-            "C005", f"{m['count']} × {kit_mod.CONNECTOR_LABEL[m['conn']]} cable of {m['length']:g} m missing.",
-            fix=f"Add {m['count']} × {m['length']:g} m to the shopping list."))
+            "C005", f"{m['count']} × {kit_mod.CONNECTOR_LABEL[m['conn']]} cable of {fmt(m['length'])} missing.",
+            fix=f"Add {m['count']} × {fmt(m['length'])} to the shopping list."))
     allis = [i for w in walked for i in w["issues"]] + issues
     summary = {s: sum(1 for i in allis if i["severity"] == s) for s in ("error", "warning", "info")}
     links = [l for w in walked for l in w["links"] if l.get("route")]
@@ -502,7 +503,7 @@ def _universe_checks(plan, rig, fx, items) -> List[dict]:
 def shopping(walked: List[dict], issues: List[dict], assigned: dict) -> List[dict]:
     """What to buy: the cables missing, and everything a check put on the
     list (adapters, terminators, a device the kit lacks): ``[{what, count}]``."""
-    out = [{"what": f"{kit_mod.CONNECTOR_LABEL[m['conn']]} DMX cable {m['length']:g} m", "count": m["count"]}
+    out = [{"what": f"{kit_mod.CONNECTOR_LABEL[m['conn']]} DMX cable {fmt(m['length'])}", "count": m["count"]}
            for m in assigned["missing"]]
     for i in issues + [i for w in walked for i in w["issues"]]:
         if i.get("buy"):

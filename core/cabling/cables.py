@@ -19,6 +19,7 @@ import math
 from typing import Dict, List, Optional
 
 from core.cabling import kit as kit_mod
+from core.cabling import units as units_mod
 
 SLACK_M = 0.5                         # at each end
 BUY_LENGTHS = (1.5, 3, 5, 10, 15, 20, 25, 30, 50)
@@ -30,9 +31,12 @@ def need_m(route_mm: float, slack_m: float = SLACK_M) -> float:
 
 
 def buy_length(m: float) -> float:
-    for L in BUY_LENGTHS:
+    """The shortest length sold (in the user's unit) that covers *m* metres."""
+    for L in units_mod.buy_lengths_m():
         if L >= m:
             return L
+    if units_mod.current() == "ft":
+        return round(math.ceil(m / units_mod.FT / 50) * 50 * units_mod.FT, 2)
     return float(math.ceil(m / 10) * 10)
 
 

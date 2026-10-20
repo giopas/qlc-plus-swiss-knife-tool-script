@@ -697,7 +697,7 @@ class Server:
             items = [i for i in kit["items"] if not (i["kind"] == "fixture" and
                                                     (i.get("manufacturer", "").lower(), i.get("model", "").lower()) == key)]
             items.append(item)
-            self.api("POST", "/api/cabling/kit", {"kit": {"items": items}})
+            self.api("POST", "/api/cabling/kit", {"kit": {"items": items, "units": kit.get("units", "m")}})
             return {"added": item["name"], "to_check": to_check,
                     "note": "In your kit now. Values from a photo or a guess stay to check (C105) until seen at load-in."}
         if act in ("plan", "check"):

@@ -10,6 +10,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ### Fixed
 
 - Brightness now finds fixture definitions in the macOS user folder (`~/Library/Application Support/QLC+/Fixtures`), where QLC+'s Fixture Editor saves them. It uses the same lookup as the Porter, the Doctor, Quick Start, Show Paperwork and Cabling.
+- Show Paperwork's cabling section now reads the fixtures with the same definitions as the Cabling screen: the show's folder, then the QLC+ library on this computer. Before, a stock fixture's connector was unknown on paper, so the printed plan could guess 3-pin and differ from the screen.
+- Input profiles (for a MIDI pedal or controller) are also looked for in the Windows user folder (`%USERPROFILE%\QLC+\InputProfiles`) and in a QLC+ installed in `~/Applications` on the Mac.
 
 ## [3.6.0] — 2026-10-20 — Plan the DMX cables
 

@@ -507,12 +507,12 @@ def _cabling_context(state: dict):
         return None
     from core import qxw_io
     from core.cabling import plan as cplan, rig as crig
-    from core.doctor import load_qxf_defs
+    from routes.doctor_routes import _defs      # the same lookup as the Cabling screen (3.6.1)
     p = cplan.load_plan(cplan.sidecar_path(path))
     if not p or not p["chains"]:
         return None
     root = qxw_io.strip_ns(copy.deepcopy(state["qxw_root"]))
-    r = crig.read_rig(root, load_qxf_defs([os.path.dirname(os.path.abspath(path))]), path)
+    r = crig.read_rig(root, _defs(path), path)
     from core.cabling import kit as ckit, units as cunits
     with cunits.use(ckit.load_units()):
         return cplan.evaluate(p, r), p, r

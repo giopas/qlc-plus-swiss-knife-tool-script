@@ -44,8 +44,10 @@ No new screens. Fix what a real gig would show, and do the checks on the Mac tha
 **Fixed so far**
 
 - Brightness looked for fixture definitions in its own list of folders, which missed the macOS user folder `~/Library/Application Support/QLC+/Fixtures`. A definition made in QLC+'s Fixture Editor on the Mac was therefore not found by Brightness. It now uses the shared lookup (`core/quick_start/qlc_library.library_dirs()`) first, like the Porter, the Doctor, Quick Start, Show Paperwork and Cabling. Test: `tests/test_brightness_dirs.py`.
+- Show Paperwork's cabling section read the rig with only the show folder's definitions, while the Cabling screen uses `_defs()` (show folder, then the QLC+ library). A stock fixture's connector was unknown on paper (3-pin guessed, C101), so the printed plan could differ from the screen. It now uses `_defs()` too.
+- Input profiles: the lookup also covers the Windows user folder `%USERPROFILE%\QLC+\InputProfiles`, `~/Applications/QLC+.app`, `C:\qlcplus\InputProfiles`, and spells the macOS user folder `InputProfiles` as QLC+ does (matters on a case-sensitive disk). Tests for both: `tests/test_lookup_dirs_361.py`.
 
-**Automated checks done (20 October)**: the full test suite (1100 passed), `tools/ground_truth.py` clean apart from two stale `maintenance.lock` files (removed), the Doctor on the nine test shows (only the known D002 in the raw `Festival_14fix.qxw`, which the tests expect).
+**Automated checks done (20 October)**: the full test suite (1102 passed after the fixes above), `tools/ground_truth.py` clean apart from two stale `maintenance.lock` files (removed), the Doctor on the nine test shows (only the known D002 in the raw `Festival_14fix.qxw`, which the tests expect).
 
 **Checks on the Mac** (giopas). Tick them here; anything that fails becomes a fix in 3.6.1.
 

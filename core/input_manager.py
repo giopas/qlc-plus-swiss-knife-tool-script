@@ -391,11 +391,13 @@ def forget_controller(name: str) -> List[dict]:
 
 PROFILE_DIRS = [
     os.path.join(os.path.expanduser("~"), ".qlcplus", "inputprofiles"),
-    os.path.join(os.path.expanduser("~"), "Library", "Application Support", "QLC+", "inputprofiles"),
+    os.path.join(os.path.expanduser("~"), "Library", "Application Support", "QLC+", "InputProfiles"),
     "/Applications/QLC+.app/Contents/Resources/InputProfiles",
     "/Applications/QLC+.app/Contents/Resources/inputprofiles",
+    os.path.join(os.path.expanduser("~"), "Applications", "QLC+.app", "Contents", "Resources", "InputProfiles"),
     "/usr/share/qlcplus/inputprofiles", "/usr/local/share/qlcplus/inputprofiles",
-    "C:\\QLC+5\\InputProfiles", "C:\\QLC+\\InputProfiles",
+    os.path.join(os.path.expanduser("~"), "QLC+", "InputProfiles"),      # Windows user folder
+    "C:\\QLC+5\\InputProfiles", "C:\\QLC+\\InputProfiles", "C:\\qlcplus\\InputProfiles",
 ]
 
 

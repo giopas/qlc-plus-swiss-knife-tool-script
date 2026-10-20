@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.6.1, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.7.0, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -61,7 +61,7 @@ A. Before the next gig (the show path)
 | A4 | ✓ Stage Monitor: a two-hour soak; the two black colours under stage light; control mode *Previous*, *Next*, *Stop* with the chosen *Safety hold* | 3.5.0, 3.5.5 |
 | A5 | ✓ Stage Monitor: a CueList on a hidden page of a multipage frame still reports | 3.5.0 |
 | A6 | ✓ Cabling with the real cable bag (lengths, counts, any mic cables): a plan for the next venue, plot and labels printed, pick list used to pack | 3.6.0 |
-| A7 | *Update and restart* from 3.6.0 to 3.6.1 | release |
+| A7 | *Update and restart* from 3.6.1 to 3.7.0 | release |
 
 B. Before the next release (the tools)
 
@@ -74,8 +74,8 @@ B. Before the next release (the tools)
 | B5 | Claude Desktop with the packaged macOS app (so far only from the sources) | 3.0 |
 | B6 | Dictionary *Ask Claude…*, a dictionary written by Claude, cue notes seen in QLC+ | 3.0.1 |
 | B7 | Doctor fixes with a choice, output opened in QLC+ | 2.4.0 |
-| B8 | Fit a console to the real tablet and to a Pi touchscreen: *Fit*, *Check* with its list of small buttons, the result in QLC+'s web page (port 9999) on the device; the iPad sizes against what Safari reports | 3.7.0 |
-| B9 | *Take the show elsewhere (.zip)*: unzip on a computer without your user definitions, open the show in QLC+ and see the fixtures as moving heads, not dimmers | 3.7.0 |
+| B8 | ✓ Fit a console to the real tablet and to a Pi touchscreen: *Fit*, *Check* with its list of small buttons, the result in QLC+'s web page (port 9999) on the device; the iPad sizes against what Safari reports | 3.7.0 |
+| B9 | ✓ *Take the show elsewhere (.zip)*: unzip on a computer without your user definitions, open the show in QLC+ and see the fixtures as moving heads, not dimmers | 3.7.0 |
 
 C. For other users (when there is a chance)
 
@@ -90,7 +90,7 @@ C. For other users (when there is a chance)
 
 For moving a show to another machine (a stage laptop, a Raspberry Pi) or another screen (a tablet, a small touchscreen). giopas plays from his MacBook Pro, so this is mainly for other users, and for the day the show moves.
 
-**Status (20 October, branch `feat/v3.7.0`, not released).** Both parts are built and committed locally; the wiki (separate repository) has its commit too. 1145 tests pass (1 skipped without the `websocket` module). Left for the release: the pictures with `python3 tools/shots.py all`, release notes, the version bump and the merge as in section 8.
+**Status (20 October, branch `feat/v3.7.0`, released as 3.7.0 once merged; B8 and B9 passed).** Both parts are built and committed locally; the wiki (separate repository) has its commit too. 1145 tests pass (1 skipped without the `websocket` module). Left for the release: the pictures with `python3 tools/shots.py all`, release notes, the version bump and the merge as in section 8.
 
 - Part 1 is `core/definitions.py` (where each definition was found; the zip), `core/quick_start/qlc_library.py` (`stock_dirs()`, `user_dirs()`, `in_stock()`), Doctor D021 to D023 and I009 in `core/doctor/checks.py`, `/api/show/definitions` and `/api/show/travel`, the button in the Doctor and Show Paperwork, and `save_show` with `with_definitions`. Severities, confirmed from QLC+'s `Fixture::loadXML`: D021 to D023 are warnings (a missing mode becomes a generic dimmer sized by the file's channel count). The *chosen folder* source is in `source_of()` but no screen offers a chosen folder yet.
 - Part 2 is `core/vc_screens.py` (the sizes; your own in `~/.qlc_swiss_knife/vc_screens/`; Library kind `vc_screen`), `apply_screen()` and `preview_screen()` in `core/vc_builder.py`, `/api/vc/screen-preview`, the panel in `static/js/vc_builder.js`, the outline in `static/js/vc_editor.js`, and `edit_vc` `screen` with `preview` for Claude. A call with no `mode` behaves as before 3.7.0 (text unchanged), so recorded sessions replay to the same file.
@@ -219,6 +219,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.5.0 to 3.5.5 | 17 Oct | Stage Monitor: the current cue live on a tablet on stage, black colours, preview in the browser, Start Stage Monitor, asking before replacing a page, Stop and *Safety hold* in control mode. |
 | 3.6.0 | 20 Oct | Cabling: a DMX cabling planner with the kit you own, 24 checks, plot, pick list, labels and load-in order; Claude's `cabling` tool. |
 | 3.6.1 | 20 Oct | Ready for the gig: the show path checked on stage (A1 to A6); fixture definitions and input profiles found in every folder QLC+ uses. |
+| 3.7.0 | 20 Oct | Another computer, another screen: definitions that travel (Doctor D021 to D023, I009, the travel zip); the Virtual Console fitted to a screen (Fit, Stretch, Page size, Check, tap-size warning). |
 
 ## 5. Goal and the Pub test
 

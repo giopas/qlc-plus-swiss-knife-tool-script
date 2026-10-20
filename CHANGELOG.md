@@ -5,7 +5,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
-## [Unreleased]
+## [3.7.0] — 2026-10-20 — Another computer, another screen
 
 ### Added
 

@@ -30,7 +30,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux, with an update check and *Update and restart*. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | An MCP server with 28 tools (among them `guide`), seven ready requests, the guide as resources. Claude Desktop connects with one `.mcpb` file, Claude Code with one command. Claude gets only the folders you list and writes only new files (the Stage Monitor's own page and settings are the exception). |
-| Tests | 1102 automated tests pass (1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | 1145 automated tests pass (1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
 **Order agreed on 20 October** (giopas): 3.6.1 gig-ready pass, 3.7.0 another computer and another screen, 3.8.0 stage layouts and per-song tempo, 3.9.0 Stage Monitor song cards, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye.
@@ -49,7 +49,7 @@ No new screens. Fix what a real gig would show, and do the checks on the Mac tha
 
 **Automated checks done (20 October)**: the full test suite (1102 passed after the fixes above), `tools/ground_truth.py` clean apart from two stale `maintenance.lock` files (removed), the Doctor on the nine test shows (only the known D002 in the raw `Festival_14fix.qxw`, which the tests expect).
 
-**Checks on the Mac** (giopas). A1 to A6 passed on 20 October; A7 is done right after the push (*Update and restart* from 3.6.0). The B and C checks stay open and move with the next releases; anything that fails becomes a fix.
+**Checks on the Mac** (giopas). A1 to A6 passed on 20 October; A7 is done right after each push (*Update and restart* from the previous version). The B and C checks stay open and move with the next releases; anything that fails becomes a fix.
 
 A. Before the next gig (the show path)
 
@@ -90,7 +90,7 @@ C. For other users (when there is a chance)
 
 For moving a show to another machine (a stage laptop, a Raspberry Pi) or another screen (a tablet, a small touchscreen). giopas plays from his MacBook Pro, so this is mainly for other users, and for the day the show moves.
 
-**Status (20 October, branch `feat/v3.7.0`, released as 3.7.0 once merged; B8 and B9 passed).** Both parts are built and committed locally; the wiki (separate repository) has its commit too. 1145 tests pass (1 skipped without the `websocket` module). Left for the release: the pictures with `python3 tools/shots.py all`, release notes, the version bump and the merge as in section 8.
+**Status (20 October, branch `feat/v3.7.0`, released as 3.7.0 once merged; B8 and B9 passed).** Both parts are built and committed locally; the wiki (separate repository) has its commit too. 1145 tests pass (1 skipped without the `websocket` module). Version bump, CHANGELOG and release notes are done. Left: the pictures with `python3 tools/shots.py all` (giopas, on the Mac), the merge as in section 8, then A7 (*Update and restart* from 3.6.1).
 
 - Part 1 is `core/definitions.py` (where each definition was found; the zip), `core/quick_start/qlc_library.py` (`stock_dirs()`, `user_dirs()`, `in_stock()`), Doctor D021 to D023 and I009 in `core/doctor/checks.py`, `/api/show/definitions` and `/api/show/travel`, the button in the Doctor and Show Paperwork, and `save_show` with `with_definitions`. Severities, confirmed from QLC+'s `Fixture::loadXML`: D021 to D023 are warnings (a missing mode becomes a generic dimmer sized by the file's channel count). The *chosen folder* source is in `source_of()` but no screen offers a chosen folder yet.
 - Part 2 is `core/vc_screens.py` (the sizes; your own in `~/.qlc_swiss_knife/vc_screens/`; Library kind `vc_screen`), `apply_screen()` and `preview_screen()` in `core/vc_builder.py`, `/api/vc/screen-preview`, the panel in `static/js/vc_builder.js`, the outline in `static/js/vc_editor.js`, and `edit_vc` `screen` with `preview` for Claude. A call with no `mode` behaves as before 3.7.0 (text unchanged), so recorded sessions replay to the same file.

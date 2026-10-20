@@ -9,6 +9,7 @@ else: no server, no account, no network.  A *library pack* is a JSON file
 * ``look_preset``   a Look Builder chaser preset
 * ``nomenclature``  a function-naming profile
 * ``vc_style``      a Virtual Console style (button size, gaps, fonts)
+* ``vc_screen``     a screen size to fit a Virtual Console to (3.7.0)
 * ``show_profile``  a Show Profile (the changes of a show, to do again)
 
 Your controllers (they carry a device UID of *your* computer), sessions and
@@ -43,6 +44,7 @@ KINDS = [
     ("look_preset", "Look preset", "A chaser preset for the Look Builder"),
     ("nomenclature", "Naming profile", "How functions are named"),
     ("vc_style", "VC style", "Button size, gaps, fonts"),
+    ("vc_screen", "Screen size", "A screen to fit the Virtual Console to"),
     ("show_profile", "Show Profile", "The changes of a show, to do again"),
     ("cabling_kit", "Cabling kit", "Your DMX kit for the Cabling planner"),
 ]
@@ -130,6 +132,11 @@ def _own(kind: str) -> Dict[str, dict]:
         for fn, p in _read_json_files(vs.user_dir()):
             if isinstance(p, dict):
                 out[str(p.get("label") or p.get("id") or fn[:-5])] = p
+    elif kind == "vc_screen":
+        from core import vc_screens
+        for s in vc_screens.list_screens():
+            if not s["builtin"]:
+                out[s["label"]] = {"label": s["label"], "w": s["w"], "h": s["h"], "touch": s["touch"]}
     elif kind == "show_profile":
         from core import profile as prof
         for fn, p in _read_json_files(prof.profiles_dir(), ".profile.json"):
@@ -156,6 +163,8 @@ def _summary(kind: str, d: dict) -> str:
         return d.get("format", "")
     if kind == "vc_style":
         return f"button {d.get('btn_w', '?')}×{d.get('btn_h', '?')}, gap {d.get('gap', '?')}"
+    if kind == "vc_screen":
+        return f"{d.get('w', '?')}×{d.get('h', '?')}" + (", touch" if d.get("touch") else "")
     if kind == "show_profile":
         bits = [f"{len(d.get('steps') or [])} step(s)"]
         if d.get("start"):
@@ -300,6 +309,15 @@ def _check_vc_style(d: dict) -> dict:
     return {k: d[k] for k in vs.DEFAULTS if k in d}
 
 
+def _check_vc_screen(d: dict) -> dict:
+    from core import vc_screens
+    try:
+        c = vc_screens.clean(d)
+    except vc_screens.ScreenError as e:
+        raise LibraryError(str(e))
+    return {k: c[k] for k in ("w", "h", "touch")}
+
+
 def _check_show_profile(d: dict) -> dict:
     from core import profile as prof, recipe
     if d.get("format") != prof.FORMAT:
@@ -355,7 +373,8 @@ def _install_kit(name: str, clean: dict) -> None:
 
 
 _CHECKS = {"cabling_kit": _check_cabling_kit, "vc_template": _check_vc_template, "palette": _check_palette, "look_preset": _check_look_preset,
-           "nomenclature": _check_nomenclature, "vc_style": _check_vc_style, "show_profile": _check_show_profile}
+           "nomenclature": _check_nomenclature, "vc_style": _check_vc_style, "vc_screen": _check_vc_screen,
+           "show_profile": _check_show_profile}
 
 
 def _reserved(kind: str, name: str) -> bool:
@@ -374,6 +393,9 @@ def _reserved(kind: str, name: str) -> bool:
     if kind == "vc_style":
         from core.quick_start import vc_style as vs
         return any(p["builtin"] and (p["id"].lower() == low or p["label"].lower() == low) for p in vs.list_styles())
+    if kind == "vc_screen":
+        from core import vc_screens
+        return any(b["id"].lower() == low or b["label"].lower() == low for b in vc_screens.BUILTIN)
     return False
 
 
@@ -492,6 +514,15 @@ def _write_item(kind: str, name: str, clean: dict) -> None:
         # the id must not clash with a built-in: user items are known by their own slug
         with open(os.path.join(folder, slug + ".json"), "w", encoding="utf-8") as fh:
             json.dump({**clean, "id": slug, "label": name}, fh, indent=1, ensure_ascii=False)
+    elif kind == "vc_screen":
+        from core import vc_screens
+        sid = vc_screens.slug(name) or "screen"
+        while any(b["id"] == sid for b in vc_screens.BUILTIN):          # a user file never takes a built-in id
+            sid += "_2"
+        os.makedirs(vc_screens.user_dir(), exist_ok=True)
+        with open(os.path.join(vc_screens.user_dir(), sid + ".json"), "w", encoding="utf-8") as fh:
+            json.dump({"id": sid, "label": name, "w": clean["w"], "h": clean["h"], "touch": clean["touch"]},
+                      fh, indent=1, ensure_ascii=False)
     elif kind == "show_profile":
         from core import profile as prof
         prof.save({**clean, "name": name})

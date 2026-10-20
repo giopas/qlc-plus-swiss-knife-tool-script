@@ -15,6 +15,7 @@ The documentation of Claude's Swiss Knife tools, in one place (v3.0.1).
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+from core import vc_screens
 
 # ── one entry per tool ─────────────────────────────────────────────────────────
 # "use": when to call it; "args": [(name, text)]; "returns"; "example"; "notes"
@@ -320,7 +321,13 @@ EDIT_VC_OPS: Dict[str, str] = {
     "delete_page": "page_id.",
     "label_panel": "parent_id, lines (texts), columns, title, label_w, label_h: a frame of labels, e.g. a legend.",
     "auto_arrange": "frame_id, profile (naming profile), columns: lay the buttons out in rows by name prefix.",
-    "screen": "profile_id (macbook, fullhd, tablet, ipad), page_ids, scale: size pages for a screen.",
+    "screen": "Fit pages to a screen. profile_id (the list is at the end) or width + height of your own (touch: true to warn "
+              "about small buttons); orientation (landscape, portrait); mode: fit (one factor, shapes and text keep their "
+              "proportions; the usual choice), stretch (width and height separately), page (page size only); page_ids "
+              "(default: all pages). Answers the size, the factor, widgets outside the page and, on a touch screen, the "
+              "buttons and sliders too small to tap. Add preview: true to see that without changing the show. Screens: "
+              + ", ".join(f"{x['id']} ({x['w']}x{x['h']}{', touch' if x['touch'] else ''})" for x in vc_screens.BUILTIN)
+              + ". Without mode, scale true stretches and false sets the page size only (older recipes).",
     "apply_template": "name, caption: add a saved VC template as a page.",
     "setlist_cuelist": "chaser_id, cuelist_id, page_id: show a setlist chaser in a CueList widget.",
     "fix_ids": "(no arguments): give duplicate widget ids new ones.",

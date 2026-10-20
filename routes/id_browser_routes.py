@@ -154,7 +154,8 @@ _BUILDER_ARGS = {
     'label_panel':     {'parent_id': str, 'lines': list, 'columns': int, 'title': str,
                         'label_w': int, 'label_h': int},
     'auto_arrange':    {'frame_id': str, 'profile': str, 'columns': int},
-    'screen':          {'profile_id': str, 'page_ids': list, 'scale': bool},
+    'screen':          {'profile_id': str, 'page_ids': list, 'scale': bool, 'width': int, 'height': int,
+                        'orientation': str, 'mode': str, 'touch': bool},
     'apply_template':  {'name': str, 'caption': str},
     'setlist_cuelist': {'chaser_id': str, 'cuelist_id': str, 'page_id': str},
 }
@@ -182,12 +183,26 @@ def _builder_kw(op: str, d: dict) -> dict:
     return kw
 
 
+@bp.route('/vc/screen-preview', methods=['POST'])
+def vc_screen_preview():
+    """What fitting the pages to a screen would do (same body as the `screen` operation),
+    worked out on a copy: nothing in the show changes and no step is recorded."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import vc_builder, vc_ops
+    try:
+        return jsonify({'ok': True, **vc_builder.preview_screen(ws._state['qxw_root'],
+                                                                 **_builder_kw('screen', request.get_json(force=True) or {}))})
+    except vc_ops.VcOpError as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @bp.route('/vc/builder-info')
 def vc_builder_info():
     """Functions (with nomenclature prefix), kinds, screens, templates, profiles."""
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
-    from core import vc_builder
+    from core import vc_builder, vc_screens
     from core.quick_start import nomenclature
     ref = request.args.get('profile') or 'plain'
     try:
@@ -205,7 +220,7 @@ def vc_builder_info():
     setlist = [i for i in items if i['type'] == 'Chaser']
     setlist.sort(key=lambda i: (not i['name'].lower().startswith('setlist'), i['name'].lower()))
     return jsonify({'functions': items, 'kinds': list(vc_builder.KINDS),
-                    'screens': [{'id': k, **v} for k, v in vc_builder.SCREENS.items()],
+                    'screens': vc_screens.list_screens(), 'tap_min': vc_screens.TAP_MIN,
                     'templates': vc_builder.list_templates(),
                     'profiles': nomenclature.list_profiles(),
                     'legend': vc_builder.legend_lines(prof),

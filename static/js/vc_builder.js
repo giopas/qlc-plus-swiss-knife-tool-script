@@ -222,15 +222,32 @@ function _vcbRenderPanel() {
       <label class="vce-lb"><input type="checkbox" id="vce-page-keep"> keep key/MIDI</label>
     </div>
 
-    <div class="vce-sec">Screen size</div>
+    <div class="vce-sec">Screen size <span class="vce-hint">fit this console to a screen</span></div>
     <div class="vce-row">
-      <select id="vcb-screen" class="vce-pi" style="width:160px">${I.screens.map(s => opt(s.id, s.label)).join('')}</select>
-      <select id="vcb-sall" class="vce-pi" style="width:90px">${opt('page', 'this page')}${opt('all', 'all pages')}</select>
+      <select id="vcb-screen" class="vce-pi" style="flex:1;min-width:120px" onchange="vcbScreenChanged()">${
+        I.screens.map(s => opt(s.id, s.label, s.id === _vcbScr.id)).join('')}${opt('custom', 'Your own size…', _vcbScr.id === 'custom')}</select>
+      <select id="vcb-orient" class="vce-pi" style="width:92px" onchange="vcbScreenChanged()">${
+        opt('landscape', 'Landscape', _vcbScr.orient === 'landscape')}${opt('portrait', 'Portrait', _vcbScr.orient === 'portrait')}</select>
+    </div>
+    <div class="vce-row" id="vcb-custom" style="display:${_vcbScr.id === 'custom' ? '' : 'none'}">
+      <label class="vce-lb">width <input id="vcb-cw" type="number" min="200" max="10000" value="${_vcbScr.cw}" class="vce-pi vce-n" style="width:70px" onchange="vcbScreenChanged()"></label>
+      <label class="vce-lb">height <input id="vcb-ch" type="number" min="200" max="10000" value="${_vcbScr.ch}" class="vce-pi vce-n" style="width:70px" onchange="vcbScreenChanged()"></label>
+      <label class="vce-lb" title="Warn about buttons and sliders too small to tap"><input type="checkbox" id="vcb-ctouch" ${_vcbScr.touch ? 'checked' : ''} onchange="vcbScreenChanged()"> touch screen</label>
     </div>
     <div class="vce-row">
-      <label class="vce-lb" title="Move and resize every widget in proportion"><input type="checkbox" id="vcb-scale"> scale the widgets too</label>
+      <select id="vcb-mode" class="vce-pi" style="flex:1;min-width:120px" onchange="vcbScreenChanged()" title="Fit keeps the shapes: one factor for width and height, text included">${
+        opt('fit', 'Fit: keeps the shapes', _vcbScr.mode === 'fit')}${opt('stretch', 'Stretch: width and height separately', _vcbScr.mode === 'stretch')}${
+        opt('page', 'Page size only', _vcbScr.mode === 'page')}</select>
+      <select id="vcb-sall" class="vce-pi" style="width:90px" onchange="vcbScreenChanged()">${opt('page', 'this page', !_vcbScr.all)}${opt('all', 'all pages', _vcbScr.all)}</select>
+    </div>
+    <div class="vce-row">
+      <label class="vce-lb"><input type="checkbox" id="vcb-outline" ${_vcbScr.outline ? 'checked' : ''} onchange="vcbScreenChanged()"> draw the screen's outline over the page</label>
+    </div>
+    <div class="vce-row">
+      <button class="vce-ab" onclick="vcbScreenCheck()" title="Say what it would do, without changing the show">🔍 Check</button>
       <button class="vce-ab" onclick="vcbScreen()">Apply size</button>
     </div>
+    <div id="vcb-screen-out" class="vce-hint" style="margin-bottom:6px"></div>
 
     <div class="vce-sec">Templates <span class="vce-hint">reuse a page in another show</span></div>
     <div class="vce-row">
@@ -351,12 +368,90 @@ async function vcbLabelPanel() {
     d => `Label panel with ${d.labels} label(s)`);
 }
 
+// ── screen size (3.7.0) ──────────────────────────────────────────────────────
+let _vcbScr = { id: 'macbook', orient: 'landscape', mode: 'fit', all: false, cw: 1280, ch: 800, touch: false, outline: false };
+
+function _vcbScrRead() {
+  const v = id => document.getElementById(id);
+  if (!v('vcb-screen')) return _vcbScr;
+  Object.assign(_vcbScr, {
+    id: v('vcb-screen').value, orient: v('vcb-orient').value, mode: v('vcb-mode').value,
+    all: v('vcb-sall').value === 'all', cw: +v('vcb-cw').value || 0, ch: +v('vcb-ch').value || 0,
+    touch: v('vcb-ctouch').checked, outline: v('vcb-outline').checked });
+  return _vcbScr;
+}
+
+/** The screen asked for in the panel: sides in the chosen orientation. */
+function _vcbScrSize() {
+  const S = _vcbScr;
+  let w, h, touch, label;
+  if (S.id === 'custom') { w = S.cw; h = S.ch; touch = S.touch; label = ''; }
+  else {
+    const s = (_vcbInfo?.screens || []).find(x => x.id === S.id);
+    if (!s) return null;
+    ({ w, h, touch, label } = { w: s.w, h: s.h, touch: s.touch, label: s.label });
+  }
+  if (w < h) [w, h] = [h, w];
+  if (S.orient === 'portrait') [w, h] = [h, w];
+  return { w, h, touch, label: label || `${w} × ${h}` };
+}
+
+function _vcbScrBody() {
+  const S = _vcbScr;
+  const b = { op: 'screen', mode: S.mode, orientation: S.orient, page_ids: S.all ? [] : [_vcePage.id] };
+  if (S.id === 'custom') { b.width = S.cw; b.height = S.ch; b.touch = S.touch; } else b.profile_id = S.id;
+  return b;
+}
+
+function vcbScreenChanged() {
+  _vcbScrRead();
+  const c = document.getElementById('vcb-custom');
+  if (c) c.style.display = _vcbScr.id === 'custom' ? '' : 'none';
+  const sz = _vcbScrSize();
+  window._vceOutline = _vcbScr.outline && sz && sz.w >= 200 && sz.h >= 200 ? { w: sz.w, h: sz.h, label: sz.label } : null;
+  const out = document.getElementById('vcb-screen-out');
+  if (out) out.textContent = '';
+  if (typeof _vceRender === 'function') _vceRender();
+}
+
+/** What the result says, in words: size, factor, widgets outside, widgets too small to tap. */
+function _vcbScrSay(d, tap) {
+  const bits = [`${d.size}`];
+  if (d.mode !== 'page') bits.push(`factor ${d.factor}`);
+  let html = _esc(bits.join(', ')) + '.';
+  if (d.outside) html += ` ${d.outside} widget(s) outside the page (move them, or use Fit).`;
+  if (d.touch) {
+    html += d.small_count
+      ? ` ${d.small_count} button(s) or slider(s) under ${tap} px, hard to tap: ` +
+        d.small.map(x => `${_esc(x.caption || x.type)} (${x.w}×${x.h})`).join(', ') + (d.small_count > d.small.length ? ', …' : '')
+      : ` Every button and slider is at least ${tap} px.`;
+  }
+  return html;
+}
+
+async function vcbScreenCheck() {
+  _vcbScrRead();
+  if (!_vcePage) return;
+  try {
+    if (!(await _vceFlush())) return;
+    const r = await fetch('/api/vc/screen-preview', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_vcbScrBody()) });
+    const d = await r.json();
+    if (!r.ok) { _vceStatus('✗ ' + d.error, 'error'); return; }
+    document.getElementById('vcb-screen-out').innerHTML = _vcbScrSay(d, _vcbInfo.tap_min);
+    _vceStatus('✓ Checked on a copy: the show is unchanged', 'ok');
+  } catch (e) { _vceStatus('✗ ' + e.message, 'error'); }
+}
+
 async function vcbScreen() {
-  const profile_id = document.getElementById('vcb-screen').value;
-  const all = document.getElementById('vcb-sall').value === 'all';
-  const scale = document.getElementById('vcb-scale').checked;
-  await _vcbRun({ op: 'screen', profile_id, scale, page_ids: all ? [] : [_vcePage.id] }, _vcePage.id, [],
-    d => `${d.pages} page(s) set to ${d.size}` + (d.outside ? ` — ${d.outside} widget(s) now outside the page (move them, or use "scale")` : ''));
+  _vcbScrRead();
+  if (!_vcePage) return;
+  const d = await _vcbRun(_vcbScrBody(), _vcePage.id, [],
+    d => `${d.pages} page(s) set to ${d.size}` + (d.outside ? ` — ${d.outside} widget(s) now outside the page (move them, or use Fit)` : ''));
+  if (d) {
+    const out = document.getElementById('vcb-screen-out');
+    if (out) out.innerHTML = _vcbScrSay(d, _vcbInfo.tap_min);
+  }
 }
 
 async function vcbSaveTemplate() {

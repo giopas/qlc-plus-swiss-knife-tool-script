@@ -327,8 +327,9 @@ function _vceFitPage() {
   if (!wrap) return;
   const cw = wrap.clientWidth  - 16;
   const ch = wrap.clientHeight - 16;
-  const pw = _vcePage.w || 1920;
-  const ph = _vcePage.h || 1080;
+  const o  = window._vceOutline || { w: 0, h: 0 };
+  const pw = Math.max(_vcePage.w || 1920, o.w);
+  const ph = Math.max(_vcePage.h || 1080, o.h);
   _vceZoom = Math.min(cw / pw, ch / ph, 1.0);
   _vcePanX = 0;
   _vcePanY = 0;
@@ -341,8 +342,9 @@ function _vceSizeCanvas() {
   const cv = document.getElementById(VCE_CV_ID);
   if (!cv || !_vcePage) return;
   const s = _vceZoom;
-  cv.width  = Math.round((_vcePage.w || 1920) * s);
-  cv.height = Math.round((_vcePage.h || 1080) * s);
+  const o = window._vceOutline || { w: 0, h: 0 };        // the screen's outline may be bigger than the page
+  cv.width  = Math.round(Math.max(_vcePage.w || 1920, o.w) * s);
+  cv.height = Math.round(Math.max(_vcePage.h || 1080, o.h) * s);
   cv.style.width  = cv.width  + 'px';
   cv.style.height = cv.height + 'px';
 }
@@ -385,6 +387,22 @@ function _vceRender() {
   const widgets = allNodes.filter(n => n.type !== 'Frame' && n.type !== 'SoloFrame');
 
   [...frames, ...widgets].forEach(n => _vceDrawNode(ctx, n, s));
+
+  // The outline of the screen the console is being fitted to (VC Builder, Screen size)
+  if (window._vceOutline) {
+    const o = window._vceOutline;
+    ctx.save();
+    ctx.strokeStyle = '#f9e2af';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([8, 5]);
+    ctx.strokeRect(1, 1, o.w * s - 2, o.h * s - 2);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f9e2af';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${o.label}  ${o.w}×${o.h}`, 8, Math.max(16, o.h * s - 8));
+    ctx.restore();
+  }
 
   // Rubber-band overlay
   if (_vceDragRect) {

@@ -212,7 +212,7 @@ def test_routes_flow(tmp_path):
     _fill()
     c = app.create_app().test_client()
     st = c.get("/api/library/state").get_json()
-    assert len(st["items"]) == 6 and len(st["kinds"]) == 7 and "Palettes" in st["folders"]
+    assert len(st["items"]) == 6 and len(st["kinds"]) == 8 and "Palettes" in st["folders"]
     sel = [{"kind": i["kind"], "name": i["name"]} for i in st["items"] if i["kind"] in ("palette", "vc_style")]
     r = c.post("/api/library/pack", json={"selection": sel, "title": "Two things"})
     assert r.status_code == 200

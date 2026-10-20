@@ -14,6 +14,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
   - **📦 Take the show elsewhere (.zip)…** in the Doctor and in Show Paperwork: the show in progress, every definition that is not in QLC+'s stock library saved as `<Manufacturer>-<Model>.qxf` (the name QLC+ looks for next to a workspace, so it loads with no copying), the side files (`<show>.stage.json`, `<show>.cabling.json`) and a short text on where definitions go on macOS, Linux, Windows and a Raspberry Pi. A new file every time; the same show gives the same zip, byte for byte.
   - Claude: `save_show` takes `with_definitions` and also writes `<show>_to_go.zip` (the tool count stays 28).
 
+- **Fit the Virtual Console to a screen.** QLC+ places widgets at fixed pixel positions, so a console made on a laptop overflows a small touchscreen and is tiny on a big one. The VC Visual Editor's *Screen size* now has:
+  - More screens, as data: the four of before (same ids, so old recipes still replay), an HD laptop, QHD, 4K, 7-inch touchscreens (800 × 480, 1024 × 600), the Raspberry Pi Touch Display 2 (1280 × 720), and iPads from the mini to the 12.9-inch. Your own width and height, in landscape or portrait. Your own screens can be saved and shared through the Library (a new kind, *Screen size*).
+  - Three ways to apply it. **Fit** (the default) uses one factor for width and height, so buttons keep their shapes; **Stretch** scales them separately, as before; **Page size only** leaves the widgets where they are.
+  - Text scales with the widgets, within limits: never below 8 pt (or the size it had, if smaller) and never above 28 pt.
+  - On a touch screen, a warning that names the buttons and sliders smaller than 44 px on their short side. Caption-only buttons used as labels are not counted.
+  - **🔍 Check** says what an application would do (size, factor, widgets outside the page, widgets too small to tap) on a copy, without changing the show. The screen's outline can be drawn over the page before applying.
+  - It is recorded in the recipe, so a Show Profile can fit another show to the same screen. A call without a way to fit behaves as before (`scale` true stretches with the text unchanged, false sets the page size), so recorded sessions replay to the same file.
+  - Claude: `edit_vc` with `op` `screen` takes `profile_id` or `width` and `height`, `orientation`, `mode` and `preview` (the tool count stays 28).
+
 ## [3.6.1] — 2026-10-20 — Ready for the gig
 
 ### Fixed

@@ -24,7 +24,7 @@ import re
 import xml.etree.ElementTree as ET  # nosec B405
 from typing import Dict, List, Optional, Tuple
 
-from core import vc_ops
+from core import vc_ops, vc_screens
 from core.vc_ops import (CONTAINERS, VcOpError, _get, _index, _int, _is_widget, _local,
                          _next_id, _q, _renumber, _strip_bindings, _vc)
 
@@ -33,12 +33,7 @@ MARGIN, GAP = 10, 6
 KINDS = ("Button", "Frame", "SoloFrame", "Slider", "Label", "CueList")
 DEFAULT_SIZE = {"Button": (110, 55), "Frame": (400, 250), "SoloFrame": (400, 250),
                 "Slider": (60, 200), "Label": (150, 30), "CueList": (720, 420)}   # wide enough for every column, Note included
-SCREENS = {
-    "macbook": {"label": "MacBook 1650 × 884", "w": 1650, "h": 884},
-    "fullhd": {"label": "Full HD 1920 × 1080", "w": 1920, "h": 1080},
-    "tablet": {"label": "Tablet 1280 × 800", "w": 1280, "h": 800},
-    "ipad": {"label": "iPad 1024 × 768", "w": 1024, "h": 768},
-}
+SCREENS = {x["id"]: {"label": x["label"], "w": x["w"], "h": x["h"]} for x in vc_screens.BUILTIN}   # kept for old callers
 _FONT = "Roboto,12,-1,5,50,0,0,0,0,0,0,0,0,0,0,1"
 
 
@@ -446,31 +441,139 @@ def auto_arrange(root, frame_id: str, profile=None, *, columns: Optional[int] = 
     return {"arranged": len(btns), "groups": rows}
 
 
-def apply_screen(root, profile_id: str, page_ids=None, scale: bool = False) -> dict:
-    """Size pages for a screen profile; with *scale*, move and resize every
-    widget in proportion (fonts unchanged)."""
-    if profile_id not in SCREENS:
-        raise VcOpError(f"Unknown screen profile: {profile_id}")
-    sw, sh = SCREENS[profile_id]["w"], SCREENS[profile_id]["h"]
+_TAP_WIDGETS = ("Button", "Slider")
+MODES = ("fit", "stretch", "page")
+
+
+def _scale_font(spec: str, factor: float) -> str:
+    """A Qt font string with its size scaled by *factor*, kept readable: never below 8
+    (or the size it had, if smaller) and never above 28 (or the size it had, if larger)."""
+    parts = spec.split(",")
+    if len(parts) < 3:
+        return spec
+    for i in (1, 2):                                   # point size, else pixel size
+        try:
+            old = float(parts[i])
+        except ValueError:
+            continue
+        if old > 0:
+            new = int(round(old * factor))
+            new = max(min(old, 8), min(max(old, 28), new))
+            parts[i] = str(int(new))
+            return ",".join(parts)
+    return spec
+
+
+def _fonts(el: ET.Element):
+    for a in el:
+        if _local(a.tag) == "Appearance":
+            for f in a:
+                if _local(f.tag) == "Font" and (f.text or "").strip():
+                    yield f
+
+
+def _content_extent(page: ET.Element) -> Tuple[int, int]:
+    """Right and bottom edge of what is on the page (top-level widgets)."""
+    right = bottom = 0
+    for c in page:
+        if _is_widget(c):
+            x, y, w, h = _rect(c)
+            right, bottom = max(right, x + w), max(bottom, y + h)
+    return right, bottom
+
+
+def _is_tappable(w: ET.Element) -> bool:
+    """A button that runs something, or a slider.  Caption-only buttons are labels."""
+    tag = _local(w.tag)
+    if tag == "Slider":
+        return True
+    if tag != "Button":
+        return False
+    if (_child(w, "Action") is not None and (_child(w, "Action").text or "").strip() in ("StopAll", "Blackout")):
+        return True
+    fn = _child(w, "Function")
+    return fn is not None and (fn.get("ID") or "") not in ("", NONE_ID)
+
+
+def too_small_to_tap(page: ET.Element, tap: int = vc_screens.TAP_MIN) -> List[dict]:
+    """Buttons and sliders of a page whose smaller side is under *tap* pixels."""
+    out = []
+    for w in page.iter():
+        if w is page or not _is_widget(w) or not _is_tappable(w):
+            continue
+        _x, _y, ww, hh = _rect(w)
+        if min(ww, hh) < tap:
+            out.append({"id": w.get("ID", ""), "caption": (w.get("Caption") or "").replace("\n", " "),
+                        "type": _local(w.tag), "w": ww, "h": hh})
+    return out
+
+
+def apply_screen(root, profile_id: Optional[str] = None, page_ids=None, scale: bool = False, *,
+                 width=None, height=None, orientation: str = "landscape", mode: Optional[str] = None,
+                 touch: bool = False) -> dict:
+    """Fit pages to a screen: a known one (*profile_id*) or your own *width* × *height*,
+    *orientation* ``landscape`` or ``portrait``.
+
+    *mode*:
+
+    * ``fit`` (the default of the editor): one factor for width and height, so shapes keep
+      their proportions; every widget, and the text in it, is scaled by it.
+    * ``stretch``: width and height scaled separately; text follows the smaller factor.
+    * ``page``: only the size of the page is set; widgets stay where they are.
+
+    Without *mode*, as before 3.7.0: *scale* true stretches the widgets (text unchanged),
+    false sets the page size only, so a recorded session replays to the same file.
+
+    Returns ``{pages, size, outside, mode, factor, touch, small_count, small}``; *small*
+    names the buttons and sliders under :data:`vc_screens.TAP_MIN` pixels on a touch screen.
+    """
+    try:
+        sw, sh, is_touch, label = vc_screens.resolve(profile_id, width, height, orientation, touch)
+    except vc_screens.ScreenError as e:
+        raise VcOpError(str(e))
+    legacy = mode is None
+    if legacy:
+        mode = "stretch" if scale else "page"
+    if mode not in MODES:
+        raise VcOpError(f"Unknown way to fit: {mode} (use fit, stretch or page).")
     vc = _vc(root)
     pages = _pages(vc) if not page_ids else [_page(vc, p) for p in page_ids]
-    outside = 0
+    outside, small, factor = 0, [], 1.0
     for p in pages:
         _, _, pw, ph = _rect(p)
-        kx, ky = (sw / pw if pw else 1.0), (sh / ph if ph else 1.0)
-        if scale:
+        if mode == "fit":
+            cw, ch = _content_extent(p)
+            bw, bh = max(pw, cw, 1), max(ph, ch, 1)
+            kx = ky = factor = min(sw / bw, sh / bh)
+        else:
+            kx, ky = (sw / pw if pw else 1.0), (sh / ph if ph else 1.0)
+            factor = min(kx, ky)
+        if mode != "page":
             for w in p.iter():
-                if w is p or not _is_widget(w):
-                    continue
-                x, y, ww, hh = _rect(w)
-                _set_rect(w, round(x * kx), round(y * ky), max(10, round(ww * kx)), max(10, round(hh * ky)))
+                if w is not p and _is_widget(w):
+                    x, y, ww, hh = _rect(w)
+                    _set_rect(w, round(x * kx), round(y * ky), max(10, round(ww * kx)), max(10, round(hh * ky)))
+            if not legacy:                                  # text follows the widgets (not in old recipes)
+                for el in p.iter():
+                    if el is p or _is_widget(el):
+                        for f in _fonts(el):
+                            f.text = _scale_font(f.text.strip(), factor)
         _set_rect(p, 0, 0, sw, sh)
         for c in p:
             if _is_widget(c):
                 x, y, ww, hh = _rect(c)
                 if x + ww > sw + 8 or y + hh > sh + 8:
                     outside += 1
-    return {"pages": len(pages), "size": f"{sw}×{sh}", "outside": outside}
+        if is_touch:
+            small.extend({**s, "page": p.get("Caption", "")} for s in too_small_to_tap(p))
+    return {"pages": len(pages), "size": f"{sw}×{sh}", "outside": outside, "mode": mode,
+            "factor": round(factor, 3), "touch": is_touch, "screen": label,
+            "small_count": len(small), "small": small[:30]}
+
+
+def preview_screen(root, **kw) -> dict:
+    """What :func:`apply_screen` would do, on a copy: the show is not touched."""
+    return apply_screen(copy.deepcopy(root), **kw)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

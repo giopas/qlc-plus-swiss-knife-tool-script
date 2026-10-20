@@ -145,7 +145,9 @@ TOOLS: List[dict] = [
                           "page_id": _S, "frame_id": _S, "index": {"type": "integer"},
                           "keep_bindings": {"type": "boolean"}, "lines": _IDS, "columns": {"type": "integer"},
                           "title": _S, "profile": _S, "profile_id": _S, "page_ids": _IDS, "name": _S,
-                          "chaser_id": _S, "cuelist_id": _S}, ["op"])},
+                          "chaser_id": _S, "cuelist_id": _S, "width": {"type": "integer"},
+                          "height": {"type": "integer"}, "orientation": _S, "mode": _S, "scale": {"type": "boolean"},
+                          "touch": {"type": "boolean"}, "preview": {"type": "boolean"}}, ["op"])},
     {"name": "setlist", "handler": "t_setlist",
      "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out}. With apply=false only shows the matches.",
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
@@ -451,6 +453,11 @@ class Server:
 
     def t_edit_vc(self, a: dict) -> Any:
         self.need_show()
+        if a.get("preview"):                      # screen only: what it would do, nothing changes
+            if a.get("op") != "screen":
+                raise ToolError("`preview` is for op `screen` only.")
+            body = {k: v for k, v in a.items() if k not in ("preview", "op")}
+            return self.api("POST", "/api/vc/screen-preview", body)
         r = self.api("POST", "/api/vc/op", dict(a))
         w = self._written(r, f"Virtual Console: {a.get('op')}")
         if isinstance(r, dict):

@@ -221,7 +221,7 @@ The acceptance benchmark was the **Pub test**: rebuild the 6-fixture pub show fr
 
 These apply to every change.
 
-1. **Never overwrite.** Every write produces a new file: `<name>_v<N+1>.qxw`. The original is never touched.
+1. **Never overwrite.** Every write produces a new file: `<name>_v<N+1>.qxw`. The original is never touched. The one exception is the Stage Monitor: a page from an earlier Stage Monitor export is replaced, and only after a yes (see *The one exception* in section 7).
 2. **One writer.** All `.qxw` output goes through `core/qxw_io.write_qxw()`, which keeps the XML declaration and the `<!DOCTYPE Workspace>`. A load, write, load round trip must lose nothing.
 3. **Deterministic IDs and ordering.** New IDs are `max(existing) + 1` in a stable order. Generated XML has no timestamps or random values. Golden-file tests compare output byte for byte.
 4. **The Doctor gates every export.** Quick Start, Porter, Rig Reducer, Look Builder and VC Builder run it before writing. Errors block the export and warnings go into the report.

@@ -5,6 +5,30 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [3.8.0] — 2026-10-20 — Stage layouts and per-song tempo
+
+### Added
+
+- **Per-song tempo in the Setlist.** Both ideas come from mjcmatrix (Matt C), [QLC+ wiki](https://github.com/mjcmatrix/qlcplus/wiki). The ideas are his, the code is not.
+  - A setlist line can carry a tempo: `Song name | 128BPM`. The word BPM is needed unless a bar comes first, so a title such as "99 Luftballons" stays a title. A tempo outside 20 to 400 is left out and the note says so.
+  - A **BPM** column and a **Beats** field (beats per step, default 1) on the Setlist screen. A badge says whether the matched chaser already fits the tempo, does not fit it, or cannot be timed (not a chaser, it follows the QLC+ tempo, or its steps wait for the pedal).
+  - **✓ Apply to the show** recomputes the fade and the hold of every step of a song's chaser from the BPM and the beats per step. It keeps the proportion between fade and hold. It changes the copy built for the song, never the original, so a chaser used by two songs at two tempos is copied per song.
+  - The change goes through the show in progress, so it is in the History and the Doctor checks it like any other step. A new read-only route, `POST /api/setlist/tempo-check`, reports the fit without changing anything.
+  - Saved setlist files keep the tempo as two extra fields (`|bpm|beats`), written only when a tempo is set. Older files load as before.
+  - Claude: `setlist` reads and writes the tempo (`Song | 128BPM`, or `bpm` and `beats` in a row) and returns a `tempo` summary (the tool count stays 28).
+
+- **Stage layouts.** A saved layout of the stage and the band, to start a show from. It holds the stage type and size, the drum riser, the backline, the members by role, wedges, a backdrop and walkways.
+  - Three built in (Full band, Acoustic, Festival) and your own, kept in `~/.qlc_swiss_knife/stage_layouts` (or the folder in `QSK_STAGE_LAYOUTS`). **Save as layout** on the Stage & Meshes screen keeps the visible meshes of the show in progress, with their place relative to the centre line and the back edge, so a layout fits another stage width.
+  - A **Layouts** tab in Stage & Meshes applies a layout in place of the meshes now on the stage, or next to them, with or without its stage type and size. A model the computer does not have is drawn as a block of the same size and the message says so.
+  - **Quick Start** starts the show from a layout. The **Look Builder** aims its "places on the stage" at the members, and **Cabling** takes its band floor from the meshes. Walkways of a layout are added to the Cabling plan with one button, placed for the night's stage width.
+  - A new Library kind, **Stage layout**, shares layouts like the other kinds.
+  - The meshes are written into the show as Stage & Meshes does today, with the show in progress and the History.
+
+### Changed
+
+- The Library now has nine kinds.
+- Setlist timing: **Hold** has a tick, *Wait for the pedal (Inf)*, instead of a box where you had to type `Inf`. Ticked, the hold is infinite and the box is locked; unticked, you type milliseconds, and an empty box now means 0 instead of infinite.
+
 ## [3.7.0] — 2026-10-20 — Another computer, another screen
 
 ### Added

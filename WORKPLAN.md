@@ -33,7 +33,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Tests | 1145 automated tests pass (1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
-**Order agreed on 20 October** (giopas): 3.6.1 gig-ready pass, 3.7.0 another computer and another screen, 3.8.0 stage layouts and per-song tempo, 3.9.0 Stage Monitor song cards, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye.
+**Order agreed on 20 October** (giopas): 3.6.1 gig-ready pass, 3.7.0 another computer and another screen, 3.8.0 stage layouts and per-song tempo, 3.8.5 plain-language wiki and README, 3.9.0 Stage Monitor song cards and one Tablet entry, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye.
 
 ## 2. Next releases
 
@@ -125,6 +125,16 @@ QLC+ places Virtual Console widgets at fixed pixel positions, so a console made 
 
 ### 3.8.0 · Stage layouts and per-song tempo
 
+**Status (20 October): built, tests green, not committed, not released.** Also in: Hold has a tick *Wait for the pedal (Inf)*; an empty Hold box now means 0. New: `core/setlist_tempo.py`, `core/stage_layouts.py`, tests `test_setlist_tempo_380.py` and `test_stage_layouts_380.py`, CHANGELOG under `[Unreleased]`, release notes, wiki pages, translations in the seven languages. To do by giopas: live checks on the Mac, version bump, commit and push.
+
+Deviations from the plan below:
+- A chaser used by two songs is not named `<name> · 128 BPM`; the clone is named after the song as every setlist clone is, and each song has its own, so the CueList already points to it.
+- Beats per step is a per-song field (default 1); the Look Builder's recorded value is not read.
+- Layouts are written as meshes only. Colours and the curtain stay in the layout. Built-in layouts use scaled cubes from `generic/cube.obj`, so they work without the user's mesh library.
+- Walkways are not written into the show (Cabling keeps them in its plan); the Cabling screen has an *Add* button that places a layout's walkways for the night's stage width.
+- Positions are stored relative to the centre line and the back edge, so a layout fits another stage width.
+- The Library now has nine kinds.
+
 Decided 18 October, from the wiki of mjcmatrix's fork of QLC+ (https://github.com/mjcmatrix/qlcplus/wiki, by Matt C). Ideas only, no code; Swiss Knife writes only what upstream QLC+ 5.2.2 to 5.3.x reads. Both features credit mjcmatrix by name, with a link, in the CHANGELOG, the release notes and their wiki pages.
 
 **1. Stage layouts.** A saved layout of the stage and the band, used as the base of a new show, the way My kit is the base of tonight's kit in Cabling.
@@ -142,7 +152,20 @@ Decided 18 October, from the wiki of mjcmatrix's fork of QLC+ (https://github.co
 - A chaser used by two songs at different tempos is copied per song (`<name> · 128 BPM`) and each song's CueList step points to its copy.
 - Every change goes through the show in progress, the History and the Doctor. Claude's `setlist` tool reads and writes the tempo.
 
-### 3.9.0 · Stage Monitor song cards
+### 3.8.5 · Plain-language wiki and README
+
+Decided 20 October (giopas): Swiss Knife is a powerful tool and must also be extremely clear to everyone. No new features; the words change.
+
+- Review every wiki page and the README, and rewrite where needed so that a reader of 10 or 15 can follow each feature. Not every page needs a full rewrite: add an intro box and a worked example where the page is dense.
+- Each feature page starts with a short box *In one minute*: what it is for, in everyday words, with an example from a real gig (a pub, a band of five, a pedal).
+- Terms explained the first time they appear (chaser, step, fade, hold, BPM, beat, mesh, DMX universe, cue list), or linked to one *Words used here* page.
+- A table or a small picture where a number or a layout is easier to see than to read; the 3.8.0 Setlist section on tempo and Beats is the model.
+- The README gets the same treatment: what Swiss Knife is in three sentences, who it is for, the first ten minutes (install, open, Quick Start), then the feature list in plain words.
+- The Pub test (section 5) is the test: someone who has never used the tool follows a page and gets the result.
+- Plain prose rules stay: no dashes as connectors, no marketing tone. Plain does not mean childish.
+- In-app texts (tooltips, the guide) are checked against the same wording; any change goes into the seven language files.
+
+### 3.9.0 · Stage Monitor song cards and one Tablet entry
 
 The cheap part of the teleprompter idea: what each player needs to know about the next song, on the stage tablet, from data Swiss Knife already has.
 
@@ -151,6 +174,7 @@ The cheap part of the teleprompter idea: what each player needs to know about th
 - Views by role in the address: `?role=commander` (cues and card side by side, for the player with the pedal), `?role=vocals`, `?role=band`. Same page, same export, no setup on the tablet.
 - From the 3.5.0 phase 3: chosen VC buttons (PANIC RESET) as big tiles in control mode, the Setlist screen's order, a QR code for the address if a small pure-Python encoder fits.
 - The page stays offline (nothing from the internet) and read-only by default.
+- **One Tablet entry** (giopas, 20 October). The Setlist screen's *📱 Tablet page…* (a static `.html` with every song, ticked off by tap) and the Stage Monitor (live from QLC+) do the same job, putting the setlist on a tablet on stage, and are two places today. Bring them into one *Tablet on stage* area with two modes, *Simple page (no network)* and *Live monitor*. Shared settings (theme, text size, songs shown) are set once. The Setlist button leads there. Rename the sidebar entry, keep the old wiki titles as redirects, and move the wiki text into one page.
 
 ### 3.10.0 · Teleprompter (later stage)
 

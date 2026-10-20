@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 from flask import Blueprint, Response, jsonify, request
 
-from core import fixture_groups as fg, qxw_io, stage3d as s3
+from core import fixture_groups as fg, qxw_io, stage3d as s3, stage_layouts as sl
 from routes.doctor_routes import _defs, _open_workspace
 
 bp = Blueprint('stage', __name__, url_prefix='/api/stage')
@@ -184,6 +184,16 @@ def op():
                                h=_num(d.get('h')), d=_num(d.get('d')),
                                keep_meshes=bool(d.get('keep_meshes', True)), **kw)
             msg = 'Stage updated' + (' — meshes kept in place.' if d.get('keep_meshes', True) else '.')
+        elif o == 'layout':
+            lay = sl.get(str(d.get('layout') or ''))
+            if lay is None:
+                raise ValueError('That stage layout does not exist.')
+            res = sl.apply(r, lay, mode=str(d.get('mode') or 'replace'),
+                           set_stage=bool(d.get('set_stage', True)), **kw)
+            msg = f"Layout '{lay['name']}': {res['added']} mesh(es) placed" + \
+                  (f", {res['replaced']} replaced" if res['replaced'] else '') + \
+                  (f"; {len(res['missing'])} model(s) not found here, blocks used" if res['missing'] else '') + \
+                  (f"; {len(res['outside'])} reach(es) past the stage edge" if res['outside'] else '') + '.'
         elif o == 'group_new':
             res = fg.create(r, str(d.get('name', '')), [str(i) for i in (d.get('fixtures') or [])],
                             order=str(d.get('order') or 'stage'))
@@ -205,6 +215,58 @@ def op():
     del w['undo'][:-UNDO_LIMIT]
     _sync(w, groups=o.startswith('group_'))
     return _state(w, message=msg, result=res)
+
+
+# ── Stage layouts (v3.8.0) ───────────────────────────────────────────────────
+
+@bp.route('/layouts')
+def layouts():
+    return jsonify({'layouts': sl.list_layouts(), 'roles': list(sl.ROLES)})
+
+
+@bp.route('/layouts/<lid>')
+def layout_one(lid):
+    lay = sl.get(lid)
+    if lay is None:
+        return jsonify({'error': 'That stage layout does not exist.'}), 404
+    out = {'layout': lay}
+    try:
+        wmm = float(request.args.get('w') or lay['stage']['w'] * 1000)
+    except ValueError:
+        wmm = lay['stage']['w'] * 1000
+    out['walkways'] = sl.walkways_for(lay, wmm)
+    return jsonify(out)
+
+
+@bp.route('/layouts/save', methods=['POST'])
+def layout_save():
+    """Body: {name, description?, include_hidden?} → keeps the meshes of the stage
+    being edited as one of your layouts."""
+    w = _work()
+    if w is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    d = request.get_json(force=True) or {}
+    name = str(d.get('name') or '').strip()
+    try:
+        got = sl.from_root(w['root'], name, description=str(d.get('description') or ''),
+                           qxw_path=w['path'], mesh_dirs=_dirs(), include_hidden=bool(d.get('include_hidden')))
+        if not got['layout']['items']:
+            return jsonify({'error': 'There are no meshes on this stage to keep as a layout.'}), 400
+        if sl.reserved(got['layout']['name']):
+            return jsonify({'error': f"'{got['layout']['name']}' is a built-in layout: choose another name."}), 400
+        saved = sl.save(got['layout'])
+    except sl.LayoutError as e:
+        return jsonify({'error': str(e)}), 400
+    return jsonify({'ok': True, 'id': saved['id'], 'items': len(got['layout']['items']),
+                    'skipped': got['skipped'], 'layouts': sl.list_layouts()})
+
+
+@bp.route('/layouts/delete', methods=['POST'])
+def layout_delete():
+    lid = str((request.get_json(force=True) or {}).get('id') or '')
+    if lid.startswith('builtin:') or not sl.delete(lid):
+        return jsonify({'error': 'That layout is built in or does not exist.'}), 400
+    return jsonify({'ok': True, 'layouts': sl.list_layouts()})
 
 
 @bp.route('/library')

@@ -50,6 +50,8 @@ SKIP = [
     r"^/api/setlist/generate-all-qxw$", r"^/api/setlist/save$", r"^/api/stage/library-dirs$",
     r"^/api/brightness/apply$", r"^/api/brightness/fetch-github$", r"^/api/brightness/upload-qxf$",
     r"^/api/stagemon/",            # the Stage Monitor only reads the show
+    r"^/api/setlist/tempo-check$",  # only looks
+    r"^/api/stage/layouts",         # reading and keeping layouts changes no show
 ]
 _SKIP = [re.compile(p) for p in SKIP]
 

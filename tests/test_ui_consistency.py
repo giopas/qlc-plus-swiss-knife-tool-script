@@ -157,7 +157,7 @@ def test_inspector_tabs_in_look_builder_and_stage():
     # 3.3.0: the families of the QLC+ 5.3 wizard, and the effect panel for a chaser
     assert {"colour", "intensity", "movement", "matrix"} <= set(re.findall(r"\{ id: '(\w+)', name: '[A-Z]", looks))
     assert 'data-lbpane="chaser"' in looks
-    assert set(re.findall(r'data-stpane="(\w+)"', stage)) == {"select", "place", "add", "stage", "groups"}
+    assert set(re.findall(r'data-stpane="(\w+)"', stage)) == {"select", "place", "add", "stage", "groups", "layouts"}
 
 
 def test_route_steps_open_real_tools():

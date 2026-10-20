@@ -149,7 +149,7 @@ TOOLS: List[dict] = [
                           "height": {"type": "integer"}, "orientation": _S, "mode": _S, "scale": {"type": "boolean"},
                           "touch": {"type": "boolean"}, "preview": {"type": "boolean"}}, ["op"])},
     {"name": "setlist", "handler": "t_setlist",
-     "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out}. With apply=false only shows the matches.",
+     "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). A song may carry its tempo: \"Song name | 128BPM\" (spaces, case and the BPM word optional after the bar). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out, bpm, beats}. A song with a BPM gets the steps of its chaser (a copy; the original is not touched) timed to it, `beats` beats a step (default 1); functions that cannot follow a tempo are left as they are and named in `tempo.left_alone`. With apply=false only shows the matches and which ones the tempo would change.",
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
                           "apply": {"type": "boolean"}, "target_chaser_id": _S})},
     {"name": "stage_monitor", "handler": "t_stage_monitor",
@@ -466,9 +466,18 @@ class Server:
 
     def t_setlist(self, a: dict) -> Any:
         self.need_show()
-        songs = [str(s) for s in a.get("songs") or []]
+        from core import setlist_tempo
+        songs, tempi = [], []
+        for s in a.get("songs") or []:
+            name, bpm, _bad = setlist_tempo.split_line(str(s))
+            songs.append(name)
+            tempi.append(bpm or "")
         if not songs and a.get("text"):
-            songs = [s["txt_name"] for s in self.api("POST", "/api/setlist/parse", {"text": a["text"]})["songs"]]
+            parsed = self.api("POST", "/api/setlist/parse", {"text": a["text"]})
+            for st in parsed.get("sets") or []:
+                for so in st.get("songs") or []:
+                    songs.append(so["txt_name"])
+                    tempi.append(so.get("bpm") or "")
         slots = self.api("GET", "/api/setlist/slots")
         slot = a.get("slot") or ((slots[0].get("id") or slots[0].get("slot_id")) if slots else "")
         if not slot:
@@ -477,16 +486,25 @@ class Server:
         rows = a.get("rows")
         if not rows:
             rows = [{"txt_name": m["txt_name"], "qxw_id": m.get("matched_id") or "",
-                     "qxw_name": m.get("matched_name") or "", "in": 0, "hold": 0, "out": 0}
-                    for m in matches]
+                     "qxw_name": m.get("matched_name") or "", "in": 0, "hold": 0, "out": 0,
+                     **({"bpm": tempi[i]} if i < len(tempi) and tempi[i] else {})}
+                    for i, m in enumerate(matches)]
+        tempo_rows = [r for r in rows if r.get("bpm")]
         if a.get("apply") is False:
-            return {"slot": slot, "matches": matches}
+            out = {"slot": slot, "matches": matches}
+            if tempo_rows:
+                out["tempo"] = self.api("POST", "/api/setlist/tempo-check", {"rows": rows}).get("rows", [])
+            return out
         self.api("POST", f"/api/setlist/{slot}/songs", {"songs": songs})
         self.api("POST", f"/api/setlist/{slot}/details", {"rows": rows})
         body = {"target_chaser_id": a["target_chaser_id"]} if a.get("target_chaser_id") else {}
         r = self.api("POST", f"/api/setlist/{slot}/apply", body)
         w = self._written(r, f"Setlist of {len(rows)} song(s) built")
         w["left_out"] = (r or {}).get("skipped") or []
+        t = (r or {}).get("tempo") or {}
+        if tempo_rows:
+            w["tempo"] = {"fitted": t.get("fitted", 0), "already_right": t.get("ok", 0),
+                          "left_alone": t.get("na", []), "lines": t.get("lines", [])}
         return w
 
     def t_compare(self, a: dict) -> Any:

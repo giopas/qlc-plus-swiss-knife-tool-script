@@ -18,6 +18,8 @@ import io
 import re
 from typing import Dict, List, Optional
 
+from core import setlist_tempo as tempo
+
 HOLD_INFINITE = "4294967294"                 # QLC+'s "wait for Go" sentinel
 
 _NUM = re.compile(r"^\s*(?:\(?\d{1,3}\)|\d{1,3}\s*[.):\-–—]|0\d\s+(?=\D)|[-*•·▪►>]+)\s*")
@@ -30,6 +32,7 @@ _HEAD = {
     "in": ("fade in", "fadein", "in", "fade_in"),
     "hold": ("hold", "duration", "length", "time", "durata", "durée", "dur"),
     "out": ("fade out", "fadeout", "out", "fade_out"),
+    "bpm": ("bpm", "tempo"),
 }
 
 
@@ -83,10 +86,12 @@ def _set_break(line: str) -> Optional[str]:
 
 
 def parse(text: str, name_hint: str = "") -> dict:
-    """``{sets: [{name, songs: [{txt_name, in, hold, out}]}], songs: n, notes: [..], format}``."""
+    """``{sets: [{name, songs: [{txt_name, in, hold, out}]}], songs: n, notes: [..], format}``.
+    A song that has a tempo (``Song | 128BPM`` or a *BPM* column) also has ``bpm`` (v3.8.0)."""
     text = (text or "").replace("﻿", "")
     notes: List[str] = []
     sets: List[Dict] = []
+    bad_bpm: List[str] = []
 
     def cur(nm: str = "") -> Dict:
         if nm:
@@ -119,7 +124,8 @@ def parse(text: str, name_hint: str = "") -> dict:
             fmt = "table"
         else:                                   # no header: the first column is the song, unless numbers
             first_num = all(re.fullmatch(r"\s*\d{1,3}\s*", r[0]) for r in rows if r)
-            idx = {"name": 1 if first_num and len(rows[0]) > 1 else 0, "set": None, "in": None, "hold": None, "out": None}
+            idx = {"name": 1 if first_num and len(rows[0]) > 1 else 0, "set": None, "in": None, "hold": None, "out": None,
+                   "bpm": None}
             fmt = "table (no header)"
         for r in rows:
             def g(k):
@@ -129,10 +135,17 @@ def parse(text: str, name_hint: str = "") -> dict:
             if not nm:
                 continue
             s = cur(g("set")) if g("set") else cur()
-            s["songs"].append({"txt_name": nm, "in": _ms(g("in")), "hold": _ms(g("hold"), HOLD_INFINITE) if g("hold") else HOLD_INFINITE,
-                               "out": _ms(g("out"))})
+            song = {"txt_name": nm, "in": _ms(g("in")), "hold": _ms(g("hold"), HOLD_INFINITE) if g("hold") else HOLD_INFINITE,
+                    "out": _ms(g("out"))}
+            if g("bpm"):
+                v = tempo.parse_value(g("bpm"))
+                if v is None:
+                    bad_bpm.append(nm)
+                else:
+                    song["bpm"] = tempo.fmt(v)
+            s["songs"].append(song)
         if has_head:
-            used = [k for k in ("set", "in", "hold", "out") if idx[k] is not None]
+            used = [k for k in ("set", "in", "hold", "out", "bpm") if idx[k] is not None]
             if used:
                 notes.append("Columns used: song" + "".join(f", {k}" for k in used) + " (times in seconds or m:ss).")
     else:
@@ -148,7 +161,13 @@ def parse(text: str, name_hint: str = "") -> dict:
                 continue
             nm = _clean(line)
             if nm:
-                cur()["songs"].append({"txt_name": nm, "in": "0", "hold": HOLD_INFINITE, "out": "0"})
+                nm, bpm, rejected = tempo.split_line(nm)
+                song = {"txt_name": nm, "in": "0", "hold": HOLD_INFINITE, "out": "0"}
+                if bpm:
+                    song["bpm"] = bpm
+                elif rejected:
+                    bad_bpm.append(nm)
+                cur()["songs"].append(song)
     sets = [s for s in sets if s["songs"]]
     n = sum(len(s["songs"]) for s in sets)
     if len(sets) > 1:
@@ -157,6 +176,11 @@ def parse(text: str, name_hint: str = "") -> dict:
     for s in sets:
         for so in s["songs"]:
             dup[so["txt_name"].casefold()] = dup.get(so["txt_name"].casefold(), 0) + 1
+    with_bpm = sum(1 for s in sets for so in s["songs"] if so.get("bpm"))
+    if with_bpm:
+        notes.append(f"{with_bpm} song(s) with a tempo (BPM).")
+    if bad_bpm:
+        notes.append("Tempo left out (BPM must be between 20 and 400): " + ", ".join(bad_bpm[:6]) + ("…" if len(bad_bpm) > 6 else "") + ".")
     twice = sorted(k for k, v in dup.items() if v > 1)
     if twice:
         notes.append("Listed more than once: " + ", ".join(twice[:6]) + ("…" if len(twice) > 6 else "") + ".")

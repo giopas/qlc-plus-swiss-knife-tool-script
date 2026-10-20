@@ -588,8 +588,11 @@ async function slApply() {
   if (!r.ok || d.error) { setStatus(d.error || 'Failed.', 'error'); return; }
   if (d.skipped && d.skipped.length)
     setStatus(`⚠ Setlist built, but ${d.skipped.length} song(s) have no function and are not in the cue list: ${d.skipped.join(', ')} — assign them and apply again.`, 'warn');
+  else if (d.tempo && d.tempo.fitted)
+    setStatus(`✓ Setlist chasers built in the show, ${d.tempo.fitted} song(s) timed to their BPM — 💾 Save as new file… when you're ready.`, 'ok');
   else
     setStatus('✓ Setlist chasers built in the show — 💾 Save as new file… when you\'re ready.', 'ok');
   await showRefresh();
   if (typeof _fetchChasers === 'function') await _fetchChasers();
+  if (typeof slCheckTempo === 'function') slCheckTempo();
 }

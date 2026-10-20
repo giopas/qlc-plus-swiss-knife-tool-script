@@ -181,14 +181,18 @@ GUIDE: Dict[str, dict] = {
     },
     "setlist": {
         "use": "Turn a setlist into the cue list chaser: songs are matched to the show's functions by name.",
-        "args": [("songs", "Song titles in order."),
-                 ("text", "Or a pasted list (numbering and set breaks are understood)."),
+        "args": [("songs", "Song titles in order. A tempo may follow a bar: \"Song name | 128BPM\"."),
+                 ("text", "Or a pasted list (numbering, set breaks and `| 128BPM` are understood)."),
                  ("slot", "Which CueList slot (default the first)."),
-                 ("rows", "Override the matches: [{txt_name, qxw_id, in, hold, out}]."),
+                 ("rows", "Override the matches: [{txt_name, qxw_id, in, hold, out, bpm, beats}]. "
+                          "bpm 20 to 400 times the song's chaser steps; beats = beats per step (default 1)."),
                  ("apply", "false: only show the matches."),
                  ("target_chaser_id", "The chaser to fill (default the slot's own).")],
-        "returns": "The matches, then what was built and `left_out` (songs with no function).",
-        "notes": "Show the matches to the user before applying. Each cue note names the button that plays the same look.",
+        "returns": "The matches, then what was built, `left_out` (songs with no function) and, when songs have a "
+                   "tempo, `tempo` {fitted, already_right, left_alone, lines}.",
+        "notes": "Show the matches to the user before applying. Each cue note names the button that plays the same look. "
+                 "A tempo changes a copy of the song's chaser, never the original; scenes, chasers that follow QLC+'s own "
+                 "tempo and chasers that wait for the pedal are left alone and listed in `left_alone`.",
     },
     "stage_monitor": {
         "use": "Make the Stage Monitor page: a tablet on stage shows the cue that is playing and the next one, "

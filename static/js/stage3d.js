@@ -19,6 +19,7 @@ const ST_SNAP = 10;       // mm
 function stageInit() { if (!_stS) _stLoad(); }
 
 function invalidateStage() {
+  _stLayouts = null;
   _stS = null; _stSel = null; _stSet = new Set();
   const b = document.getElementById('st-body');
   if (b) b.innerHTML = '<div class="porter-placeholder">Open a workspace to see its 3D stage.</div>';
@@ -78,6 +79,74 @@ function stageTab(t) {
   _stTab = t;
   document.querySelectorAll('#st-body [data-sttab]').forEach(b => b.classList.toggle('active', b.dataset.sttab === t));
   document.querySelectorAll('#st-body [data-stpane]').forEach(p => { p.hidden = p.dataset.stpane !== t; });
+}
+
+// ── Stage layouts (3.8.0) ────────────────────────────────────────────────────
+// The stage and the band as a thing you keep: apply one to this stage, or keep this stage as one.
+// Idea from the stage layouts of mjcmatrix's fork of QLC+ (Matt C).
+let _stLayouts = null;
+const _ST_ROLE = { vocals: 'vocals', guitar: 'guitar', bass: 'bass', drums: 'drums', keys: 'keys', riser: 'riser',
+  backline: 'backline', wedge: 'wedges', backdrop: 'backdrop', walkway: 'walkway', other: 'other' };
+
+async function _stLoadLayouts() {
+  try { _stLayouts = (await fetch('/api/stage/layouts').then(r => r.json())).layouts || []; } catch (e) { _stLayouts = []; }
+  const el = document.getElementById('st-layouts'); if (el) el.innerHTML = _stLayoutsHtml();
+}
+
+function _stLayoutsHtml() {
+  if (!_stLayouts) { _stLoadLayouts(); return '<div class="vce-hint">Loading…</div>'; }
+  const rows = _stLayouts.map(l => {
+    const roles = Object.entries(l.roles).map(([r, n]) => (n > 1 ? n + ' ' : '') + (_ST_ROLE[r] || r)).join(', ');
+    return `<div class="st-item"><span><b>${_esc(l.label)}</b>${l.builtin ? ' <span class="vce-hint">built in</span>' : ''}
+        <span class="vce-hint">${l.stage.w}×${l.stage.d} m · ${_esc(roles)}${l.walkways ? ' · ' + l.walkways + ' walkway(s)' : ''}</span></span>
+      <span><button class="btn btn-surface btn-sm" onclick="stageLayoutApply('${_esc(l.id)}')">Use</button>${l.builtin ? '' :
+        ` <button class="btn btn-surface btn-sm" title="Delete this layout (the stage is not changed)" onclick="stageLayoutDelete('${_esc(l.id)}')">🗑</button>`}</span></div>`;
+  }).join('');
+  return `<h3>Stage layouts <span class="p-desc">the stage and the band, to start a show from</span></h3>
+    <div class="st-list">${rows || '<div class="vce-hint">No layouts yet.</div>'}</div>
+    <div class="lb-row">
+      <label class="vce-hint">Use it <select id="st-lay-mode" class="filter-input">
+        <option value="replace">in place of the meshes now on the stage</option><option value="add">next to the meshes now on the stage</option></select></label>
+      <label class="vce-hint"><input type="checkbox" id="st-lay-stage" checked> take its stage type and size</label>
+    </div>
+    <div class="vce-hint">Without that tick the stage stays as it is and the members keep their distance from the centre line and the back edge.
+      Models your computer does not have are drawn as blocks of the same size. The Look Builder aims at the members by name; Cabling's band floor is the meshes.</div>
+    <h3 style="margin-top:12px">Keep this stage <span class="p-desc">as a layout of yours</span></h3>
+    <div class="lb-row"><input id="st-lay-name" class="filter-input" style="flex:1;min-width:0" placeholder="Name, e.g. Full band at the Pub">
+      <button class="btn btn-surface btn-sm" onclick="stageLayoutSave()" ${_stS && _stS.meshes.length ? '' : 'disabled'}>Save as layout</button></div>
+    <div class="vce-hint">Keeps the stage type and size, and every visible mesh with its place, rotation and size. Share layouts with the Library (Home screen).</div>`;
+}
+
+async function stageLayoutApply(id) {
+  const mode = document.getElementById('st-lay-mode')?.value || 'replace';
+  const setStage = document.getElementById('st-lay-stage')?.checked !== false;
+  if (mode === 'replace' && _stS.meshes.length &&
+      !confirm(`This takes the ${_stS.meshes.length} mesh(es) now on the stage out. ↶ Undo brings them back. Continue?`)) return;
+  const d = await _stOp({ op: 'layout', layout: id, mode, set_stage: setStage });
+  if (d && d.result && d.result.missing && d.result.missing.length)
+    setStatus(`Models not found here, blocks used instead: ${d.result.missing.join(', ')}. Not saved yet.`, 'warn');
+}
+
+async function stageLayoutSave() {
+  const name = (document.getElementById('st-lay-name')?.value || '').trim();
+  if (!name) { setStatus('Give the layout a name.', 'warn'); return; }
+  const r = await fetch('/api/stage/layouts/save', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }) });
+  const d = await r.json();
+  if (!r.ok) { setStatus(d.error || 'Failed.', 'error'); return; }
+  _stLayouts = d.layouts;
+  const el = document.getElementById('st-layouts'); if (el) el.innerHTML = _stLayoutsHtml();
+  setStatus(`Layout '${name}' kept: ${d.items} item(s)` + (d.skipped.length ? `; left out (model file not found): ${d.skipped.join(', ')}` : '') + '.', 'ok');
+}
+
+async function stageLayoutDelete(id) {
+  if (!confirm('Delete this layout? The stage and the shows are not changed.')) return;
+  const r = await fetch('/api/stage/layouts/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }) });
+  const d = await r.json();
+  if (!r.ok) { setStatus(d.error || 'Failed.', 'error'); return; }
+  _stLayouts = d.layouts;
+  const el = document.getElementById('st-layouts'); if (el) el.innerHTML = _stLayoutsHtml();
 }
 
 // ── Fixture groups (2.8: the Pub test needs groups the show doesn't have) ──
@@ -187,6 +256,7 @@ function _stRender() {
         ['add', 'Add', 'Add a mesh from your mesh folders'],
         ['stage', 'Stage', 'The stage type and size'],
         ['groups', `Groups${(_stS.groups || []).length ? ` (${_stS.groups.length})` : ''}`, 'Fixture groups: make one from the fixtures you select, rename, change, delete'],
+        ['layouts', 'Layouts', 'Stage layouts: the stage and the band (riser, members, backline) to start a show from, or to keep from this one'],
       ].map(([k, l, t]) => `<button class="subtab-btn${_stTab === k ? ' active' : ''}" data-sttab="${k}" onclick="stageTab('${k}')" title="${t}">${l}</button>`).join('')}</div>
       <div class="lb-card" data-stpane="stage"${_stTab === 'stage' ? '' : ' hidden'}>
         <h3>Stage <span class="p-desc">the floor and the space around the rig</span></h3>
@@ -229,6 +299,8 @@ function _stRender() {
       <div class="lb-card" id="st-place" data-stpane="place"${_stTab === 'place' ? '' : ' hidden'}>${_stPlaceHtml()}</div>
 
       <div class="lb-card" data-stpane="groups"${_stTab === 'groups' ? '' : ' hidden'}>${_stGroupsHtml()}</div>
+
+      <div class="lb-card" id="st-layouts" data-stpane="layouts"${_stTab === 'layouts' ? '' : ' hidden'}>${_stLayoutsHtml()}</div>
 
       <div class="lb-card" data-stpane="add"${_stTab === 'add' ? '' : ' hidden'}>
         <h3>Add a mesh <span class="p-desc">from your mesh folders</span></h3>

@@ -653,6 +653,23 @@ def build_workspace(data: dict):
         vc_size=gen.page_size,
     )
 
+    # v3.8.0: start from a stage layout (the riser, the members, the backline as meshes)
+    layout_id = str(data.get('stage_layout') or '').strip()
+    if layout_id:
+        from core import stage_layouts, qxw_io, stage3d
+        lay = stage_layouts.get(layout_id)
+        if lay is None:
+            raise QsError('That stage layout does not exist.', 400)
+        root = qxw_io.strip_ns(qxw_io.loads_qxw(qxw_bytes))
+        try:
+            stage3d.set_stage(root, type=lay['stage']['type'])        # the size is the one of the rig above
+            stage_layouts.apply(root, lay, mode='add', set_stage=False)
+        except (stage3d.StageError, stage_layouts.LayoutError) as e:
+            raise QsError(f'The stage layout could not be used: {e}', 400)
+        import xml.etree.ElementTree as _ET
+        _ET.indent(root, space=' ')
+        qxw_bytes = qxw_io.qxw_bytes(root)
+
     # Doctor gates every export (WORKPLAN principle 4): errors block it.
     from core.doctor import check
     from core.qxw_io import loads_qxw

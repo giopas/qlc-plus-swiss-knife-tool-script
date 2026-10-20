@@ -795,8 +795,34 @@ function _cbPlaces() {
   (p.extras || []).forEach((x, i) => rows.push(`<div class="cb-row"><span data-i18n="off">${_cbE(x.name)}</span>
     <button class="btn btn-surface btn-sm" onclick="go('fixtures')" title="${_cbE(_cbT('Patch it in Fixtures (the show in progress)'))}">${_cbE(_cbT('Patch it…'))}</button>
     <button class="btn btn-surface btn-sm" onclick="cablingExtra(${i})">✕</button></div>`));
+  _cbLoadLayouts();
   document.getElementById('cb-floor-list').innerHTML = rows.join('')
     || `<div class="cb-dim">${_cbE(_cbT('Nothing placed by hand yet: the computer stands where the setting says, the splitter is placed by the plan.'))}</div>`;
+}
+
+/* v3.8.0: the walkways of a stage layout, placed for tonight's stage width */
+let _cbLayouts = null;
+async function _cbLoadLayouts() {
+  const sel = document.getElementById('cb-lay-sel');
+  if (!sel) return;
+  if (!_cbLayouts) {
+    try { _cbLayouts = ((await fetch('/api/stage/layouts').then(r => r.json())).layouts || []).filter(l => l.walkways); }
+    catch (e) { _cbLayouts = []; }
+  }
+  sel.innerHTML = _cbLayouts.map(l => `<option value="${_cbE(l.id)}">${_cbE(l.label)} (${l.walkways})</option>`).join('')
+    || `<option value="">${_cbE(_cbT('no layout has a walkway'))}</option>`;
+}
+
+async function cablingLayoutWalks() {
+  const id = (document.getElementById('cb-lay-sel') || {}).value;
+  if (!id) return;
+  const d = await fetch(`/api/stage/layouts/${encodeURIComponent(id)}?w=${Math.round(_cbStageNow().w)}`).then(r => r.json());
+  if (d.error) { setStatus(d.error, 'error'); return; }
+  const have = new Set((_cb.plan.walkways || []).map(w => [w.x0, w.z0, w.x1, w.z1].join()));
+  let n = 0;
+  (d.walkways || []).forEach(w => { if (!have.has([w.x0, w.z0, w.x1, w.z1].join())) { _cb.plan.walkways.push(w); n++; } });
+  setStatus(n ? _cbT('{0} walkway(s) added from the layout.', n) : _cbT('Those walkways are already in the plan.'), n ? 'ok' : 'warn');
+  if (n) _cbChanged();
 }
 
 function cablingStageClick(ev) {

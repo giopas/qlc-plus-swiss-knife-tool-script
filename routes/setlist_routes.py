@@ -7,6 +7,7 @@ from core import workspace as ws
 from core import pdf as pdf_mod
 import core.session as sess
 from core import setlist_io
+from core import setlist_tempo
 
 
 def _safe_err(exc: Exception) -> str:
@@ -212,23 +213,30 @@ def load_slot_file(slot_id):
                     continue
                 parts = line.split('|')
                 if len(parts) >= 6:
-                    # New detailed format
-                    rows.append({
+                    # Detailed format; v3.8.0 adds two optional fields: bpm, beats
+                    row = {
                         'txt_name': parts[0].strip(),
                         'qxw_id':   parts[1].strip(),
                         'qxw_name': parts[2].strip(),
                         'in':       parts[3].strip() or '0',
                         'hold':     parts[4].strip() or '4294967294',
                         'out':      parts[5].strip() or '0',
-                    })
+                    }
+                    if len(parts) > 6 and parts[6].strip():
+                        row['bpm'] = parts[6].strip()
+                    if len(parts) > 7 and parts[7].strip():
+                        row['beats'] = parts[7].strip()
+                    rows.append(ws._tempo_row(row))
                 else:
-                    # Old format: plain song names (may have been saved by old Export)
+                    # Old format: plain song names (may have been saved by old Export);
+                    # "Song name | 128BPM" gives the song a tempo (v3.8.0)
                     name = parts[0].strip()
                     if name:
-                        rows.append({
-                            'txt_name': name, 'qxw_id': '', 'qxw_name': '',
-                            'in': '0', 'hold': '4294967294', 'out': '0',
-                        })
+                        row = {'txt_name': name, 'qxw_id': '', 'qxw_name': '',
+                               'in': '0', 'hold': '4294967294', 'out': '0'}
+                        if len(parts) == 2 and setlist_tempo.parse_value(parts[1]) is not None:
+                            row['bpm'] = parts[1].strip()
+                        rows.append(ws._tempo_row(row))
         ws.set_slot_details(slot_id, rows)
         sess.set_slot_path(slot_id, path)
         has_assign = any(r.get('qxw_id') for r in rows)
@@ -259,7 +267,7 @@ def save_slot_file(slot_id):
         lines = [
             f'# QLC+ Swiss Knife — Setlist slot: {slot.get("caption", slot_id)}\n',
             f'# Slot ID: {slot_id}\n',
-            '# Format: txt_name|qxw_id|qxw_name|in|hold|out\n',
+            '# Format: txt_name|qxw_id|qxw_name|in|hold|out[|bpm|beats per step]\n',
         ]
         for r in rows:
             parts = [
@@ -270,6 +278,10 @@ def save_slot_file(slot_id):
                 str(r.get('hold', '4294967294')),
                 str(r.get('out',  '0')),
             ]
+            if r.get('bpm'):                       # the tempo fields only when there is a tempo
+                parts.append(str(r['bpm']))
+                if r.get('beats'):
+                    parts.append(str(r['beats']))
             lines.append('|'.join(parts) + '\n')
         with open(path, 'w', encoding='utf-8') as f:
             f.writelines(lines)
@@ -368,16 +380,52 @@ def apply_slot(slot_id):
     try:
         from core import show
         ws._state['setlist_skipped'] = []
-        ws.generate_slot_qxw_content(slot_id, target)
+        ws._state['setlist_tempo_log'] = []
+        ws.generate_slot_qxw_content(slot_id, target, data.get('apply_tempo') is not False)
         skipped = list(ws._state.get('setlist_skipped') or [])
         if skipped:
             show.set_detail('Left out (no function assigned): ' + ', '.join(skipped))
+        tempo = _tempo_summary(show)
         show.close_step()
-        return jsonify({'ok': True, 'skipped': skipped, 'show': show.status()})
+        return jsonify({'ok': True, 'skipped': skipped, 'tempo': tempo, 'show': show.status()})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
+
+
+def _tempo_summary(show) -> dict:
+    """What the tempo did in the build just done, for the History and the page:
+    {fitted, ok, na: [{song, why}], lines}.  Empty when no song has a tempo."""
+    log = list(ws._state.get('setlist_tempo_log') or [])
+    if not log:
+        return {'fitted': 0, 'ok': 0, 'na': [], 'lines': []}
+    lines = []
+    na = []
+    for e in log:
+        if e['status'] == 'fitted':
+            lines.append(f"{e['song']}: {e['bpm']} BPM, {e['beats']} beat(s) a step = {e['want_ms']} ms")
+        elif e['status'] == 'na':
+            na.append({'song': e['song'], 'why': e['why']})
+            lines.append(f"{e['song']}: {e['bpm']} BPM, steps left as they are ({e['why']})")
+    if lines:
+        show.set_detail('Tempo: ' + '; '.join(lines))
+    return {'fitted': sum(1 for e in log if e['status'] == 'fitted'),
+            'ok': sum(1 for e in log if e['status'] == 'ok'), 'na': na, 'lines': lines}
+
+
+@bp.route('/tempo-check', methods=['POST'])
+def tempo_check():
+    """Body: {rows: [{qxw_id, bpm, beats}]} → {rows: [{idx, bpm, beats, status, now_ms, want_ms, why}]}.
+    Which songs have a function whose step times do not fit their BPM
+    ("off": Apply to the show will fit it).  Nothing is changed."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    rows = data.get('rows', [])
+    if not isinstance(rows, list):
+        return jsonify({'error': 'rows must be a list.'}), 400
+    return jsonify({'rows': ws.tempo_report(rows)})
 
 
 @bp.route('/notes')
@@ -410,13 +458,16 @@ def apply_all():
         return jsonify({'error': 'No workspace loaded.'}), 400
     try:
         from core import show
+        data = request.get_json(silent=True) or {}
         ws._state['setlist_skipped'] = []
-        ws.generate_all_slots_qxw_content()
+        ws._state['setlist_tempo_log'] = []
+        ws.generate_all_slots_qxw_content(data.get('apply_tempo') is not False)
         skipped = list(ws._state.get('setlist_skipped') or [])
         if skipped:
             show.set_detail('Left out (no function assigned): ' + ', '.join(skipped))
+        tempo = _tempo_summary(show)
         show.close_step()
-        return jsonify({'ok': True, 'skipped': skipped, 'show': show.status()})
+        return jsonify({'ok': True, 'skipped': skipped, 'tempo': tempo, 'show': show.status()})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:

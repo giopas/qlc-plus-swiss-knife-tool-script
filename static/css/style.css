@@ -2194,6 +2194,17 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   border-bottom-color: var(--surface-2);
   background: var(--surface-1);
 }
+.fb-song-tempo { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+.fb-song-bpm {
+  width: 52px; text-align: right; background: transparent; color: var(--text);
+  border: none; border-bottom: 1px solid transparent; font-family: var(--mono);
+  font-size: var(--fs-small); outline: none; padding: 1px 2px;
+}
+.fb-song-bpm:hover, .fb-song-bpm:focus { border-bottom-color: var(--surface-2); background: var(--surface-1); }
+.fb-tempo-badge { font-size: var(--fs-micro); font-family: var(--mono); white-space: nowrap; }
+.fb-tempo-ok  { color: var(--green); }
+.fb-tempo-off { color: var(--amber, #d9a400); }
+.fb-tempo-na  { color: var(--text-faint); }
 .fb-song-assign {
   font-size: var(--fs-micro);
   color: var(--accent);
@@ -4513,3 +4524,7 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .cb-own-range { display: inline-flex; align-items: center; gap: 6px; }
 .sb-cabling-plot svg { width: 100%; max-height: 520px; }
 .sb-steps { padding-left: 22px; line-height: 1.5; }
+
+/* Hold: the "Wait for the pedal (Inf)" tick under the Hold box */
+.fb-timing-infrow { margin-top: -2px; }
+.fb-timing-inf { font-size: 11px; color: var(--text-dim, inherit); display: flex; align-items: center; gap: 6px; cursor: pointer; }

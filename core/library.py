@@ -10,6 +10,7 @@ else: no server, no account, no network.  A *library pack* is a JSON file
 * ``nomenclature``  a function-naming profile
 * ``vc_style``      a Virtual Console style (button size, gaps, fonts)
 * ``vc_screen``     a screen size to fit a Virtual Console to (3.7.0)
+* ``stage_layout``  the stage and the band, the base of a new show (3.8.0)
 * ``show_profile``  a Show Profile (the changes of a show, to do again)
 
 Your controllers (they carry a device UID of *your* computer), sessions and
@@ -47,6 +48,7 @@ KINDS = [
     ("vc_screen", "Screen size", "A screen to fit the Virtual Console to"),
     ("show_profile", "Show Profile", "The changes of a show, to do again"),
     ("cabling_kit", "Cabling kit", "Your DMX kit for the Cabling planner"),
+    ("stage_layout", "Stage layout", "The stage and the band: riser, members, backline, walkways"),
 ]
 KIT_NAME = "My kit"
 _KIND_IDS = [k for k, _l, _d in KINDS]
@@ -147,6 +149,9 @@ def _own(kind: str) -> Dict[str, dict]:
         base = kit_mod.load_base()
         if base["items"]:
             out[KIT_NAME] = {"name": KIT_NAME, "items": base["items"], "units": base.get("units", "m")}
+    elif kind == "stage_layout":
+        from core import stage_layouts
+        out.update(stage_layouts.own())
     else:
         raise LibraryError(f"Unknown kind: {kind}")
     return out
@@ -172,6 +177,13 @@ def _summary(kind: str, d: dict) -> str:
         return ", ".join(bits)
     if kind == "cabling_kit":
         return f"{len(d.get('items') or [])} item(s)"
+    if kind == "stage_layout":
+        st = d.get("stage") or {}
+        roles = {it.get("role") for it in d.get("items") or []}
+        members = len(roles & {"vocals", "guitar", "bass", "drums", "keys"})
+        return f"{st.get('w', '?'):g}×{st.get('d', '?'):g} m, {len(d.get('items') or [])} item(s), {members} role(s)" \
+            if isinstance(st.get("w"), (int, float)) and isinstance(st.get("d"), (int, float)) \
+            else f"{len(d.get('items') or [])} item(s)"
     return ""
 
 
@@ -356,6 +368,14 @@ def _check_cabling_kit(d: dict) -> dict:
     return out
 
 
+def _check_stage_layout(d: dict) -> dict:
+    from core import stage_layouts
+    try:
+        return stage_layouts.clean(d, name=str(d.get("name") or ""))
+    except stage_layouts.LayoutError as e:
+        raise LibraryError(str(e))
+
+
 def _install_kit(name: str, clean: dict) -> None:
     """*My kit* replaced is your kit replaced; any other name (or a copy) adds
     the items you do not have yet (same kind and name) to your kit."""
@@ -374,7 +394,7 @@ def _install_kit(name: str, clean: dict) -> None:
 
 _CHECKS = {"cabling_kit": _check_cabling_kit, "vc_template": _check_vc_template, "palette": _check_palette, "look_preset": _check_look_preset,
            "nomenclature": _check_nomenclature, "vc_style": _check_vc_style, "vc_screen": _check_vc_screen,
-           "show_profile": _check_show_profile}
+           "show_profile": _check_show_profile, "stage_layout": _check_stage_layout}
 
 
 def _reserved(kind: str, name: str) -> bool:
@@ -396,6 +416,9 @@ def _reserved(kind: str, name: str) -> bool:
     if kind == "vc_screen":
         from core import vc_screens
         return any(b["id"].lower() == low or b["label"].lower() == low for b in vc_screens.BUILTIN)
+    if kind == "stage_layout":
+        from core import stage_layouts
+        return stage_layouts.reserved(name)
     return False
 
 
@@ -528,6 +551,9 @@ def _write_item(kind: str, name: str, clean: dict) -> None:
         prof.save({**clean, "name": name})
     elif kind == "cabling_kit":
         _install_kit(name, clean)
+    elif kind == "stage_layout":
+        from core import stage_layouts
+        stage_layouts.save(clean, name=name)
 
 
 def install(pack: dict, choices: Optional[Dict[str, str]] = None, default: str = "skip") -> dict:

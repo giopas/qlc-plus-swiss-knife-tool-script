@@ -10,7 +10,8 @@ let _selectedSlot  = null;
 let _setlistLoaded = false;
 let _chasers       = [];
 let _functions     = [];   // [{id, name, type, contains, vc_button, desc}]
-let _songRows      = [];   // [{txt_name, qxw_id, qxw_name, in, hold, out}]
+let _songRows      = [];   // [{txt_name, qxw_id, qxw_name, in, hold, out, bpm?, beats?}]
+let _tempoCheck    = {};   // row index -> {status: ok|off|na|none, now_ms, want_ms, why}  (v3.8.0)
 let _selectedSong  = -1;
 let _selectedSongs = new Set();   // indices of all selected song rows (multi-select)
 let _poolFiltered  = [];
@@ -189,10 +190,12 @@ function _setEditorEnabled(on) {
 
 // ── Song list (FileBot left panel) ─────────────────────────────────────────────
 
+let _tempoSkip = false;   // true while the tempo check itself redraws the list
 function _renderSongList() {
   const list = document.getElementById('fb-song-list');
   if (!list) return;
   _updateSongCount();
+  if (!_tempoSkip) { if (_songRows.some(r => r.bpm)) slCheckTempo(); else { _tempoCheck = {}; _updateTempoLine(); } }
   if (!_songRows.length) {
     list.innerHTML = '<div class="slot-empty" style="padding:16px">No songs. Click ➕ to add.</div>';
     return;
@@ -259,8 +262,71 @@ function _renderSongList() {
                  onclick="event.stopPropagation()">
           ${assignHtml}
         </div>
+        <div class="fb-song-tempo">
+          <input class="fb-song-bpm" type="text" inputmode="decimal" value="${_esc(row.bpm || '')}" placeholder="BPM"
+                 data-tooltip="The song's tempo, 20 to 400. When you apply the setlist, the steps of its chaser are timed to it. Leave empty to keep the chaser as it is."
+                 onchange="slBpmChanged(${i}, this)" onclick="event.stopPropagation()">
+          ${_tempoBadge(i)}
+        </div>
       </div>`;
   }).join('');
+}
+
+// ── v3.8.0 Per-song tempo ─────────────────────────────────────────────────────
+
+function _tempoBadge(i) {
+  const c = _tempoCheck[i];
+  if (!c) return '';
+  const want = c.want_ms + ' ms';
+  if (c.status === 'ok')   return `<span class="fb-tempo-badge fb-tempo-ok" data-tooltip="Its chaser steps already last ${want}.">✓</span>`;
+  if (c.status === 'off')  return `<span class="fb-tempo-badge fb-tempo-off" data-tooltip="Its chaser steps last ${c.now_ms} ms, a step at this tempo lasts ${want}. ✓ Apply to the show times them to the BPM.">⚠ ${c.now_ms}→${c.want_ms} ms</span>`;
+  if (c.status === 'na')   return `<span class="fb-tempo-badge fb-tempo-na" data-tooltip="The tempo does not change this function: it is not a chaser, it follows the QLC+ tempo, or its steps wait for the pedal.">–</span>`;
+  return '';
+}
+
+function slBpmChanged(idx, el) {
+  const row = _songRows[idx]; if (!row) return;
+  const m = String(el.value || '').trim().match(/^(\d{2,3}(?:[.,]\d+)?)\s*(?:bpm)?$/i);
+  const v = m ? parseFloat(m[1].replace(',', '.')) : NaN;
+  if (!el.value.trim()) { delete row.bpm; delete row.beats; }
+  else if (v >= 20 && v <= 400) row.bpm = String(v);
+  else { setStatus('The tempo must be a number from 20 to 400.', 'warn'); el.value = row.bpm || ''; return; }
+  el.value = row.bpm || '';
+  _updateTimingPanel();
+  slCheckTempo();
+}
+
+function slBeatsChanged(el) {
+  const row = _songRows[_selectedSong]; if (!row) return;
+  const v = parseFloat(String(el.value || '').replace(',', '.'));
+  if (!String(el.value || '').trim() || v === 1) delete row.beats;
+  else if (v >= 0.125 && v <= 64) row.beats = String(v);
+  else { setStatus('Beats per step must be from 1/8 to 64.', 'warn'); el.value = row.beats || '1'; return; }
+  slCheckTempo();
+}
+
+let _tempoTimer = null;
+function slCheckTempo() {
+  clearTimeout(_tempoTimer);
+  _tempoTimer = setTimeout(async () => {
+    _tempoSkip = true;
+    try {
+    if (!_songRows.some(r => r.bpm)) { _tempoCheck = {}; _renderSongList(); _updateTempoLine(); return; }
+    const d = await _apiPost('/api/setlist/tempo-check', { rows: _songRows.map(r => ({ txt_name: r.txt_name || '', qxw_id: r.qxw_id || '', bpm: r.bpm || '', beats: r.beats || '' })) });
+    _tempoCheck = {};
+    if (!d.error) (d.rows || []).forEach(r => { _tempoCheck[r.idx] = r; });
+    _renderSongList(); _updateTempoLine();
+    for (const i of _selectedSongs) document.querySelectorAll('.fb-song-item')[i]?.classList.add('fb-song-active');
+    } finally { _tempoSkip = false; }
+  }, 150);
+}
+
+function _updateTempoLine() {
+  const el = document.getElementById('sl-tempo-line'); if (!el) return;
+  const off = Object.values(_tempoCheck).filter(c => c.status === 'off').length;
+  const n = _songRows.filter(r => r.bpm).length;
+  el.textContent = !n ? '' : off ? `⚠ ${off} of ${n} song(s) with a BPM have steps that do not fit it. ✓ Apply to the show fits them.`
+                                  : `✓ ${n} song(s) with a BPM.`;
 }
 
 // ── Row selection + timing panel ──────────────────────────────────────────────
@@ -304,10 +370,12 @@ function _clearTimingPanel() {
   _setTimingEnabled(false);
   const lbl = document.getElementById('timing-song-label');
   if (lbl) lbl.textContent = '— select a song —';
-  ['timing-in','timing-hold','timing-out'].forEach(id => {
+  ['timing-in','timing-hold','timing-out','timing-bpm','timing-beats'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const inf = document.getElementById('timing-hold-inf');
+  if (inf) { inf.checked = false; inf.disabled = true; }
 }
 
 function _updateTimingPanel() {
@@ -321,7 +389,11 @@ function _updateTimingPanel() {
   const outEl  = document.getElementById('timing-out');
   if (inEl)   inEl.value   = _fmtMs(row.in   ?? '0');
   if (holdEl) holdEl.value = _fmtMs(row.hold ?? '4294967294');
+  _syncHoldInf();
   if (outEl)  outEl.value  = _fmtMs(row.out  ?? '0');
+  const bpmEl = document.getElementById('timing-bpm'), beatsEl = document.getElementById('timing-beats');
+  if (bpmEl)   bpmEl.value   = row.bpm || '';
+  if (beatsEl) { beatsEl.value = row.beats || '1'; beatsEl.disabled = !row.bpm; }
 }
 
 function _updateTimingLabel() {
@@ -331,18 +403,44 @@ function _updateTimingLabel() {
 }
 
 function _setTimingEnabled(on) {
-  ['timing-in','timing-hold','timing-out'].forEach(id => {
+  ['timing-in','timing-hold','timing-out','timing-bpm','timing-hold-inf'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !on;
   });
+  if (on) _syncHoldInf();
+  const be = document.getElementById('timing-beats');
+  if (be && !on) be.disabled = true;
+}
+
+// The Hold box and its "Wait for the pedal (Inf)" tick always say the same thing.
+function _syncHoldInf() {
+  const row = _songRows[_selectedSong];
+  const inf = document.getElementById('timing-hold-inf');
+  const holdEl = document.getElementById('timing-hold');
+  if (!inf || !holdEl) return;
+  const isInf = !row || String(row.hold ?? _INF_VAL) === _INF_VAL;
+  inf.checked = !!row && isInf;
+  holdEl.disabled = !row || isInf;
+}
+
+function slHoldInf(box) {
+  const row = _songRows[_selectedSong];
+  if (!row) return;
+  row.hold = box.checked ? _INF_VAL : '1000';
+  const holdEl = document.getElementById('timing-hold');
+  if (holdEl) holdEl.value = _fmtMs(row.hold);
+  _syncHoldInf();
+  if (typeof slCheckTempo === 'function') slCheckTempo();
 }
 
 function slTimingChanged(field, inputEl) {
   const row = _songRows[_selectedSong];
   if (!row) return;
-  const val = _parseMs(inputEl.value);
+  // Hold is only typed when the tick is off: an empty box means 0, never "wait for the pedal".
+  const val = (field === 'hold' && !inputEl.value.trim()) ? '0' : _parseMs(inputEl.value);
   row[field] = val;
-  inputEl.value = _fmtMs(val);  // normalize display
+  if (field === 'hold') { if (val === _INF_VAL) inputEl.value = 'Inf'; _syncHoldInf(); }
+  else inputEl.value = _fmtMs(val);  // normalize display
 }
 
 // ── Row editing ───────────────────────────────────────────────────────────────
@@ -808,6 +906,8 @@ async function slSaveDetails(silent = false) {
     in:       String(r.in   ?? '0'),
     hold:     String(r.hold ?? '4294967294'),
     out:      String(r.out  ?? '0'),
+    ...(r.bpm ? { bpm: String(r.bpm) } : {}),
+    ...(r.bpm && r.beats ? { beats: String(r.beats) } : {}),
   }));
   const res = await _apiPost(`/api/setlist/${_selectedSlot}/details`, { rows });
   if (res.error) { setStatus(res.error, 'error'); return; }
@@ -1239,13 +1339,13 @@ function _slImpSongs() {
 function _slImpList() {
   const songs = _slImpSongs(), el = document.getElementById('sl-imp-list'); if (!el) return;
   el.innerHTML = songs.map((s, i) => `<div class="st-item"><span><span class="vce-hint">${i + 1}</span> ${_esc(s.txt_name)}</span>
-    <span class="vce-hint">${s.hold !== '4294967294' ? 'hold ' + (+s.hold / 1000) + ' s' : ''}${s.in !== '0' ? ' in ' + (+s.in / 1000) + ' s' : ''}${s.out !== '0' ? ' out ' + (+s.out / 1000) + ' s' : ''}</span></div>`).join('');
+    <span class="vce-hint">${s.bpm ? s.bpm + ' BPM ' : ''}${s.hold !== '4294967294' ? 'hold ' + (+s.hold / 1000) + ' s' : ''}${s.in !== '0' ? ' in ' + (+s.in / 1000) + ' s' : ''}${s.out !== '0' ? ' out ' + (+s.out / 1000) + ' s' : ''}</span></div>`).join('');
 }
 
 async function slImportApply() {
   const songs = _slImpSongs(); if (!songs.length) return;
   const mode = (document.getElementById('sl-imp-mode') || {}).value || 'replace';
-  const rows = songs.map(s => ({ txt_name: s.txt_name, qxw_id: '', qxw_name: '', in: s.in, hold: s.hold, out: s.out }));
+  const rows = songs.map(s => ({ txt_name: s.txt_name, qxw_id: '', qxw_name: '', in: s.in, hold: s.hold, out: s.out, ...(s.bpm ? { bpm: s.bpm } : {}) }));
   if (mode === 'replace' && _songRows.some(r => r.qxw_id) &&
       !confirm('Replacing the songs drops the function assignments of this slot. Continue?')) return;
   _songRows = mode === 'append' ? _songRows.concat(rows) : rows;

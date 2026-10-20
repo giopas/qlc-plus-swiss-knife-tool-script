@@ -492,6 +492,32 @@ function _qsSyncStageFields() {
   set('qs-stage-w', _qsStage.w_mm);
   set('qs-stage-d', _qsStage.d_mm);
   set('qs-stage-h', _qsStage.h_mm);
+  _qsLoadStageLayouts();
+}
+
+/* v3.8.0 Stage layouts: the stage and the band a new show starts from */
+let _qsLayouts = null;
+async function _qsLoadStageLayouts() {
+  const sel = document.getElementById('qs-stage-layout');
+  if (!sel || _qsLayouts) return;
+  try {
+    const d = await fetch('/api/stage/layouts').then(r => r.json());
+    _qsLayouts = d.layouts || [];
+  } catch (e) { _qsLayouts = []; return; }
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">— none —</option>' + _qsLayouts.map(l =>
+    `<option value="${_esc(l.id)}">${_esc(l.label)} (${l.stage.w}×${l.stage.d} m)</option>`).join('');
+  sel.value = keep;
+}
+
+function qsPickStageLayout() {
+  const l = (_qsLayouts || []).find(x => x.id === document.getElementById('qs-stage-layout')?.value);
+  if (!l) return;
+  _qsStage.w_mm = Math.round(l.stage.w * 1000);
+  _qsStage.d_mm = Math.round(l.stage.d * 1000);
+  _qsStage.h_mm = Math.round(l.stage.h * 1000);
+  _qsSyncStageFields();
+  _qsDrawCanvas();
 }
 
 function qsApplyStageFields() {
@@ -1505,6 +1531,8 @@ async function qsExport() {
     stage_d: _qsStage.d_mm,
     stage_h: _qsStage.h_mm,
   });
+  const layoutId = document.getElementById('qs-stage-layout')?.value || '';
+  if (layoutId) params.set('stage_layout', layoutId);
   const url = '/api/quickstart/generate?' + params.toString();
 
   try {

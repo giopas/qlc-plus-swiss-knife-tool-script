@@ -754,12 +754,25 @@
           </div>
           <div class="fb-timing-row">
             <label class="fb-timing-lbl">Hold</label>
-            <input id="timing-hold" class="fb-timing-in" type="text" placeholder="Inf" disabled oninput="slTimingChanged('hold',this)">
+            <input id="timing-hold" class="fb-timing-in" type="text" placeholder="ms" disabled oninput="slTimingChanged('hold',this)">
+          </div>
+          <div class="fb-timing-row fb-timing-infrow">
+            <label class="fb-timing-lbl"></label>
+            <label class="fb-timing-inf" data-tooltip="Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds."><input type="checkbox" id="timing-hold-inf" disabled onchange="slHoldInf(this)"> Wait for the pedal (Inf)</label>
           </div>
           <div class="fb-timing-row">
             <label class="fb-timing-lbl">Out</label>
             <input id="timing-out"  class="fb-timing-in" type="text" placeholder="0"   disabled oninput="slTimingChanged('out',this)">
           </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl" data-tooltip="The song's tempo. When the setlist is applied, the steps of its chaser are timed to it.">BPM</label>
+            <input id="timing-bpm" class="fb-timing-in" type="text" placeholder="–" disabled onchange="slBpmChanged(_selectedSong, this)">
+          </div>
+          <div class="fb-timing-row">
+            <label class="fb-timing-lbl" data-tooltip="How many beats one step of the song's chaser lasts (1 = a step per beat, 0.5 = two steps per beat, 4 = a step per bar of 4/4).">Beats</label>
+            <input id="timing-beats" class="fb-timing-in" type="text" placeholder="1" disabled onchange="slBeatsChanged(this)">
+          </div>
+          <span class="hint-text" id="sl-tempo-line" style="font-size:9px;line-height:1.3"></span>
 
           <div class="fb-sep"></div>
 
@@ -2416,6 +2429,11 @@
           <div class="pane-header">On the floor</div>
           <div class="cb-card" id="cb-floor-list"></div>
           <div class="cb-card">
+            <div class="cb-row"><span>Walkways from a stage layout</span>
+              <select id="cb-lay-sel" class="field-input"></select>
+              <button class="btn btn-surface btn-sm" onclick="cablingLayoutWalks()" data-tooltip="Add the walkways of a saved stage layout to tonight's plan, placed for tonight's stage width.">Add</button></div>
+          </div>
+          <div class="cb-card">
             <div class="cb-row"><span>Slack</span>
               <input id="cb-slack" class="field-input cb-narrow" type="number" min="0" max="3" step="0.25" onchange="cablingSet('slack_m', _cbToM(this.value))"> <span class="cb-u">m</span> at each cable end</div>
           </div>
@@ -2680,6 +2698,10 @@
           <label style="font-size:10px;white-space:nowrap">H</label>
           <input id="qs-stage-h" class="filter-input" type="number" value="4000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
           <span style="font-size:9px;color:var(--overlay0);white-space:nowrap">mm</span>
+          <span style="width:1px;height:18px;background:var(--overlay0);margin:0 2px;flex-shrink:0"></span>
+          <label style="font-size:10px;white-space:nowrap" for="qs-stage-layout">Layout</label>
+          <select id="qs-stage-layout" class="filter-input" style="font-size:10px;padding:2px 4px;max-width:150px" onchange="qsPickStageLayout()"
+                  data-tooltip="Start the show with the stage and the band of a saved layout: the riser, the members, the backline. The stage takes the layout's size."><option value="">— none —</option></select>
           <div class="spacer"></div>
           <button class="btn btn-surface btn-sm" style="white-space:nowrap" onclick="qsAutoDmx()">Auto-DMX</button>
           <span id="qs-dmx-info" style="font-size:11px;white-space:nowrap"></span>

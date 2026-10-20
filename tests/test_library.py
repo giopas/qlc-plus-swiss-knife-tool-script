@@ -17,7 +17,8 @@ STEP = {"title": "Check the show", "method": "POST", "path": "/api/doctor/apply"
 def _stores(tmp_path, monkeypatch):
     for var, name in (("QSK_VC_TEMPLATES", "tpl"), ("QSK_LOOK_PRESETS", "presets.json"),
                       ("QSK_NOMENCLATURE", "nom"), ("QSK_VC_STYLES", "styles"), ("QSK_PROFILES", "profiles"),
-                      ("QSK_LOOK_PALETTES", "pal.json"), ("QSK_CABLING_KIT", "kit.json")):
+                      ("QSK_LOOK_PALETTES", "pal.json"), ("QSK_CABLING_KIT", "kit.json"),
+                      ("QSK_STAGE_LAYOUTS", "layouts"), ("QSK_VC_SCREENS", "screens")):
         monkeypatch.setenv(var, str(tmp_path / name))
 
 
@@ -212,7 +213,7 @@ def test_routes_flow(tmp_path):
     _fill()
     c = app.create_app().test_client()
     st = c.get("/api/library/state").get_json()
-    assert len(st["items"]) == 6 and len(st["kinds"]) == 8 and "Palettes" in st["folders"]
+    assert len(st["items"]) == 6 and len(st["kinds"]) == 9 and "Palettes" in st["folders"]
     sel = [{"kind": i["kind"], "name": i["name"]} for i in st["items"] if i["kind"] in ("palette", "vc_style")]
     r = c.post("/api/library/pack", json={"selection": sel, "title": "Two things"})
     assert r.status_code == 200

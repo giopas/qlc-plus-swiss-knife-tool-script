@@ -31,7 +31,7 @@ def _safe_err(exc: Exception) -> str:
 
 def folders() -> dict:
     from core import profile, vc_builder, look_builder
-    from core import vc_screens
+    from core import vc_screens, stage_layouts
     from core.quick_start import nomenclature, vc_style
     return {'VC templates': vc_builder.templates_dir(),
             'Palettes': look_builder.user_palettes_path(),
@@ -39,6 +39,7 @@ def folders() -> dict:
             'Naming profiles': nomenclature.user_dir(),
             'VC styles': vc_style.user_dir(),
             'Screen sizes': vc_screens.user_dir(),
+            'Stage layouts': stage_layouts.user_dir(),
             'Show Profiles': profile.profiles_dir()}
 
 

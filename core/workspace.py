@@ -23,13 +23,14 @@ import string
 import xml.etree.ElementTree as ET  # nosec B405
 
 from core import qxw_io
+from core import setlist_tempo
 
 # ── QLC+ XML namespace ────────────────────────────────────────────────────────
 QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "3.7.0"  # single source of truth — must match CHANGELOG
+VERSION = "3.8.0"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -756,7 +757,7 @@ def set_slot_details(slot_id: str, rows: list):
     Each row must be a dict with keys:
       txt_name, qxw_id, qxw_name, in, hold, out
     """
-    _slot_details[slot_id] = list(rows)
+    _slot_details[slot_id] = [_tempo_row(r) for r in rows]
     # Keep the simple string list in sync
     _slot_songs[slot_id] = [r.get('txt_name', '') for r in rows]
 
@@ -767,6 +768,56 @@ def update_song_detail(slot_id: str, row_idx: int, patch: dict):
     while len(rows) <= row_idx:
         rows.append({'txt_name': '', 'qxw_id': '', 'qxw_name': '', 'in': '0', 'hold': '4294967294', 'out': '0'})
     rows[row_idx].update(patch)
+    _tempo_row(rows[row_idx])
+
+
+def _tempo_row(row: dict) -> dict:
+    """Keep a row's tempo fields clean (v3.8.0): 'bpm' is '' or a number 20 to
+    400, 'beats' is '' (one beat a step) or a number.  A row without a tempo
+    gets no new keys, so shows and recipes from before 3.8.0 are unchanged."""
+    if not isinstance(row, dict):
+        return row
+    for k, clean in (('bpm', setlist_tempo.clean_bpm), ('beats', setlist_tempo.clean_beats)):
+        if k in row:
+            v = clean(row.get(k))
+            if v:
+                row[k] = v
+            else:
+                row.pop(k)
+    if 'bpm' not in row:                   # beats per step mean nothing without a tempo
+        row.pop('beats', None)
+    return row
+
+
+def tempo_report(rows: list) -> list:
+    """For each row with a BPM: does its function already run at that tempo?
+    ``[{idx, bpm, beats, status, now_ms, want_ms, why}]`` where status is ``ok``,
+    ``off`` (Apply to the show will fit it), ``na`` (it cannot follow a tempo)
+    or ``none`` (no function assigned yet).  Nothing is changed."""
+    root = _state.get('qxw_root')
+    engine = root.find('q:Engine', NS) if root is not None else None
+    out = []
+    clones = {}
+    if engine is not None:                 # the copies a former Apply made, by song name
+        for f in engine.findall('q:Function', NS):
+            if f.get('SwissKnifeClone'):
+                clones.setdefault(f.get('Name', ''), f)
+    for i, r in enumerate(rows or []):
+        bpm = setlist_tempo.clean_bpm((r or {}).get('bpm'))
+        if not bpm:
+            continue
+        beats = setlist_tempo.clean_beats((r or {}).get('beats')) or '1'
+        fid = (r or {}).get('qxw_id', '')
+        fn = _find_by_id(engine, 'Function', fid) if (engine is not None and fid) else None
+        built = clones.get((r or {}).get('txt_name', '')) if fn is not None else None
+        if built is not None and built.get('Type') == fn.get('Type'):
+            fn = built                     # already applied: look at the copy in the cue list
+        if fn is None:
+            res = {'status': 'none', 'now_ms': 0, 'want_ms': setlist_tempo.step_ms(bpm, beats), 'why': 'no function assigned'}
+        else:
+            res = setlist_tempo.chaser_fit(fn, bpm, beats)
+        out.append({'idx': i, 'bpm': bpm, 'beats': beats, **res})
+    return out
 
 
 def get_available_chasers() -> list:
@@ -778,7 +829,7 @@ def get_available_chasers() -> list:
     return rows
 
 
-def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tuple:
+def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None, apply_tempo: bool = True) -> tuple:
     """
     Clone each song's base function, build/update a Chaser with the cloned steps,
     and return (suggested_filename, xml_bytes) WITHOUT writing to disk.
@@ -791,6 +842,9 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     slot_id           : str   — CueList widget ID
     target_chaser_id  : str | None
         Existing chaser function ID to target. If None or empty, creates a new one.
+    apply_tempo       : bool
+        v3.8.0: a song row with a BPM gets the steps of its copy of the function
+        fitted to that tempo (a chaser; the original is never touched).
 
     Returns
     -------
@@ -897,6 +951,13 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
             seen.add(parent_id)
             origin_id = parent_id
         clone.set('SwissKnifeClone', origin_id)   # marks this as a generated clone; value = ultimate original ID
+        bpm = setlist_tempo.clean_bpm(d.get('bpm')) if apply_tempo else ''
+        if bpm:
+            beats = setlist_tempo.clean_beats(d.get('beats')) or '1'
+            fit = setlist_tempo.fit_chaser(clone, bpm, beats)
+            _state.setdefault('setlist_tempo_log', []).append({
+                'song': txt_n, 'bpm': bpm, 'beats': beats, 'status': fit['status'],
+                'want_ms': fit['want_ms'], 'why': fit.get('why', '')})
         engine.append(clone)
         # Update in-memory state so the clone is trackable within this session
         _state['clone_ids'].add(cid)
@@ -955,7 +1016,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None) -> tup
     return suggested_filename, xml_bytes
 
 
-def generate_all_slots_qxw_content() -> tuple:
+def generate_all_slots_qxw_content(apply_tempo: bool = True) -> tuple:
     """
     Generate QXW for ALL cuelist slots that have song details loaded.
     For each slot uses the slot's existing linked chaser (if any) or creates a new one.
@@ -982,7 +1043,7 @@ def generate_all_slots_qxw_content() -> tuple:
         chaser_id = slot.get('chaser_id') or None
         if chaser_id in ('4294967295', '-1', ''):
             chaser_id = None
-        generate_slot_qxw_content(slot_id, chaser_id)
+        generate_slot_qxw_content(slot_id, chaser_id, apply_tempo)
 
     # Serialize the combined result once
     root       = _state['qxw_root']

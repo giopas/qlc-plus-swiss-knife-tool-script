@@ -54,7 +54,9 @@ GUIDE: Dict[str, dict] = {
         "args": [],
         "returns": "`by_code` counts and up to 30 findings sorted errors first: key, code, severity, location, "
                    "message, fixable, default (ticked by default).",
-        "notes": "Pass the `key` of a finding to `doctor_fix`.",
+        "notes": "Pass the `key` of a finding to `doctor_fix`. D021 to D023 are about definitions (a mode or channel "
+                 "count that does not match, a scene channel the fixture lacks); I009 names a definition that is not "
+                 "in QLC+'s stock library, so it has to travel: `save_show` with `with_definitions` writes the zip.",
     },
     "doctor_fix": {
         "use": "Fix Doctor findings in the show in progress (one History step).",
@@ -293,8 +295,10 @@ GUIDE: Dict[str, dict] = {
     "redo": {"use": "Redo what was undone.", "args": [], "returns": "The show status after."},
     "save_show": {
         "use": "Save the show in progress as a NEW .qxw with its report and recipe.",
-        "args": [("where", "A folder or a .qxw path (default: next to the opened show).")],
-        "returns": "`saved`, `report`, `recipe`, the Doctor counts.",
+        "args": [("where", "A folder or a .qxw path (default: next to the opened show)."),
+                 ("with_definitions", "true: also write `<show>_to_go.zip` for another computer: the show, the fixture "
+                                      "definitions QLC+ does not ship with (saved as QLC+ looks for them), the side files, a short text.")],
+        "returns": "`saved`, `report`, `recipe`, the Doctor counts; with `with_definitions` also `zip`, `definitions_in_zip`, `definitions_not_found`.",
         "notes": "Never overwrites: a taken name becomes _v2, _v3. Setlist cue notes are brought up to date first.",
     },
 }

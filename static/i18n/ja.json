@@ -3898,5 +3898,21 @@
  "Untick a mesh the cables may cross (a rug, a low riser, a flat object):": "ケーブルが横切ってよいメッシュのチェックを外す（ラグ、低いライザー、平らな物）：",
  "No meshes on the stage: no band floor.": "ステージにメッシュがありません：バンドエリアなし。",
  "Band floor: {0}": "バンドエリア: {0}",
- "Band floor: every mesh of Stage & Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.": "バンドエリア: ステージとメッシュの各メッシュと周りの空間（「バンドエリア」で設定）。ケーブルは迂回するか、ステージの縁に沿って（テープで固定）通します。横切ると報告されます。"
+ "Band floor: every mesh of Stage & Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.": "バンドエリア: ステージとメッシュの各メッシュと周りの空間（「バンドエリア」で設定）。ケーブルは迂回するか、ステージの縁に沿って（テープで固定）通します。横切ると報告されます。",
+ "📦 Take the show elsewhere (.zip)…": "📦 ショーを別のコンピューターへ（.zip）…",
+ "The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer": "ショー、QLC+に付属しないフィクスチャー定義、付随ファイル、短い説明文を、別のコンピューター用に1つのzipにまとめます",
+ "Preparing the zip…": "zipを準備しています…",
+ "Could not prepare the zip.": "zipを準備できませんでした。",
+ "Save the zip of the show": "ショーのzipを保存",
+ "Saved {0}: the show and {1} fixture definition(s). The show you opened is unchanged.": "{0} を保存しました：ショーとフィクスチャー定義 {1} 件。開いているショーは変更されていません。",
+ "Choose a .zip file name.": "拡張子が .zip のファイル名を指定してください。",
+ "That file exists already; choose another name.": "そのファイルは既に存在します。別の名前を指定してください。",
+ "mode '{0}' is not in the definition of {1} {2} (modes: {3}); QLC+ opens it as a generic dimmer with {4} channel(s)": "モード「{0}」が {1} {2} の定義にありません（モード：{3}）。QLC+ は {4} チャンネルの汎用ディマーとして開きます",
+ "the show stores {0} channel(s), the definition's mode '{1}' has {2}; QLC+ uses {3}, so addresses and scenes may not match": "ショーには {0} チャンネルが保存されていますが、定義のモード「{1}」は {2} チャンネルです。QLC+ は {3} を使うため、アドレスやシーンが合わない場合があります",
+ "{0}: sets channel {1} but the fixture has {2} channel(s); QLC+ ignores them": "{0}：チャンネル {1} を設定していますが、フィクスチャーは {2} チャンネルです。QLC+ は無視します",
+ "the definition of {0} {1} is not in QLC+'s stock library ({2} fixture(s)); it has to travel with the show (Take the show elsewhere)": "{0} {1} の定義は QLC+ のライブラリにありません。ショーと一緒に持ち出す必要があります（フィクスチャー {2} 台）（ショーを別のコンピューターへ）",
+ "Fixture mode missing from its definition (QLC+ makes a generic dimmer)": "フィクスチャーのモードが定義にありません（QLC+ は汎用ディマーを作ります）",
+ "Channel count differs from the definition's mode": "チャンネル数が定義のモードと異なります",
+ "Scene sets a channel the fixture does not have": "シーンがフィクスチャーにないチャンネルを設定しています",
+ "Definition not in QLC+'s stock library (travels with the show)": "QLC+ のライブラリにない定義（ショーと一緒に持ち出します）"
 }

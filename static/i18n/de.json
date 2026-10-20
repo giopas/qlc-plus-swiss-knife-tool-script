@@ -3898,5 +3898,21 @@
  "Untick a mesh the cables may cross (a rug, a low riser, a flat object):": "Entferne das Häkchen bei einem Mesh, das Kabel queren dürfen (ein Teppich, ein flaches Podest, ein flaches Objekt):",
  "No meshes on the stage: no band floor.": "Keine Meshes auf der Bühne: keine Bandfläche.",
  "Band floor: {0}": "Bandfläche: {0}",
- "Band floor: every mesh of Stage & Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.": "Bandfläche: jedes Mesh aus Bühne & Meshes und der Raum darum (einstellbar unter Die Bandfläche). Kabel gehen außen herum oder an der Bühnenkante entlang (abgeklebt); ein Queren wird gemeldet."
+ "Band floor: every mesh of Stage & Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.": "Bandfläche: jedes Mesh aus Bühne & Meshes und der Raum darum (einstellbar unter Die Bandfläche). Kabel gehen außen herum oder an der Bühnenkante entlang (abgeklebt); ein Queren wird gemeldet.",
+ "📦 Take the show elsewhere (.zip)…": "📦 Show mitnehmen (.zip)…",
+ "The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer": "Die Show, die Geräte-Definitionen, die QLC+ nicht mitliefert, die Zusatzdateien und ein kurzer Text in einer Zip-Datei für einen anderen Computer",
+ "Preparing the zip…": "Zip wird vorbereitet…",
+ "Could not prepare the zip.": "Das Zip konnte nicht vorbereitet werden.",
+ "Save the zip of the show": "Zip der Show speichern",
+ "Saved {0}: the show and {1} fixture definition(s). The show you opened is unchanged.": "{0} gespeichert: die Show und {1} Geräte-Definition(en). Die geöffnete Show wurde nicht verändert.",
+ "Choose a .zip file name.": "Wähle einen .zip-Dateinamen.",
+ "That file exists already; choose another name.": "Diese Datei existiert bereits; wähle einen anderen Namen.",
+ "mode '{0}' is not in the definition of {1} {2} (modes: {3}); QLC+ opens it as a generic dimmer with {4} channel(s)": "Modus „{0}“ fehlt in der Definition von {1} {2} (Modi: {3}); QLC+ öffnet ihn als generischen Dimmer mit {4} Kanal/Kanälen",
+ "the show stores {0} channel(s), the definition's mode '{1}' has {2}; QLC+ uses {3}, so addresses and scenes may not match": "die Show speichert {0} Kanal/Kanäle, der Modus „{1}“ der Definition hat {2}; QLC+ nutzt {3}, Adressen und Szenen passen daher eventuell nicht",
+ "{0}: sets channel {1} but the fixture has {2} channel(s); QLC+ ignores them": "{0}: setzt Kanal {1}, aber das Gerät hat {2} Kanal/Kanäle; QLC+ ignoriert sie",
+ "the definition of {0} {1} is not in QLC+'s stock library ({2} fixture(s)); it has to travel with the show (Take the show elsewhere)": "die Definition von {0} {1} ist nicht in der Bibliothek von QLC+; sie muss mit der Show reisen ({2} Gerät(e)) (Show mitnehmen)",
+ "Fixture mode missing from its definition (QLC+ makes a generic dimmer)": "Modus des Geräts fehlt in seiner Definition (QLC+ macht einen generischen Dimmer)",
+ "Channel count differs from the definition's mode": "Kanalanzahl weicht vom Modus der Definition ab",
+ "Scene sets a channel the fixture does not have": "Szene setzt einen Kanal, den das Gerät nicht hat",
+ "Definition not in QLC+'s stock library (travels with the show)": "Definition nicht in der Bibliothek von QLC+ (reist mit der Show)"
 }

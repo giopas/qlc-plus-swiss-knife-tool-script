@@ -36,25 +36,50 @@ _QXF_NS = "{http://www.qlcplus.org/FixtureDefinition}"
 _cache: Dict[Tuple[str, ...], Dict[Tuple[str, str], str]] = {}
 
 
-def library_dirs() -> List[str]:
+def _candidates() -> List[Tuple[str, str]]:
+    """``[(folder, "stock" | "user")]`` that exist on this computer."""
     env = os.environ.get("QLCPLUS_FIXTURES")
     if env is not None:
-        return [d for d in env.split(os.pathsep) if d and os.path.isdir(d)]
+        return [(d, "stock") for d in env.split(os.pathsep) if d and os.path.isdir(d)]
     home = os.path.expanduser("~")
     system = platform.system()
     if system == "Darwin":
-        cands = ["/Applications/QLC+.app/Contents/Resources/Fixtures",
-                 os.path.join(home, "Applications/QLC+.app/Contents/Resources/Fixtures"),
-                 os.path.join(home, "Library/Application Support/QLC+/Fixtures")]
+        cands = [("/Applications/QLC+.app/Contents/Resources/Fixtures", "stock"),
+                 (os.path.join(home, "Applications/QLC+.app/Contents/Resources/Fixtures"), "stock"),
+                 (os.path.join(home, "Library/Application Support/QLC+/Fixtures"), "user")]
     elif system == "Windows":
         drive = os.environ.get("SystemDrive", "C:")
-        cands = [os.path.join(drive + os.sep, "qlcplus", "Fixtures"),
-                 os.path.join(drive + os.sep, "QLC+", "Fixtures"),
-                 os.path.join(home, "QLC+", "Fixtures")]
+        cands = [(os.path.join(drive + os.sep, "qlcplus", "Fixtures"), "stock"),
+                 (os.path.join(drive + os.sep, "QLC+", "Fixtures"), "stock"),
+                 (os.path.join(home, "QLC+", "Fixtures"), "user")]
     else:
-        cands = ["/usr/share/qlcplus/fixtures", "/usr/local/share/qlcplus/fixtures",
-                 os.path.join(home, ".qlcplus/fixtures"), os.path.join(home, ".qlcplus/Fixtures")]
-    return [d for d in cands if os.path.isdir(d)]
+        cands = [("/usr/share/qlcplus/fixtures", "stock"), ("/usr/local/share/qlcplus/fixtures", "stock"),
+                 (os.path.join(home, ".qlcplus/fixtures"), "user"), (os.path.join(home, ".qlcplus/Fixtures"), "user")]
+    return [(d, k) for d, k in cands if os.path.isdir(d)]
+
+
+def library_dirs() -> List[str]:
+    """Every QLC+ fixture folder on this computer: stock definitions, then the user's own."""
+    return [d for d, _k in _candidates()]
+
+
+def stock_dirs() -> List[str]:
+    """The folders QLC+ ships its definitions in (3.7.0)."""
+    return [d for d, k in _candidates() if k == "stock"]
+
+
+def user_dirs() -> List[str]:
+    """The user's own definitions folder (made in QLC+'s Fixture Editor) (3.7.0)."""
+    return [d for d, k in _candidates() if k == "user"]
+
+
+def in_stock(manufacturer: str, model: str) -> Optional[bool]:
+    """Is this fixture in QLC+'s stock library?  ``None`` when no stock folder
+    is found on this computer (nothing can be said)."""
+    dirs = stock_dirs()
+    if not dirs:
+        return None
+    return (_norm(manufacturer), _norm(model)) in _index(dirs)
 
 
 def _norm(s: str) -> str:

@@ -3898,5 +3898,21 @@
  "Untick a mesh the cables may cross (a rug, a low riser, a flat object):": "取消勾选线缆可以穿过的网格（地毯、矮台、扁平物体）：",
  "No meshes on the stage: no band floor.": "舞台上没有网格：没有乐队区域。",
  "Band floor: {0}": "乐队区域：{0}",
- "Band floor: every mesh of Stage & Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.": "乐队区域：舞台与网格中的每个网格及其周围空间（在“乐队区域”中设置）。线缆绕开它，或沿舞台边缘走（贴胶带）；穿过会被报告。"
+ "Band floor: every mesh of Stage & Meshes and the space kept round it (set under The band floor). Cables go round it, or along the stage edge (taped); crossing it is reported.": "乐队区域：舞台与网格中的每个网格及其周围空间（在“乐队区域”中设置）。线缆绕开它，或沿舞台边缘走（贴胶带）；穿过会被报告。",
+ "📦 Take the show elsewhere (.zip)…": "📦 带走演出文件（.zip）…",
+ "The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer": "把演出文件、QLC+ 自带库里没有的灯具定义、附属文件和一段简短说明打包成一个 zip，供另一台电脑使用",
+ "Preparing the zip…": "正在准备 zip…",
+ "Could not prepare the zip.": "无法准备 zip。",
+ "Save the zip of the show": "保存演出 zip",
+ "Saved {0}: the show and {1} fixture definition(s). The show you opened is unchanged.": "已保存 {0}：演出和 {1} 个灯具定义。打开的演出未被改动。",
+ "Choose a .zip file name.": "请选择 .zip 文件名。",
+ "That file exists already; choose another name.": "该文件已存在，请换一个名称。",
+ "mode '{0}' is not in the definition of {1} {2} (modes: {3}); QLC+ opens it as a generic dimmer with {4} channel(s)": "模式“{0}”不在 {1} {2} 的定义中（模式：{3}）；QLC+ 会把它当作 {4} 通道的通用调光器打开",
+ "the show stores {0} channel(s), the definition's mode '{1}' has {2}; QLC+ uses {3}, so addresses and scenes may not match": "演出中保存了 {0} 个通道，而定义的模式“{1}”有 {2} 个；QLC+ 使用 {3}，因此地址和场景可能对不上",
+ "{0}: sets channel {1} but the fixture has {2} channel(s); QLC+ ignores them": "{0}：设置了通道 {1}，但灯具只有 {2} 个通道；QLC+ 会忽略它们",
+ "the definition of {0} {1} is not in QLC+'s stock library ({2} fixture(s)); it has to travel with the show (Take the show elsewhere)": "{0} {1} 的定义不在 QLC+ 的资源库中，必须随演出一起带走（{2} 台灯具）（带走演出文件）",
+ "Fixture mode missing from its definition (QLC+ makes a generic dimmer)": "灯具的模式不在其定义中（QLC+ 会生成通用调光器）",
+ "Channel count differs from the definition's mode": "通道数与定义的模式不一致",
+ "Scene sets a channel the fixture does not have": "场景设置了灯具没有的通道",
+ "Definition not in QLC+'s stock library (travels with the show)": "定义不在 QLC+ 的资源库中（随演出一起带走）"
 }

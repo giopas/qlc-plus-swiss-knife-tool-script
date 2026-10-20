@@ -7,6 +7,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added
+
+- **Fixture definitions that travel.** A `.qxw` does not carry its fixture definitions; on another computer a custom one is missing and QLC+ opens the fixture as a generic dimmer with the channel count stored in the show. Swiss Knife now says where each definition of the show was found (*QLC+ library*, *user folder*, *show folder*, *chosen folder*) and which have to travel.
+  - New Doctor checks. D021: the fixture's mode is not in its definition. D022: the show stores a channel count that differs from the definition's mode. D023: a scene sets a channel the fixture does not have. All three are warnings (from QLC+'s source: a missing mode becomes a generic dimmer sized by the file's channel count). I009 (information): the definition is not in QLC+'s stock library, so it has to travel with the show. I009 stays silent on a computer with no QLC+ library, where nothing can be said.
+  - **📦 Take the show elsewhere (.zip)…** in the Doctor and in Show Paperwork: the show in progress, every definition that is not in QLC+'s stock library saved as `<Manufacturer>-<Model>.qxf` (the name QLC+ looks for next to a workspace, so it loads with no copying), the side files (`<show>.stage.json`, `<show>.cabling.json`) and a short text on where definitions go on macOS, Linux, Windows and a Raspberry Pi. A new file every time; the same show gives the same zip, byte for byte.
+  - Claude: `save_show` takes `with_definitions` and also writes `<show>_to_go.zip` (the tool count stays 28).
+
 ## [3.6.1] — 2026-10-20 — Ready for the gig
 
 ### Fixed

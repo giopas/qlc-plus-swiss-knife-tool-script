@@ -786,6 +786,79 @@ def _i003_missing_defs(ws: _Workspace):
                           {"fixture": fid})
 
 
+# ── Definitions that travel (3.7.0) ─────────────────────────────────────────
+# QLC+ (Fixture::loadXML): without the definition, or without the mode in it,
+# the fixture becomes a generic dimmer with the file's channel count.
+
+def _eff_channels(ws: _Workspace, fx: dict) -> int:
+    """Channels QLC+ will give this fixture: the definition's mode, else the file's count."""
+    d = ws.defs.get(_def_key(fx["manufacturer"], fx["model"]))
+    n = ((d or {}).get("modes") or {}).get(fx["mode"])
+    return n if isinstance(n, int) and n > 0 else fx["channels"]
+
+
+def _d021_mode_missing(ws: _Workspace):
+    for fid, fx in ws.fixtures.items():
+        d = ws.defs.get(_def_key(fx["manufacturer"], fx["model"]))
+        if d is None or fx["builtin"] or fid in ws.infra or not (d.get("modes") or {}):
+            continue
+        if fx["mode"] not in d["modes"]:
+            yield Finding("D021", WARNING, f"Fixture {fid} '{fx['name']}'",
+                          f"mode '{fx['mode']}' is not in the definition of {fx['manufacturer']} "
+                          f"{fx['model']} (modes: {', '.join(sorted(d['modes']))}); QLC+ opens it "
+                          f"as a generic dimmer with {fx['channels']} channel(s)",
+                          {"fixture": fid, "mode": fx["mode"]})
+
+
+def _d022_channel_count(ws: _Workspace):
+    for fid, fx in ws.fixtures.items():
+        d = ws.defs.get(_def_key(fx["manufacturer"], fx["model"]))
+        n = ((d or {}).get("modes") or {}).get(fx["mode"])
+        if fx["builtin"] or fid in ws.infra or not isinstance(n, int) or fx["channels"] <= 0:
+            continue
+        if n != fx["channels"]:
+            yield Finding("D022", WARNING, f"Fixture {fid} '{fx['name']}'",
+                          f"the show stores {fx['channels']} channel(s), the definition's mode "
+                          f"'{fx['mode']}' has {n}; QLC+ uses {n}, so addresses and scenes may not match",
+                          {"fixture": fid, "show": fx["channels"], "definition": n})
+
+
+def _d023_channel_beyond(ws: _Workspace):
+    for f in ws.function_els:
+        if f.get("Type") != "Scene":
+            continue
+        for v in f.findall("FixtureVal"):
+            fx = ws.fixtures.get(v.get("ID"))
+            if fx is None or fx["channels"] <= 0:
+                continue
+            n = _eff_channels(ws, fx)
+            beyond = sorted(c for c in _scene_pairs(v) if c >= n)
+            if beyond:
+                yield Finding("D023", WARNING, ws.fn_loc(f.get("ID")),
+                              f"{fx['name']}: sets channel {', '.join(str(c + 1) for c in beyond)} "
+                              f"but the fixture has {n} channel(s); QLC+ ignores them",
+                              {"function": f.get("ID"), "fixture": fx["id"], "channels": beyond})
+
+
+def _i009_travels(ws: _Workspace):
+    from core.quick_start import qlc_library
+    seen: Dict[Tuple[str, str], List[str]] = {}
+    for fid, fx in ws.fixtures.items():
+        d = ws.defs.get(_def_key(fx["manufacturer"], fx["model"]))
+        if d is None or fx["builtin"] or fid in ws.infra or not d.get("path"):
+            continue
+        seen.setdefault(_def_key(fx["manufacturer"], fx["model"]), []).append(fid)
+    for key in sorted(seen):
+        fids = seen[key]
+        fx = ws.fixtures[fids[0]]
+        if qlc_library.in_stock(fx["manufacturer"], fx["model"]) is False:
+            yield Finding("I009", INFO, f"Fixture {fids[0]} '{fx['name']}'",
+                          f"the definition of {fx['manufacturer']} {fx['model']} is not in QLC+'s stock "
+                          f"library ({len(fids)} fixture(s)); it has to travel with the show "
+                          f"(Take the show elsewhere)",
+                          {"fixture": fids[0], "fixtures": fids})
+
+
 # ── QLC+ 5 palettes and the Show Wizard (3.1.0) ─────────────────────────────
 
 def _d019_palette_refs(ws: _Workspace):
@@ -962,7 +1035,9 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),
                 _i001_caption_buttons(ws), _i002_pages(ws), _i003_missing_defs(ws),
                 _i004_layers(ws, layers), _i005_wizard_unused(ws), _i006_infrastructure(ws),
-                _i007_wizard_lost(ws), _i008_qlc53_only(ws)):
+                _i007_wizard_lost(ws), _i008_qlc53_only(ws),
+                _d021_mode_missing(ws), _d022_channel_count(ws), _d023_channel_beyond(ws),
+                _i009_travels(ws)):
         findings.extend(gen)
     stats = {"fixtures": len(ws.fixture_els), "functions": len(ws.function_els),
              "vc_widgets": len(ws.widgets), "vc_pages": len(ws.pages)}

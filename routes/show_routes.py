@@ -6,6 +6,9 @@
     GET  /api/show/file      the show as a .qxw (for the Save dialog)
     POST /api/show/saved     {qxw_path}: the file was saved there → report + mark saved
     POST /api/show/save      {path}: write the show there (server side) + report
+    GET  /api/show/definitions  where each fixture definition was found, and which travel
+    GET  /api/show/travel    the "take the show elsewhere" zip (for the Save dialog)
+    POST /api/show/travel    {path}: write that zip there (a new file, never over one)
 """
 
 import os
@@ -163,3 +166,65 @@ def save():
 @bp.route('/report')
 def report_text():
     return Response(show.report(), mimetype='text/plain; charset=utf-8')
+
+
+# ── Take the show elsewhere (3.7.0) ──────────────────────────────────────────
+
+def _definition_rows():
+    from core import definitions
+    from routes.doctor_routes import _defs
+    path = workspace._state.get('path') or ''
+    return definitions.describe(workspace._state['qxw_root'], _defs(path), path), path
+
+
+def _travel_name() -> str:
+    st = show.status()
+    if st.get('unsaved') == 0 and st.get('saved_name'):
+        return st['saved_name']
+    return st['source_name'] if not st.get('steps') else st['suggested_name']
+
+
+@bp.route('/definitions')
+def definitions_info():
+    """Where each fixture definition of the show was found (QLC+ library, user
+    folder, show folder) and which have to travel with it."""
+    if not show.active():
+        return jsonify({'error': 'No show open.'}), 400
+    rows, _path = _definition_rows()
+    return jsonify({'definitions': rows, 'travelling': sum(1 for r in rows if r['travels']),
+                    'missing': sum(1 for r in rows if not r['found'])})
+
+
+def _travel_zip():
+    from core import definitions
+    rows, path = _definition_rows()
+    name = _travel_name()
+    return name, definitions.build_zip(name, show.show_bytes(), rows, path)
+
+
+@bp.route('/travel', methods=['GET', 'POST'])
+def travel():
+    if not show.active():
+        return jsonify({'error': 'No show open.'}), 400
+    try:
+        name, data = _travel_zip()
+        from core import definitions
+        zname = definitions.zip_name(name)
+        if request.method == 'GET':
+            return Response(data, mimetype='application/zip',
+                            headers={'Content-Disposition': f'attachment; filename="{zname}"',
+                                     'X-Suggested-Filename': zname,
+                                     'Access-Control-Expose-Headers': 'X-Suggested-Filename'})
+        path = ((request.get_json(silent=True) or {}).get('path') or '').strip()
+        if not path.lower().endswith('.zip'):
+            return jsonify({'error': 'Choose a .zip file name.'}), 400
+        path = os.path.abspath(path)
+        if os.path.exists(path):
+            return jsonify({'error': 'That file exists already; choose another name.'}), 400
+        if not os.path.isdir(os.path.dirname(path)):
+            return jsonify({'error': 'That folder does not exist.'}), 400
+        with open(path, 'xb') as fh:
+            fh.write(data)
+        return jsonify({'ok': True, 'path': path, 'name': os.path.basename(path)})
+    except Exception as e:  # noqa: BLE001
+        return jsonify({'error': _safe_err(e)}), 400

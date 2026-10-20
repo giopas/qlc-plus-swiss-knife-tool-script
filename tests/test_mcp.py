@@ -430,3 +430,19 @@ def test_cabling_tool(work):
     assert all(os.path.isfile(p) for p in chk["written"])
     err, msg = work.tool("cabling", action="plan", choose="Z")
     assert err and "choose must be" in str(msg)
+
+
+def test_save_show_with_definitions_writes_a_zip(work):
+    """3.7.0: a zip for another computer: the show and the definitions QLC+ does not ship with."""
+    import zipfile
+    f = work.folder
+    work.ok("open_show", path=str(f / "Pub_6fix.qxw"))
+    r = work.ok("save_show", where=str(f), with_definitions=True)
+    z = r["zip"]
+    assert z.startswith(str(f)) and z.endswith("_to_go.zip") and os.path.isfile(z)
+    names = zipfile.ZipFile(z).namelist()
+    assert os.path.basename(r["saved"]) in names and "READ ME.txt" in names
+    assert "Generic-7-Ch RGB LED PAR.qxf" in names and r["definitions_in_zip"]
+    r2 = work.ok("save_show", where=str(f), with_definitions=True)             # never over an existing zip
+    assert r2["zip"] != z and os.path.isfile(z) and os.path.isfile(r2["zip"])
+    assert "zip" not in work.ok("save_show", where=str(f))

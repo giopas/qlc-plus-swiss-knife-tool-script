@@ -444,6 +444,24 @@ async function showSave() {
   await showRefresh();
 }
 
+/** Take the show elsewhere: the show, the fixture definitions QLC+ does not
+ *  ship with, the side files and a short text, as one zip (3.7.0). */
+async function showTravel() {
+  if (!_show.active) { setStatus(_tr('Open a show first.'), 'error'); return; }
+  await showFlushPending();
+  setStatus(_tr('Preparing the zip…'));
+  const r = await _origFetch('/api/show/travel');
+  if (!r.ok) { setStatus(_tr('Could not prepare the zip.'), 'error'); return; }
+  const name = r.headers.get('X-Suggested-Filename') || 'show_to_go.zip';
+  const info = await (await _origFetch('/api/show/definitions')).json();
+  const blob = await r.blob();
+  const saved = await saveFileWithPicker(blob, name, [{ description: 'ZIP', accept: { 'application/zip': ['.zip'] } }],
+    _tr('Save the zip of the show'));
+  if (!saved) { setStatus(_tr('Save cancelled.')); return; }
+  setStatus(_tr('Saved {0}: the show and {1} fixture definition(s). The show you opened is unchanged.',
+    saved, info.travelling ?? 0), 'ok');
+}
+
 /** Ask before dropping unsaved changes (open another file, reload, quit). */
 function showConfirmDiscard(what) {
   const n = window._showUnsaved || 0;

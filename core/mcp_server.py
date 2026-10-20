@@ -190,8 +190,8 @@ TOOLS: List[dict] = [
     {"name": "redo", "handler": "t_redo",
      "description": "Redo what was undone.", "inputSchema": _obj()},
     {"name": "save_show", "handler": "t_save_show",
-     "description": "Save the show in progress as a NEW .qxw (+ report + recipe) in a shared folder. Never overwrites: a taken name becomes _v2, _v3… `where` is a folder or a .qxw path; default: next to the opened file.",
-     "inputSchema": _obj({"where": _S})},
+     "description": "Save the show in progress as a NEW .qxw (+ report + recipe) in a shared folder. Never overwrites: a taken name becomes _v2, _v3… `where` is a folder or a .qxw path; default: next to the opened file. `with_definitions` also writes a zip for another computer: the show, the fixture definitions QLC+ does not ship with, the side files and a short text.",
+     "inputSchema": _obj({"where": _S, "with_definitions": {"type": "boolean"}})},
 ]
 
 # MCP tool annotations: they let the client group the tools ("reads" vs "changes") and
@@ -786,8 +786,19 @@ class Server:
             raise ToolError("That would overwrite the opened show; pick another name.")
         r = self.api("POST", "/api/show/save", {"path": path})
         no_change = not st.get("steps")
+        zipped: Dict[str, Any] = {}
+        if a.get("with_definitions"):
+            from core import definitions
+            zpath = self.allow.new_file_path(os.path.dirname(path),
+                                             definitions.zip_name(os.path.basename(path)), ext=".zip")
+            info = self.api("GET", "/api/show/definitions")
+            z = self.api("POST", "/api/show/travel", {"path": zpath})
+            zipped = {"zip": z.get("path") or zpath,
+                      "definitions_in_zip": [d["file"] for d in info["definitions"] if d["travels"]],
+                      "definitions_not_found": [f"{d['manufacturer']} {d['model']}" for d in info["definitions"]
+                                                if not d["found"]]}
         return {"saved": r.get("path") or path, "no_changes": no_change, "report": r.get("report_path"),
-                "recipe": r.get("recipe_path"), "doctor": self._counts(),
+                "recipe": r.get("recipe_path"), "doctor": self._counts(), **zipped,
                 "note": ("No changes were made, so this is an identical copy. " if no_change else "")
                         + "The original file was not changed. The recipe replays this to the same file: "
                         "python -m core.recipe replay <recipe>"}

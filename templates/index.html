@@ -1990,6 +1990,8 @@
         <option>A3 Landscape</option><option>A3 Portrait</option>
         <option>US Letter Landscape</option><option>US Letter Portrait</option>
       </select>
+      <button class="btn btn-surface btn-ghost" onclick="showTravel()"
+              data-tooltip="The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer">📦 Take the show elsewhere (.zip)…</button>
       <button class="btn btn-surface" onclick="sbExportCsv()">📊 Export CSV (ZIP)…</button>
       <button class="btn btn-accent" onclick="sbExportPdf()">📄 Export PDF…</button>
     </div>
@@ -2140,6 +2142,8 @@
       <span class="out-outcome" id="oc-doctor" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()">📋 Copy Report</button>
+      <button class="btn btn-surface btn-ghost" onclick="showTravel()"
+              data-tooltip="The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer">📦 Take the show elsewhere (.zip)…</button>
       <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
               data-tooltip="Fix only a copy: save it as a separate file, the show in progress stays as it is">Export a fixed copy…</button>
       <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled>✓ Fix selected in the show</button>

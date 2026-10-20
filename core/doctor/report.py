@@ -34,6 +34,9 @@ TITLES = {
     "D018": "Setlist song that lights nothing",
     "D019": "Missing palette or fixture group",
     "D020": "Palette that sets nothing on its fixtures",
+    "D021": "Fixture mode missing from its definition (QLC+ makes a generic dimmer)",
+    "D022": "Channel count differs from the definition's mode",
+    "D023": "Scene sets a channel the fixture does not have",
     "I001": "Caption-only button (used as a label)",
     "I002": "Virtual Console pages",
     "I003": "No fixture definition — channel checks skipped",
@@ -42,6 +45,7 @@ TITLES = {
     "I006": "Page-switch fixtures (not lights)",
     "I007": "QLC+ Show Wizard effect never created",
     "I008": "QLC+ 5.3 content that QLC+ 5.2.2 ignores",
+    "I009": "Definition not in QLC+'s stock library (travels with the show)",
 }
 
 

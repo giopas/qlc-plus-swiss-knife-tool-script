@@ -88,6 +88,8 @@ C. For other users (when there is a chance)
 
 ### 3.7.0 · Another computer, another screen
 
+For moving a show to another machine (a stage laptop, a Raspberry Pi) or another screen (a tablet, a small touchscreen). giopas plays from his MacBook Pro, so this is mainly for other users, and for the day the show moves.
+
 **Status (20 October, branch `feat/v3.7.0`, not released).** Both parts are built and committed locally; the wiki (separate repository) has its commit too. 1145 tests pass (1 skipped without the `websocket` module). Left for the release: the pictures with `python3 tools/shots.py all`, release notes, the version bump and the merge as in section 8.
 
 - Part 1 is `core/definitions.py` (where each definition was found; the zip), `core/quick_start/qlc_library.py` (`stock_dirs()`, `user_dirs()`, `in_stock()`), Doctor D021 to D023 and I009 in `core/doctor/checks.py`, `/api/show/definitions` and `/api/show/travel`, the button in the Doctor and Show Paperwork, and `save_show` with `with_definitions`. Severities, confirmed from QLC+'s `Fixture::loadXML`: D021 to D023 are warnings (a missing mode becomes a generic dimmer sized by the file's channel count). The *chosen folder* source is in `source_of()` but no screen offers a chosen folder yet.
@@ -95,15 +97,12 @@ C. For other users (when there is a chance)
 - Pixel values: the 7-inch touchscreens (800 × 480, 1024 × 600) and the Pi Touch Display 2 (720 × 1280 native, 1280 × 720 turned to landscape) were checked against shop and maker pages. The iPad sizes (CSS points, landscape) come from memory and are to be checked on the device (B8).
 - Tap size: 44 px on the short side (Apple asks for 44 pt, Material for 48 dp), `vc_screens.TAP_MIN`.
 
-
-For moving a show to another machine (a stage laptop, a Raspberry Pi) or another screen (a tablet, a small touchscreen). giopas plays from his MacBook Pro, so this is mainly for other users, and for the day the show moves.
-
 **1. Fixture definitions that travel**
 
 A `.qxw` names each fixture's manufacturer, model, mode and channel count but does not carry the definition. QLC+ finds it in its stock library, in the user folder, or next to the workspace as `<Manufacturer>-<Model>.qxf` (`Fixture::loader`). On another computer a custom definition is missing, and channels, sliders and addresses go wrong without a clear message.
 
 - One lookup for every tool: the stock and user folders of the system (`qlc_library.library_dirs()`), the show's folder, and the folder the user chose for decoding. Each definition remembers where it was found: *QLC+ library*, *user folder*, *show folder* or *chosen folder*.
-- New Doctor checks (severities to confirm against the QLC+ source before building):
+- New Doctor checks (severities confirmed against QLC+'s `Fixture::loadXML` on 20 October: warnings):
   - D021: the fixture's mode is not in its definition.
   - D022: the channel count in the show differs from the mode's channels in the definition.
   - D023: a scene sets a channel beyond the fixture's channel count.
@@ -253,7 +252,7 @@ The reasons and dates are in the archives.
 | Claude | The only AI connected (others cannot start a local program; putting Swiss Knife online is not planned). Full tool set, new files only (plus the Stage Monitor exception), only the folders giopas lists. Connection by one `.mcpb` for Claude Desktop. |
 | Supported QLC+ | 5.2.2 to 5.3.x. QLC+ 4 is not a target. Behaviour verified in real QLC+ (`tools/qlc_check.py`), not only by reading XML. |
 | Fixture tilt | QLC+ 3D convention: 0 straight down, 90 horizontal, 180 straight up. Truss fixtures 45° toward the stage, floor fixtures 45° up toward the performers. |
-| Doctor severities | D001 to D003 errors; D004 to D009, D012 and D016 warnings; D015 and the I-codes information. |
+| Doctor severities | D001 to D003 errors; D004 to D009, D012, D016 and D021 to D023 warnings; D015 and the I-codes information. |
 | PANIC RESET | A script: stop every generated function, start a neutral-state scene, wait 100 ms, stop itself. |
 | Quick Start VC | One page; looks and effects in one solo frame; each fixture group in its own solo frame with a submaster; RGB matrices through a collection that opens the master dimmers. |
 | Generated XML | Indented like QLC+'s own files. Definitions QLC+ lacks are saved next to the workspace as `.qxf`. |

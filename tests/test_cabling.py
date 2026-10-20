@@ -659,3 +659,62 @@ def test_lengths_in_feet(festival, tmp_path, monkeypatch):
     texts = [i["text"] for w in ev["chains"] for i in w["issues"]] + [i["text"] for i in ev["issues"]]
     assert not any(" m " in t or t.endswith(" m.") for t in texts if "missing" in t or "joined" in t)
     assert any(" ft" in t for t in texts)
+
+
+def test_kit_export_and_import(tmp_path, monkeypatch):
+    """My kit leaves as a Library pack and comes back: added or replacing."""
+    monkeypatch.setenv("QSK_CABLING_KIT", str(tmp_path / "kit.json"))
+    import app
+    c = app.create_app().test_client()
+    assert c.get("/api/cabling/kit/export").status_code == 400            # empty kit
+    kit.save_base({"items": [P["enttec_usb_pro"], P["lixada_1x8"], dict(P["cable_3_10"], count=2)], "units": "ft"})
+    r = c.get("/api/cabling/kit/export")
+    assert r.status_code == 200 and r.headers["X-Suggested-Filename"] == "cabling_kit.qsklib.json"
+    text = r.get_data(as_text=True)
+    kit.save_base({"items": [P["enttec_usb_pro"], P["terminator_3"]]})
+    pv = c.post("/api/cabling/kit/import", json={"text": text}).get_json()
+    assert pv["items"] == 3 and pv["new"] == 2 and pv["units"] == "ft"
+    added = c.post("/api/cabling/kit/import", json={"text": text, "mode": "add"}).get_json()
+    assert added["added"] == 2 and len(added["kit"]["items"]) == 4 and added["kit"].get("units", "m") == "m"
+    rep = c.post("/api/cabling/kit/import", json={"text": text, "mode": "replace"}).get_json()
+    assert len(rep["kit"]["items"]) == 3 and rep["kit"]["units"] == "ft"
+    plain = json.dumps({"items": [P["terminator_5"]]})                     # a plain kit file works too
+    assert c.post("/api/cabling/kit/import", json={"text": plain, "mode": "add"}).get_json()["added"] == 1
+    assert c.post("/api/cabling/kit/import", json={"text": "nope"}).status_code == 400
+
+
+def test_network_node_and_wireless(festival):
+    """A node is fed by a network cable from the computer; a wireless pair
+    sends the feed by radio, checked against the transmitter's range."""
+    k = lixada_kit()
+    k["items"] += [copy.deepcopy(P["wireless_tx"]), copy.deepcopy(P["wireless_rx"]), copy.deepcopy(P["cable_net_20"])]
+    p = plan.new_plan(k)
+    p["controller"]["mode"] = "foh"
+    alts = {a["name"]: a for a in auto.alternatives(p, festival)}
+    node = alts["Node on the network"]
+    net = next(c for c in node["evaluation"]["chains"] if c["name"] == "Network")
+    assert net["links"][0]["conn"] == "rj45" and net["links"][0]["cables"][0]["name"].startswith("Network cable")
+    assert not any(b["what"].startswith("Computer network") for b in outputs.pick_list(node["evaluation"], node["plan"])["bag"])
+    wl = alts["Wireless to the stage"]
+    feed = next(c for c in wl["evaluation"]["chains"] if c["name"] == "Feed")
+    radio = [l for l in feed["links"] if l["conn"] == "wireless"]
+    assert radio and radio[0]["route"].get("radio") and not radio[0]["cables"]
+    assert not wl["missing"] or all("Wireless" not in m["what"] for m in wl["missing"])
+    # out of range: a receiver 200 m away
+    far = copy.deepcopy(wl["plan"])
+    rx = next(it["id"] for it in far["tonight"]["items"] if it["kind"] == "wireless_rx")
+    far["places"][rx] = {"x": 3000, "z": 200000, "h": 0}
+    ev = plan.evaluate(far, festival)
+    assert any(i["code"] == "C018" for c in ev["chains"] for i in c["issues"])
+
+
+def test_stage_size_for_tonight(festival):
+    """The plan may use tonight's stage size; the show keeps its own."""
+    p = festival_plan()
+    w, d = festival["stage"]["w"], festival["stage"]["d"]
+    p["stage"] = {"w": w + 4000, "d": d + 2000}
+    p = plan.clean_plan(p)
+    assert p["stage"] == {"w": w + 4000, "d": d + 2000}
+    r = plan.with_extras(festival, p)
+    assert r["stage"]["w"] == w + 4000 and r["stage_show"]["w"] == w and festival["stage"]["w"] == w
+    assert "stage" not in plan.clean_plan({"stage": {"w": 5, "d": 5}})

@@ -2284,17 +2284,46 @@
           <div class="cb-row cb-kit-units"><span>Lengths in</span>
             <select id="cb-units" class="field-input cb-narrow" onchange="cablingUnits(this.value)"><option value="m">metres (m)</option><option value="ft">feet (ft)</option></select>
             <span class="cb-hint cb-kit-path" id="cb-kit-path"></span></div>
+          <div class="cb-actions">
+            <button class="btn btn-surface btn-sm" onclick="cablingKitExport()" data-tooltip="Your kit as a file (.qsklib.json): a copy, for another computer or a friend">⬇ Export my kit…</button>
+            <button class="btn btn-surface btn-sm" onclick="document.getElementById('cb-kit-file').click()" data-tooltip="A kit file (.qsklib.json from Export or the Library, or a kit .json)">📂 Import a kit…</button>
+            <input type="file" id="cb-kit-file" accept=".json,application/json" hidden onchange="cablingKitImport(this)">
+          </div>
+          <div id="cb-kit-import" class="cb-card cb-sync" hidden></div>
           <div id="cb-mykit"></div>
           <div class="cb-card cb-add">
             <div class="cb-row"><span>Add</span>
               <select id="cb-preset-m" class="field-input"></select>
               <button class="btn btn-surface btn-sm" onclick="cablingAddPreset('m')">+ Add</button></div>
             <div class="cb-row"><span>Cables</span>
-              <select id="cb-cab-conn-m" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option></select>
+              <select id="cb-cab-conn-m" class="field-input cb-narrow"><option value="xlr3">3-pin</option><option value="xlr5">5-pin</option><option value="rj45">Network (RJ45)</option></select>
               <input id="cb-cab-len-m" class="field-input cb-narrow" type="number" min="0.1" step="0.5" value="3" title="Length"> <span class="cb-u">m</span>
               × <input id="cb-cab-n-m" class="field-input cb-narrow" type="number" min="1" max="99" value="1" title="How many">
               <select id="cb-cab-type-m" class="field-input cb-narrow"><option value="dmx">DMX 110 Ω</option><option value="mic">Microphone</option></select>
               <button class="btn btn-surface btn-sm" onclick="cablingAddCable('m')">+ Add</button></div>
+            <details class="cb-own">
+              <summary>Your own device <span class="cb-hint">when no preset fits: a node, a wireless unit, another splitter or interface</span></summary>
+              <div class="cb-row"><span>Kind</span>
+                <select id="cb-own-kind" class="field-input cb-narrow" onchange="cablingOwnKind()">
+                  <option value="interface">Interface</option><option value="splitter">Splitter</option>
+                  <option value="node">Art-Net / sACN node</option><option value="wireless_tx">Wireless transmitter</option>
+                  <option value="wireless_rx">Wireless receiver</option></select>
+                <input id="cb-own-name" class="field-input" placeholder="Name, e.g. DMXking eDMX2 PRO"></div>
+              <div class="cb-row"><span>Input</span>
+                <select id="cb-own-in" class="field-input cb-narrow"><option value="usb">USB</option><option value="rj45">Network (RJ45)</option>
+                  <option value="xlr3">3-pin ♂</option><option value="xlr5">5-pin ♂</option><option value="wireless">Radio</option></select>
+                <label class="cb-check"><input type="checkbox" id="cb-own-thru"> a thru</label></div>
+              <div class="cb-row"><span>Outputs</span>
+                <input id="cb-own-n" class="field-input cb-narrow" type="number" min="1" max="16" value="1">
+                <select id="cb-own-out" class="field-input cb-narrow"><option value="xlr3">3-pin ♀</option><option value="xlr5">5-pin ♀</option>
+                  <option value="xlr3m">3-pin ♂</option><option value="wireless">Radio</option></select>
+                <span class="cb-own-range">Range <input id="cb-own-range" class="field-input cb-narrow" type="number" min="1" value="100"> <span class="cb-u">m</span></span></div>
+              <div class="cb-row"><span>Termination</span>
+                <select id="cb-own-term" class="field-input"><option value="none">No switch: needs a terminator plug</option>
+                  <option value="switch">Has a termination switch</option><option value="auto">Terminates by itself (built in)</option>
+                  <option value="unknown" selected>Not sure</option></select>
+                <button class="btn btn-surface btn-sm" onclick="cablingOwnAdd()">+ Add</button></div>
+            </details>
           </div>
         </div>
         <div class="cb-side">
@@ -2335,7 +2364,8 @@
           <div class="pane-header">The stage from above <span class="cb-hint">audience at the bottom · click to place</span></div>
           <div class="cb-seg" id="cb-place-mode">
             <button data-v="controller" onclick="cablingPlaceMode('controller')">Computer</button>
-            <button data-v="splitter" onclick="cablingPlaceMode('splitter')">Splitter</button>
+            <button data-v="splitter" onclick="cablingPlaceMode('splitter')">Device</button>
+            <select id="cb-place-item" class="field-input cb-narrow" title="The splitter, node or wireless unit to place with Device"></select>
             <button data-v="outlet" onclick="cablingPlaceMode('outlet')">Power outlet</button>
             <button data-v="walkway" onclick="cablingPlaceMode('walkway')">Walkway (2 corners)</button>
             <button data-v="extra" onclick="cablingPlaceMode('extra')">+ Fixture found here</button>
@@ -2366,6 +2396,14 @@
                 <option value="laptop">A laptop</option><option value="pi">A Raspberry Pi (needs an outlet)</option>
                 <option value="other">Another computer (needs an outlet)</option></select></div>
             <button class="btn btn-surface btn-sm" onclick="cablingClearPlace('controller')">Put the computer back where the setting says</button>
+          </div>
+          <div class="pane-header">The stage <span class="cb-hint">tonight's size; the show keeps its own</span></div>
+          <div class="cb-card">
+            <div class="cb-row"><span>Width</span><input id="cb-stage-w" class="field-input cb-narrow" type="number" min="1" step="0.5" onchange="cablingStage()"> <span class="cb-u">m</span>
+              <span>Depth</span><input id="cb-stage-d" class="field-input cb-narrow" type="number" min="1" step="0.5" onchange="cablingStage()"> <span class="cb-u">m</span></div>
+            <div class="cb-row"><span class="cb-hint" id="cb-stage-show"></span>
+              <button class="btn btn-surface btn-sm" onclick="cablingStage(true)">Back to the show's size</button></div>
+            <div class="cb-hint">To change the show itself, use <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>.</div>
           </div>
           <div class="pane-header">On the floor</div>
           <div class="cb-card" id="cb-floor-list"></div>

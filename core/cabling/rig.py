@@ -121,7 +121,8 @@ def interface_for(universe: dict, inventory: dict) -> Optional[dict]:
     o = universe.get("output") or {}
     name = (o.get("name") or "").lower()
     plugin = (o.get("plugin") or "").lower()
-    ifaces = kit_mod.by_kind(inventory, "interface") + kit_mod.by_kind(inventory, "node")
+    ifaces = [it for it in kit_mod.by_kind(inventory, "interface") + kit_mod.by_kind(inventory, "node")
+              if any(p["role"] == "out" and p["conn"] in ("xlr3", "xlr5", "jack35") for p in it["ports"])]
     for it in ifaces:
         if any(w and w in name for w in it.get("match") or []):
             return it

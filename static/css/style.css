@@ -4502,5 +4502,10 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .cb-kit-units { margin: 2px 0 8px; }
 .cb-kit-units .cb-kit-path { margin: 0; }
 .cb-sync { cursor: pointer; border: 1px solid var(--orange); }
+#cb-kit-import { cursor: default; }
+.cb-own { margin-top: 4px; }
+.cb-own summary { cursor: pointer; font-size: var(--fs-body); color: var(--text); margin-bottom: 6px; }
+.cb-own .cb-row { margin-bottom: 6px; }
+.cb-own-range { display: inline-flex; align-items: center; gap: 6px; }
 .sb-cabling-plot svg { width: 100%; max-height: 520px; }
 .sb-steps { padding-left: 22px; line-height: 1.5; }

@@ -53,6 +53,8 @@ COMPUTERS = ("laptop", "pi", "other")      # what runs QLC+: a Pi or a desktop n
 DEFAULT_CONTROLLER = {"mode": "stand", "side": "stage-left", "distance_m": 12.0, "route": "unknown",
                       "computer": "laptop"}
 USB_MAX_MM = 5000
+WIRELESS_RANGE_M = 100.0         # when the transmitter does not say
+ETHERNET_MAX_M = 100.0           # one network cable (100BASE-TX)
 BAND_REPORT_M = 1.0              # m of band floor crossed before it is reported
 LONG_CHAIN_M = 300
 DAISY_FIXTURES, DAISY_M = 8, 30
@@ -165,7 +167,11 @@ def _clean_extra(v, i: int) -> Optional[dict]:
 
 
 def with_extras(rig: dict, plan: dict) -> dict:
-    """The rig plus the plan's fixtures found on the day (``patched: False``)."""
+    """The rig plus the plan's fixtures found on the day (``patched: False``),
+    on tonight's stage size when the plan sets one (the show keeps its own)."""
+    st = plan.get("stage")
+    if st and (st.get("w"), st.get("d")) != (rig["stage"]["w"], rig["stage"]["d"]):
+        rig = {**rig, "stage": {**rig["stage"], "w": st["w"], "d": st["d"]}, "stage_show": rig["stage"]}
     if not plan.get("extras"):
         return rig
     r = dict(rig)
@@ -183,6 +189,17 @@ def with_extras(rig: dict, plan: dict) -> dict:
     return r
 
 
+def _clean_stage(st) -> Optional[dict]:
+    """Tonight's stage size (mm), when it differs from the show's: ``{w, d}``."""
+    if not isinstance(st, dict):
+        return None
+    try:
+        w, d = int(round(float(st.get("w")))), int(round(float(st.get("d"))))
+    except (TypeError, ValueError):
+        return None
+    return {"w": w, "d": d} if 1000 <= w <= 100000 and 1000 <= d <= 100000 else None
+
+
 def clean_plan(p) -> dict:
     p = p if isinstance(p, dict) else {}
     out = {"version": PLAN_VERSION,
@@ -195,6 +212,7 @@ def clean_plan(p) -> dict:
                       if re.match(r"^(\d+|x\d+)$", str(k)) and v in kit_mod.OWNERS},
            "extras": [e for e in (_clean_extra(x, i) for i, x in enumerate(p.get("extras") or [])) if e][:40],
            "controller": clean_controller(p.get("controller")),
+           **({"stage": _clean_stage(p.get("stage"))} if _clean_stage(p.get("stage")) else {}),
            "chains": [c for c in (_clean_chain(x) for x in p.get("chains") or []) if c]}
     out["tonight"].pop("dropped", None)
     return out
@@ -344,10 +362,31 @@ def evaluate(plan: dict, rig: dict) -> dict:
                                                 "Move the fixtures, or use another output."))
         w["universes"] = unis
         for i, link in enumerate(w["links"]):
+            if link["conn"] == "wireless":         # radio: a straight line, no cable
+                a, b = pts[i], pts[i + 1]
+                flat = round(((b["x"] - a["x"]) ** 2 + (b["z"] - a["z"]) ** 2) ** 0.5)
+                r = {"length": flat, "flat": flat, "climb": 0, "points": [[a["x"], a["z"]], [b["x"], b["z"]]],
+                     "walkways": [], "audience": False, "open_floor_m": 0.0, "band_m": 0.0, "radio": True}
+                tx = devs[i - 1] if i > 0 else src
+                reach = float(tx.get("range_m") or WIRELESS_RANGE_M)
+                if flat / 1000 > reach:
+                    w["issues"].append(chain_mod._issue(
+                        "C018", f"{link['from']} → {link['to']}: {fmt(flat / 1000)} by radio, beyond the "
+                        f"{fmt(reach)} the transmitter reaches.", link["to"],
+                        "Move the receiver closer, or run a cable."))
+                link["route"] = r
+                link["need_m"] = 0
+                link["cables"] = []
+                continue
             r = router.hop(pts[i], pts[i + 1])
             link["route"] = r
             link["need_m"] = cables_mod.need_m(r["length"], plan["slack_m"])
-            if link["conn"] in ("xlr3", "xlr5") and not fixed[i]:
+            if link["conn"] == "rj45" and link["need_m"] > ETHERNET_MAX_M:
+                w["issues"].append(chain_mod._issue(
+                    "C019", f"{link['from']} → {link['to']}: {fmt(link['need_m'])} of network cable; "
+                    f"Ethernet reaches {fmt(ETHERNET_MAX_M)}.", link["to"],
+                    "Put a network switch on the way, or the node nearer the computer."))
+            if link["conn"] in ("xlr3", "xlr5", "rj45") and not fixed[i]:
                 hops.append({"key": f"{n}:{i}", "need": link["need_m"], "conn": link["conn"]})
             elif fixed[i]:
                 link["cables"] = [{"id": fixed[i]["id"], "name": fixed[i]["name"],
@@ -457,7 +496,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
                                            f["name"], "Place it in Stage & Meshes."))
     for m in assigned["missing"]:
         issues.append(chain_mod._issue(
-            "C005", f"{m['count']} × {kit_mod.CONNECTOR_LABEL[m['conn']]} cable of {fmt(m['length'])} missing.",
+            "C005", f"{m['count']} × {kit_mod.cable_word(m['conn'])} of {fmt(m['length'])} missing.",
             fix=f"Add {m['count']} × {fmt(m['length'])} to the shopping list."))
     allis = [i for w in walked for i in w["issues"]] + issues
     summary = {s: sum(1 for i in allis if i["severity"] == s) for s in ("error", "warning", "info")}
@@ -503,7 +542,7 @@ def _universe_checks(plan, rig, fx, items) -> List[dict]:
 def shopping(walked: List[dict], issues: List[dict], assigned: dict) -> List[dict]:
     """What to buy: the cables missing, and everything a check put on the
     list (adapters, terminators, a device the kit lacks): ``[{what, count}]``."""
-    out = [{"what": f"{kit_mod.CONNECTOR_LABEL[m['conn']]} DMX cable {fmt(m['length'])}", "count": m["count"]}
+    out = [{"what": f"{kit_mod.cable_word(m['conn'])} {fmt(m['length'])}", "count": m["count"]}
            for m in assigned["missing"]]
     for i in issues + [i for w in walked for i in w["issues"]]:
         if i.get("buy"):

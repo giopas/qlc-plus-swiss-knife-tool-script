@@ -139,7 +139,7 @@ def _own(kind: str) -> Dict[str, dict]:
         from core.cabling import kit as kit_mod
         base = kit_mod.load_base()
         if base["items"]:
-            out[KIT_NAME] = {"name": KIT_NAME, "items": base["items"]}
+            out[KIT_NAME] = {"name": KIT_NAME, "items": base["items"], "units": base.get("units", "m")}
     else:
         raise LibraryError(f"Unknown kind: {kind}")
     return out
@@ -332,7 +332,10 @@ def _check_cabling_kit(d: dict) -> dict:
     items = [it for it in inv["items"] if it.get("owner", "mine") == "mine"]
     if not items:
         raise LibraryError("the kit has no items of your own")
-    return {"name": d.get("name"), "items": items}
+    out = {"name": d.get("name"), "items": items}
+    if d.get("units") in ("m", "ft"):
+        out["units"] = d["units"]
+    return out
 
 
 def _install_kit(name: str, clean: dict) -> None:
@@ -340,13 +343,13 @@ def _install_kit(name: str, clean: dict) -> None:
     the items you do not have yet (same kind and name) to your kit."""
     from core.cabling import kit as kit_mod
     if name.lower() == KIT_NAME.lower():
-        kit_mod.save_base({"items": clean["items"]})
+        kit_mod.save_base({"items": clean["items"], "units": clean.get("units") or kit_mod.load_units()})
         return
     base = kit_mod.load_base()
     have = {(it["kind"], it["name"].lower()) for it in base["items"]}
     add = [{k: v for k, v in it.items() if k != "id"} for it in clean["items"]
            if (it["kind"], it["name"].lower()) not in have]
-    kit_mod.save_base({"items": base["items"] + add})
+    kit_mod.save_base({"items": base["items"] + add, "units": base.get("units", "m")})
 
 
 _CHECKS = {"cabling_kit": _check_cabling_kit, "vc_template": _check_vc_template, "palette": _check_palette, "look_preset": _check_look_preset,

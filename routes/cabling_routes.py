@@ -13,6 +13,8 @@ in settings.
     GET  /api/cabling/kit          your kit and the presets
     POST /api/cabling/kit          {kit}: keep your kit (settings)
     POST /api/cabling/kit/item     {item}: check one kit item (the clean item or the error)
+    GET  /api/cabling/kit/export   your kit as a file (a Library pack, .qsklib.json)
+    POST /api/cabling/kit/import   {text, mode: preview | add | replace}: a kit from a file
     GET  /api/cabling/fixtures?q=  fixture models of the installed QLC+ library
     POST /api/cabling/fixture-item {manufacturer, model} or {gh_manufacturer, filename}:
                                    a kit item for that model (connector from its definition)
@@ -266,3 +268,74 @@ def fixture_item():
     except Exception as e:                       # GitHub unreachable, a broken file
         return jsonify({'error': _safe_err(e)}), 502
     return jsonify({'item': item})
+
+
+@bp.route('/kit/export')
+def export_kit():
+    """Your kit as a Library pack: opens in Library or in Cabling › My kit › Import."""
+    import json as _json
+    from core import library as lib
+    base = kit_mod.load_base()
+    if not base['items']:
+        return jsonify({'error': 'Your kit is empty: nothing to export.'}), 400
+    pack = lib.export_pack([{'kind': 'cabling_kit', 'name': lib.KIT_NAME}], 'My cabling kit')
+    pack['items'][0]['data']['units'] = base.get('units', 'm')
+    body = _json.dumps(pack, indent=1, ensure_ascii=False)
+    return Response(body, mimetype='application/json',
+                    headers={'X-Suggested-Filename': 'cabling_kit' + lib.EXT,
+                             'Content-Disposition': 'attachment; filename="cabling_kit' + lib.EXT + '"'})
+
+
+def _kit_from_text(text: str) -> dict:
+    """A kit from a file's text: a Library pack (its first cabling kit) or a
+    plain kit file (``{items: [...]}``).  Raises ValueError with the reason."""
+    import json as _json
+    from core import library as lib
+    try:
+        data = _json.loads(text)
+    except (ValueError, TypeError):
+        raise ValueError('This is not a kit file (not JSON).')
+    if isinstance(data, dict) and data.get('format') == lib.FORMAT:
+        kits = [it for it in data.get('items') or [] if isinstance(it, dict) and it.get('kind') == 'cabling_kit']
+        if not kits:
+            raise ValueError('This library file holds no cabling kit.')
+        data = kits[0].get('data') or {}
+    if not isinstance(data, dict) or not isinstance(data.get('items'), list):
+        raise ValueError('This is not a kit file.')
+    try:
+        clean = lib._check_cabling_kit({**data, 'name': 'kit'})
+    except lib.LibraryError as e:
+        raise ValueError(f'The kit cannot be used: {e}.')
+    return {'items': clean['items'], 'units': data.get('units') if data.get('units') in ('m', 'ft') else None}
+
+
+@bp.route('/kit/import', methods=['POST'])
+def import_kit():
+    d = request.get_json(silent=True) or {}
+    text = d.get('text') or ''
+    if len(text) > 4 * 1024 * 1024:
+        return jsonify({'error': 'The file is too large for a kit.'}), 400
+    try:
+        got = _kit_from_text(text)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    base = kit_mod.load_base()
+    have = {(it['kind'], it['name'].lower()) for it in base['items']}
+    new = [it for it in got['items'] if (it['kind'], it['name'].lower()) not in have]
+    mode = d.get('mode', 'preview')
+    if mode == 'preview':
+        return jsonify({'items': len(got['items']), 'new': len(new), 'names': [it['name'] for it in new][:20],
+                        'units': got['units']})
+    units = got['units'] or base.get('units', 'm')
+    if mode == 'replace':
+        inv = {'items': got['items'], 'units': units}
+    elif mode == 'add':
+        inv = {'items': base['items'] + [{k: v for k, v in it.items() if k != 'id'} for it in new],
+               'units': base.get('units', 'm')}
+    else:
+        return jsonify({'error': 'Choose add or replace.'}), 400
+    try:
+        kit_mod.save_base(inv)
+    except OSError as e:
+        return jsonify({'error': _safe_err(e)}), 500
+    return jsonify({'ok': True, 'kit': kit_mod.load_base(), 'path': _kit_where(), 'added': len(new)})

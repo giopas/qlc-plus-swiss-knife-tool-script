@@ -169,7 +169,7 @@ function _cbSummary() {
 
 // ── 1 · Kit ──────────────────────────────────────────────────────────────────
 function _cbItemText(it) {
-  if (it.kind === 'cable') return `${CB_CONN[it.a.conn]} · ${_cbLen(it.length)}${it.type === 'mic' ? ' · ' + _cbT('microphone') : ''}`;
+  if (it.kind === 'cable') return `${CB_CONN[it.a.conn]} · ${_cbLen(it.length)}${it.kind === 'cable' && it.type === 'net' ? ' · ' + _cbT('network') : ''}${it.type === 'mic' ? ' · ' + _cbT('microphone') : ''}`;
   if (it.kind === 'adapter') return `${CB_CONN[it.a.conn]}${_cbG(it.a.gender)} → ${CB_CONN[it.b.conn]}${_cbG(it.b.gender)}`;
   if (it.kind === 'terminator') return `${CB_CONN[it.plug.conn]}${_cbG(it.plug.gender)} · 120 Ω`;
   const ports = it.ports || [];
@@ -314,7 +314,13 @@ function cablingAddCable(w) {
   const n = parseInt(g('cb-cab-n').value, 10) || 1;
   const type = g('cb-cab-type').value;
   if (!(length >= 0.1 && length <= 500)) { setStatus(_cbT('A cable is 0.1 to 500 m (1 to 1600 ft) long.'), 'warn'); return; }
-  const name = `${CB_CONN[conn]} ${type === 'mic' ? 'mic' : 'DMX'} cable ${Math.round(typed * 100) / 100} ${_cbUnits()}`;
+  const len = `${Math.round(typed * 100) / 100} ${_cbUnits()}`;
+  if (conn === 'rj45') {                       // a network patch lead: the same plug at both ends
+    _cbAddItem({ kind: 'cable', name: `Network cable (RJ45) ${len}`, a: { conn, gender: 'm' }, b: { conn, gender: 'm' },
+      length, type: 'net' }, w, n);
+    return;
+  }
+  const name = `${CB_CONN[conn]} ${type === 'mic' ? 'mic' : 'DMX'} cable ${len}`;
   _cbAddItem({ kind: 'cable', name, a: { conn, gender: 'm' }, b: { conn, gender: 'f' }, length, type }, w, n);
 }
 
@@ -369,6 +375,79 @@ async function _cbBaseSave() {
   _cbBase.kit = d.kit;
   if (_cb) { _cb.base = d.kit; _cbEvaluate(); }   // the checks speak in the kit's unit
   _cbMyKit();
+}
+
+async function cablingKitExport() {
+  try {
+    const r = await fetch('/api/cabling/kit/export');
+    if (!r.ok) { const d = await r.json().catch(() => ({})); setStatus(_cbT(d.error || 'Export failed.'), 'warn'); return; }
+    const saved = await saveFileWithPicker(await r.blob(), r.headers.get('X-Suggested-Filename') || 'cabling_kit.qsklib.json',
+      null, _cbT('Save your kit'));
+    if (saved) setStatus(_cbT('Saved: {0}', saved), 'ok');
+  } catch (e) { setStatus(_cbT('Export failed.'), 'error'); }
+}
+
+let _cbImportText = '';
+async function cablingKitImport(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  _cbImportText = await f.text();
+  const d = await _apiJson('/api/cabling/kit/import', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: _cbImportText }) });
+  const box = document.getElementById('cb-kit-import');
+  if (d.error) { setStatus(_cbT(d.error), 'error'); box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `<div><b data-i18n="off">${_cbE(f.name)}</b>: ${_cbE(_cbT('{0} item(s), {1} you do not have', d.items, d.new))}${d.names.length
+      ? ` <span class="cb-dim" data-i18n="off">(${_cbE(d.names.join(', '))})</span>` : ''}</div>
+    <div class="cb-actions">
+      <button class="btn btn-accent btn-sm" onclick="cablingKitImportGo('add')"${d.new ? '' : ' disabled'}>${_cbE(_cbT('Add what I do not have'))}</button>
+      <button class="btn btn-surface btn-sm" onclick="cablingKitImportGo('replace')">${_cbE(_cbT('Replace my kit'))}</button>
+      <button class="btn btn-surface btn-sm" onclick="document.getElementById('cb-kit-import').hidden = true">${_cbE(_cbT('Cancel'))}</button></div>`;
+}
+
+async function cablingKitImportGo(mode) {
+  if (mode === 'replace' && !confirm(_cbT('Your kit becomes the one in the file. Go on?'))) return;
+  const d = await _apiJson('/api/cabling/kit/import', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: _cbImportText, mode }) });
+  if (d.error) { setStatus(_cbT(d.error), 'error'); return; }
+  document.getElementById('cb-kit-import').hidden = true;
+  _cbBase.kit = d.kit;
+  _cbBase.path = d.path;
+  if (_cb) _cb.base = d.kit;
+  _cbUnitLabels();
+  _cbRender();
+  setStatus(mode === 'add' ? _cbT('{0} item(s) added to your kit.', d.added) : _cbT('Your kit is now the one in the file.'), 'ok');
+}
+
+function cablingOwnKind() {
+  const k = document.getElementById('cb-own-kind').value;
+  const set = (id, v) => { document.getElementById(id).value = v; };
+  if (k === 'interface') { set('cb-own-in', 'usb'); set('cb-own-out', 'xlr5'); set('cb-own-n', 1); }
+  if (k === 'splitter') { set('cb-own-in', 'xlr3'); set('cb-own-out', 'xlr3'); set('cb-own-n', 4); }
+  if (k === 'node') { set('cb-own-in', 'rj45'); set('cb-own-out', 'xlr3'); set('cb-own-n', 2); }
+  if (k === 'wireless_tx') { set('cb-own-in', 'xlr3'); set('cb-own-out', 'wireless'); set('cb-own-n', 1); }
+  if (k === 'wireless_rx') { set('cb-own-in', 'wireless'); set('cb-own-out', 'xlr3'); set('cb-own-n', 1); }
+  document.getElementById('cb-own-thru').checked = k === 'splitter';
+}
+
+function cablingOwnAdd() {
+  const g = id => document.getElementById(id).value;
+  const kind = g('cb-own-kind'), name = g('cb-own-name').trim();
+  if (!name) { setStatus(_cbT('Give the device a name.'), 'warn'); return; }
+  const inC = g('cb-own-in'), outV = g('cb-own-out'), n = Math.max(1, Math.min(16, parseInt(g('cb-own-n'), 10) || 1));
+  const outC = outV === 'xlr3m' ? 'xlr3' : outV, outG = outV === 'xlr3m' ? 'm' : (outV === 'wireless' ? '' : 'f');
+  const gl = c => (c === 'usb' || c === 'wireless' ? '' : (c === 'rj45' ? 'f' : 'm'));
+  const ports = [{ role: 'in', conn: inC, gender: gl(inC), name: inC === 'usb' ? 'USB' : inC === 'rj45' ? 'NET' : inC === 'wireless' ? 'RF' : 'DMX IN' }];
+  if (document.getElementById('cb-own-thru').checked && inC.startsWith('xlr')) ports.push({ role: 'thru', conn: inC, gender: 'f', name: 'DMX THRU' });
+  for (let i = 1; i <= n; i += 1)
+    ports.push({ role: 'out', conn: outC, gender: outG, name: outC === 'wireless' ? 'RF' : (n > 1 ? `DMX OUT ${i}` : 'DMX OUT'),
+      isolated: kind === 'splitter' || kind === 'node' });
+  const item = { kind, name, ports, termination: g('cb-own-term') };
+  if (kind === 'node') item.plugin = 'ArtNet';
+  if (kind === 'wireless_tx') item.range_m = _cbToM(g('cb-own-range')) || 100;
+  _cbAddItem(item, 'm');
+  setStatus(_cbT('{0} added to your kit.', name), 'ok');
 }
 
 function cablingUnits(u) {
@@ -551,15 +630,17 @@ async function _cbAskClaude(g) {
 // ── 2 · Places ───────────────────────────────────────────────────────────────
 function cablingPlaceMode(m) { _cbPick = m; _cbCorner = null; _cbPlaces(); }
 
+const _cbStageNow = () => _cb.plan.stage || _cb.rig.stage;
+
 function _cbStageBox() {
-  const st = _cb.rig.stage, ctl = _cb.evaluation.controller;
+  const st = _cbStageNow(), ctl = _cb.evaluation.controller;
   const x0 = Math.min(-2000, ctl.x - 800), x1 = Math.max(st.w + 2000, ctl.x + 800);
   const z0 = Math.min(-1000, ctl.z - 800), z1 = Math.max(st.d + 1500, ctl.z + 800);
   return { x0, z0, x1, z1 };
 }
 
 function _cbStageSvg(clickable) {
-  const st = _cb.rig.stage, b = _cbStageBox(), p = _cb.plan, ev = _cb.evaluation;
+  const st = _cbStageNow(), b = _cbStageBox(), p = _cb.plan, ev = _cb.evaluation;
   const parts = [`<svg viewBox="${b.x0} ${b.z0} ${b.x1 - b.x0} ${b.z1 - b.z0}" class="cb-svg" role="img" aria-label="${_cbE(_cbT('The stage from above'))}"
     ${clickable ? 'onclick="cablingStageClick(event)"' : ''}>`];
   parts.push(`<rect x="0" y="0" width="${st.w}" height="${st.d}" class="cb-s-stage"/>`);
@@ -593,6 +674,19 @@ function _cbPlaces() {
   const c = _cb.plan.controller;
   document.querySelectorAll('input[name="cb-ctl"]').forEach(r => { r.checked = r.value === c.mode; });
   const set = (id, v) => { const e = document.getElementById(id); if (e && document.activeElement !== e) e.value = v; };
+  const st = _cbStageNow(), sh = _cb.rig.stage;
+  set('cb-stage-w', _cbNum(st.w / 1000)); set('cb-stage-d', _cbNum(st.d / 1000));
+  const shw = document.getElementById('cb-stage-show');
+  if (shw) shw.textContent = _cb.plan.stage ? _cbT('The show: {0} × {1}', _cbLen(sh.w / 1000), _cbLen(sh.d / 1000))
+    : _cbT('The size in the show');
+  const pi = document.getElementById('cb-place-item');
+  if (pi) {
+    const devs = p0 => p0.tonight.items.filter(i => ['splitter', 'node', 'wireless_tx', 'wireless_rx'].includes(i.kind) && i.count > 0);
+    const keep = pi.value;
+    pi.innerHTML = devs(_cb.plan).map(i => `<option value="${_cbE(i.id)}">${_cbE(i.name)}</option>`).join('')
+      || `<option value="">${_cbE(_cbT('no device in tonight\'s kit'))}</option>`;
+    if (keep && [...pi.options].some(o => o.value === keep)) pi.value = keep;
+  }
   set('cb-side-sel', c.side); set('cb-computer', c.computer || 'laptop'); set('cb-foh-d', _cbNum(c.distance_m)); set('cb-foh-route', c.route); set('cb-slack', _cbNum(_cb.plan.slack_m));
   const p = _cb.plan, items = Object.fromEntries(p.tonight.items.map(x => [x.id, x]));
   const rows = [];
@@ -619,8 +713,10 @@ function cablingStageClick(ev) {
   const p = _cb.plan;
   if (_cbPick === 'controller') p.places.controller = { x, z };
   else if (_cbPick === 'splitter') {
-    const sp = p.tonight.items.find(i => i.kind === 'splitter' && i.count > 0) || p.tonight.items.find(i => i.kind === 'node' && i.count > 0);
-    if (!sp) { setStatus(_cbT('Tonight\'s kit has no splitter or node to place.'), 'warn'); return; }
+    const want = (document.getElementById('cb-place-item') || {}).value;
+    const sp = p.tonight.items.find(i => i.id === want && i.count > 0)
+      || p.tonight.items.find(i => i.kind === 'splitter' && i.count > 0) || p.tonight.items.find(i => i.kind === 'node' && i.count > 0);
+    if (!sp) { setStatus(_cbT('Tonight\'s kit has no splitter, node or wireless unit to place.'), 'warn'); return; }
     p.places[sp.id] = { x, z, h: 0 };
   } else if (_cbPick === 'outlet') p.outlets.push({ x, z });
   else if (_cbPick === 'walkway') {
@@ -633,6 +729,19 @@ function cablingStageClick(ev) {
     const model = prompt(_cbT('Manufacturer and model (for the kit; may stay empty):'), '') || '';
     p.extras.push({ id: '', name: name.trim(), manufacturer: '', model: model.trim(), x, z, h: 0, universe: '0', connector: '' });
   }
+  _cbChanged();
+}
+
+function cablingStage(reset) {
+  const sh = _cb.rig.stage, now = _cbStageNow();
+  // a value left as shown keeps its exact size (the shown one is rounded to the unit)
+  const val = (id, mm) => { const v = document.getElementById(id).value;
+    return +v === _cbNum(mm / 1000) ? mm : _cbToM(v) * 1000; };
+  const w = val('cb-stage-w', now.w), d = val('cb-stage-d', now.d);
+  if (reset || (Math.round(w) === sh.w && Math.round(d) === sh.d)) delete _cb.plan.stage;
+  else if (w >= 1000 && d >= 1000) _cb.plan.stage = { w: Math.round(w), d: Math.round(d) };
+  else { setStatus(_cbT('A stage is at least 1 m by 1 m.'), 'warn'); return; }
+  _cbAlts = null;
   _cbChanged();
 }
 

@@ -49,7 +49,7 @@ def _pool(inventory: dict, conn: str) -> List[dict]:
         for n in range(it["count"]):
             out.append({"id": it["id"], "name": it["name"], "length": it["length"], "type": it.get("type", "dmx"),
                         "n": n})
-    out.sort(key=lambda c: (c["type"] != "dmx", c["length"], c["id"], c["n"]))
+    out.sort(key=lambda c: (c["type"] == "mic", c["length"], c["id"], c["n"]))
     return out
 
 
@@ -99,7 +99,7 @@ def _pub(c: dict) -> dict:
 
 
 def _single(pool: List[dict], need: float) -> Optional[dict]:
-    dmx = [c for c in pool if c["type"] == "dmx" and c["length"] >= need]
+    dmx = [c for c in pool if c["type"] in ("dmx", "net") and c["length"] >= need]
     if dmx:
         return dmx[0]
     mic = [c for c in pool if c["type"] == "mic" and c["length"] >= need]

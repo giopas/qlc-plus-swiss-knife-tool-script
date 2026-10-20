@@ -256,7 +256,9 @@ def _interface_with_room(rig, uni_id, tonight, used) -> str:
     added from the preset with count 0 (shown as missing)."""
     first = _interface_for_uni(rig, uni_id, tonight)
     items = {it["id"]: it for it in tonight["items"]}
-    for iid in [first] + [it["id"] for it in kit_mod.by_kind(tonight, "interface") if it["id"] != first]:
+    dmx = [it["id"] for it in kit_mod.by_kind(tonight, "interface")
+           if it["id"] != first and any(p["conn"] in ("xlr3", "xlr5") for p in it["ports"] if p["role"] == "out")]
+    for iid in [first] + dmx:
         if _free_outs(items[iid], used):
             return iid
     item = copy.deepcopy(kit_mod.PRESETS["enttec_usb_pro"])
@@ -342,6 +344,49 @@ def _fill(plan: dict, rig: dict, src_item: str, src_point_key: Optional[str], vi
             used[(source, port)] = used.get((source, port), 0) + 1
             p["chains"].append({"source": {"item": source, "port": port},
                                 "devices": [{"fixture": i} for i in ids], "label": ""})
+    _feed_nodes(p)
+    return plan_mod.clean_plan(p)
+
+
+def _ensure_lan(tonight: dict) -> str:
+    """The computer's network port in tonight's kit (it is the computer: count 1)."""
+    have = [it for it in kit_mod.by_kind(tonight, "interface")
+            if any(q["role"] == "out" and q["conn"] == "rj45" for q in it["ports"])]
+    if have:
+        return have[0]["id"]
+    item = copy.deepcopy(kit_mod.PRESETS["computer_lan"])
+    item.update(count=1, owner="mine")
+    tonight["items"].append(kit_mod.clean_item(item))
+    kit_mod._number(tonight["items"])
+    return tonight["items"][-1]["id"]
+
+
+def _feed_nodes(p: dict) -> None:
+    """Every node used gets a network cable from the computer (one chain)."""
+    items = {it["id"]: it for it in p["tonight"]["items"]}
+    fed = {d.get("item") for c in p["chains"] for d in c["devices"]}
+    nodes = sorted({c["source"]["item"] for c in p["chains"]
+                    if items.get(c["source"]["item"], {}).get("kind") == "node"} - fed)
+    for k, node in enumerate(nodes):
+        lan = _ensure_lan(p["tonight"])
+        p["chains"].insert(k, {"source": {"item": lan, "port": 0}, "devices": [{"item": node}], "label": "Network"})
+
+
+def _wireless(base: dict, rig: dict, a: dict, tonight: dict) -> Optional[dict]:
+    """*a* (a plan with a splitter fed from the computer) with the feed sent by
+    radio: transmitter at the computer, receiver by the splitter."""
+    p = copy.deepcopy(a["plan"])
+    tx = _ensure(p["tonight"], "wireless_tx", "wireless_tx")
+    rx = _ensure(p["tonight"], "wireless_rx", "wireless_rx")
+    feed = next((c for c in p["chains"] if c.get("label") == "Feed"), None)
+    if feed is None:
+        return None
+    sp = feed["devices"][-1].get("item")
+    feed["devices"] = [{"item": tx}, {"item": rx}] + feed["devices"]
+    feed["cables"] = []
+    spot = p["places"].get(sp)
+    if spot:
+        p["places"][rx] = {"x": spot["x"], "z": max(spot["z"] - 450, 100), "h": 0}
     return plan_mod.clean_plan(p)
 
 
@@ -352,9 +397,10 @@ def score(ev: dict) -> float:
     errors = ev["summary"]["error"]
     allis = ev["issues"] + [i for c in ev["chains"] for i in c["issues"]]
     daisy = sum(1 for i in allis if i["code"] == "C012")      # one failing fixture darkens the rest
+    radio = sum(1 for c in ev["chains"] for l in c["links"] if l.get("conn") == "wireless")   # a cable is surer
     band = sum(l["route"].get("band_m", 0) for c in ev["chains"] for l in c["links"] if l.get("route"))
     return round(t["cable_m"] + 0.5 * t["open_floor_m"] + 4 * t["crossings"] + 3 * t["joined"]
-                 + 15 * missing + 40 * devices + 5 * errors + 10 * daisy + 2 * band, 2)
+                 + 15 * missing + 40 * devices + 5 * errors + 10 * daisy + 2 * band + 5 * radio, 2)
 
 
 def _alt(key, name, p, rig, note="") -> dict:
@@ -428,8 +474,11 @@ def alternatives(plan: dict, rig: dict) -> List[dict]:
                 nb = (a, label)
         if nb:
             out.append(nb[0])
-        if kit_mod.by_kind(tonight, "wireless_tx") and kit_mod.by_kind(tonight, "wireless_rx"):
-            pass                                   # a wireless pair: planned by hand for now
+        if best:                                   # the same, the feed by radio (no cable across the audience)
+            wp = _wireless(base, rig, best[0], tonight)
+            if wp:
+                out.append(_alt("", "Wireless to the stage", wp, rig,
+                                f"transmitter at the computer, receiver by the splitter ({best[1]})"))
     else:
         floor, router, trs = plan_mod.floor_for(base, rig)
         splitter = _ensure(tonight, "splitter", "lixada_1x8")
@@ -443,6 +492,11 @@ def alternatives(plan: dict, rig: dict) -> List[dict]:
         out.append(_alt("", "Splitter at the computer", pl, rig, "short feed, longer runs"))
         pl = _fill(base, rig, iface, None, None, None, router, trs, "daisy")
         out.append(_alt("", "One daisy chain", pl, rig, "no splitter"))
+        if best and kit_mod.by_kind(tonight, "wireless_tx") and kit_mod.by_kind(tonight, "wireless_rx"):
+            wp = _wireless(base, rig, best[0], tonight)
+            if wp:
+                out.append(_alt("", "Wireless to the stage", wp, rig,
+                                f"transmitter at the computer, receiver by the splitter ({best[1]})"))
     out.sort(key=lambda a: (a["score"], a["name"]))
     for k, a in enumerate(out):
         a["key"] = "ABCDEF"[k]

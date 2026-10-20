@@ -26,7 +26,7 @@ from typing import Dict, List, Optional
 from core.cabling import kit as kit_mod
 
 SEVERITY = {"C001": "error", "C002": "error", "C003": "error", "C004": "error",
-            "C005": "error", "C006": "error",
+            "C005": "error", "C006": "error", "C019": "error",
             "C101": "info", "C102": "info", "C103": "info", "C104": "info", "C105": "info"}
 
 

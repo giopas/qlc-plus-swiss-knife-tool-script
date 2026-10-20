@@ -228,6 +228,7 @@ GUIDE: Dict[str, dict] = {
                  ("controller", "plan: `{mode: stand | foh | auto, side: stage-left | stage-right | back | front, "
                                 "distance_m, route: wall | taped | overhead | unknown, computer: laptop | pi | other}` "
                                 "(auto: the planner chooses where the computer stands; a pi or other computer needs an outlet)."),
+                 ("stage_m", "plan: `[width, depth]` in metres, tonight's stage when it is not the show's (the show is not changed)."),
                  ("owners", "plan: `{fixture id: mine | borrowed | venue}` for fixtures not in the kit (a venue's house rig)."),
                  ("choose", "plan: the key of the alternative to keep (A, B, C)."),
                  ("export", "check: files to write: plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt."),

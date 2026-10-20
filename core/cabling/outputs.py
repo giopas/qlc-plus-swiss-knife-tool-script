@@ -261,7 +261,7 @@ def pick_list(ev: dict, plan: dict) -> dict:
         used_dev |= {d["item"] for d in c["devices"] if d.get("item")}
     for iid in sorted(used_dev):
         it = items.get(iid)
-        if it and it.get("count", 0) > 0 and it.get("owner") != "venue":
+        if it and it.get("count", 0) > 0 and it.get("owner") != "venue" and it.get("power") != "computer":
             add(it["name"] + (" + power supply" if it.get("power") in ("mains", "dc adapter") else ""))
     for w in ev["chains"]:
         for a in w["adapters"]:
@@ -411,9 +411,11 @@ def load_in(ev: dict, plan: dict) -> List[str]:
     ctl = plan["controller"]
     where = {"stand": ctl["side"].replace("-", " ") + (" wing" if "stage" in ctl["side"] else ""),
              "foh": f"front of house, {fmt(ctl['distance_m'])} from the stage", "auto": "where the plan puts it"}
-    ifaces = sorted({c["source"]["item"] for c in plan["chains"] if items.get(c["source"]["item"], {}).get("kind") == "interface"})
-    names = ", ".join(items[i]["name"] for i in ifaces) or "the interface"
-    steps.append(f"Computer and {names} at the {where[ctl['mode']]}.")
+    ifaces = sorted({c["source"]["item"] for c in plan["chains"] if items.get(c["source"]["item"], {}).get("kind") == "interface"
+                     and items[c["source"]["item"]].get("power") != "computer"})
+    names = ", ".join(items[i]["name"] for i in ifaces)
+    steps.append(f"Computer and {names} at the {where[ctl['mode']]}." if names
+                 else f"Computer at the {where[ctl['mode']]}.")
     for w in ev["chains"]:
         for a in {a["at"]: a for l in w["links"] for a in l["adapters"]}.values():
             steps.append(f"{a['name']} on {a['at']}.")

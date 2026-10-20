@@ -156,13 +156,13 @@ TOOLS: List[dict] = [
                           "replace": {"type": "boolean"},
                           "lang": {"type": "string", "enum": ["en", "it", "fr", "de", "es", "pt", "ja", "zh"]}})},
     {"name": "cabling", "handler": "t_cabling",
-     "description": "The DMX cabling planner: tonight's kit, chains, cables, adapters, terminators, the pick list and labels. `action` is one of kit, fixture, plan, check. kit: without `kit` lists your kit and the presets; with `kit` {items:[...]} keeps it as your kit (settings). fixture: a fixture model for the kit from what you found (a name, a link, a photo of the back panel): give manufacturer, model, connectors (e.g. [\"xlr3\"]), thru, termination (none, switch, auto, unknown), power_w, sources {field: manual|photo|qxf|guess} and count; without confirmed=true it only returns the proposal to show the user; with confirmed=true it adds it to your kit. plan (needs an open show): `controller` {mode: stand|foh|auto, side, distance_m, route, computer: laptop|pi|other}, `owners` {fixture id: mine|borrowed|venue}; returns two or three alternatives; choose=\"A\" keeps that one next to the show as <show>.cabling.json. check: the checks, totals, load-in order and pick list of the kept plan; export=[plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt] with `folder` writes those as NEW files. The show itself is never changed.",
+     "description": "The DMX cabling planner: tonight's kit, chains, cables, adapters, terminators, the pick list and labels. `action` is one of kit, fixture, plan, check. kit: without `kit` lists your kit and the presets; with `kit` {items:[...]} keeps it as your kit (settings). fixture: a fixture model for the kit from what you found (a name, a link, a photo of the back panel): give manufacturer, model, connectors (e.g. [\"xlr3\"]), thru, termination (none, switch, auto, unknown), power_w, sources {field: manual|photo|qxf|guess} and count; without confirmed=true it only returns the proposal to show the user; with confirmed=true it adds it to your kit. plan (needs an open show): `controller` {mode: stand|foh|auto, side, distance_m, route, computer: laptop|pi|other}, `owners` {fixture id: mine|borrowed|venue}, `stage_m` [width, depth] for tonight's stage when it differs from the show's (the show is not changed); presets include Art-Net nodes (fed by a network cable from the computer) and wireless transmitters/receivers, and the plan offers a wireless feed when the kit has a pair; returns two or three alternatives; choose=\"A\" keeps that one next to the show as <show>.cabling.json. check: the checks, totals, load-in order and pick list of the kept plan; export=[plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt] with `folder` writes those as NEW files. The show itself is never changed.",
      "inputSchema": _obj({"action": {"type": "string", "enum": ["kit", "fixture", "plan", "check"]},
                           "kit": {"type": "object"}, "manufacturer": _S, "model": _S, "connectors": _IDS,
                           "thru": {"type": "boolean"}, "termination": _S, "power_w": {"type": "number"},
                           "sources": {"type": "object"}, "count": {"type": "integer"},
                           "confirmed": {"type": "boolean"}, "controller": {"type": "object"},
-                          "owners": {"type": "object"}, "choose": _S, "export": _IDS, "folder": _S}, ["action"])},
+                          "owners": {"type": "object"}, "stage_m": {"type": "array", "items": {"type": "number"}}, "choose": _S, "export": _IDS, "folder": _S}, ["action"])},
     {"name": "compare", "handler": "t_compare",
      "description": "Compare the show in progress with another .qxw and return the differences (read only).",
      "inputSchema": _obj({"path": _S}, ["path"])},
@@ -709,6 +709,9 @@ class Server:
                     plan["controller"].update(dict(a["controller"]))
                 if a.get("owners"):
                     plan["owners"].update({str(k): v for k, v in dict(a["owners"]).items()})
+                if a.get("stage_m"):                  # tonight's stage, in metres: [width, depth]
+                    w, d = (float(v) for v in list(a["stage_m"])[:2])
+                    plan["stage"] = {"w": round(w * 1000), "d": round(d * 1000)}
                 alts = self.api("POST", "/api/cabling/auto", {"plan": plan})["alternatives"]
                 out: Dict[str, Any] = {"alternatives": [
                     {k: x[k] for k in ("key", "name", "note", "cable_m", "longest_m", "crossings", "adapters",

@@ -43,7 +43,7 @@ ROLES = ("in", "out", "thru")
 KINDS = ("interface", "splitter", "node", "wireless_tx", "wireless_rx",
          "cable", "adapter", "terminator", "fixture")
 DEVICE_KINDS = ("interface", "splitter", "node", "wireless_tx", "wireless_rx", "fixture")
-CABLE_TYPES = ("dmx", "mic")
+CABLE_TYPES = ("dmx", "mic", "net")
 TERMINATION = ("none", "switch", "auto", "unknown")
 OWNERS = ("mine", "borrowed", "venue")
 DEFAULT_DRIVE = 32                 # devices one DMX output may drive (EIA-485 unit loads)
@@ -130,8 +130,18 @@ def _device(kind: str, name: str, ports: List[dict], **extra) -> dict:
     return d
 
 
+def cable_word(conn: str, ctype: str = "dmx") -> str:
+    """``3-pin DMX cable``, ``3-pin mic cable``, ``Network cable (RJ45)``."""
+    if conn == "rj45":
+        return "Network cable (RJ45)"
+    return f"{CONNECTOR_LABEL[conn]} {'mic' if ctype == 'mic' else 'DMX'} cable"
+
+
 def _cable(length: float, conn: str = "xlr3", ctype: str = "dmx", count: int = 1) -> dict:
-    return {"kind": "cable", "name": f"{CONNECTOR_LABEL[conn]} {'mic' if ctype == 'mic' else 'DMX'} cable {_m(length)}",
+    if conn == "rj45":                             # a patch lead: the same plug at both ends
+        return {"kind": "cable", "name": f"{cable_word(conn)} {_m(length)}", "a": end(conn, "m"),
+                "b": end(conn, "m"), "length": float(length), "type": "net", "count": count}
+    return {"kind": "cable", "name": f"{cable_word(conn, ctype)} {_m(length)}",
             "a": end(conn, "m"), "b": end(conn, "f"), "length": float(length),
             "type": ctype, "count": count}
 
@@ -169,17 +179,34 @@ PRESETS: Dict[str, dict] = {
                           termination="none", power="dc adapter", match=["lixada"]),
     "splitter_1x4": _splitter(4),
     "splitter_1x8": _splitter(8),
+    # the computer's own network port: what feeds an Art-Net / sACN node (never packed)
+    "computer_lan": _device("interface", "Computer network port (Art-Net / sACN)",
+                            [port("out", "rj45", "f", name="LAN")], power="computer"),
+    "artnet_node_1": _device("node", "Art-Net / sACN node, 1 universe",
+                             [port("in", "rj45", "f", name="NET"),
+                              port("out", "xlr3", "f", name="DMX OUT", isolated=True)],
+                             plugin="ArtNet", power="mains", termination="none"),
+    "artnet_node_4": _device("node", "Art-Net / sACN node, 4 universes",
+                             [port("in", "rj45", "f", name="NET")]
+                             + [port("out", "xlr5", "f", name=f"OUT {c}", isolated=True) for c in "ABCD"],
+                             plugin="ArtNet", power="mains", termination="none"),
     "artnet_node_2": _device("node", "Art-Net / sACN node, 2 universes",
                              [port("in", "rj45", "f", name="NET"),
                               port("out", "xlr5", "f", name="OUT A", isolated=True),
                               port("out", "xlr5", "f", name="OUT B", isolated=True)],
-                             plugin="ArtNet", power="mains"),
+                             plugin="ArtNet", power="mains", termination="none"),
     "wireless_tx": _device("wireless_tx", "Wireless DMX transmitter",
                            [port("in", "xlr3", "m", name="DMX IN"), port("out", "wireless", name="RF")],
                            range_m=100.0, power="mains"),
     "wireless_rx": _device("wireless_rx", "Wireless DMX receiver",
                            [port("in", "wireless", name="RF"), port("out", "xlr3", "f", name="DMX OUT")],
-                           power="mains"),
+                           power="mains", termination="none"),
+    "wireless_tx_batt": _device("wireless_tx", "Wireless DMX transmitter, battery (3-pin plug)",
+                                [port("in", "xlr3", "m", name="DMX IN"), port("out", "wireless", name="RF")],
+                                range_m=300.0, power="battery"),
+    "wireless_rx_batt": _device("wireless_rx", "Wireless DMX receiver, battery (3-pin plug)",
+                                [port("in", "wireless", name="RF"), port("out", "xlr3", "m", name="DMX OUT")],
+                                power="battery", termination="none"),
     "adapter_5m_3f": _adapter(end("xlr5", "m"), end("xlr3", "f")),
     "adapter_3m_5f": _adapter(end("xlr3", "m"), end("xlr5", "f")),
     "gender_3ff": _adapter(end("xlr3", "f"), end("xlr3", "f"), "Gender changer 3-pin ♀–♀"),
@@ -188,6 +215,7 @@ PRESETS: Dict[str, dict] = {
     "terminator_5": {"kind": "terminator", "name": "Terminator 5-pin 120 Ω", "plug": end("xlr5", "m"), "count": 1},
     "cable_3_1.5": _cable(1.5), "cable_3_3": _cable(3), "cable_3_5": _cable(5),
     "cable_3_10": _cable(10), "cable_3_20": _cable(20), "cable_5_1.5": _cable(1.5, "xlr5"),
+    "cable_net_10": _cable(10, "rj45"), "cable_net_20": _cable(20, "rj45"), "cable_net_50": _cable(50, "rj45"),
 }
 
 

@@ -55,8 +55,14 @@ def _norm(s: str) -> str:
 
 def _qlc_fixture_dirs() -> list[str]:
     """Return a list of directories that may contain QXF fixture definition files."""
-    dirs = []
     home = os.path.expanduser('~')
+
+    # The installed QLC+ library first, from the one shared lookup (stock and
+    # user folders on each system, ``QLCPLUS_FIXTURES`` honoured).  On macOS
+    # it includes ~/Library/Application Support/QLC+/Fixtures, which the list
+    # below used to miss (3.6.1).
+    from core.quick_start import qlc_library
+    dirs = list(qlc_library.library_dirs())
 
     # macOS app bundle (most common install location)
     dirs.append('/Applications/QLC+.app/Contents/Resources/Fixtures')

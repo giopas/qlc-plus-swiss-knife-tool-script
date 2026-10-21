@@ -4189,5 +4189,19 @@
  "A Show Wizard effect that was never created.": "作成されなかったショーウィザードのエフェクト。",
  "QLC+ 5.3 content that QLC+ 5.2.2 ignores.": "QLC+ 5.2.2が無視するQLC+ 5.3のコンテンツ。",
  "A fixture definition QLC+ does not ship; it travels with the show.": "QLC+に同梱されていないフィクスチャー定義。ショーと一緒に持ち運ばれます。",
- "Info": "情報"
+ "Info": "情報",
+ "In the bag": "バッグの中",
+ "from the stage edge": "ステージの端から",
+ "at each cable end": "ケーブルの両端",
+ "Unknown export.": "不明なエクスポートです。",
+ "The plan has no chains yet.": "プランにはまだチェーンがありません。",
+ "Some items cannot be used.": "使用できない項目があります。",
+ "Your kit is empty: nothing to export.": "キットが空です。エクスポートするものがありません。",
+ "This is not a kit file (not JSON).": "これはキットファイルではありません（JSONではありません）。",
+ "This library file holds no cabling kit.": "このライブラリファイルには配線キットが含まれていません。",
+ "This is not a kit file.": "これはキットファイルではありません。",
+ "The file is too large for a kit.": "ファイルが大きすぎてキットにできません。",
+ "Choose add or replace.": "追加か置き換えを選んでください。",
+ "Press Preview in Swiss Knife first.": "先にSwiss Knifeでプレビューを押してください。",
+ "A QR code is made for an http:// or https:// address.": "QRコードはhttp://またはhttps://のアドレスに対して作成されます。"
 }

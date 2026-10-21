@@ -4189,5 +4189,19 @@
  "A Show Wizard effect that was never created.": "Um efeito do Show Wizard que nunca foi criado.",
  "QLC+ 5.3 content that QLC+ 5.2.2 ignores.": "Conteúdo do QLC+ 5.3 que o QLC+ 5.2.2 ignora.",
  "A fixture definition QLC+ does not ship; it travels with the show.": "Uma definição de fixture que o QLC+ não inclui; viaja com o show.",
- "Info": "Info"
+ "Info": "Info",
+ "In the bag": "Na mala",
+ "from the stage edge": "desde a borda do palco",
+ "at each cable end": "em cada ponta do cabo",
+ "Unknown export.": "Exportação desconhecida.",
+ "The plan has no chains yet.": "O plano ainda não tem cadeias.",
+ "Some items cannot be used.": "Alguns itens não podem ser usados.",
+ "Your kit is empty: nothing to export.": "O teu kit está vazio: nada para exportar.",
+ "This is not a kit file (not JSON).": "Isto não é um ficheiro de kit (não é JSON).",
+ "This library file holds no cabling kit.": "Este ficheiro de biblioteca não contém um kit de cablagem.",
+ "This is not a kit file.": "Isto não é um ficheiro de kit.",
+ "The file is too large for a kit.": "O ficheiro é demasiado grande para um kit.",
+ "Choose add or replace.": "Escolhe adicionar ou substituir.",
+ "Press Preview in Swiss Knife first.": "Carrega primeiro em Pré-visualizar no Swiss Knife.",
+ "A QR code is made for an http:// or https:// address.": "Um código QR é criado para um endereço http:// ou https://."
 }

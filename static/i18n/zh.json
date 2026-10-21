@@ -4189,5 +4189,19 @@
  "A Show Wizard effect that was never created.": "一个从未创建的演出向导效果。",
  "QLC+ 5.3 content that QLC+ 5.2.2 ignores.": "QLC+ 5.2.2 会忽略的 QLC+ 5.3 内容。",
  "A fixture definition QLC+ does not ship; it travels with the show.": "QLC+ 自带库中没有的灯具定义；它会随演出一起带走。",
- "Info": "提示"
+ "Info": "提示",
+ "In the bag": "包里",
+ "from the stage edge": "从舞台边缘起",
+ "at each cable end": "每根线缆的两端",
+ "Unknown export.": "未知的导出。",
+ "The plan has no chains yet.": "方案中还没有线路链。",
+ "Some items cannot be used.": "有些项目无法使用。",
+ "Your kit is empty: nothing to export.": "你的套件是空的：没有可导出的内容。",
+ "This is not a kit file (not JSON).": "这不是套件文件（不是 JSON）。",
+ "This library file holds no cabling kit.": "这个库文件不包含布线套件。",
+ "This is not a kit file.": "这不是套件文件。",
+ "The file is too large for a kit.": "文件太大，无法作为套件。",
+ "Choose add or replace.": "请选择添加或替换。",
+ "Press Preview in Swiss Knife first.": "请先在 Swiss Knife 中点击预览。",
+ "A QR code is made for an http:// or https:// address.": "只能为 http:// 或 https:// 地址生成二维码。"
 }

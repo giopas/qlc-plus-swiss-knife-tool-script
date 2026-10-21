@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.8.0, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.9.0, 21 October 2026** (built on `feat/v3.9.0`, to be merged and tagged; 3.8.0 was released on 20 October). Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -266,6 +266,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.6.1 | 20 Oct | Ready for the gig: the show path checked on stage (A1 to A6); fixture definitions and input profiles found in every folder QLC+ uses. |
 | 3.7.0 | 20 Oct | Another computer, another screen: definitions that travel (Doctor D021 to D023, I009, the travel zip); the Virtual Console fitted to a screen (Fit, Stretch, Page size, Check, tap-size warning). |
 | 3.8.0 | 20 Oct | Stage layouts and per-song tempo: saved layouts of the stage and the band (three built in, shared through the Library), a tempo per song in the setlist with *Apply tempo*, *Wait for the pedal* on Hold. |
+| 3.9.0 | 21 Oct | Tablet on stage: song cards, the Next song banner, views by role, a QR code, one screen for the live monitor and the simple page, the first use of the page kit. |
 
 ## 5. Goal and the Pub test
 

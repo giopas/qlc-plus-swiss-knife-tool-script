@@ -18,10 +18,12 @@
   --ready: #f5b301; --next: #7cc4ff; --ok: #2ecc71; --warn: #f5b301; --bad: #ff4d4d;
   --bar: #14181d; --tab-bg: var(--fg); --tab-fg: var(--bg);
   --stale-bg: #3a3f46; --stale-fg: #c7ccd2; --banner-bg: #2a0d0d; --banner-fg: #ffd5d5;
+  --tune: #ffb020; --card-fg: #f4f6f8; --card-bg: #14181d;   /* a tuning change, and the card text (7:1 and 4.5:1 or better) */
 }
 :root[data-theme="contrast"] {
   --bg: #000; --fg: #fff; --dim: #c8c8c8; --line: #333;
   --cur-bg: #ffff00; --cur-fg: #000; --ready: #ffff00; --next: #00e5ff; --bar: #000;
+  --tune: #ffff00; --card-fg: #fff; --card-bg: #000;
 }
 /* black: as little light as possible on a dark stage; only the current song is bright */
 :root[data-theme="black"], :root[data-theme="dim"] {
@@ -30,8 +32,10 @@
   --ok: #1b5e36; --warn: #6e5400; --bad: #8f2020; --bar: #000;
   --tab-bg: #161616; --tab-fg: #9a9a9a; --stale-bg: transparent; --stale-fg: #333;
   --banner-bg: #0d0000; --banner-fg: #9a5c5c;
+  --tune: #d9a400; --card-fg: #b0b0b0; --card-bg: #000;
 }
-:root[data-theme="dim"] { --fg: #404040; --dim: #2c2c2c; --cur-fg: #8f8f8f; --ready: #5e5e5e; --next: #5e5e5e; --tab-fg: #6a6a6a; }
+:root[data-theme="dim"] { --fg: #404040; --dim: #2c2c2c; --cur-fg: #8f8f8f; --ready: #5e5e5e; --next: #5e5e5e; --tab-fg: #6a6a6a;
+  --tune: #c49500; --card-fg: #909090; }
 :root[data-font="S"]  { --k: .85; }
 :root[data-font="L"]  { --k: 1.25; }
 :root[data-font="XL"] { --k: 1.5; }
@@ -51,11 +55,11 @@ header { display: flex; align-items: center; gap: calc(14px * var(--k));
 #dot.ok { background: var(--ok); } #dot.wait { background: var(--warn); }
 #clock { font-size: calc(22px * var(--k)); font-variant-numeric: tabular-nums; font-weight: 600; }
 button { font: inherit; color: inherit; background: none; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
-#fs { padding: 6px 10px; font-size: calc(18px * var(--k)); }
+#fs { min-width: 56px; min-height: 56px; padding: 6px 10px; font-size: calc(18px * var(--k)); }
 
 #tabs { display: flex; gap: 8px; padding: 8px calc(16px * var(--k)) 0; flex: none; overflow-x: auto; }
 #tabs:empty { display: none; }
-#tabs button { padding: calc(8px * var(--k)) calc(14px * var(--k)); font-size: calc(18px * var(--k)); white-space: nowrap; position: relative; }
+#tabs button { padding: calc(8px * var(--k)) calc(14px * var(--k)); min-height: 56px; font-size: calc(18px * var(--k)); white-space: nowrap; position: relative; }
 #tabs button.on { background: var(--tab-bg); color: var(--tab-fg); border-color: var(--tab-bg); font-weight: 700; }
 
 #status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
@@ -63,7 +67,9 @@ button { font: inherit; color: inherit; background: none; border: 1px solid var(
 #state { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 #state.play { color: var(--ok); } #state.pause, #state.stop { color: var(--warn); }
 
-#list { flex: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; padding: 30vh 0; }
+#work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+#list { min-width: 0; min-height: 0; overflow-y: auto; position: relative; padding: 0; }
+#list::before, #list::after { content: ""; display: block; height: 30vh; }   /* room to centre the first and last song; unlike padding it can shrink under the banner */   /* no smooth scrolling: no motion on the stage */
 .step { display: flex; gap: calc(14px * var(--k)); align-items: baseline;
   padding: calc(10px * var(--k)) calc(18px * var(--k)); border-bottom: 1px solid var(--line);
   font-size: calc(28px * var(--k)); line-height: 1.2; }
@@ -102,6 +108,37 @@ body.stale .step.cur .n, body.stale .step.cur .note { color: var(--stale-fg); }
 #banner[hidden] { display: none; }
 #empty { padding: 30px 20px; color: var(--dim); font-size: calc(22px * var(--k)); text-align: center; }
 
+/* ── song cards (3.9.0): the next-song banner and the role views ───────────── */
+.cl { display: flex; gap: calc(14px * var(--k)); align-items: baseline; font-size: calc(28px * var(--k)); line-height: 1.25;
+  color: var(--card-fg); padding: calc(3px * var(--k)) 0; }
+.cl .k { flex: none; min-width: 5.5ch; font-size: .62em; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.cl .v { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.tc { color: var(--tune); font-size: calc(30px * var(--k)); font-weight: 800; padding: calc(4px * var(--k)) 0; }   /* text first: colour never alone */
+.tc b { font-weight: 800; }
+#nextup { flex: none; margin: 0 calc(16px * var(--k)) calc(8px * var(--k)); padding: calc(12px * var(--k)) calc(16px * var(--k));
+  background: var(--card-bg); color: var(--card-fg); border: 3px solid var(--line); border-radius: 12px; }
+#nextup[hidden] { display: none; }
+.up-h { color: var(--next); font-size: calc(20px * var(--k)); font-weight: 800; letter-spacing: .12em; }
+.up-n { color: var(--card-fg); font-size: calc(40px * var(--k)); font-weight: 800; line-height: 1.15; padding-bottom: calc(4px * var(--k)); overflow-wrap: anywhere; }
+.up-cur { color: var(--dim); font-size: calc(22px * var(--k)); padding-top: calc(10px * var(--k)); }
+#cardpane { display: none; min-width: 0; min-height: 0; overflow-y: auto; padding: calc(14px * var(--k)) calc(18px * var(--k));
+  border-left: 2px solid var(--line); background: var(--card-bg); }
+body[data-role] #cardpane { display: block; }
+body[data-role] #nextup { display: none; }                  /* the card is already on screen */
+body[data-role] #work { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+body[data-role="band"] #work { grid-template-columns: minmax(0, 32%) minmax(0, 1fr); }
+body[data-role="vocals"] #work { grid-template-columns: minmax(0, 1fr); }
+body[data-role="band"] .step { font-size: calc(20px * var(--k)); }
+body[data-role="band"] .step.cur { font-size: calc(30px * var(--k)); }
+body[data-role="vocals"] #list, body[data-role="vocals"] #nextbar, body[data-role="vocals"] #ctrl { display: none; }
+body[data-role="vocals"] #cardpane { border-left: 0; }
+@media (orientation: portrait) {
+  body[data-role] #work { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 45fr) minmax(0, 55fr); }
+  body[data-role="band"] #work { grid-template-rows: minmax(0, 30fr) minmax(0, 70fr); }
+  body[data-role="vocals"] #work { grid-template-rows: minmax(0, 1fr); }
+  body[data-role] #cardpane { border-left: 0; border-top: 2px solid var(--line); }
+}
+
 #debug { position: fixed; inset: 0; background: rgba(0,0,0,.92); color: #b7f7c4; z-index: 10; padding: 14px;
   font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow: auto; white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
 #debug[hidden] { display: none; }
@@ -118,7 +155,11 @@ body.stale .step.cur .n, body.stale .step.cur .note { color: var(--stale-fg); }
 <nav id="tabs"></nav>
 <div id="status"><span id="listName"></span><span><span id="pos"></span> <span id="state"></span></span></div>
 <div id="banner" hidden></div>
-<main id="list"></main>
+<div id="work">
+  <main id="list"></main>
+  <aside id="cardpane" aria-live="polite"></aside>
+</div>
+<div id="nextup" hidden aria-live="polite"></div>
 <div id="nextbar" hidden><span class="lbl"></span><span class="t"></span></div>
 <div id="ctrl" hidden>
   <button id="bPrev" type="button"><span class="fill"></span>◀ <span class="lb"></span><span class="hint"></span></button>
@@ -167,6 +208,13 @@ const HOLD_MS = Number.isFinite(CFG.holdMs) ? CFG.holdMs : 600;
 const STOP_HOLD_MS = Number.isFinite(CFG.stopHoldMs) ? CFG.stopHoldMs : Math.max(1200, 2 * HOLD_MS);
 
 const T = s => (CFG.t && CFG.t[s]) || s;
+// ?role=commander | vocals | band picks a view of the same page; &who=Guitar shows only that player's line
+const ROLE = ["commander", "vocals", "band"].includes(new URLSearchParams(location.search).get("role"))
+  ? new URLSearchParams(location.search).get("role") : "";
+const WHO = (new URLSearchParams(location.search).get("who") || "").trim().toLowerCase();
+// which card fields each role sees: vocals the tempo and the note, everyone else everything
+const SHOW = ROLE === "vocals" ? {bpm: 1, note: 1} : {tuning: 1, bpm: 1, starts: 1, players: 1, note: 1};
+if (ROLE) document.body.dataset.role = ROLE;      // no attribute without a role: the default page has no card pane
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const params = new URLSearchParams(location.search);
@@ -274,8 +322,9 @@ function onMessage(msg) {
     if (m.kind === "cue") {
       const moved = s.idx !== m.idx;
       s.idx = m.idx; s.next = -1;
-      if (moved && m.idx >= 0) follow(m.id);
+      if (moved && m.idx >= 0) { follow(m.id); upFor = m.id; }
     } else {
+      if (s.idx !== m.idx && m.idx >= 0) upFor = m.id;
       s.status = m.status; s.idx = m.idx; s.next = m.next;
     }
   }
@@ -292,6 +341,41 @@ function visibleAfter(l, idx) {
   for (let i = idx + 1; i < l.steps.length; i++) if (!l.steps[i].hide) return i;
   return -1;
 }
+// ── song cards ───────────────────────────────────────────────────────────────
+const line = (k, v) => `<div class="cl"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`;
+function cardHtml(x) {
+  const c = x.card || {}, rows = [];
+  if (SHOW.tuning && x.tc)   // the words first, the colour second
+    rows.push(`<div class="tc">▲ ${esc(T("TUNING CHANGE"))} <b>${esc(x.tc.from)} → ${esc(x.tc.to)}</b></div>`);
+  else if (SHOW.tuning && c.tuning) rows.push(line(T("Tuning"), c.tuning));
+  if (SHOW.bpm && c.bpm) rows.push(line(T("Tempo"), `${c.bpm} ${T("BPM")}`));
+  if (SHOW.starts && c.starts) rows.push(line(T("Starts"), c.starts));
+  if (SHOW.players) (c.players || []).filter(p => !WHO || !p.who || p.who.toLowerCase() === WHO)
+    .forEach(p => rows.push(line(p.who || "·", p.note)));
+  if (SHOW.note && c.note) rows.push(line(T("Note"), c.note));
+  return rows.join("");
+}
+// The banner: when the setlist moves to a new step, the card of the song after it, for six seconds
+// or until the next step. Not shown on the role views: their card pane is always there.
+let upT = null, upFor = null;
+function hideNextUp() { clearTimeout(upT); $("nextup").hidden = true; }
+function showNextUp(l, nxt) {
+  const x = nxt >= 0 ? l.steps[nxt] : null, body = x ? cardHtml(x) : "";
+  if (ROLE || !x || !body) { hideNextUp(); return; }
+  $("nextup").innerHTML = `<div class="up-h">${esc(T("NEXT UP"))}</div><div class="up-n">${esc(x.name)}</div>${body}`;
+  $("nextup").hidden = false;
+  clearTimeout(upT); upT = setTimeout(hideNextUp, CFG.nextUpMs || 6000);
+}
+function renderPane(l, idx, nxt) {
+  if (!ROLE) return;
+  const cur = idx >= 0 ? l.steps[idx] : null, nx = nxt >= 0 ? l.steps[nxt] : null;
+  let h = "";
+  if (ROLE === "vocals" && cur) h += `<div class="up-n">${esc(cur.name)}</div>${cardHtml(cur)}`;
+  if (nx) h += `<div class="up-h">${esc(T("NEXT UP"))}</div><div class="up-n">${esc(nx.name)}</div>${cardHtml(nx)}`;
+  if (ROLE === "band" && cur) h += `<div class="up-cur">${esc(cur.name)}</div>`;
+  $("cardpane").innerHTML = h;
+}
+
 function render() {
   const l = lists[cur];
   if (!l) { $("list").innerHTML = `<div id="empty">${esc(T("No cue list chosen. Choose one in Swiss Knife and export again."))}</div>`; return; }
@@ -329,7 +413,7 @@ function render() {
   nb.querySelector(".lbl").textContent = T("NEXT");
   nb.querySelector(".t").textContent = nxt >= 0 ? l.steps[nxt].name : "—";
 
-  const ctrl = l.mode === "control";
+  const ctrl = l.mode === "control" && ROLE !== "vocals" && ROLE !== "band";   // the vocals and band views never control
   $("ctrl").hidden = !ctrl;
   if (ctrl) {
     $("bPrev").querySelector(".lb").textContent = T("Previous");
@@ -346,6 +430,9 @@ function render() {
     b.hidden = false;
     b.innerHTML = `${esc(T("Not connected to QLC+"))}<small>${esc(T("Start QLC+ with web access (qlcplus -w). Trying again by itself."))}<br>${esc(wsUrl)}</small>`;
   } else b.hidden = true;
+
+  renderPane(l, idx, nxt);
+  if (upFor === l.id) { upFor = null; showNextUp(l, nxt); }
 
   const target = list.querySelector(".cur, .ready");
   if (target) {

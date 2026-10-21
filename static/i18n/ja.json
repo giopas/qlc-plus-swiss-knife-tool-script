@@ -4009,5 +4009,11 @@
  "Singer, guitar, bass, keys and drums on a riser, backline, two wedges and a backdrop.": "ライザー上のボーカル、ギター、ベース、キーボード、ドラム、バックライン、フロアモニター2台、背景幕。",
  "Two players and a singer at the front of a small stage, no riser.": "小さなステージの前方に2人の演奏者とボーカル。ライザーなし。",
  "Wait for the pedal (Inf)": "ペダルを待つ（Inf）",
- "Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds.": "オンにすると、ペダルを踏むまでルックが点いたままになります（無限ホールド。QLC+ では Inf と表記）。オフにするとミリ秒で時間を入力できます。"
+ "Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds.": "オンにすると、ペダルを踏むまでルックが点いたままになります（無限ホールド。QLC+ では Inf と表記）。オフにするとミリ秒で時間を入力できます。",
+ "NEXT UP": "次の曲",
+ "TUNING CHANGE": "チューニング変更",
+ "Tuning": "チューニング",
+ "Tempo": "テンポ",
+ "Starts": "開始",
+ "BPM": "BPM"
 }

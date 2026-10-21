@@ -4009,5 +4009,11 @@
  "Singer, guitar, bass, keys and drums on a riser, backline, two wedges and a backdrop.": "主唱、吉他、贝斯、键盘和鼓在升降台上，另有返送设备、两个返听和背景幕。",
  "Two players and a singer at the front of a small stage, no riser.": "小舞台前方两位乐手和一位主唱，没有升降台。",
  "Wait for the pedal (Inf)": "等待踏板（Inf）",
- "Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds.": "勾选后，灯光效果会保持到您踩下踏板（无限保持，在 QLC+ 中写作 Inf）。取消勾选可输入毫秒数。"
+ "Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds.": "勾选后，灯光效果会保持到您踩下踏板（无限保持，在 QLC+ 中写作 Inf）。取消勾选可输入毫秒数。",
+ "NEXT UP": "下一首",
+ "TUNING CHANGE": "更换调弦",
+ "Tuning": "调弦",
+ "Tempo": "速度",
+ "Starts": "起拍",
+ "BPM": "BPM"
 }

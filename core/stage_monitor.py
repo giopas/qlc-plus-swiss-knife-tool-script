@@ -221,6 +221,57 @@ def _port(v, default: int) -> int:
     return n if 1 <= n <= 65535 else default
 
 
+# ── song cards (3.9.0) ───────────────────────────────────────────────────────
+
+CARD_LIMITS = (("tuning", 40), ("starts", 80), ("note", 200))   # text fields and their length
+MAX_PLAYERS = 8
+BPM_MIN, BPM_MAX = 20, 400
+ROLES = ("commander", "vocals", "band")
+_NAME_BPM = re.compile(r"[·•\-–—|]\s*(\d{2,3}(?:[.,]\d)?)\s*bpm\s*$", re.I)
+
+
+def clean_card(card) -> dict:
+    """A song card with only what is set: ``tuning``, ``starts`` (who starts and how),
+    ``note``, ``bpm`` (a tempo of your own, 20 to 400) and ``players``
+    (``[{who, note}]``, up to eight: a pedal or FX setting for a player).
+    Empty fields are left out, so an unused card is ``{}``."""
+    if not isinstance(card, dict):
+        return {}
+    out: dict = {}
+    for key, n in CARD_LIMITS:
+        v = str(card.get(key) or "").strip()[:n]
+        if v:
+            out[key] = v
+    try:
+        bpm = int(round(float(str(card.get("bpm")).replace(",", "."))))
+    except (TypeError, ValueError):
+        bpm = 0
+    if BPM_MIN <= bpm <= BPM_MAX:
+        out["bpm"] = bpm
+    players = []
+    for p in card.get("players") or []:
+        if not isinstance(p, dict):
+            continue
+        who, note = str(p.get("who") or "").strip()[:30], str(p.get("note") or "").strip()[:80]
+        if who or note:
+            players.append({"who": who, "note": note})
+    if players:
+        out["players"] = players[:MAX_PLAYERS]
+    return out
+
+
+def tempo_from_name(name: str) -> Optional[int]:
+    """The tempo in a step name made by Apply tempo (``Song · 128 BPM``), or ``None``."""
+    m = _NAME_BPM.search(name or "")
+    if not m:
+        return None
+    try:
+        v = int(round(float(m.group(1).replace(",", "."))))
+    except ValueError:
+        return None
+    return v if BPM_MIN <= v <= BPM_MAX else None
+
+
 def clean_config(cfg: Optional[dict]) -> dict:
     """A configuration with every key, values checked; unknown keys dropped."""
     cfg = cfg if isinstance(cfg, dict) else {}
@@ -254,6 +305,9 @@ def clean_config(cfg: Optional[dict]) -> dict:
                     s["hide"] = True
                 if str(v.get("label") or "").strip():
                     s["label"] = str(v["label"]).strip()[:120]
+                card = clean_card(v.get("card"))
+                if card:
+                    s["card"] = card
                 if s:
                     steps[str(int(k))] = s
         out["lists"].append({
@@ -327,6 +381,7 @@ PAGE_STRINGS = (
     "Start QLC+ with web access (qlcplus -w). Trying again by itself.",
     "No cue list chosen. Choose one in Swiss Knife and export again.",
     "Every step of this list is hidden.", "Close",
+    "NEXT UP", "TUNING CHANGE", "Tuning", "Tempo", "Starts", "Note", "BPM",
 )
 LANGS = ("en", "it", "fr", "de", "es", "pt", "ja", "zh")
 _I18N = os.path.join(os.path.dirname(_HERE), "static", "i18n")
@@ -352,10 +407,22 @@ def page_data(cfg: dict, lists: List[dict], lang: str = "en") -> dict:
     for item in cfg["lists"]:
         cl = by_id[item["id"]]
         steps = []
+        last_tuning = ""                       # the tuning of the song before, to show a change
         for st in cl["steps"]:
             s = item["steps"].get(str(st["index"]), {})
-            steps.append({"i": st["index"], "name": s.get("label") or st["name"],
-                          "note": st["note"], "hide": bool(s.get("hide"))})
+            row = {"i": st["index"], "name": s.get("label") or st["name"],
+                   "note": st["note"], "hide": bool(s.get("hide"))}
+            card = dict(s.get("card") or {})
+            bpm = card.get("bpm") or tempo_from_name(st["name"])
+            if bpm:
+                card["bpm"] = bpm
+            if card:
+                row["card"] = card
+            if not row["hide"] and card.get("tuning"):
+                if last_tuning and card["tuning"] != last_tuning:
+                    row["tc"] = {"from": last_tuning, "to": card["tuning"]}
+                last_tuning = card["tuning"]
+            steps.append(row)
         out_lists.append({"id": int(item["id"]),
                           "label": item["label"] or cl["caption"] or (cl["chaser"] or {}).get("name") or f"Cue list {item['id']}",
                           "mode": item["mode"], "layout": cl.get("layout", "stop"), "steps": steps})

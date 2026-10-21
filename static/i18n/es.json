@@ -4009,5 +4009,11 @@
  "Singer, guitar, bass, keys and drums on a riser, backline, two wedges and a backdrop.": "Voz, guitarra, bajo, teclados y batería sobre tarima, backline, dos monitores de suelo y un fondo.",
  "Two players and a singer at the front of a small stage, no riser.": "Dos músicos y un cantante al frente de un escenario pequeño, sin tarima.",
  "Wait for the pedal (Inf)": "Esperar al pedal (Inf)",
- "Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds.": "Marcado: el look se queda encendido hasta que pises el pedal (hold infinito, escrito Inf en QLC+). Desmárcalo para escribir un tiempo en milisegundos."
+ "Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds.": "Marcado: el look se queda encendido hasta que pises el pedal (hold infinito, escrito Inf en QLC+). Desmárcalo para escribir un tiempo en milisegundos.",
+ "NEXT UP": "SIGUIENTE CANCIÓN",
+ "TUNING CHANGE": "CAMBIO DE AFINACIÓN",
+ "Tuning": "Afinación",
+ "Tempo": "Tempo",
+ "Starts": "Empieza",
+ "BPM": "BPM"
 }

@@ -139,7 +139,7 @@ function _renderDictTable(rows) {
   if (!rows.length) {
     wrap.innerHTML = '<div style="padding:24px;color:var(--overlay0);font-size:12px">'
                    + ((_dictData.length === 0)
-                       ? '<a class="open-ws-link">📂 Open a workspace</a> to see functions.'
+                       ? '<a class="open-ws-link"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open a workspace</a> to see functions.'
                        : 'No results for current filter.') + '</div>';
     return;
   }
@@ -343,8 +343,8 @@ async function dictDraft() {
   if (r.error) { setStatus(r.error, 'error'); return; }
   await _loadDictionary();
   if (!r.drafted) { setStatus('Every function already has a description.', 'ok'); return; }
-  setStatus(`✨ ${r.drafted} description(s) drafted — ${r.described} of ${r.total} functions now described. ` +
-    'Check them, then 💾 Save as new file.', 'ok');
+  setStatus(`${r.drafted} description(s) drafted — ${r.described} of ${r.total} functions now described. ` +
+    'Check them, then Save as new file.', 'ok');
 }
 
 /** Save as a new file next to the show (or the loaded dictionary); never overwrites. */
@@ -375,7 +375,7 @@ async function dictClaudeToggle(open) {
     st.textContent = s.last_start
       ? t('Connected. Claude last started Swiss Knife on {0}.', new Date(s.last_start).toLocaleString())
       : (s.extension || s.config) ? t('Installed in Claude Desktop. Claude has not used it yet.')
-      : t('Not connected yet: use 🔌 Connect to Claude in the left menu first.');
+      : t('Not connected yet: use Connect to Claude in the left menu first.');
   } catch { st.textContent = ''; }
   await dictClaudeText();
 }

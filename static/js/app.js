@@ -19,16 +19,19 @@ let _vcData  = [];   // raw vc-widgets array from /api/vc-widgets
 let _fnGrid  = null; // Grid.js instance for Functions table
 let _vcGrid  = null; // Grid.js instance for VC Widgets table
 
-// ── Type → emoji map (kept for Grid.js cell rendering) ──────────────────────
+// ── Icons: the sprite symbol as markup (3.9.5; replaces the emoji of 3.9.0 and before) ─────────
+function skIcon(id) { return '<svg class="ic" aria-hidden="true"><use href="/static/icons.svg#' + id + '"/></svg>'; }
+
+// ── Type → icon map (kept for Grid.js cell rendering) ──────────────────────
 const TYPE_ICON = {
-  Chaser: '🔄', Scene: '🎬', Sequence: '📋', EFX: '✨',
-  Script: '📝', Show: '🎭', Audio: '🎵', Collection: '📦',
-  RGBMatrix: '🌈', Button: '🔘', Slider: '🎚', Knob: '🔩',
-  Frame: '🖼', SoloFrame: '⬜', CueList: '📑', Label: '🏷',
-  XYPad: '🕹', Clock: '🕐', VUMeter: '📊',
-  AudioTrigger: '🔊', Animation: '🎞', SpeedDial: '⏩',
+  Chaser: 'refresh', Scene: 'film', Sequence: 'clipboard', EFX: 'sparkles',
+  Script: 'file-text', Show: 'layout', Audio: 'music', Collection: 'package',
+  RGBMatrix: 'palette', Button: 'square', Slider: 'sliders', Knob: 'target',
+  Frame: 'image', SoloFrame: 'square', CueList: 'list', Label: 'tag',
+  XYPad: 'target', Clock: 'clock', VUMeter: 'bar-chart',
+  AudioTrigger: 'music', Animation: 'film', SpeedDial: 'clock',
 };
-const icon = t => TYPE_ICON[t] || '◻';
+const icon = t => (TYPE_ICON[t] ? (window.gridjs ? gridjs.html(skIcon(TYPE_ICON[t])) : '') : '◻');
 
 // ── Screen-ID → lazy-load function map ──────────────────────────────────────
 const _LAZY = {
@@ -317,7 +320,7 @@ async function quitApp() {
   setTimeout(() => {
     document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;' +
       'height:100vh;font-family:system-ui;color:#cdd6f4;background:#1e1e2e;flex-direction:column;gap:12px">' +
-      '<div style="font-size:2rem">⚡</div>' +
+      '<div style="font-size:2rem"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#bolt"/></svg> </div>' +
       '<div>QLC+ Swiss Knife has been shut down.</div>' +
       '<div style="font-size:12px;opacity:.5">You can close this tab.</div></div>';
     try { window.close(); } catch {}
@@ -342,8 +345,8 @@ async function _initGreeting() {
   } catch {}
 
   const h = new Date().getHours();
-  const greet = h < 12 ? 'Good morning, {0} 👋' : h < 18 ? 'Good afternoon, {0} 👋' : 'Good evening, {0} 👋';
-  el.textContent = name ? greet.replace('{0}', name) : 'Welcome 👋';   // English; the i18n observer translates it
+  const greet = h < 12 ? 'Good morning, {0}' : h < 18 ? 'Good afternoon, {0}' : 'Good evening, {0}';
+  el.textContent = name ? greet.replace('{0}', name) : 'Welcome';   // English; the i18n observer translates it
 }
 
 // =============================================================================
@@ -487,7 +490,7 @@ async function reloadFromDisk() {
   const st = await _apiJson('/api/status');
   if (!st.loaded) { browseWorkspace(); return; }
   if (!st.path) {
-    setStatus('This workspace was uploaded, so it cannot be re-read — use 📂 Open… to pick the file.', 'warn');
+    setStatus('This workspace was uploaded, so it cannot be re-read — use Open… to pick the file.', 'warn');
     return;
   }
   await _doLoad({ method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -516,7 +519,7 @@ async function pickQxwInto(pathInputId, fileInputId, loadFn) {
 /** "⤵ Open workspace" button in two-file tools: use the file open in the header. */
 async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
   const st = await _apiJson('/api/status');
-  if (!st.loaded) { setStatus('"⤵ Open workspace" copies the workspace open in the header, and none is open — use 📂 Browse… next to it instead.', 'warn'); return; }
+  if (!st.loaded) { setStatus('"⤵ Open workspace" copies the workspace open in the header, and none is open — use Browse… next to it instead.', 'warn'); return; }
   if (!st.path) { setStatus('The open workspace was uploaded (no file path) — use Browse… instead.', 'warn'); return; }
   const fileEl = document.getElementById(fileInputId);
   if (fileEl) fileEl.value = '';
@@ -525,7 +528,7 @@ async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
   await loadFn();
 }
 
-// Any "📂 Open a workspace" link in an empty state opens the picker.
+// Any "Open a workspace" link in an empty state opens the picker.
 document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('.open-ws-link');
   if (a) { e.preventDefault(); browseWorkspace(); }
@@ -644,7 +647,7 @@ function _updateHeader(state) {
 }
 
 // Tools that work on the open workspace show the same banner when none is open,
-// so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
+// so "where do I load the file?" has one answer everywhere: Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
@@ -659,7 +662,7 @@ function _updateNeedWsBanners(loaded) {
       b = document.createElement('div');
       b.className = 'need-ws';
       b.innerHTML = 'No workspace open — this tool works on the open workspace. ' +
-        '<button class="btn btn-accent btn-sm" onclick="browseWorkspace()">📂 Open workspace…</button>';
+        '<button class="btn btn-accent btn-sm" onclick="browseWorkspace()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open workspace…</button>';
       const head = scr.querySelector(':scope > .page-h');
       if (head && head.nextSibling) scr.insertBefore(b, head.nextSibling); else scr.prepend(b);
     }
@@ -877,7 +880,7 @@ async function _ensureIdBrowserLoaded() {
   if (!state.loaded) {
     ['fn-table-wrap', 'vc-table-wrap'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace (📂 Open… top right) to list its functions and Virtual Console widgets.</div>';
+      if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace (Open… top right) to list its functions and Virtual Console widgets.</div>';
     });
     return;
   }

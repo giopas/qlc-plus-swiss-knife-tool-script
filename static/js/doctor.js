@@ -1,10 +1,10 @@
 /**
  * Workspace Doctor tab (WORKPLAN Phase 2.1).
  *
- * 🔍 Check runs the Doctor on the open workspace; findings are grouped by
+ * Check runs the Doctor on the open workspace; findings are grouped by
  * code, fixable ones get a tick box (recommended fixes ticked; removals of
  * functions — D004 / D015 / D016 — are offered but not ticked).
- * 💾 Fix selected writes a NEW workspace (Save dialog, default
+ * Fix selected writes a NEW workspace (Save dialog, default
  * <name>_v<N+1>.qxw) and the fix report next to it.  The open workspace
  * and its file are never changed.
  */
@@ -46,7 +46,7 @@ function _docStatus(msg, level) {
 
 function _docRenderEmpty() {
   const el = document.getElementById('doc-list');
-  if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace and press 🔍 Check.</div>';
+  if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace and press Check.</div>';
 }
 
 async function doctorCheck() {
@@ -81,7 +81,7 @@ function doctorRender() {
   for (const f of _docData.findings) (byCode[f.code] = byCode[f.code] || []).push(f);
   const codes = Object.keys(byCode).filter(c => showInfo || byCode[c][0].severity !== 'info');
   if (!codes.length) {
-    el.innerHTML = '<div class="porter-placeholder">✅ No errors or warnings.' +
+    el.innerHTML = '<div class="porter-placeholder"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#check"/></svg> No errors or warnings.' +
       (s.info ? ' Tick <b>Show info</b> to see the info findings.' : '') + '</div>';
     _docSyncButton();
     return;
@@ -187,7 +187,7 @@ async function doctorFix() {
       [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }], 'Save fixed workspace');
     if (!saved) { _docStatus('Not saved.', 'info'); return; }
     const full = saveFileWithPicker.lastPath;
-    let reportMsg = 'Fix report not saved (no folder known) — use 📋 Copy Report.';
+    let reportMsg = 'Fix report not saved (no folder known) — use Copy Report.';
     if (full) {
       try {
         const rr = await fetch('/api/doctor/save-report', {

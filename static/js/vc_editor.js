@@ -1100,7 +1100,7 @@ function _vceCopyMoveHtml(selArr) {
     <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
       <select id="vce-cm-target" class="vce-pi" style="width:220px"
               onchange="document.getElementById('vce-cm-newname').style.display = this.value==='__new__' ? '' : 'none'">
-        ${opts}<option value="__new__">➕ New page…</option>
+        ${opts}<option value="__new__">New page…</option>
       </select>
       <input id="vce-cm-newname" class="vce-pi" style="width:140px;display:none" placeholder="New page name">
     </div>
@@ -1182,7 +1182,7 @@ async function _vceCheckDuplicates() {
     if (!dups.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
     const list = dups.map(x => `ID ${_esc(x.id)}: ${x.captions.map(c => '“' + _esc(c) + '”').join(' + ')}`).join('<br>');
     box.innerHTML = `⚠ ${dups.length} widget ID(s) used twice — copy/move can't target them:<br>${list}<br>
-      <button class="vce-ab" style="margin-top:4px" onclick="vceFixDuplicateIds()">🩹 Fix duplicate IDs</button>`;
+      <button class="vce-ab" style="margin-top:4px" onclick="vceFixDuplicateIds()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#wrench"/></svg> Fix duplicate IDs</button>`;
     box.style.display = '';
     _vceStatus(`⚠ ${dups.length} duplicated widget ID(s) — fix it at the top of the right panel`, 'warn');
   } catch { /* non-fatal */ }

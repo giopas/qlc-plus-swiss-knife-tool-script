@@ -60,11 +60,11 @@ function _renderSessionBadge() {
   if (_sess.filename) {
     badge.textContent = (_sess.dirty ? '● ' : '') + _sess.filename;
     badge.title = _sess.dirty
-      ? 'Session has unsaved changes — click 📋 to save'
+      ? 'Session has unsaved changes — click to save'
       : `Session: ${_sess.filename}`;
   } else {
     badge.textContent = _sess.dirty ? '● unsaved session' : '';
-    badge.title = _sess.dirty ? 'Session has unsaved changes — click 📋 to save' : '';
+    badge.title = _sess.dirty ? 'Session has unsaved changes — click to save' : '';
   }
 }
 
@@ -182,33 +182,33 @@ function _renderModal() {
     <p class="sess-hint">All fields are optional — fill in only the paths you want remembered. You can paste paths directly without re-loading the files.</p>
 
     <div class="sess-row">
-      <div class="sess-row-label">🎬 Workspace</div>
+      <div class="sess-row-label"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#film"/></svg> Workspace</div>
       <div class="sess-row-body">
         ${wsNote}
         <div class="sess-path-row">
           <input id="sess-inp-workspace" class="sess-path-input" type="text"
                  value="${_esc(wsValue)}" placeholder="${_esc(wsPlaceholder)}"
                  spellcheck="false" oninput="_sessInputChanged()">
-          ${wsValue ? `<button class="btn btn-surface btn-sm" onclick="sessionChangeWorkspace()" title="Pre-fill the header path input with this path">📂 Use</button>` : ''}
+          ${wsValue ? `<button class="btn btn-surface btn-sm" onclick="sessionChangeWorkspace()" title="Pre-fill the header path input with this path"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Use</button>` : ''}
         </div>
       </div>
     </div>
 
     <div class="sess-row">
-      <div class="sess-row-label">📖 Dictionary</div>
+      <div class="sess-row-label"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#book"/></svg> Dictionary</div>
       <div class="sess-row-body">
         <div class="sess-path-row">
           <input id="sess-inp-dictionary" class="sess-path-input" type="text"
                  value="${_esc(dictPath)}" placeholder="Paste full path to descriptions .txt…"
                  spellcheck="false" oninput="_sessInputChanged()">
           <button class="btn btn-surface btn-sm" onclick="sessionPickDictionary(null)"
-                  title="Browse for a descriptions .txt file">📂</button>
+                  title="Browse for a descriptions .txt file"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> </button>
         </div>
       </div>
     </div>
 
     <div class="sess-row">
-      <div class="sess-row-label">🎵 Setlist slots</div>
+      <div class="sess-row-label"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#music"/></svg> Setlist slots</div>
       <div class="sess-row-body sess-readonly">
         ${slotCount
           ? `<span class="sess-ok">✓ ${slotCount} slot file path${slotCount !== 1 ? 's' : ''} remembered — restored automatically when session is loaded</span>`
@@ -220,7 +220,7 @@ function _renderModal() {
     </div>
 
     <div class="sess-row">
-      <div class="sess-row-label">💡 QXF overrides</div>
+      <div class="sess-row-label"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#lightbulb"/></svg> QXF overrides</div>
       <div class="sess-row-body sess-readonly">
         ${forcedCount
           ? `<span class="sess-ok">✓ ${forcedCount} fixture${forcedCount !== 1 ? 's' : ''} with forced QXF — will be saved automatically</span>`
@@ -308,7 +308,7 @@ async function sessionPickDictionary(fallbackInput) {
 //   Brightness (forced QXFs + slider values), Function Porter and QXW Merger
 //   files, Show Book QXF folder + sections, PDF paper sizes.
 // Not saved on purpose: unsaved edits inside the workspace (VC editor, Trigger
-// Manager, Setlist) — those belong in a new .qxw via each tool's 💾 button.
+// Manager, Setlist) — those belong in a new .qxw via each tool's button.
 
 function _absPath(p) {
   p = (p || '').trim();
@@ -385,7 +385,7 @@ async function sessionSave() {
   if (fullPath && typeof _addRecent === 'function') _addRecent(fullPath, 'qsk');
   _renderSessionList();
   sessionCloseModal();
-  _showStatus(`💾 Session saved: ${savedName}`);
+  _showStatus(`Session saved: ${savedName}`);
 }
 
 
@@ -401,7 +401,7 @@ async function sessionLoad(input) {
   if (!data || data.version !== 1) { _showStatus('⚠ Not a valid .qsk session file.'); return; }
 
   sessionCloseModal();
-  _showStatus('⏳ Loading session…');
+  _showStatus('Loading session…');
   try {
     const r = await fetch('/api/session/apply', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -421,7 +421,7 @@ async function sessionLoadFromPath(path) {
       await sessionSave();
     }
   }
-  _showStatus('⏳ Loading session…');
+  _showStatus('Loading session…');
   try {
     const r = await fetch('/api/session/load-from-path', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -463,7 +463,7 @@ async function _afterSessionApplied(result, data, filename) {
   const res = result.results || {};
   const matchInfo = res.auto_match && res.auto_match.startsWith('ok')
     ? ` · ${res.auto_match.replace(/^ok\s*/, '')}` : '';
-  _showStatus((result.ok ? '✅ Session loaded' : '⚠ Session loaded (with errors)') +
+  _showStatus((result.ok ? 'Session loaded' : '⚠ Session loaded (with errors)') +
               ` — ${filename}${matchInfo}`);
   _renderSessionBadge();
   _renderSessionList();

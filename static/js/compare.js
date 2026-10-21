@@ -27,7 +27,7 @@ async function compareOpened() {
 
 async function compareRun() {
   const path = document.getElementById('cmp-path')?.value || '';
-  if (!path) { setStatus('Pick the other show first (📂 Other show…).', 'warn'); return; }
+  if (!path) { setStatus('Pick the other show first (Other show…).', 'warn'); return; }
   setStatus('Comparing…', 'ok');
   const r = await fetch('/api/compare/run', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path }) });
@@ -72,7 +72,7 @@ function _cmpRender() {
 async function compareCopy() {
   if (!_cmpRes) { setStatus('Compare first.', 'warn'); return; }
   try { await navigator.clipboard.writeText(_cmpRes.report); setStatus('Report copied.', 'ok'); }
-  catch { setStatus('Could not copy — use 💾 Save report…', 'warn'); }
+  catch { setStatus('Could not copy — use Save report…', 'warn'); }
 }
 
 async function compareSaveReport() {

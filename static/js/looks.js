@@ -227,7 +227,7 @@ function _lbRenderFams() {
   }).join('') + `<div class="lb-card lbx-fam">
       <div class="lbx-h"><i class="lbx-dot" style="background:#fbbf24"></i><h3>Your chasers</h3><span class="lb-n">${_lbOwn.length}</span>
         <span class="lbx-sp"></span><button class="btn btn-surface btn-sm" onclick="looksEdit('new')">+ New chaser</button></div>
-      ${_lbOwn.map((c, i) => `<div class="lb-item"><span>🔁 ${_esc(c.name || (_lbOpts.patterns.find(p => p.id === c.pattern) || {}).label)} — ${_esc(_lbGName(c.group))}
+      ${_lbOwn.map((c, i) => `<div class="lb-item"><span><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#refresh"/></svg> ${_esc(c.name || (_lbOpts.patterns.find(p => p.id === c.pattern) || {}).label)} — ${_esc(_lbGName(c.group))}
         ${c.colours.map(x => `<i class="lb-dot" style="background:${x.hex}"></i>`).join('')}</span>
         <button class="btn btn-surface btn-sm" onclick="looksRemoveOwn(${i})" aria-label="Remove">✕</button></div>`).join('')
         || '<p class="p-desc">A chaser of your own: any group, pattern, colours and timing, with the song presets.</p>'}
@@ -263,7 +263,7 @@ function _lbColourBar() {
     <button class="btn btn-surface btn-sm" onclick="looksAddCustom()">+ add</button>
     <input class="filter-input lb-cname" id="lb-palname" placeholder="palette name">
     <button class="btn btn-surface btn-sm" onclick="looksSavePalette()" title="Keep the ticked colours as a palette of your own">★ Save ticked as palette</button>
-    <button class="btn btn-surface btn-sm" onclick="looksDeletePalette()" title="Delete the palette named in the box (yours only)" aria-label="Delete palette">🗑</button>
+    <button class="btn btn-surface btn-sm" onclick="looksDeletePalette()" title="Delete the palette named in the box (yours only)" aria-label="Delete palette"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button>
     <label class="lbx-inl">Level <input type="range" id="lb-level" min="5" max="100" step="5" value="100"
       oninput="document.getElementById('lb-level-v').textContent=this.value+' %'; _lbChanged()"> <span id="lb-level-v">100 %</span></label>
   </div>`;
@@ -509,7 +509,7 @@ function looksEdit(eid) {
           <option value="">—</option>${_lbOpts.presets.map((q, i) => `<option value="${i}">${q.builtin ? '' : '★ '}${_esc(q.name)}</option>`).join('')}</select>
         <input class="filter-input" id="lb-pname" placeholder="save as…">
         <button class="btn btn-surface btn-sm" onclick="looksSavePreset()">★ Save as recipe</button>
-        <button class="btn btn-surface btn-sm" onclick="looksDeletePreset()" title="Delete the selected recipe (yours only)" aria-label="Delete recipe">🗑</button></div>
+        <button class="btn btn-surface btn-sm" onclick="looksDeletePreset()" title="Delete the selected recipe (yours only)" aria-label="Delete recipe"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button></div>
       <div class="lb-row" ${eid === 'new' ? '' : 'hidden'}><span class="lbx-lbl">Group</span>
         <select id="lb-cg" class="filter-input" onchange="_lbChPreview()">${_lbOpts.groups.map(g =>
           `<option value="${_esc(g.id)}" ${g.id === firstG ? 'selected' : ''} ${g.supported ? '' : 'disabled'} data-i18n="off">${_esc(_lbGName(g.id))} (${g.fixtures.length})</option>`).join('')}</select></div>
@@ -825,7 +825,7 @@ function _lbRenderBatch() {
   el.innerHTML = rows.map(([w, n]) => `<div class="lbx-sumrow"><span>${w}</span><b>+${n}</b></div>`).join('') +
     `<div class="lbx-doc ${doc.new_errors.length ? 'bad' : ''}">${doc.new_errors.length || doc.new_warnings.length
       ? `<span>Doctor: new</span> <span>${doc.new_errors.length} error(s), ${doc.new_warnings.length} warning(s)</span>` : '<span>Doctor: nothing new</span>'}</div>` +
-    (_lbLast.blocked ? '<p class="porter-warn">⛔ The result has new Doctor errors — it will not be added.</p>' : '') +
+    (_lbLast.blocked ? '<p class="porter-warn"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#ban"/></svg> The result has new Doctor errors — it will not be added.</p>' : '') +
     `<details><summary>Changes (${_lbLast.log.length})</summary><div class="rr-log">${_lbLast.log.map(x => `<div>${_esc(x)}</div>`).join('')}</div></details>` +
     (_lbLast.notes.length ? `<details><summary>Notes (${_lbLast.notes.length})</summary><div class="rr-log">${_lbLast.notes.map(x => `<div>${_esc(x)}</div>`).join('')}</div></details>` : '');
   _lbSync();

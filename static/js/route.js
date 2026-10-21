@@ -9,14 +9,14 @@ const ROUTES = {
   new: {
     title: 'Start a new show',
     steps: [
-      { tool: 'quickstart', label: 'The rig',     hint: 'Quick Start (or Fixtures for the rig alone) — fixtures, patch, groups, first looks and console; 💾 Save as new file…, then 🎛 Open it as the show' },
+      { tool: 'quickstart', label: 'The rig',     hint: 'Quick Start (or Fixtures for the rig alone) — fixtures, patch, groups, first looks and console; Save as new file…, then Open it as the show' },
       { tool: 'stage',    label: 'Groups', tab: 'groups', hint: 'Stage & Meshes › Groups — the fixture groups the looks are built on' },
       { tool: 'looks',    label: 'Looks',         hint: 'Look Builder — looks and chasers for the groups' },
       { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — pages, buttons, the setlist CueList' },
       { tool: 'stage',    label: 'Stage',         hint: 'Stage & Meshes — the stage, band and set pieces' },
       { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — the songs into the CueList' },
       { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — patch sheet, tech rider, crew checklist' },
-      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then Save as new file…' },
     ],
   },
   adapt: {
@@ -30,7 +30,7 @@ const ROUTES = {
       { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — pages, buttons, the setlist CueList' },
       { tool: 'stage',    label: 'Stage',         hint: 'Stage & Meshes — the venue stage, band and set pieces' },
       { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — tonight’s songs into the CueList' },
-      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then Save as new file…' },
     ],
   },
   wizard: {
@@ -41,7 +41,7 @@ const ROUTES = {
       { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — move or rename the new buttons, add a setlist page' },
       { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — tonight’s songs into the CueList' },
       { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — patch sheet, tech rider, crew checklist' },
-      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix, then Save as new file…' },
     ],
   },
   upgrade: {
@@ -50,7 +50,7 @@ const ROUTES = {
       { tool: 'doctor',   label: 'Check',         hint: 'Workspace Doctor — fix what the show carries before adding to it' },
       { tool: 'upgrade',  label: 'Upgrade',       hint: 'Upgrade to QLC+ 5.3 — folders, palettes, an All Fixtures group, positions, a page per group, locked fixtures' },
       { tool: 'vceditor', label: 'Console',       hint: 'VC Visual Editor — look at the Groups page, move or rename what you like' },
-      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix (I008 lists what QLC+ 5.2.2 would ignore), then 💾 Save as new file…' },
+      { tool: 'doctor',   label: 'Final check',   hint: 'Workspace Doctor — nothing left to fix (I008 lists what QLC+ 5.2.2 would ignore), then Save as new file…' },
     ],
   },
   gig: {
@@ -58,7 +58,7 @@ const ROUTES = {
     steps: [
       { tool: 'setlist',  label: 'Setlist',       hint: 'Setlist — tonight’s songs into the CueList' },
       { tool: 'triggers', label: 'Keys & MIDI',   hint: 'Trigger Manager — no clashes, every button reachable' },
-      { tool: 'doctor',   label: 'Check',         hint: 'Workspace Doctor — nothing left to fix, then 💾 Save as new file…' },
+      { tool: 'doctor',   label: 'Check',         hint: 'Workspace Doctor — nothing left to fix, then Save as new file…' },
       { tool: 'cabling',  label: 'Cabling',       hint: 'Cabling — the DMX cables for tonight: kit, places, plan, pick list and labels' },
       { tool: 'showbook', label: 'Paperwork',     hint: 'Show Paperwork — tech rider for the venue, crew checklist (with the cabling)' },
     ],
@@ -223,7 +223,7 @@ async function routeForward() {
   if (n >= 0) { routeGo(n); return; }
   routeRender();
   if (typeof showSave === 'function' && typeof _show !== 'undefined' && _show.active) showSave();
-  setStatus(_rTr('Route done: {0}. Keep the show with 💾 Save as new file… in the header.', _rTr(ROUTES[_route.id].title)), 'ok');
+  setStatus(_rTr('Route done: {0}. Keep the show with Save as new file… in the header.', _rTr(ROUTES[_route.id].title)), 'ok');
 }
 
 /** Kept for the old "Done, next ›" (and anything that still calls it). */
@@ -414,7 +414,7 @@ function routeCards() {
 
 /** Start card "Do it again with a profile": the History's Do it again box. */
 async function startProfiles(fromNothing) {
-  if (!fromNothing && (typeof _show === 'undefined' || !_show.active)) { setStatus('Open the show to apply the profile to first (📂 Open…) — or ▶ Start a show from a profile that keeps its own rig.', 'warn'); return; }
+  if (!fromNothing && (typeof _show === 'undefined' || !_show.active)) { setStatus('Open the show to apply the profile to first (Open…) — or ▶ Start a show from a profile that keeps its own rig.', 'warn'); return; }
   await showHistoryToggle(true);
   const d = document.getElementById('sh-again');
   if (d) { d.open = true; d.scrollIntoView({ block: 'nearest' }); }

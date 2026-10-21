@@ -418,7 +418,7 @@ let _fixLastSavedPath = null;
 /** The rig just saved becomes the show in progress (asks first if the open
  *  one has unsaved changes). */
 async function fixOpenAsShow() {
-  if (!_fixLastSavedPath) { setStatus('Save the rig first (💾 Save as new file…).', 'warn'); return; }
+  if (!_fixLastSavedPath) { setStatus('Save the rig first (Save as new file…).', 'warn'); return; }
   const inp = document.getElementById('path-input');
   if (inp) inp.value = _fixLastSavedPath;
   await loadFromPath();
@@ -441,7 +441,7 @@ async function fixGenerateQxw() {
       _fixLastSavedPath = saveFileWithPicker.lastPath || null;
       const opn = document.getElementById('fix-btn-open');
       if (opn) opn.style.display = _fixLastSavedPath ? '' : 'none';
-      setStatus(_fixLastSavedPath ? 'Workspace saved to: ' + _fixLastSavedPath + ' — 🎛 Open it as the show to keep working on it.' : 'QXW saved.', 'ok');
+      setStatus(_fixLastSavedPath ? 'Workspace saved to: ' + _fixLastSavedPath + ' — Open it as the show to keep working on it.' : 'QXW saved.', 'ok');
     }
   } catch (err) { setStatus(String(err), 'error'); }
 }

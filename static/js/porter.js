@@ -102,7 +102,7 @@ async function porterUseShowTgt(quiet = false) {
   if (!r.ok) { if (!quiet) _pStatus(d.error || 'No show open.', 'error'); return false; }
   _pTgtLoaded = true; _pTgtShow = true; _pTgtStale = false; _pTgtName = d.name;
   const p = document.getElementById('porter-tgt-path'); if (p) p.value = '';
-  setFileChip('porter-tgt-chip', '🎛 the show in progress');
+  setFileChip('porter-tgt-chip', 'the show in progress');
   await _pFetchTargetData();
   if (!quiet) _pStatus(`Target: the show in progress (${d.summary.fixtures} fixtures, ${d.summary.functions} functions).`, 'ok');
   _pRenderStep();
@@ -346,7 +346,7 @@ function _pRenderStep() {
   if (tb) {
     // chosen: the button itself says so (no second "the show in progress" chip)
     tb.className = 'btn ' + (_pTgtShow ? 'btn-surface porter-chosen' : 'btn-accent');
-    tb.textContent = _pTgtShow ? '✓ The show in progress' : '🎛 The show in progress';
+    tb.textContent = _pTgtShow ? '✓ The show in progress' : 'The show in progress';
   }
   const tc = document.getElementById('porter-tgt-chip');
   if (tc) tc.hidden = _pTgtShow || !_pTgtLoaded;
@@ -417,7 +417,7 @@ function _pRenderVcTree() {
   }
   const scope = new Set(_pVcScope);
   el.innerHTML = _pVcTree.map((w, i) => {
-    const icon = w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
+    const icon = w.depth === 0 ? '' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
     return `<label class="porter-row${w.depth === 0 ? ' porter-vc-page' : ''}" style="padding-left:${0.5 + w.depth * 1.2}rem">
       <input type="checkbox" class="porter-vc-check" data-idx="${i}" value="${w.key}"
              ${scope.has(w.key) ? 'checked' : ''} onchange="porterVcToggle(${i}, this.checked)">
@@ -1021,7 +1021,7 @@ async function _pRenderVcOptions() {
     const r = await fetch('/api/porter/target/pages');
     pages = r.ok ? await r.json() : [];
   } catch (e) { pages = []; }
-  sel.innerHTML = '<option value="">➕ A new page</option>' +
+  sel.innerHTML = '<option value="">A new page</option>' +
     pages.map(p => `<option value="${_esc(p.id)}" ${String(_pVc.target_page) === String(p.id) ? 'selected' : ''}>${_esc(p.caption || '(page ' + p.id + ')')}</option>`).join('');
   document.getElementById('porter-vc-enabled').checked = _pVc.enabled;
   document.getElementById('porter-vc-caption').value = _pVc.page_caption;
@@ -1047,7 +1047,7 @@ function _pRenderRmTree() {
   if (!_pTgtVcTree.length) { el.innerHTML = '<div class="porter-placeholder">The target has no Virtual Console.</div>'; return; }
   const scope = new Set(_pRmScope);
   el.innerHTML = _pTgtVcTree.map((w, i) => {
-    const icon = w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
+    const icon = w.depth === 0 ? '' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
     return `<label class="porter-row${w.depth === 0 ? ' porter-vc-page' : ''}" style="padding-left:${0.5 + w.depth * 1.2}rem">
       <input type="checkbox" class="porter-rm-check" data-idx="${i}" value="${w.key}"
              ${scope.has(w.key) ? 'checked' : ''} onchange="porterRmToggle(${i}, this.checked)">
@@ -1292,7 +1292,7 @@ async function porterExecute() {
     const folder = fullPath ? fullPath.replace(/[\\/][^\\/]*$/, '') : '';
     _pStatus(reportName
       ? `Exported ${savedName} and the port report ${reportName} in ${folder}.`
-      : `Exported ${savedName}. The port report could not be saved next to it — use 📋 Copy Report.`,
+      : `Exported ${savedName}. The port report could not be saved next to it — use Copy Report.`,
       reportName ? 'ok' : 'warn');
     _pExported = true;
     _pRenderDone(savedName, summary, reportName, folder);
@@ -1363,7 +1363,7 @@ function _pRenderDone(filename, summary, reportName, folder) {
       <p>Workspace: <strong>${_esc(filename)}</strong></p>
       ${reportName
         ? `<p>Port report: <strong>${_esc(reportName)}</strong> — saved next to it${folder ? ` in <code>${_esc(folder)}</code>` : ''}. It lists every ported function, what was left out, the Virtual Console placement and Doctor's result.</p>`
-        : `<p class="porter-warn">The port report could not be saved next to the workspace — use 📋 Copy Report.</p>`}
+        : `<p class="porter-warn">The port report could not be saved next to the workspace — use Copy Report.</p>`}
       ${summary.removed_vc && summary.removed_vc.length ? `<p>Removed from the target's Virtual Console: ${summary.removed_vc.map(_esc).join('; ')}.</p>` : ''}
       <p>${summary.functions ?? _pClosure.function_ids.length} function(s) ported
          ${summary.pruned && summary.pruned.length ? `(${summary.pruned.length} left out: none of their fixtures is in the target)` : ''}.</p>
@@ -1460,7 +1460,7 @@ function _pRenderCopyPick() {
   if (mEl) mEl.innerHTML = _pSrcMeshes.length ? _pSrcMeshes.map(m => `
     <label class="porter-row"><input type="checkbox" class="porter-check" value="${_esc(m.id)}"
       ${_pCopyMsh.has(String(m.id)) ? 'checked' : ''} onchange="porterCopyMesh(this)">
-      <span>${m.found ? '' : '⚠ '}${m.hidden ? '🙈 ' : ''}${_esc(m.label)}</span>
+      <span>${m.found ? '' : '⚠ '}${m.hidden ? '' : ''}${_esc(m.label)}</span>
       <span class="porter-row-sub">${m.found ? '' : 'model file not found here'}</span></label>`).join('')
     : '<div class="porter-placeholder">No meshes on the source stage.</div>';
   const det = document.getElementById('porter-copy-pick');
@@ -1597,7 +1597,7 @@ async function porterApply() {
   if (el) {
     const h = el.querySelector('h3'); if (h) h.textContent = `Applied to the show — step ${d.step.n}`;
     const p = el.querySelector('p'); if (p) p.innerHTML = `${_esc(d.step.title)}. Nothing is written yet: keep working in any tool, then
-      <button class="btn btn-accent btn-sm" onclick="showSave()">💾 Save as new file…</button> (also top right) writes the show and one report with every step.
+      <button class="btn btn-accent btn-sm" onclick="showSave()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file…</button> (also top right) writes the show and one report with every step.
       ${(summary.copied && summary.copied.map && Object.keys(summary.copied.map).length) ? `<br>The copied fixtures stand where they were in the source (scaled to this stage) — adjust them in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>.` : ''}`;
     el.querySelectorAll('.porter-warn').forEach(x => x.remove());
     if (!(summary.functions || 0)) {            // fixtures / groups only: no function lines

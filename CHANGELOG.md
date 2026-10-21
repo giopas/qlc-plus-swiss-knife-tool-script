@@ -5,6 +5,27 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [Unreleased]
+
+### Changed (3.9.5, stage A: the foundation)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **Five type sizes, none below 11 px.** Title 20, section 15, body 13, ui 12, small 11. The old names `--fs-lead` and `--fs-micro` stay as aliases of body and small. The page title and the Start heading use the title size. The few literal sizes of 8 to 10 px (the Virtual Console preview, the pool toggle, plot labels, two badges) are now 11 px.
+- **Radii and motion.** Cards and panels 8 px, controls 6 px, pills 999 px. Two motion tokens. People who ask their system for less motion get no animation.
+- **Colours that read.** Every theme has `--success-text`, `--warning-text`, `--error-text` and `--accent-ring`. The text colours reach 4.5:1 on their backgrounds in dark, grey and light, checked by `tests/test_tokens_contrast.py`. To get there the light theme's teal and orange are a little darker, the dim and faint text colours a little lighter in dark and grey.
+- **A visible keyboard focus.** One ring (2 px, offset 2 px) on every button, link, field and tab.
+- **Four kinds of button.** Primary `btn-accent`, secondary `btn-surface`, ghost `btn-ghost`, danger `btn-danger`; `btn-overwrite` stays for the Stage Monitor's *replace a page*. The classes `btn-primary`, `btn-secondary`, `btn-success`, `btn-green` and `btn-red` are gone. Setlist's *Save Songs* is now secondary so *Apply to the show* is the only filled button there; Dictionary's *Save* and the two *Add to Rig* buttons are primary; Triggers' *Clear* is a danger button.
+- **Icons from the sprite, no emoji.** Every button, heading and list that started with a picture now has an icon from `static/icons.svg` (20 new ones: file, trash, download, image, package, sparkles, target, monitor, map, tag, lock, bar chart, film, eye off, ban, light bulb, square, activity, bot, ticket). The function types, the Show Paperwork sections and the status messages that named a button by its emoji follow. Arrows, ticks and crosses stay as text signs.
+- **Translations kept.** The emoji were part of the translation keys. They are removed from the keys and the translations of the seven languages in one step, so nothing is lost; two messages sent by the server still name *Open…* with its old emoji.
+- **The shell has no inline styles.** The few left became classes.
+
+### Added
+
+- `tests/test_tokens_contrast.py` (WCAG ratios of the token pairs in three themes) and `tests/test_ui_lint.py` (no emoji, no key starting with a picture, no font size below 11 px, no inline style in the shell and the kit, every icon exists in the sprite, only the four button kinds).
+
+---
+
 ## [3.9.0] — 2026-10-21 — Tablet on stage
 
 ### Added

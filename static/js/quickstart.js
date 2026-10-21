@@ -1464,7 +1464,7 @@ let _qsLastSavedPath = null;
 /** The new show becomes the show in progress (asks first if the open one has
  *  unsaved changes). */
 async function qsOpenAsShow() {
-  if (!_qsLastSavedPath) { setStatus('Save the new show first (💾 Save as new file…).', 'warn'); return; }
+  if (!_qsLastSavedPath) { setStatus('Save the new show first (Save as new file…).', 'warn'); return; }
   const inp = document.getElementById('path-input');
   if (inp) inp.value = _qsLastSavedPath;
   await loadFromPath();
@@ -1513,7 +1513,7 @@ function _qsProfileFolderLink(path) {
   if (!row) return;
   let a = document.getElementById('qs-prof-folder');
   if (!a) { a = document.createElement('button'); a.id = 'qs-prof-folder'; a.className = 'btn btn-surface'; row.appendChild(a); }
-  a.textContent = '📂 Open folder';
+  a.textContent = 'Open folder';
   a.title = path;
   a.onclick = () => fetch('/api/profile/open-folder', { method: 'POST' }).catch(() => {});
 }
@@ -1581,7 +1581,7 @@ async function qsExport() {
     console.error('Quick Start export failed:', err);
     setStatus('Export failed: ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Save as new file…'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save as new file…'; }
   }
   return false;
 }

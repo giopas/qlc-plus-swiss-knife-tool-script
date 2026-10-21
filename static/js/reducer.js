@@ -2,9 +2,9 @@
  * Rig Reducer tab (WORKPLAN Phase 2.2).
  *
  * Lists the fixtures of the open workspace: untick the ones to remove, edit
- * name / universe / address of the kept ones (re-patch).  🔍 Preview shows
+ * name / universe / address of the kept ones (re-patch).  Preview shows
  * what will be removed (values, groups, functions, VC widgets) and what the
- * Doctor says; 💾 Reduce writes a NEW workspace (Save dialog) and the report
+ * Doctor says; Reduce writes a NEW workspace (Save dialog) and the report
  * next to it.  The open workspace is never changed.
  */
 
@@ -159,7 +159,7 @@ async function reducerPreview(auto) {
     const newBad = doc.new_errors.length, newWarn = doc.new_warnings.length;
     el.innerHTML = `<h3 class="rr-h">What Apply will do</h3>
       <div class="rr-sub">updated as you tick · ${c.values} scene value set(s) go with the fixtures</div>
-      ${d.blocked ? '<div class="rr-block">⛔ The result has new Doctor errors — Apply is refused until they are gone.</div>' : ''}
+      ${d.blocked ? '<div class="rr-block"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#ban"/></svg> The result has new Doctor errors — Apply is refused until they are gone.</div>' : ''}
       ${groups.filter(([, ls]) => ls.length).map(([t, ls], i) => `
         <details class="rr-grp"${i === 0 ? ' open' : ''}><summary><span>${t}</span><b>${ls.length}</b></summary>
           <ul>${ls.map(x => `<li>${_esc(x)}</li>`).join('')}</ul></details>`).join('')}
@@ -175,7 +175,7 @@ async function reducerPreview(auto) {
     if (c.functions) chips.push(`−${c.functions} function${c.functions > 1 ? 's' : ''}`);
     if (c.widgets) chips.push(`−${c.widgets} VC widget${c.widgets > 1 ? 's' : ''}`);
     if (ren) chips.push(`${ren} renamed / re-patched`);
-    chips.push(newBad ? { text: `⛔ ${newBad} new Doctor error(s)`, kind: 'error' }
+    chips.push(newBad ? { text: `${newBad} new Doctor error(s)`, kind: 'error' }
       : { text: '✓ no new Doctor errors', kind: 'ok' });
     setOutcome('reducer', chips, newBad ? 'error' : '');
     if (!auto) setStatus('Preview ready.', 'ok');

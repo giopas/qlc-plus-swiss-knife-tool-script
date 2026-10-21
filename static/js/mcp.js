@@ -36,7 +36,7 @@ async function mcpLoad() {
 function mcpSidebar(connected) {
   const b = document.querySelector('#fp-mcp .sc-link');
   if (!b) return;
-  b.textContent = connected ? t('🔌 MCP connected to Claude') : t('🔌 Connect to Claude');
+  b.textContent = connected ? t('MCP connected to Claude') : t('Connect to Claude');
   b.classList.toggle('mcp-on', !!connected);
 }
 
@@ -58,7 +58,7 @@ async function mcpStatus() {
   else el.textContent = t('Not connected yet. Use the button below.');
   el.className = 'upd-msg mcp-status ' + (connected ? 'mcp-ok' : 'mcp-no');
   mcpSidebar(connected);
-  btn.textContent = connected ? t('⬇ Reinstall the connection') : t('⬇ Connect Claude Desktop');
+  btn.textContent = connected ? t('Reinstall the connection') : t('Connect Claude Desktop');
 }
 
 async function mcpToggle(open) {

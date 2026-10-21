@@ -1,7 +1,7 @@
 // =============================================================================
 // The show in progress (WORKPLAN Phase 2.6)
 // Every tool changes one working copy of the open show; each change is a step
-// in its History (undo any step); 💾 Save as new file… writes it all at once,
+// in its History (undo any step); Save as new file… writes it all at once,
 // with one report.  The header shows it; sidebar tools that changed the show
 // get an orange dot until it is saved.
 // =============================================================================
@@ -467,7 +467,7 @@ function showConfirmDiscard(what) {
   const n = window._showUnsaved || 0;
   if (!n) return true;
   return confirm(`The show in progress has ${n} unsaved change${n > 1 ? 's' : ''}.\n\n` +
-    `${what} discards them. Continue?\n\n(Cancel, then 💾 Save as new file… to keep them.)`);
+    `${what} discards them. Continue?\n\n(Cancel, then Save as new file… to keep them.)`);
 }
 
 document.addEventListener('DOMContentLoaded', () => showRefreshSoon(50));
@@ -522,7 +522,7 @@ async function showApply(url, body, busy = 'Applying…') {
     const tr = (x, ...v) => (typeof t === 'function' ? t(x, ...v) : x.replace(/\{(\d+)\}/g, (_m, i) => v[+i] ?? ''));
     const doc = d.show && d.show.doctor ? _sep(' ') + tr('Doctor: {0} errors, {1} warnings.', d.show.doctor.error || 0, d.show.doctor.warning || 0) : '';
     setStatus(tr('✓ Applied to the show — step {0}: {1}.', s.n, _stepTitle(s.title)) + doc + _sep(' ') +
-              tr("💾 Save as new file… (top right) when you're ready."), 'ok');
+              tr("Save as new file… (top right) when you're ready."), 'ok');
     await showRefresh();
     return d;
   } catch (e) {
@@ -577,7 +577,7 @@ async function vceApply() {
   const n = Object.keys(_vceChanges || {}).length;
   if (!n) { _vceStatus('Every edit is already in the show.', 'ok'); return; }
   if (!(await _vceFlush())) return;
-  _vceStatus(`✓ ${n} widget change(s) applied to the show — 💾 Save as new file… (top right) when you're ready.`, 'ok');
+  _vceStatus(`✓ ${n} widget change(s) applied to the show — Save as new file… (top right) when you're ready.`, 'ok');
 }
 
 async function slApply() {
@@ -589,9 +589,9 @@ async function slApply() {
   if (d.skipped && d.skipped.length)
     setStatus(`⚠ Setlist built, but ${d.skipped.length} song(s) have no function and are not in the cue list: ${d.skipped.join(', ')} — assign them and apply again.`, 'warn');
   else if (d.tempo && d.tempo.fitted)
-    setStatus(`✓ Setlist chasers built in the show, ${d.tempo.fitted} song(s) timed to their BPM — 💾 Save as new file… when you're ready.`, 'ok');
+    setStatus(`✓ Setlist chasers built in the show, ${d.tempo.fitted} song(s) timed to their BPM — Save as new file… when you're ready.`, 'ok');
   else
-    setStatus('✓ Setlist chasers built in the show — 💾 Save as new file… when you\'re ready.', 'ok');
+    setStatus('✓ Setlist chasers built in the show — Save as new file… when you\'re ready.', 'ok');
   await showRefresh();
   if (typeof _fetchChasers === 'function') await _fetchChasers();
   if (typeof slCheckTempo === 'function') slCheckTempo();

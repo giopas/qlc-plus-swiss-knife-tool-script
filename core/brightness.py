@@ -15,6 +15,8 @@ import tempfile
 import urllib.request
 import xml.etree.ElementTree as ET
 
+from core import xml_safe
+
 from core.workspace import _state, NS, QLC_NS_URI
 from core import qxw_io
 from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, norm_name, GH_API_BASE, GH_RAW_BASE
@@ -102,7 +104,7 @@ def _parse_qxf(qxf_path: str, mode_name: str) -> dict:
     or empty dict on failure.
     """
     try:
-        root = ET.parse(qxf_path).getroot()
+        root = xml_safe.parse(qxf_path, xml_safe.MAX_DEFINITION_BYTES).getroot()
     except Exception:
         return {}
 
@@ -543,7 +545,7 @@ def fetch_fixtures_from_github(missing_fixtures: list, save_dir: str) -> dict:
 
         # ── Download ──────────────────────────────────────────────────────
         raw_url = f'{_GITHUB_RAW}/{gh_mfr_dir}/{matched_entry["name"]}'
-        dest    = os.path.join(save_dir, matched_entry['name'])
+        dest    = os.path.join(save_dir, os.path.basename(matched_entry['name']))
         try:
             data = _gh_get_raw_shared(raw_url)
             with open(dest, 'wb') as f:

@@ -11,13 +11,13 @@ let _sbDoc      = null;    // last document model from /api/showbook/preview
 let _sbBusy     = false;
 
 const _SB_SECTIONS = [
-  { id: 'patch_sheet', label: 'Patch sheet (DIP switches)', icon: 'cable' },
+  { id: 'patch_sheet', label: 'Patch sheet: DIP switch settings', icon: 'cable' },
   { id: 'rider',       label: 'Tech rider (fixture types)', icon: 'ticket' },
   { id: 'stage_plan',  label: 'Stage plot',     icon: 'map' },
   { id: 'checklist',   label: 'Load-in checklist', icon: 'check' },
   { id: 'cabling',     label: 'DMX cabling',    icon: 'cable' },
   { id: 'summary',     label: 'Summary',       icon: 'bar-chart' },
-  { id: 'patch',       label: 'Patch List',     icon: 'cable' },
+  { id: 'patch',       label: 'Patch list: universe and address', icon: 'cable' },
   { id: 'functions',   label: 'Function Index', icon: 'clipboard' },
   { id: 'scenes',      label: 'Scenes',         icon: 'film' },
   { id: 'chasers',     label: 'Chasers',        icon: 'refresh' },
@@ -51,7 +51,15 @@ function _sbVenueOnly() {
   return _sbPresets.size > 0 && [..._sbPresets].every(p => p === 'rider' || p === 'checklist' || p === 'patch');
 }
 
-/** Pick who the paper is for; ⇧-click adds / removes a preset. */
+/** A tap on a "who is it for" chip adds or removes that reader; with none left the ticks are yours. */
+function sbTogglePreset(p) {
+  _sbPresets.has(p) ? _sbPresets.delete(p) : _sbPresets.add(p);
+  _sbBuildSectionPicker();
+  _sbApplyPresets();
+  invalidateShowbook();
+}
+
+/** Pick one reader (the Start page's chips and the old Checklist / Tech rider entries); ⇧-click toggles like a tap. */
 function sbPreset(p, ev) {
   if (p === 'custom') _sbPresets = new Set();
   else if (ev && ev.shiftKey) { _sbPresets.has(p) ? _sbPresets.delete(p) : _sbPresets.add(p); }
@@ -61,20 +69,50 @@ function sbPreset(p, ev) {
   invalidateShowbook();
 }
 
+/** A hand-made tick: the readers stay (and the venue lock with them); the header says the ticks differ. */
+function sbManualTick() {
+  _sbPatchOpts();
+  _sbUpdateCount();
+  invalidateShowbook();
+}
+
 function _sbApplyPresets() {
-  document.querySelectorAll('.sb-preset').forEach(b =>
-    b.classList.toggle('active', b.dataset.p === 'custom' ? _sbPresets.size === 0 : _sbPresets.has(b.dataset.p)));
+  document.querySelectorAll('.sb-preset').forEach(b => {
+    const on = _sbPresets.has(b.dataset.p);
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   const venue = _sbVenueOnly();
   const want = new Set([..._sbPresets].flatMap(p => _SB_PRESETS[p] || []));
   document.querySelectorAll('#sb-section-checks input[type=checkbox]').forEach(c => {
     if (_sbPresets.size) c.checked = want.has(c.value);
     c.disabled = venue && !_SB_VENUE_SAFE.has(c.value);
-    c.closest('label')?.classList.toggle('sb-locked', c.disabled);
+    const lab = c.closest('label');
+    if (lab) {
+      lab.classList.toggle('sb-locked', c.disabled);
+      if (c.disabled) lab.title = t('Not on paper that leaves your hands'); else lab.removeAttribute('title');
+    }
   });
   const note = document.getElementById('sb-venue-note');
   if (note) note.hidden = !venue;
   _sbPatchOpts();
   _sbRiderOpts();
+  _sbUpdateCount();
+}
+
+/** "7 of 16 sections" and, when the ticks are not what the readers give, a tag that says so. */
+function _sbUpdateCount() {
+  const all = document.querySelectorAll('#sb-section-checks input[type=checkbox]');
+  const ticked = _sbSelectedSections();
+  const el = document.getElementById('sb-count');
+  if (el) el.textContent = t('{0} of {1} sections', ticked.length, all.length);
+  const tag = document.getElementById('sb-custom-tag');
+  if (!tag) return;
+  if (!_sbPresets.size) { tag.textContent = t('Your own selection'); tag.hidden = false; return; }
+  const want = new Set([..._sbPresets].flatMap(p => _SB_PRESETS[p] || []));
+  const same = ticked.length === want.size && ticked.every(id => want.has(id));
+  tag.textContent = t('Changed by hand');
+  tag.hidden = same;
 }
 
 function _sbRiderOpts() {
@@ -169,7 +207,9 @@ function invalidateShowbook() {
   _sbLoaded = false;
   _sbDoc = null;
   const preview = document.getElementById('sb-preview');
-  if (preview) preview.innerHTML = '<div class="porter-placeholder">Pick who it is for, then Generate Preview.</div>';
+  if (preview) preview.innerHTML = '<div class="porter-placeholder">' + _esc(t('Nothing to preview yet. Press Preview to look at the pages, or export straight away.')) + '</div>';
+  const tools = document.getElementById('sb-preview-tools');
+  if (tools) tools.hidden = true;
 }
 
 // ── Section picker ──────────────────────────────────────────────────────────
@@ -193,7 +233,7 @@ function _sbBuildSectionPicker() {
       <legend>${g.title} <small>${g.hint}</small></legend>
       ${g.ids.map(id => byId[id]).filter(Boolean).map(s => `
         <label class="sb-check-label">
-          <input type="checkbox" value="${s.id}" checked onchange="_sbPatchOpts()">
+          <input type="checkbox" value="${s.id}" checked onchange="sbManualTick()">
           <span>${skIcon(s.icon)} ${s.label}</span>
         </label>`).join('')}
     </fieldset>`).join('');
@@ -206,14 +246,14 @@ function _sbSelectedSections() {
 
 function sbSelectAll() {
   document.querySelectorAll('#sb-section-checks input[type=checkbox]')
-    .forEach(c => c.checked = true);
-  _sbPatchOpts();
+    .forEach(c => { if (!c.disabled) c.checked = true; });
+  sbManualTick();
 }
 
 function sbSelectNone() {
   document.querySelectorAll('#sb-section-checks input[type=checkbox]')
-    .forEach(c => c.checked = false);
-  _sbPatchOpts();
+    .forEach(c => { if (!c.disabled) c.checked = false; });
+  sbManualTick();
 }
 
 // ── QXF directory ───────────────────────────────────────────────────────────
@@ -264,7 +304,9 @@ async function sbGenerate() {
     _sbDoc = data.document;
     _sbLoaded = true;
     _sbRenderPreview(_sbDoc);
-    _sbStatus('Preview ready — scroll down to review, then export.');
+    const tools = document.getElementById('sb-preview-tools');
+    if (tools) tools.hidden = false;
+    _sbStatus('Preview ready. Look it over, then export.');
   } catch (e) {
     _sbStatus('Network error: ' + e.message, 'error');
   } finally {

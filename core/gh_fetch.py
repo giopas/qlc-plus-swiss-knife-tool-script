@@ -30,6 +30,20 @@ _HTTP_HEADERS = {
 }
 
 
+# ── Names that go into a GitHub address ───────────────────────────────────────
+
+_COMPONENT = re.compile(r"[\w\- .&]+")
+
+
+def valid_component(name: str, qxf: bool = False) -> bool:
+    """True when *name* is safe as one part of a GitHub path: letters, digits, space, ``-``, ``_``,
+    ``.`` and ``&``; no ``..``, no slash, no newline, not a bare dot.  With *qxf* it must end in ``.qxf``."""
+    n = str(name or "")
+    if not n or n.strip(".") == "" or ".." in n or not _COMPONENT.fullmatch(n):
+        return False
+    return n.lower().endswith(".qxf") if qxf else True
+
+
 # ── Name normalisation ────────────────────────────────────────────────────────
 
 def norm_name(s: str) -> str:

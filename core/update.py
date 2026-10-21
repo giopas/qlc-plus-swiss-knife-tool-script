@@ -47,6 +47,11 @@ FEED = f"https://api.github.com/repos/{REPO}/releases/latest"
 CACHE_HOURS = 12
 TIMEOUT = 5
 MAX_DOWNLOAD = 400 * 1024 * 1024
+MAX_UNPACKED = 2 * 1024 * 1024 * 1024         # an archive that unpacks to more than this is refused (a zip bomb)
+# 3.9.7: a download starts on one of GitHub's own hosts (it may be redirected to the release storage).
+_GITHUB_HOSTS = ("github.com", "api.github.com", "objects.githubusercontent.com",
+                 "release-assets.githubusercontent.com", "github-releases.githubusercontent.com",
+                 "raw.githubusercontent.com")
 _ASSET_RE = re.compile(r"^QLC-Swiss-Knife-(?P<ver>\d+\.\d+\.\d+)-(?P<os>macos|windows|linux)-(?P<arch>arm64|x86_64|x64)\.(?P<ext>zip|tar\.gz|dmg)$")
 
 
@@ -171,12 +176,24 @@ def _ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context()
 
 
+def _check_host(url: str) -> None:
+    """Refuse a download that does not start on GitHub.  Skipped when QSK_UPDATE_FEED points
+    the check somewhere else (tests and a mirror of your own)."""
+    if os.environ.get("QSK_UPDATE_FEED"):
+        return
+    from urllib.parse import urlsplit
+    host = (urlsplit(url).hostname or "").lower()
+    if host not in _GITHUB_HOSTS:
+        raise ValueError(f"not a GitHub address: {host or url[:40]}")
+
+
 def _read(url: str, limit: int = 2_000_000) -> bytes:
     if os.path.isfile(url):
         with open(url, "rb") as f:
             return f.read(limit)
     if not url.startswith("https://"):
         raise ValueError("only https:// or a local file")
+    _check_host(url)
     req = urllib.request.Request(url, headers={"User-Agent": f"QLC-Swiss-Knife/{VERSION}",
                                                "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_ssl_context()) as r:
@@ -272,6 +289,7 @@ def _download(url: str, dest: str) -> None:
         return
     if not url.startswith("https://"):
         raise ValueError("only https:// downloads")
+    _check_host(url)
     req = urllib.request.Request(url, headers={"User-Agent": f"QLC-Swiss-Knife/{VERSION}"})
     got = 0
     with urllib.request.urlopen(req, timeout=30, context=_ssl_context()) as r, open(dest, "wb") as f:
@@ -298,6 +316,8 @@ def _safe_extract(archive: str, dest: str) -> None:
             bad = [n for n in z.namelist() if not ok(n)]
             if bad:
                 raise ValueError(f"unsafe path in the archive: {bad[0]}")
+            if sum(i.file_size for i in z.infolist()) > MAX_UNPACKED:
+                raise ValueError("the archive unpacks to too much data")
             for info in z.infolist():
                 mode = info.external_attr >> 16
                 target = os.path.join(dest, info.filename)
@@ -315,10 +335,25 @@ def _safe_extract(archive: str, dest: str) -> None:
                     os.chmod(target, mode & 0o7777)
     else:
         with tarfile.open(archive) as t:
-            bad = [m.name for m in t.getmembers() if not ok(m.name) or m.islnk() and not ok(m.linkname)]
+            members = t.getmembers()
+            bad = [m.name for m in members if not ok(m.name)]
+            for m in members:                       # links must stay inside, devices and fifos never
+                if m.issym() and (posixpath.isabs(m.linkname) or not ok(posixpath.join(posixpath.dirname(m.name), m.linkname))):
+                    bad.append(m.name)
+                elif m.islnk() and not ok(m.linkname):
+                    bad.append(m.name)
+                elif m.isdev() or m.isfifo():
+                    bad.append(m.name)
             if bad:
                 raise ValueError(f"unsafe path in the archive: {bad[0]}")
-            t.extractall(dest)
+            if sum(m.size for m in members) > MAX_UNPACKED:
+                raise ValueError("the archive unpacks to too much data")
+            try:
+                # "tar" drops setuid bits and group/other write; the links were checked above ("data" would
+                # check them again, but judges a link from the wrong folder on some 3.10 and 3.11 releases)
+                t.extractall(dest, filter="tar")        # nosec B202 — every member was checked above
+            except TypeError:
+                t.extractall(dest)                  # nosec B202 — every member was checked above
 
 
 def _payload(unpacked: str) -> str:

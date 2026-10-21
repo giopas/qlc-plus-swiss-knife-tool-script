@@ -25,6 +25,7 @@ import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Tuple
 
 from core.cabling import kit as kit_mod
+from core import xml_safe
 
 _names: Dict[Tuple[str, ...], List[Tuple[str, str, str]]] = {}
 
@@ -43,7 +44,7 @@ def _library() -> List[Tuple[str, str, str]]:
         fmap = os.path.join(d, "FixturesMap.xml")
         if os.path.isfile(fmap):
             try:
-                for m in ET.parse(fmap).getroot():
+                for m in xml_safe.parse(fmap).getroot():
                     for f in m:
                         mf, md = m.get("n", ""), f.get("m", "")
                         if (mf.lower(), md.lower()) not in seen:

@@ -33,7 +33,7 @@ from core.quick_start.qxw_builder import build_qxw
 from core.quick_start.nomenclature import list_profiles, load_profile
 from core.quick_start.vc_style import extract_style_file, list_styles, load_style
 from core.quick_start.template_library import list_templates
-from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, GH_API_BASE, GH_RAW_BASE
+from core.gh_fetch import gh_get as _gh_get_shared, gh_get_raw as _gh_get_raw_shared, GH_API_BASE, GH_RAW_BASE, valid_component
 
 
 
@@ -824,7 +824,7 @@ def gh_fixtures():
     if not mfg:
         return jsonify({'error': 'No manufacturer specified.'}), 400
     # Sanitise: only allow safe chars
-    if not re.match(r'^[\w\s\-\.&]+$', mfg):
+    if not valid_component(mfg):
         return jsonify({'error': 'Invalid manufacturer name.'}), 400
 
     if mfg in _gh_fixture_cache:
@@ -855,9 +855,9 @@ def gh_load():
     filename = (data.get('filename') or '').strip()
     if not mfg or not filename:
         return jsonify({'error': 'manufacturer and filename required.'}), 400
-    if not re.match(r'^[\w\s\-\.&]+$', mfg):
+    if not valid_component(mfg):
         return jsonify({'error': 'Invalid manufacturer name.'}), 400
-    if not filename.lower().endswith('.qxf'):
+    if not valid_component(filename, qxf=True):
         return jsonify({'error': 'Only .qxf files.'}), 400
 
     try:

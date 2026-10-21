@@ -255,9 +255,9 @@ def fixture_item():
     try:
         if d.get('gh_manufacturer'):
             mfg, fn = str(d['gh_manufacturer']).strip(), str(d.get('filename') or '').strip()
-            if not re.match(r'^[\w\s\-\.&]+$', mfg) or not fn.lower().endswith('.qxf') or '/' in fn or '..' in fn:
+            from core.gh_fetch import gh_get_raw, GH_RAW_BASE, valid_component
+            if not valid_component(mfg) or not valid_component(fn, qxf=True):
                 return jsonify({'error': 'Not a QLC+ fixture file.'}), 400
-            from core.gh_fetch import gh_get_raw, GH_RAW_BASE
             raw = gh_get_raw(f"{GH_RAW_BASE}/{mfg.replace(' ', '%20')}/{fn.replace(' ', '%20')}")
             item = fixtures_mod.item_from_qxf_bytes(raw)
         else:

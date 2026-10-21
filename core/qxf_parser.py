@@ -22,6 +22,8 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from typing import Optional
 
+from core import xml_safe
+
 QXF_NS_URI = "http://www.qlcplus.org/FixtureDefinition"
 _NS = {"f": QXF_NS_URI}
 
@@ -431,7 +433,7 @@ def parse_qxf(path: str) -> dict:
     ------
     ValueError  if the file is not a valid QXF.
     """
-    tree = ET.parse(path)
+    tree = xml_safe.parse(path, xml_safe.MAX_DEFINITION_BYTES)
     root = tree.getroot()
 
     if QXF_NS_URI not in (root.tag or ""):

@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for QLC+ Swiss Knife (v3.9.6).  One-folder build:
+# PyInstaller spec for QLC+ Swiss Knife (v3.9.7).  One-folder build:
 #
 #     pip install pyinstaller flask pywebview
 #     pyinstaller --noconfirm packaging/swissknife.spec

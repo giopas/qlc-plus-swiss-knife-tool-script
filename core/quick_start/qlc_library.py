@@ -32,6 +32,8 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Tuple
 
+from core import xml_safe
+
 _QXF_NS = "{http://www.qlcplus.org/FixtureDefinition}"
 _cache: Dict[Tuple[str, ...], Dict[Tuple[str, str], str]] = {}
 
@@ -96,7 +98,7 @@ def _index(dirs: List[str]) -> Dict[Tuple[str, str], str]:
         fmap = os.path.join(d, "FixturesMap.xml")
         if os.path.isfile(fmap):            # stock library: fast path
             try:
-                root = ET.parse(fmap).getroot()
+                root = xml_safe.parse(fmap).getroot()
                 for m in root:
                     for f in m:
                         path = os.path.join(d, m.get("n", ""), f.get("n", "") + ".qxf")
@@ -128,7 +130,7 @@ def _read_mfr_model(path: str) -> Optional[Tuple[str, str]]:
 
 def _modes(path: str) -> Optional[set]:
     try:
-        root = ET.parse(path).getroot()
+        root = xml_safe.parse(path, xml_safe.MAX_DEFINITION_BYTES).getroot()
     except (OSError, ET.ParseError):
         return None
     return {m.get("Name", "") for m in root.iter(f"{_QXF_NS}Mode")}

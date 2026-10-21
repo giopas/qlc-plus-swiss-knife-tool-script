@@ -277,5 +277,9 @@ def save_blob():
 #── helpers ───────────────────────────────────────────────────────────────────
 
 def _as_str(s: str) -> str:
-    """Wrap a Python string as an AppleScript string literal."""
-    return '"' + s.replace('"', '\\"') + '"'
+    """Wrap a Python string as an AppleScript string literal.
+
+    The backslash is escaped first: with only the quote escaped, a title ending in ``\\"`` closed the literal
+    early and the rest of the text ran as AppleScript (3.9.7, finding F11).  Line breaks become spaces."""
+    s = str(s).replace('\r', ' ').replace('\n', ' ')
+    return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'

@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.9.6, 21 October 2026** (3.9.5 is tagged and pushed; 3.9.6 is prepared for the merge and the tag). Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.9.7, 21 October 2026** (3.9.5 is tagged and pushed; 3.9.6 and 3.9.7 are prepared for the merge and the tag). Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -33,7 +33,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Tests | The suite passes in CI (1145 tests at 3.7.0, 1246 at 3.9.5 stage A, more since; 1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
-**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot; released), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words; released 21 October), 3.9.6 plain-language wiki and README (released 21 October), 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
+**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot; released), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words; released 21 October), 3.9.6 plain-language wiki and README (released 21 October), 3.9.7 security audit and a clearer Show Paperwork (prepared 21 October), 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
 
 ## 2. Next releases
 
@@ -222,14 +222,32 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 - Left: **step 4**, the pictures (the 3.9.5 pictures were retaken in `b370fa2`; run `python3 tools/shots.py all` only if a screen changed since), **step 5**, check **D1** (the Pub test for the docs, two readers, one of them not a lighting person, on Quick Start and Rig Reducer), the Italian text of the new page read by giopas, then the release: bump `VERSION` and the README title to 3.9.6, move `[Unreleased]`, `python3 tools/release_notes.py v3.9.6`, merge, tag, push (section 8).
 - Git: the sandbox cannot push. Both repositories carry a local commit on `docs/v3.9.6`.
 
+### 3.9.7 · Security audit and a clearer Show Paperwork
+
+**Status: built and prepared for release on 21 October (branch `feat/v3.9.7`; version, CHANGELOG, release notes and `docs/SECURITY_AUDIT_3.9.7.md` done; 1,329 tests pass).**
+
+- **Show Paperwork** reads in four numbered steps (*Who is it for?*, *What goes in*, *On every page*, *Check it*); the presets are toggle chips that can be combined, the Custom chip is gone, a count and a "Changed by hand" tag show what is in. What each button writes did not change.
+- **Audit**, eleven findings (F1 to F11), all fixed with tests in `tests/test_security_397.py`; `tools/xss_probe.py` (advisory) loads a show of script payloads into every screen. Residual risks are listed in the audit.
+- Left for giopas: pictures of Show Paperwork (`python3 tools/shots.py showbook`), a read of the new Italian texts, and the checks still open from 3.9.6 (D1, D2, D3).
+- Rule from now on: a new screen that loads anything from outside the app, or a new route that writes to a path the page sends, needs a line in the audit's *Repeat* section and a test.
+
 ### 3.10.0 · Teleprompter (later stage)
 
-Chords and lyrics from giopas's `song_writer` app (the "song-notation-tool" of the 20 October brief), following the setlist on the stage tablet. To be designed when song cards have been used at a gig.
+Chords and lyrics following the setlist on the stage tablet. **The source is not fixed to `song_writer`.** The same screen should take three kinds of text: `song_writer` notation, ChordPro (`.cho`, `.chordpro`, `.pro`; `{title:}`, `{start_of_chorus}`, `[C]` inside the lyric) and Ultimate Guitar style plain text (chords on the line above the lyric, `[Verse]` headers). Each is read into one inside model (song, sections, lines of lyric with chord positions) and the page uses only that model. To be designed when song cards have been used at a gig, and a **design review comes first** (see *Open design questions*).
 
 - The notation files are taken from a folder and put inside the exported page, so it still needs no internet. Songs are matched to the setlist with the setlist's own name matching.
 - A CueList step named like a section (`03 - Chorus`) brings that section of the sheet (`[Chorus]`) to the middle of the screen and highlights it; manual scrolling stays possible.
 - Text size A− / A+, chords and lyrics, lyrics only.
-- Depends on `song_writer` writing section headers Swiss Knife can match; that is the first thing to check.
+- Depends on a section name Swiss Knife can match, whatever the format: `[Chorus]` in song_writer and UG, `{start_of_chorus}` or `{comment: Chorus}` in ChordPro. A file with no section names still works as a plain scrolling sheet.
+
+**Open design questions (for a separate design session, not decided here)**
+
+1. The matching rule between a CueList step (`03 - Chorus`) and a section (`Chorus`, `Chorus 2`, `Verse 1`, `Ch.`): exact, ignoring numbers and case, or a per-song map.
+2. Reading UG text: chords above the lyric need column alignment, and many files are pasted with wrong spaces. Tolerance, and what to do when a line cannot be read (show it as it is).
+3. ChordPro scope: which directives are read (title, key, capo, tempo, comment, chorus, verse, bridge), which are ignored, and how `[C]` inline chords are drawn.
+4. How the files reach the page: a folder or a pick, matched to the setlist by the setlist's own name matching; embedded so the page stays offline and read-only; size limit per page.
+5. Screen behaviour: scroll and highlight when a step changes, manual scroll hold, A−/A+, chords and lyrics, lyrics only, transpose or not, dark/light on a stage.
+6. Where the file stays the owner of its text: Swiss Knife never edits the song files (one writer).
 
 ### 3.11.0 · Colour themes and porting by eye
 
@@ -294,6 +312,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.9.0 | 21 Oct | Tablet on stage: song cards, the Next song banner, views by role, a QR code, one screen for the live monitor and the simple page, the first use of the page kit. |
 | 3.9.5 | 21 Oct | A clearer Swiss Knife: type scale and bundled Inter, four button kinds, ribbon and Start that follow the state, the kit's chip and reason on every footer, Doctor by kind, plain words under every tool title. No change to `core/` or to what a button writes. |
 | 3.9.6 | 21 Oct | Plain-language docs: the README and every wiki page rewritten to one shape (*In one minute*, steps, *If it does not work*), a *Words used here* page, the Tablet on stage page, `tools/plain_check.py`. Docs only. |
+| 3.9.7 | 21 Oct | Security audit (eleven findings fixed: Host and Origin checks, no CDN script, tablet server allowlist, safe save paths, safer updater and XML) and a Show Paperwork screen in four steps. |
 
 ## 5. Goal and the Pub test
 

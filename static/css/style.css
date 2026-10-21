@@ -4720,3 +4720,32 @@ svg.ic { vertical-align: -.2em; }
 .sn-recent[hidden] { display: none; }
 .sn-recent .sn-label { padding-bottom: var(--sp-1); }
 body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHOW PAPERWORK, 3.9.7: four numbered steps (who, what, header, check)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sb-step { padding: 10px 0 12px; border-top: 1px solid var(--border); }
+.sb-step:first-child { border-top: 0; padding-top: 2px; }
+.sb-step-h, .sb-preview-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.sb-preview-bar { margin: 12px 0 8px; padding: 0 2px; }
+.sb-num { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: var(--fs-small); font-weight: 700; }
+.sb-step-t { font-size: var(--fs-body); font-weight: 600; color: var(--text); }
+.sb-step-hint { font-size: var(--fs-ui); color: var(--text-dim); }
+.sb-custom-tag { font-size: var(--fs-small); color: var(--orange); border: 1px solid color-mix(in srgb, var(--orange) 45%, transparent);
+  background: var(--orange-soft); border-radius: var(--radius-pill); padding: 1px 8px; }
+.sb-custom-tag[hidden], .sb-preview-tools[hidden] { display: none; }
+.sb-preview-tools { display: inline-flex; gap: 6px; }
+.sb-presets { margin-bottom: 8px; }
+.sb-preset[aria-pressed="true"]::after { content: "✓"; margin-left: 6px; font-weight: 700; }   /* not colour alone */
+.sb-detail { margin-top: 10px; padding: 8px 10px; background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--radius); }
+.sb-detail .sb-options { margin-top: 0; }
+.sb-detail .sb-options + .sb-options { margin-top: 8px; }
+.sb-detail-t { font-size: var(--fs-ui); font-weight: 600; color: var(--text-dim); min-width: 8.5em; }
+.sb-adv { margin-top: 8px; }
+.sb-adv > summary { cursor: pointer; font-size: var(--fs-ui); color: var(--text-dim); }
+.sb-adv[open] > summary { margin-bottom: 6px; }
+.sb-adv .sb-options { margin-top: 4px; }
+.sb-w-event { flex: 0 0 220px; } .sb-w-name { flex: 0 0 200px; } .sb-w-date { flex: 0 0 150px; }
+.sb-w-dip { flex: 0 0 70px; } .sb-w-paper { flex: 0 0 170px; }
+@media (max-width: 900px) { .sb-detail-t { min-width: 0; } }

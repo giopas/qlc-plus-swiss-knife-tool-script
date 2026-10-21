@@ -10,10 +10,6 @@
   <link rel="stylesheet" href="/static/css/tokens.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/static/css/style.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/static/css/kit.css?v={{ asset_v }}">
-
-  <!-- Grid.js — zero-config sortable/filterable tables -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
 </head>
 <body>
 
@@ -1884,96 +1880,117 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Show Paperwork</h2><div class="p-desc">Print the tech rider, the load-in checklist and the show book.</div></div>
+      <div><h2>Show Paperwork</h2><div class="p-desc">Choose who the paper is for, then export it as a PDF or a CSV.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Show-Paperwork')" title="How this tool works — opens the Show Paperwork page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
 
-    <!-- Controls bar -->
+    <!-- 1 · 2 · 3: who, what, header -->
     <div class="sb-controls">
-      <div class="sb-presets">
-        <span class="sb-label">Who is it for?</span>
-        <button class="sb-preset" data-p="rider" onclick="sbPreset('rider', event)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#ticket"/></svg> Tech rider <small>for the venue</small></button>
-        <button class="sb-preset" data-p="checklist" onclick="sbPreset('checklist', event)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#check"/></svg> Crew checklist <small>for load-in</small></button>
-        <button class="sb-preset" data-p="patch" onclick="sbPreset('patch', event)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#cable"/></svg> Patch sheet <small>for the crew at the rig</small></button>
-        <button class="sb-preset active" data-p="operator" onclick="sbPreset('operator', event)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#book"/></svg> Show book <small>for you at the desk</small></button>
-        <button class="sb-preset" data-p="custom" onclick="sbPreset('custom', event)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> Custom <small>tick the sections</small></button>
-        <span class="sb-optional">⇧-click to combine (e.g. rider + checklist for a festival advance) — one PDF</span>
-      </div>
-      <div id="sb-venue-note" class="sb-venue-note" hidden><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#lock"/></svg> This paper leaves your hands: whatever is ticked, it never carries function names, key / MIDI maps, the Virtual Console or the Doctor — only the rig, its patch and the stage plot.</div>
-      <div class="sb-sections-head">
-        <span class="sb-label">What goes in</span>
-        <span class="sb-optional">— set by the preset above; change the ticks to make it your own</span>
-        <div class="spacer"></div>
-        <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">✓ All</button>
-        <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">✗ None</button>
-      </div>
-      <div id="sb-section-checks" class="sb-groups"></div>
 
-      <div class="sb-options">
-        <span class="sb-label">Decode DMX values with the definitions in</span>
-        <input id="sb-qxf-path" type="hidden">
-        <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
-        <button class="btn btn-surface btn-sm" onclick="sbBrowseQxf()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Folder…</button>
-        <span class="sb-optional">optional — definitions next to the show and the QLC+ library are used anyway</span>
+      <div class="sb-step">
+        <div class="sb-step-h"><span class="sb-num">1</span><span class="sb-step-t">Who is it for?</span>
+          <span class="sb-step-hint">Pick one or more. Each reader gets only what they need.</span></div>
+        <div class="sb-presets" role="group" aria-label="Who is it for?">
+          <button class="sb-preset" data-p="rider" aria-pressed="false" onclick="sbTogglePreset('rider')"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#ticket"/></svg> Tech rider <small>for the venue</small></button>
+          <button class="sb-preset" data-p="checklist" aria-pressed="false" onclick="sbTogglePreset('checklist')"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#check"/></svg> Crew checklist <small>for load-in</small></button>
+          <button class="sb-preset" data-p="patch" aria-pressed="false" onclick="sbTogglePreset('patch')"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#cable"/></svg> Patch sheet <small>for the crew at the rig</small></button>
+          <button class="sb-preset active" data-p="operator" aria-pressed="true" onclick="sbTogglePreset('operator')"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#book"/></svg> Show book <small>for you at the desk</small></button>
+        </div>
+        <div id="sb-venue-note" class="sb-venue-note" hidden><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#lock"/></svg> This paper leaves your hands. Whatever is ticked, it never carries function names, key / MIDI maps, the Virtual Console or the Doctor: only the rig, its patch and the stage plot.</div>
       </div>
 
-      <div id="sb-rider-opts" class="sb-options" hidden>
-        <span class="sb-label">Tech rider</span>
-        <span class="sb-optional">also list:</span>
-        <label class="toggle-label"><input type="checkbox" id="sb-rx-patch" checked onchange="sbRiderChanged()"> the patch of each fixture</label>
-        <label class="toggle-label"><input type="checkbox" id="sb-rx-tilt" checked onchange="sbRiderChanged()"> where it hangs and its tilt</label>
-        <label class="toggle-label"><input type="checkbox" id="sb-rx-meshes" checked onchange="sbRiderChanged()"> the set pieces on the stage</label>
+      <div class="sb-step">
+        <div class="sb-step-h"><span class="sb-num">2</span><span class="sb-step-t">What goes in</span>
+          <span id="sb-count" class="sb-step-hint"></span>
+          <span id="sb-custom-tag" class="sb-custom-tag" hidden>Your own selection</span>
+          <div class="spacer"></div>
+          <button class="btn btn-surface btn-xs" onclick="sbSelectAll()">All</button>
+          <button class="btn btn-surface btn-xs" onclick="sbSelectNone()">None</button>
+        </div>
+        <div id="sb-section-checks" class="sb-groups"></div>
+
+        <div id="sb-rider-opts" class="sb-options sb-detail" hidden>
+          <span class="sb-detail-t">Tech rider also lists</span>
+          <label class="toggle-label"><input type="checkbox" id="sb-rx-patch" checked onchange="sbRiderChanged()"> the patch of each fixture</label>
+          <label class="toggle-label"><input type="checkbox" id="sb-rx-tilt" checked onchange="sbRiderChanged()"> where it hangs and its tilt</label>
+          <label class="toggle-label"><input type="checkbox" id="sb-rx-meshes" checked onchange="sbRiderChanged()"> the set pieces on the stage</label>
+        </div>
+
+        <div id="sb-patch-opts" class="sb-detail" hidden>
+          <div class="sb-options">
+            <span class="sb-detail-t">Patch sheet</span>
+            <label class="field-label" for="sb-event">Event / venue</label>
+            <input id="sb-event" type="text" class="filter-input sb-w-event" maxlength="120" placeholder="e.g. Pub night, The Anchor" spellcheck="false">
+            <label class="field-label" for="sb-dip">DIP switches</label>
+            <select id="sb-dip" class="filter-input sb-w-dip" data-tooltip="How many address switches the fixtures have (switch n = 2^(n-1); 10 covers address 512)"><option>10</option><option>9</option></select>
+            <span id="sb-logo-name" class="file-chip">no logo</span>
+            <button class="btn btn-surface btn-sm" onclick="sbPickLogo()" data-tooltip="A PNG or JPEG printed at the top of the patch sheet and the ticket; remembered in this browser"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#image"/></svg> Logo…</button>
+            <button id="sb-logo-clear" class="btn btn-surface btn-xs" onclick="sbClearLogo()" hidden>Remove logo</button>
+            <input id="sb-logo-file" type="file" accept="image/png,image/jpeg" hidden onchange="sbLogoChosen(this)">
+          </div>
+          <div class="sb-options">
+            <span class="sb-detail-t">Thermal printer ticket</span>
+            <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('80', 'pdf')" data-tooltip="One long PDF page, 80 mm wide"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> 80 mm PDF…</button>
+            <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('58', 'pdf')" data-tooltip="One long PDF page, 58 mm wide"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> 58 mm PDF…</button>
+            <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('58', 'txt')" data-tooltip="Plain text, 32 characters a line (58 mm); for printer apps">TXT 58…</button>
+            <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('80', 'txt')" data-tooltip="Plain text, 48 characters a line (80 mm)">TXT 80…</button>
+            <span class="sb-optional">Saved at once, without the PDF below.</span>
+          </div>
+        </div>
       </div>
 
-      <div id="sb-patch-opts" class="sb-options" hidden>
-        <span class="sb-label">Patch sheet</span>
-        <label class="field-label" for="sb-event">Event / venue</label>
-        <input id="sb-event" type="text" class="filter-input" style="flex:0 0 220px" maxlength="120" placeholder="e.g. Pub night — The Anchor" spellcheck="false">
-        <span id="sb-logo-name" class="file-chip">no logo</span>
-        <button class="btn btn-surface btn-sm" onclick="sbPickLogo()" data-tooltip="A PNG or JPEG printed at the top of the patch sheet and the ticket; remembered in this browser"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#image"/></svg> Logo…</button>
-        <button id="sb-logo-clear" class="btn btn-surface btn-xs" onclick="sbClearLogo()" hidden>✕</button>
-        <input id="sb-logo-file" type="file" accept="image/png,image/jpeg" hidden onchange="sbLogoChosen(this)">
-        <label class="field-label" for="sb-dip">DIP switches</label>
-        <select id="sb-dip" class="filter-input" style="flex:0 0 70px" data-tooltip="How many address switches the fixtures have (switch n = 2^(n-1); 10 covers address 512)"><option>10</option><option>9</option></select>
-        <span class="sb-optional">Thermal printer ticket:</span>
-        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('80', 'pdf')" data-tooltip="One long PDF page, 80 mm wide"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> 80 mm PDF…</button>
-        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('58', 'pdf')" data-tooltip="One long PDF page, 58 mm wide"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> 58 mm PDF…</button>
-        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('58', 'txt')" data-tooltip="Plain text, 32 characters a line (58 mm); for printer apps">TXT 58…</button>
-        <button class="btn btn-surface btn-sm" onclick="sbExportReceipt('80', 'txt')" data-tooltip="Plain text, 48 characters a line (80 mm)">TXT 80…</button>
+      <div class="sb-step">
+        <div class="sb-step-h"><span class="sb-num">3</span><span class="sb-step-t">On every page</span>
+          <span class="sb-step-hint">Printed in the header. Both are optional.</span></div>
+        <div class="sb-options">
+          <label class="field-label" for="show-name-input">Show name</label>
+          <input id="show-name-input" type="text" class="filter-input sb-w-name"
+                 placeholder="from the file name" spellcheck="false" onchange="updateShowInfo()"
+                 data-tooltip="Printed on every page and used in file names. Blank uses the show's file name.">
+          <label class="field-label" for="event-date-input">Date</label>
+          <input id="event-date-input" type="date" class="filter-input sb-w-date" onchange="updateShowInfo()">
+        </div>
+        <details class="sb-adv">
+          <summary>Advanced: where to read fixture definitions</summary>
+          <div class="sb-options">
+            <input id="sb-qxf-path" type="hidden">
+            <span id="sb-qxf-name" class="file-chip">no folder chosen</span>
+            <button class="btn btn-surface btn-sm" onclick="sbBrowseQxf()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Folder…</button>
+            <span class="sb-optional">Used to turn DMX values into names. The definitions next to the show and in the QLC+ library are read anyway.</span>
+          </div>
+        </details>
       </div>
 
-      <div class="sb-action-bar">
-        <span class="sb-label">For the header</span>
-        <label class="field-label" for="show-name-input">Show name</label>
-        <input id="show-name-input" type="text" class="filter-input" style="flex:0 0 200px"
-               placeholder="from the file name" spellcheck="false" onchange="updateShowInfo()"
-               data-tooltip="Printed on every page and used in file names. Blank uses the show's file name.">
-        <label class="field-label" for="event-date-input">Date</label>
-        <input id="event-date-input" type="date" class="filter-input" style="flex:0 0 150px" onchange="updateShowInfo()">
-        <div class="spacer"></div>
-        <button class="btn btn-surface btn-xs" onclick="sbExpandAll()">▾ Expand all</button>
-        <button class="btn btn-surface btn-xs" onclick="sbCollapseAll()">▸ Collapse all</button>
-        <button class="btn btn-surface" onclick="sbGenerate()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#search"/></svg> Preview</button>
-      </div>
     </div>
 
-    <!-- Preview area -->
+    <!-- 4 · check it (optional) -->
+    <div class="sb-preview-bar">
+      <span class="sb-num">4</span><span class="sb-step-t">Check it</span>
+      <span class="sb-step-hint">Optional. You can also export straight away.</span>
+      <div class="spacer"></div>
+      <span id="sb-preview-tools" class="sb-preview-tools" hidden>
+        <button class="btn btn-surface btn-xs" onclick="sbExpandAll()">Expand all</button>
+        <button class="btn btn-surface btn-xs" onclick="sbCollapseAll()">Collapse all</button>
+      </span>
+      <button class="btn btn-surface btn-sm" onclick="sbGenerate()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#search"/></svg> Preview</button>
+    </div>
     <div id="sb-preview" class="sb-preview">
-      <div class="porter-placeholder">Pick who it is for, then Preview — or go straight to Export PDF… below.</div>
+      <div class="porter-placeholder">Nothing to preview yet. Press Preview to look at the pages, or export straight away.</div>
     </div>
 
     <div class="out-footer">
       <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
+      <button class="btn btn-surface btn-ghost" onclick="showTravel()"
+              data-tooltip="The show, its extra fixture definitions and side files, and a short note, in one zip for another computer."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
       <div class="spacer"></div>
-      <select id="sb-paper" class="filter-input" style="flex:0 0 170px" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
+      <label class="field-label" for="sb-paper">Paper</label>
+      <select id="sb-paper" class="filter-input sb-w-paper" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
         <option>A4 Landscape</option><option>A4 Portrait</option>
         <option>A3 Landscape</option><option>A3 Portrait</option>
         <option>US Letter Landscape</option><option>US Letter Portrait</option>
       </select>
-      <button class="btn btn-surface btn-ghost" onclick="showTravel()"
-              data-tooltip="The show, its extra fixture definitions and side files, and a short note, in one zip for another computer."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
       <button class="btn btn-surface" onclick="sbExportCsv()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#bar-chart"/></svg> Export CSV (ZIP)…</button>
       <button class="btn btn-accent" onclick="sbExportPdf()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> Export PDF…</button>
     </div>

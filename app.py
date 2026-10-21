@@ -156,15 +156,57 @@ from routes.cabling_routes import bp as cabling_bp
 
 PORT = 5731
 
-# Allowed Origin / Host values for CSRF protection (localhost only)
-_ALLOWED_HOSTS = {f'localhost:{PORT}', f'127.0.0.1:{PORT}'}
+# Loopback names the page may be reached by (CSRF and DNS-rebinding protection).
+_LOOPBACK_NAMES = {'localhost', '127.0.0.1', '[::1]'}
+
+
+def _split_host(value: str):
+    """``'localhost:5731'`` -> ``('localhost', 5731)``; a missing port gives ``None``.
+    Returns ``(None, None)`` when the value is not a plain host[:port]."""
+    value = (value or '').strip().lower()
+    if not value or any(c in value for c in '/\\@?#% \t'):
+        return None, None
+    host, port = value, None
+    if value.startswith('['):                      # [::1]:5731
+        end = value.find(']')
+        if end < 0:
+            return None, None
+        host, rest = value[:end + 1], value[end + 1:]
+        if rest:
+            if not rest.startswith(':') or not rest[1:].isdigit():
+                return None, None
+            port = int(rest[1:])
+    elif ':' in value:
+        host, _, p = value.partition(':')
+        if not p.isdigit():
+            return None, None
+        port = int(p)
+    return host, port
+
+
+def _host_ok(value: str) -> bool:
+    """True for localhost, 127.0.0.1 or [::1] on this app's port (or with no port:
+    the test client).  Any other name, for example one an attacker's DNS points
+    at 127.0.0.1 (DNS rebinding), is refused."""
+    host, port = _split_host(value)
+    return host in _LOOPBACK_NAMES and port in (None, PORT)
+
+
+def _origin_ok(origin: str) -> bool:
+    """True when an Origin header names this app: http(s), a loopback name, this port."""
+    origin = (origin or '').strip()
+    for scheme in ('http://', 'https://'):
+        if origin.lower().startswith(scheme):
+            host, port = _split_host(origin[len(scheme):].rstrip('/'))
+            return host in _LOOPBACK_NAMES and port == PORT
+    return False
 
 
 def _asset_version() -> str:
     """Short hash of static-file mtimes, appended as ?v= to CSS/JS URLs."""
     import hashlib
     root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    h = hashlib.sha1()
+    h = hashlib.sha1(usedforsecurity=False)
     for d, _dirs, files in sorted(os.walk(root)):
         for f in sorted(files):
             try:
@@ -207,24 +249,33 @@ def create_app():
     app.register_blueprint(stagemon_bp)
     app.register_blueprint(cabling_bp)
 
-    # ── Security: CSRF origin check ───────────────────────────────────────────
+    # ── Security: Host check (DNS rebinding) and CSRF origin check ───────────
+    @app.before_request
+    def _host_check():
+        """Answer only to this computer's own names.  A web page that makes its
+        domain resolve to 127.0.0.1 (DNS rebinding) would otherwise be same-origin
+        with this server and could read every GET answer; its Host is not ours."""
+        if not _host_ok(request.headers.get('Host', '')):
+            return jsonify({'error': 'Forbidden'}), 403
+
     @app.before_request
     def _csrf_origin_check():
         """
-        Reject state-changing requests whose Origin header explicitly names a
-        non-localhost origin.  Requests with no Origin header (curl, Python
-        scripts, same-origin browser fetches that omit Origin) are allowed
-        because the server only listens on 127.0.0.1 — no remote host can
-        reach it without Origin spoofing, which is browser-enforced.
+        Reject state-changing requests that come from another origin.  An Origin
+        header, when the browser sends one, must name this app (loopback, this
+        port); ``Origin: null`` and every other site are refused.  Without an
+        Origin header the request is allowed unless the browser says it is
+        cross-site (``Sec-Fetch-Site``): curl and scripts send neither, and the
+        server listens on 127.0.0.1 only.
         """
         if request.method not in ('POST', 'PATCH', 'PUT', 'DELETE'):
             return
-        origin = request.headers.get('Origin', '')
-        if not origin:
-            return   # no Origin = same-origin or non-browser client → allow
-        # Strip scheme and compare
-        origin_host = origin.replace('http://', '').replace('https://', '').rstrip('/')
-        if origin_host not in _ALLOWED_HOSTS:
+        origin = request.headers.get('Origin')
+        if origin is not None:
+            if not _origin_ok(origin):
+                return jsonify({'error': 'Forbidden'}), 403
+            return
+        if request.headers.get('Sec-Fetch-Site', '').lower() in ('cross-site', 'same-site'):
             return jsonify({'error': 'Forbidden'}), 403
 
     # ── The recipe (WORKPLAN 2.9): every change to the show, for the replay ──
@@ -256,15 +307,19 @@ def create_app():
     @app.after_request
     def _security_headers(response):
         """Add security headers to every response."""
-        # CSP: allow same-origin resources + the jsdelivr CDN used for Grid.js
+        # CSP: everything comes from this server (3.9.7: no CDN; the fonts, icons and scripts are bundled).
+        # 'unsafe-inline' stays for scripts because the screens use inline onclick handlers.
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
-            "connect-src 'self' https://api.github.com; "
+            "font-src 'self'; "
+            "connect-src 'self'; "
             "object-src 'none'; "
-            "base-uri 'self';"
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none';"
         )
         if request.path == '/api/stagemon/preview':
             # the Stage Monitor preview talks to QLC+ on this computer (its own port)
@@ -276,6 +331,8 @@ def create_app():
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options']        = 'DENY'
         response.headers['Referrer-Policy']        = 'no-referrer'
+        response.headers['Cross-Origin-Opener-Policy']   = 'same-origin'
+        response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
         return response
 
     # ── Settings endpoint ──────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import os
 import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
+from core.safe_paths import TEXT_EXTS, UnsafePath, check_text_save_path
 from core import pdf as pdf_mod
 import core.session as sess
 from core import setlist_io
@@ -147,6 +148,10 @@ def save_setlist():
     if not path:
         return jsonify({'error': 'No path provided.'}), 400
     try:
+        path = check_text_save_path(path)
+    except UnsafePath as e:
+        return jsonify({'error': str(e)}), 400
+    try:
         slots  = ws.get_cuelist_slots()
         lines  = [
             '# QLC+ Swiss Knife — Setlist\n',
@@ -261,6 +266,10 @@ def save_slot_file(slot_id):
     path = (data.get('path') or '').strip()
     if not path:
         return jsonify({'error': 'No path provided.'}), 400
+    try:
+        path = check_text_save_path(path)
+    except UnsafePath as e:
+        return jsonify({'error': str(e)}), 400
     try:
         slot  = next((s for s in ws.get_cuelist_slots() if s['id'] == slot_id), {})
         rows  = ws.get_slot_details(slot_id)

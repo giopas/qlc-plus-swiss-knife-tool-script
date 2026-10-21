@@ -681,8 +681,29 @@ class _Quiet(SimpleHTTPRequestHandler):
     def log_message(self, *_a):   # no request log in Swiss Knife's console
         pass
 
+    # 3.9.7: the tablet is on the LAN, so it gets the page and nothing else: not the other files of the
+    # folder (the show, the settings, the launcher), no directory listing, no files behind a symlink.
+    PAGE_PATHS = ("/", "/index.html")
+
+    def send_head(self):
+        path = self.path.split("?", 1)[0].split("#", 1)[0]
+        if path not in self.PAGE_PATHS:
+            self.send_error(404, "Not found")
+            return None
+        return super().send_head()
+
+    def list_directory(self, path):
+        self.send_error(404, "Not found")
+        return None
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Content-Security-Policy",
+                         "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; "
+                         "connect-src ws: wss: http:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
         super().end_headers()
 
 

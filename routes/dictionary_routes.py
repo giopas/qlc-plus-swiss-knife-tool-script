@@ -4,6 +4,7 @@ import os
 import re
 from flask import Blueprint, jsonify, request, Response
 from core import workspace as ws
+from core.safe_paths import TEXT_EXTS, UnsafePath, check_text_save_path
 import core.session as sess
 
 
@@ -118,6 +119,10 @@ def save_dict():
     path = (data.get('path') or '').strip()
     if not path:
         return jsonify({'error': 'No path provided.'}), 400
+    try:
+        path = check_text_save_path(path, TEXT_EXTS + ('.json',))
+    except UnsafePath as e:
+        return jsonify({'error': str(e)}), 400
     try:
         ws.save_dictionary(path)
         return jsonify({'ok': True, 'path': path})

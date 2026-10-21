@@ -31,6 +31,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from typing import Dict, List, Optional
 
 from core import porter_input as pi, vc_ops
+from core import xml_safe
 
 # (kind, first stored channel, how many) — QLC+ plugins/midi/src/common/midiprotocol.h
 KINDS = [
@@ -414,7 +415,7 @@ def profiles(dirs=None) -> List[str]:
             if not f.lower().endswith(".qxi"):
                 continue
             try:
-                t = ET.parse(os.path.join(d, f)).getroot()
+                t = xml_safe.parse(os.path.join(d, f), xml_safe.MAX_DEFINITION_BYTES).getroot()
             except (ET.ParseError, OSError):
                 continue
             mfg = next((e.text for e in t.iter() if e.tag.endswith("Manufacturer")), "") or ""

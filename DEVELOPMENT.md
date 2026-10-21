@@ -163,14 +163,14 @@ Each tab follows the same three-step pattern:
 ### Tab 3 — Setup Checklist
 - **Core logic location:** `SetupChecklistTab`
 - **Key data:** `ws.get_fixtures()` already works — just needs the UI + PDF export
-- **Frontend:** read-only fixture table (can reuse Grid.js), export buttons
+- **Frontend:** read-only fixture table , export buttons
 - **PDF export:** port `_export_blueprint_pdf()` to write bytes → `Response(bytes, mimetype='application/pdf')`
 - **New file:** `static/js/checklist.js`
 
 ### Tab 4 — Trigger Manager
 - **Core logic location:** `TriggerManagerTab`
 - **Key data:** vc_widgets + KeySequence/Input nodes from raw XML (need a second pass in `_parse_vc_node`)
-- **Frontend:** editable Grid.js table (key, MIDI, function assignment per row), save-back button
+- **Frontend:** editable table (key, MIDI, function assignment per row), save-back button
 - **Save-back:** writes `<name>_v<N+1>.qxw` next to the loaded file via `core/qxw_io.write_qxw()` — never in place
 - **New file:** `core/triggers.py`, `static/js/triggers.js`
 
@@ -197,7 +197,19 @@ The app binds **only to `127.0.0.1`** (localhost) and is not accessible from oth
 
 ### Network access
 
-The app is fully local **except** for the "Browse QLC+ Library" button in the Quick Start and Brightness tools (and the ID Browser's Grid.js table library, loaded from a CDN — offline it falls back to plain tables), which fetches fixture data from `api.github.com` and `raw.githubusercontent.com` (the official QLC+ repository). No authentication tokens are sent and no user data leaves the machine. All other features work entirely offline.
+The app is fully local **except** for the "Browse QLC+ Library" button in the Quick Start and Brightness tools, which fetches fixture data from `api.github.com` and `raw.githubusercontent.com` (the official QLC+ repository), and the self-updater, which talks to GitHub only. No authentication tokens are sent and no user data leaves the machine. The page loads nothing from the internet (no CDN; the CSP allows only `'self'`). All other features work entirely offline.
+
+### Since the 3.9.7 audit
+
+The full audit is in [docs/SECURITY_AUDIT_3.9.7.md](docs/SECURITY_AUDIT_3.9.7.md). The rules it added:
+
+- **Host and Origin.** `app.py` answers only to loopback host names on port 5731 (against DNS rebinding) and refuses a state-changing request whose `Origin` is not the app itself, or whose `Sec-Fetch-Site` is cross-site.
+- **No external resources.** A test fails if a template loads a script, image or stylesheet from another host.
+- **Tablet server.** `core/stage_monitor.py` and `core/stage_page/serve_stage.py` serve only `/` and `/index.html`, never a folder listing.
+- **Paths.** Text saves go through `core/safe_paths.py`; GitHub names through `core/gh_fetch.valid_component`.
+- **XML.** Every parse of a show or fixture goes through `core/xml_safe.py` (no entities, size caps).
+- **Updater.** Download hosts are checked; tar members that are links outside the folder, devices or fifos are refused; unpacked size is capped.
+- **Tests and probe.** `tests/test_security_397.py`; `tools/xss_probe.py` loads a show with script payloads as names into every screen and reports any that ran.
 
 ---
 
@@ -222,6 +234,5 @@ For endpoints that write files (save triggers, generate QXW), return `{"ok": tru
 | Package | Why | Version |
 |---|---|---|
 | `flask` | HTTP server + routing | ≥ 3.0 |
-| Grid.js | Sortable/filterable tables | loaded from CDN (no install) |
 
 No other runtime dependencies.  All QXW/QXF parsing uses Python stdlib (`xml.etree.ElementTree`).  PDF export will use Python stdlib too (same raw-PDF writer from the tkinter version, no reportlab).

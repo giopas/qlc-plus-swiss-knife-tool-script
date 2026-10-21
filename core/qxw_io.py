@@ -22,6 +22,8 @@ import tempfile
 import xml.etree.ElementTree as ET  # nosec B405
 from typing import Iterable
 
+from core import xml_safe
+
 QLC_NS_URI = "http://www.qlcplus.org/Workspace"
 ET.register_namespace("", QLC_NS_URI)
 
@@ -43,13 +45,7 @@ def load_qxw(path: str, strip_namespace: bool = False) -> ET.ElementTree:
     With ``strip_namespace=True`` tags are plain (``"Engine"``) instead of
     ``"{http://www.qlcplus.org/Workspace}Engine"``.
     """
-    size = os.path.getsize(path)
-    if size > MAX_QXW_BYTES:
-        raise ValueError(
-            f"File too large ({size // (1024 * 1024)} MB). "
-            f"Max allowed: {MAX_QXW_BYTES // (1024 * 1024)} MB."
-        )
-    tree = ET.parse(path)  # nosec B314
+    tree = xml_safe.parse(path, MAX_QXW_BYTES)      # size cap, no entities (core/xml_safe.py)
     if strip_namespace:
         strip_ns(tree.getroot())
     return tree
@@ -57,9 +53,7 @@ def load_qxw(path: str, strip_namespace: bool = False) -> ET.ElementTree:
 
 def loads_qxw(data: bytes) -> ET.Element:
     """Parse workspace bytes and return the root element."""
-    if len(data) > MAX_QXW_BYTES:
-        raise ValueError("Workspace data too large.")
-    return ET.fromstring(data)  # nosec B314
+    return xml_safe.fromstring(data, MAX_QXW_BYTES)   # size cap, no entities
 
 
 # ── Namespace helpers ────────────────────────────────────────────────────────

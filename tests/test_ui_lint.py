@@ -79,3 +79,14 @@ def test_button_classes_are_the_four_kinds():
     for text in JS.values():
         used |= set(re.findall(r"\bbtn-(accent|surface|ghost|danger|overwrite|primary|secondary|success|green|red)\b", text))
     assert not used & {"primary", "secondary", "success", "green", "red"}, used
+
+
+def test_inter_is_bundled_with_its_licence():
+    fonts = ROOT / "static" / "fonts"
+    tokens = (ROOT / "static" / "css" / "tokens.css").read_text(encoding="utf-8")
+    for name in ("inter-latin-wght-normal.woff2", "inter-latin-ext-wght-normal.woff2"):
+        assert (fonts / name).stat().st_size > 10000, name
+        assert "/static/fonts/" + name in tokens
+    assert "SIL OPEN FONT LICENSE" in (fonts / "Inter-OFL.txt").read_text(encoding="utf-8").upper()
+    assert '--font: "Inter"' in tokens
+    assert "http" not in re.sub(r"/\*.*?\*/", "", tokens, flags=re.S).split("--font:")[0].split("@font-face")[1]

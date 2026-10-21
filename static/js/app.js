@@ -68,16 +68,19 @@ const _LAZY = {
 /** The footer of a tool says what its main button will do (v2.2 UI review:
  *  "what happens if I press Apply?"), next to the button.  *parts*: a string
  *  or a list of chips; *kind*: '' · 'ok' · 'warn' · 'error'. */
+/** Singular or plural form of a counted phrase, each form its own translation key: skPlural(n, one, many, ...more) */
+function skPlural(n, one, many, ...more) { return t(n === 1 ? one : many, n, ...more); }
+
 function setOutcome(screen, parts, kind = '', lead = 'Apply will') {
   const el = document.getElementById('oc-' + screen);
   if (!el) return;
   if (!parts || (Array.isArray(parts) && !parts.length)) { el.innerHTML = ''; el.className = 'out-outcome'; return; }
   const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const body = Array.isArray(parts)
-    ? parts.map(p => typeof p === 'string' ? `<span class="oc-chip">${esc(p)}</span>`
-      : `<span class="oc-chip oc-${p.kind || ''}">${esc(p.text)}</span>`).join('')
-    : `<span>${esc(parts)}</span>`;
-  el.innerHTML = (lead ? `<b>${esc(lead)}</b>` : '') + body;
+    ? parts.map(p => typeof p === 'string' ? `<span class="oc-chip">${esc(t(p))}</span>`
+      : `<span class="oc-chip oc-${p.kind || ''}">${esc(t(p.text))}</span>`).join('')
+    : `<span>${esc(t(parts))}</span>`;
+  el.innerHTML = (lead ? `<b>${esc(t(lead))}</b>` : '') + body;
   el.className = 'out-outcome' + (kind ? ' oc-' + kind : '');
 }
 

@@ -268,11 +268,11 @@ function _pSyncOutcome() {
   if (_pStep === 2) {
     if (!nFn && !nCopy) return setOutcome(n, 'nothing yet — tick pages, frames, buttons or functions', '', 'Apply will do');
     const chips = [];
-    if (nFn) chips.push(`port ${nFn} function${nFn > 1 ? 's' : ''}`);
-    if (_pVcScope.length) chips.push(`${_pVcScope.length} VC widget${_pVcScope.length > 1 ? 's' : ''}`);
-    if (_pCopyFx.size) chips.push(`copy ${_pCopyFx.size} fixture${_pCopyFx.size > 1 ? 's' : ''}`);
-    if (_pCopyGrp.size) chips.push(`copy ${_pCopyGrp.size} group${_pCopyGrp.size > 1 ? 's' : ''}`);
-    if (_pCopyMsh.size) chips.push(`copy ${_pCopyMsh.size} mesh${_pCopyMsh.size > 1 ? 'es' : ''}`);
+    if (nFn) chips.push(skPlural(nFn, 'port {0} function', 'port {0} functions'));
+    if (_pVcScope.length) chips.push(skPlural(_pVcScope.length, '{0} VC widget', '{0} VC widgets'));
+    if (_pCopyFx.size) chips.push(skPlural(_pCopyFx.size, 'copy {0} fixture', 'copy {0} fixtures'));
+    if (_pCopyGrp.size) chips.push(skPlural(_pCopyGrp.size, 'copy {0} group', 'copy {0} groups'));
+    if (_pCopyMsh.size) chips.push(skPlural(_pCopyMsh.size, 'copy {0} mesh', 'copy {0} meshes'));
     return setOutcome(n, chips, '', 'Apply will');
   }
   if (_pStep === 3) {
@@ -281,28 +281,28 @@ function _pSyncOutcome() {
     const mapped = ids.filter(id => (_pFixMapping[id] || _pFixMapping[String(id)] || []).length).length;
     const open = ids.length - skipped - mapped;
     const chips = [];
-    if (ids.length) chips.push({ text: `${mapped} of ${ids.length} fixture${ids.length > 1 ? 's' : ''} mapped`, kind: open > 0 && !_pDropUnmapped ? 'warn' : '' });
-    if (skipped) chips.push(`${skipped} not ported`);
+    if (ids.length) chips.push({ text: skPlural(ids.length, '{1} of {0} fixture mapped', '{1} of {0} fixtures mapped', mapped), kind: open > 0 && !_pDropUnmapped ? 'warn' : '' });
+    if (skipped) chips.push(t('{0} not ported', skipped));
     const noExact = ids.filter(id => !_pSkipFx.has(id) && !_pSkipFx.has(String(id)) &&
       !(((_pCandidates && _pCandidates.candidates[id]) || {}).tier1 || []).length).length;
-    if (noExact) chips.push(`${noExact} without exact match`);
-    if (open > 0 && !_pDropUnmapped) chips.push({ text: `${open} without a target`, kind: 'warn' });
-    if (nCopy) chips.push(`${_pCopyFx.size} fixture${_pCopyFx.size === 1 ? '' : 's'} copied`);
+    if (noExact) chips.push(t('{0} without exact match', noExact));
+    if (open > 0 && !_pDropUnmapped) chips.push({ text: t('{0} without a target', open), kind: 'warn' });
+    if (nCopy) chips.push(skPlural(_pCopyFx.size, '{0} fixture copied', '{0} fixtures copied'));
     return chips.length ? setOutcome(n, chips, '', 'Apply will') : setOutcome(n, 'nothing to map', '', 'Apply will do');
   }
   if (_pStep === 4) {
     const v = _pValidation;
     if (!v) return setOutcome(n, 'checking the plan…', '', 'Apply will');
     const chips = [];
-    if (v.errors.length) chips.push({ text: `${v.errors.length} error${v.errors.length > 1 ? 's' : ''} to fix first`, kind: 'error' });
-    else chips.push(`port ${nFn} function${nFn === 1 ? '' : 's'} into ${where}`);
-    if (v.warnings.length) chips.push({ text: `${v.warnings.length} warning${v.warnings.length > 1 ? 's' : ''}`, kind: 'warn' });
+    if (v.errors.length) chips.push({ text: skPlural(v.errors.length, '{0} error to fix first', '{0} errors to fix first'), kind: 'error' });
+    else chips.push(skPlural(nFn, 'port {0} function into {1}', 'port {0} functions into {1}', where));
+    if (v.warnings.length) chips.push({ text: skPlural(v.warnings.length, '{0} warning', '{0} warnings'), kind: 'warn' });
     return setOutcome(n, chips, v.errors.length ? 'error' : '', v.errors.length ? 'Blocked:' : 'Apply will');
   }
   if (_pStep === 5) {
     if (_pExported) return;
-    const chips = [`port ${nFn} function${nFn === 1 ? '' : 's'}`];
-    if (nCopy) chips.push(`copy ${nCopy} fixture/group${nCopy > 1 ? 's' : ''}`);
+    const chips = [skPlural(nFn, 'port {0} function', 'port {0} functions')];
+    if (nCopy) chips.push(skPlural(nCopy, 'copy {0} fixture/group', 'copy {0} fixtures/groups'));
     chips.push(_pTgtShow ? 'one History step' : 'write a new file');
     return setOutcome(n, chips, '', 'Apply will');
   }

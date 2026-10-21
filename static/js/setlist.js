@@ -514,9 +514,9 @@ function _updateSongCount() {
     const n = _songRows.length, ok = _songRows.filter(r => r.qxw_id).length;
     const dark = _songRows.filter(r => r.qxw_id && (_functions.find(f => f.id === r.qxw_id) || {}).dark).length;
     setOutcome('setlist', !n ? 'nothing yet — pick a slot and add songs' : [
-      `${ok} cue${ok !== 1 ? 's' : ''} in the cue list`,
-      ...(n - ok ? [{ text: `${n - ok} song${n - ok > 1 ? 's' : ''} without a function — left out`, kind: 'warn' }] : []),
-      ...(dark ? [{ text: `${dark} light${dark > 1 ? '' : 's'} nothing`, kind: 'warn' }] : []),
+      skPlural(ok, '{0} cue in the cue list', '{0} cues in the cue list'),
+      ...(n - ok ? [{ text: skPlural(n - ok, '{0} song without a function — left out', '{0} songs without a function — left out'), kind: 'warn' }] : []),
+      ...(dark ? [{ text: skPlural(dark, '{0} lights nothing', '{0} light nothing'), kind: 'warn' }] : []),
     ], '', n ? 'Apply will put' : 'Apply will do');
   }
   const el = document.getElementById('song-count');

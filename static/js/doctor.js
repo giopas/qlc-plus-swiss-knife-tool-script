@@ -192,7 +192,7 @@ function _docSyncButton() {
     for (const k of _docSel) { const c = String(k).split('|')[0]; by[c] = (by[c] || 0) + 1; }
     const codes = Object.keys(by).sort();
     setOutcome('doctor', codes.length ? codes.slice(0, 6).map(c => `${c} × ${by[c]}`)
-      .concat(codes.length > 6 ? [`+${codes.length - 6} more kinds`] : []) : 'nothing — tick the findings to fix',
+      .concat(codes.length > 6 ? [t('+{0} more kinds', codes.length - 6)] : []) : 'nothing — tick the findings to fix',
       '', codes.length ? 'Apply will fix' : 'Apply will do');
   }
 }

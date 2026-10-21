@@ -170,12 +170,12 @@ async function reducerPreview(auto) {
           `<li>${doc.total_errors} error(s), ${doc.total_warnings} warning(s) in all — none of them caused by this step</li>`}</ul></details>`;
     const ren = Object.values(_rrEdit).length;
     const chips = [];
-    if (c.fixtures) chips.push(`−${c.fixtures} fixture${c.fixtures > 1 ? 's' : ''}`);
-    if (c.groups) chips.push(`−${c.groups} group${c.groups > 1 ? 's' : ''}`);
-    if (c.functions) chips.push(`−${c.functions} function${c.functions > 1 ? 's' : ''}`);
-    if (c.widgets) chips.push(`−${c.widgets} VC widget${c.widgets > 1 ? 's' : ''}`);
-    if (ren) chips.push(`${ren} renamed / re-patched`);
-    chips.push(newBad ? { text: `${newBad} new Doctor error(s)`, kind: 'error' }
+    if (c.fixtures) chips.push(skPlural(c.fixtures, '−{0} fixture', '−{0} fixtures'));
+    if (c.groups) chips.push(skPlural(c.groups, '−{0} group', '−{0} groups'));
+    if (c.functions) chips.push(skPlural(c.functions, '−{0} function', '−{0} functions'));
+    if (c.widgets) chips.push(skPlural(c.widgets, '−{0} VC widget', '−{0} VC widgets'));
+    if (ren) chips.push(t('{0} renamed / re-patched', ren));
+    chips.push(newBad ? { text: t('{0} new Doctor error(s)', newBad), kind: 'error' }
       : { text: '✓ no new Doctor errors', kind: 'ok' });
     setOutcome('reducer', chips, newBad ? 'error' : '');
     if (!auto) setStatus('Preview ready.', 'ok');

@@ -84,6 +84,7 @@ No change to `core/`, to the API routes or to what any button writes.
 - **Every Workspace Doctor rule has a plain meaning** under its title, in everyday words ("Two fixtures use the same DMX channels."). The technical title and the rule ID stay.
 - All new sentences are in the seven languages. `tests/test_ui_lint.py` checks the header length, the tooltip length, that every rule has its meaning and that the new texts are translated.
 - Tool names are unchanged: no rename was confirmed. Empty states keep their wording.
+- **The footer summary chips are translated.** "port 3 functions", "2 of 5 fixtures mapped", "−2 groups" and the other counted chips of Function Porter, Rig Reducer, Brightness and Setlist now have one translation per singular and plural form (`skPlural()` in `app.js`), and `setOutcome()` translates the lead and the words. A test keeps every form translated in the seven languages.
 
 ### Added
 

@@ -200,3 +200,24 @@ def test_the_stage_e_sentences_are_translated_in_all_seven_languages():
         d = json.load(open(f, encoding="utf-8"))
         miss = [s for s in heads + plain if s not in d and "Tablet" not in s]
         assert not miss, (os.path.basename(f), miss[:3])
+
+
+# ── the footer summary chips are translated (3.9.5) ─────────────────────────
+
+def test_summary_chips_use_skplural_not_english_suffixes():
+    for name in ("porter.js", "reducer.js", "brightness.js", "setlist.js"):
+        bad = [l.strip() for l in JS[name].splitlines()
+               if ("chips.push" in l or "setOutcome(" in l) and re.search(r"\$\{[^}]*\?\s*'(?:s|es)'\s*:\s*''\}", l)]
+        assert not bad, (name, bad[:2])
+
+
+def test_every_skplural_pair_is_translated_in_all_seven_languages():
+    keys = set()
+    for text in JS.values():
+        for m in re.finditer(r"skPlural\([^,]+,\s*'([^']+)',\s*'([^']+)'", text):
+            keys.update(m.groups())
+    assert len(keys) >= 40, len(keys)
+    for f in glob.glob(str(ROOT / "static" / "i18n" / "*.json")):
+        d = json.load(open(f, encoding="utf-8"))
+        miss = sorted(k for k in keys if k not in d)
+        assert not miss, (os.path.basename(f), miss[:4])

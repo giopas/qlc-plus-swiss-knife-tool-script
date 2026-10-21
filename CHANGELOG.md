@@ -5,6 +5,28 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [3.9.0] — 2026-10-21 — Tablet on stage
+
+### Added
+
+- **Song cards.** A card per song of a cue list: tuning, tempo, who starts and how, a note, and a line per player (pedal or FX settings). Edited on the Tablet on stage screen and kept in `<show>.stage.json`, shared by every version of the show. The Dictionary's text can be offered as a start. The tempo comes from the card, else from the Setlist (a step named `Song · 128 BPM`).
+- **Next song banner.** When the cue list reaches a new song, the tablet shows its card in large type for six seconds. A change of tuning from the song before is written in words first ("TUNING CHANGE from → to") and also coloured.
+- **Views by role.** Add `?role=commander` (cues and the next card), `?role=band` (the card in full) or `?role=vocals` (song names, tempo and note) to the address, and `&who=Guitar` for one player's line. The vocals and band views hide the control buttons.
+- **Stage rules.** Tuning change at least 7:1, card text at least 4.5:1, 56 px touch targets, no motion, colour never alone. Tests enforce them in every theme.
+- **Page kit (step 0).** `static/css/kit.css` and `skActionBar()` in `static/js/kit.js`: header, toolbar, sticky action bar with a chip that says what the main button does, a reason shown when it is disabled, empty and done states, a segmented control. All classes start with `kit-`; the tokens are untouched. Only the Tablet on stage screen uses it.
+
+### Changed
+
+- **One entry, Tablet on stage.** The Stage Monitor screen and the Setlist screen's tablet page are now one screen with two modes, Live monitor and Simple page. The Setlist button opens it in Simple page mode. The title is shared; text size and colours of the two pages are still set apart.
+- The sidebar entry, the Start chip and the Claude tool texts use the new name. The tool id `stage_monitor` stays.
+- Translations for the new words in the seven languages. The ja and zh "Note" now mean a remark.
+
+### Not in this release
+
+Cards in the Simple page, a QR code, chosen VC buttons as tiles in control mode, the Setlist order on the live page, and the wiki pages (3.9.6).
+
+---
+
 ## [3.8.0] — 2026-10-20 — Stage layouts and per-song tempo
 
 ### Added

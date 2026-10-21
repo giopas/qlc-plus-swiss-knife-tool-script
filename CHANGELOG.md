@@ -7,6 +7,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.9.5] — 2026-10-21 — A clearer Swiss Knife
+
+Same tool, easier to read and to trust. A readable type scale and one bundled font, four kinds of button, a ribbon and a Start screen that follow what you are doing, one chip and one reason on every footer, a Doctor that counts kinds of problem, and plain words under every tool title. **No change to `core/`, to the API routes or to what any button writes**: a recorded session replays to the same file.
+
 ### Changed (3.9.5, stage A: the foundation)
 
 No change to `core/`, to the API routes or to what any button writes.
@@ -21,25 +27,16 @@ No change to `core/`, to the API routes or to what any button writes.
 - **Inter is bundled.** The interface now draws its letters with Inter (variable font, Latin and Latin Extended, 133 KB, SIL Open Font License, `static/fonts/Inter-OFL.txt`), so a button label is the same width on every computer and still works with no internet. Japanese and Chinese use the system fonts. If the font is missing the old system stack takes over.
 - **The shell has no inline styles.** The few left became classes.
 
-### Changed (3.9.5, stage E: the words in the app)
+### Changed (3.9.5, stage B: the shell and Start)
 
-No change to `core/`, to the API routes or to what any button writes.
+No change to `core/` or to what any button writes. One field is added to `/api/show/status`: the Doctor's `rules`.
 
-- **One outcome sentence under each tool title.** The 19 header sentences say what you get ("Adapt your show to a smaller rig."), in 20 words or fewer and without dashes as connectors.
-- **Tooltips of 20 words or fewer.** 25 long ones (Setlist, Dictionary, Function Porter, Show Paperwork, Tablet on stage and others) were cut to what happens, not how it is built.
-- **Every Workspace Doctor rule has a plain meaning** under its title, in everyday words ("Two fixtures use the same DMX channels."). The technical title and the rule ID stay.
-- All new sentences are in the seven languages. `tests/test_ui_lint.py` checks the header length, the tooltip length, that every rule has its meaning and that the new texts are translated.
-- Tool names are unchanged: no rename was confirmed. Empty states keep their wording.
-
-### Changed (3.9.5, stage D: key screens)
-
-No change to `core/`, to the API routes or to what any button writes.
-
-- **Workspace Doctor counts kinds.** The summary is three buttons (errors, kinds of warning, kinds of info, each with its number of places); each one filters the list, and the *Show info* tick box is gone. A rule card says "N places" and has a *Show them / Hide them* link.
-- **Function Porter, step 3** opens on the mapping list; the two stage maps stay folded and the choice is remembered. The footer summary adds how many fixtures have no exact match.
-- **Setlist.** *Setlist TXT* and *Workspace* are folds, closed until opened. Each assigned song shows the function's type badge and a pill: same name, similar name or different name (read from the two names; it does not say who chose the match).
-- **Tables.** Zebra stripes only in the dense tables, rows at least 32 px, header kept in view. The last inline font sizes under 11 px (9 to 10.5) are 11 px.
-- The plain meaning of each Doctor rule came in stage E.
+- **The ribbon.** The file name has room (240 px or more) and a middle ellipsis (`Festival…_14fix.qxw`), with a second line that says *opened, never touched* or *Saved as …*. The three count cards are one quiet line (`14 fixtures · 286 functions · 113 widgets`), shown from 1700 px wide and otherwise in the file's tooltip. The changes read as a sentence (*3 changes, not saved*, with a teal dot, or *Saved as …*, or *No changes*) and open the History.
+- **The Doctor pill counts kinds, not places.** `1 error · 6 kinds of warning` instead of `1 · 856`. Red is only for errors, amber for warnings, green with a tick when clean. The hover lists the rules with their counts (`D005 ×801, D004 ×4`).
+- **Save and Open.** *Save as new file…* is filled when there is something to save and an ordinary button when there is not. *Open…* is a split button: its menu has *Reload from disk* and the recent shows.
+- **Start follows the state.** A zone at the top picks one of five states by a fixed order: no show open, a route in progress (*You are on step 4 of 9 …*, *Continue*), the Doctor has errors (*Open the Doctor*), changes not saved (*Save as new file…*, *History*), clean and saved (*… is ready. What next?*). The others become small lines under it. The drop zone and the recent list show only when no show is open. The job cards come before the guided routes, and the last tool used on a card is marked.
+- **Recent shows** show the date (today, yesterday, a weekday), the fixture count and the Doctor result, and each has an *Open* button.
+- **The side menu.** An accent bar on the active tool, the last three tools used under Start, groups that fold (the choice is kept), and labels in the dim text colour instead of the faint one.
 
 ### Changed (3.9.5, stage C: the kit on every tool)
 
@@ -68,16 +65,25 @@ No change to `core/`, to the API routes or to what any button writes.
 | Cabling | Next / Save | the plan next to the show | Saved next to the show |
 | Tablet on stage | Export | the tablet page folder | its own chips (3.9.0) |
 
-### Changed (3.9.5, stage B: the shell and Start)
+### Changed (3.9.5, stage D: key screens)
 
-No change to `core/` or to what any button writes. One field is added to `/api/show/status`: the Doctor's `rules`.
+No change to `core/`, to the API routes or to what any button writes.
 
-- **The ribbon.** The file name has room (240 px or more) and a middle ellipsis (`Festival…_14fix.qxw`), with a second line that says *opened, never touched* or *Saved as …*. The three count cards are one quiet line (`14 fixtures · 286 functions · 113 widgets`), shown from 1700 px wide and otherwise in the file's tooltip. The changes read as a sentence (*3 changes, not saved*, with a teal dot, or *Saved as …*, or *No changes*) and open the History.
-- **The Doctor pill counts kinds, not places.** `1 error · 6 kinds of warning` instead of `1 · 856`. Red is only for errors, amber for warnings, green with a tick when clean. The hover lists the rules with their counts (`D005 ×801, D004 ×4`).
-- **Save and Open.** *Save as new file…* is filled when there is something to save and an ordinary button when there is not. *Open…* is a split button: its menu has *Reload from disk* and the recent shows.
-- **Start follows the state.** A zone at the top picks one of five states by a fixed order: no show open, a route in progress (*You are on step 4 of 9 …*, *Continue*), the Doctor has errors (*Open the Doctor*), changes not saved (*Save as new file…*, *History*), clean and saved (*… is ready. What next?*). The others become small lines under it. The drop zone and the recent list show only when no show is open. The job cards come before the guided routes, and the last tool used on a card is marked.
-- **Recent shows** show the date (today, yesterday, a weekday), the fixture count and the Doctor result, and each has an *Open* button.
-- **The side menu.** An accent bar on the active tool, the last three tools used under Start, groups that fold (the choice is kept), and labels in the dim text colour instead of the faint one.
+- **Workspace Doctor counts kinds.** The summary is three buttons (errors, kinds of warning, kinds of info, each with its number of places); each one filters the list, and the *Show info* tick box is gone. A rule card says "N places" and has a *Show them / Hide them* link.
+- **Function Porter, step 3** opens on the mapping list; the two stage maps stay folded and the choice is remembered. The footer summary adds how many fixtures have no exact match.
+- **Setlist.** *Setlist TXT* and *Workspace* are folds, closed until opened. Each assigned song shows the function's type badge and a pill: same name, similar name or different name (read from the two names; it does not say who chose the match).
+- **Tables.** Zebra stripes only in the dense tables, rows at least 32 px, header kept in view. The last inline font sizes under 11 px (9 to 10.5) are 11 px.
+- The plain meaning of each Doctor rule came in stage E.
+
+### Changed (3.9.5, stage E: the words in the app)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **One outcome sentence under each tool title.** The 19 header sentences say what you get ("Adapt your show to a smaller rig."), in 20 words or fewer and without dashes as connectors.
+- **Tooltips of 20 words or fewer.** 25 long ones (Setlist, Dictionary, Function Porter, Show Paperwork, Tablet on stage and others) were cut to what happens, not how it is built.
+- **Every Workspace Doctor rule has a plain meaning** under its title, in everyday words ("Two fixtures use the same DMX channels."). The technical title and the rule ID stay.
+- All new sentences are in the seven languages. `tests/test_ui_lint.py` checks the header length, the tooltip length, that every rule has its meaning and that the new texts are translated.
+- Tool names are unchanged: no rename was confirmed. Empty states keep their wording.
 
 ### Added
 

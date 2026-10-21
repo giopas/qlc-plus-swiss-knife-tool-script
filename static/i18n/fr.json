@@ -4137,5 +4137,6 @@
  "Fixtures that switch pages, not lights.": "Des projecteurs qui changent de page, pas des lumières.",
  "A Show Wizard effect that was never created.": "Un effet du Show Wizard qui n'a jamais été créé.",
  "QLC+ 5.3 content that QLC+ 5.2.2 ignores.": "Contenu de QLC+ 5.3 que QLC+ 5.2.2 ignore.",
- "A fixture definition QLC+ does not ship; it travels with the show.": "Une définition de projecteur que QLC+ ne fournit pas ; elle voyage avec le show."
+ "A fixture definition QLC+ does not ship; it travels with the show.": "Une définition de projecteur que QLC+ ne fournit pas ; elle voyage avec le show.",
+ "Info": "Info"
 }

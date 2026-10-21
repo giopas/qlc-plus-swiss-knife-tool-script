@@ -4188,5 +4188,6 @@
  "Fixtures that switch pages, not lights.": "切换页面的灯具，而不是灯光。",
  "A Show Wizard effect that was never created.": "一个从未创建的演出向导效果。",
  "QLC+ 5.3 content that QLC+ 5.2.2 ignores.": "QLC+ 5.2.2 会忽略的 QLC+ 5.3 内容。",
- "A fixture definition QLC+ does not ship; it travels with the show.": "QLC+ 自带库中没有的灯具定义；它会随演出一起带走。"
+ "A fixture definition QLC+ does not ship; it travels with the show.": "QLC+ 自带库中没有的灯具定义；它会随演出一起带走。",
+ "Info": "提示"
 }

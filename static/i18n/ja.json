@@ -4188,5 +4188,6 @@
  "Fixtures that switch pages, not lights.": "ライトではなく、ページを切り替えるフィクスチャー。",
  "A Show Wizard effect that was never created.": "作成されなかったショーウィザードのエフェクト。",
  "QLC+ 5.3 content that QLC+ 5.2.2 ignores.": "QLC+ 5.2.2が無視するQLC+ 5.3のコンテンツ。",
- "A fixture definition QLC+ does not ship; it travels with the show.": "QLC+に同梱されていないフィクスチャー定義。ショーと一緒に持ち運ばれます。"
+ "A fixture definition QLC+ does not ship; it travels with the show.": "QLC+に同梱されていないフィクスチャー定義。ショーと一緒に持ち運ばれます。",
+ "Info": "情報"
 }

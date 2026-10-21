@@ -132,9 +132,9 @@
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Dictionary</span>
     </button>
-    <button class="sn-item" id="sn-stagemon" data-tip="Stage Monitor" data-desc="A page for a tablet on stage: the cue that is playing, big, and the next one, live from QLC+. For the player who steps through the setlist with a pedal and cannot see the laptop." onclick="go('stagemon')">
+    <button class="sn-item" id="sn-stagemon" data-tip="Tablet on stage" data-desc="Put tonight's setlist on a tablet for the band: song cards (tuning, tempo, who starts), a Next song banner and a view for each player, live from QLC+ or as one simple page with no network." onclick="go('stagemon')">
       <svg class="ic"><use href="/static/icons.svg#tablet"/></svg>
-      <span>Stage Monitor</span>
+      <span>Tablet on stage</span>
     </button>
     <button class="sn-item" id="sn-cabling" data-tip="Cabling" data-desc="Plan the DMX cables with the kit you own: which splitter output feeds which fixtures, in what order, which cable goes where, the adapters and terminators, and the pick list and labels for the crew." onclick="go('cabling')">
       <svg class="ic"><use href="/static/icons.svg#cable"/></svg>
@@ -521,7 +521,7 @@
         <div class="wf-card" data-grp="4">
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Stage Monitor</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -790,9 +790,8 @@
                   onclick="slOpenImport()" disabled
                   data-tooltip="Bring a setlist in from the clipboard, a .txt or a .csv (spreadsheet): numbering is dropped, set breaks and fade / hold columns are understood. You see what will be imported first.">📋 Import / paste…</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-tablet-page"
-                  onclick="slTabletPage()" disabled
-                  data-tooltip="One HTML file with every setlist in big type: tap a song to tick it off. Open it on a tablet or phone — no app, no network.">📱 Tablet page…</button>
-          <label class="vce-hint" style="font-size:10px"><input type="checkbox" id="sl-tab-notes"> with the QLC+ function names</label>
+                  onclick="go('stagemon'); stagemonMode('simple')" disabled
+                  data-tooltip="Put the setlist on a tablet for the band: one simple page with no network, or the live monitor with song cards. Opens Tablet on stage.">Tablet on stage…</button>
 
           <div class="fb-sep"></div>
 
@@ -2512,34 +2511,43 @@
   </section>
 
   <!-- ======================================================================
-       STAGE MONITOR (3.5.0)
+       TABLET ON STAGE (3.9.0; was the Stage Monitor of 3.5.0). The first screen on the page kit.
   ====================================================================== -->
   <section class="screen" id="scr-stagemon">
 
-    <div class="page-h">
-      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#tablet"/></svg></div>
-      <div><h2>Stage Monitor</h2><div class="p-desc">The cue that is playing and the next one, live from QLC+, on a tablet on stage. The show is only read.</div></div>
-      <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Stage-Monitor')" title="How this tool works — opens the Stage Monitor page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+    <div class="kit-head">
+      <div class="kit-head-icon"><svg class="ic"><use href="/static/icons.svg#tablet"/></svg></div>
+      <div><h2>Tablet on stage</h2><div class="kit-head-sub">Put tonight’s setlist on a tablet for the band.</div></div>
+      <div class="kit-head-tools">
+        <button class="help-btn" onclick="openHelp('Stage-Monitor')" title="How this tool works — opens the Tablet on stage page of the wiki">?</button>
+        <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      </div>
     </div>
 
-    <div class="doc-toolbar">
+    <div class="kit-toolbar">
+      <span id="sm-mode"></span>
       <span id="sm-summary" class="doc-summary"></span>
-      <div class="spacer"></div>
-      <button class="btn btn-surface" onclick="stagemonLoad()" data-tooltip="Read the cue lists of the show again">↻ Refresh</button>
+      <span class="kit-spacer"></span>
+      <button class="btn btn-surface" id="sm-refresh" onclick="stagemonLoad()" data-tooltip="Read the cue lists of the show again">↻ Refresh</button>
     </div>
 
-    <div class="sm-body">
-      <div class="sm-lists">
-        <div class="pane-header">Cue lists</div>
+    <!-- Live monitor: follows QLC+ -->
+    <div class="kit-body sm-live" id="sm-live">
+      <div class="kit-work sm-songs">
         <div id="sm-notice"></div>
         <div id="sm-lists"><div class="porter-placeholder">Open a workspace with a CueList on its Virtual Console.</div></div>
       </div>
 
-      <div class="sm-side">
-        <div class="pane-header">The page</div>
-        <div class="sm-card">
+      <aside class="sm-side">
+        <div class="sm-ptabs" role="tablist" aria-label="Song card, page, send to the tablet">
+          <button type="button" role="tab" id="sm-t-card" data-p="card" onclick="stagemonPane('card')">Song card</button>
+          <button type="button" role="tab" id="sm-t-page" data-p="page" onclick="stagemonPane('page')">Page</button>
+          <button type="button" role="tab" id="sm-t-send" data-p="send" onclick="stagemonPane('send')">Send to the tablet</button>
+        </div>
+
+        <div class="sm-card" id="sm-p-card" role="tabpanel"></div>
+
+        <div class="sm-card" id="sm-p-page" role="tabpanel" hidden>
           <label class="sm-row"><span>Title</span>
             <input id="sm-title" class="field-input" maxlength="120" placeholder="The show’s name" oninput="stagemonSet('title', this.value)"></label>
           <div class="sm-row"><span>Text size</span>
@@ -2557,6 +2565,7 @@
           <label class="sm-check"><input type="checkbox" id="sm-next" onchange="stagemonSet('show_next', this.checked)"> Show the next cue</label>
           <label class="sm-check"><input type="checkbox" id="sm-clock" onchange="stagemonSet('show_clock', this.checked)"> Show the time</label>
           <label class="sm-check"><input type="checkbox" id="sm-numbers" onchange="stagemonSet('show_numbers', this.checked)"> Show step numbers</label>
+          <label class="sm-check" data-tooltip="The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name"><input type="checkbox" id="sm-notes" onchange="stagemonSet('show_notes', this.checked)"> Show step notes</label>
           <div class="sm-row"><span>Safety hold</span>
             <select id="sm-hold" class="field-input sm-theme" onchange="stagemonSet('hold_ms', +this.value)"
                     data-tooltip="Control mode: how long Previous and Next must be held before they act, so a stray touch does nothing. Off: a tap acts at once, handy for skipping several songs. Stop always needs a longer hold (at least 1.2 s).">
@@ -2566,16 +2575,15 @@
               <option value="1000">1 s</option>
               <option value="1500">1.5 s</option>
             </select></div>
-          <label class="sm-check" data-tooltip="The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name"><input type="checkbox" id="sm-notes" onchange="stagemonSet('show_notes', this.checked)"> Show step notes</label>
           <div class="sm-row sm-ports"><span>Ports</span>
             <label data-tooltip="QLC+ web access listens here (qlcplus -w); 9999 unless you changed it">QLC+ <input id="sm-wsport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('ws_port', +this.value)"></label>
             <label data-tooltip="Where the page is served to the tablet">Page <input id="sm-httpport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('http_port', +this.value)"></label>
           </div>
+          <div class="sm-meta sm-roles-help">Views by role: end the address with ?role=commander (cues and the next card, for the player with the pedal), ?role=band (the card in full) or ?role=vocals (song names, tempo and note). Add &amp;who=Guitar to show only that player’s line.</div>
           <div class="sm-saved" id="sm-saved"></div>
         </div>
 
-        <div class="pane-header">On the tablet</div>
-        <div class="sm-card">
+        <div class="sm-card" id="sm-p-send" role="tabpanel" hidden>
           <div class="sm-row"><span>Folder</span>
             <span class="file-chip" id="sm-folder-chip">—</span>
             <button class="btn btn-surface btn-sm" onclick="stagemonPickFolder()">Choose…</button></div>
@@ -2593,19 +2601,24 @@
             <li>At the gig Swiss Knife can stay closed: double-click <b>Start Stage Monitor</b> in the exported folder.</li>
           </ol>
         </div>
+      </aside>
+    </div>
+
+    <!-- Simple page: one .html, no network -->
+    <div class="kit-body sm-simple" id="sm-simple" hidden>
+      <div class="kit-work">
+        <div class="sm-card">
+          <div class="sm-simple-h">Simple page</div>
+          <p class="sm-meta sm-simple-p">One .html file with every setlist in big type. Tap a song to tick it off. Open it on a tablet or phone from AirDrop, mail or a drive: no app, no network, no QLC+.</p>
+          <label class="sm-row"><span>Title</span>
+            <input id="sm-simple-title" class="field-input" maxlength="120" placeholder="The show’s name" oninput="stagemonSet('title', this.value)"></label>
+          <label class="sm-check"><input type="checkbox" id="sm-tab-notes"> with the QLC+ function names</label>
+          <p class="sm-meta sm-simple-p">The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.</p>
+        </div>
       </div>
     </div>
 
-    <div class="out-footer">
-      <span class="out-note new" title="The show is not changed; only the stage_monitor folder and the settings file are written">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Reads the show, writes only the page
-      </span>
-      <span class="out-outcome" id="oc-stagemon" aria-live="polite"></span>
-      <div class="spacer"></div>
-      <button class="btn btn-surface" id="sm-preview" onclick="stagemonPreview()" data-tooltip="Open the page in your browser, talking to the QLC+ on this computer">👁 Preview</button>
-      <button id="sm-go" class="btn btn-accent" onclick="stagemonExport()" disabled>⤓ Export the page</button>
-    </div>
+    <div data-actionbar id="sm-actionbar"></div>
 
   </section>
 

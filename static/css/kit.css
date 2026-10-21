@@ -14,6 +14,10 @@
   --kit-radius-sm: 6px;    /* controls */
 }
 
+/* a kit part with the hidden attribute stays hidden, whatever display the part sets */
+.kit-head[hidden], .kit-toolbar[hidden], .kit-body[hidden], .kit-work[hidden], .kit-panel[hidden],
+.kit-actionbar[hidden], .kit-empty[hidden], .kit-seg[hidden] { display: none; }
+
 /* ── Focus: a visible ring on every kit control ───────────────────────────── */
 .kit-seg button:focus-visible,
 .kit-actionbar .btn:focus-visible,

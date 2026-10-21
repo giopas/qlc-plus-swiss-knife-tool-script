@@ -101,7 +101,8 @@ def test_every_tool_header_has_a_wiki_help_button():
         pages = re.findall(r'openHelp\(\'([\w-]+)\'\)', body)
         assert pages, f"{screen}: no ? help button"
         assert pages[0] in WIKI_PAGES, (screen, pages[0])
-        assert 'class="p-desc"' in body, screen
+        # the page kit's header (3.9.0) says it in kit-head-sub; the other screens still use p-desc
+        assert 'class="p-desc"' in body or 'class="kit-head-sub"' in body, screen
         seen += 1
     assert seen >= 14
 

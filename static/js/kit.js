@@ -1,7 +1,7 @@
 /* =============================================================================
    kit.js: the page kit's few lines of JS (DESIGN_v2.md section 8, WORKPLAN 3.9.0)
 
-   skActionBar({chip, summary, secondary, primary, why})
+   skActionBar({chip, summary, secondary, primary, why})   (chip, summary, labels, disabled and hidden may be functions)
        draws the sticky action bar into <div data-actionbar> (or opts.target):
        a chip that names what the main button does, a live summary, at most one
        Secondary and one Primary.  A disabled Primary shows why, in words, next
@@ -74,7 +74,8 @@ const SK_CHIPS = {
     host.replaceChildren(bar);
 
     function update() {
-      const chip = typeof opts.chip === 'string' ? SK_CHIPS[opts.chip] : opts.chip;
+      const spec = val(opts.chip);                       // a chip name, {kind, text} or a function giving one
+      const chip = typeof spec === 'string' ? SK_CHIPS[spec] : spec;
       const known = chip && (chip.text || SK_CHIPS[chip.kind]);
       chipEl.className = 'kit-chip ' + ((chip && (chip.cls || (SK_CHIPS[chip.kind] || {}).cls)) || '');
       chipEl.textContent = known ? (chip.text || SK_CHIPS[chip.kind].text) : '';
@@ -84,9 +85,10 @@ const SK_CHIPS = {
         if (!b) continue;
         b.textContent = val(spec.label) || '';
         b.disabled = !!val(spec.disabled);
+        b.hidden = !!val(spec.hidden);
       }
       // a disabled Primary says why: data-why on the button, the same words beside it
-      const why = pri && pri.disabled ? (val(opts.why) || (opts.primary && val(opts.primary.why)) || '') : '';
+      const why = pri && pri.disabled && !pri.hidden ? (val(opts.why) || (opts.primary && val(opts.primary.why)) || '') : '';
       if (pri) {
         if (why) {
           pri.setAttribute('data-why', why);

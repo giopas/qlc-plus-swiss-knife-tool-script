@@ -4380,7 +4380,6 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 :lang(ja) .doc-hint-warn, :lang(zh) .doc-hint-warn { margin-left: 0; }
 
 /* ── Stage Monitor (3.5.0) ─────────────────────────────────────────────── */
-.sm-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 12px; padding: 0 12px 8px; }
 .sm-lists, .sm-side { min-height: 0; overflow: auto; }
 .sm-card { background: var(--surface-1); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
 .sm-cl { background: var(--surface-1); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid transparent; }
@@ -4417,8 +4416,57 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .sm-how { font-size: var(--fs-ui); color: var(--text-dim); margin: 4px 0 0; padding-left: 18px; }
 .sm-how code, .sm-meta code { font-family: var(--font-mono); }
 .sm-warn { font-size: var(--fs-ui); color: var(--orange, #ff9800); background: var(--surface-1); border-radius: var(--radius); padding: 6px 10px; margin-bottom: 8px; }
-@media (max-width: 1100px) { .sm-body { grid-template-columns: 1fr; } }
 .sm-theme { width: auto; flex: 1; }
+
+/* ── Tablet on stage (3.9.0): songs on the left, card / page / send on the right ── */
+.sm-card[hidden] { display: none; }
+.sm-songs { min-height: 0; overflow: auto; }
+.sm-side { flex: none; width: 430px; min-height: 0; overflow: auto; }
+@media (max-width: 1100px) { .sm-side { width: auto; } .sm-songs, .sm-side { overflow: visible; } }
+.sm-tabs { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.sm-tab { display: flex; align-items: center; gap: 6px; padding: 5px 12px; font: inherit; font-size: var(--fs-ui); font-weight: 600; cursor: pointer;
+  color: var(--text-dim); background: var(--surface-1); border: 1px solid var(--border); border-radius: 999px; }
+.sm-tab.sel { color: var(--text); border-color: var(--accent); }
+.sm-tab:focus-visible, .sm-ptabs button:focus-visible, .sm-fn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sm-dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--text-faint); }
+.sm-tab.on .sm-dot { background: var(--accent); border-color: var(--accent); }
+.sm-listcfg { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.sm-listcfg .field-input { width: 200px; }
+.sm-meta-flat { margin-left: 0; margin-bottom: var(--sp-2); }
+.sm-song td { cursor: default; }
+.sm-song .sm-fn { cursor: pointer; font-weight: 600; color: var(--text); }
+.sm-song.sel td { background: var(--accent-soft); }
+.sm-song:hover td { background: var(--row-hover); }
+.sm-chips { white-space: nowrap; }
+.sm-chip { display: inline-block; margin-right: 4px; padding: 0 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); font-size: var(--fs-small); }
+.sm-chip.warn { background: var(--warning-soft); color: var(--warning); font-weight: 600; }
+.sm-steps { max-height: none; margin-left: 0; }
+.sm-ptabs { display: flex; gap: 2px; margin-bottom: var(--sp-2); border-bottom: 1px solid var(--border); }
+.sm-ptabs button { padding: 6px 12px; font: inherit; font-size: var(--fs-ui); font-weight: 600; color: var(--text-dim); background: none; border: 0;
+  border-bottom: 2px solid transparent; cursor: pointer; }
+.sm-ptabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.sm-card-h { font-size: var(--fs-body); }
+.sm-card-h .sm-n { color: var(--text-faint); font-family: var(--mono); margin-right: 4px; }
+.sm-field { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-body); }
+.sm-field > span:first-child { width: 78px; flex: none; color: var(--text-dim); }
+.sm-field > .field-input { flex: 1; min-width: 0; }
+.sm-players { align-items: flex-start; }
+.sm-players > div { flex: 1; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.sm-pl { display: flex; gap: 6px; width: 100%; }
+.sm-pl .field-input:first-child { width: 96px; flex: none; }
+.sm-pl .field-input:nth-child(2) { flex: 1; min-width: 0; }
+.sm-bpm { max-width: 90px; flex: none !important; }
+.sm-tempo { font-size: var(--fs-ui); color: var(--text-dim); }
+.sm-tc { font-size: var(--fs-ui); font-weight: 600; color: var(--warning); min-height: 0; margin-left: 86px; }
+.sm-tc:empty { display: none; }
+.sm-dictline { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.sm-dictline:empty { display: none; }
+.sm-card-f { display: flex; align-items: center; gap: var(--sp-2); }
+.sm-simple-h { font-size: var(--fs-section); font-weight: 600; }
+.sm-simple-p { margin: 0; max-width: 62ch; }
+.sm-roles-help { margin: 4px 0 0; }
+.sm-role > span { width: 82px; flex: none; color: var(--text-dim); font-size: var(--fs-ui); }
+.sm-role code { font-size: var(--fs-ui); font-weight: 600; overflow-wrap: anywhere; }
 
 /* ── Cabling (3.6.0) ───────────────────────────────────────────────────────── */
 .cb-step { flex: 1; min-height: 0; overflow: auto; padding: 0 12px 8px; }

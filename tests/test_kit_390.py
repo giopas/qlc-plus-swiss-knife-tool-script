@@ -53,13 +53,19 @@ def test_a_disabled_primary_says_why():
     assert "data-why" in JS and "aria-live" in JS
 
 
-def test_no_existing_screen_uses_the_kit_yet():
-    """3.9.0 step 0 changes no existing screen; the Tablet screen is the kit's only user."""
+def test_only_tablet_on_stage_uses_the_kit_so_far():
+    """3.9.0 step 0 changes no existing screen; the Tablet on stage screen is the kit's pilot.
+    3.9.5 rolls the kit out to the other screens and this test then goes."""
     own = re.compile(r"(?<![\w-])kit-(head|toolbar|body|work|panel|actionbar|chip|summary|why|empty|done|seg|page|spacer|loading)")
-    assert not own.search(re.sub(r'href="/static/css/kit\.css[^"]*"', "", HTML))
     api = re.compile(r"skActionBar|skSegmented|skEmpty|skDone|SK_CHIPS")
+    shell = re.sub(r'href="/static/css/kit\.css[^"]*"', "", HTML)
+    for m in re.finditer(r'<section class="screen[^"]*" id="scr-(\w+)">(.*?)</section>', shell, re.S):
+        if m.group(1) != "stagemon":
+            assert not own.search(m.group(2)), m.group(1)
+    outside = re.sub(r'<section class="screen[^"]*" id="scr-stagemon">.*?</section>', "", shell, flags=re.S)
+    assert not own.search(outside)
     for p in (ROOT / "static/js").glob("*.js"):
-        if p.name != "kit.js":
+        if p.name not in ("kit.js", "stagemon.js"):
             text = p.read_text(encoding="utf-8")
             assert not api.search(text) and not own.search(text), p.name
     assert not own.search((ROOT / "static/css/style.css").read_text(encoding="utf-8"))

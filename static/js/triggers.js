@@ -87,7 +87,7 @@ function _renderTrgTable(rows) {
   if (!rows.length) {
     wrap.innerHTML = '<div style="padding:24px;color:var(--overlay0);font-size:12px">'
                    + (_trgData.length === 0
-                       ? '<a class="open-ws-link">📂 Open a workspace</a> to see triggers.'
+                       ? '<a class="open-ws-link"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open a workspace</a> to see triggers.'
                        : 'No results for current filter.') + '</div>';
     return;
   }

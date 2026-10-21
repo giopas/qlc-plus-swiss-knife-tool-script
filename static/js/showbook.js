@@ -11,22 +11,22 @@ let _sbDoc      = null;    // last document model from /api/showbook/preview
 let _sbBusy     = false;
 
 const _SB_SECTIONS = [
-  { id: 'patch_sheet', label: 'Patch sheet (DIP switches)', icon: '🔌' },
-  { id: 'rider',       label: 'Tech rider (fixture types)', icon: '🎟' },
-  { id: 'stage_plan',  label: 'Stage plot',     icon: '🗺' },
-  { id: 'checklist',   label: 'Load-in checklist', icon: '✅' },
-  { id: 'cabling',     label: 'DMX cabling',    icon: '🧵' },
-  { id: 'summary',     label: 'Summary',       icon: '📊' },
-  { id: 'patch',       label: 'Patch List',     icon: '🔌' },
-  { id: 'functions',   label: 'Function Index', icon: '📋' },
-  { id: 'scenes',      label: 'Scenes',         icon: '🎬' },
-  { id: 'chasers',     label: 'Chasers',        icon: '🔄' },
-  { id: 'collections', label: 'Collections',    icon: '📦' },
-  { id: 'efx',         label: 'EFX',            icon: '✨' },
-  { id: 'shows',       label: 'Shows',          icon: '🎭' },
-  { id: 'scripts',     label: 'Scripts',        icon: '📝' },
-  { id: 'vc_layout',   label: 'VC Layout',      icon: '🖼' },
-  { id: 'doctor',      label: 'Doctor summary', icon: '🩺' },
+  { id: 'patch_sheet', label: 'Patch sheet (DIP switches)', icon: 'cable' },
+  { id: 'rider',       label: 'Tech rider (fixture types)', icon: 'ticket' },
+  { id: 'stage_plan',  label: 'Stage plot',     icon: 'map' },
+  { id: 'checklist',   label: 'Load-in checklist', icon: 'check' },
+  { id: 'cabling',     label: 'DMX cabling',    icon: 'cable' },
+  { id: 'summary',     label: 'Summary',       icon: 'bar-chart' },
+  { id: 'patch',       label: 'Patch List',     icon: 'cable' },
+  { id: 'functions',   label: 'Function Index', icon: 'clipboard' },
+  { id: 'scenes',      label: 'Scenes',         icon: 'film' },
+  { id: 'chasers',     label: 'Chasers',        icon: 'refresh' },
+  { id: 'collections', label: 'Collections',    icon: 'package' },
+  { id: 'efx',         label: 'EFX',            icon: 'sparkles' },
+  { id: 'shows',       label: 'Shows',          icon: 'layout' },
+  { id: 'scripts',     label: 'Scripts',        icon: 'file-text' },
+  { id: 'vc_layout',   label: 'VC Layout',      icon: 'image' },
+  { id: 'doctor',      label: 'Doctor summary', icon: 'activity' },
 ];
 
 // ── Init ────────────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ function invalidateShowbook() {
   _sbLoaded = false;
   _sbDoc = null;
   const preview = document.getElementById('sb-preview');
-  if (preview) preview.innerHTML = '<div class="porter-placeholder">Pick who it is for, then 🔍 Generate Preview.</div>';
+  if (preview) preview.innerHTML = '<div class="porter-placeholder">Pick who it is for, then Generate Preview.</div>';
 }
 
 // ── Section picker ──────────────────────────────────────────────────────────
@@ -194,7 +194,7 @@ function _sbBuildSectionPicker() {
       ${g.ids.map(id => byId[id]).filter(Boolean).map(s => `
         <label class="sb-check-label">
           <input type="checkbox" value="${s.id}" checked onchange="_sbPatchOpts()">
-          <span>${s.icon} ${s.label}</span>
+          <span>${skIcon(s.icon)} ${s.label}</span>
         </label>`).join('')}
     </fieldset>`).join('');
 }
@@ -283,7 +283,7 @@ function _sbRenderPreview(doc) {
 
   if (secs.rider) {
     const r = secs.rider;
-    parts.push(_sbTable('🎟 Tech rider — fixture types', r.types,
+    parts.push(_sbTable('Tech rider — fixture types', r.types,
       ['Manufacturer', 'Model', 'Mode', 'Qty', 'Ch', 'Patch range', 'Universe(s)'],
       t => [t.manufacturer, t.model, t.mode, t.quantity, t.channels || '', t.patch_range, t.universes.join(', ')],
       'sb-sec-rider').replace('</table>', `</table><div class="sb-stats"><span><b>Total:</b> ${r.total_fixtures} fixture(s),
@@ -291,30 +291,30 @@ function _sbRenderPreview(doc) {
     const d = r.detail, ex = r.extras || [];
     if (d && d.fixtures.length && (ex.includes('patch') || ex.includes('tilt'))) {
       const heads = ['#', 'Name', 'Model'].concat(ex.includes('patch') ? ['Universe', 'Address', 'Ch'] : [], ex.includes('tilt') ? ['X (m)', 'Depth (m)', 'Height (m)', 'Tilt'] : []);
-      parts.push(_sbTable('🎟 Tech rider — fixtures' + (ex.includes('tilt') ? ' (position and tilt: centre of the fixture; height = underside above the floor)' : ''), d.fixtures, heads,
+      parts.push(_sbTable('Tech rider — fixtures' + (ex.includes('tilt') ? ' (position and tilt: centre of the fixture; height = underside above the floor)' : ''), d.fixtures, heads,
         f => [f.id, f.name, f.model].concat(ex.includes('patch') ? [f.universe + 1, f.address + 1, f.channels || ''] : [],
           ex.includes('tilt') ? [(f.x / 1000).toFixed(2), (f.z / 1000).toFixed(2), (f.height / 1000).toFixed(2), f.tilt_text] : []), 'sb-sec-rider-fx'));
     }
     if (d && ex.includes('meshes')) {
-      parts.push(_sbTable('🎟 Tech rider — set pieces on the stage (3D)', d.meshes, ['Name', 'X (m)', 'Depth (m)', 'Floor to bottom (m)', 'W × D × H (m)'],
+      parts.push(_sbTable('Tech rider — set pieces on the stage (3D)', d.meshes, ['Name', 'X (m)', 'Depth (m)', 'Floor to bottom (m)', 'W × D × H (m)'],
         m => [m.name, (m.x / 1000).toFixed(2), (m.z / 1000).toFixed(2), (m.bottom / 1000).toFixed(2),
               `${(m.w / 1000).toFixed(2)} × ${(m.d / 1000).toFixed(2)} × ${(m.h / 1000).toFixed(2)}`], 'sb-sec-rider-mesh'));
     }
   }
   if (secs.checklist) {
-    parts.push(_sbTable('✅ Load-in checklist', secs.checklist,
+    parts.push(_sbTable('Load-in checklist', secs.checklist,
       ['☐', 'ID', 'Name', 'Model', 'Mode', 'Patch', 'Groups', '3D position'],
       c => ['☐', c.id, c.name, c.model, c.mode, c.patch, c.groups, c.position], 'sb-sec-checklist'));
   }
   if (secs.cabling) {
     const cb = secs.cabling;
-    parts.push(`<div class="sb-section" id="sb-sec-cabling"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🧵 DMX cabling <span class="sb-toggle-icon">▾</span></h3>
+    parts.push(`<div class="sb-section" id="sb-sec-cabling"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#cable"/></svg> DMX cabling <span class="sb-toggle-icon">▾</span></h3>
       <div class="sb-section-body"><ol class="sb-steps">${cb.steps.map(st => `<li>${_esc(st)}</li>`).join('')}</ol>
       <div class="sb-cabling-plot">${cb.svg}</div></div></div>`);
   }
   if (secs.stage_plan) {
     const sp = secs.stage_plan;
-    parts.push(`<div class="sb-section" id="sb-sec-stage"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🗺 Stage plot <span class="sb-toggle-icon">▾</span></h3>
+    parts.push(`<div class="sb-section" id="sb-sec-stage"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#map"/></svg> Stage plot <span class="sb-toggle-icon">▾</span></h3>
       <div class="sb-section-body"><div class="sb-stats"><span>${sp.placed} of ${sp.fixtures.length} fixture(s) placed —
       the same two views are a page of their own in the PDF.</span></div>
       ${_sbStagePlot(sp)}
@@ -325,7 +325,7 @@ function _sbRenderPreview(doc) {
   if (secs.summary) {
     const s = secs.summary;
     parts.push(`<div class="sb-section" id="sb-sec-summary">
-      <h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📊 Summary <span class="sb-toggle-icon">▾</span></h3>
+      <h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#bar-chart"/></svg> Summary <span class="sb-toggle-icon">▾</span></h3>
       <div class="sb-section-body">
       <div class="sb-stats">
         <span><b>Fixtures:</b> ${s.fixture_count}</span>
@@ -346,7 +346,7 @@ function _sbRenderPreview(doc) {
     const ps = secs.patch_sheet;
     const bar = f => Array.from({ length: ps.switches }, (_, i) =>
       `<span class="sb-dip ${f.dip.includes(i + 1) ? 'on' : ''}" title="switch ${i + 1}"></span>`).join('');
-    parts.push(`<div class="sb-section" id="sb-sec-patch-sheet"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🔌 Patch sheet <span class="sb-toggle-icon">▾</span></h3>
+    parts.push(`<div class="sb-section" id="sb-sec-patch-sheet"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#cable"/></svg> Patch sheet <span class="sb-toggle-icon">▾</span></h3>
       <div class="sb-section-body"><div class="sb-stats"><span>${ps.total} fixture(s) · DIP ${ps.switches} switches, switch <i>n</i> = 2<sup>n−1</sup>, ON = up</span></div>` +
       ps.universes.map(u => `<h4 class="sb-sub">Universe ${u.universe} — channels ${u.used[0]}–${u.used[1]}</h4>
         <table class="sb-table"><thead><tr><th>ID</th><th>Address</th><th>Ch</th><th>Name</th><th>Fixture</th><th>Mode</th><th>DIP</th><th>ON</th></tr></thead><tbody>${
@@ -358,7 +358,7 @@ function _sbRenderPreview(doc) {
 
   // Patch
   if (secs.patch) {
-    parts.push(_sbTable('🔌 Patch List', secs.patch,
+    parts.push(_sbTable('Patch List', secs.patch,
       ['ID', 'Name', 'Model', 'Mode', 'Patch', 'Groups'],
       p => [p.id, p.name, p.model, p.mode, p.patch, p.groups],
       'sb-sec-patch'));
@@ -411,10 +411,10 @@ function _sbRenderPreview(doc) {
 // VC layout: one table per page, frames indented (WORKPLAN 1.3)
 function _sbVcLayout(layout) {
   const pages = layout.pages || [];
-  const head = '<div class="sb-section" id="sb-sec-vclayout"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🖼 VC Layout <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">';
+  const head = '<div class="sb-section" id="sb-sec-vclayout"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#image"/></svg> VC Layout <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">';
   if (!pages.length) return head + '<div class="sb-empty">No Virtual Console.</div></div></div>';
   const body = pages.map(pg => `
-    <h4 class="sb-subhead">📄 ${_esc(pg.caption)} <small>${_esc(pg.size)}${pg.size ? ' px · ' : ''}${pg.widgets.length} widget(s)</small></h4>
+    <h4 class="sb-subhead"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> ${_esc(pg.caption)} <small>${_esc(pg.size)}${pg.size ? ' px · ' : ''}${pg.widgets.length} widget(s)</small></h4>
     <div class="sb-table-wrap"><table class="sb-table">
       <thead><tr><th>ID</th><th>Type</th><th>Caption</th><th>Position / size</th><th>Function</th><th>Key / MIDI</th></tr></thead>
       <tbody>${pg.widgets.map(w => `<tr>
@@ -428,7 +428,7 @@ function _sbVcLayout(layout) {
 }
 
 function _sbDoctor(d) {
-  const head = '<div class="sb-section" id="sb-sec-doctor"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🩺 Workspace Doctor <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">';
+  const head = '<div class="sb-section" id="sb-sec-doctor"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#activity"/></svg> Workspace Doctor <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">';
   const line = `<div class="sb-stats"><span><b>Errors:</b> ${d.errors}</span><span><b>Warnings:</b> ${d.warnings}</span><span><b>Info:</b> ${d.info}</span></div>`;
   if (!d.findings.length) return head + line + '<div class="sb-empty">No errors or warnings.</div></div></div>';
   return head + line + `<div class="sb-table-wrap"><table class="sb-table">
@@ -541,7 +541,7 @@ function _sbTable(title, rows, headers, cellsFn, sectionId) {
 }
 
 function _sbFunctionIndex(funcs) {
-  if (!funcs.length) return `<div class="sb-section" id="sb-sec-functions"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📋 Function Index <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No items.</div></div></div>`;
+  if (!funcs.length) return `<div class="sb-section" id="sb-sec-functions"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Function Index <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No items.</div></div></div>`;
 
   const maxRows = 100;
   const shown = funcs.slice(0, maxRows);
@@ -552,7 +552,7 @@ function _sbFunctionIndex(funcs) {
   const clickable = new Set(['Scene', 'Chaser', 'Collection', 'EFX', 'Show', 'Script']);
 
   return `<div class="sb-section" id="sb-sec-functions">
-    <h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📋 Function Index <span class="sb-toggle-icon">▾</span></h3>
+    <h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Function Index <span class="sb-toggle-icon">▾</span></h3>
     <div class="sb-section-body">
     <div class="sb-table-wrap"><table class="sb-table">
       <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Description</th></tr></thead>
@@ -568,9 +568,9 @@ function _sbFunctionIndex(funcs) {
 }
 
 function _sbScenes(scenes) {
-  if (!scenes.length) return '<div class="sb-section" id="sb-sec-scenes"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🎬 Scenes <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No scenes.</div></div></div>';
+  if (!scenes.length) return '<div class="sb-section" id="sb-sec-scenes"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#film"/></svg> Scenes <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No scenes.</div></div></div>';
 
-  const parts = ['<div class="sb-section" id="sb-sec-scenes"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🎬 Scene Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
+  const parts = ['<div class="sb-section" id="sb-sec-scenes"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#film"/></svg> Scene Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
   const maxScenes = 50;
   const shown = scenes.slice(0, maxScenes);
 
@@ -598,9 +598,9 @@ function _sbScenes(scenes) {
 }
 
 function _sbChasers(chasers) {
-  if (!chasers.length) return '<div class="sb-section" id="sb-sec-chasers"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🔄 Chasers <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No chasers.</div></div></div>';
+  if (!chasers.length) return '<div class="sb-section" id="sb-sec-chasers"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#refresh"/></svg> Chasers <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No chasers.</div></div></div>';
 
-  const parts = ['<div class="sb-section" id="sb-sec-chasers"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🔄 Chaser Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
+  const parts = ['<div class="sb-section" id="sb-sec-chasers"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#refresh"/></svg> Chaser Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
   for (const ch of chasers) {
     parts.push(`<div class="sb-sub-heading sb-item-toggle" id="sb-chaser-${_esc(ch.id)}" onclick="sbToggleItem(this)">Chaser #${_esc(ch.id)}: ${_esc(ch.name)}
       <span class="sb-meta">[${_esc(ch.direction)} / ${_esc(ch.run_order)}]</span>${ch.description ? `<span class="sb-meta">— ${_esc(ch.description)}</span>` : ''} <span class="sb-toggle-icon">▾</span></div>`);
@@ -620,9 +620,9 @@ function _sbChasers(chasers) {
 }
 
 function _sbCollections(collections) {
-  if (!collections.length) return '<div class="sb-section" id="sb-sec-collections"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📦 Collections <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No collections.</div></div></div>';
+  if (!collections.length) return '<div class="sb-section" id="sb-sec-collections"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Collections <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No collections.</div></div></div>';
 
-  const parts = ['<div class="sb-section" id="sb-sec-collections"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📦 Collection Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
+  const parts = ['<div class="sb-section" id="sb-sec-collections"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Collection Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
   for (const c of collections) {
     parts.push(`<div class="sb-sub-heading sb-item-toggle" id="sb-col-${_esc(c.id)}" onclick="sbToggleItem(this)">Collection #${_esc(c.id)}: ${_esc(c.name)}${c.description ? `<span class="sb-meta">— ${_esc(c.description)}</span>` : ''} <span class="sb-toggle-icon">▾</span></div>`);
     parts.push('<div class="sb-item-body">');
@@ -641,9 +641,9 @@ function _sbCollections(collections) {
 }
 
 function _sbEfx(efxList) {
-  if (!efxList.length) return '<div class="sb-section" id="sb-sec-efx"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">✨ EFX <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No EFX functions.</div></div></div>';
+  if (!efxList.length) return '<div class="sb-section" id="sb-sec-efx"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg> EFX <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No EFX functions.</div></div></div>';
 
-  const parts = ['<div class="sb-section" id="sb-sec-efx"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">✨ EFX Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
+  const parts = ['<div class="sb-section" id="sb-sec-efx"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg> EFX Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
   for (const e of efxList) {
     parts.push(`<div class="sb-sub-heading sb-item-toggle" id="sb-efx-${_esc(e.id)}" onclick="sbToggleItem(this)">EFX #${_esc(e.id)}: ${_esc(e.name)}
       <span class="sb-meta">[${_esc(e.algorithm)}]</span> <span class="sb-toggle-icon">▾</span></div>`);
@@ -663,9 +663,9 @@ function _sbEfx(efxList) {
 }
 
 function _sbShows(shows) {
-  if (!shows.length) return '<div class="sb-section" id="sb-sec-shows"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🎭 Shows <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No show functions.</div></div></div>';
+  if (!shows.length) return '<div class="sb-section" id="sb-sec-shows"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#layout"/></svg> Shows <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No show functions.</div></div></div>';
 
-  const parts = ['<div class="sb-section" id="sb-sec-shows"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">🎭 Show Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
+  const parts = ['<div class="sb-section" id="sb-sec-shows"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#layout"/></svg> Show Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
   for (const s of shows) {
     parts.push(`<div class="sb-sub-heading sb-item-toggle" id="sb-show-${_esc(s.id)}" onclick="sbToggleItem(this)">Show #${_esc(s.id)}: ${_esc(s.name)} <span class="sb-toggle-icon">▾</span></div>`);
     parts.push('<div class="sb-item-body">');
@@ -687,9 +687,9 @@ function _sbShows(shows) {
 }
 
 function _sbScripts(scripts) {
-  if (!scripts.length) return '<div class="sb-section" id="sb-sec-scripts"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📝 Scripts <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No scripts.</div></div></div>';
+  if (!scripts.length) return '<div class="sb-section" id="sb-sec-scripts"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> Scripts <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body"><div class="sb-empty">No scripts.</div></div></div>';
 
-  const parts = ['<div class="sb-section" id="sb-sec-scripts"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)">📝 Script Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
+  const parts = ['<div class="sb-section" id="sb-sec-scripts"><h3 class="sb-collapse-toggle" onclick="sbToggleSection(this)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> Script Details <span class="sb-toggle-icon">▾</span></h3><div class="sb-section-body">'];
   for (const s of scripts) {
     parts.push(`<div class="sb-sub-heading sb-item-toggle" id="sb-script-${_esc(s.id)}" onclick="sbToggleItem(this)">Script #${_esc(s.id)}: ${_esc(s.name)} <span class="sb-toggle-icon">▾</span></div>`);
     parts.push('<div class="sb-item-body">');

@@ -19,16 +19,19 @@ let _vcData  = [];   // raw vc-widgets array from /api/vc-widgets
 let _fnGrid  = null; // Grid.js instance for Functions table
 let _vcGrid  = null; // Grid.js instance for VC Widgets table
 
-// ── Type → emoji map (kept for Grid.js cell rendering) ──────────────────────
+// ── Icons: the sprite symbol as markup (3.9.5; replaces the emoji of 3.9.0 and before) ─────────
+function skIcon(id) { return '<svg class="ic" aria-hidden="true"><use href="/static/icons.svg#' + id + '"/></svg>'; }
+
+// ── Type → icon map (kept for Grid.js cell rendering) ──────────────────────
 const TYPE_ICON = {
-  Chaser: '🔄', Scene: '🎬', Sequence: '📋', EFX: '✨',
-  Script: '📝', Show: '🎭', Audio: '🎵', Collection: '📦',
-  RGBMatrix: '🌈', Button: '🔘', Slider: '🎚', Knob: '🔩',
-  Frame: '🖼', SoloFrame: '⬜', CueList: '📑', Label: '🏷',
-  XYPad: '🕹', Clock: '🕐', VUMeter: '📊',
-  AudioTrigger: '🔊', Animation: '🎞', SpeedDial: '⏩',
+  Chaser: 'refresh', Scene: 'film', Sequence: 'clipboard', EFX: 'sparkles',
+  Script: 'file-text', Show: 'layout', Audio: 'music', Collection: 'package',
+  RGBMatrix: 'palette', Button: 'square', Slider: 'sliders', Knob: 'target',
+  Frame: 'image', SoloFrame: 'square', CueList: 'list', Label: 'tag',
+  XYPad: 'target', Clock: 'clock', VUMeter: 'bar-chart',
+  AudioTrigger: 'music', Animation: 'film', SpeedDial: 'clock',
 };
-const icon = t => TYPE_ICON[t] || '◻';
+const icon = t => (TYPE_ICON[t] ? (window.gridjs ? gridjs.html(skIcon(TYPE_ICON[t])) : '') : '◻');
 
 // ── Screen-ID → lazy-load function map ──────────────────────────────────────
 const _LAZY = {
@@ -65,16 +68,19 @@ const _LAZY = {
 /** The footer of a tool says what its main button will do (v2.2 UI review:
  *  "what happens if I press Apply?"), next to the button.  *parts*: a string
  *  or a list of chips; *kind*: '' · 'ok' · 'warn' · 'error'. */
+/** Singular or plural form of a counted phrase, each form its own translation key: skPlural(n, one, many, ...more) */
+function skPlural(n, one, many, ...more) { return t(n === 1 ? one : many, n, ...more); }
+
 function setOutcome(screen, parts, kind = '', lead = 'Apply will') {
   const el = document.getElementById('oc-' + screen);
   if (!el) return;
   if (!parts || (Array.isArray(parts) && !parts.length)) { el.innerHTML = ''; el.className = 'out-outcome'; return; }
   const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const body = Array.isArray(parts)
-    ? parts.map(p => typeof p === 'string' ? `<span class="oc-chip">${esc(p)}</span>`
-      : `<span class="oc-chip oc-${p.kind || ''}">${esc(p.text)}</span>`).join('')
-    : `<span>${esc(parts)}</span>`;
-  el.innerHTML = (lead ? `<b>${esc(lead)}</b>` : '') + body;
+    ? parts.map(p => typeof p === 'string' ? `<span class="oc-chip">${esc(t(p))}</span>`
+      : `<span class="oc-chip oc-${p.kind || ''}">${esc(t(p.text))}</span>`).join('')
+    : `<span>${esc(t(parts))}</span>`;
+  el.innerHTML = (lead ? `<b>${esc(t(lead))}</b>` : '') + body;
   el.className = 'out-outcome' + (kind ? ' oc-' + kind : '');
 }
 
@@ -89,6 +95,7 @@ function go(screenId) {
     const sb = document.getElementById('app-statusbar');
     if (sb) { sb.textContent = typeof t === 'function' ? t('Ready.') : 'Ready.'; sb.className = 'app-statusbar status-ok'; }
   }
+  if (screenId !== 'start') { skRememberTool(screenId); }
   // Update sidebar
   document.querySelectorAll('.sn-item').forEach(b => {
     b.classList.toggle('active', b.id === `sn-${screenId}`);
@@ -97,6 +104,7 @@ function go(screenId) {
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.toggle('active', s.id === `scr-${screenId}`);
   });
+  if (screenId === 'start' && typeof renderStart === 'function') renderStart();
   // Lazy-load
   const loader = _LAZY[screenId];
   if (loader) loader();
@@ -317,7 +325,7 @@ async function quitApp() {
   setTimeout(() => {
     document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;' +
       'height:100vh;font-family:system-ui;color:#cdd6f4;background:#1e1e2e;flex-direction:column;gap:12px">' +
-      '<div style="font-size:2rem">⚡</div>' +
+      '<div style="font-size:2rem"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#bolt"/></svg> </div>' +
       '<div>QLC+ Swiss Knife has been shut down.</div>' +
       '<div style="font-size:12px;opacity:.5">You can close this tab.</div></div>';
     try { window.close(); } catch {}
@@ -342,8 +350,8 @@ async function _initGreeting() {
   } catch {}
 
   const h = new Date().getHours();
-  const greet = h < 12 ? 'Good morning, {0} 👋' : h < 18 ? 'Good afternoon, {0} 👋' : 'Good evening, {0} 👋';
-  el.textContent = name ? greet.replace('{0}', name) : 'Welcome 👋';   // English; the i18n observer translates it
+  const greet = h < 12 ? 'Good morning, {0}' : h < 18 ? 'Good afternoon, {0}' : 'Good evening, {0}';
+  el.textContent = name ? greet.replace('{0}', name) : 'Welcome';   // English; the i18n observer translates it
 }
 
 // =============================================================================
@@ -368,17 +376,88 @@ function _renderRecents() {
   try {
     const recents = JSON.parse(localStorage.getItem('sk-recents') || '[]');
     if (!recents.length) { wrap.innerHTML = ''; return; }
-    wrap.innerHTML = '<div class="recents-title">Recent files</div>' +
+    wrap.innerHTML = '<div class="recents-title">Recent</div>' +
       recents.map(r => {
         const name = r.path.split(/[\\/]/).pop();
-        const ago  = _timeAgo(r.ts);
-        return `<div class="recent-item" onclick="loadRecentFile('${r.path.replace(/'/g, "\\'")}', '${r.type}')">
-          <svg class="ic"><use href="/static/icons.svg#clock"/></svg>
-          <span class="recent-name">${name}</span>
-          <span class="recent-ago">${ago}</span>
+        const ago  = skDateLabel(r.ts);
+        const bits = [];
+        if (Number.isInteger(r.fixtures)) bits.push(t(r.fixtures === 1 ? '{0} fixture' : '{0} fixtures', r.fixtures));
+        if (r.doctor) bits.push(r.doctor.error ? t(r.doctor.error === 1 ? '{0} error' : '{0} errors', r.doctor.error) : t('clean'));
+        return `<div class="recent-item" onclick="loadRecentFile('${r.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', '${r.type}')" title="${_esc(r.path)}">
+          <svg class="ic"><use href="/static/icons.svg#${r.type === 'qsk' ? 'clipboard' : 'clock'}"/></svg>
+          <span class="recent-name">${_esc(name)}</span>
+          <span class="recent-meta">${_esc(bits.join(' · '))}</span>
+          <span class="recent-ago">${_esc(ago)}</span>
+          <span class="btn btn-surface btn-sm recent-open">${_esc(t('Open'))}</span>
         </div>`;
       }).join('');
   } catch {}
+}
+
+/** The tools used last: the Start cards mark the last one, the sidebar lists the last three (3.9.5). */
+function skRememberTool(id) {
+  try {
+    localStorage.setItem('sk-lasttool', id);
+    const list = JSON.parse(localStorage.getItem('sk-recent-tools') || '[]').filter(x => x !== id);
+    list.unshift(id);
+    localStorage.setItem('sk-recent-tools', JSON.stringify(list.slice(0, 3)));
+  } catch { /* per-browser convenience */ }
+  skRenderRecentTools();
+}
+
+function skRenderRecentTools() {
+  const box = document.getElementById('sn-recent'), list = document.getElementById('sn-recent-list');
+  if (!box || !list) return;
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem('sk-recent-tools') || '[]'); } catch { /* none */ }
+  ids = ids.filter(id => document.getElementById('sn-' + id));
+  box.hidden = !ids.length;
+  list.innerHTML = '';
+  ids.forEach(id => {
+    const src = document.getElementById('sn-' + id);
+    const b = document.createElement('button');
+    b.className = 'sn-item sn-recent-item' + (src.classList.contains('active') ? ' active' : '');
+    b.innerHTML = src.innerHTML.replace(/<i class="sn-dot"[^>]*><\/i>/, '');
+    b.addEventListener('click', () => go(id));
+    list.appendChild(b);
+  });
+}
+document.addEventListener('DOMContentLoaded', skRenderRecentTools);
+
+/** Groups of the side menu fold away; the choice is remembered (3.9.5). */
+function skGroupToggle(label) {
+  const closed = !label.classList.contains('sn-collapsed');
+  label.classList.toggle('sn-collapsed', closed);
+  label.setAttribute('aria-expanded', String(!closed));
+  for (let el = label.nextElementSibling; el && !el.classList.contains('sn-group-label'); el = el.nextElementSibling) {
+    if (el.classList.contains('sn-item')) el.classList.toggle('sn-folded', closed);
+  }
+  try {
+    const set = new Set(JSON.parse(localStorage.getItem('sk-folded-groups') || '[]'));
+    if (closed) set.add(label.id); else set.delete(label.id);
+    localStorage.setItem('sk-folded-groups', JSON.stringify([...set]));
+  } catch { /* per-browser convenience */ }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  let folded = [];
+  try { folded = JSON.parse(localStorage.getItem('sk-folded-groups') || '[]'); } catch { /* none */ }
+  document.querySelectorAll('.sn-group-label').forEach(l => {
+    l.setAttribute('role', 'button'); l.setAttribute('tabindex', '0'); l.setAttribute('aria-expanded', 'true');
+    l.addEventListener('click', () => skGroupToggle(l));
+    l.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); skGroupToggle(l); } });
+    if (folded.includes(l.id)) skGroupToggle(l);
+  });
+});
+
+/** today, yesterday, a weekday within the week, else the date (3.9.5). */
+function skDateLabel(ts) {
+  const d = new Date(ts), now = new Date();
+  const day = x => Math.floor(new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime() / 86400000);
+  const diff = day(now) - day(d);
+  if (diff <= 0) return t('today');
+  if (diff === 1) return t('yesterday');
+  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: 'short' });
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 function _timeAgo(ts) {
@@ -487,7 +566,7 @@ async function reloadFromDisk() {
   const st = await _apiJson('/api/status');
   if (!st.loaded) { browseWorkspace(); return; }
   if (!st.path) {
-    setStatus('This workspace was uploaded, so it cannot be re-read — use 📂 Open… to pick the file.', 'warn');
+    setStatus('This workspace was uploaded, so it cannot be re-read — use Open… to pick the file.', 'warn');
     return;
   }
   await _doLoad({ method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -516,7 +595,7 @@ async function pickQxwInto(pathInputId, fileInputId, loadFn) {
 /** "⤵ Open workspace" button in two-file tools: use the file open in the header. */
 async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
   const st = await _apiJson('/api/status');
-  if (!st.loaded) { setStatus('"⤵ Open workspace" copies the workspace open in the header, and none is open — use 📂 Browse… next to it instead.', 'warn'); return; }
+  if (!st.loaded) { setStatus('"⤵ Open workspace" copies the workspace open in the header, and none is open — use Browse… next to it instead.', 'warn'); return; }
   if (!st.path) { setStatus('The open workspace was uploaded (no file path) — use Browse… instead.', 'warn'); return; }
   const fileEl = document.getElementById(fileInputId);
   if (fileEl) fileEl.value = '';
@@ -525,7 +604,7 @@ async function useOpenWorkspace(pathInputId, fileInputId, loadFn) {
   await loadFn();
 }
 
-// Any "📂 Open a workspace" link in an empty state opens the picker.
+// Any "Open a workspace" link in an empty state opens the picker.
 document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('.open-ws-link');
   if (a) { e.preventDefault(); browseWorkspace(); }
@@ -644,7 +723,7 @@ function _updateHeader(state) {
 }
 
 // Tools that work on the open workspace show the same banner when none is open,
-// so "where do I load the file?" has one answer everywhere: 📂 Open… (header,
+// so "where do I load the file?" has one answer everywhere: Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
@@ -659,7 +738,7 @@ function _updateNeedWsBanners(loaded) {
       b = document.createElement('div');
       b.className = 'need-ws';
       b.innerHTML = 'No workspace open — this tool works on the open workspace. ' +
-        '<button class="btn btn-accent btn-sm" onclick="browseWorkspace()">📂 Open workspace…</button>';
+        '<button class="btn btn-accent btn-sm" onclick="browseWorkspace()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open workspace…</button>';
       const head = scr.querySelector(':scope > .page-h');
       if (head && head.nextSibling) scr.insertBefore(b, head.nextSibling); else scr.prepend(b);
     }
@@ -667,6 +746,14 @@ function _updateNeedWsBanners(loaded) {
   });
 }
 document.addEventListener('DOMContentLoaded', () => _updateNeedWsBanners(false));
+
+/** A long file name keeps its start and its end: Festival…_14fix.qxw (3.9.5). */
+function skMidEllipsis(name, max) {
+  const s = String(name || '');
+  if (s.length <= max) return s;
+  const tail = Math.max(8, Math.floor((max - 1) * 0.4));
+  return s.slice(0, max - 1 - tail) + '…' + s.slice(s.length - tail);
+}
 
 /** Populate the persistent top metrics strip. Mirrors _updateHeader's logic
  *  so the strip and the Start-screen file panel never disagree. */
@@ -682,18 +769,24 @@ function _updateMetricsStrip(state) {
     let label = 'Workspace loaded';
     if (state.path) label = state.path.split(/[\\/]/).pop();
     else if (state.original_name) label = state.original_name + '  (uploaded)';
-    if (nameEl) nameEl.textContent = label;
+    if (nameEl) nameEl.textContent = skMidEllipsis(label, 30);
     fileEl.className = 'ms-file ws-loaded';
-    fileEl.title = state.path || state.original_name || '';
+    window._wsPath = state.path || '';
+    window._wsLabel = label;
+    fileEl.title = (state.path || state.original_name || '') + ' (' + (state.fixture_count ?? '—') + ' fixtures, ' +
+      (state.func_count ?? '—') + ' functions, ' + (state.vc_widget_count ?? '—') + ' widgets)';
   } else {
     if (nameEl) nameEl.textContent = 'No workspace loaded';
     fileEl.className = 'ms-file ws-unloaded';
     fileEl.title = '';
+    window._wsPath = ''; window._wsLabel = '';
+    const sub = document.getElementById('ms-file-sub'); if (sub) sub.textContent = '';
   }
 
   if (fixEl)  fixEl.textContent  = state.fixture_count   ?? '—';
   if (funcEl) funcEl.textContent = state.func_count       ?? '—';
   if (vcEl)   vcEl.textContent   = state.vc_widget_count  ?? '—';
+  if (typeof renderStart === 'function') renderStart();
 }
 
 // =============================================================================
@@ -877,7 +970,7 @@ async function _ensureIdBrowserLoaded() {
   if (!state.loaded) {
     ['fn-table-wrap', 'vc-table-wrap'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace (📂 Open… top right) to list its functions and Virtual Console widgets.</div>';
+      if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace (Open… top right) to list its functions and Virtual Console widgets.</div>';
     });
     return;
   }

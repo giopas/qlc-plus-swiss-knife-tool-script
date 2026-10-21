@@ -125,7 +125,7 @@
 .kit-loading { padding: var(--sp-4); color: var(--text-dim); font-size: var(--fs-ui); }
 
 .kit-done {
-  position: fixed; left: 50%; bottom: 72px; transform: translateX(-50%); z-index: 50;
+  position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 50;
   display: flex; align-items: center; gap: var(--sp-3);
   max-width: min(560px, calc(100vw - 2 * var(--sp-3)));
   padding: var(--sp-2) var(--sp-3);

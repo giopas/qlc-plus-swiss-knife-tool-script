@@ -1,10 +1,10 @@
 /**
  * Workspace Doctor tab (WORKPLAN Phase 2.1).
  *
- * 🔍 Check runs the Doctor on the open workspace; findings are grouped by
+ * Check runs the Doctor on the open workspace; findings are grouped by
  * code, fixable ones get a tick box (recommended fixes ticked; removals of
  * functions — D004 / D015 / D016 — are offered but not ticked).
- * 💾 Fix selected writes a NEW workspace (Save dialog, default
+ * Fix selected writes a NEW workspace (Save dialog, default
  * <name>_v<N+1>.qxw) and the fix report next to it.  The open workspace
  * and its file are never changed.
  */
@@ -12,6 +12,7 @@
 let _docData = null;          // last /api/doctor/check result
 let _docSel = new Set();      // ticked finding keys
 let _docOpen = new Set();     // expanded codes
+let _docFilter = 'attention'; // 'attention' (errors and warnings) | 'error' | 'warning' | 'info'
 const _DOC_SHOW = 150;
 // per-kind choices (v2.4): how a fix is done; sent with the fix as `options`
 let _docOpt = { d003: 'unlink', d004: 'merge', d015: 'remove', d013mode: 'ms', d013val: 500 };
@@ -33,6 +34,42 @@ function _docOptBar(code) {
   return '';
 }        // rows shown per code (the rest follow the group tick)
 
+// what each rule means, in everyday words (3.9.5, stage E); the technical title stays beside it
+const _DOC_PLAIN = {
+  D001: 'The file is not a QLC+ show.',
+  D002: 'Two items share one ID, so QLC+ can mix them up.',
+  D003: 'Something points to a function that no longer exists.',
+  D004: 'A chaser with fewer than two steps does nothing a scene would not.',
+  D005: 'A scene leaves some channels out, so older values can stay on.',
+  D006: 'A strobe or built-in program channel is on outside an effect.',
+  D007: 'A button and a chaser step use the same scene and can fight.',
+  D008: 'The Virtual Console has no panic button to black everything out.',
+  D009: 'Two fixtures use the same DMX channels.',
+  D010: 'The setlist page is not the first page of the Virtual Console.',
+  D011: 'A widget sits outside its page or frame, so you cannot see it.',
+  D012: 'Buttons listen to a controller that is not patched, so they stay silent.',
+  D013: 'Chaser steps with no duration go by instantly.',
+  D014: 'A cue list plays a chaser that has no steps.',
+  D015: 'A function has no name.',
+  D016: 'No button, cue or chaser uses this function.',
+  D017: 'The panic reset is a scene, so it cannot darken what is running.',
+  D018: 'A setlist song whose look lights nothing: the stage goes dark.',
+  D019: 'A palette or fixture group that the show uses is missing.',
+  D020: 'A palette sets nothing on its fixtures.',
+  D021: 'The fixture mode is not in its definition, so QLC+ treats it as a plain dimmer.',
+  D022: 'The channel count differs from the one in the definition.',
+  D023: 'A scene sets a channel the fixture does not have.',
+  I001: 'A button used only as a text label.',
+  I002: 'The pages of your Virtual Console.',
+  I003: 'No fixture definition found, so channel checks are skipped.',
+  I004: 'Layer scenes, meant to be played together.',
+  I005: 'Show Wizard functions that no button plays.',
+  I006: 'Fixtures that switch pages, not lights.',
+  I007: 'A Show Wizard effect that was never created.',
+  I008: 'QLC+ 5.3 content that QLC+ 5.2.2 ignores.',
+  I009: 'A fixture definition QLC+ does not ship; it travels with the show.',
+};
+
 function doctorInit() {
   if (_docData) return;
   // a show is open: check it straight away (the list follows the show in progress)
@@ -46,7 +83,7 @@ function _docStatus(msg, level) {
 
 function _docRenderEmpty() {
   const el = document.getElementById('doc-list');
-  if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace and press 🔍 Check.</div>';
+  if (el) el.innerHTML = '<div class="porter-placeholder">Open a workspace and press Check.</div>';
 }
 
 async function doctorCheck() {
@@ -71,18 +108,30 @@ async function doctorCheck() {
 function doctorRender() {
   const el = document.getElementById('doc-list');
   if (!el || !_docData) return;
-  const showInfo = document.getElementById('doc-show-info')?.checked;
   const s = _docData.summary;
-  document.getElementById('doc-summary').innerHTML =
-    `<span class="doc-chip doc-error">${s.error} error(s)</span>` +
-    `<span class="doc-chip doc-warning">${s.warning} warning(s)</span>` +
-    `<span class="doc-chip doc-info">${s.info} info</span>`;
   const byCode = {};
   for (const f of _docData.findings) (byCode[f.code] = byCode[f.code] || []).push(f);
-  const codes = Object.keys(byCode).filter(c => showInfo || byCode[c][0].severity !== 'info');
+  // the summary counts kinds of problem, not places: 851 copies of one rule are one kind (3.9.5, stage D)
+  const kinds = sev => Object.keys(byCode).filter(c => byCode[c][0].severity === sev).length;
+  const places = n => t(n === 1 ? '{0} place' : '{0} places', n);
+  const block = (sev, big, label, sub) =>
+    `<button type="button" class="doc-block doc-${sev}" aria-pressed="${_docFilter === sev}" onclick="doctorFilter('${sev}')">` +
+    `<b>${_esc(big)}</b><span>${_esc(label)}</span>${sub ? `<small>${_esc(sub)}</small>` : ''}</button>`;
+  const wk = kinds('warning'), ik = kinds('info');
+  document.getElementById('doc-summary').innerHTML =
+    block('error', s.error, t(s.error === 1 ? 'error' : 'errors'), '') +
+    block('warning', wk, t(wk === 1 ? 'kind of warning' : 'kinds of warning'), s.warning ? places(s.warning) : '') +
+    block('info', ik, t(ik === 1 ? 'kind of info' : 'kinds of info'), s.info ? places(s.info) : '');
+  const keep = c => _docFilter === 'attention' ? byCode[c][0].severity !== 'info' : byCode[c][0].severity === _docFilter;
+  const codes = Object.keys(byCode).filter(keep);
+  if (!codes.length && _docFilter !== 'attention') {
+    el.innerHTML = '<div class="porter-placeholder">' + _esc(t('Nothing of this kind.')) + '</div>';
+    _docSyncButton();
+    return;
+  }
   if (!codes.length) {
-    el.innerHTML = '<div class="porter-placeholder">✅ No errors or warnings.' +
-      (s.info ? ' Tick <b>Show info</b> to see the info findings.' : '') + '</div>';
+    el.innerHTML = '<div class="porter-placeholder"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#check"/></svg> No errors or warnings.' +
+      (s.info ? ' Choose <b>Info</b> above to see the info findings.' : '') + '</div>';
     _docSyncButton();
     return;
   }
@@ -112,10 +161,11 @@ function doctorRender() {
         ${box}
         <span class="doc-code">${code}</span>
         <span class="doc-title">${_esc(_docData.titles[code] || '')}</span>
-        <span class="doc-count">${items.length}${fixable.length ? ` · ${ticked}/${fixable.length} ticked` : ''}</span>
+        <span class="doc-count">${places(items.length)}${fixable.length ? ` · ${ticked}/${fixable.length} ticked` : ''}</span>
         <span class="doc-hint"><span>${_esc(hint)}</span>${hintWarn ? `<span class="doc-hint-warn">${hintWarn}</span>` : ''}</span>
-        <span class="doc-caret">${open ? '▾' : '▸'}</span>
+        <span class="doc-caret">${_esc(t(open ? 'Hide them' : 'Show them'))} ${open ? '▾' : '▸'}</span>
       </div>
+      ${_DOC_PLAIN[code] ? `<div class="doc-plain">${_esc(t(_DOC_PLAIN[code]))}</div>` : ''}
       ${open && fixable.length ? _docOptBar(code) : ''}
       <div class="doc-rows">${rows}</div>
     </div>`;
@@ -142,9 +192,14 @@ function _docSyncButton() {
     for (const k of _docSel) { const c = String(k).split('|')[0]; by[c] = (by[c] || 0) + 1; }
     const codes = Object.keys(by).sort();
     setOutcome('doctor', codes.length ? codes.slice(0, 6).map(c => `${c} × ${by[c]}`)
-      .concat(codes.length > 6 ? [`+${codes.length - 6} more kinds`] : []) : 'nothing — tick the findings to fix',
+      .concat(codes.length > 6 ? [t('+{0} more kinds', codes.length - 6)] : []) : 'nothing — tick the findings to fix',
       '', codes.length ? 'Apply will fix' : 'Apply will do');
   }
+}
+
+function doctorFilter(sev) {
+  _docFilter = _docFilter === sev ? 'attention' : sev;
+  doctorRender();
 }
 
 function doctorToggle(code) {
@@ -187,7 +242,7 @@ async function doctorFix() {
       [{ description: 'QLC+ Workspace', accept: { 'application/xml': ['.qxw'] } }], 'Save fixed workspace');
     if (!saved) { _docStatus('Not saved.', 'info'); return; }
     const full = saveFileWithPicker.lastPath;
-    let reportMsg = 'Fix report not saved (no folder known) — use 📋 Copy Report.';
+    let reportMsg = 'Fix report not saved (no folder known) — use Copy Report.';
     if (full) {
       try {
         const rr = await fetch('/api/doctor/save-report', {

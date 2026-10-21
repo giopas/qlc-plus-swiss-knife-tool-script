@@ -5,6 +5,98 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [Unreleased]
+
+---
+
+## [3.9.5] — 2026-10-21 — A clearer Swiss Knife
+
+Same tool, easier to read and to trust. A readable type scale and one bundled font, four kinds of button, a ribbon and a Start screen that follow what you are doing, one chip and one reason on every footer, a Doctor that counts kinds of problem, and plain words under every tool title. **No change to `core/`, to the API routes or to what any button writes**: a recorded session replays to the same file.
+
+### Changed (3.9.5, stage A: the foundation)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **Five type sizes, none below 11 px.** Title 20, section 15, body 13, ui 12, small 11. The old names `--fs-lead` and `--fs-micro` stay as aliases of body and small. The page title and the Start heading use the title size. The few literal sizes of 8 to 10 px (the Virtual Console preview, the pool toggle, plot labels, two badges) are now 11 px.
+- **Radii and motion.** Cards and panels 8 px, controls 6 px, pills 999 px. Two motion tokens. People who ask their system for less motion get no animation.
+- **Colours that read.** Every theme has `--success-text`, `--warning-text`, `--error-text` and `--accent-ring`. The text colours reach 4.5:1 on their backgrounds in dark, grey and light, checked by `tests/test_tokens_contrast.py`. To get there the light theme's teal and orange are a little darker, the dim and faint text colours a little lighter in dark and grey.
+- **A visible keyboard focus.** One ring (2 px, offset 2 px) on every button, link, field and tab.
+- **Four kinds of button.** Primary `btn-accent`, secondary `btn-surface`, ghost `btn-ghost`, danger `btn-danger`; `btn-overwrite` stays for the Stage Monitor's *replace a page*. The classes `btn-primary`, `btn-secondary`, `btn-success`, `btn-green` and `btn-red` are gone. Setlist's *Save Songs* is now secondary so *Apply to the show* is the only filled button there; Dictionary's *Save* and the two *Add to Rig* buttons are primary; Triggers' *Clear* is a danger button.
+- **Icons from the sprite, no emoji.** Every button, heading and list that started with a picture now has an icon from `static/icons.svg` (20 new ones: file, trash, download, image, package, sparkles, target, monitor, map, tag, lock, bar chart, film, eye off, ban, light bulb, square, activity, bot, ticket). The function types, the Show Paperwork sections and the status messages that named a button by its emoji follow. Arrows, ticks and crosses stay as text signs.
+- **Translations kept.** The emoji were part of the translation keys. They are removed from the keys and the translations of the seven languages in one step, so nothing is lost; two messages sent by the server still name *Open…* with its old emoji.
+- **Inter is bundled.** The interface now draws its letters with Inter (variable font, Latin and Latin Extended, 133 KB, SIL Open Font License, `static/fonts/Inter-OFL.txt`), so a button label is the same width on every computer and still works with no internet. Japanese and Chinese use the system fonts. If the font is missing the old system stack takes over.
+- **The shell has no inline styles.** The few left became classes.
+
+### Changed (3.9.5, stage B: the shell and Start)
+
+No change to `core/` or to what any button writes. One field is added to `/api/show/status`: the Doctor's `rules`.
+
+- **The ribbon.** The file name has room (240 px or more) and a middle ellipsis (`Festival…_14fix.qxw`), with a second line that says *opened, never touched* or *Saved as …*. The three count cards are one quiet line (`14 fixtures · 286 functions · 113 widgets`), shown from 1700 px wide and otherwise in the file's tooltip. The changes read as a sentence (*3 changes, not saved*, with a teal dot, or *Saved as …*, or *No changes*) and open the History.
+- **The Doctor pill counts kinds, not places.** `1 error · 6 kinds of warning` instead of `1 · 856`. Red is only for errors, amber for warnings, green with a tick when clean. The hover lists the rules with their counts (`D005 ×801, D004 ×4`).
+- **Save and Open.** *Save as new file…* is filled when there is something to save and an ordinary button when there is not. *Open…* is a split button: its menu has *Reload from disk* and the recent shows.
+- **Start follows the state.** A zone at the top picks one of five states by a fixed order: no show open, a route in progress (*You are on step 4 of 9 …*, *Continue*), the Doctor has errors (*Open the Doctor*), changes not saved (*Save as new file…*, *History*), clean and saved (*… is ready. What next?*). The others become small lines under it. The drop zone and the recent list show only when no show is open. The job cards come before the guided routes, and the last tool used on a card is marked.
+- **Recent shows** show the date (today, yesterday, a weekday), the fixture count and the Doctor result, and each has an *Open* button.
+- **The side menu.** An accent bar on the active tool, the last three tools used under Start, groups that fold (the choice is kept), and labels in the dim text colour instead of the faint one.
+
+### Changed (3.9.5, stage C: the kit on every tool)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **One chip per footer, in the kit's words.** Every tool footer says in one line, and never wraps, what its main button does: *Changes the show in progress*, *Writes a new file*, *Does not change the show*, *Saved in your settings*, *Saved next to the show*. The old sentences ("Read-only, nothing is changed", "Adds to the show in progress (or exports a copy)", the shield icon) are gone; `tests/test_ui_lint.py` checks the words.
+- **A disabled main button says why.** Next to it, in words: "Open a show first.", "Tick the problems you want fixed.", "Pick groups and tick effects first." and so on, also as `data-why` and `aria-describedby` for screen readers (`skFooters()` in `kit.js`; the reason lives in `data-needs` on the button).
+- **After an Apply, a toast with Undo and History.** Any step added to the History says "Applied to the show: <tool> - <step>" for six seconds, and the step is lit in the History panel. Undo and Redo stay quiet; tools whose edits go straight in (Triggers, VC Editor) do not toast on every edit.
+- **Setlist: one main button.** *Save Songs* only keeps the matches and timings in the session, and Apply and switching setlist already do that, so it is now a quiet ghost button with a tooltip that says so. *Apply to the show* is the only filled button of the screen.
+- Footers wrap on a narrow window instead of cutting the main button off; the toast sits above the footer.
+
+#### Audit: every button that writes (3.9.5)
+
+| Tool | Button | What it writes | Chip |
+| --- | --- | --- | --- |
+| Setlist | Apply to the show | chasers in the show in progress | Changes the show in progress |
+| Setlist | Export a copy... | a new .qxw | (secondary) |
+| Setlist | PDF, Multi PDF, XML TXT | a document | (secondary) |
+| Rig Reducer, Look Builder, Workspace Doctor, Wizard repair, Upgrade, Brightness, Function Porter (step 5) | Apply to the show / Fix selected / Add to the show | one step in the show in progress | Changes the show in progress |
+| Triggers, VC Editor | each edit | one step, straight away | Changes the show in progress (tooltip explains) |
+| Fixtures | Save as new file... | a new .qxw | Writes a new file |
+| Quick Start | Export | a new .qxw | Writes a new file |
+| Compare, Show Book | none on the show | a report or nothing | Does not change the show |
+| Dictionary | Save | a .txt dictionary | Does not change the show |
+| Library | Install | your own template folders | Saved in your settings |
+| Cabling | Next / Save | the plan next to the show | Saved next to the show |
+| Tablet on stage | Export | the tablet page folder | its own chips (3.9.0) |
+
+### Changed (3.9.5, stage D: key screens)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **Workspace Doctor counts kinds.** The summary is three buttons (errors, kinds of warning, kinds of info, each with its number of places); each one filters the list, and the *Show info* tick box is gone. A rule card says "N places" and has a *Show them / Hide them* link.
+- **Function Porter, step 3** opens on the mapping list; the two stage maps stay folded and the choice is remembered. The footer summary adds how many fixtures have no exact match.
+- **Setlist.** *Setlist TXT* and *Workspace* are folds, closed until opened. Each assigned song shows the function's type badge and a pill: same name, similar name or different name (read from the two names; it does not say who chose the match).
+- **Tables.** Zebra stripes only in the dense tables, rows at least 32 px, header kept in view. The last inline font sizes under 11 px (9 to 10.5) are 11 px.
+- The plain meaning of each Doctor rule came in stage E.
+
+### Changed (3.9.5, stage E: the words in the app)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **One outcome sentence under each tool title.** The 19 header sentences say what you get ("Adapt your show to a smaller rig."), in 20 words or fewer and without dashes as connectors.
+- **Tooltips of 20 words or fewer.** 25 long ones (Setlist, Dictionary, Function Porter, Show Paperwork, Tablet on stage and others) were cut to what happens, not how it is built.
+- **Every Workspace Doctor rule has a plain meaning** under its title, in everyday words ("Two fixtures use the same DMX channels."). The technical title and the rule ID stay.
+- All new sentences are in the seven languages. `tests/test_ui_lint.py` checks the header length, the tooltip length, that every rule has its meaning and that the new texts are translated.
+- Tool names are unchanged: no rename was confirmed. Empty states keep their wording.
+- **The footer summary chips are translated.** "port 3 functions", "2 of 5 fixtures mapped", "−2 groups" and the other counted chips of Function Porter, Rig Reducer, Brightness and Setlist now have one translation per singular and plural form (`skPlural()` in `app.js`), and `setOutcome()` translates the lead and the words. A test keeps every form translated in the seven languages.
+
+### Added
+
+- `static/js/start_state.js` (`skStartState()`, a pure function) and `tests/test_start_state.py` (the rule order of the five states, run with node), `tests/test_show_doctor_rules.py` (the rules in the show status).
+- 47 strings in the seven languages, with separate singular and plural forms where English has them.
+
+### Added (stage A)
+
+- `tests/test_tokens_contrast.py` (WCAG ratios of the token pairs in three themes) and `tests/test_ui_lint.py` (no emoji, no key starting with a picture, no font size below 11 px, no inline style in the shell and the kit, every icon exists in the sprite, only the four button kinds).
+
+---
+
 ## [3.9.0] — 2026-10-21 — Tablet on stage
 
 ### Added

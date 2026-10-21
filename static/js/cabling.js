@@ -711,7 +711,7 @@ async function _cbAskClaude(g) {
   try {
     const s = await (await fetch('/api/mcp/status')).json();
     st.textContent = (s.last_start || s.extension || s.config) ? ''
-      : _cbT('Not connected yet: use 🔌 Connect to Claude in the left menu first.');
+      : _cbT('Not connected yet: use Connect to Claude in the left menu first.');
   } catch { st.textContent = ''; }
   const r = await _apiJson('/api/mcp/fixture-request', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -918,7 +918,7 @@ function _cbPlan() {
         ? _cbE(_cbT('Missing: {0}', a.missing.map(m => `${m.count} × ${m.what}`).join(', '))) : _cbE(_cbT('Nothing missing'))}</div>
     </button>`).join('') : `<div class="porter-placeholder">${_cbE(_cbT('No alternative: the show has no fixtures.'))}</div>`;
   document.getElementById('cb-plot').innerHTML = _cb.plan.chains.length ? (_cb.svg || '')
-    : `<div class="porter-placeholder">${_cbE(_cbT('No chains yet: ✨ Propose, or start a chain by hand.'))}</div>`;
+    : `<div class="porter-placeholder">${_cbE(_cbT('No chains yet: Propose, or start a chain by hand.'))}</div>`;
   const tt = _cb.evaluation.totals;
   document.getElementById('cb-plan-totals').textContent = _cb.plan.chains.length
     ? _cbT('{0} of cable · longest hop {1} · {2} adapter(s)', _cbLen(tt.cable_m), _cbLen(tt.longest_m), tt.adapters) : '';

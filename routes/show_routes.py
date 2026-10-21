@@ -36,7 +36,15 @@ def doctor_counts() -> dict:
     from routes.doctor_routes import _defs
     st = workspace._state
     rep = check(st['qxw_root'], _defs(st.get('path') or ''))
-    counts = rep.severity_counts()
+    counts = dict(rep.severity_counts())
+    from core.doctor.report import TITLES
+    rules: dict = {}
+    for f in rep.findings:                       # the ribbon names kinds of problem, not instances (3.9.5)
+        if f.severity == 'info':
+            continue
+        r = rules.setdefault(f.code, {'n': 0, 'severity': f.severity, 'title': TITLES.get(f.code, '')})
+        r['n'] += 1
+    counts['rules'] = rules
     _doctor_cache.update({'version': v, 'path': st.get('path'), 'counts': counts})
     return counts
 

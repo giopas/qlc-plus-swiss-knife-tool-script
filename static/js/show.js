@@ -1,7 +1,7 @@
 // =============================================================================
 // The show in progress (WORKPLAN Phase 2.6)
 // Every tool changes one working copy of the open show; each change is a step
-// in its History (undo any step); 💾 Save as new file… writes it all at once,
+// in its History (undo any step); Save as new file… writes it all at once,
 // with one report.  The header shows it; sidebar tools that changed the show
 // get an orange dot until it is saved.
 // =============================================================================
@@ -46,12 +46,38 @@ async function showRefresh() {
     st = await r.json();
   } catch { return; }
   const changed = st.active && _show.active && st.version !== _show.version;
+  const before = _show;
   _show = st;
+  _skAnnounce(before, st);
   _renderShowBar();
   _renderSideChanges();
   if (typeof routeSync === 'function') routeSync(st.changed_tools);
   if (changed) _showChangedElsewhere();
   if (document.getElementById('show-history')?.classList.contains('open')) showHistoryRender();
+}
+
+/** A step was added to the History (not by an undo or a redo): say so once, with Undo and History
+ *  beside it, and light the new step up in the History (3.9.5, stage C). */
+let _skQuietUntil = 0;
+async function _skAnnounce(before, st) {
+  const quiet = Date.now() < _skQuietUntil;
+  // tools whose edits go straight in (Triggers, VC Editor) have no Apply button: no toast per edit
+  const here = document.querySelector('.screen.active');
+  if (here && here.querySelector('.out-footer') && !here.querySelector('.out-footer .btn-accent')) return;
+  if (!before.active || !st.active || quiet || !(st.steps > before.steps) || before.version < 0) return;
+  const k = st.steps - before.steps;
+  let what = '';
+  try {
+    const steps = (await (await _origFetch('/api/show/history')).json()).steps || [];
+    const s = steps[steps.length - 1];
+    if (s) what = _tr(s.tool_title) + ' — ' + _stepTitle(s.title);
+  } catch { /* the toast still says something */ }
+  window._skNewStep = st.steps;
+  if (typeof skDone !== 'function') return;
+  skDone(k > 1 ? t('{0} changes added to the show.', k) : (what ? t('Applied to the show: {0}', what) : t('Applied to the show.')), {
+    undo: () => showUndo(st.steps),
+    history: () => showHistoryToggle(true),
+  });
 }
 
 function _renderShowBar() {
@@ -61,24 +87,26 @@ function _renderShowBar() {
   const n = _show.unsaved || 0;
   const ch = document.getElementById('sb-changes');
   if (ch) {
-    ch.innerHTML = n ? `<b>${n}</b><small>unsaved change${n > 1 ? 's' : ''}</small>`
-      : (_show.saved_name ? `<b>✓</b><small title="${_esc(_show.saved_name)}">saved</small>` : '<b>0</b><small>changes</small>');
-    ch.className = 'sb-pill sb-card' + (n ? ' sb-unsaved' : '');
-    ch.title = n ? 'Open the History to see every change' : '';
+    ch.textContent = skChangesText(_show);
+    ch.className = 'sb-link sb-changes' + (n ? ' sb-unsaved' : '');
+    ch.title = t('Open the History to see every change');
   }
+  const sub = document.getElementById('ms-file-sub');
+  if (sub) sub.textContent = _show.active ? (_show.saved_name ? t('Saved as {0}', _show.saved_name) : t('opened, never touched')) : '';
   const d = _show.doctor, dr = document.getElementById('sb-doctor');
   if (dr) {
     if (d) {
-      const e = d.error || 0, w = d.warning || 0;
-      dr.innerHTML = `<b>${e} · ${w}</b><small>Doctor err · warn</small>`;
-      dr.title = `Workspace Doctor on the show as it is now: ${e} error${e === 1 ? '' : 's'}, ${w} warning${w === 1 ? '' : 's'} — click to open it`;
-      dr.className = 'sb-pill sb-card sb-doctor ' + (e ? 'sb-bad' : w ? 'sb-warn' : 'sb-good');
+      const sum = skDoctorSummary(d);
+      dr.innerHTML = sum.html;
+      dr.title = sum.tip + ' ' + t('Click to open the Doctor.');
+      dr.className = 'sb-link sb-doctor';
       dr.hidden = false;
     } else dr.hidden = true;
   }
   const u = document.getElementById('sb-undo');
   if (u) u.disabled = !(_show.steps > 0);
   const s = document.getElementById('sb-save');
+  if (s) s.className = 'btn btn-sm ' + (n ? 'btn-accent' : 'btn-surface');   // filled only when there is something to save
   if (s) s.title = `Save the show as a new file (${_show.suggested_name || ''}) with a report of every change — the file you opened is never touched`;
   // orange dots: tools that changed the show since it was opened / saved
   document.querySelectorAll('.sn-item[id^="sn-"]').forEach(btn => {
@@ -92,7 +120,67 @@ function _renderShowBar() {
     }
   });
   window._showUnsaved = n;
+  if (typeof skRememberRecent === 'function') skRememberRecent();
+  if (typeof renderStart === 'function') renderStart();
 }
+
+/** "3 changes, not saved" | "Saved as X" | "No changes" (the ribbon, 3.9.5). */
+function skChangesText(show) {
+  const n = (show && show.unsaved) || 0;
+  if (n) return t(n === 1 ? '{0} change, not saved' : '{0} changes, not saved', n);
+  return show && show.saved_name ? t('Saved as {0}', show.saved_name) : t('No changes');
+}
+
+/** The Doctor pill counts kinds of problem, not places (3.9.5):
+ *  "1 error · 4 kinds of warning"; the hover lists the rules with their counts. */
+function skDoctorSummary(d) {
+  const e = d.error || 0, w = d.warning || 0;
+  const rules = d.rules || {};
+  const kinds = sev => Object.keys(rules).filter(c => rules[c].severity === sev).sort();
+  const wk = kinds('warning').length;
+  const listing = sev => kinds(sev).map(c => c + ' ×' + rules[c].n).join(', ');
+  const nE = n => t(n === 1 ? '{0} error' : '{0} errors', n), nW = n => t(n === 1 ? '{0} warning' : '{0} warnings', n);
+  const eTxt = e ? nE(e) : '';
+  const wTxt = w ? (wk ? t(wk === 1 ? '{0} kind of warning' : '{0} kinds of warning', wk) : nW(w)) : '';
+  const tip = [e ? nE(e) + (listing('error') ? ': ' + listing('error') : '') : '',
+    w ? nW(w) + (listing('warning') ? ': ' + listing('warning') : '') : ''].filter(Boolean).join('; ');
+  return {
+    html: (!e && !w) ? '<span class="sb-ok">✓ ' + _esc(t('Doctor: clean')) + '</span>'
+      : [e ? '<span class="sb-e">' + _esc(eTxt) + '</span>' : '', w ? '<span class="sb-w">' + _esc(wTxt) + '</span>' : ''].filter(Boolean).join(' · '),
+    tip: tip ? t('Workspace Doctor') + ': ' + tip + '.' : t('Workspace Doctor: no errors or warnings.'),
+  };
+}
+
+// ── The Open… split button: reload and the recent shows (3.9.5) ──────────────
+function openMenuToggle(ev) {
+  if (ev) ev.stopPropagation();
+  const m = document.getElementById('open-menu'), c = document.getElementById('open-caret');
+  if (!m) return;
+  const open = m.hidden;
+  if (open) _renderOpenMenu();
+  m.hidden = !open;
+  if (c) c.setAttribute('aria-expanded', String(open));
+}
+function _renderOpenMenu() {
+  const m = document.getElementById('open-menu');
+  if (!m) return;
+  let recents = [];
+  try { recents = JSON.parse(localStorage.getItem('sk-recents') || '[]').filter(r => r.type !== 'qsk'); } catch { /* none */ }
+  const loaded = !!window._wsPath;
+  m.innerHTML =
+    `<button role="menuitem" class="split-item" ${loaded ? '' : 'disabled'} onclick="openMenuToggle();reloadFromDisk()">${_esc(t('Reload from disk'))} <small>${_esc(t('discards unsaved changes'))}</small></button>` +
+    (recents.length ? `<div class="split-sep">${_esc(t('Recent shows'))}</div>` : '') +
+    recents.map(r => `<button role="menuitem" class="split-item" title="${_esc(r.path)}" data-path="${_esc(r.path)}" onclick="openMenuPick(this)">${_esc(r.path.split(/[\\/]/).pop())}</button>`).join('');
+}
+function openMenuPick(el) { openMenuToggle(); loadRecentFile(el.dataset.path, 'qxw'); }
+document.addEventListener('click', e => {
+  const m = document.getElementById('open-menu');
+  if (m && !m.hidden && !e.target.closest('#open-split')) openMenuToggle();
+});
+document.addEventListener('keydown', e => {
+  const m = document.getElementById('open-menu');
+  if (e.key === 'Escape' && m && !m.hidden) { openMenuToggle(); document.getElementById('open-caret')?.focus(); }
+});
 
 // Every change a tool makes goes through a POST/PATCH to /api/…: refresh the
 // bar shortly after (tools don't need to know about the show bar).
@@ -120,6 +208,7 @@ async function showFlushPending() {
 // ── Undo / History ───────────────────────────────────────────────────────────
 
 async function showUndo(n) {
+  _skQuietUntil = Date.now() + 4000;
   await showFlushPending();
   const r = await _origFetch('/api/show/undo', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -136,6 +225,7 @@ async function showUndo(n) {
 }
 
 async function showRedo() {
+  _skQuietUntil = Date.now() + 4000;
   const r = await _origFetch('/api/show/redo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   const d = await r.json();
   if (!r.ok || d.error) { setStatus(d.error || 'Nothing to redo.', 'error'); return; }
@@ -210,7 +300,7 @@ async function showHistoryRender() {
   html += steps.map(s => {
     const doc = s.doctor ? `Doctor after: ${s.doctor.error || 0} errors · ${s.doctor.warning || 0} warnings` : '';
     const sub = [s.detail, s.edits > 1 ? `${s.edits} edits` : '', doc, time(s.time)].filter(Boolean).join(' · ');
-    return `<li class="sh-step${s.saved ? ' sh-saved' : ''}">
+    return `<li class="sh-step${s.saved ? ' sh-saved' : ''}${s.n === window._skNewStep ? ' sh-new' : ''}">
       <span class="sh-n">${s.n}</span>
       <div class="sh-body">
         <div class="sh-title"><b>${_esc(s.tool_title)}</b> — <span data-i18n="off">${_esc(_stepTitle(s.title))}</span>${s.saved ? ' <span class="sh-tag">saved</span>' : ''}</div>
@@ -467,7 +557,7 @@ function showConfirmDiscard(what) {
   const n = window._showUnsaved || 0;
   if (!n) return true;
   return confirm(`The show in progress has ${n} unsaved change${n > 1 ? 's' : ''}.\n\n` +
-    `${what} discards them. Continue?\n\n(Cancel, then 💾 Save as new file… to keep them.)`);
+    `${what} discards them. Continue?\n\n(Cancel, then Save as new file… to keep them.)`);
 }
 
 document.addEventListener('DOMContentLoaded', () => showRefreshSoon(50));
@@ -522,7 +612,7 @@ async function showApply(url, body, busy = 'Applying…') {
     const tr = (x, ...v) => (typeof t === 'function' ? t(x, ...v) : x.replace(/\{(\d+)\}/g, (_m, i) => v[+i] ?? ''));
     const doc = d.show && d.show.doctor ? _sep(' ') + tr('Doctor: {0} errors, {1} warnings.', d.show.doctor.error || 0, d.show.doctor.warning || 0) : '';
     setStatus(tr('✓ Applied to the show — step {0}: {1}.', s.n, _stepTitle(s.title)) + doc + _sep(' ') +
-              tr("💾 Save as new file… (top right) when you're ready."), 'ok');
+              tr("Save as new file… (top right) when you're ready."), 'ok');
     await showRefresh();
     return d;
   } catch (e) {
@@ -577,7 +667,7 @@ async function vceApply() {
   const n = Object.keys(_vceChanges || {}).length;
   if (!n) { _vceStatus('Every edit is already in the show.', 'ok'); return; }
   if (!(await _vceFlush())) return;
-  _vceStatus(`✓ ${n} widget change(s) applied to the show — 💾 Save as new file… (top right) when you're ready.`, 'ok');
+  _vceStatus(`✓ ${n} widget change(s) applied to the show — Save as new file… (top right) when you're ready.`, 'ok');
 }
 
 async function slApply() {
@@ -589,9 +679,9 @@ async function slApply() {
   if (d.skipped && d.skipped.length)
     setStatus(`⚠ Setlist built, but ${d.skipped.length} song(s) have no function and are not in the cue list: ${d.skipped.join(', ')} — assign them and apply again.`, 'warn');
   else if (d.tempo && d.tempo.fitted)
-    setStatus(`✓ Setlist chasers built in the show, ${d.tempo.fitted} song(s) timed to their BPM — 💾 Save as new file… when you're ready.`, 'ok');
+    setStatus(`✓ Setlist chasers built in the show, ${d.tempo.fitted} song(s) timed to their BPM — Save as new file… when you're ready.`, 'ok');
   else
-    setStatus('✓ Setlist chasers built in the show — 💾 Save as new file… when you\'re ready.', 'ok');
+    setStatus('✓ Setlist chasers built in the show — Save as new file… when you\'re ready.', 'ok');
   await showRefresh();
   if (typeof _fetchChasers === 'function') await _fetchChasers();
   if (typeof slCheckTempo === 'function') slCheckTempo();

@@ -6,7 +6,7 @@
  * height of the lowest point above the floor — not by QLC+'s raw XPos/YPos
  * (which depend on how the model was drawn).  Drag a mesh in either view,
  * or type the numbers; ⤓ puts it on the floor.  All edits stay on a working
- * copy (↶ undo) until 💾 Save → new file.
+ * copy (↶ undo) until Save → new file.
  */
 
 let _stS = null;          // /api/stage/state
@@ -100,7 +100,7 @@ function _stLayoutsHtml() {
     return `<div class="st-item"><span><b>${_esc(l.label)}</b>${l.builtin ? ' <span class="vce-hint">built in</span>' : ''}
         <span class="vce-hint">${l.stage.w}×${l.stage.d} m · ${_esc(roles)}${l.walkways ? ' · ' + l.walkways + ' walkway(s)' : ''}</span></span>
       <span><button class="btn btn-surface btn-sm" onclick="stageLayoutApply('${_esc(l.id)}')">Use</button>${l.builtin ? '' :
-        ` <button class="btn btn-surface btn-sm" title="Delete this layout (the stage is not changed)" onclick="stageLayoutDelete('${_esc(l.id)}')">🗑</button>`}</span></div>`;
+        ` <button class="btn btn-surface btn-sm" title="Delete this layout (the stage is not changed)" onclick="stageLayoutDelete('${_esc(l.id)}')"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button>`}</span></div>`;
   }).join('');
   return `<h3>Stage layouts <span class="p-desc">the stage and the band, to start a show from</span></h3>
     <div class="st-list">${rows || '<div class="vce-hint">No layouts yet.</div>'}</div>
@@ -179,7 +179,7 @@ function _stGroupsHtml() {
         <option value="stage">left → right on the stage</option><option value="given">as listed above</option></select></label></div>
     <div class="lb-row">${editing
       ? `<button class="btn btn-accent btn-sm" onclick="stageGroupSave()">✓ Save group</button>
-         <button class="btn btn-surface btn-sm" onclick="stageGroupDelete()" title="${editing.used_by.length ? 'Used by RGB matrices — change them first' : 'Delete this group'}">🗑 Delete</button>
+         <button class="btn btn-surface btn-sm" onclick="stageGroupDelete()" title="${editing.used_by.length ? 'Used by RGB matrices — change them first' : 'Delete this group'}"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Delete</button>
          <button class="btn btn-surface btn-sm" onclick="stageGroupEdit(null)">Cancel</button>`
       : `<button class="btn btn-accent btn-sm" onclick="stageGroupSave()">＋ Create group</button>`}</div>
     <div class="vce-hint">The group goes into the show in progress at once (↶ Undo here or in the History). Heads in one row, left → right as seen from the audience.</div>`;
@@ -277,7 +277,7 @@ function _stRender() {
           const p = m.place;
           const off = p && p.bottom !== 0;
           return `<div class="st-item ${_stSet.has(m.id) ? 'on' : ''}" onclick="stageSelect('${m.id}', event)">
-            <span>${m.found ? '' : '⚠ '}${m.hidden ? '<span title="Hidden in the 3D view">🙈 </span>' : ''}${_esc(m.label)}</span>
+            <span>${m.found ? '' : '⚠ '}${m.hidden ? '<span title="Hidden in the 3D view"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#eye-off"/></svg> </span>' : ''}${_esc(m.label)}</span>
             <span class="vce-hint">${p ? `${off ? `<b style="color:var(--warning)">${p.bottom > 0 ? 'floats ' + p.bottom : 'sinks ' + (-p.bottom)} mm</b>` : 'on the floor'}` : 'file not found'}</span></div>`;
         }).join('') || '<div class="vce-hint">No meshes yet — add one below.</div>'}</div>
         <div class="lb-row">
@@ -314,15 +314,15 @@ function _stRender() {
   const s = document.getElementById('st-summary');
   if (s) s.innerHTML = `<span class="doc-chip">${_esc(S.type_name)} ${S.w}×${S.d} m</span>` +
     `<span class="doc-chip">${_stS.meshes.length} mesh(es)</span><span class="doc-chip">${_stS.fixtures.length} fixture(s)</span>` +
-    (_stS.dirty ? '<span class="doc-chip" title="These edits are in the show in progress — 💾 Save as new file… keeps them">edited</span>' : '');
+    (_stS.dirty ? '<span class="doc-chip" title="These edits are in the show in progress — Save as new file… keeps them">edited</span>' : '');
 }
 
 function _stEditHtml() {
   if (_stSet.size > 1) {
     const k = _stKinds();
     return `<h3>${_stSet.size} items selected</h3><div class="vce-hint">Place them together in the <a href="#" onclick="stageTab('place');return false">Place</a> tab; click one to edit it.</div>
-      ${k.ms ? `<div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageHide(true)" title="Hide the selected meshes in QLC+'s 3D view (kept in the show)">🙈 Hide meshes</button>
-        <button class="btn btn-surface btn-sm" onclick="stageHide(false)">👁 Show meshes</button></div>` : ''}
+      ${k.ms ? `<div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageHide(true)" title="Hide the selected meshes in QLC+'s 3D view (kept in the show)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#eye-off"/></svg> Hide meshes</button>
+        <button class="btn btn-surface btn-sm" onclick="stageHide(false)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#eye"/></svg> Show meshes</button></div>` : ''}
       ${k.fx ? _stAimHtml() : ''}`;
   }
   const f = _stFx(_stSel);
@@ -356,7 +356,7 @@ function _stEditHtml() {
     <div class="lb-row">
       <button class="btn btn-surface btn-sm" onclick="stageMove()" ${m.found ? '' : 'disabled'}>Move</button>
       <button class="btn btn-surface btn-sm" onclick="stageFloor(['${m.id}'])" ${m.found ? '' : 'disabled'}>⤓ On the floor</button>
-      <button class="btn btn-surface btn-sm" onclick="stageHide(${m.hidden ? 'false' : 'true'})" title="Hide or show it in QLC+'s 3D view — the mesh stays in the show">${m.hidden ? '👁 Show' : '🙈 Hide'}</button>
+      <button class="btn btn-surface btn-sm" onclick="stageHide(${m.hidden ? 'false' : 'true'})" title="Hide or show it in QLC+'s 3D view — the mesh stays in the show">${m.hidden ? 'Show' : 'Hide'}</button>
       <span class="vce-hint">size ${p.w ?? '?'} × ${p.h ?? '?'} × ${p.d ?? '?'} mm (W×H×D as placed)</span>
     </div>
     <div class="lb-row"><span style="width:62px">Rotation</span>
@@ -381,7 +381,7 @@ function _stEditHtml() {
       <div class="vce-hint" style="margin-bottom:6px">${m.file ? 'found: ' + _esc(m.file) : m.builtin ? 'QLC+ built-in model' : 'not found on this computer'}</div>
       <div class="lb-row">
         <button class="btn btn-surface btn-sm" onclick="_stOp({op:'duplicate',id:'${m.id}'})">⧉ Duplicate</button>
-        <button class="btn btn-surface btn-sm" onclick="_stOp({op:'remove',id:'${m.id}'})">🗑 Remove</button>
+        <button class="btn btn-surface btn-sm" onclick="_stOp({op:'remove',id:'${m.id}'})"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Remove</button>
       </div>
       <div class="vce-hint">In the file (QLC+ 3D view): X ${m.pos[0]} · Y ${m.pos[1]} · Z ${m.pos[2]} mm${m.size ? ` · model ${m.size.join(' × ')} mm` : ''}</div>
     </details>`;
@@ -572,7 +572,7 @@ function _stAimHtml() {
            <label>height <input id="st-aim-h" type="number" step="100" class="filter-input rr-num" value="${_stVal('st-aim-h') || 0}"> mm</label>`
         : `<label><select id="st-aim-w" class="filter-input">${[['centre', 'its centre'], ['top', 'its top'], ['floor', 'the floor under it']].map(([v, l]) =>
             `<option value="${v}" ${wh === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`}
-      <button class="btn btn-surface btn-sm" onclick="stageAim()">🎯 Aim</button></div>
+      <button class="btn btn-surface btn-sm" onclick="stageAim()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#target"/></svg> Aim</button></div>
     <div class="vce-hint">Z is measured from the back edge; the height from the floor. Undo brings the old tilt back.</div>`;
 }
 function stageAim() {

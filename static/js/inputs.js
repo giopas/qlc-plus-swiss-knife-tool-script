@@ -87,7 +87,7 @@ function _inRender() {
       <button class="btn btn-surface btn-sm" onclick="_inRemember()" title="Keep this controller so any show can use it in one click">★ Remember it…</button>
       <button class="btn btn-surface btn-sm" onclick="_inEdit=null;_inRender()">Cancel</button>
     </div>` : '';
-  const learn = `<div class="lb-row"><button class="btn btn-surface btn-sm" onclick="_inLearn()" title="Read the controllers patched in another show — QLC+ wrote their real UID and line mode there — and remember them">📂 Learn my controllers from another show…</button></div>`;
+  const learn = `<div class="lb-row"><button class="btn btn-surface btn-sm" onclick="_inLearn()" title="Read the controllers patched in another show — QLC+ wrote their real UID and line mode there — and remember them"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Learn my controllers from another show…</button></div>`;
   const ctl = S.controllers.length ? `
     <div class="st-sec">My controllers <span class="vce-hint">kept on this computer — when QLC+ saved a show with the input as None, patch it back in one click</span></div>
     <div class="lb-row"><label>Patch <select id="in-ctl" class="filter-input">${S.controllers.map(c => `<option value="${_te(c.name)}">${_te(c.name)} — ${_te(c.device)}</option>`).join('')}</select></label>

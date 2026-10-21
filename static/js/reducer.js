@@ -2,9 +2,9 @@
  * Rig Reducer tab (WORKPLAN Phase 2.2).
  *
  * Lists the fixtures of the open workspace: untick the ones to remove, edit
- * name / universe / address of the kept ones (re-patch).  🔍 Preview shows
+ * name / universe / address of the kept ones (re-patch).  Preview shows
  * what will be removed (values, groups, functions, VC widgets) and what the
- * Doctor says; 💾 Reduce writes a NEW workspace (Save dialog) and the report
+ * Doctor says; Reduce writes a NEW workspace (Save dialog) and the report
  * next to it.  The open workspace is never changed.
  */
 
@@ -159,7 +159,7 @@ async function reducerPreview(auto) {
     const newBad = doc.new_errors.length, newWarn = doc.new_warnings.length;
     el.innerHTML = `<h3 class="rr-h">What Apply will do</h3>
       <div class="rr-sub">updated as you tick · ${c.values} scene value set(s) go with the fixtures</div>
-      ${d.blocked ? '<div class="rr-block">⛔ The result has new Doctor errors — Apply is refused until they are gone.</div>' : ''}
+      ${d.blocked ? '<div class="rr-block"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#ban"/></svg> The result has new Doctor errors — Apply is refused until they are gone.</div>' : ''}
       ${groups.filter(([, ls]) => ls.length).map(([t, ls], i) => `
         <details class="rr-grp"${i === 0 ? ' open' : ''}><summary><span>${t}</span><b>${ls.length}</b></summary>
           <ul>${ls.map(x => `<li>${_esc(x)}</li>`).join('')}</ul></details>`).join('')}
@@ -170,12 +170,12 @@ async function reducerPreview(auto) {
           `<li>${doc.total_errors} error(s), ${doc.total_warnings} warning(s) in all — none of them caused by this step</li>`}</ul></details>`;
     const ren = Object.values(_rrEdit).length;
     const chips = [];
-    if (c.fixtures) chips.push(`−${c.fixtures} fixture${c.fixtures > 1 ? 's' : ''}`);
-    if (c.groups) chips.push(`−${c.groups} group${c.groups > 1 ? 's' : ''}`);
-    if (c.functions) chips.push(`−${c.functions} function${c.functions > 1 ? 's' : ''}`);
-    if (c.widgets) chips.push(`−${c.widgets} VC widget${c.widgets > 1 ? 's' : ''}`);
-    if (ren) chips.push(`${ren} renamed / re-patched`);
-    chips.push(newBad ? { text: `⛔ ${newBad} new Doctor error(s)`, kind: 'error' }
+    if (c.fixtures) chips.push(skPlural(c.fixtures, '−{0} fixture', '−{0} fixtures'));
+    if (c.groups) chips.push(skPlural(c.groups, '−{0} group', '−{0} groups'));
+    if (c.functions) chips.push(skPlural(c.functions, '−{0} function', '−{0} functions'));
+    if (c.widgets) chips.push(skPlural(c.widgets, '−{0} VC widget', '−{0} VC widgets'));
+    if (ren) chips.push(t('{0} renamed / re-patched', ren));
+    chips.push(newBad ? { text: t('{0} new Doctor error(s)', newBad), kind: 'error' }
       : { text: '✓ no new Doctor errors', kind: 'ok' });
     setOutcome('reducer', chips, newBad ? 'error' : '');
     if (!auto) setStatus('Preview ready.', 'ok');

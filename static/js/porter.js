@@ -102,7 +102,7 @@ async function porterUseShowTgt(quiet = false) {
   if (!r.ok) { if (!quiet) _pStatus(d.error || 'No show open.', 'error'); return false; }
   _pTgtLoaded = true; _pTgtShow = true; _pTgtStale = false; _pTgtName = d.name;
   const p = document.getElementById('porter-tgt-path'); if (p) p.value = '';
-  setFileChip('porter-tgt-chip', '🎛 the show in progress');
+  setFileChip('porter-tgt-chip', 'the show in progress');
   await _pFetchTargetData();
   if (!quiet) _pStatus(`Target: the show in progress (${d.summary.fixtures} fixtures, ${d.summary.functions} functions).`, 'ok');
   _pRenderStep();
@@ -268,11 +268,11 @@ function _pSyncOutcome() {
   if (_pStep === 2) {
     if (!nFn && !nCopy) return setOutcome(n, 'nothing yet — tick pages, frames, buttons or functions', '', 'Apply will do');
     const chips = [];
-    if (nFn) chips.push(`port ${nFn} function${nFn > 1 ? 's' : ''}`);
-    if (_pVcScope.length) chips.push(`${_pVcScope.length} VC widget${_pVcScope.length > 1 ? 's' : ''}`);
-    if (_pCopyFx.size) chips.push(`copy ${_pCopyFx.size} fixture${_pCopyFx.size > 1 ? 's' : ''}`);
-    if (_pCopyGrp.size) chips.push(`copy ${_pCopyGrp.size} group${_pCopyGrp.size > 1 ? 's' : ''}`);
-    if (_pCopyMsh.size) chips.push(`copy ${_pCopyMsh.size} mesh${_pCopyMsh.size > 1 ? 'es' : ''}`);
+    if (nFn) chips.push(skPlural(nFn, 'port {0} function', 'port {0} functions'));
+    if (_pVcScope.length) chips.push(skPlural(_pVcScope.length, '{0} VC widget', '{0} VC widgets'));
+    if (_pCopyFx.size) chips.push(skPlural(_pCopyFx.size, 'copy {0} fixture', 'copy {0} fixtures'));
+    if (_pCopyGrp.size) chips.push(skPlural(_pCopyGrp.size, 'copy {0} group', 'copy {0} groups'));
+    if (_pCopyMsh.size) chips.push(skPlural(_pCopyMsh.size, 'copy {0} mesh', 'copy {0} meshes'));
     return setOutcome(n, chips, '', 'Apply will');
   }
   if (_pStep === 3) {
@@ -281,25 +281,28 @@ function _pSyncOutcome() {
     const mapped = ids.filter(id => (_pFixMapping[id] || _pFixMapping[String(id)] || []).length).length;
     const open = ids.length - skipped - mapped;
     const chips = [];
-    if (ids.length) chips.push({ text: `${mapped} of ${ids.length} fixture${ids.length > 1 ? 's' : ''} mapped`, kind: open > 0 && !_pDropUnmapped ? 'warn' : '' });
-    if (skipped) chips.push(`${skipped} not ported`);
-    if (open > 0 && !_pDropUnmapped) chips.push({ text: `${open} without a target`, kind: 'warn' });
-    if (nCopy) chips.push(`${_pCopyFx.size} fixture${_pCopyFx.size === 1 ? '' : 's'} copied`);
+    if (ids.length) chips.push({ text: skPlural(ids.length, '{1} of {0} fixture mapped', '{1} of {0} fixtures mapped', mapped), kind: open > 0 && !_pDropUnmapped ? 'warn' : '' });
+    if (skipped) chips.push(t('{0} not ported', skipped));
+    const noExact = ids.filter(id => !_pSkipFx.has(id) && !_pSkipFx.has(String(id)) &&
+      !(((_pCandidates && _pCandidates.candidates[id]) || {}).tier1 || []).length).length;
+    if (noExact) chips.push(t('{0} without exact match', noExact));
+    if (open > 0 && !_pDropUnmapped) chips.push({ text: t('{0} without a target', open), kind: 'warn' });
+    if (nCopy) chips.push(skPlural(_pCopyFx.size, '{0} fixture copied', '{0} fixtures copied'));
     return chips.length ? setOutcome(n, chips, '', 'Apply will') : setOutcome(n, 'nothing to map', '', 'Apply will do');
   }
   if (_pStep === 4) {
     const v = _pValidation;
     if (!v) return setOutcome(n, 'checking the plan…', '', 'Apply will');
     const chips = [];
-    if (v.errors.length) chips.push({ text: `${v.errors.length} error${v.errors.length > 1 ? 's' : ''} to fix first`, kind: 'error' });
-    else chips.push(`port ${nFn} function${nFn === 1 ? '' : 's'} into ${where}`);
-    if (v.warnings.length) chips.push({ text: `${v.warnings.length} warning${v.warnings.length > 1 ? 's' : ''}`, kind: 'warn' });
+    if (v.errors.length) chips.push({ text: skPlural(v.errors.length, '{0} error to fix first', '{0} errors to fix first'), kind: 'error' });
+    else chips.push(skPlural(nFn, 'port {0} function into {1}', 'port {0} functions into {1}', where));
+    if (v.warnings.length) chips.push({ text: skPlural(v.warnings.length, '{0} warning', '{0} warnings'), kind: 'warn' });
     return setOutcome(n, chips, v.errors.length ? 'error' : '', v.errors.length ? 'Blocked:' : 'Apply will');
   }
   if (_pStep === 5) {
     if (_pExported) return;
-    const chips = [`port ${nFn} function${nFn === 1 ? '' : 's'}`];
-    if (nCopy) chips.push(`copy ${nCopy} fixture/group${nCopy > 1 ? 's' : ''}`);
+    const chips = [skPlural(nFn, 'port {0} function', 'port {0} functions')];
+    if (nCopy) chips.push(skPlural(nCopy, 'copy {0} fixture/group', 'copy {0} fixtures/groups'));
     chips.push(_pTgtShow ? 'one History step' : 'write a new file');
     return setOutcome(n, chips, '', 'Apply will');
   }
@@ -346,7 +349,7 @@ function _pRenderStep() {
   if (tb) {
     // chosen: the button itself says so (no second "the show in progress" chip)
     tb.className = 'btn ' + (_pTgtShow ? 'btn-surface porter-chosen' : 'btn-accent');
-    tb.textContent = _pTgtShow ? '✓ The show in progress' : '🎛 The show in progress';
+    tb.textContent = _pTgtShow ? '✓ The show in progress' : 'The show in progress';
   }
   const tc = document.getElementById('porter-tgt-chip');
   if (tc) tc.hidden = _pTgtShow || !_pTgtLoaded;
@@ -417,7 +420,7 @@ function _pRenderVcTree() {
   }
   const scope = new Set(_pVcScope);
   el.innerHTML = _pVcTree.map((w, i) => {
-    const icon = w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
+    const icon = w.depth === 0 ? '' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
     return `<label class="porter-row${w.depth === 0 ? ' porter-vc-page' : ''}" style="padding-left:${0.5 + w.depth * 1.2}rem">
       <input type="checkbox" class="porter-vc-check" data-idx="${i}" value="${w.key}"
              ${scope.has(w.key) ? 'checked' : ''} onchange="porterVcToggle(${i}, this.checked)">
@@ -614,6 +617,12 @@ function _pRenderClosureSummary() {
 async function _pRenderMapFixtures() {
   const container = document.getElementById('porter-fixture-map');
   if (!container) return;
+  // 3.9.5: the step opens on the mapping list; the two stage maps stay folded unless the last choice was to show them
+  const fold = document.getElementById('porter-maps-fold');
+  if (fold && !fold.dataset.init) {
+    fold.dataset.init = '1';
+    try { fold.open = localStorage.getItem('sk-porter-both-stages') === '1'; } catch (e) { /* stays folded */ }
+  }
 
   const fxIds = _pClosure ? _pClosure.fixture_ids : [];
   if (!fxIds.length && !_pSkipFx.size) {
@@ -987,7 +996,10 @@ function _pDrawPlans() {
 window.addEventListener('resize', () => { if (_pStep === 1 || _pStep === 3) _pDrawPlans(); });
 // v2.2.1: the step-3 stage maps are folded (mapping first); draw them when opened
 document.addEventListener('toggle', ev => {
-  if (ev.target && ev.target.id === 'porter-maps-fold' && ev.target.open) setTimeout(_pDrawPlans, 0);
+  if (ev.target && ev.target.id === 'porter-maps-fold') {
+    try { localStorage.setItem('sk-porter-both-stages', ev.target.open ? '1' : '0'); } catch (e) { /* not remembered */ }
+    if (ev.target.open) setTimeout(_pDrawPlans, 0);
+  }
 }, true);
 
 function porterToggleMirror(srcId, checked) {
@@ -1021,7 +1033,7 @@ async function _pRenderVcOptions() {
     const r = await fetch('/api/porter/target/pages');
     pages = r.ok ? await r.json() : [];
   } catch (e) { pages = []; }
-  sel.innerHTML = '<option value="">➕ A new page</option>' +
+  sel.innerHTML = '<option value="">A new page</option>' +
     pages.map(p => `<option value="${_esc(p.id)}" ${String(_pVc.target_page) === String(p.id) ? 'selected' : ''}>${_esc(p.caption || '(page ' + p.id + ')')}</option>`).join('');
   document.getElementById('porter-vc-enabled').checked = _pVc.enabled;
   document.getElementById('porter-vc-caption').value = _pVc.page_caption;
@@ -1047,7 +1059,7 @@ function _pRenderRmTree() {
   if (!_pTgtVcTree.length) { el.innerHTML = '<div class="porter-placeholder">The target has no Virtual Console.</div>'; return; }
   const scope = new Set(_pRmScope);
   el.innerHTML = _pTgtVcTree.map((w, i) => {
-    const icon = w.depth === 0 ? '📄 ' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
+    const icon = w.depth === 0 ? '' : (w.tag === 'Frame' || w.tag === 'SoloFrame' ? '▣ ' : '');
     return `<label class="porter-row${w.depth === 0 ? ' porter-vc-page' : ''}" style="padding-left:${0.5 + w.depth * 1.2}rem">
       <input type="checkbox" class="porter-rm-check" data-idx="${i}" value="${w.key}"
              ${scope.has(w.key) ? 'checked' : ''} onchange="porterRmToggle(${i}, this.checked)">
@@ -1292,7 +1304,7 @@ async function porterExecute() {
     const folder = fullPath ? fullPath.replace(/[\\/][^\\/]*$/, '') : '';
     _pStatus(reportName
       ? `Exported ${savedName} and the port report ${reportName} in ${folder}.`
-      : `Exported ${savedName}. The port report could not be saved next to it — use 📋 Copy Report.`,
+      : `Exported ${savedName}. The port report could not be saved next to it — use Copy Report.`,
       reportName ? 'ok' : 'warn');
     _pExported = true;
     _pRenderDone(savedName, summary, reportName, folder);
@@ -1363,7 +1375,7 @@ function _pRenderDone(filename, summary, reportName, folder) {
       <p>Workspace: <strong>${_esc(filename)}</strong></p>
       ${reportName
         ? `<p>Port report: <strong>${_esc(reportName)}</strong> — saved next to it${folder ? ` in <code>${_esc(folder)}</code>` : ''}. It lists every ported function, what was left out, the Virtual Console placement and Doctor's result.</p>`
-        : `<p class="porter-warn">The port report could not be saved next to the workspace — use 📋 Copy Report.</p>`}
+        : `<p class="porter-warn">The port report could not be saved next to the workspace — use Copy Report.</p>`}
       ${summary.removed_vc && summary.removed_vc.length ? `<p>Removed from the target's Virtual Console: ${summary.removed_vc.map(_esc).join('; ')}.</p>` : ''}
       <p>${summary.functions ?? _pClosure.function_ids.length} function(s) ported
          ${summary.pruned && summary.pruned.length ? `(${summary.pruned.length} left out: none of their fixtures is in the target)` : ''}.</p>
@@ -1460,7 +1472,7 @@ function _pRenderCopyPick() {
   if (mEl) mEl.innerHTML = _pSrcMeshes.length ? _pSrcMeshes.map(m => `
     <label class="porter-row"><input type="checkbox" class="porter-check" value="${_esc(m.id)}"
       ${_pCopyMsh.has(String(m.id)) ? 'checked' : ''} onchange="porterCopyMesh(this)">
-      <span>${m.found ? '' : '⚠ '}${m.hidden ? '🙈 ' : ''}${_esc(m.label)}</span>
+      <span>${m.found ? '' : '⚠ '}${m.hidden ? '' : ''}${_esc(m.label)}</span>
       <span class="porter-row-sub">${m.found ? '' : 'model file not found here'}</span></label>`).join('')
     : '<div class="porter-placeholder">No meshes on the source stage.</div>';
   const det = document.getElementById('porter-copy-pick');
@@ -1597,7 +1609,7 @@ async function porterApply() {
   if (el) {
     const h = el.querySelector('h3'); if (h) h.textContent = `Applied to the show — step ${d.step.n}`;
     const p = el.querySelector('p'); if (p) p.innerHTML = `${_esc(d.step.title)}. Nothing is written yet: keep working in any tool, then
-      <button class="btn btn-accent btn-sm" onclick="showSave()">💾 Save as new file…</button> (also top right) writes the show and one report with every step.
+      <button class="btn btn-accent btn-sm" onclick="showSave()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file…</button> (also top right) writes the show and one report with every step.
       ${(summary.copied && summary.copied.map && Object.keys(summary.copied.map).length) ? `<br>The copied fixtures stand where they were in the source (scaled to this stage) — adjust them in <a href="#" onclick="go('stage');return false">Stage &amp; Meshes</a>.` : ''}`;
     el.querySelectorAll('.porter-warn').forEach(x => x.remove());
     if (!(summary.functions || 0)) {            // fixtures / groups only: no function lines

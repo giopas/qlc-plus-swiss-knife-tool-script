@@ -84,7 +84,7 @@ async function slFillCueNotes(auto) {
     if (!r.ok) { if (!auto) setStatus('✗ ' + (d.error || 'Could not add the notes.'), 'error'); return; }
     if (!d.added) { if (!auto) setStatus('Every setlist cue note is up to date.', 'ok'); return; }
     setStatus(`↪ ${d.added} setlist cue note(s) written: the button that plays each cue. Notes you typed in QLC+ are kept. ` +
-      'A step of the History (↶ to undo); 💾 Save as new file… to keep them.', 'ok');
+      'A step of the History (↶ to undo); Save as new file… to keep them.', 'ok');
     if (typeof showRefresh === 'function') showRefresh();
   } catch (e) { if (!auto) setStatus('Network error: ' + e.message, 'error'); }
 }
@@ -191,13 +191,30 @@ function _setEditorEnabled(on) {
 // ── Song list (FileBot left panel) ─────────────────────────────────────────────
 
 let _tempoSkip = false;   // true while the tempo check itself redraws the list
+/** How close the assigned function's name is to the song's: 'same', 'similar' or 'different'.
+ *  Read from the two names only (a clone's " (Setlist)" suffix is ignored); it does not say who chose the match. */
+function _slMatchKind(song, fnName) {
+  const norm = x => String(x || '').replace(/ \(Setlist\)$/, '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const a = norm(song), b = norm(fnName);
+  if (!a || !b) return '';
+  if (a === b) return 'same';
+  if ((a.length >= 3 && b.includes(a)) || (b.length >= 3 && a.includes(b))) return 'similar';
+  const ta = new Set(a.split(' ').filter(w => w.length >= 3)), tb = b.split(' ').filter(w => w.length >= 3);
+  return tb.some(w => ta.has(w)) ? 'similar' : 'different';
+}
+const _SL_MATCH_TEXT = {
+  same: ['same name', 'The function has the same name as the song.'],
+  similar: ['similar name', 'The function has a similar name: check it is the right one.'],
+  different: ['different name', 'The function has another name than the song: chosen by hand, or a guess to check.'],
+};
+
 function _renderSongList() {
   const list = document.getElementById('fb-song-list');
   if (!list) return;
   _updateSongCount();
   if (!_tempoSkip) { if (_songRows.some(r => r.bpm)) slCheckTempo(); else { _tempoCheck = {}; _updateTempoLine(); } }
   if (!_songRows.length) {
-    list.innerHTML = '<div class="slot-empty" style="padding:16px">No songs. Click ➕ to add.</div>';
+    list.innerHTML = '<div class="slot-empty" style="padding:16px">No songs. Click to add.</div>';
     return;
   }
   list.innerHTML = _songRows.map((row, i) => {
@@ -241,11 +258,17 @@ function _renderSongList() {
     let originHtml = '';
     if (hasAssign) {
       const parts = [`[${_esc(row.qxw_id)}]`];
-      if (vcButton) parts.push(`🎛 ${_esc(vcButton)}`);
+      if (vcButton) parts.push(`${_esc(vcButton)}`);
       originHtml = `<div class="fb-song-origin">→ ${parts.join(' ')}</div>`;
     }
+    const kind = hasAssign ? _slMatchKind(row.txt_name, row.qxw_name || (fn && fn.name)) : '';
+    const tags = hasAssign
+      ? `<div class="fb-song-tags">${fn && fn.type ? `<span class="badge badge-${_esc(fn.type)}">${_esc(fn.type)}</span>` : ''}`
+        + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + '</div>'
+      : '';
     const assignHtml = hasAssign
       ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
+        + tags
         + parentHtml
         + originHtml
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')
@@ -491,9 +514,9 @@ function _updateSongCount() {
     const n = _songRows.length, ok = _songRows.filter(r => r.qxw_id).length;
     const dark = _songRows.filter(r => r.qxw_id && (_functions.find(f => f.id === r.qxw_id) || {}).dark).length;
     setOutcome('setlist', !n ? 'nothing yet — pick a slot and add songs' : [
-      `${ok} cue${ok !== 1 ? 's' : ''} in the cue list`,
-      ...(n - ok ? [{ text: `${n - ok} song${n - ok > 1 ? 's' : ''} without a function — left out`, kind: 'warn' }] : []),
-      ...(dark ? [{ text: `${dark} light${dark > 1 ? '' : 's'} nothing`, kind: 'warn' }] : []),
+      skPlural(ok, '{0} cue in the cue list', '{0} cues in the cue list'),
+      ...(n - ok ? [{ text: skPlural(n - ok, '{0} song without a function — left out', '{0} songs without a function — left out'), kind: 'warn' }] : []),
+      ...(dark ? [{ text: skPlural(dark, '{0} lights nothing', '{0} light nothing'), kind: 'warn' }] : []),
     ], '', n ? 'Apply will put' : 'Apply will do');
   }
   const el = document.getElementById('song-count');
@@ -505,8 +528,8 @@ function _updateSongCount() {
 // ── Function pool panel ───────────────────────────────────────────────────────
 
 const _FN_TYPE_ICON = {
-  Chaser:'🔄', Scene:'🎬', Sequence:'📋', EFX:'✨', Script:'📝',
-  Show:'🎭', Audio:'🎵', Collection:'📦', RGBMatrix:'🌈',
+  Chaser:'refresh', Scene:'film', Sequence:'clipboard', EFX:'sparkles', Script:'file-text',
+  Show:'layout', Audio:'music', Collection:'package', RGBMatrix:'palette',
 };
 const _TYPE_ORDER = ['Chaser','Scene','Sequence','EFX','Script','Show','Audio','Collection','RGBMatrix'];
 
@@ -596,7 +619,7 @@ function _renderFnPool(list) {
 
   if (!list.length) {
     wrap.innerHTML = `<div class="slot-empty">${
-      _functions.length === 0 ? '<a class="open-ws-link">📂 Open a workspace</a> to see functions' : 'No results'
+      _functions.length === 0 ? '<a class="open-ws-link"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open a workspace</a> to see functions' : 'No results'
     }</div>`;
     return;
   }
@@ -627,7 +650,7 @@ function _renderFnPool(list) {
     </div>`;
 
   for (const type of sortedTypes) {
-    const icon      = _FN_TYPE_ICON[type] || '◻';
+    const icon      = _FN_TYPE_ICON[type] ? skIcon(_FN_TYPE_ICON[type]) : '◻';
     const fns       = groups[type];
     const collapsed = _poolGroupCollapsed.has(type);
     html += `
@@ -658,7 +681,7 @@ function _renderFnPool(list) {
       }
       const vcTxt   = f.vc_button || f.vc_inherited || '';
       const vcHtml  = vcTxt
-        ? `<div class="pool-item-vc">🎛 ${_esc(vcTxt)}</div>`
+        ? `<div class="pool-item-vc"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> ${_esc(vcTxt)}</div>`
         : '';
       const descHtml = f.desc
         ? `<div class="pool-item-desc">${_esc(f.desc)}</div>`
@@ -730,7 +753,7 @@ function slAssignFromPool() {
       let originDiv = listEl.querySelector('.fb-song-origin');
       const originParts = [`[${_esc(fn.id)}]`];
       const vcCap = fn.vc_button || fn.vc_inherited;
-      if (vcCap) originParts.push(`🎛 ${vcCap}`);
+      if (vcCap) originParts.push(`${vcCap}`);
       if (!originDiv) {
         originDiv = document.createElement('div');
         originDiv.className = 'fb-song-origin';
@@ -765,7 +788,7 @@ async function slDeleteWorkspaceClones() {
     `This removes marked SwissKnife clones AND legacy unreferenced duplicates ` +
     `left by older versions. Songs assigned to a removed clone are re-pointed ` +
     `to the surviving original whenever possible; otherwise they are unassigned.\n\n` +
-    `After this, ✓ Apply to the show and 💾 Save as new file… give a clean file without the old clones.`
+    `After this, ✓ Apply to the show and Save as new file… give a clean file without the old clones.`
   )) return;
 
   const res = await _apiPost('/api/setlist/purge-workspace-clones', {});
@@ -802,7 +825,7 @@ async function slDeleteWorkspaceClones() {
   const parts = [`Deleted ${res.removed} clone(s) from workspace`];
   if (res.redirected) parts.push(`${res.redirected} song(s) re-pointed to their original function`);
   if (res.unassigned) parts.push(`${res.unassigned} song(s) unassigned`);
-  parts.push('✓ Apply to the show, then 💾 Save as new file….');
+  parts.push('✓ Apply to the show, then Save as new file….');
   setStatus(parts.join(' — '), 'ok');
 }
 
@@ -1353,7 +1376,7 @@ async function slImportApply() {
   _renderSongList(); _updateSongCount(); _clearTimingPanel(); _renderFnPool(_poolFiltered);
   await slSaveDetails();
   slCloseImport();
-  setStatus(`Imported ${rows.length} song(s) — use 🎯 Re-Match to give them functions.`, 'ok');
+  setStatus(`Imported ${rows.length} song(s) — use Re-Match to give them functions.`, 'ok');
 }
 
 // ── v2.6.0 The tablet page ────────────────────────────────────────────────────

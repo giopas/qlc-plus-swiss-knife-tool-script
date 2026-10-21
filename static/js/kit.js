@@ -12,6 +12,11 @@
    skEmpty({text, button})                   the "open a show first" state
    skDone(message, {undo, history})          the "Applied. …  Undo · History" toast
 
+   skFooters()                               the same promise for the footers already in the page (.out-footer):
+       a disabled main button (.btn-accent) gets its reason, in words, from data-needs (or "Open a show
+       first." when it also has data-needs-show and no show is open), as data-why, a visible .out-why and
+       aria-describedby.  The chip on the left keeps the words of SK_CHIPS (checked by test_ui_lint).
+
    Text is set with textContent (no HTML from callers).  Words go through the
    i18n observer like any other text on the page.  Nothing here knows a tool.
    ============================================================================= */
@@ -65,7 +70,7 @@ const SK_CHIPS = {
     whyEl.hidden = true;
 
     left.append(chipEl, summaryEl);
-    const sec = opts.secondary ? button(opts.secondary, 'btn-secondary') : null;
+    const sec = opts.secondary ? button(opts.secondary, 'btn-surface') : null;
     const pri = opts.primary ? button(opts.primary, 'btn-accent') : null;   // at most one of each
     if (sec) right.append(sec);
     if (pri) right.append(pri);
@@ -162,5 +167,57 @@ const SK_CHIPS = {
     return doneEl;
   }
 
-  Object.assign(window, { skActionBar, skSegmented, skEmpty, skDone, SK_CHIPS });
+  // ── the footers that are in the page ────────────────────────────────────────
+  function _showOpen() { return typeof _show !== 'undefined' ? !!_show.active : true; }
+
+  function _footerWhy(f) {
+    const b = f.querySelector('.btn-accent');
+    if (!b) return;
+    let w = f.querySelector('.out-why');
+    if (!w) {
+      w = el('span', 'out-why');
+      w.id = 'why-' + (b.id || Math.random().toString(36).slice(2, 8));
+      w.setAttribute('role', 'status');
+      w.setAttribute('aria-live', 'polite');
+      const sp = f.querySelector('.spacer');
+      f.insertBefore(w, sp || b);
+    }
+    const trans = (x) => (typeof t === 'function' ? t(x) : x);
+    let why = '';
+    if (b.disabled) {
+      why = b.hasAttribute('data-needs-show') && !_showOpen() ? 'Open a show first.' : (b.getAttribute('data-needs') || '');
+      why = trans(why);
+    }
+    if (!b.hasAttribute('data-tip0')) b.setAttribute('data-tip0', b.getAttribute('data-tooltip') || '');
+    if (why) {
+      b.setAttribute('data-why', why);
+      b.setAttribute('data-tooltip', why);
+      b.setAttribute('aria-describedby', w.id);
+    } else {
+      b.removeAttribute('data-why');
+      b.removeAttribute('aria-describedby');
+      const t0 = b.getAttribute('data-tip0');
+      if (t0) b.setAttribute('data-tooltip', t0); else b.removeAttribute('data-tooltip');
+    }
+    if (w.textContent !== why) w.textContent = why;
+    w.hidden = !why;
+  }
+
+  function skFooters() {
+    document.querySelectorAll('.out-footer').forEach(_footerWhy);
+  }
+
+  let _fq = 0;
+  function _footersSoon() { cancelAnimationFrame(_fq); _fq = requestAnimationFrame(skFooters); }
+  function _watchFooters() {
+    skFooters();
+    new MutationObserver(_footersSoon).observe(document.body, {
+      subtree: true, attributes: true, attributeFilter: ['disabled', 'data-needs'],
+    });
+    document.addEventListener('sk-lang', skFooters);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _watchFooters);
+  else _watchFooters();
+
+  Object.assign(window, { skActionBar, skSegmented, skEmpty, skDone, skFooters, SK_CHIPS });
 })();

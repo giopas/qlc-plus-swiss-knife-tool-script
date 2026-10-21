@@ -26,7 +26,7 @@ function invalidateBrightness() {
   _brtLinked   = {};
   _brtBaseline = {};
   const wrap = document.getElementById('brt-fixture-wrap');
-  if (wrap) wrap.innerHTML = '<div class="brt-placeholder"><a class="open-ws-link">📂 Open a workspace</a> to adjust brightness.</div>';
+  if (wrap) wrap.innerHTML = '<div class="brt-placeholder"><a class="open-ws-link"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open a workspace</a> to adjust brightness.</div>';
   _brtSetPreview(null);
 }
 
@@ -200,7 +200,7 @@ function _brtRender() {
         <!-- Per-group QXF override picker -->
         <label class="btn btn-surface brt-assign-qxf-btn"
                title="Manually assign a QXF file to this fixture group, bypassing automatic name matching">
-          📂 Assign QXF
+          <svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Assign QXF
           <input type="file" accept=".qxf" style="display:none" id="${assignId}"
                  onchange="brtAssignQxf(this,'${mfrSafe}','${modelSafe}')">
         </label>
@@ -362,9 +362,9 @@ function _brtSetPreview(stats) {
   if (!el) return;
   if (!stats) { el.textContent = ''; el.className = 'brt-preview-count'; setOutcome('brightness', ''); return; }
   const { fixtures_active: f, scenes: s, values: v } = stats;
-  setOutcome('brightness', v ? [`${f} fixture${f !== 1 ? 's' : ''}`, `${s} scene${s !== 1 ? 's' : ''}`, `${v} value${v !== 1 ? 's' : ''}`]
+  setOutcome('brightness', v ? [skPlural(f, '{0} fixture', '{0} fixtures'), skPlural(s, '{0} scene', '{0} scenes'), skPlural(v, '{0} value', '{0} values')]
     : 'nothing yet — move a slider', '', v ? 'Apply will change' : 'Apply will do');
-  el.textContent = `${f} fixture${f!==1?'s':''}, ${s} scene${s!==1?'s':''}, ${v} value${v!==1?'s':''} will change`;
+  el.textContent = t('{0} will change', [skPlural(f, '{0} fixture', '{0} fixtures'), skPlural(s, '{0} scene', '{0} scenes'), skPlural(v, '{0} value', '{0} values')].join(', '));
   el.className   = `brt-preview-count ${v > 0 ? 'brt-preview-active' : ''}`;
 }
 
@@ -425,7 +425,7 @@ async function brtUploadQxf() {
 // ── Scan local fixture directories ────────────────────────────────────────────
 
 async function brtScanLocal() {
-  setStatus('📁 Scanning local QLC+ fixture directories…');
+  setStatus('Scanning local QLC+ fixture directories…');
   let res;
   try { res = await _apiJson('/api/brightness/scan-local'); }
   catch (e) { setStatus('Scan error: ' + e.message, 'error'); return; }
@@ -435,7 +435,7 @@ async function brtScanLocal() {
   const matched = res.fixtures_matched?.length ?? 0;
   const missing = res.fixtures_missing?.length ?? 0;
   const ndirs   = res.dirs?.length ?? 0;
-  let msg = `📁 Local: ${total} QXF file(s) in ${ndirs} director${ndirs!==1?'ies':'y'}. `;
+  let msg = `Local: ${total} QXF file(s) in ${ndirs} director${ndirs!==1?'ies':'y'}. `;
   msg += matched ? `✓ ${matched} fixture type(s) matched. ` : '';
   msg += missing ? `⚠ ${missing} still unmatched.` : (matched ? 'All fixtures matched!' : '');
   setStatus(msg, (matched > 0 || total > 0) ? 'ok' : 'warn');
@@ -463,7 +463,7 @@ async function brtFetchGithub() {
   );
   if (!ok) return;
 
-  setStatus(`🌐 Connecting to GitHub — looking up ${missing.length} fixture type(s)…`);
+  setStatus(`Connecting to GitHub — looking up ${missing.length} fixture type(s)…`);
   let res;
   try {
     res = await _apiJson('/api/brightness/fetch-github', {
@@ -471,12 +471,12 @@ async function brtFetchGithub() {
       body: JSON.stringify({ fixtures: missing }),
     });
   } catch (e) { setStatus('Network error: ' + e.message, 'error'); return; }
-  if (res.error) { setStatus('🌐 ' + res.error, 'error'); return; }
+  if (res.error) { setStatus('' + res.error, 'error'); return; }
 
   const dl  = res.downloaded?.length ?? 0;
   const nf  = res.not_found?.length  ?? 0;
   const err = res.errors?.length     ?? 0;
-  let msg = `🌐 GitHub: `;
+  let msg = `GitHub: `;
   if (dl)  msg += `✓ ${dl} QXF file(s) downloaded. `;
   if (nf)  msg += `⚠ ${nf} fixture(s) not found on GitHub. `;
   if (err) msg += `✗ ${err} error(s). `;

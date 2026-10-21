@@ -366,9 +366,9 @@ function qsGhSelectMfg(mfg) {
   const fixList = document.getElementById('qs-gh-fixture-list');
   if (fixList) fixList.innerHTML = '<div class="qs-loading">Loading fixtures...</div>';
 
-  document.querySelectorAll('.qs-gh-mfg-btn').forEach(b => b.classList.remove('btn-primary'));
+  document.querySelectorAll('.qs-gh-mfg-btn').forEach(b => b.classList.remove('btn-accent'));
   document.querySelectorAll('.qs-gh-mfg-btn').forEach(b => {
-    if (b.textContent === mfg) b.classList.add('btn-primary');
+    if (b.textContent === mfg) b.classList.add('btn-accent');
   });
 
   _qsApi('GET', '/gh/fixtures?manufacturer=' + encodeURIComponent(mfg))
@@ -391,7 +391,7 @@ function _qsGhRenderFixtures() {
   _qsGhFixtures.forEach(f => {
     html += `<tr>
       <td>${_esc(f.display)}</td>
-      <td><button class="btn btn-success btn-sm" onclick="qsGhLoadFixture('${_esc(f.manufacturer.replace(/'/g, "\\'"))}','${_esc(f.name.replace(/'/g, "\\'"))}',this)">Load</button></td>
+      <td><button class="btn btn-accent btn-sm" onclick="qsGhLoadFixture('${_esc(f.manufacturer.replace(/'/g, "\\'"))}','${_esc(f.name.replace(/'/g, "\\'"))}',this)">Load</button></td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -405,7 +405,7 @@ function qsGhLoadFixture(mfg, filename, btn) {
       if (d.error) { alert(d.error); if (btn) { btn.disabled = false; btn.textContent = 'Load'; } return; }
       const def = d.definition;
       _qsAddLoadedDef(def);
-      if (btn) { btn.textContent = 'Loaded'; btn.classList.remove('btn-success'); btn.classList.add('btn-surface'); }
+      if (btn) { btn.textContent = 'Loaded'; btn.classList.remove('btn-accent'); btn.classList.add('btn-surface'); }
       const info = document.getElementById('qs-gh-status');
       if (info) info.textContent = `Loaded: ${def.manufacturer} ${def.model}`;
     })
@@ -1464,7 +1464,7 @@ let _qsLastSavedPath = null;
 /** The new show becomes the show in progress (asks first if the open one has
  *  unsaved changes). */
 async function qsOpenAsShow() {
-  if (!_qsLastSavedPath) { setStatus('Save the new show first (💾 Save as new file…).', 'warn'); return; }
+  if (!_qsLastSavedPath) { setStatus('Save the new show first (Save as new file…).', 'warn'); return; }
   const inp = document.getElementById('path-input');
   if (inp) inp.value = _qsLastSavedPath;
   await loadFromPath();
@@ -1512,8 +1512,8 @@ function _qsProfileFolderLink(path) {
   const row = document.querySelector('.qs-profile-row');
   if (!row) return;
   let a = document.getElementById('qs-prof-folder');
-  if (!a) { a = document.createElement('button'); a.id = 'qs-prof-folder'; a.className = 'btn btn-secondary'; row.appendChild(a); }
-  a.textContent = '📂 Open folder';
+  if (!a) { a = document.createElement('button'); a.id = 'qs-prof-folder'; a.className = 'btn btn-surface'; row.appendChild(a); }
+  a.textContent = 'Open folder';
   a.title = path;
   a.onclick = () => fetch('/api/profile/open-folder', { method: 'POST' }).catch(() => {});
 }
@@ -1581,7 +1581,7 @@ async function qsExport() {
     console.error('Quick Start export failed:', err);
     setStatus('Export failed: ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Save as new file…'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save as new file…'; }
   }
   return false;
 }

@@ -6,7 +6,7 @@
  * (rename, reorder, first page, delete), label panels (nomenclature legend),
  * auto-arrange by nomenclature, screen profiles, page templates, and the
  * setlist CueList.  Every change goes through /api/vc/op (undoable, saved
- * with 💾 Apply & Save QXW…).  Uses the editor's globals (_vcePage, _vceSel,
+ * with Apply & Save QXW…).  Uses the editor's globals (_vcePage, _vceSel,
  * _vceNodes, _vceFlush, _vceOp, _vceReloadAt, _vceStatus, _vceHitTest …).
  */
 
@@ -70,7 +70,7 @@ function _vcbSelectionHtml(selArr) {
     html += `<div class="vce-sec">Edit</div>
       <div class="vce-row">
         <button class="vce-ab" onclick="vcbDuplicate()" title="⌘D — copies next to the originals (key/MIDI not copied)">⧉ Duplicate</button>
-        <button class="vce-ab" onclick="vcbDelete()" title="Delete / Backspace">🗑 Delete</button>
+        <button class="vce-ab" onclick="vcbDelete()" title="Delete / Backspace"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Delete</button>
         ${single && (first.type === 'Frame' || first.type === 'SoloFrame') ? `
           <button class="vce-ab" onclick="vcbAutoArrange('${_esc(first.id)}')" title="One row per naming group (the name prefix), in the profile's order — profile chosen in ＋ Add &amp; wire">⇶ Arrange buttons by name group</button>` : ''}
       </div>`;
@@ -152,7 +152,7 @@ function _vcbRenderPanel() {
   const q = s => _esc(s).replace(/'/g, "\\'");
 
   add.innerHTML = `
-    <div class="vce-intro">Put new widgets on the page and connect them to your functions. Everything is undoable, goes into the show in progress, and is kept with 💾 Save as new file….</div>
+    <div class="vce-intro">Put new widgets on the page and connect them to your functions. Everything is undoable, goes into the show in progress, and is kept with Save as new file….</div>
 
     ${_vcbSetlistCard()}
 
@@ -186,7 +186,7 @@ function _vcbRenderPanel() {
     <div id="vcb-fnlist" class="vcb-fnlist"></div>
 
     <div class="vce-sec"><span class="vce-step">3</span>Ready-made blocks</div>
-    <details class="vce-sub"><summary>🏷 Label panel — your naming legend, or any text, as labels in columns</summary>
+    <details class="vce-sub"><summary><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#tag"/></svg> Label panel — your naming legend, or any text, as labels in columns</summary>
       <div class="vce-row">
         <select id="vcb-lsrc" class="vce-pi" style="width:150px" onchange="document.getElementById('vcb-ltext').style.display=this.value==='custom'?'':'none'">
           ${I.legend.length ? opt('legend', 'Naming legend') : ''}${opt('custom', 'My text (one per line)')}</select>
@@ -209,7 +209,7 @@ function _vcbRenderPanel() {
       <button class="vce-ab" onclick="vcbMovePage(-1)">◀ Move left</button>
       <button class="vce-ab" onclick="vcbMovePage(1)">Move right ▶</button>
       <button class="vce-ab" onclick="vcbMovePage(0, true)" title="QLC+ opens on the first page">★ Make first</button>
-      <button class="vce-ab" onclick="vcbDeletePage()">🗑 Delete page</button>
+      <button class="vce-ab" onclick="vcbDeletePage()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Delete page</button>
     </div>
 
     <div class="vce-sec">New page</div>
@@ -244,7 +244,7 @@ function _vcbRenderPanel() {
       <label class="vce-lb"><input type="checkbox" id="vcb-outline" ${_vcbScr.outline ? 'checked' : ''} onchange="vcbScreenChanged()"> draw the screen's outline over the page</label>
     </div>
     <div class="vce-row">
-      <button class="vce-ab" onclick="vcbScreenCheck()" title="Say what it would do, without changing the show">🔍 Check</button>
+      <button class="vce-ab" onclick="vcbScreenCheck()" title="Say what it would do, without changing the show"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#search"/></svg> Check</button>
       <button class="vce-ab" onclick="vcbScreen()">Apply size</button>
     </div>
     <div id="vcb-screen-out" class="vce-hint" style="margin-bottom:6px"></div>
@@ -252,14 +252,14 @@ function _vcbRenderPanel() {
     <div class="vce-sec">Templates <span class="vce-hint">reuse a page in another show</span></div>
     <div class="vce-row">
       <input id="vcb-tname" class="vce-pi" style="flex:1;min-width:80px" placeholder="template name">
-      <button class="vce-ab" onclick="vcbSaveTemplate()" title="Layout, colours and function names — no key/MIDI">💾 Save this page</button>
+      <button class="vce-ab" onclick="vcbSaveTemplate()" title="Layout, colours and function names — no key/MIDI"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save this page</button>
     </div>
     <div class="vce-hint" style="margin-bottom:4px">Saved templates — ＋ adds one as a new page; its buttons find their functions by name:</div>
     ${I.templates.length ? I.templates.map(t => `
       <div class="vce-row" style="justify-content:space-between">
         <span>${_esc(t.name)} <span class="vce-hint">${t.widgets} widgets · ${t.functions} functions</span></span>
         <span><button class="vce-ab" onclick="vcbApplyTemplate('${q(t.name)}')">＋ Add as page</button>
-              <button class="vce-ab" onclick="vcbDeleteTemplate('${q(t.name)}')" title="Delete template">🗑</button></span>
+              <button class="vce-ab" onclick="vcbDeleteTemplate('${q(t.name)}')" title="Delete template"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button></span>
       </div>`).join('') : '<div class="vce-hint">none yet</div>'}`;
   _vcbRenderFnList();
 }

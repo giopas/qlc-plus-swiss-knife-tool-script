@@ -4069,5 +4069,20 @@
  "The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.": "歌曲来自曲目表界面。歌曲卡片、角色视图和下一首横幅在实时监视中。",
  "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set on the Page tab, Stop after a longer one.": "只读：平板只显示 Cue，上面的任何操作都不会改动演出。控制：页面还有“上一个”“停止”“下一个”按钮，像 QLC+ 自带按钮或踏板一样操作此 Cue 列表。“上一个”和“下一个”在“页面”选项卡设定的安全长按后生效，“停止”需要更长的长按。",
  "QR code": "二维码",
- "Scan with the tablet camera:": "用平板的相机扫描："
+ "Scan with the tablet camera:": "用平板的相机扫描：",
+ "Views by role": "按角色查看",
+ "A view is an address ending in ?role=… that shows the cards its own way: the layout, the fields and, if you like, one player’s line. The tablet opens the one you send it. Add &who=Guitar to the address to see only that player’s line.": "视图是以 ?role=… 结尾的地址，它决定卡片的显示方式：布局、字段，以及（可选）只显示某位成员的那一行。平板会打开你发给它的那个视图。在地址后加 &who=Guitar 则只显示该成员的那一行。",
+ "+ Add a view": "+ 添加视图",
+ "Back to the three that come with the page": "恢复页面自带的三个",
+ "Cues and card side by side, with the buttons": "Cue 与卡片并排，带按钮",
+ "Small cue list, large card": "小的 Cue 列表，大的卡片",
+ "The card alone": "仅卡片",
+ "Remove this view": "删除此视图",
+ "Only this player’s line (optional)": "仅此成员的那一行（可选）",
+ "No views: the tablet shows the plain page.": "没有视图：平板显示普通页面。",
+ "Address word": "地址词",
+ "Guitar": "吉他",
+ "with the song cards": "带歌曲卡片",
+ "Under each song that has one, a Card button opens its tuning, tempo, who starts and the note. The tablet can choose a view by role.": "在有卡片的歌曲下方，“卡片”按钮会展开调弦、速度、谁起拍和备注。平板可以按角色选择视图。",
+ "The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.": "歌曲来自曲目表界面。歌曲卡片在实时监视中编写，下一首横幅也在那里。"
 }

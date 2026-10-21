@@ -18,6 +18,79 @@ let _smSel = -1;             // the song (step index) whose card is open
 let _smSeg = null, _smBar = null, _smDict = null;
 
 const _SM_TUNINGS = ['E standard', 'Eb standard', 'D standard', 'Drop D', 'Drop C', 'DADGAD', 'Open G', 'Open D'];
+// ── views by role: what the tablet shows, chosen by the address (?role=…) ──
+const _SM_FIELDS = [['tuning', 'Tuning'], ['bpm', 'Tempo'], ['starts', 'Starts'], ['players', 'Per player'], ['note', 'Note']];
+const _SM_LAYOUTS = [['commander', 'Cues and card side by side, with the buttons'],
+                     ['band', 'Small cue list, large card'], ['vocals', 'The card alone']];
+const _SM_DEFAULT_VIEWS = [
+  {id: 'commander', label: 'Commander', layout: 'commander', fields: ['tuning', 'bpm', 'starts', 'players', 'note'], who: ''},
+  {id: 'band', label: 'Band', layout: 'band', fields: ['tuning', 'bpm', 'starts', 'players', 'note'], who: ''},
+  {id: 'vocals', label: 'Vocals', layout: 'vocals', fields: ['bpm', 'note'], who: ''},
+];
+const _smSlug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
+const _smViews = () => (_sm && _smCfg().views) || _SM_DEFAULT_VIEWS;
+function _smOwnViews() {           // the first edit makes the three that come with the page your own
+  const c = _smCfg();
+  if (!c.views) c.views = JSON.parse(JSON.stringify(_SM_DEFAULT_VIEWS));
+  return c.views;
+}
+function _smViewsDraw() {
+  const box = document.getElementById('sm-views');
+  if (!box || !_sm) return;
+  const vs = _smViews();
+  box.innerHTML = vs.map((v, i) => {
+    const f = _SM_FIELDS.map(([k, l]) => `<label class="sm-check"><input type="checkbox" ${v.fields.includes(k) ? 'checked' : ''}
+      onchange="stagemonView(${i}, 'field:${k}', this.checked)"> ${_esc(l)}</label>`).join('');
+    const lay = _SM_LAYOUTS.map(([k, l]) => `<option value="${k}" ${v.layout === k ? 'selected' : ''}>${_esc(l)}</option>`).join('');
+    return `<div class="sm-view">
+      <div class="sm-view-h"><input class="field-input" maxlength="30" value="${_esc(v.label)}" aria-label="${_esc('Name')}"
+        oninput="stagemonView(${i}, 'label', this.value)">
+        <code>?role=<input class="field-input sm-view-id" maxlength="20" value="${_esc(v.id)}" aria-label="${_esc('Address word')}"
+        onchange="stagemonView(${i}, 'id', this.value)"></code>
+        <button class="btn btn-surface btn-sm" onclick="stagemonViewDel(${i})">${_esc('Remove this view')}</button></div>
+      <select class="field-input" aria-label="${_esc('Layout')}" onchange="stagemonView(${i}, 'layout', this.value)">${lay}</select>
+      <div class="sm-view-f">${f}</div>
+      <label class="sm-field"><span>${_esc('Only this player’s line (optional)')}</span>
+        <input class="field-input" maxlength="30" value="${_esc(v.who)}" placeholder="${_esc('Guitar')}"
+        oninput="stagemonView(${i}, 'who', this.value)"></label></div>`;
+  }).join('') || `<div class="sm-meta">${_esc('No views: the tablet shows the plain page.')}</div>`;
+  document.getElementById('sm-views-reset').hidden = !_smCfg().views;
+}
+function stagemonView(i, key, value) {
+  const vs = _smOwnViews(), v = vs[i];
+  if (!v) return;
+  if (key.startsWith('field:')) {
+    const f = key.slice(6);
+    v.fields = _SM_FIELDS.map(x => x[0]).filter(k => k === f ? value : v.fields.includes(k));
+  } else if (key === 'label') {
+    if (v.id === _smSlug(v.label) || !v.id) v.id = _smSlug(value) || v.id;     // the address follows the name until you set it
+    v.label = value;
+    const idEl = document.querySelectorAll('#sm-views .sm-view-id')[i];
+    if (idEl && document.activeElement !== idEl) idEl.value = v.id;
+  } else if (key === 'id') {
+    v.id = _smSlug(value) || v.id;
+    document.querySelectorAll('#sm-views .sm-view-id')[i].value = v.id;
+  } else v[key] = value;
+  _smChanged(false);
+  if (key !== 'label' && key !== 'who') _smServer(_sm.server);
+}
+function stagemonViewAdd() {
+  const vs = _smOwnViews();
+  if (vs.length >= 12) return;
+  let n = vs.length + 1;
+  while (vs.some(v => v.id === 'view-' + n)) n++;
+  vs.push({id: 'view-' + n, label: 'View ' + n, layout: 'band', fields: ['tuning', 'bpm', 'starts', 'players', 'note'], who: ''});
+  _smViewsDraw(); _smChanged(false); _smServer(_sm.server);
+}
+function stagemonViewDel(i) {
+  _smOwnViews().splice(i, 1);
+  _smViewsDraw(); _smChanged(false); _smServer(_sm.server);
+}
+function stagemonViewsReset() {
+  delete _smCfg().views;
+  _smViewsDraw(); _smChanged(false); _smServer(_sm.server);
+}
+
 const _SM_NAME_BPM = /[·•\-–—|]\s*(\d{2,3}(?:[.,]\d)?)\s*bpm\s*$/i;   // "Song · 128 BPM", as Apply tempo writes it
 const _smTempoOf = name => {
   const m = _SM_NAME_BPM.exec(name || '');
@@ -331,6 +404,7 @@ function _smSettings() {
   set('sm-hold', String(c.hold_ms));
   set('sm-folder', _sm.folder || '');
   setFileChip('sm-folder-chip', _sm.folder, 'no folder yet');
+  _smViewsDraw();
   _smServer(_sm.server);
 }
 
@@ -407,8 +481,9 @@ function stagemonStep(id, index, key, value) {
 // ── Simple page: the Setlist's one-file page ─────────────────────────────────
 async function stagemonSimpleExport() {
   const notes = !!document.getElementById('sm-tab-notes')?.checked;
+  const cards = !!document.getElementById('sm-tab-cards')?.checked;
   const title = (_sm && _smCfg().title || '').trim();
-  await slTabletPage({title, notes});
+  await slTabletPage({title, notes, cards});
 }
 
 // ── folder, preview, export, serve ───────────────────────────────────────────
@@ -546,7 +621,7 @@ function _smServer(sv) {
       `<div class="sm-url"><code>${_esc(u)}</code>${copy(u)}</div>`).join('');
     const qrBtn = u => `<button class="btn btn-surface btn-sm" onclick="stagemonQr('${_esc(u)}')">${_esc('QR code')}</button>`;
     el.innerHTML += `<div class="sm-roles"><div class="sm-meta" style="margin:6px 0 0">${_esc('A view for each player:')}</div>` +
-      ['commander', 'band', 'vocals'].map(r => `<div class="sm-url sm-role"><span>${_esc(r)}</span><code>${_esc(urls[0] + '?role=' + r)}</code>${copy(urls[0] + '?role=' + r)}${qrBtn(urls[0] + '?role=' + r)}</div>`).join('') + '</div>';
+      _smViews().map(v => `<div class="sm-url sm-role"><span>${_esc(v.label)}</span><code>${_esc(urls[0] + '?role=' + v.id)}</code>${copy(urls[0] + '?role=' + v.id)}${qrBtn(urls[0] + '?role=' + v.id)}</div>`).join('') + '</div>';
     el.innerHTML += `<div class="sm-qrbox" id="sm-qrbox"></div>`;
     stagemonQr(_smQrFor && _smQrFor.startsWith(urls[0]) ? _smQrFor : urls[0]);
     if (sv.https_from) el.innerHTML += `<div class="sm-warn">${_esc(`${sv.https_from} asked for https://. On that device type the address with http://, as shown above.`)}</div>`;

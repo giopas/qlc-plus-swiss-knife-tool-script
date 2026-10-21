@@ -1358,13 +1358,13 @@ async function slImportApply() {
 
 // ── v2.6.0 The tablet page ────────────────────────────────────────────────────
 
-// opts: {title, notes} from Tablet on stage (Simple page); the title falls back to the show's name
+// opts: {title, notes, cards} from Tablet on stage (Simple page); the title falls back to the show's name
 async function slTabletPage(opts = {}) {
   await slSaveDetails(true);
   const st = await _apiJson('/api/status');
   const title = (opts.title || '').trim() || (st.original_name || 'Setlist').replace(/\.qxw$/i, '').replace(/_v\d+$/, '');
   const r = await fetch('/api/setlist/tablet', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, notes: !!opts.notes }) });
+    body: JSON.stringify({ title, notes: !!opts.notes, cards: !!opts.cards }) });
   if (!r.ok) { const d = await r.json().catch(() => ({})); setStatus(d.error || 'Failed.', 'error'); return; }
   const blob = await r.blob();
   const saved = await saveFileWithPicker(blob, `${title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_')}_setlist.html`, null, 'Save the tablet page as');

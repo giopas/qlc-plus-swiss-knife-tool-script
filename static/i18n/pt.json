@@ -4069,5 +4069,20 @@
  "The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.": "As músicas vêm do ecrã do alinhamento. As fichas, as vistas por função e o aviso da próxima música estão no monitor ao vivo.",
  "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set on the Page tab, Stop after a longer one.": "Só leitura: o tablet só mostra as cues; nada nele altera o show. Controlo: a página também tem os botões Anterior, Stop e Seguinte, que comandam esta cue list no QLC+ como os seus próprios botões ou o pedal. Anterior e Seguinte atuam após o toque longo de segurança definido no separador Página, Stop após um mais longo.",
  "QR code": "Código QR",
- "Scan with the tablet camera:": "Leia com a câmara do tablet:"
+ "Scan with the tablet camera:": "Leia com a câmara do tablet:",
+ "Views by role": "Vistas por função",
+ "A view is an address ending in ?role=… that shows the cards its own way: the layout, the fields and, if you like, one player’s line. The tablet opens the one you send it. Add &who=Guitar to the address to see only that player’s line.": "Uma vista é um endereço terminado em ?role=… que mostra as fichas à sua maneira: a disposição, os campos e, se quiser, a linha de um só músico. O tablet abre a que lhe enviar. Acrescente &who=Guitar ao endereço para ver só a linha desse músico.",
+ "+ Add a view": "+ Adicionar uma vista",
+ "Back to the three that come with the page": "Voltar às três que vêm com a página",
+ "Cues and card side by side, with the buttons": "Cues e ficha lado a lado, com os botões",
+ "Small cue list, large card": "Cue list pequena, ficha grande",
+ "The card alone": "Só a ficha",
+ "Remove this view": "Remover esta vista",
+ "Only this player’s line (optional)": "Só a linha deste músico (opcional)",
+ "No views: the tablet shows the plain page.": "Nenhuma vista: o tablet mostra a página simples.",
+ "Address word": "Palavra do endereço",
+ "Guitar": "Guitarra",
+ "with the song cards": "com as fichas das músicas",
+ "Under each song that has one, a Card button opens its tuning, tempo, who starts and the note. The tablet can choose a view by role.": "Sob cada música que tenha uma, um botão Ficha abre a afinação, o andamento, quem começa e a nota. O tablet pode escolher uma vista por função.",
+ "The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.": "As músicas vêm do ecrã do alinhamento. As fichas escrevem-se no monitor ao vivo, que também tem o aviso da próxima música."
 }

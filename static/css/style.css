@@ -4581,3 +4581,15 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 .sm-qrbox { margin-top: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .sm-qr { background: #fff; border-radius: var(--kit-radius-sm, 6px); display: block; }
 .sm-qr-url { font-size: var(--fs-ui); overflow-wrap: anywhere; }
+
+/* Views by role (3.9.0) */
+.sm-views-box { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.sm-views-h { font-weight: 700; }
+.sm-view { border: 1px solid var(--border); border-radius: var(--kit-radius, 8px); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.sm-view-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sm-view-h > .field-input { width: 11em; }
+.sm-view-id { width: 9em; display: inline-block; padding: 2px 6px; }
+.sm-view .sm-field { flex-direction: column; align-items: stretch; gap: 4px; }
+.sm-view .sm-field > span:first-child { width: auto; }
+.sm-view-f { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.sm-views-act { display: flex; gap: 8px; flex-wrap: wrap; }

@@ -154,7 +154,7 @@ Decided 18 October, from the wiki of mjcmatrix's fork of QLC+ (https://github.co
 
 ### 3.9.0 · Tablet on stage (song cards and one Tablet entry)
 
-**Status, 21 October: built on `feat/v3.9.0`, to be pushed and tagged by giopas.** Done: step 0 (the page kit), song cards, Next song banner, views by role, the one screen with two modes, translations. Also done: QR code for the address and the role views. Left for later: cards in the Simple page (open question 10.4), VC button tiles in control mode, the Setlist order on the live page, shared text size and colours with the Simple page.
+**Status, 21 October: built on `feat/v3.9.0`, to be pushed and tagged by giopas.** Done: step 0 (the page kit), song cards, Next song banner, views by role, the one screen with two modes, translations. Also done: QR code for the address and the role views. Cards in the Simple page (question 10.4, decided yes by giopas on 21 October) and views by role of your own (id, layout, fields, one player) are in too. Left for later: VC button tiles in control mode, the Setlist order on the live page, shared text size and colours with the Simple page.
 
 The cheap part of the teleprompter idea: what each player needs to know about the next song, on the stage tablet, from data Swiss Knife already has.
 

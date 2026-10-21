@@ -208,13 +208,13 @@ const HOLD_MS = Number.isFinite(CFG.holdMs) ? CFG.holdMs : 600;
 const STOP_HOLD_MS = Number.isFinite(CFG.stopHoldMs) ? CFG.stopHoldMs : Math.max(1200, 2 * HOLD_MS);
 
 const T = s => (CFG.t && CFG.t[s]) || s;
-// ?role=commander | vocals | band picks a view of the same page; &who=Guitar shows only that player's line
-const ROLE = ["commander", "vocals", "band"].includes(new URLSearchParams(location.search).get("role"))
-  ? new URLSearchParams(location.search).get("role") : "";
-const WHO = (new URLSearchParams(location.search).get("who") || "").trim().toLowerCase();
-// which card fields each role sees: vocals the tempo and the note, everyone else everything
-const SHOW = ROLE === "vocals" ? {bpm: 1, note: 1} : {tuning: 1, bpm: 1, starts: 1, players: 1, note: 1};
-if (ROLE) document.body.dataset.role = ROLE;      // no attribute without a role: the default page has no card pane
+// ?role=<id> picks a view of the same page (CFG.views: your own, or commander, band, vocals); &who=Guitar
+// shows only that player's line. A view has a layout (ROLE below), the card fields it shows and a player.
+const VIEW = (CFG.views || []).find(v => v.id === new URLSearchParams(location.search).get("role")) || null;
+const ROLE = VIEW ? VIEW.layout : "";
+const WHO = (new URLSearchParams(location.search).get("who") || (VIEW && VIEW.who) || "").trim().toLowerCase();
+const SHOW = VIEW ? Object.fromEntries(VIEW.fields.map(f => [f, 1])) : {tuning: 1, bpm: 1, starts: 1, players: 1, note: 1};
+if (ROLE) document.body.dataset.role = ROLE;      // no attribute without a view: the default page has no card pane
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const params = new URLSearchParams(location.search);

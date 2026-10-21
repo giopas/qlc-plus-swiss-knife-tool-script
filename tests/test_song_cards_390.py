@@ -84,8 +84,8 @@ def test_a_show_without_cards_builds_the_same_page_data_as_before():
 
 def test_the_page_has_its_roles_banner_and_stage_rules():
     html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
-    for role in sm.ROLES:
-        assert f'"{role}"' in html
+    assert "CFG.views" in html                                          # the views come from the settings
+    assert {v["layout"] for v in sm.DEFAULT_VIEWS} == set(sm.ROLES)     # the three layouts come with the page
     assert "if (ROLE) document.body.dataset.role = ROLE" in html       # data-role="" would match the role CSS
     assert 'id="nextup"' in html and 'id="cardpane"' in html and "▲ ${esc(T(\"TUNING CHANGE\"))}" in html
     assert "scroll-behavior: smooth" not in html.replace("/* no smooth scrolling", "")        # no motion on the stage

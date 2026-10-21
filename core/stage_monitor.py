@@ -226,7 +226,15 @@ def _port(v, default: int) -> int:
 CARD_LIMITS = (("tuning", 40), ("starts", 80), ("note", 200))   # text fields and their length
 MAX_PLAYERS = 8
 BPM_MIN, BPM_MAX = 20, 400
-ROLES = ("commander", "vocals", "band")
+ROLES = ("commander", "vocals", "band")   # the three layouts of the page; a view of your own picks one
+FIELD_KEYS = ("tuning", "bpm", "starts", "players", "note")   # what a card can show
+MAX_VIEWS = 12
+DEFAULT_VIEWS = (
+    {"id": "commander", "label": "Commander", "layout": "commander", "fields": list(FIELD_KEYS), "who": ""},
+    {"id": "band", "label": "Band", "layout": "band", "fields": list(FIELD_KEYS), "who": ""},
+    {"id": "vocals", "label": "Vocals", "layout": "vocals", "fields": ["bpm", "note"], "who": ""},
+)
+_SLUG = re.compile(r"[^a-z0-9]+")
 _NAME_BPM = re.compile(r"[·•\-–—|]\s*(\d{2,3}(?:[.,]\d)?)\s*bpm\s*$", re.I)
 
 
@@ -272,6 +280,67 @@ def tempo_from_name(name: str) -> Optional[int]:
     return v if BPM_MIN <= v <= BPM_MAX else None
 
 
+def clean_views(views) -> list:
+    """The views by role (3.9.0): ``[{id, label, layout, fields, who}]``.
+
+    *id* is what goes after ``?role=`` in the address (lower case letters, digits and
+    dashes), *layout* one of ``ROLES`` (how the page is arranged: ``commander`` has the
+    buttons, ``band`` a small cue list and a big card, ``vocals`` the card alone),
+    *fields* what the card shows and *who* a player whose line is the only one shown.
+    At most ``MAX_VIEWS``; a repeated id is dropped."""
+    out, seen = [], set()
+    for v in views if isinstance(views, list) else []:
+        if not isinstance(v, dict):
+            continue
+        label = str(v.get("label") or "").strip()[:30]
+        vid = _SLUG.sub("-", str(v.get("id") or label).lower()).strip("-")[:20]
+        if not vid or vid in seen:
+            continue
+        seen.add(vid)
+        fields = v.get("fields")
+        out.append({"id": vid, "label": label or vid,
+                    "layout": v.get("layout") if v.get("layout") in ROLES else "band",
+                    "fields": [f for f in FIELD_KEYS if f in (fields if isinstance(fields, list) else [])],
+                    "who": str(v.get("who") or "").strip()[:30]})
+        if len(out) >= MAX_VIEWS:
+            break
+    return out
+
+
+def views_of(cfg: Optional[dict]) -> list:
+    """The views of a configuration: its own, or the three that come with the page."""
+    own = (cfg or {}).get("views")
+    return clean_views(own) if isinstance(own, list) else copy.deepcopy(list(DEFAULT_VIEWS))
+
+
+def _base(name: str) -> str:
+    """A song name without the tempo Apply tempo adds ("Song · 128 BPM"), for matching."""
+    return _NAME_BPM.sub("", str(name or "")).strip().casefold()
+
+
+def match_steps(names: List[List[str]], steps: List[dict]) -> list:
+    """The step of a cue list for each song of a setlist, or ``None``.
+
+    *names*: per song, the names it may go by (the setlist's name, the function's name).
+    Songs are matched by name, in order, each step once; when no song matched at all and
+    both lists have the same length, by position (a setlist applied to the show in order)."""
+    out: list = [None] * len(names)
+    used: set = set()
+    by_name: Dict[str, List[int]] = {}
+    for i, st in enumerate(steps):
+        by_name.setdefault(_base(st.get("name")), []).append(i)
+    for n, alts in enumerate(names):
+        for alt in alts:
+            hit = next((i for i in by_name.get(_base(alt), []) if i not in used), None)
+            if hit is not None:
+                out[n] = steps[hit]
+                used.add(hit)
+                break
+    if not any(out) and len(names) == len(steps):
+        out = list(steps)
+    return out
+
+
 def clean_config(cfg: Optional[dict]) -> dict:
     """A configuration with every key, values checked; unknown keys dropped."""
     cfg = cfg if isinstance(cfg, dict) else {}
@@ -289,6 +358,8 @@ def clean_config(cfg: Optional[dict]) -> dict:
     out["hold_ms"] = hold if hold in HOLD_CHOICES else DEFAULTS["hold_ms"]
     out["ws_port"] = _port(cfg.get("ws_port"), DEFAULT_WS_PORT)
     out["http_port"] = _port(cfg.get("http_port"), DEFAULT_HTTP_PORT)
+    if isinstance(cfg.get("views"), list):          # absent: the three that come with the page
+        out["views"] = clean_views(cfg["views"])
     seen = set()
     for item in cfg.get("lists") or []:
         if not isinstance(item, dict):
@@ -430,7 +501,7 @@ def page_data(cfg: dict, lists: List[dict], lang: str = "en") -> dict:
             "showNext": cfg["show_next"], "showClock": cfg["show_clock"],
             "showNumbers": cfg["show_numbers"], "showNotes": cfg["show_notes"], "holdMs": cfg["hold_ms"],
             "stopHoldMs": max(STOP_HOLD_MIN, 2 * cfg["hold_ms"]), "wsPort": cfg["ws_port"],
-            "lists": out_lists, "lang": lang if lang in LANGS else "en", "t": page_strings(lang)}
+            "views": views_of(cfg), "lists": out_lists, "lang": lang if lang in LANGS else "en", "t": page_strings(lang)}
 
 
 def _inline_json(data: dict) -> str:

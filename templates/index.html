@@ -2579,7 +2579,15 @@
             <label data-tooltip="QLC+ web access listens here (qlcplus -w); 9999 unless you changed it">QLC+ <input id="sm-wsport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('ws_port', +this.value)"></label>
             <label data-tooltip="Where the page is served to the tablet">Page <input id="sm-httpport" class="field-input" type="number" min="1" max="65535" onchange="stagemonSet('http_port', +this.value)"></label>
           </div>
-          <div class="sm-meta sm-roles-help">Views by role: end the address with ?role=commander (cues and the next card, for the player with the pedal), ?role=band (the card in full) or ?role=vocals (song names, tempo and note). Add &amp;who=Guitar to show only that player’s line.</div>
+          <div class="sm-views-box">
+            <div class="sm-views-h">Views by role</div>
+            <div class="sm-meta">A view is an address ending in ?role=… that shows the cards its own way: the layout, the fields and, if you like, one player’s line. The tablet opens the one you send it. Add &amp;who=Guitar to the address to see only that player’s line.</div>
+            <div id="sm-views"></div>
+            <div class="sm-views-act">
+              <button class="btn btn-surface btn-sm" onclick="stagemonViewAdd()">+ Add a view</button>
+              <button class="btn btn-surface btn-sm" id="sm-views-reset" onclick="stagemonViewsReset()">Back to the three that come with the page</button>
+            </div>
+          </div>
           <div class="sm-saved" id="sm-saved"></div>
         </div>
 
@@ -2613,7 +2621,8 @@
           <label class="sm-row"><span>Title</span>
             <input id="sm-simple-title" class="field-input" maxlength="120" placeholder="The show’s name" oninput="stagemonSet('title', this.value)"></label>
           <label class="sm-check"><input type="checkbox" id="sm-tab-notes"> with the QLC+ function names</label>
-          <p class="sm-meta sm-simple-p">The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.</p>
+          <label class="sm-check" data-tooltip="Under each song that has one, a Card button opens its tuning, tempo, who starts and the note. The tablet can choose a view by role."><input type="checkbox" id="sm-tab-cards" checked> with the song cards</label>
+          <p class="sm-meta sm-simple-p">The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.</p>
         </div>
       </div>
     </div>

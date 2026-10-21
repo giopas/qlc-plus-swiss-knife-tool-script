@@ -4069,5 +4069,20 @@
  "The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.": "Die Songs kommen vom Setlist-Bildschirm. Songkarten, Rollenansichten und das Banner für den nächsten Song gibt es im Live-Monitor.",
  "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set on the Page tab, Stop after a longer one.": "Nur lesen: Das Tablet zeigt nur die Cues; nichts darauf ändert die Show. Steuerung: Die Seite hat zusätzlich Zurück-, Stopp- und Weiter-Tasten, die diese Cue-Liste in QLC+ wie ihre eigenen Tasten oder das Pedal bedienen. Zurück und Weiter wirken nach der Sicherheitshaltezeit aus dem Reiter Seite, Stopp nach einer längeren.",
  "QR code": "QR-Code",
- "Scan with the tablet camera:": "Mit der Tablet-Kamera scannen:"
+ "Scan with the tablet camera:": "Mit der Tablet-Kamera scannen:",
+ "Views by role": "Ansichten nach Rolle",
+ "A view is an address ending in ?role=… that shows the cards its own way: the layout, the fields and, if you like, one player’s line. The tablet opens the one you send it. Add &who=Guitar to the address to see only that player’s line.": "Eine Ansicht ist eine Adresse, die auf ?role=… endet und die Karten auf ihre Weise zeigt: Anordnung, Felder und, wenn Sie möchten, die Zeile nur einer Person. Das Tablet öffnet die, die Sie ihm schicken. Mit &who=Guitar an der Adresse sehen Sie nur die Zeile dieser Person.",
+ "+ Add a view": "+ Ansicht hinzufügen",
+ "Back to the three that come with the page": "Zurück zu den drei mitgelieferten",
+ "Cues and card side by side, with the buttons": "Cues und Karte nebeneinander, mit den Tasten",
+ "Small cue list, large card": "Kleine Cue-Liste, große Karte",
+ "The card alone": "Nur die Karte",
+ "Remove this view": "Diese Ansicht entfernen",
+ "Only this player’s line (optional)": "Nur die Zeile dieser Person (optional)",
+ "No views: the tablet shows the plain page.": "Keine Ansichten: Das Tablet zeigt die einfache Seite.",
+ "Address word": "Adresswort",
+ "Guitar": "Gitarre",
+ "with the song cards": "mit den Songkarten",
+ "Under each song that has one, a Card button opens its tuning, tempo, who starts and the note. The tablet can choose a view by role.": "Unter jedem Song, der eine hat, öffnet eine Karten-Taste Stimmung, Tempo, wer einsetzt und die Notiz. Das Tablet kann eine Ansicht nach Rolle wählen.",
+ "The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.": "Die Songs kommen vom Setlist-Bildschirm. Songkarten schreiben Sie im Live-Monitor, der auch das Banner für den nächsten Song hat."
 }

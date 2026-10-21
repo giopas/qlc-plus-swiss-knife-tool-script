@@ -446,3 +446,15 @@ def test_save_show_with_definitions_writes_a_zip(work):
     r2 = work.ok("save_show", where=str(f), with_definitions=True)             # never over an existing zip
     assert r2["zip"] != z and os.path.isfile(z) and os.path.isfile(r2["zip"])
     assert "zip" not in work.ok("save_show", where=str(f))
+
+
+def test_stage_monitor_takes_views_and_cards(work):
+    """3.9.0: Claude can write the song cards and the views by role."""
+    work.ok("open_show", path=str(work.folder / "Festival_14fix.qxw"))
+    d = work.ok("stage_monitor")
+    cid = d["cuelists"][0]["id"]
+    views = [{"id": "Keys", "label": "Keys", "layout": "band", "fields": ["tuning", "note"], "who": ""}]
+    d = work.ok("stage_monitor", config={"views": views, "lists": [
+        {"id": cid, "label": "", "mode": "read", "steps": {"2": {"card": {"tuning": "Drop D", "bpm": 120}}}}]})
+    assert d["config"]["views"][0]["id"] == "keys"                       # cleaned like any other setting
+    assert d["config"]["lists"][0]["steps"]["2"]["card"] == {"tuning": "Drop D", "bpm": 120}

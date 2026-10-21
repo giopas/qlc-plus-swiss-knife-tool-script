@@ -487,7 +487,7 @@ Which field is shown to which role is a table in the Page tab, three columns of 
 
 | Question | Recommendation |
 |---|---|
-| Do cards also appear in the Simple page? | Yes, as a fold under each song. The data is the same. |
+| Do cards also appear in the Simple page? | Yes, as a fold under each song. The data is the same. **Decided yes, 21 October (giopas), built in 3.9.0**, together with views by role of your own (layout, fields, one player). |
 | One renderer for both pages? | Only if cheap. Unify the entry and the settings in 3.9.0; leave renderers apart if merging needs a rewrite. |
 | Role views: one page or separate files? | One page, the role in the address, as in the workplan. |
 | QR code | Only with a small pure-Python encoder. Otherwise show the address in large type. |

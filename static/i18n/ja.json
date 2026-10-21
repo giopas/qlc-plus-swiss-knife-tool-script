@@ -4069,5 +4069,20 @@
  "The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.": "曲はセットリスト画面から取り込みます。曲カード、役割別の表示、次の曲のバナーはライブモニターにあります。",
  "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set on the Page tab, Stop after a longer one.": "読み取り専用：タブレットはキューを表示するだけで、ショーは変更されません。操作：ページに「前へ」「停止」「次へ」ボタンも付き、QLC+のこのキューリストを、そのボタンやペダルと同じように操作します。「前へ」「次へ」は［ページ］タブで設定した安全長押しの後、「停止」はそれより長い長押しの後に動作します。",
  "QR code": "QRコード",
- "Scan with the tablet camera:": "タブレットのカメラで読み取ってください："
+ "Scan with the tablet camera:": "タブレットのカメラで読み取ってください：",
+ "Views by role": "役割別の表示",
+ "A view is an address ending in ?role=… that shows the cards its own way: the layout, the fields and, if you like, one player’s line. The tablet opens the one you send it. Add &who=Guitar to the address to see only that player’s line.": "表示は、?role=… で終わるアドレスで、カードの見せ方（レイアウト、項目、必要なら特定のメンバーの行だけ）を決めます。タブレットには、送った表示が開きます。アドレスに &who=Guitar を付けると、そのメンバーの行だけを表示します。",
+ "+ Add a view": "+ 表示を追加",
+ "Back to the three that come with the page": "ページ標準の3つに戻す",
+ "Cues and card side by side, with the buttons": "キューとカードを並べ、ボタン付き",
+ "Small cue list, large card": "小さなキューリストと大きなカード",
+ "The card alone": "カードのみ",
+ "Remove this view": "この表示を削除",
+ "Only this player’s line (optional)": "このメンバーの行だけ（任意）",
+ "No views: the tablet shows the plain page.": "表示なし：タブレットには通常のページが表示されます。",
+ "Address word": "アドレスの語",
+ "Guitar": "ギター",
+ "with the song cards": "曲カード付き",
+ "Under each song that has one, a Card button opens its tuning, tempo, who starts and the note. The tablet can choose a view by role.": "カードのある曲の下にある［カード］ボタンで、チューニング、テンポ、誰が始めるか、メモを開きます。タブレットで役割別の表示を選べます。",
+ "The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.": "曲はセットリスト画面から取り込みます。曲カードはライブモニターで書き、次の曲のバナーもそこにあります。"
 }

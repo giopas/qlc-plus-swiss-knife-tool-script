@@ -11,7 +11,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 - **Song cards.** A card per song of a cue list: tuning, tempo, who starts and how, a note, and a line per player (pedal or FX settings). Edited on the Tablet on stage screen and kept in `<show>.stage.json`, shared by every version of the show. The Dictionary's text can be offered as a start. The tempo comes from the card, else from the Setlist (a step named `Song · 128 BPM`).
 - **Next song banner.** When the cue list reaches a new song, the tablet shows its card in large type for six seconds. A change of tuning from the song before is written in words first ("TUNING CHANGE from → to") and also coloured.
-- **Views by role.** Add `?role=commander` (cues and the next card), `?role=band` (the card in full) or `?role=vocals` (song names, tempo and note) to the address, and `&who=Guitar` for one player's line. The vocals and band views hide the control buttons.
+- **Views by role, of your own.** A view is an address ending in `?role=<word>`: it picks a layout (cues and card with the buttons for the pedal player, a small cue list with a large card, or the card alone), the card fields it shows (tuning, tempo, who starts, per player, note) and, if you like, one player's line. Three come with the page (commander, band, vocals); add, rename, change or remove them on the Page tab of Tablet on stage, with their own address word. `&who=Guitar` still narrows any view to one player. The Send tab lists a link and a QR code for each view. Claude can write them through `stage_monitor` (`views`).
+- **Song cards in the Simple page.** Under each song that has a card, a Card button folds out its tuning (a tuning change in words first), tempo, who starts, the lines per player and the note. A View menu on the page picks what to show, using the same views as the live page, and remembers the choice on the tablet. Tick "with the song cards" when you export; a song is matched to its cue list step by name. Songs without a card look as before.
 - **Stage rules.** Tuning change at least 7:1, card text at least 4.5:1, 56 px touch targets, no motion, colour never alone. Tests enforce them in every theme.
 - **QR code for the tablet.** Once the page is served, the Send tab shows a QR code for the address and a QR code button on each role view, so the tablet opens the right page by scanning. The code is made on the computer by a small pure-Python encoder (`core/qr.py`, byte mode, level M, up to 106 characters), black on white so it scans on any theme. No network and no new dependency; the tests decode the image.
 - **Page kit (step 0).** `static/css/kit.css` and `skActionBar()` in `static/js/kit.js`: header, toolbar, sticky action bar with a chip that says what the main button does, a reason shown when it is disabled, empty and done states, a segmented control. All classes start with `kit-`; the tokens are untouched. Only the Tablet on stage screen uses it.
@@ -24,7 +25,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Not in this release
 
-Cards in the Simple page, chosen VC buttons as tiles in control mode, the Setlist order on the live page, and the wiki pages (3.9.6).
+Chosen VC buttons as tiles in control mode, the Setlist order on the live page, and the wiki pages (3.9.6).
 
 ---
 

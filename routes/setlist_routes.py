@@ -640,6 +640,33 @@ def parse_setlist():
     return jsonify(res)
 
 
+def _add_cards(sets):
+    """Put the song cards of Tablet on stage on the songs of the page (3.9.0).  The cards live
+    next to the show, per cue list step; a song is matched to a step of the cue list with the
+    same id by name.  Returns the views by role, or None when there is nothing to show."""
+    from core import stage_monitor as sm
+    from routes import stagemon_routes as smr
+    cls, _name = smr._lists()
+    if cls is None:
+        return None
+    side = smr._sidecar()
+    cfg = (sm.load_config(side) if side else None) or smr._mem['config']
+    if not cfg:
+        return None
+    pd = sm.page_data(cfg, cls)
+    steps_of = {str(l['id']): l['steps'] for l in pd['lists']}
+    for s in sets:
+        steps = steps_of.get(str(s.get('id')))
+        if not steps:
+            continue
+        for so, st in zip(s['songs'], sm.match_steps([[so['name'], so['note']] for so in s['songs']], steps)):
+            if st and st.get('card'):
+                so['card'] = st['card']
+                if st.get('tc'):
+                    so['tc'] = st['tc']
+    return pd['views']
+
+
 @bp.route('/tablet', methods=['POST'])
 def tablet_page():
     """Body: {title, slots?: [ids], notes?: bool} → one self-contained HTML
@@ -660,10 +687,13 @@ def tablet_page():
                      for r in rows if (r.get('txt_name') or r.get('qxw_name'))]
         else:
             songs = [{'name': n, 'note': ''} for n in ws.get_slot_songs(slot['id']) if n]
-        sets.append({'name': slot.get('caption') or f"Set {slot['id']}", 'songs': songs})
+        sets.append({'id': slot['id'], 'name': slot.get('caption') or f"Set {slot['id']}", 'songs': songs})
     if not any(s['songs'] for s in sets):
         return jsonify({'error': 'No songs in the setlist yet.'}), 400
     title = (data.get('title') or 'Setlist').strip() or 'Setlist'
+    views = None
+    if data.get('cards'):
+        views = _add_cards(sets)
     page = setlist_io.tablet_page(title, sets, notes=bool(data.get('notes')),
-                                  generated=datetime.date.today().isoformat())
+                                  generated=datetime.date.today().isoformat(), views=views)
     return Response(page, mimetype='text/html; charset=utf-8')

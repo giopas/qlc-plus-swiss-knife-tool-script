@@ -15,6 +15,7 @@ from __future__ import annotations
 import csv
 import html
 import io
+import json
 import re
 from typing import Dict, List, Optional
 
@@ -208,6 +209,13 @@ li small{display:block;color:var(--dim);font-size:.5em;margin-top:.2em}
 li.done{opacity:.35;text-decoration:line-through}
 li.next .t{color:var(--acc)}
 .set{display:none}.set.show{display:block}
+li .cbtn{align-self:center;font-size:14px;padding:8px 12px;min-height:48px;color:var(--dim)}
+li.open .cbtn{border-color:var(--acc);color:var(--acc)}
+.card{display:none;font-size:.5em;margin-top:.5em;padding:.5em .7em;border-left:3px solid var(--line);line-height:1.3}
+li.open .card,.showcards li.hascard .card{display:block}
+.card .cl{display:flex;gap:.8em;padding:.1em 0}.card .k{color:var(--dim);min-width:5.5em}
+.card .tc{font-weight:700;color:var(--fg);border:2px solid var(--fg);border-radius:6px;padding:.2em .5em;margin:.2em 0;display:inline-block}
+select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:48px}
 .foot{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);padding:8px 16px;color:var(--dim);font-size:13px;display:flex;justify-content:space-between}
 """
 
@@ -230,38 +238,97 @@ _JS = """
   var nt=document.getElementById('notes');if(nt)nt.onclick=function(){document.body.classList.toggle('shownotes');nt.classList.toggle('on')};
   document.getElementById('theme').onclick=function(){document.body.classList.toggle('light');st.light=document.body.classList.contains('light')?1:0;save()};
   if(st.light)document.body.classList.add('light');
-  document.getElementById('reset').onclick=function(){if(confirm('Untick every song?')){st={fs:fs,tab:st.tab};save();[].forEach.call(document.querySelectorAll('li'),function(l){l.classList.remove('done')});mark()}};
+  document.getElementById('reset').onclick=function(){if(confirm('Untick every song?')){st={fs:fs,tab:st.tab,view:st.view};save();[].forEach.call(document.querySelectorAll('li'),function(l){l.classList.remove('done')});mark()}};
+  var vs=[];try{vs=JSON.parse(document.getElementById('views').textContent||'[]')}catch(e){}
+  var vsel=document.getElementById('view'),qs=new URLSearchParams(location.search);
+  function who(){var v=vs.filter(function(x){return x.id===st.view})[0];return (qs.get('who')||(v&&v.who)||'').trim().toLowerCase()}
+  function apply(){
+    var v=vs.filter(function(x){return x.id===st.view})[0],w=who();
+    [].forEach.call(document.querySelectorAll('li.hascard'),function(li){
+      var n=0;
+      [].forEach.call(li.querySelectorAll('.cl'),function(r){
+        var f=r.getAttribute('data-f'),p=(r.getAttribute('data-who')||'').toLowerCase(),
+            off=(v&&v.fields.indexOf(f)<0)||(f==='players'&&w&&p&&p!==w);
+        r.hidden=!!off;if(!off)n++});
+      var b=li.querySelector('.cbtn');if(b)b.hidden=!n;if(!n)li.classList.remove('open')})}
+  if(vsel){
+    var want=qs.get('role');if(want&&vs.some(function(x){return x.id===want}))st.view=want;
+    vsel.value=st.view||'';if(vsel.value!==(st.view||''))st.view='';
+    vsel.onchange=function(){st.view=vsel.value;save();apply()}}
+  [].forEach.call(document.querySelectorAll('.cbtn'),function(b){b.onclick=function(e){e.stopPropagation();b.parentNode.classList.toggle('open')}});
+  var cb=document.getElementById('cards');if(cb)cb.onclick=function(){document.body.classList.toggle('showcards');cb.classList.toggle('on')};
+  apply();
   show(Math.min(st.tab||0,sets.length-1));
 })();
 """
 
 
-def tablet_page(title: str, sets: List[Dict], *, notes: bool = False, generated: str = "") -> str:
-    """One self-contained HTML file.  *sets*: ``[{name, songs: [{name, note}]}]``
+_CARD_ROWS = (("tuning", "Tuning"), ("bpm", "Tempo"), ("starts", "Starts"), ("note", "Note"))
+
+
+def _card_html(card: Dict, tc: Optional[Dict]) -> str:
+    """The fold under a song: one row per card field, each tagged ``data-f`` so a view can hide it."""
+    e = html.escape
+    rows = []
+    if tc:                       # the words first, the box second
+        rows.append(f'<div class="cl" data-f="tuning"><span class="tc">▲ TUNING CHANGE {e(tc["from"])} → {e(tc["to"])}</span></div>')
+    elif card.get("tuning"):
+        rows.append(f'<div class="cl" data-f="tuning"><span class="k">Tuning</span><span>{e(card["tuning"])}</span></div>')
+    if card.get("bpm"):
+        rows.append(f'<div class="cl" data-f="bpm"><span class="k">Tempo</span><span>{e(str(card["bpm"]))} BPM</span></div>')
+    if card.get("starts"):
+        rows.append(f'<div class="cl" data-f="starts"><span class="k">Starts</span><span>{e(card["starts"])}</span></div>')
+    for p in card.get("players") or []:
+        rows.append(f'<div class="cl" data-f="players" data-who="{e(p.get("who", ""))}">'
+                    f'<span class="k">{e(p.get("who") or "·")}</span><span>{e(p.get("note", ""))}</span></div>')
+    if card.get("note"):
+        rows.append(f'<div class="cl" data-f="note"><span class="k">Note</span><span>{e(card["note"])}</span></div>')
+    return f'<div class="card">{"".join(rows)}</div>' if rows else ""
+
+
+def tablet_page(title: str, sets: List[Dict], *, notes: bool = False, generated: str = "",
+                views: Optional[List[Dict]] = None) -> str:
+    """One self-contained HTML file.  *sets*: ``[{name, songs: [{name, note, card?, tc?}]}]``
     (empty sets are skipped).  *notes*: include each song's note (the QLC+
-    function) behind a Notes button."""
+    function) behind a Notes button.  A song with a ``card`` (and ``tc``, a tuning
+    change) gets a fold under its name; *views* (``[{id, label, fields, who}]``)
+    lets the tablet choose which card fields it shows."""
     sets = [s for s in sets if s.get("songs")]
     e = html.escape
     tabs = "".join(f'<button type="button">{e(s["name"])} <span style="color:var(--dim)">{len(s["songs"])}</span></button>'
                    for s in sets) if len(sets) > 1 else ""
     body = []
+    has_cards = False
     for si, s in enumerate(sets):
         li = []
         for n, so in enumerate(s["songs"], 1):
             note = f'<small class="note">{e(so["note"])}</small>' if notes and so.get("note") else ""
-            li.append(f'<li data-id="{si}-{n}"><span class="n">{n}</span><span class="t">{e(so["name"])}{note}</span></li>')
+            card = _card_html(so["card"], so.get("tc")) if so.get("card") else ""
+            has_cards = has_cards or bool(card)
+            btn = '<button type="button" class="cbtn">Card</button>' if card else ""
+            cls = ' class="hascard"' if card else ""
+            li.append(f'<li data-id="{si}-{n}"{cls}><span class="n">{n}</span>'
+                      f'<span class="t">{e(so["name"])}{note}{card}</span>{btn}</li>')
         body.append(f'<section class="set"><ol>{"".join(li)}</ol></section>')
+    views = [v for v in (views or []) if has_cards]
+    view_json = json.dumps(views, ensure_ascii=False).replace("<", "\\u003c")
+    sel = ""
+    if views:
+        sel = ('<select id="view" aria-label="View"><option value="">Everything</option>'
+               + "".join(f'<option value="{e(v["id"])}">{e(v["label"])}</option>' for v in views) + "</select>")
+    cards_btn = '<button type="button" id="cards">Cards</button>' if has_cards else ""
     total = sum(len(s["songs"]) for s in sets)
     note_btn = '<button type="button" id="notes">Notes</button>' if notes else ""
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes"><title>{e(title)}</title>
 <style>{_CSS}.note{{display:none}}.shownotes .note{{display:block}}</style></head>
-<body class="auto"><header><h1>{e(title)}</h1>{note_btn}
+<body class="auto"><header><h1>{e(title)}</h1>{sel}{cards_btn}{note_btn}
 <button type="button" id="smaller">A−</button><button type="button" id="bigger">A+</button>
 <button type="button" id="theme">◐</button><button type="button" id="reset">Reset</button></header>
 <div class="tabs">{tabs}</div>
 {"".join(body)}
 <div class="foot"><span>{total} song(s) · tap a song to tick it off</span><span>{e(generated)}</span></div>
+<script type="application/json" id="views">{view_json}</script>
 <script>{_JS}</script></body></html>
 """

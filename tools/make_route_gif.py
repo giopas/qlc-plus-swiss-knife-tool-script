@@ -201,6 +201,7 @@ def main():
         # Compare with the hand-made pub show
         def s10():
             pg.click("#sn-compare")
+            pg.evaluate("document.body.classList.add('no-native-picker')")   # the paste box is for plain browsers
             pg.fill("input[placeholder*='paste the .qxw']", os.path.join(CORPUS, "Pub_6fix.qxw"))
             pg.keyboard.press("Enter")
             pg.get_by_role("button", name="Compare").last.click()

@@ -122,7 +122,7 @@ def main():
             pg.wait_for_timeout(1200)
             pg.evaluate("go('stagemon')")
             pg.wait_for_timeout(1500)
-            pg.evaluate("stagemonSteps('4001')")
+            pg.evaluate("typeof stagemonList_ === 'function' && stagemonList_('4001')")   # 3.9.0: was stagemonSteps
             pg.evaluate("document.body.classList.remove('no-native-picker')")   # as in the app: no path box
             pg.wait_for_timeout(600)
             pg.mouse.move(1420, 880)

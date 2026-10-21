@@ -11,6 +11,7 @@ show's CueLists, live from QLC+.  The show is only read.
     POST /api/stagemon/serve       {folder?, port?}: serve the folder to the tablet
     POST /api/stagemon/stop        stop serving
     GET  /api/stagemon/status      serving or not, this computer's addresses
+    GET  /api/stagemon/qr?text=    a QR code (SVG) for the tablet's address
 """
 
 import os
@@ -18,6 +19,7 @@ import re
 
 from flask import Blueprint, Response, current_app, jsonify, request
 
+from core import qr
 from core import stage_monitor as sm
 from core import workspace
 from routes.doctor_routes import _open_workspace
@@ -213,3 +215,15 @@ def stop():
 @bp.route('/status')
 def status():
     return jsonify({'server': sm.server.status()})
+
+
+@bp.route('/qr')
+def qr_code():
+    """The QR code of an http(s) address, as an SVG image."""
+    text = request.args.get('text', '')
+    if not re.match(r'^https?://', text):
+        return jsonify({'error': 'A QR code is made for an http:// or https:// address.'}), 400
+    try:
+        return Response(qr.svg(text), mimetype='image/svg+xml')
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400

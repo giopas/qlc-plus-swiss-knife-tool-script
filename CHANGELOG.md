@@ -13,6 +13,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Next song banner.** When the cue list reaches a new song, the tablet shows its card in large type for six seconds. A change of tuning from the song before is written in words first ("TUNING CHANGE from → to") and also coloured.
 - **Views by role.** Add `?role=commander` (cues and the next card), `?role=band` (the card in full) or `?role=vocals` (song names, tempo and note) to the address, and `&who=Guitar` for one player's line. The vocals and band views hide the control buttons.
 - **Stage rules.** Tuning change at least 7:1, card text at least 4.5:1, 56 px touch targets, no motion, colour never alone. Tests enforce them in every theme.
+- **QR code for the tablet.** Once the page is served, the Send tab shows a QR code for the address and a QR code button on each role view, so the tablet opens the right page by scanning. The code is made on the computer by a small pure-Python encoder (`core/qr.py`, byte mode, level M, up to 106 characters), black on white so it scans on any theme. No network and no new dependency; the tests decode the image.
 - **Page kit (step 0).** `static/css/kit.css` and `skActionBar()` in `static/js/kit.js`: header, toolbar, sticky action bar with a chip that says what the main button does, a reason shown when it is disabled, empty and done states, a segmented control. All classes start with `kit-`; the tokens are untouched. Only the Tablet on stage screen uses it.
 
 ### Changed
@@ -23,7 +24,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Not in this release
 
-Cards in the Simple page, a QR code, chosen VC buttons as tiles in control mode, the Setlist order on the live page, and the wiki pages (3.9.6).
+Cards in the Simple page, chosen VC buttons as tiles in control mode, the Setlist order on the live page, and the wiki pages (3.9.6).
 
 ---
 

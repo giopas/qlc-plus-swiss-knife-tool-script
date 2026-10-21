@@ -154,7 +154,7 @@ Decided 18 October, from the wiki of mjcmatrix's fork of QLC+ (https://github.co
 
 ### 3.9.0 · Tablet on stage (song cards and one Tablet entry)
 
-**Status, 21 October: built on `feat/v3.9.0`, to be pushed and tagged by giopas.** Done: step 0 (the page kit), song cards, Next song banner, views by role, the one screen with two modes, translations. Left for later: cards in the Simple page (open question 10.4), QR code, VC button tiles in control mode, the Setlist order on the live page, shared text size and colours with the Simple page.
+**Status, 21 October: built on `feat/v3.9.0`, to be pushed and tagged by giopas.** Done: step 0 (the page kit), song cards, Next song banner, views by role, the one screen with two modes, translations. Also done: QR code for the address and the role views. Left for later: cards in the Simple page (open question 10.4), VC button tiles in control mode, the Setlist order on the live page, shared text size and colours with the Simple page.
 
 The cheap part of the teleprompter idea: what each player needs to know about the next song, on the stage tablet, from data Swiss Knife already has.
 
@@ -353,6 +353,8 @@ Do not push the feature branch (that starts a third test run for the same commit
 cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script && git status --short
 git checkout main && git merge --ff-only feat/vX.Y.Z && git tag vX.Y.Z && git push origin main vX.Y.Z && (cd wiki && git push origin master)
 ```
+
+**How Claude hands over the push.** Always as these two lines in one code block, with the real folder and the real version filled in, so giopas can paste them as they are. Not as a list of steps and not with a different command order. Only when this cannot work (for example the branch is not fast-forwardable) say so first and give the changed commands in the same two-line shape.
 
 `git status --short` must print nothing first. For a change that is not a release, leave out the `git tag` part. If a change is risky, push `main` first, wait for `tests` to pass, then push the tag.
 

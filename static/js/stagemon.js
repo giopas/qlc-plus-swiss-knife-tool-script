@@ -512,6 +512,25 @@ async function _smStatus() {
 }
 
 let _smPoll = null;
+let _smQrFor = '';
+function stagemonQr(url) {
+  const box = document.getElementById('sm-qrbox');
+  if (!box) return;
+  _smQrFor = url;
+  box.textContent = '';
+  const cap = document.createElement('div');
+  cap.className = 'sm-meta';
+  cap.textContent = 'Scan with the tablet camera:';
+  const img = document.createElement('img');
+  img.className = 'sm-qr';
+  img.width = img.height = 200;
+  img.alt = 'QR code ' + url;
+  img.src = '/api/stagemon/qr?text=' + encodeURIComponent(url);
+  const code = document.createElement('code');
+  code.className = 'sm-qr-url';
+  code.textContent = url;
+  box.append(cap, img, code);
+}
 function _smServer(sv) {
   clearTimeout(_smPoll);
   if (sv && sv.running && !sv.https_from && document.getElementById('scr-stagemon')?.classList.contains('active'))
@@ -525,8 +544,11 @@ function _smServer(sv) {
     const copy = u => `<button class="btn btn-surface btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${_esc(u)}')">${_esc('Copy')}</button>`;
     el.innerHTML = `<div>${_esc('Serving — open on the tablet:')}</div>` + urls.map(u =>
       `<div class="sm-url"><code>${_esc(u)}</code>${copy(u)}</div>`).join('');
+    const qrBtn = u => `<button class="btn btn-surface btn-sm" onclick="stagemonQr('${_esc(u)}')">${_esc('QR code')}</button>`;
     el.innerHTML += `<div class="sm-roles"><div class="sm-meta" style="margin:6px 0 0">${_esc('A view for each player:')}</div>` +
-      ['commander', 'band', 'vocals'].map(r => `<div class="sm-url sm-role"><span>${_esc(r)}</span><code>${_esc(urls[0] + '?role=' + r)}</code>${copy(urls[0] + '?role=' + r)}</div>`).join('') + '</div>';
+      ['commander', 'band', 'vocals'].map(r => `<div class="sm-url sm-role"><span>${_esc(r)}</span><code>${_esc(urls[0] + '?role=' + r)}</code>${copy(urls[0] + '?role=' + r)}${qrBtn(urls[0] + '?role=' + r)}</div>`).join('') + '</div>';
+    el.innerHTML += `<div class="sm-qrbox" id="sm-qrbox"></div>`;
+    stagemonQr(_smQrFor && _smQrFor.startsWith(urls[0]) ? _smQrFor : urls[0]);
     if (sv.https_from) el.innerHTML += `<div class="sm-warn">${_esc(`${sv.https_from} asked for https://. On that device type the address with http://, as shown above.`)}</div>`;
     el.innerHTML += `<div class="sm-meta" style="margin:6px 0 0">${_esc('At the gig only QLC+ (with -w) and this server are needed. Without Swiss Knife: double-click Start Stage Monitor in the folder.')}</div>`;
   } else {

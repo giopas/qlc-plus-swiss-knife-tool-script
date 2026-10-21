@@ -4067,5 +4067,7 @@
  "Views by role: end the address with ?role=commander (cues and the next card, for the player with the pedal), ?role=band (the card in full) or ?role=vocals (song names, tempo and note). Add &who=Guitar to show only that player’s line.": "按角色查看：在地址末尾加上 ?role=commander（Cue 与下一张卡片，给踩踏板的人）、?role=band（完整卡片）或 ?role=vocals（歌名、速度和备注）。再加 &who=Guitar 则只显示该成员的那一行。",
  "One .html file with every setlist in big type. Tap a song to tick it off. Open it on a tablet or phone from AirDrop, mail or a drive: no app, no network, no QLC+.": "包含所有曲目表的大字号 .html 文件。点一下歌曲即可划掉。可通过 AirDrop、邮件或网盘在平板或手机上打开：无需应用、无需网络、无需 QLC+。",
  "The songs come from the Setlist screen. Song cards, role views and the Next song banner are in the Live monitor.": "歌曲来自曲目表界面。歌曲卡片、角色视图和下一首横幅在实时监视中。",
- "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set on the Page tab, Stop after a longer one.": "只读：平板只显示 Cue，上面的任何操作都不会改动演出。控制：页面还有“上一个”“停止”“下一个”按钮，像 QLC+ 自带按钮或踏板一样操作此 Cue 列表。“上一个”和“下一个”在“页面”选项卡设定的安全长按后生效，“停止”需要更长的长按。"
+ "Read-only: the tablet only shows the cues; nothing on it changes the show. Control: the page also has Previous, Stop and Next buttons that work this cue list in QLC+ like its own buttons or the pedal. Previous and Next act after the safety hold set on the Page tab, Stop after a longer one.": "只读：平板只显示 Cue，上面的任何操作都不会改动演出。控制：页面还有“上一个”“停止”“下一个”按钮，像 QLC+ 自带按钮或踏板一样操作此 Cue 列表。“上一个”和“下一个”在“页面”选项卡设定的安全长按后生效，“停止”需要更长的长按。",
+ "QR code": "二维码",
+ "Scan with the tablet camera:": "用平板的相机扫描："
 }

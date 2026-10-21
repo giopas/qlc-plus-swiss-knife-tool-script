@@ -4576,3 +4576,8 @@ body:not(.no-native-picker) .sm-folder-in { display: none; }
 /* Hold: the "Wait for the pedal (Inf)" tick under the Hold box */
 .fb-timing-infrow { margin-top: -2px; }
 .fb-timing-inf { font-size: 11px; color: var(--text-dim, inherit); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* QR code of the tablet address (3.9.0) */
+.sm-qrbox { margin-top: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.sm-qr { background: #fff; border-radius: var(--kit-radius-sm, 6px); display: block; }
+.sm-qr-url { font-size: var(--fs-ui); overflow-wrap: anywhere; }

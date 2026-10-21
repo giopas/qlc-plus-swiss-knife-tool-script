@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.9.5
+# QLC+ Swiss Knife v3.9.6
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -67,7 +67,7 @@ The tools are in six groups, numbered 1 to 6 like the side menu and the Start sc
 | **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, matched to your chasers, in a cue list you step through with a key or a pedal. A tempo for each song, and PDFs. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every key and MIDI control in one table, with clashes and gaps marked. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A short description for every function, shown in the other tools. |
-| | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-Monitor) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |
+| | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tablet-on-stage) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |
 | | [Cabling](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Cabling) | Plan the DMX cables with the kit you own: which cable goes where, adapters and terminators. A plot, a pick list, labels and a load-in order. |
 | **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Reads the show for mistakes, explains each one and fixes what you tick. Also from the command line. |
 | | [Wizard Repair](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Wizard-Repair) | Finishes a show made by the QLC+ 5.3 Show Wizard: the effects it loses, buttons it leaves out, a PANIC RESET on every page. |

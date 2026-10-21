@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.9.5, 21 October 2026** (released: tag `v3.9.5` is on `main` and on origin; 3.9.0 and 3.8.0 are tagged too). Now in work: 3.9.6, the plain-language wiki and README. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.9.6, 21 October 2026** (3.9.5 is tagged and pushed; 3.9.6 is prepared for the merge and the tag). Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -33,7 +33,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Tests | The suite passes in CI (1145 tests at 3.7.0, 1246 at 3.9.5 stage A, more since; 1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
-**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot; released), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words; released 21 October), 3.9.6 plain-language wiki and README (in work), 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
+**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot; released), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words; released 21 October), 3.9.6 plain-language wiki and README (released 21 October), 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
 
 ## 2. Next releases
 
@@ -198,7 +198,7 @@ Decided 21 October (giopas). Design: [DESIGN_v2.md](DESIGN_v2.md); mockups: `moc
 
 ### 3.9.6 · Plain-language wiki and README
 
-**Status: started 21 October (branch `docs/v3.9.6` in the main repository and in `wiki/`). Progress is logged under *Log* at the end of this entry.**
+**Status: built and prepared for release on 21 October (branch `docs/v3.9.6` in the main repository and in `wiki/`; version, CHANGELOG and release notes done). Check D1 was not done before the release and stays open. Progress is logged under *Log* at the end of this entry.**
 
 Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki describes the screens 3.9.5 changes and its pictures are retaken then. Docs only, so no installer test. Swiss Knife is a powerful tool and must also be extremely clear to everyone. No new features; the words change.
 
@@ -217,7 +217,7 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 
 - 21 October: `ground_truth.py` clean apart from two stale `maintenance.lock` files, which were removed.
 - 21 October, steps 1 to 3 of DESIGN_v2.md 12.3 done: *Words used here* (new wiki page), the README, and every wiki page to the template of 11.2 (box, before you start, example, if it does not work, words), the 36 pages and the three stubs apart. `tools/plain_check.py` and its test are in; it reports 0 pages without the box, an average sentence of 14 to 16 words, and Cabling, Look Builder and the tablet page as the longest (about 17). The full suite passes (1286 tests, 1 skipped without `websocket`).
-- Tablet on stage is documented in the `Stage-Monitor` wiki page, which keeps its file name because the app's **?** button and `tests/test_ui_consistency.py` use it. Renaming the page to `Tablet-on-stage` (the plan in 12.3) needs a one-line change in `templates/index.html` and the wiki list in the test, so it is left for a decision: it is not docs only.
+- Tablet on stage is documented in the new wiki page `Tablet-on-stage`; `Stage-Monitor` stays as a pointer. The app's **?** button and `tests/test_ui_consistency.py` use the new name (one line each).
 - The wiki and README button names follow the app since 3.9.5 (no emoji).
 - Left: **step 4**, the pictures (the 3.9.5 pictures were retaken in `b370fa2`; run `python3 tools/shots.py all` only if a screen changed since), **step 5**, check **D1** (the Pub test for the docs, two readers, one of them not a lighting person, on Quick Start and Rig Reducer), the Italian text of the new page read by giopas, then the release: bump `VERSION` and the README title to 3.9.6, move `[Unreleased]`, `python3 tools/release_notes.py v3.9.6`, merge, tag, push (section 8).
 - Git: the sandbox cannot push. Both repositories carry a local commit on `docs/v3.9.6`.
@@ -293,6 +293,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.8.0 | 20 Oct | Stage layouts and per-song tempo: saved layouts of the stage and the band (three built in, shared through the Library), a tempo per song in the setlist with *Apply tempo*, *Wait for the pedal* on Hold. |
 | 3.9.0 | 21 Oct | Tablet on stage: song cards, the Next song banner, views by role, a QR code, one screen for the live monitor and the simple page, the first use of the page kit. |
 | 3.9.5 | 21 Oct | A clearer Swiss Knife: type scale and bundled Inter, four button kinds, ribbon and Start that follow the state, the kit's chip and reason on every footer, Doctor by kind, plain words under every tool title. No change to `core/` or to what a button writes. |
+| 3.9.6 | 21 Oct | Plain-language docs: the README and every wiki page rewritten to one shape (*In one minute*, steps, *If it does not work*), a *Words used here* page, the Tablet on stage page, `tools/plain_check.py`. Docs only. |
 
 ## 5. Goal and the Pub test
 

@@ -140,3 +140,25 @@ def test_a_step_added_to_the_history_is_announced():
     show = JS["show.js"]
     assert "_skAnnounce" in show and "skDone(" in show and "sh-new" in show
     assert "showUndo(" in show.split("_skAnnounce", 1)[1][:1800]
+
+
+# ── stage D: key screens ────────────────────────────────────────────────────
+
+def test_the_doctor_counts_kinds_and_filters():
+    doc = JS["doctor.js"]
+    assert "doctorFilter" in doc and "kinds of warning" in doc and 'aria-pressed' in doc
+    assert 'id="doc-show-info"' not in HTML
+
+
+def test_the_setlist_rail_folds_and_songs_carry_a_match_pill():
+    assert len(re.findall(r'<details class="fb-fold">', HTML)) == 2
+    sl = JS["setlist.js"]
+    assert "_slMatchKind" in sl and "fb-pill-" in sl and "badge-${" in sl
+
+
+def test_the_porter_remembers_whether_both_stages_were_shown():
+    assert "sk-porter-both-stages" in JS["porter.js"]
+
+
+def test_no_inline_font_size_below_11px_in_the_template():
+    assert not re.findall(r"font-size:\s*(?:[0-9]|10)(?:\.\d+)?px", HTML)

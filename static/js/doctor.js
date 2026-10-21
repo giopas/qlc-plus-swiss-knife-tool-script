@@ -12,6 +12,7 @@
 let _docData = null;          // last /api/doctor/check result
 let _docSel = new Set();      // ticked finding keys
 let _docOpen = new Set();     // expanded codes
+let _docFilter = 'attention'; // 'attention' (errors and warnings) | 'error' | 'warning' | 'info'
 const _DOC_SHOW = 150;
 // per-kind choices (v2.4): how a fix is done; sent with the fix as `options`
 let _docOpt = { d003: 'unlink', d004: 'merge', d015: 'remove', d013mode: 'ms', d013val: 500 };
@@ -71,18 +72,30 @@ async function doctorCheck() {
 function doctorRender() {
   const el = document.getElementById('doc-list');
   if (!el || !_docData) return;
-  const showInfo = document.getElementById('doc-show-info')?.checked;
   const s = _docData.summary;
-  document.getElementById('doc-summary').innerHTML =
-    `<span class="doc-chip doc-error">${s.error} error(s)</span>` +
-    `<span class="doc-chip doc-warning">${s.warning} warning(s)</span>` +
-    `<span class="doc-chip doc-info">${s.info} info</span>`;
   const byCode = {};
   for (const f of _docData.findings) (byCode[f.code] = byCode[f.code] || []).push(f);
-  const codes = Object.keys(byCode).filter(c => showInfo || byCode[c][0].severity !== 'info');
+  // the summary counts kinds of problem, not places: 851 copies of one rule are one kind (3.9.5, stage D)
+  const kinds = sev => Object.keys(byCode).filter(c => byCode[c][0].severity === sev).length;
+  const places = n => t(n === 1 ? '{0} place' : '{0} places', n);
+  const block = (sev, big, label, sub) =>
+    `<button type="button" class="doc-block doc-${sev}" aria-pressed="${_docFilter === sev}" onclick="doctorFilter('${sev}')">` +
+    `<b>${_esc(big)}</b><span>${_esc(label)}</span>${sub ? `<small>${_esc(sub)}</small>` : ''}</button>`;
+  const wk = kinds('warning'), ik = kinds('info');
+  document.getElementById('doc-summary').innerHTML =
+    block('error', s.error, t(s.error === 1 ? 'error' : 'errors'), '') +
+    block('warning', wk, t(wk === 1 ? 'kind of warning' : 'kinds of warning'), s.warning ? places(s.warning) : '') +
+    block('info', ik, t(ik === 1 ? 'kind of info' : 'kinds of info'), s.info ? places(s.info) : '');
+  const keep = c => _docFilter === 'attention' ? byCode[c][0].severity !== 'info' : byCode[c][0].severity === _docFilter;
+  const codes = Object.keys(byCode).filter(keep);
+  if (!codes.length && _docFilter !== 'attention') {
+    el.innerHTML = '<div class="porter-placeholder">' + _esc(t('Nothing of this kind.')) + '</div>';
+    _docSyncButton();
+    return;
+  }
   if (!codes.length) {
     el.innerHTML = '<div class="porter-placeholder"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#check"/></svg> No errors or warnings.' +
-      (s.info ? ' Tick <b>Show info</b> to see the info findings.' : '') + '</div>';
+      (s.info ? ' Choose <b>Info</b> above to see the info findings.' : '') + '</div>';
     _docSyncButton();
     return;
   }
@@ -112,9 +125,9 @@ function doctorRender() {
         ${box}
         <span class="doc-code">${code}</span>
         <span class="doc-title">${_esc(_docData.titles[code] || '')}</span>
-        <span class="doc-count">${items.length}${fixable.length ? ` · ${ticked}/${fixable.length} ticked` : ''}</span>
+        <span class="doc-count">${places(items.length)}${fixable.length ? ` · ${ticked}/${fixable.length} ticked` : ''}</span>
         <span class="doc-hint"><span>${_esc(hint)}</span>${hintWarn ? `<span class="doc-hint-warn">${hintWarn}</span>` : ''}</span>
-        <span class="doc-caret">${open ? '▾' : '▸'}</span>
+        <span class="doc-caret">${_esc(t(open ? 'Hide them' : 'Show them'))} ${open ? '▾' : '▸'}</span>
       </div>
       ${open && fixable.length ? _docOptBar(code) : ''}
       <div class="doc-rows">${rows}</div>
@@ -145,6 +158,11 @@ function _docSyncButton() {
       .concat(codes.length > 6 ? [`+${codes.length - 6} more kinds`] : []) : 'nothing — tick the findings to fix',
       '', codes.length ? 'Apply will fix' : 'Apply will do');
   }
+}
+
+function doctorFilter(sev) {
+  _docFilter = _docFilter === sev ? 'attention' : sev;
+  doctorRender();
 }
 
 function doctorToggle(code) {

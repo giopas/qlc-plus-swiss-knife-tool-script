@@ -723,7 +723,7 @@
 
       <!-- Col 3: Actions pane (FileBot Middle) -->
       <div class="fb-actions-pane">
-        <div class="pane-header" style="font-size:10px;letter-spacing:.05em">ACTIONS</div>
+        <div class="pane-header">ACTIONS</div>
 
         <!-- Scrollable body -->
         <div class="fb-actions-body">
@@ -777,12 +777,13 @@
             <label class="fb-timing-lbl" data-tooltip="How many beats one step of the song's chaser lasts (1 = a step per beat, 0.5 = two steps per beat, 4 = a step per bar of 4/4).">Beats</label>
             <input id="timing-beats" class="fb-timing-in" type="text" placeholder="1" disabled onchange="slBeatsChanged(this)">
           </div>
-          <span class="hint-text" id="sl-tempo-line" style="font-size:9px;line-height:1.3"></span>
+          <span class="hint-text" id="sl-tempo-line" style="font-size:11px;line-height:1.3"></span>
 
           <div class="fb-sep"></div>
 
           <!-- Import / Export -->
-          <div class="fb-group-label">Setlist TXT</div>
+          <details class="fb-fold">
+            <summary class="fb-group-label">Setlist TXT</summary>
           <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
                   onclick="slImportSlotFile()"
                   disabled
@@ -796,22 +797,25 @@
           <button class="btn btn-surface fb-wide-btn" id="btn-tablet-page"
                   onclick="go('stagemon'); stagemonMode('simple')" disabled
                   data-tooltip="Put the setlist on a tablet for the band: one simple page with no network, or the live monitor with song cards. Opens Tablet on stage.">Tablet on stage…</button>
+          </details>
 
           <div class="fb-sep"></div>
 
           <!-- Workspace cleanup -->
-          <div class="fb-group-label">Workspace</div>
+          <details class="fb-fold">
+            <summary class="fb-group-label">Workspace</summary>
           <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
                   onclick="slDeleteWorkspaceClones()" disabled
                   data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Then ✓ Apply to the show (bottom right) and Save as new file…."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Delete Clones from WS</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-fill-notes" onclick="slFillCueNotes()"
                   data-tooltip="Every setlist cue gets a note naming the button that plays the same look (or what it plays when there is none). Swiss Knife's own notes are refreshed when the show changed; notes you typed in QLC+ are kept. Done for you when a show opens.">↪ Add references to the cue notes</button>
+          </details>
 
           <div class="fb-sep"></div>
 
           <!-- Generate -->
           <div class="fb-group-label">Setlist chaser in the show</div>
-          <span class="hint-text" style="font-size:9px;line-height:1.3">
+          <span class="hint-text" style="font-size:11px;line-height:1.3">
             Target chaser in workspace:
           </span>
           <select id="sl-chaser-select" class="filter-input fb-chaser-sel" disabled
@@ -1423,14 +1427,14 @@
                          font-size:11px; font-family:var(--font-mono); }
       #vce-actions-panel { border-top:0.5px solid var(--border); background:var(--surface-0);
                            padding:8px; }
-      .vce-pl { color:var(--text-muted); font-size:9px; margin:8px 0 4px;
+      .vce-pl { color:var(--text-muted); font-size:11px; margin:8px 0 4px;
                 text-transform:uppercase; letter-spacing:.07em; }
       .vce-pi { width:100%; box-sizing:border-box; padding:3px 5px; font-size:11px;
                 font-family:var(--font-mono); border:0.5px solid var(--border);
                 border-radius:4px; background:var(--surface-0); color:var(--text-primary); }
       .vce-pr4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4px; }
       .vce-pr2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-      .vce-ab { padding:3px 5px; font-size:10px; font-family:var(--font-mono);
+      .vce-ab { padding:3px 5px; font-size:11px; font-family:var(--font-mono);
                 background:var(--surface-0); border:0.5px solid var(--border);
                 border-radius:4px; cursor:pointer; color:var(--text-primary); white-space:nowrap; }
       .vce-ab:hover { background:var(--surface-1); border-color:var(--border-strong); }
@@ -1440,33 +1444,33 @@
                  border-bottom:none; border-radius:6px 6px 0 0; color:var(--text-muted); cursor:pointer; }
       .vce-tab:hover { color:var(--text-primary); }
       .vce-tab.on { background:var(--surface-0); border-color:var(--border); color:var(--text-primary); font-weight:600; }
-      .vce-tab-n { font-size:9px; color:var(--text-accent); }
+      .vce-tab-n { font-size:11px; color:var(--text-accent); }
       .vce-pane { padding:8px 10px 12px; background:var(--surface-0); font-size:11px; }
       .vce-pane[hidden] { display:none; }
-      .vce-intro { font-size:10.5px; color:var(--text-muted); margin-bottom:8px; line-height:1.4; }
-      .vce-sec { font-size:10px; font-weight:600; color:var(--text-primary); text-transform:uppercase;
+      .vce-intro { font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.4; }
+      .vce-sec { font-size:11px; font-weight:600; color:var(--text-primary); text-transform:uppercase;
                  letter-spacing:.06em; margin:12px 0 5px; padding-top:8px; border-top:0.5px solid var(--border); }
       .vce-sec:first-child { border-top:none; padding-top:0; margin-top:0; }
       .vce-step { display:inline-block; width:15px; height:15px; line-height:15px; text-align:center; border-radius:50%;
-                  background:var(--bg-accent); color:var(--text-accent); font-size:9px; margin-right:4px; }
-      .vce-hint { font-size:9.5px; font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0; }
+                  background:var(--bg-accent); color:var(--text-accent); font-size:11px; margin-right:4px; }
+      .vce-hint { font-size:11px; font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0; }
       .vce-row { display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-bottom:5px; }
-      .vce-lb { font-size:10px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px; }
+      .vce-lb { font-size:11px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px; }
       .vce-n { width:46px; }
       .vce-sub { margin:4px 0 6px; }
       .vcb-card { border:1px solid var(--text-accent); border-radius:6px; background:var(--bg-accent);
                   padding:7px 9px 6px; margin:0 0 10px; }
       .vcb-card-t { font-size:11px; font-weight:600; color:var(--text-accent); margin-bottom:3px; }
       .vcb-primary { border-color:var(--text-accent) !important; color:var(--text-accent); font-weight:600; }
-      .vce-sub > summary { cursor:pointer; font-size:10px; color:var(--text-muted); margin-bottom:4px; }
+      .vce-sub > summary { cursor:pointer; font-size:11px; color:var(--text-muted); margin-bottom:4px; }
       .vcb-fnlist { max-height:180px; overflow-y:auto; border:0.5px solid var(--border); border-radius:4px;
                     background:var(--surface-0); margin-bottom:6px; }
-      .vcb-fn { display:flex; justify-content:space-between; gap:6px; padding:2px 6px; font-size:10px; cursor:grab; }
+      .vcb-fn { display:flex; justify-content:space-between; gap:6px; padding:2px 6px; font-size:11px; cursor:grab; }
       .vcb-fn:hover { background:var(--surface-1); }
-      .vcb-t { color:var(--text-muted); font-size:9px; white-space:nowrap; }
+      .vcb-t { color:var(--text-muted); font-size:11px; white-space:nowrap; }
       .vce-sep { width:0.5px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
       #vce-statusbar { padding:3px 10px; border-top:0.5px solid var(--border);
-                       background:var(--surface-0); font-size:10px; font-family:var(--font-mono);
+                       background:var(--surface-0); font-size:11px; font-family:var(--font-mono);
                        display:flex; justify-content:space-between; align-items:center; }
     </style>
 
@@ -1484,22 +1488,22 @@
         <div class="vce-sep"></div>
 
         <!-- Mask thresholds -->
-        <span style="font-size:10px;color:var(--text-muted)">±</span>
+        <span style="font-size:11px;color:var(--text-muted)">±</span>
         <input id="vce-thresh0" type="number" min="1" max="20" value="2" title="Minor threshold (px)"
-               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
+               style="width:36px;font-size:11px;padding:2px 4px;background:var(--surface-0);
                       border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
                onchange="vceUpdateThresholds()">
-        <span style="font-size:10px;color:var(--text-muted)">/</span>
+        <span style="font-size:11px;color:var(--text-muted)">/</span>
         <input id="vce-thresh1" type="number" min="1" max="50" value="5" title="Major threshold (px)"
-               style="width:36px;font-size:10px;padding:2px 4px;background:var(--surface-0);
+               style="width:36px;font-size:11px;padding:2px 4px;background:var(--surface-0);
                       border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
                onchange="vceUpdateThresholds()">
-        <span style="font-size:10px;color:var(--text-muted)">px</span>
+        <span style="font-size:11px;color:var(--text-muted)">px</span>
         <div class="vce-sep"></div>
 
         <!-- Zoom -->
         <button class="vce-xb" onclick="vceZoom(-1)" title="Zoom out (⌘−)">−</button>
-        <span id="vce-zoom-lbl" style="font-size:10px;color:var(--text-muted);min-width:34px;text-align:center;font-family:var(--font-mono)">—</span>
+        <span id="vce-zoom-lbl" style="font-size:11px;color:var(--text-muted);min-width:34px;text-align:center;font-family:var(--font-mono)">—</span>
         <button class="vce-xb" onclick="vceZoom(+1)" title="Zoom in (⌘+ or pinch)">+</button>
         <button class="vce-xb" onclick="vceFit()" title="Fit page (⌘0)">fit</button>
         <div class="vce-sep"></div>
@@ -1616,10 +1620,10 @@
 
       <!-- Status bar -->
       <div id="vce-statusbar">
-        <span id="vce-status" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
+        <span id="vce-status" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">
           Load a workspace and open this tab to start
         </span>
-        <span style="font-size:9px;opacity:.4">VC VISUAL EDITOR  v{{ version }}</span>
+        <span style="font-size:11px;opacity:.4">VC VISUAL EDITOR  v{{ version }}</span>
       </div>
 
     </div><!-- end #vce-wrap -->
@@ -2091,7 +2095,6 @@
       <button class="btn btn-surface" onclick="doctorCheck()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#search"/></svg> Check</button>
       <span id="doc-summary" class="doc-summary"></span>
       <div class="spacer"></div>
-      <label class="doc-opt"><input type="checkbox" id="doc-show-info" onchange="doctorRender()"> Show info</label>
       <button class="btn btn-surface btn-sm" onclick="doctorSelect('default')" data-tooltip="Tick every fix that doesn't delete functions">✓ Recommended</button>
       <button class="btn btn-surface btn-sm" onclick="doctorSelect('all')" data-tooltip="Tick every fixable finding, removals included">✓ All</button>
       <button class="btn btn-surface btn-sm" onclick="doctorSelect('none')">✗ None</button>
@@ -2658,16 +2661,16 @@
           <button id="qs-btn-view-front" class="btn btn-surface btn-sm" onclick="qsSetView('front')">Front</button>
           <button id="qs-btn-view-side"  class="btn btn-surface btn-sm" onclick="qsSetView('side')">Side</button>
           <span style="width:1px;height:18px;background:var(--overlay0);margin:0 2px;flex-shrink:0"></span>
-          <label style="font-size:10px;white-space:nowrap">W</label>
-          <input id="qs-stage-w" class="filter-input" type="number" value="8000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
-          <label style="font-size:10px;white-space:nowrap">D</label>
-          <input id="qs-stage-d" class="filter-input" type="number" value="6000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
-          <label style="font-size:10px;white-space:nowrap">H</label>
-          <input id="qs-stage-h" class="filter-input" type="number" value="4000" min="1000" step="500" style="width:52px;font-size:10px;padding:2px 4px" onchange="qsApplyStageFields()">
-          <span style="font-size:9px;color:var(--overlay0);white-space:nowrap">mm</span>
+          <label style="font-size:11px;white-space:nowrap">W</label>
+          <input id="qs-stage-w" class="filter-input" type="number" value="8000" min="1000" step="500" style="width:52px;font-size:11px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <label style="font-size:11px;white-space:nowrap">D</label>
+          <input id="qs-stage-d" class="filter-input" type="number" value="6000" min="1000" step="500" style="width:52px;font-size:11px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <label style="font-size:11px;white-space:nowrap">H</label>
+          <input id="qs-stage-h" class="filter-input" type="number" value="4000" min="1000" step="500" style="width:52px;font-size:11px;padding:2px 4px" onchange="qsApplyStageFields()">
+          <span style="font-size:11px;color:var(--overlay0);white-space:nowrap">mm</span>
           <span style="width:1px;height:18px;background:var(--overlay0);margin:0 2px;flex-shrink:0"></span>
-          <label style="font-size:10px;white-space:nowrap" for="qs-stage-layout">Layout</label>
-          <select id="qs-stage-layout" class="filter-input" style="font-size:10px;padding:2px 4px;max-width:150px" onchange="qsPickStageLayout()"
+          <label style="font-size:11px;white-space:nowrap" for="qs-stage-layout">Layout</label>
+          <select id="qs-stage-layout" class="filter-input" style="font-size:11px;padding:2px 4px;max-width:150px" onchange="qsPickStageLayout()"
                   data-tooltip="Start the show with the stage and the band of a saved layout: the riser, the members, the backline. The stage takes the layout's size."><option value="">— none —</option></select>
           <div class="spacer"></div>
           <button class="btn btn-surface btn-sm" style="white-space:nowrap" onclick="qsAutoDmx()">Auto-DMX</button>
@@ -2690,7 +2693,7 @@
           <!-- Position presets: Stage Position -->
           <div class="qs-card" style="padding:10px">
             <h3 style="font-size:12px;margin:0 0 8px">Quick Position <span style="color:var(--overlay0);font-weight:400">(selected or all)</span></h3>
-            <div style="font-size:10px;color:var(--overlay0);margin-bottom:6px">Stage Position (X &times; Z)</div>
+            <div style="font-size:11px;color:var(--overlay0);margin-bottom:6px">Stage Position (X &times; Z)</div>
             <table class="qs-preset-grid">
               <thead><tr><th></th><th>Left</th><th>Center</th><th>Right</th></tr></thead>
               <tbody>
@@ -2708,7 +2711,7 @@
                   <td><button class="btn btn-surface btn-xs" onclick="qsPresetPos('Right','Front')">FR</button></td></tr>
               </tbody>
             </table>
-            <div style="font-size:10px;color:var(--overlay0);margin:8px 0 4px">Height (Y)</div>
+            <div style="font-size:11px;color:var(--overlay0);margin:8px 0 4px">Height (Y)</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Floor')">Floor</button>
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Low-Mid')">Low-Mid</button>
@@ -2716,7 +2719,7 @@
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top-Mid')">Top-Mid</button>
               <button class="btn btn-surface btn-xs" onclick="qsPresetHeight('Top')">Top</button>
             </div>
-            <div style="font-size:10px;color:var(--overlay0);margin:8px 0 4px" title="Tilt (XRot in the QLC+ 3D view). Auto: from the height — floor up, truss down, mid level across the stage, always toward its centre">Beam (tilt)</div>
+            <div style="font-size:11px;color:var(--overlay0);margin:8px 0 4px" title="Tilt (XRot in the QLC+ 3D view). Auto: from the height — floor up, truss down, mid level across the stage, always toward its centre">Beam (tilt)</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
               <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('down')" title="Pointing down, like a truss light">&#x2193; Down</button>
               <button class="btn btn-surface btn-xs" onclick="qsSetOrientation('horizontal')" title="Across the stage, like a mid-height light">&#x2194; Across</button>
@@ -2728,7 +2731,7 @@
           <!-- Alignment tools -->
           <div class="qs-card" style="padding:10px">
             <h3 style="font-size:12px;margin:0 0 6px">Align &amp; Distribute <span id="qs-sel-info" style="color:var(--overlay0);font-weight:400">None selected</span></h3>
-            <p style="font-size:10px;color:var(--overlay0);margin:0 0 6px">Select 2+ fixtures (Shift/Cmd+click)</p>
+            <p style="font-size:11px;color:var(--overlay0);margin:0 0 6px">Select 2+ fixtures (Shift/Cmd+click)</p>
             <div id="qs-align-btns" style="display:flex;flex-wrap:wrap;gap:4px">
               <button class="btn btn-surface btn-xs" onclick="qsAlignLeft()" disabled title="Align to leftmost X">&#x25C0; Left</button>
               <button class="btn btn-surface btn-xs" onclick="qsAlignRight()" disabled title="Align to rightmost X">Right &#x25B6;</button>
@@ -2804,7 +2807,7 @@
         <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <label style="font-weight:600;font-size:12px;white-space:nowrap">Project name:</label>
           <input id="qs-project-name" class="filter-input" type="text" placeholder="My Show" style="flex:1;min-width:180px;font-size:12px">
-          <span style="font-size:10px;color:var(--overlay0);white-space:nowrap">Filename: <span id="qs-filename-preview" style="font-family:monospace">quick_start_YYYYMMDD_HHMM.qxw</span></span>
+          <span style="font-size:11px;color:var(--overlay0);white-space:nowrap">Filename: <span id="qs-filename-preview" style="font-family:monospace">quick_start_YYYYMMDD_HHMM.qxw</span></span>
         </div>
         <div class="qs-profile-row">
           <label for="qs-prof-name">★ Keep this rig as a profile</label>
@@ -2857,12 +2860,12 @@
       .qs-fix-row:hover { background:var(--surface0); }
       .qs-fix-row-sel { background:var(--surface1) !important; outline:1px solid var(--blue); }
       .qs-fix-row-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-      .qs-fix-row-pos { color:var(--overlay0); font-size:10px; font-family:monospace; }
+      .qs-fix-row-pos { color:var(--overlay0); font-size:11px; font-family:monospace; }
       .qs-preset-grid { width:100%; font-size:11px; border-collapse:collapse; }
-      .qs-preset-grid th { font-weight:600; font-size:10px; color:var(--overlay0); text-align:center; padding:2px; }
+      .qs-preset-grid th { font-weight:600; font-size:11px; color:var(--overlay0); text-align:center; padding:2px; }
       .qs-preset-grid td { text-align:center; padding:2px; }
-      .qs-preset-label { font-weight:600; font-size:10px; color:var(--overlay0); text-align:right !important; padding-right:6px !important; }
-      .btn-xs { font-size:10px !important; padding:2px 8px !important; min-width:28px; }
+      .qs-preset-label { font-weight:600; font-size:11px; color:var(--overlay0); text-align:right !important; padding-right:6px !important; }
+      .btn-xs { font-size:11px !important; padding:2px 8px !important; min-width:28px; }
       .btn-view-active { background:var(--blue) !important; color:#fff !important; border-color:var(--blue) !important; }
       .qs-card { background:var(--surface); border:1px solid var(--overlay0); border-radius:8px; padding:16px; margin-bottom:12px; }
       .qs-card h3 { margin:0 0 10px; font-size:14px; }

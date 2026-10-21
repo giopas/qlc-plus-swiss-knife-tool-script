@@ -2205,6 +2205,16 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .fb-tempo-ok  { color: var(--green); }
 .fb-tempo-off { color: var(--amber, #d9a400); }
 .fb-tempo-na  { color: var(--text-faint); }
+.fb-song-tags { display: flex; gap: 6px; align-items: center; padding: 2px 0 0 2px; }
+.fb-pill { font-size: var(--fs-small); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+.fb-pill-same { color: var(--success-text); border-color: color-mix(in srgb, var(--success) 40%, transparent); background: var(--success-soft); }
+.fb-pill-similar { color: var(--warning-text); border-color: color-mix(in srgb, var(--warning) 40%, transparent); background: var(--warning-soft); }
+.fb-pill-different { color: var(--text-dim); }
+/* the rail's folds (Setlist TXT, Workspace): closed until opened */
+.fb-fold > summary { cursor: pointer; list-style: none; }
+.fb-fold > summary::-webkit-details-marker { display: none; }
+.fb-fold > summary::before { content: "▸"; display: inline-block; width: 1em; }
+.fb-fold[open] > summary::before { content: "▾"; }
 .fb-song-assign {
   font-size: var(--fs-small);
   color: var(--accent);
@@ -3594,6 +3604,16 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .doc-chip.doc-error { color: var(--error); }
 .doc-chip.doc-warning { color: var(--orange, #ff9800); }
 .doc-chip.doc-info { color: var(--text-dim); }
+/* 3.9.5 stage D: the Doctor's three blocks, each a filter */
+.doc-block { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-ui); cursor: pointer; }
+.doc-block b { font-size: var(--fs-section); font-weight: 600; }
+.doc-block small { font-size: var(--fs-small); color: var(--text-dim); }
+.doc-block.doc-error b { color: var(--error-text); }
+.doc-block.doc-warning b { color: var(--warning-text); }
+.doc-block.doc-info b { color: var(--text-dim); }
+.doc-block:hover { background: var(--surface-2); }
+.doc-block[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .doc-opt { font-size: var(--fs-body); margin-right: 6px; }
 .doc-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 12px 8px; }
 .doc-group-box { border: 1px solid var(--border, #333); border-left-width: 3px; border-radius: var(--radius); margin: 6px 0; }
@@ -4094,9 +4114,10 @@ body.nav-min .sn-group-label { border-bottom: 0; margin: 0; }
 
 /* ── Data tables: zebra, hover, quiet separators, readable rows ─────────── */
 .custom-table td, .sb-table td, .plain-table td, .porter-map-table td, .data-table td, .fix-rig-table td { line-height: 1.5; }
-.custom-table tbody tr:nth-child(even) td, .sb-table tbody tr:nth-child(even) td,
-.plain-table tbody tr:nth-child(even) td, .data-table tbody tr:nth-child(even) td,
-.porter-map-table tbody tr:nth-child(even) td { background-color: var(--zebra); }
+/* 3.9.5 stage D: zebra only in the dense tables; every row at least 32 px; the header stays in view */
+.plain-table tbody tr:nth-child(even) td, .data-table tbody tr:nth-child(even) td { background-color: var(--zebra); }
+.custom-table td, .plain-table td, .data-table td, .porter-map-table td { height: 32px; }
+.custom-table th, .data-table th, .porter-map-table th { position: sticky; top: 0; z-index: 1; background: var(--surface-1); }
 td.gridjs-td { border-right: 0 !important; line-height: 1.5; }
 tr:nth-child(even) td.gridjs-td { background: color-mix(in srgb, var(--bg) 96%, var(--text)) !important; }
 .custom-table tbody tr:hover td, .sb-table tbody tr:hover td, .plain-table tbody tr:hover td,

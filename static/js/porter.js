@@ -283,6 +283,9 @@ function _pSyncOutcome() {
     const chips = [];
     if (ids.length) chips.push({ text: `${mapped} of ${ids.length} fixture${ids.length > 1 ? 's' : ''} mapped`, kind: open > 0 && !_pDropUnmapped ? 'warn' : '' });
     if (skipped) chips.push(`${skipped} not ported`);
+    const noExact = ids.filter(id => !_pSkipFx.has(id) && !_pSkipFx.has(String(id)) &&
+      !(((_pCandidates && _pCandidates.candidates[id]) || {}).tier1 || []).length).length;
+    if (noExact) chips.push(`${noExact} without exact match`);
     if (open > 0 && !_pDropUnmapped) chips.push({ text: `${open} without a target`, kind: 'warn' });
     if (nCopy) chips.push(`${_pCopyFx.size} fixture${_pCopyFx.size === 1 ? '' : 's'} copied`);
     return chips.length ? setOutcome(n, chips, '', 'Apply will') : setOutcome(n, 'nothing to map', '', 'Apply will do');
@@ -614,6 +617,12 @@ function _pRenderClosureSummary() {
 async function _pRenderMapFixtures() {
   const container = document.getElementById('porter-fixture-map');
   if (!container) return;
+  // 3.9.5: the step opens on the mapping list; the two stage maps stay folded unless the last choice was to show them
+  const fold = document.getElementById('porter-maps-fold');
+  if (fold && !fold.dataset.init) {
+    fold.dataset.init = '1';
+    try { fold.open = localStorage.getItem('sk-porter-both-stages') === '1'; } catch (e) { /* stays folded */ }
+  }
 
   const fxIds = _pClosure ? _pClosure.fixture_ids : [];
   if (!fxIds.length && !_pSkipFx.size) {
@@ -987,7 +996,10 @@ function _pDrawPlans() {
 window.addEventListener('resize', () => { if (_pStep === 1 || _pStep === 3) _pDrawPlans(); });
 // v2.2.1: the step-3 stage maps are folded (mapping first); draw them when opened
 document.addEventListener('toggle', ev => {
-  if (ev.target && ev.target.id === 'porter-maps-fold' && ev.target.open) setTimeout(_pDrawPlans, 0);
+  if (ev.target && ev.target.id === 'porter-maps-fold') {
+    try { localStorage.setItem('sk-porter-both-stages', ev.target.open ? '1' : '0'); } catch (e) { /* not remembered */ }
+    if (ev.target.open) setTimeout(_pDrawPlans, 0);
+  }
 }, true);
 
 function porterToggleMirror(srcId, checked) {

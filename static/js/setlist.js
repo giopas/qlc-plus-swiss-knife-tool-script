@@ -191,6 +191,23 @@ function _setEditorEnabled(on) {
 // ── Song list (FileBot left panel) ─────────────────────────────────────────────
 
 let _tempoSkip = false;   // true while the tempo check itself redraws the list
+/** How close the assigned function's name is to the song's: 'same', 'similar' or 'different'.
+ *  Read from the two names only (a clone's " (Setlist)" suffix is ignored); it does not say who chose the match. */
+function _slMatchKind(song, fnName) {
+  const norm = x => String(x || '').replace(/ \(Setlist\)$/, '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const a = norm(song), b = norm(fnName);
+  if (!a || !b) return '';
+  if (a === b) return 'same';
+  if ((a.length >= 3 && b.includes(a)) || (b.length >= 3 && a.includes(b))) return 'similar';
+  const ta = new Set(a.split(' ').filter(w => w.length >= 3)), tb = b.split(' ').filter(w => w.length >= 3);
+  return tb.some(w => ta.has(w)) ? 'similar' : 'different';
+}
+const _SL_MATCH_TEXT = {
+  same: ['same name', 'The function has the same name as the song.'],
+  similar: ['similar name', 'The function has a similar name: check it is the right one.'],
+  different: ['different name', 'The function has another name than the song: chosen by hand, or a guess to check.'],
+};
+
 function _renderSongList() {
   const list = document.getElementById('fb-song-list');
   if (!list) return;
@@ -244,8 +261,14 @@ function _renderSongList() {
       if (vcButton) parts.push(`${_esc(vcButton)}`);
       originHtml = `<div class="fb-song-origin">→ ${parts.join(' ')}</div>`;
     }
+    const kind = hasAssign ? _slMatchKind(row.txt_name, row.qxw_name || (fn && fn.name)) : '';
+    const tags = hasAssign
+      ? `<div class="fb-song-tags">${fn && fn.type ? `<span class="badge badge-${_esc(fn.type)}">${_esc(fn.type)}</span>` : ''}`
+        + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + '</div>'
+      : '';
     const assignHtml = hasAssign
       ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
+        + tags
         + parentHtml
         + originHtml
         + (fn?.desc      ? `<div class="fb-song-desc">${_esc(fn.desc)}</div>`        : '')

@@ -578,7 +578,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#folder"/></svg></div>
-      <div><h2>Library</h2><div class="p-desc">Share your templates, palettes, presets, naming profiles, VC styles and Show Profiles as one file — and install what other QLC+ users shared. Local files only: no server, no account.</div></div>
+      <div><h2>Library</h2><div class="p-desc">Share your templates and presets as one file, or install what others shared.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Community-Library')" title="How this tool works — opens the Community Library page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -622,7 +622,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
-      <div><h2>Compare</h2><div class="p-desc">The show in progress next to another show, by what they do — fixtures and patch, groups, looks (decoded colour and level), chasers, Virtual Console, setlist.</div></div>
+      <div><h2>Compare</h2><div class="p-desc">See what differs between the show in progress and another show.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Compare')" title="How this tool works — opens the Compare page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -661,7 +661,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
-      <div><h2>Setlist</h2><div class="p-desc">Match songs to functions, set fade timings, generate a cuelist chaser.</div></div>
+      <div><h2>Setlist</h2><div class="p-desc">Match each song to its look, set the timing and build the setlist chaser.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Setlist-Manager')" title="How this tool works — opens the Setlist Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -731,10 +731,10 @@
           <!-- Assignment -->
           <div class="fb-group-label">Assign</div>
           <button class="btn fb-wide-btn pool-toggle" id="btn-pool-toggle" onclick="slTogglePool()" aria-pressed="false"
-                  data-tooltip="Open the list of the show's QLC+ functions on the right: pick one there, then ◀ Assign (or double-click it) to give it to the selected songs">Show QLC+ functions ▸</button>
+                  data-tooltip="Open the show's functions on the right, pick one, then press Assign (or double-click it).">Show QLC+ functions ▸</button>
           <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
                   onclick="slAssignFromPool()" disabled
-                  data-tooltip="Assign the selected function to the selected song(s) — Ctrl+click or Shift+click songs to select multiple (double-click a function also works)">◀ Assign</button>
+                  data-tooltip="Give the selected function to the selected songs. Ctrl+click or Shift+click to select several songs.">◀ Assign</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
                   onclick="slClearAssignment()" disabled
                   data-tooltip="Remove the QLC+ function assignment from the selected song">✕ Clear Song</button>
@@ -743,7 +743,7 @@
                   data-tooltip="Remove all function assignments from this slot">✕ Clear All</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-purge-clones"
                   onclick="slPurgeClones()" disabled
-                  data-tooltip="THIS SLOT only: unassign songs currently linked to generated clones, so you can re-match from scratch. Clone functions remain in the workspace — nothing is deleted."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#wrench"/></svg> Purge Clones</button>
+                  data-tooltip="This setlist only: unassign songs linked to generated clones, to match again. Nothing is deleted."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#wrench"/></svg> Purge Clones</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-auto-match"
                   onclick="slAutoMatch()" disabled
                   data-tooltip="Auto-match unassigned songs to QLC+ functions by name similarity"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#target"/></svg> Re-Match</button>
@@ -763,7 +763,7 @@
           </div>
           <div class="fb-timing-row fb-timing-infrow">
             <label class="fb-timing-lbl"></label>
-            <label class="fb-timing-inf" data-tooltip="Tick: the look stays on until you step on the pedal (infinite hold, written Inf in QLC+). Untick to type a time in milliseconds."><input type="checkbox" id="timing-hold-inf" disabled onchange="slHoldInf(this)"> Wait for the pedal (Inf)</label>
+            <label class="fb-timing-inf" data-tooltip="Tick to keep the look on until the next pedal press. Untick to type a time in milliseconds."><input type="checkbox" id="timing-hold-inf" disabled onchange="slHoldInf(this)"> Wait for the pedal (Inf)</label>
           </div>
           <div class="fb-timing-row">
             <label class="fb-timing-lbl">Out</label>
@@ -774,7 +774,7 @@
             <input id="timing-bpm" class="fb-timing-in" type="text" placeholder="–" disabled onchange="slBpmChanged(_selectedSong, this)">
           </div>
           <div class="fb-timing-row">
-            <label class="fb-timing-lbl" data-tooltip="How many beats one step of the song's chaser lasts (1 = a step per beat, 0.5 = two steps per beat, 4 = a step per bar of 4/4).">Beats</label>
+            <label class="fb-timing-lbl" data-tooltip="How many beats one chaser step lasts: 1 is a step per beat, 4 is a step per bar.">Beats</label>
             <input id="timing-beats" class="fb-timing-in" type="text" placeholder="1" disabled onchange="slBeatsChanged(this)">
           </div>
           <span class="hint-text" id="sl-tempo-line" style="font-size:11px;line-height:1.3"></span>
@@ -787,16 +787,16 @@
           <button class="btn btn-surface fb-wide-btn" id="btn-import-slot-txt"
                   onclick="slImportSlotFile()"
                   disabled
-                  data-tooltip="Open a setlist saved as .txt into this slot: the songs, and their functions if it was saved with Swiss Knife. The file is remembered in the session."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Load setlist…</button>
+                  data-tooltip="Open a saved setlist file into this slot: its songs, and their functions if Swiss Knife saved it."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Load setlist…</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-export-slot-txt"
                   onclick="slSaveSlotFile()" disabled
-                  data-tooltip="Save this setlist (songs and their functions) as a .txt file you can open again later. The file is remembered in the session."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save setlist…</button>
+                  data-tooltip="Save this setlist, with its functions, as a file you can open again later."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save setlist…</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-import-paste"
                   onclick="slOpenImport()" disabled
-                  data-tooltip="Bring a setlist in from the clipboard, a .txt or a .csv (spreadsheet): numbering is dropped, set breaks and fade / hold columns are understood. You see what will be imported first."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Import / paste…</button>
+                  data-tooltip="Bring in a setlist from the clipboard, a text file or a spreadsheet. You see it before anything is imported."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Import / paste…</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-tablet-page"
                   onclick="go('stagemon'); stagemonMode('simple')" disabled
-                  data-tooltip="Put the setlist on a tablet for the band: one simple page with no network, or the live monitor with song cards. Opens Tablet on stage.">Tablet on stage…</button>
+                  data-tooltip="Put the setlist on a tablet for the band. Opens Tablet on stage.">Tablet on stage…</button>
           </details>
 
           <div class="fb-sep"></div>
@@ -806,9 +806,9 @@
             <summary class="fb-group-label">Workspace</summary>
           <button class="btn btn-surface fb-wide-btn" id="btn-delete-ws-clones"
                   onclick="slDeleteWorkspaceClones()" disabled
-                  data-tooltip="WHOLE WORKSPACE: delete all generated clone functions (incl. legacy leftovers from older versions). Songs are re-pointed to their original function where possible. Then ✓ Apply to the show (bottom right) and Save as new file…."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Delete Clones from WS</button>
+                  data-tooltip="Whole show: delete every generated clone function. Songs go back to their original function where possible."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Delete Clones from WS</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-fill-notes" onclick="slFillCueNotes()"
-                  data-tooltip="Every setlist cue gets a note naming the button that plays the same look (or what it plays when there is none). Swiss Knife's own notes are refreshed when the show changed; notes you typed in QLC+ are kept. Done for you when a show opens.">↪ Add references to the cue notes</button>
+                  data-tooltip="Give every setlist cue a note naming the button that plays the same look. Notes you typed are kept.">↪ Add references to the cue notes</button>
           </details>
 
           <div class="fb-sep"></div>
@@ -830,7 +830,7 @@
         <div class="fb-actions-footer">
           <button class="btn btn-ghost fb-wide-btn" id="btn-save-songs"
                   onclick="slSaveDetails()" disabled
-                  data-tooltip="Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save Songs</button>
+                  data-tooltip="Keeps the matches and timings in this session. Switching setlist or pressing Apply does it too."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save Songs</button>
         </div>
       </div>
 
@@ -914,7 +914,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
-      <div><h2>Trigger Manager</h2><div class="p-desc">Audit and edit every keyboard &amp; MIDI binding in the Virtual Console.</div></div>
+      <div><h2>Trigger Manager</h2><div class="p-desc">See and edit every keyboard and MIDI trigger of the Virtual Console.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Trigger-Manager')" title="How this tool works — opens the Trigger Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1033,10 +1033,10 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Dictionary</h2><div class="p-desc">Describe what every function does — descriptions show up in Setlist and everywhere else.</div></div>
+      <div><h2>Dictionary</h2><div class="p-desc">Write what each function does; the notes show up in the Setlist and everywhere else.</div></div>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-dict-claude" onclick="dictAskClaude()" style="display:none"
-              data-tooltip="Copy a ready request for Claude Desktop: Claude reads the show through Swiss Knife, writes the descriptions and saves them next to the show. Paste it in Claude.">
+              data-tooltip="Copy a ready request for Claude Desktop, which writes the descriptions and saves them next to the show.">
         <svg class="ic" aria-hidden="true"><use href="/static/icons.svg#bot"/></svg> Ask Claude…
       </button>
       <button class="btn btn-surface" onclick="browseDictTxt()"
@@ -1089,11 +1089,11 @@
       <button class="btn btn-surface" onclick="exportDictTxt()"
               data-tooltip="Download the dictionary as a pipe-delimited .txt file"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> Export TXT</button>
       <button class="btn btn-surface" onclick="dictDraft()"
-              data-tooltip="Give every function without a description a first one drawn from the show: its colours, its steps, what it starts. Your own descriptions are kept. Nothing is written to a file until you save."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg> Draft descriptions</button>
+              data-tooltip="Draft a description for every function without one. Your own descriptions are kept. Nothing is saved yet."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg> Draft descriptions</button>
       <button class="btn btn-surface" onclick="saveDictNew()"
               data-tooltip="Save as a new file next to the show (Show_dictionary.txt, or _v2, _v3 … when taken). Never overwrites."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file</button>
       <button class="btn btn-accent" onclick="saveDictFile()"
-              data-tooltip="Save all descriptions to the dictionary you loaded (or to a new file next to the show when none is loaded)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save dictionary</button>
+              data-tooltip="Save all descriptions to the dictionary you loaded, or to a new file next to the show."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save dictionary</button>
     </div>
 
   </section>
@@ -1105,7 +1105,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
-      <div><h2>Fixtures</h2><div class="p-desc">Place fixtures on a 2D stage, auto-assign DMX, export blueprint or workspace.</div></div>
+      <div><h2>Fixtures</h2><div class="p-desc">Place your fixtures on a stage, set their DMX addresses and save the rig.</div></div>
       <div class="spacer"></div>
       <input id="fix-qxf-path" type="hidden">
       <span id="fix-qxf-name" class="file-chip">no QXF loaded</span>
@@ -1265,7 +1265,7 @@
       <button class="btn btn-surface" onclick="fixExportPdf()"
               data-tooltip="Export the rig as a scaled blueprint PDF"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#image"/></svg> Blueprint PDF</button>
       <button id="fix-btn-open" class="btn btn-surface" onclick="fixOpenAsShow()" style="display:none"
-              data-tooltip="Open the file you just saved: it becomes the show in progress, and every tool (Look Builder, VC Editor, Stage, Setlist…) works on it"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> Open it as the show</button>
+              data-tooltip="Open the file you just saved as the show in progress, so every tool can work on it."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> Open it as the show</button>
       <button class="btn btn-accent" onclick="fixGenerateQxw()"
               data-tooltip="A new .qxw with this rig (fixtures, patch, 3D positions) — nothing else"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file…</button>
     </div>
@@ -1281,7 +1281,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sun"/></svg></div>
-      <div><h2>Brightness</h2><div class="p-desc">Scale the master dimmer of each fixture group across every scene. Colour ratios untouched.</div></div>
+      <div><h2>Brightness</h2><div class="p-desc">Make the whole show brighter or dimmer without changing its colours.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Brightness')" title="How this tool works — opens the Brightness page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1353,7 +1353,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#search"/></svg></div>
-      <div><h2>ID Browser</h2><div class="p-desc">Sortable, filterable tables of every function and VC widget in the workspace.</div></div>
+      <div><h2>ID Browser</h2><div class="p-desc">Find any function or Virtual Console widget by name or ID.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('ID-Browser')" title="How this tool works — opens the ID Browser page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1400,7 +1400,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
-      <div><h2>VC Visual Editor</h2><div class="p-desc">See your Virtual Console as a canvas — build it (add, wire, delete widgets; pages, templates, screen sizes) and tidy it (drag, align, distribute, sort).</div></div>
+      <div><h2>VC Visual Editor</h2><div class="p-desc">Build and tidy the Virtual Console on a canvas.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('VC-Visual-Editor')" title="How this tool works — opens the VC Visual Editor page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1649,7 +1649,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
-      <div><h2>Function Porter</h2><div class="p-desc">Bring looks, chasers, effects and their buttons — and, if you like, fixtures and groups — from another show into the show in progress.</div></div>
+      <div><h2>Function Porter</h2><div class="p-desc">Bring looks, chasers and effects from another show into this one.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Function-Porter')" title="How this tool works — opens the Function Porter page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1821,10 +1821,10 @@
         <details id="porter-midi-opts" class="porter-vc-pick">
           <summary>Key / MIDI input <small id="porter-midi-info">(loading…)</small></summary>
           <div id="porter-midi-body" class="porter-midi-body"></div>
-          <label data-tooltip="When the target universe has no input device, copy the source's device, line and input profile to it — otherwise the ported MIDI bindings don't respond">
+          <label data-tooltip="If the target universe has no input device, copy the source's. Otherwise the ported MIDI bindings stay silent.">
             <input type="checkbox" id="porter-midi-copy" checked onchange="porterVcOpt()">
             Copy the input patch (device + profile) when the target universe has none</label><br>
-          <label data-tooltip="For a Virtual Console you rebuilt: copies each source widget's key/MIDI bindings onto the target widget with the same function (after porting) or the same caption, using the policy above">
+          <label data-tooltip="For a rebuilt Virtual Console: copy key and MIDI bindings to the target widget with the same function.">
             <input type="checkbox" id="porter-midi-only" onchange="porterVcOpt()">
             Also copy bindings onto matching <b>existing</b> target widgets (same function or caption)</label>
         </details>
@@ -1884,7 +1884,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Show Paperwork</h2><div class="p-desc">The paper for each reader, from the show in progress — tech rider for the venue, crew checklist for load-in, show book for you — as PDF or CSV.</div></div>
+      <div><h2>Show Paperwork</h2><div class="p-desc">Print the tech rider, the load-in checklist and the show book.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Show-Paperwork')" title="How this tool works — opens the Show Paperwork page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1949,7 +1949,7 @@
         <label class="field-label" for="show-name-input">Show name</label>
         <input id="show-name-input" type="text" class="filter-input" style="flex:0 0 200px"
                placeholder="from the file name" spellcheck="false" onchange="updateShowInfo()"
-               data-tooltip="Printed on every page and used in the file names; blank = the workspace file name. Also kept in the session.">
+               data-tooltip="Printed on every page and used in file names. Blank uses the show's file name.">
         <label class="field-label" for="event-date-input">Date</label>
         <input id="event-date-input" type="date" class="filter-input" style="flex:0 0 150px" onchange="updateShowInfo()">
         <div class="spacer"></div>
@@ -1973,7 +1973,7 @@
         <option>US Letter Landscape</option><option>US Letter Portrait</option>
       </select>
       <button class="btn btn-surface btn-ghost" onclick="showTravel()"
-              data-tooltip="The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
+              data-tooltip="The show, its extra fixture definitions and side files, and a short note, in one zip for another computer."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
       <button class="btn btn-surface" onclick="sbExportCsv()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#bar-chart"/></svg> Export CSV (ZIP)…</button>
       <button class="btn btn-accent" onclick="sbExportPdf()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#file-text"/></svg> Export PDF…</button>
     </div>
@@ -1987,7 +1987,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#grid"/></svg></div>
-      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">The 3D stage seen from above and from the front: put meshes on the floor, move, rotate and scale them, add models. Every edit goes into the show in progress.</div></div>
+      <div><h2>Stage &amp; Meshes</h2><div class="p-desc">Place meshes on the 3D stage; every edit goes into the show in progress.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Stage-and-Meshes')" title="How this tool works — opens the Stage and Meshes page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2018,7 +2018,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
-      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Pick groups, tick what you want for them (colours, gobos, strobes, chasers, movement, matrices) and see where it lands on the console. Every look declares every channel.</div></div>
+      <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Pick fixture groups and effects, and add the looks and chasers to the show.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Look-Builder')" title="How this tool works — opens the Look Builder page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2048,7 +2048,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
-      <div><h2>Rig Reducer</h2><div class="p-desc">Keep the fixtures of a smaller rig — everything that used the others is cleaned up — and re-patch them, in the show in progress.</div></div>
+      <div><h2>Rig Reducer</h2><div class="p-desc">Adapt your show to a smaller rig.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Rig-Reducer')" title="How this tool works — opens the Rig Reducer page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2085,7 +2085,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#check-square"/></svg></div>
-      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the show in progress and fix what you tick — the Doctor in the header follows every change.</div></div>
+      <div><h2>Workspace Doctor</h2><div class="p-desc">Check the show for problems and fix the ones you tick.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Workspace-Doctor')" title="How this tool works — opens the Workspace Doctor page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2112,7 +2112,7 @@
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy Report</button>
       <button class="btn btn-surface btn-ghost" onclick="showTravel()"
-              data-tooltip="The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
+              data-tooltip="The show, its extra fixture definitions and side files, and a short note, in one zip for another computer."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
       <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
               data-tooltip="Fix only a copy: save it as a separate file, the show in progress stays as it is">Export a fixed copy…</button>
       <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled data-needs="Tick the problems you want fixed." data-needs-show>✓ Fix selected in the show</button>
@@ -2127,7 +2127,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
-      <div><h2>Wizard Repair</h2><div class="p-desc">Finish a show made by the QLC+ 5.3 Show Wizard, in the show in progress: what it lost or left half done, step by step. Nothing is removed.</div></div>
+      <div><h2>Wizard Repair</h2><div class="p-desc">Finish a show made by the QLC+ 5.3 Show Wizard. Nothing is removed.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Wizard-Repair')" title="How this tool works — opens the Wizard Repair page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2159,7 +2159,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
-      <div><h2>Upgrade to QLC+ 5.3</h2><div class="p-desc">Give a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers, in the show in progress, step by step. Nothing is removed and your looks keep every channel.</div></div>
+      <div><h2>Upgrade to QLC+ 5.3</h2><div class="p-desc">Give an older show what QLC+ 5.3 offers. Nothing is removed.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Upgrade-Older-Shows')" title="How this tool works — opens the Upgrade to QLC+ 5.3 page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2197,7 +2197,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#cable"/></svg></div>
-      <div><h2>Cabling</h2><div class="p-desc">Plan the DMX cables for tonight with the kit you own: chains, cables, adapters, terminators, and what to pack. The show is only read.</div></div>
+      <div><h2>Cabling</h2><div class="p-desc">Plan tonight's DMX cables and what to pack. The show is only read.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Cabling')" title="How this tool works — opens the Cabling page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2503,7 +2503,7 @@
             </div></div>
           <div class="sm-row"><span>Colours</span>
             <select id="sm-theme" class="field-input sm-theme" onchange="stagemonSet('theme', this.value)"
-                    data-tooltip="Black, white song and Black, grey song keep the tablet as dark as possible on stage: only the current song is lit.">
+                    data-tooltip="The black views keep the tablet dark on stage: only the current song is lit.">
               <option value="dark">Dark</option>
               <option value="contrast">High contrast</option>
               <option value="black">Black, white song</option>
@@ -2512,10 +2512,10 @@
           <label class="sm-check"><input type="checkbox" id="sm-next" onchange="stagemonSet('show_next', this.checked)"> Show the next cue</label>
           <label class="sm-check"><input type="checkbox" id="sm-clock" onchange="stagemonSet('show_clock', this.checked)"> Show the time</label>
           <label class="sm-check"><input type="checkbox" id="sm-numbers" onchange="stagemonSet('show_numbers', this.checked)"> Show step numbers</label>
-          <label class="sm-check" data-tooltip="The notes written on the CueList's steps in QLC+ (a key, a capo, who starts), in small type under each name"><input type="checkbox" id="sm-notes" onchange="stagemonSet('show_notes', this.checked)"> Show step notes</label>
+          <label class="sm-check" data-tooltip="Show the notes written on the cue list's steps (a key, a capo, who starts) under each name."><input type="checkbox" id="sm-notes" onchange="stagemonSet('show_notes', this.checked)"> Show step notes</label>
           <div class="sm-row"><span>Safety hold</span>
             <select id="sm-hold" class="field-input sm-theme" onchange="stagemonSet('hold_ms', +this.value)"
-                    data-tooltip="Control mode: how long Previous and Next must be held before they act, so a stray touch does nothing. Off: a tap acts at once, handy for skipping several songs. Stop always needs a longer hold (at least 1.2 s).">
+                    data-tooltip="How long Previous and Next must be held, so a stray touch does nothing. Stop always needs a longer hold.">
               <option value="0">Off: a tap acts</option>
               <option value="300">0.3 s</option>
               <option value="600">0.6 s</option>
@@ -2568,7 +2568,7 @@
           <label class="sm-row"><span>Title</span>
             <input id="sm-simple-title" class="field-input" maxlength="120" placeholder="The show’s name" oninput="stagemonSet('title', this.value)"></label>
           <label class="sm-check"><input type="checkbox" id="sm-tab-notes"> with the QLC+ function names</label>
-          <label class="sm-check" data-tooltip="Under each song that has one, a Card button opens its tuning, tempo, who starts and the note. The tablet can choose a view by role."><input type="checkbox" id="sm-tab-cards" checked> with the song cards</label>
+          <label class="sm-check" data-tooltip="Under each song, a Card button opens its tuning, tempo, who starts and note."><input type="checkbox" id="sm-tab-cards" checked> with the song cards</label>
           <p class="sm-meta sm-simple-p">The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.</p>
         </div>
       </div>
@@ -2589,7 +2589,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
-      <div><h2>Quick Start</h2><div class="p-desc">Generate a ready-to-run QXW workspace from your fixtures in ~5 minutes.</div></div>
+      <div><h2>Quick Start</h2><div class="p-desc">Build a ready-to-run show from your fixtures in about five minutes.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Quick-Start')" title="How this tool works — opens the Quick Start page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -2671,7 +2671,7 @@
           <span style="width:1px;height:18px;background:var(--overlay0);margin:0 2px;flex-shrink:0"></span>
           <label style="font-size:11px;white-space:nowrap" for="qs-stage-layout">Layout</label>
           <select id="qs-stage-layout" class="filter-input" style="font-size:11px;padding:2px 4px;max-width:150px" onchange="qsPickStageLayout()"
-                  data-tooltip="Start the show with the stage and the band of a saved layout: the riser, the members, the backline. The stage takes the layout's size."><option value="">— none —</option></select>
+                  data-tooltip="Start the show with the stage and band of a saved layout: riser, members and backline."><option value="">— none —</option></select>
           <div class="spacer"></div>
           <button class="btn btn-surface btn-sm" style="white-space:nowrap" onclick="qsAutoDmx()">Auto-DMX</button>
           <span id="qs-dmx-info" style="font-size:11px;white-space:nowrap"></span>
@@ -2823,7 +2823,7 @@
       <button id="qs-btn-back" class="btn btn-surface" onclick="qsBack()" style="display:none">← Back</button>
       <div class="spacer"></div>
       <button id="qs-btn-open" class="btn btn-surface" onclick="qsOpenAsShow()" style="display:none"
-              title="Open the file you just saved: it becomes the show in progress, and every tool (Look Builder, VC Editor, Stage, Setlist…) works on it"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> Open it as the show</button>
+              title="Open the file you just saved as the show in progress, so every tool can work on it."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> Open it as the show</button>
       <button id="qs-btn-port" class="btn btn-surface" onclick="qsPortFromShow()" style="display:none"
               title="Open the Function Porter with this new rig as the target, then pick an existing show as the source: looks, effects and their VC buttons are ported, translated by capability when the fixture types differ.">➜ Port from an existing show</button>
       <button id="qs-btn-next" class="btn btn-accent" onclick="qsNext()">Next →</button>

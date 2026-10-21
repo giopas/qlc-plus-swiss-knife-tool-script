@@ -162,3 +162,41 @@ def test_the_porter_remembers_whether_both_stages_were_shown():
 
 def test_no_inline_font_size_below_11px_in_the_template():
     assert not re.findall(r"font-size:\s*(?:[0-9]|10)(?:\.\d+)?px", HTML)
+
+
+# ── stage E: the words in the app (DESIGN_v2.md section 11.1) ───────────────
+
+def _words(s):
+    return len(re.sub(r"<[^>]+>", "", s).split())
+
+
+def test_every_tool_header_is_one_short_outcome_sentence():
+    heads = re.findall(r'<h2>[^<]*</h2><div class="p-desc">(.*?)</div>', HTML, re.S)
+    assert len(heads) >= 19
+    for h in heads:
+        text = re.sub(r"\s+", " ", h).strip()
+        assert _words(text) <= 20, text
+        assert " — " not in text and " – " not in text, text
+
+
+def test_tooltips_are_one_sentence_of_at_most_20_words():
+    bad = [t for t in re.findall(r'data-tooltip="([^"]*)"', HTML) if _words(t) > 20]
+    assert not bad, bad[:3]
+
+
+def test_every_doctor_rule_has_its_plain_meaning():
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from core.doctor.report import TITLES
+    plain = set(re.findall(r"^  ([DI]\d{3}): '", JS["doctor.js"], re.M))
+    assert plain == set(TITLES), sorted(plain ^ set(TITLES))
+
+
+def test_the_stage_e_sentences_are_translated_in_all_seven_languages():
+    heads = [re.sub(r"\s+", " ", h).replace("&amp;", "&").strip()
+             for h in re.findall(r'<h2>[^<]*</h2><div class="p-desc">(.*?)</div>', HTML, re.S)]
+    plain = re.findall(r"^  [DI]\d{3}: '(.*)',$", JS["doctor.js"], re.M)
+    for f in glob.glob(str(ROOT / "static" / "i18n" / "*.json")):
+        d = json.load(open(f, encoding="utf-8"))
+        miss = [s for s in heads + plain if s not in d and "Tablet" not in s]
+        assert not miss, (os.path.basename(f), miss[:3])

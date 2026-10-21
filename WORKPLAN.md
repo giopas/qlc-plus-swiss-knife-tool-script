@@ -180,6 +180,8 @@ Design in [DESIGN_v2.md](DESIGN_v2.md) section 10. The new screen is also the pi
 
 **Stage D built the same day (Doctor summary by kind with filters, Porter step 3 on the mapping list with a remembered stages toggle, Setlist folds and match pills, table pass). Not looked at in a browser yet: check Doctor, Porter step 3 and Setlist by eye. Left for E: the plain-language meaning of each Doctor rule. Next: stage E, the words.**
 
+**Stage E built the same day (one outcome sentence under each tool title, 25 tooltips cut to 20 words, a plain meaning for every Doctor rule, all in the seven languages; checked by `tests/test_ui_lint.py`). No tool rename was confirmed, so none was made. All five stages are built; before the release remain: the `--missing` commands, the picture retake, the release notes, the merge command, and giopas's checks D2 and D3.**
+
 Decided 21 October (giopas). Design: [DESIGN_v2.md](DESIGN_v2.md); mockups: `mockups/mockup_D_v2.html`. Look, structure and words of the app, from three outside UX reviews checked against the code. **No change to `core/`, to the API routes or to what any button writes**; recorded sessions replay to the same file. One branch, five stages, each ending with the tests green and a before and after contact sheet from `tools/shots.py`. Details, files and acceptance in DESIGN_v2.md section 12.2.
 
 - **A. Foundation.** Five type steps with a floor of 11 px, shared spacing and radii, semantic colours with soft and text pairs, `:focus-visible`, reduced motion, emoji replaced by the icon sprite (first a script that strips the emoji from the keys of the seven language files), inline styles in the shell to classes, the button classes folded into four. Decide whether to bundle a font.

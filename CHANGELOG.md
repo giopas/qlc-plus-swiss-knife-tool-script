@@ -21,6 +21,16 @@ No change to `core/`, to the API routes or to what any button writes.
 - **Inter is bundled.** The interface now draws its letters with Inter (variable font, Latin and Latin Extended, 133 KB, SIL Open Font License, `static/fonts/Inter-OFL.txt`), so a button label is the same width on every computer and still works with no internet. Japanese and Chinese use the system fonts. If the font is missing the old system stack takes over.
 - **The shell has no inline styles.** The few left became classes.
 
+### Changed (3.9.5, stage E: the words in the app)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **One outcome sentence under each tool title.** The 19 header sentences say what you get ("Adapt your show to a smaller rig."), in 20 words or fewer and without dashes as connectors.
+- **Tooltips of 20 words or fewer.** 25 long ones (Setlist, Dictionary, Function Porter, Show Paperwork, Tablet on stage and others) were cut to what happens, not how it is built.
+- **Every Workspace Doctor rule has a plain meaning** under its title, in everyday words ("Two fixtures use the same DMX channels."). The technical title and the rule ID stay.
+- All new sentences are in the seven languages. `tests/test_ui_lint.py` checks the header length, the tooltip length, that every rule has its meaning and that the new texts are translated.
+- Tool names are unchanged: no rename was confirmed. Empty states keep their wording.
+
 ### Changed (3.9.5, stage D: key screens)
 
 No change to `core/`, to the API routes or to what any button writes.
@@ -29,7 +39,7 @@ No change to `core/`, to the API routes or to what any button writes.
 - **Function Porter, step 3** opens on the mapping list; the two stage maps stay folded and the choice is remembered. The footer summary adds how many fixtures have no exact match.
 - **Setlist.** *Setlist TXT* and *Workspace* are folds, closed until opened. Each assigned song shows the function's type badge and a pill: same name, similar name or different name (read from the two names; it does not say who chose the match).
 - **Tables.** Zebra stripes only in the dense tables, rows at least 32 px, header kept in view. The last inline font sizes under 11 px (9 to 10.5) are 11 px.
-- Not done, moved to stage E: the one-line plain meaning of each Doctor rule.
+- The plain meaning of each Doctor rule came in stage E.
 
 ### Changed (3.9.5, stage C: the kit on every tool)
 

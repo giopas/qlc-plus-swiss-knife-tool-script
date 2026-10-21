@@ -3620,6 +3620,7 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .doc-group-box.doc-error { border-left-color: var(--error); }
 .doc-group-box.doc-warning { border-left-color: var(--orange, #ff9800); }
 .doc-group-box.doc-info { border-left-color: var(--text-dim); }
+.doc-plain { padding: 0 10px 6px 41px; font-size: var(--fs-ui); color: var(--text-dim); }
 .doc-group-h { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; }
 .doc-code { font-weight: 700; font-family: monospace; }
 .doc-title { font-weight: 600; }

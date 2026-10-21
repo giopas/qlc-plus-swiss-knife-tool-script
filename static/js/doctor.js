@@ -34,6 +34,42 @@ function _docOptBar(code) {
   return '';
 }        // rows shown per code (the rest follow the group tick)
 
+// what each rule means, in everyday words (3.9.5, stage E); the technical title stays beside it
+const _DOC_PLAIN = {
+  D001: 'The file is not a QLC+ show.',
+  D002: 'Two items share one ID, so QLC+ can mix them up.',
+  D003: 'Something points to a function that no longer exists.',
+  D004: 'A chaser with fewer than two steps does nothing a scene would not.',
+  D005: 'A scene leaves some channels out, so older values can stay on.',
+  D006: 'A strobe or built-in program channel is on outside an effect.',
+  D007: 'A button and a chaser step use the same scene and can fight.',
+  D008: 'The Virtual Console has no panic button to black everything out.',
+  D009: 'Two fixtures use the same DMX channels.',
+  D010: 'The setlist page is not the first page of the Virtual Console.',
+  D011: 'A widget sits outside its page or frame, so you cannot see it.',
+  D012: 'Buttons listen to a controller that is not patched, so they stay silent.',
+  D013: 'Chaser steps with no duration go by instantly.',
+  D014: 'A cue list plays a chaser that has no steps.',
+  D015: 'A function has no name.',
+  D016: 'No button, cue or chaser uses this function.',
+  D017: 'The panic reset is a scene, so it cannot darken what is running.',
+  D018: 'A setlist song whose look lights nothing: the stage goes dark.',
+  D019: 'A palette or fixture group that the show uses is missing.',
+  D020: 'A palette sets nothing on its fixtures.',
+  D021: 'The fixture mode is not in its definition, so QLC+ treats it as a plain dimmer.',
+  D022: 'The channel count differs from the one in the definition.',
+  D023: 'A scene sets a channel the fixture does not have.',
+  I001: 'A button used only as a text label.',
+  I002: 'The pages of your Virtual Console.',
+  I003: 'No fixture definition found, so channel checks are skipped.',
+  I004: 'Layer scenes, meant to be played together.',
+  I005: 'Show Wizard functions that no button plays.',
+  I006: 'Fixtures that switch pages, not lights.',
+  I007: 'A Show Wizard effect that was never created.',
+  I008: 'QLC+ 5.3 content that QLC+ 5.2.2 ignores.',
+  I009: 'A fixture definition QLC+ does not ship; it travels with the show.',
+};
+
 function doctorInit() {
   if (_docData) return;
   // a show is open: check it straight away (the list follows the show in progress)
@@ -129,6 +165,7 @@ function doctorRender() {
         <span class="doc-hint"><span>${_esc(hint)}</span>${hintWarn ? `<span class="doc-hint-warn">${hintWarn}</span>` : ''}</span>
         <span class="doc-caret">${_esc(t(open ? 'Hide them' : 'Show them'))} ${open ? '▾' : '▸'}</span>
       </div>
+      ${_DOC_PLAIN[code] ? `<div class="doc-plain">${_esc(t(_DOC_PLAIN[code]))}</div>` : ''}
       ${open && fixable.length ? _docOptBar(code) : ''}
       <div class="doc-rows">${rows}</div>
     </div>`;

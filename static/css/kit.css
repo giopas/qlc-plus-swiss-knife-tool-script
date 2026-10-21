@@ -1,0 +1,157 @@
+/* =============================================================================
+   kit.css: the page kit (DESIGN_v2.md section 8, WORKPLAN 3.9.0 step 0)
+
+   One frame for a tool screen: header, toolbar, work area, change panel,
+   sticky action bar with a chip and a disabled reason, empty and done states,
+   a segmented control.  Every class starts with kit-, so nothing here touches
+   a screen that has not moved to the kit.  Tokens are used as they are
+   (tokens.css is not changed before 3.9.5); the two radii the kit needs are
+   its own custom properties until then.  Loaded after tokens.css and style.css.
+   ============================================================================= */
+
+:root {
+  --kit-radius: 8px;       /* cards and panels */
+  --kit-radius-sm: 6px;    /* controls */
+}
+
+/* ── Focus: a visible ring on every kit control ───────────────────────────── */
+.kit-seg button:focus-visible,
+.kit-actionbar .btn:focus-visible,
+.kit-done button:focus-visible,
+.kit-empty .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── 1 Header ─────────────────────────────────────────────────────────────── */
+.kit-page { display: flex; flex-direction: column; min-height: 0; }
+.kit-head {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+}
+.kit-head-icon {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--kit-radius);
+  background: var(--accent-soft);
+}
+.kit-head-icon svg { width: 20px; height: 20px; color: var(--accent); }
+.kit-head h2 { margin: 0; font-size: var(--fs-title); font-weight: 700; letter-spacing: -.01em; }
+.kit-head-sub { margin-top: 2px; font-size: var(--fs-ui); color: var(--text-dim); }
+.kit-head-tools { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); }
+
+/* ── 2 Toolbar: filters and view switches, never an action that writes ───── */
+.kit-toolbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-ui); color: var(--text-dim);
+}
+.kit-toolbar .kit-spacer { flex: 1; }
+
+/* ── 3 Work area and 4 change panel ───────────────────────────────────────── */
+.kit-body { flex: 1; min-height: 0; display: flex; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); overflow: auto; }
+.kit-work { flex: 1; min-width: 0; }                      /* free layout inside */
+.kit-panel {
+  flex: none; width: 280px; align-self: flex-start;
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  border-radius: var(--kit-radius);
+  padding: var(--sp-3);
+}
+.kit-panel h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-body); font-weight: 600; }
+.kit-panel ul { margin: 0; padding: 0; list-style: none; font-size: var(--fs-ui); color: var(--text-dim); }
+.kit-panel li { padding: var(--sp-1) 0; }
+.kit-panel li b { color: var(--text); font-weight: 600; }
+.kit-panel.kit-below { width: auto; align-self: stretch; }  /* under the table instead of beside it */
+@media (max-width: 1100px) {
+  .kit-body { flex-direction: column; }
+  .kit-panel { width: auto; align-self: stretch; }
+}
+
+/* ── 5 Action bar (sticky) and 6 disabled reason ──────────────────────────── */
+.kit-actionbar {
+  position: sticky; bottom: 0; z-index: 5;
+  background: var(--surface-0);
+  border-top: 1px solid var(--border);
+  padding: var(--sp-2) var(--sp-4);
+}
+.kit-actionbar-row { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.kit-actionbar-left { display: flex; align-items: center; gap: var(--sp-2) var(--sp-3); flex: 1; min-width: 0; flex-wrap: wrap; }
+.kit-actionbar-right { display: flex; align-items: center; gap: var(--sp-2); flex: none; margin-left: auto; }
+.kit-summary { font-size: var(--fs-ui); color: var(--text-dim); min-width: 0; overflow-wrap: anywhere; }  /* may wrap */
+.kit-summary:empty { display: none; }
+
+/* the chip names what the main button does; it never wraps (P13) */
+.kit-chip {
+  flex: none; white-space: nowrap;
+  padding: 2px 10px;
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  background: var(--surface-1); color: var(--text);
+  font-size: var(--fs-ui); font-weight: 600;
+}
+.kit-chip-apply    { color: var(--accent);  border-color: color-mix(in srgb, var(--accent) 40%, transparent);  background: var(--accent-soft); }
+.kit-chip-new      { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, transparent); background: var(--success-soft); }
+.kit-chip-replace  { color: var(--orange);  border-color: color-mix(in srgb, var(--orange) 40%, transparent);  background: var(--orange-soft); }
+.kit-chip-export, .kit-chip-settings { color: var(--text-dim); }
+
+.kit-why {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  font-size: var(--fs-ui); color: var(--text-dim);
+}
+.kit-why[hidden] { display: none; }
+.kit-why::before {                       /* a small "i", drawn: no emoji, no sprite needed */
+  content: "i"; flex: none;
+  width: 14px; height: 14px; display: grid; place-items: center;
+  border: 1px solid currentColor; border-radius: 50%;
+  font-size: var(--fs-small); font-weight: 700; font-style: normal; line-height: 1;
+}
+
+/* ── 7 States: empty and done ─────────────────────────────────────────────── */
+.kit-empty {
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-4); text-align: center;
+  color: var(--text-dim); font-size: var(--fs-body);
+}
+.kit-empty p { margin: 0; max-width: 46ch; }
+.kit-loading { padding: var(--sp-4); color: var(--text-dim); font-size: var(--fs-ui); }
+
+.kit-done {
+  position: fixed; left: 50%; bottom: 72px; transform: translateX(-50%); z-index: 50;
+  display: flex; align-items: center; gap: var(--sp-3);
+  max-width: min(560px, calc(100vw - 2 * var(--sp-3)));
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--kit-radius);
+  box-shadow: var(--shadow-1);
+  font-size: var(--fs-ui);
+}
+.kit-done[hidden] { display: none; }
+.kit-done button {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--accent); font: inherit; font-weight: 600;
+}
+.kit-done button:hover { text-decoration: underline; }
+
+/* ── Segmented control (modes, keep all / keep none) ──────────────────────── */
+.kit-seg {
+  display: inline-flex; padding: 2px; gap: 2px;
+  background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: var(--kit-radius-sm);
+}
+.kit-seg button {
+  padding: 4px 12px; border: 0; border-radius: calc(var(--kit-radius-sm) - 2px);
+  background: transparent; color: var(--text-dim);
+  font: inherit; font-size: var(--fs-ui); font-weight: 600; cursor: pointer;
+}
+.kit-seg button:hover { color: var(--text); }
+.kit-seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+
+/* motion only for people who have not asked for less (DESIGN_v2 section 5) */
+@media (prefers-reduced-motion: no-preference) {
+  .kit-seg button, .kit-chip { transition: background-color .12s, color .12s, border-color .12s; }
+}

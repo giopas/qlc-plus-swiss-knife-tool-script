@@ -4602,3 +4602,9 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible, [role="
     transition-duration: .01ms !important; scroll-behavior: auto !important;
   }
 }
+
+/* ── 3.9.5 stage A: classes for what the shell used to say inline ─────────── */
+.u-hidden { display: none !important; }
+.u-grow { flex: 1; }
+.sh-foot-t-top { margin-top: var(--sp-1); }
+.coming-soon-icon-big { font-size: 4rem; margin-bottom: .5rem; }

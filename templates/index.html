@@ -37,7 +37,7 @@
     <label class="btn btn-accent" title="Load a .qsk session file"
            data-tooltip="Open a .qsk session file to restore all file paths">
       📂 Open Session…
-      <input type="file" accept=".qsk" style="display:none"
+      <input type="file" accept=".qsk" class="u-hidden"
              onchange="sessionLoad(this)">
     </label>
     <button class="btn btn-surface" onclick="sessionSave()"
@@ -45,13 +45,13 @@
             data-tooltip="Save workspace, dictionary and setlist paths to a reusable .qsk file">
       💾 Save Session
     </button>
-    <span style="flex:1"></span>
+    <span class="u-grow"></span>
     <button class="btn btn-surface" onclick="sessionCloseModal()">Close</button>
   </div>
 </div>
 
 <!-- Fallback file input used when native picker is unavailable -->
-<input id="file-input" type="file" accept=".qxw" style="display:none"
+<input id="file-input" type="file" accept=".qxw" class="u-hidden"
        onchange="loadFromInput(this)">
 
 <!-- ══════════════════════════════════════════════════════════════════════════
@@ -386,7 +386,7 @@
           <button class="btn btn-accent btn-sm" onclick="showSaveProfile()">★ Save profile</button>
         </div>
         <div class="sh-note" id="sh-prof-where"></div>
-        <div class="sh-foot-t" style="margin-top:4px">Apply a profile to this show</div>
+        <div class="sh-foot-t sh-foot-t-top">Apply a profile to this show</div>
         <div class="sh-row">
           <select id="sh-prof-list" class="filter-input" aria-label="Saved profiles" onchange="showProfSelected()"></select>
           <button class="btn btn-accent btn-sm" onclick="showApplyProfile()">▶ Apply</button>
@@ -820,7 +820,7 @@
 
         <!-- Save always visible at bottom -->
         <div class="fb-actions-footer">
-          <button class="btn btn-green fb-wide-btn" id="btn-save-songs"
+          <button class="btn btn-surface fb-wide-btn" id="btn-save-songs"
                   onclick="slSaveDetails()" disabled
                   data-tooltip="Save song assignments and timing to the server (required before Generate)">💾 Save Songs</button>
         </div>
@@ -1007,7 +1007,7 @@
                    placeholder="0">
           </div>
           <button class="btn btn-accent" onclick="applyTriggerEdit()">✓ Apply</button>
-          <button class="btn btn-red"    onclick="clearTriggerEdit()">✕ Clear</button>
+          <button class="btn btn-danger" onclick="clearTriggerEdit()">✕ Clear</button>
         </div>
       </div>
 
@@ -1077,7 +1077,7 @@
       <span id="dict-edit-label">Select a row to edit its description</span>
       <textarea id="dict-desc-input" rows="2"
                 placeholder="Description…" disabled></textarea>
-      <button class="btn btn-green" id="btn-save-dict-entry"
+      <button class="btn btn-accent" id="btn-save-dict-entry"
               onclick="saveDictEntry()" disabled>Save</button>
     </div>
 
@@ -1118,7 +1118,7 @@
 
     <!-- Toolbar row 1: fixture operations -->
     <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
-      <button class="btn btn-success" onclick="fixAddDialog()"
+      <button class="btn btn-accent" onclick="fixAddDialog()"
               data-tooltip="Add a new fixture to the rig configurator">➕ Add Fixture</button>
       <button class="btn btn-danger"  onclick="fixRemoveSelected()"
               data-tooltip="Remove the selected fixture from the rig">🗑 Remove</button>
@@ -1247,7 +1247,7 @@
 
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
           <button class="btn btn-surface" onclick="fixAddModalClose()">Cancel</button>
-          <button class="btn btn-success" onclick="fixAddConfirm()">Add to Rig</button>
+          <button class="btn btn-accent" onclick="fixAddConfirm()">Add to Rig</button>
         </div>
       </div>
     </div>
@@ -2664,7 +2664,7 @@
           <input id="qs-qxf-upload" type="file" accept=".qxf" style="display:none" onchange="qsUploadQxf()">
           <button class="btn btn-surface" onclick="qsBrowseQxf()">📂 Browse .qxf…</button>
           <span style="color:var(--overlay0);margin:0 4px">or</span>
-          <button class="btn btn-primary" onclick="qsOpenGitHub()">Browse QLC+ Library</button>
+          <button class="btn btn-accent" onclick="qsOpenGitHub()">Browse QLC+ Library</button>
         </div>
         <div id="qs-qxf-info" style="font-size:12px;color:var(--overlay0)">Load fixture definitions to get started.</div>
       </div>
@@ -2689,7 +2689,7 @@
           <input id="qs-fix-qty" class="filter-input" type="number" value="1" min="1" max="100" style="width:60px">
           <label class="field-label">Name:</label>
           <input id="qs-fix-name" class="filter-input" type="text" placeholder="(optional)" style="width:140px">
-          <button class="btn btn-success" onclick="qsAddFixture()">Add to Rig</button>
+          <button class="btn btn-accent" onclick="qsAddFixture()">Add to Rig</button>
           <button class="btn btn-danger" onclick="qsClearRig()">Clear All</button>
         </div>
       </div>
@@ -2960,7 +2960,7 @@
 ══════════════════════════════════════════════════════════════════════════ -->
 <div id="drop-overlay">
   <div id="drop-hint">
-    <div style="font-size:4rem; margin-bottom:0.5rem;">📂</div>
+    <div class="coming-soon-icon-big">📂</div>
     <div>Drop your .qxw workspace here</div>
   </div>
 </div>

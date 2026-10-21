@@ -65,7 +65,7 @@ const SK_CHIPS = {
     whyEl.hidden = true;
 
     left.append(chipEl, summaryEl);
-    const sec = opts.secondary ? button(opts.secondary, 'btn-secondary') : null;
+    const sec = opts.secondary ? button(opts.secondary, 'btn-surface') : null;
     const pri = opts.primary ? button(opts.primary, 'btn-accent') : null;   // at most one of each
     if (sec) right.append(sec);
     if (pri) right.append(pri);

@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swiss Knife — DESIGN v2 mockup</title>
+<style>
+/* Mockup D (21 Oct 2026): the DESIGN_v2.md proposal. Static, no network. Tokens from static/css/tokens.css (dark),
+   with the v2 changes: five type steps (floor 11 px), soft borders, 8 px cards, focus ring, one primary per screen. */
+:root{
+  --bg:#0d1117; --s0:#131822; --s1:#1a2130; --s2:#232c3f;
+  --border:#273043; --border-strong:#36415c;
+  --text:#e8ecf5; --dim:#98a2b8; --faint:#6b748a;
+  --accent:#2dd4bf; --accent-soft:rgba(45,212,191,.12); --accent-contrast:#062622;
+  --ok:#3ecf8e; --warn:#f5b340; --err:#ef5a6a; --orange:#f0a04b;
+  --ok-soft:rgba(62,207,142,.12); --warn-soft:rgba(245,179,64,.12); --err-soft:rgba(239,90,106,.12); --orange-soft:rgba(240,160,75,.14);
+  --fs-title:20px; --fs-section:15px; --fs-body:13px; --fs-ui:12px; --fs-small:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:16px; --sp-4:24px; --sp-5:32px;
+  --r:8px; --r-sm:6px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif; --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070b;color:var(--text);font:var(--fs-body)/1.5 var(--font);padding:var(--sp-3)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.switch{display:flex;gap:var(--sp-2);margin:0 auto var(--sp-3);max-width:1440px;align-items:center;flex-wrap:wrap}
+.switch b{font-size:var(--fs-section);margin-right:var(--sp-3)}
+.switch button{background:var(--s1);color:var(--dim);border:1px solid var(--border);border-radius:999px;padding:6px 14px}
+.switch button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.note{max-width:1440px;margin:var(--sp-3) auto 0;color:var(--dim);font-size:var(--fs-ui)}
+.frame{display:none}.frame.on{display:block}
+
+.app{max-width:1440px;height:860px;margin:0 auto;display:flex;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+/* sidebar */
+aside{width:220px;background:var(--s0);border-right:1px solid var(--border);display:flex;flex-direction:column;flex:none}
+.logo{padding:var(--sp-3);font-weight:700;display:flex;gap:8px;align-items:center;letter-spacing:.02em}
+.logo i{color:var(--accent);font-style:normal}
+.ver{font:var(--fs-small) var(--mono);color:var(--faint);background:var(--s2);border-radius:999px;padding:1px 8px}
+nav{flex:1;overflow:auto;padding:0 var(--sp-2) var(--sp-2)}
+.grp-l{display:flex;align-items:center;gap:8px;font-size:var(--fs-small);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:var(--sp-3) 8px 6px;border-bottom:1px solid var(--border)}
+.grp-l span{width:16px;height:16px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:var(--fs-small)}
+.it{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r-sm);color:var(--dim);font-size:var(--fs-body);margin-top:2px;position:relative}
+.it.on{background:var(--accent-soft);color:var(--accent)}
+.it.on:before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:3px;border-radius:3px;background:var(--accent)}
+.it .dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.recent{margin:var(--sp-2) 0;padding:var(--sp-2);border:1px solid var(--border);border-radius:var(--r);background:var(--s1)}
+.recent h4,.hist h4{font-size:var(--fs-small);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:4px;display:flex;justify-content:space-between}
+.recent a{display:block;color:var(--text);font-size:var(--fs-ui);padding:2px 0}
+.hist{margin:0 var(--sp-2) var(--sp-2);padding:var(--sp-2);border:1px solid var(--border);border-radius:var(--r);background:var(--s1)}
+.hist li{list-style:none;display:flex;gap:6px;font-size:var(--fs-ui);color:var(--dim);padding:2px 0}
+.hist li:before{content:"✓";color:var(--ok)}
+.hist li b{color:var(--text);font-weight:600}
+/* main */
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+.ribbon{overflow:hidden;display:flex;align-items:center;gap:10px;padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--border);background:var(--s0);min-height:56px}
+.file{display:flex;flex-direction:column;line-height:1.25;min-width:170px}
+.file b{font-size:var(--fs-body);font-weight:600;display:flex;gap:8px;align-items:center}
+.file b:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.file.none b:before{background:var(--faint)}
+.file small{font-size:var(--fs-small);color:var(--faint)}
+.stats{font:var(--fs-small) var(--mono);color:var(--dim);white-space:nowrap}
+.pill{white-space:nowrap;display:inline-flex;gap:6px;align-items:center;padding:3px 10px;border-radius:999px;font-size:var(--fs-ui);font-weight:600;border:1px solid var(--border);background:var(--s1);color:var(--dim)}
+.pill.err{background:var(--err-soft);border-color:rgba(239,90,106,.4);color:var(--err)}
+.pill.warn{background:var(--warn-soft);border-color:rgba(245,179,64,.4);color:var(--warn)}
+.pill.ok{background:var(--ok-soft);border-color:rgba(62,207,142,.4);color:var(--ok)}
+.pill.chg{background:var(--accent-soft);border-color:rgba(45,212,191,.4);color:var(--accent)}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--r-sm);border:1px solid var(--border-strong);background:transparent;color:var(--text);font-size:var(--fs-ui);font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+.btn.ghost{border-color:transparent;color:var(--dim)}
+.btn.sm{padding:3px 10px}
+.btn.danger{border-color:var(--err);color:var(--err)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.kbd{font:var(--fs-small) var(--mono);border:1px solid var(--border-strong);border-radius:4px;padding:0 5px;color:var(--dim)}
+.page{flex:1;overflow:auto;padding:var(--sp-4) var(--sp-5)}
+/* page header (kit 1) */
+.ph{display:flex;align-items:center;gap:14px;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--border);background:var(--s0)}
+.ph .ic{width:40px;height:40px;border-radius:var(--r);background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)}
+.ph h2{font-size:var(--fs-title);font-weight:700;line-height:1.2}
+.ph p{font-size:var(--fs-ui);color:var(--dim)}
+.ph .r{margin-left:auto;display:flex;gap:8px}
+.tb{display:flex;gap:var(--sp-2);align-items:center;padding:var(--sp-2) var(--sp-4);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:var(--r-sm);overflow:hidden}
+.seg button{background:transparent;border:0;padding:5px 14px;color:var(--dim);font-size:var(--fs-ui);font-weight:600}
+.seg button.on{background:var(--accent-soft);color:var(--accent)}
+/* action bar (kit 5, 6) */
+.ab{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-2) var(--sp-4);border-top:1px solid var(--border);background:var(--s0);flex-wrap:wrap}
+.chip{display:inline-flex;gap:6px;align-items:center;font-size:var(--fs-small);font-weight:600;padding:2px 10px;border-radius:999px;border:1px solid var(--border);color:var(--dim);background:var(--s1)}
+.chip.show{color:var(--accent);background:var(--accent-soft);border-color:rgba(45,212,191,.4)}
+.chip.newfile{color:var(--ok);background:var(--ok-soft);border-color:rgba(62,207,142,.4)}
+.chip.replace{color:var(--orange);background:var(--orange-soft);border-color:rgba(240,160,75,.4)}
+.why{font-size:var(--fs-ui);color:var(--dim);display:flex;gap:6px;align-items:center}
+.sum{font-size:var(--fs-ui);color:var(--text)}
+/* cards, tables */
+h3.sec{font-size:var(--fs-section);font-weight:600;margin:var(--sp-4) 0 var(--sp-2)}
+h3.sec small{font-weight:400;color:var(--faint);font-size:var(--fs-ui);margin-left:8px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3)}
+.card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:var(--sp-3)}
+.card .h{display:flex;gap:8px;align-items:center;font-weight:600;font-size:var(--fs-section);margin-bottom:6px}
+.card .h span{width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:var(--fs-small)}
+.card p{color:var(--dim);font-size:var(--fs-ui);margin-bottom:var(--sp-2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.tool{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 10px;font-size:var(--fs-ui);color:var(--text)}
+.tool.last{border-color:rgba(45,212,191,.5);color:var(--accent)}
+.drop{border:1px dashed var(--border-strong);border-radius:var(--r);padding:var(--sp-4);text-align:center;background:var(--s0)}
+.drop b{display:block;font-size:var(--fs-section);margin-bottom:var(--sp-2)}
+.drop .btn{margin:0 4px}
+.rec{display:flex;align-items:center;gap:var(--sp-3);padding:8px var(--sp-3);border-bottom:1px solid var(--border);font-size:var(--fs-body)}
+.rec:last-child{border-bottom:0}
+.rec .m{color:var(--dim);font-size:var(--fs-ui)}
+.list{border:1px solid var(--border);border-radius:var(--r);background:var(--s0)}
+.alert{display:flex;gap:var(--sp-3);align-items:center;padding:var(--sp-3);border-radius:var(--r);border:1px solid rgba(239,90,106,.4);background:var(--err-soft);margin-bottom:var(--sp-3)}
+.alert h2{font-size:var(--fs-section)}
+.alert p{font-size:var(--fs-ui);color:var(--dim)}
+.route{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3);border:1px solid rgba(45,212,191,.4);background:var(--accent-soft);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-ui)}
+th{position:sticky;top:0;background:var(--s0);text-align:left;color:var(--dim);font-weight:600;font-size:var(--fs-small);letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-bottom:1px solid var(--border-strong)}
+td{padding:0 10px;height:32px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(45,212,191,.07)}
+td.id{font-family:var(--mono);color:var(--dim);width:56px}
+td.n{font-weight:600}
+tr.gone td{opacity:.4;text-decoration:line-through}
+.badge{font:600 var(--fs-small) var(--mono);padding:1px 8px;border-radius:4px;background:var(--s1);border:1px solid var(--border)}
+.b-ch{color:var(--accent)}.b-sc{color:var(--ok)}.b-ex{color:var(--orange)}
+.split{display:flex;flex:1;min-height:0}
+.split>.l{flex:1;overflow:auto}
+.split>.r{width:340px;border-left:1px solid var(--border);background:var(--s0);padding:var(--sp-3);overflow:auto;flex:none}
+.panel h4{font-size:var(--fs-small);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:var(--sp-2)}
+.panel .big{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.panel .big b{font:600 var(--fs-section) var(--mono)}
+.field{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin-bottom:var(--sp-2);font-size:var(--fs-ui)}
+.field label{color:var(--dim)}
+.in{background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:6px 10px;color:var(--text);font-size:var(--fs-ui);min-height:30px}
+.in.mono{font-family:var(--mono)}
+.diff{color:var(--warn);font-size:var(--fs-small);font-weight:600}
+.tabs{display:flex;gap:var(--sp-3);border-bottom:1px solid var(--border);margin-bottom:var(--sp-3)}
+.tabs span{padding:6px 0;color:var(--dim);font-size:var(--fs-ui);font-weight:600}
+.tabs span.on{color:var(--accent);border-bottom:2px solid var(--accent)}
+.song{display:flex;gap:10px;align-items:center;padding:0 var(--sp-3);height:36px;border-bottom:1px solid var(--border);font-size:var(--fs-body)}
+.song.sel{background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent)}
+.song .no{width:22px;color:var(--faint);font-family:var(--mono);font-size:var(--fs-ui)}
+.song .t{margin-left:auto;display:flex;gap:6px}
+.song.off{opacity:.45}
+.step{display:flex;gap:8px;align-items:center;font-size:var(--fs-ui);padding:4px 0;color:var(--dim)}
+.step i{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:var(--fs-small);background:var(--ok-soft);color:var(--ok)}
+.step i.todo{background:var(--s2);color:var(--faint)}
+/* doctor */
+.sumrow{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.sumrow .card{display:flex;align-items:baseline;gap:10px}
+.sumrow b{font:700 24px var(--mono)}
+.rule{border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:var(--r);background:var(--s0);padding:10px var(--sp-3);margin-bottom:var(--sp-2);display:flex;gap:var(--sp-3);align-items:center}
+.rule.e{border-left-color:var(--err)}.rule.i{border-left-color:var(--border-strong)}
+.rule .c{font:600 var(--fs-ui) var(--mono);color:var(--dim);width:44px}
+.rule .x{flex:1}.rule .x b{font-size:var(--fs-body)}.rule .x p{font-size:var(--fs-ui);color:var(--dim)}
+.rule .k{font:600 var(--fs-section) var(--mono)}
+
+/* tablet device */
+.stagewrap{display:flex;gap:var(--sp-5);justify-content:center;align-items:flex-start;padding:var(--sp-4);background:#05070b;max-width:1440px;margin:0 auto;border:1px solid var(--border);border-radius:12px;min-height:860px}
+.dev{background:#000;border:10px solid #1b2230;border-radius:22px;overflow:hidden;color:#fff;font-family:var(--font);display:flex;flex-direction:column}
+.dev.p{width:400px;height:640px}
+.dev.l{width:640px;height:400px}
+.dev .top{display:flex;justify-content:space-between;padding:8px 12px;font-size:14px;color:#c9d1e0;border-bottom:1px solid #222}
+.dev .top i{color:#34d27b;font-style:normal}
+.dev .sets{display:flex;gap:6px;padding:8px 12px}
+.dev .sets span{border:1px solid #333;border-radius:8px;padding:4px 12px;font-size:13px}
+.dev .sets span.on{background:#fff;color:#000;font-weight:700}
+.dev .row{padding:6px 16px;font-size:20px;color:#9aa3b5}
+.dev .row b{color:#6b748a;margin-right:10px;font-weight:600}
+.dev .cur{background:#f5b400;color:#000;padding:10px 16px;font-size:28px;font-weight:800}
+.dev .cur small{display:block;font-size:16px;font-weight:700;opacity:.8}
+.dev .nx{margin:8px 10px;border:2px solid #7cc4ff;border-radius:12px;padding:10px 14px;background:#0a1220}
+.dev .nx .k{font-size:13px;font-weight:800;letter-spacing:.12em;color:#7cc4ff}
+.dev .nx .t{font-size:26px;font-weight:800}
+.dev .nx .tu{display:inline-block;margin:4px 0;background:#f5b400;color:#000;font-weight:800;font-size:15px;padding:2px 10px;border-radius:6px}
+.dev .nx p{font-size:16px;color:#d8e0ee}
+.dev .ctl{display:flex;gap:8px;padding:10px;margin-top:auto}
+.dev .ctl span{flex:1;text-align:center;border:1px solid #333;border-radius:12px;padding:14px 0;font-size:18px;font-weight:800;min-height:56px}
+.dev .ctl span.stop{color:#ff5a5a;border-color:#ff5a5a;flex:.8}
+.dev .cols{display:flex;flex:1;min-height:0}
+.dev .cols>div{flex:1;overflow:hidden}
+.dev .cols>div+div{border-left:1px solid #222;flex:1.1}
+.cap{font-size:var(--fs-ui);color:var(--dim);text-align:center;margin-top:var(--sp-2);max-width:400px}
+.rolebar{display:flex;gap:8px;margin-bottom:var(--sp-3);justify-content:center}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4"/></symbol>
+  <symbol id="tablet" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z M12 10v5M12 18h0"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v11H3z"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h0"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h0"/></symbol>
+  <symbol id="music" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12M9 18a3 3 0 11-3-3 3 3 0 013 3zm11-2a3 3 0 11-3-3 3 3 0 013 3z"/></symbol>
+</svg>
+
+<div class="switch" role="tablist" aria-label="Frames">
+  <b>Swiss Knife · DESIGN v2</b>
+  <button class="on" data-f="f1">1 Start, no show</button>
+  <button data-f="f2">2 Start, show with an error</button>
+  <button data-f="f3">3 Page kit: Rig Reducer</button>
+  <button data-f="f4">4 Doctor by kind</button>
+  <button data-f="f5">5 Tablet on stage (3.9.0)</button>
+  <button data-f="f6">6 The tablet pages</button>
+</div>
+
+<!-- ───────────── Frame 1: Start, no show ───────────── -->
+<section class="frame on" id="f1">
+<div class="app">
+  <aside>
+    <div class="logo"><i>◆</i> SWISS KNIFE <span class="ver">v3.9.5</span></div>
+    <nav>
+      <div class="it on"><svg class="i"><use href="#home"/></svg>Start</div>
+      <div class="grp-l"><span>1</span>New show</div>
+      <div class="it"><svg class="i"><use href="#bolt"/></svg>Quick Start</div>
+      <div class="it"><svg class="i"><use href="#sliders"/></svg>Fixtures</div>
+      <div class="grp-l"><span>2</span>Adapt a show</div>
+      <div class="it"><svg class="i"><use href="#sliders"/></svg>Rig Reducer</div>
+      <div class="grp-l"><span>3</span>Create</div>
+      <div class="grp-l"><span>4</span>Run the show</div>
+      <div class="it"><svg class="i"><use href="#tablet"/></svg>Tablet on stage</div>
+      <div class="grp-l"><span>5</span>Check &amp; fix</div>
+      <div class="grp-l"><span>6</span>Document</div>
+      <div class="recent"><h4>Recent tools</h4><a>Rig Reducer</a><a>Setlist</a><a>Workspace Doctor</a></div>
+    </nav>
+    <div class="hist"><h4>History <span>All ›</span></h4><div style="font-size:var(--fs-ui);color:var(--faint)">Nothing yet. Every change to a show appears here.</div></div>
+  </aside>
+  <main>
+    <div class="ribbon">
+      <div class="file none"><b>No show open</b><small>Open one to use the tools</small></div>
+      <div class="sp"></div>
+      <span class="kbd">⌘K</span>
+      <button class="btn">Open… ▾</button>
+    </div>
+    <div class="page">
+      <h1 style="font-size:var(--fs-title)">Open a show to start</h1>
+      <p style="color:var(--dim);margin:4px 0 var(--sp-3)">Swiss Knife works on a copy. The file you open is never touched.</p>
+      <div class="drop"><b>Drop a .qxw here</b><button class="btn primary">Open workspace…</button><button class="btn">Open session…</button></div>
+      <h3 class="sec">Recent shows</h3>
+      <div class="list">
+        <div class="rec"><b style="font-weight:600">Festival_14fix.qxw</b><span class="m">14 fixtures</span><span class="pill err">1 error</span><span class="sp"></span><span class="m">yesterday</span><button class="btn sm">Open</button></div>
+        <div class="rec"><b style="font-weight:600">Pub_6fix_v3.qxw</b><span class="m">6 fixtures</span><span class="pill ok">clean</span><span class="sp"></span><span class="m">Monday</span><button class="btn sm">Open</button></div>
+      </div>
+      <p style="margin-top:var(--sp-3);color:var(--dim)">No show yet? <a style="color:var(--accent)">Quick Start builds one from your fixtures →</a></p>
+      <h3 class="sec">What Swiss Knife does <small>six jobs, the same six groups as the side menu</small></h3>
+      <div class="cards">
+        <div class="card"><div class="h"><span>1</span>New show</div><p>Start from your fixtures: looks, effects, PANIC RESET and a Virtual Console, ready to run.</p><div class="chips"><span class="tool">Quick Start</span><span class="tool">Fixtures</span></div></div>
+        <div class="card"><div class="h"><span>2</span>Adapt a show</div><p>Take a show to a smaller or different rig and keep what still fits.</p><div class="chips"><span class="tool">Rig Reducer</span><span class="tool">Function Porter</span><span class="tool">Brightness</span></div></div>
+        <div class="card"><div class="h"><span>4</span>Run the show</div><p>Tonight's setlist, keys and MIDI without clashes, the cue on a tablet on stage.</p><div class="chips"><span class="tool">Setlist</span><span class="tool">Trigger Manager</span><span class="tool">Tablet on stage</span></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+<p class="note">State A of DESIGN_v2 section 7. The six job cards stay on Start; with no show open they sit below the one thing to do.</p>
+</section>
+
+<!-- ───────────── Frame 2: Start, show with an error ───────────── -->
+<section class="frame" id="f2">
+<div class="app">
+  <aside>
+    <div class="logo"><i>◆</i> SWISS KNIFE <span class="ver">v3.9.5</span></div>
+    <nav>
+      <div class="it on"><svg class="i"><use href="#home"/></svg>Start</div>
+      <div class="grp-l"><span>1</span>New show</div>
+      <div class="it"><svg class="i"><use href="#bolt"/></svg>Quick Start</div>
+      <div class="grp-l"><span>2</span>Adapt a show</div>
+      <div class="it"><svg class="i"><use href="#sliders"/></svg>Rig Reducer<span class="dot" title="Changes applied here"></span></div>
+      <div class="grp-l"><span>4</span>Run the show</div>
+      <div class="it"><svg class="i"><use href="#tablet"/></svg>Tablet on stage</div>
+      <div class="grp-l"><span>5</span>Check &amp; fix</div>
+      <div class="it"><svg class="i"><use href="#check"/></svg>Workspace Doctor<span class="dot" style="background:var(--err)"></span></div>
+      <div class="recent"><h4>Recent tools</h4><a>Rig Reducer</a><a>Setlist</a><a>Workspace Doctor</a></div>
+    </nav>
+    <div class="hist"><h4>History <span>All ›</span></h4><ul><li><b>Rig Reducer</b> kept 8 fixtures</li><li><b>Workspace Doctor</b> 853 fixes</li></ul></div>
+  </aside>
+  <main>
+    <div class="ribbon">
+      <div class="file"><b>Festival_14fix.qxw</b><small>opened, never touched</small></div>
+      <span class="stats">14 fixtures · 286 functions · 113 widgets</span>
+      <span class="pill chg">2 changes, not saved</span>
+      <span class="pill err" title="856 warnings: D005 ×851, D004 ×4, D017 ×1">1 error · 4 kinds of warning</span>
+      <div class="sp"></div>
+      <button class="btn ghost">↶ Undo</button><button class="btn ghost">History</button>
+      <button class="btn primary">Save as new file…</button>
+      <button class="btn">Open… ▾</button>
+    </div>
+    <div class="page">
+      <div class="alert">
+        <svg class="i" style="color:var(--err);width:22px;height:22px"><use href="#alert"/></svg>
+        <div><h2>Festival_14fix.qxw has 1 error to look at.</h2><p>D002: two widgets use the same ID (VC widget 0). Also 4 kinds of warning; none of them stops you saving.</p></div>
+        <span class="sp"></span><button class="btn">See the warnings</button><button class="btn primary">Open the Doctor</button>
+      </div>
+      <div class="route">
+        <div style="flex:1"><b>Adapt a show to a new venue</b> · step 4 of 9: Groups<div style="color:var(--dim);font-size:var(--fs-ui)">You left the route here a moment ago.</div></div>
+        <button class="btn">Leave the route</button><button class="btn primary">Continue</button>
+      </div>
+      <h3 class="sec">What do you want to do?</h3>
+      <div class="cards">
+        <div class="card"><div class="h"><span>1</span>New show</div><p>Start from your fixtures: looks, effects, PANIC RESET and a Virtual Console.</p><div class="chips"><span class="tool">Quick Start</span><span class="tool">Fixtures</span></div></div>
+        <div class="card"><div class="h"><span>2</span>Adapt a show</div><p>Take a show to a smaller or different rig and keep what still fits.</p><div class="chips"><span class="tool last">Rig Reducer</span><span class="tool">Function Porter</span><span class="tool">Brightness</span></div></div>
+        <div class="card"><div class="h"><span>4</span>Run the show</div><p>Tonight's setlist, keys and MIDI without clashes, the cue on a tablet on stage.</p><div class="chips"><span class="tool">Setlist</span><span class="tool">Trigger Manager</span><span class="tool">Tablet on stage</span></div></div>
+      </div>
+      <h3 class="sec">Guided routes <small>the tools in order, one step at a time; any step, any order</small></h3>
+      <div class="list">
+        <div class="rec"><b style="font-weight:600">Start a new show</b><span class="m">8 steps</span><span class="sp"></span><button class="btn sm">Start the route</button></div>
+        <div class="rec"><b style="font-weight:600">Get ready for the gig</b><span class="m">4 steps</span><span class="sp"></span><button class="btn sm">Start the route</button></div>
+        <div class="rec"><b style="font-weight:600">Upgrade a show to QLC+ 5.3</b><span class="m">4 steps</span><span class="sp"></span><button class="btn sm">Start the route</button></div>
+      </div>
+    </div>
+  </main>
+</div>
+<p class="note">States B, C and D of section 7 shown together: the first rule that fits goes on top (here the error; the route and the unsaved changes follow as small lines). The Doctor pill counts kinds; the hover gives the 856.</p>
+</section>
+
+<!-- ───────────── Frame 3: Page kit, Rig Reducer ───────────── -->
+<section class="frame" id="f3">
+<div class="app">
+  <aside>
+    <div class="logo"><i>◆</i> SWISS KNIFE <span class="ver">v3.9.5</span></div>
+    <nav>
+      <div class="it"><svg class="i"><use href="#home"/></svg>Start</div>
+      <div class="grp-l"><span>2</span>Adapt a show</div>
+      <div class="it on"><svg class="i"><use href="#sliders"/></svg>Rig Reducer</div>
+      <div class="it"><svg class="i"><use href="#folder"/></svg>Function Porter</div>
+      <div class="grp-l"><span>5</span>Check &amp; fix</div>
+      <div class="it"><svg class="i"><use href="#check"/></svg>Workspace Doctor</div>
+    </nav>
+    <div class="hist"><h4>History <span>All ›</span></h4><div style="font-size:var(--fs-ui);color:var(--faint)">No changes yet.</div></div>
+  </aside>
+  <main>
+    <div class="ribbon">
+      <div class="file"><b>Festival_14fix.qxw</b><small>opened, never touched</small></div>
+      <span class="stats">14 fixtures · 286 functions · 113 widgets</span>
+      <span class="pill err">1 error · 4 kinds of warning</span>
+      <div class="sp"></div><span class="kbd">⌘K</span><button class="btn ghost" disabled>↶ Undo</button><button class="btn ghost">History</button><button class="btn" disabled>Save as new file…</button><button class="btn">Open… ▾</button>
+    </div>
+    <div class="ph">
+      <div class="ic"><svg class="i" style="width:20px;height:20px"><use href="#sliders"/></svg></div>
+      <div><h2>Rig Reducer</h2><p>Adapt your show to a smaller rig. Pick the fixtures to keep; the rest is cleaned up.</p></div>
+      <div class="r"><button class="btn ghost" aria-label="Help"><svg class="i"><use href="#help"/></svg></button></div>
+    </div>
+    <div class="tb"><div class="seg"><button class="on">All</button><button>Kept</button><button>Removed</button></div><button class="btn sm">Keep all</button><button class="btn sm">Keep none</button><span class="sp"></span><span style="color:var(--dim);font-size:var(--fs-ui)">8 kept · 6 removed</span></div>
+    <div class="split">
+      <div class="l">
+        <table>
+          <tr><th></th><th>ID</th><th>Name</th><th>Fixture</th><th>Mode</th><th>Universe</th><th>Address</th></tr>
+          <tr class="gone"><td>☐</td><td class="id">0</td><td class="n">Ceiling 1</td><td>Eurolite LED 4C-12 Slim Spot</td><td>9 ch</td><td>1</td><td>101</td></tr>
+          <tr class="gone"><td>☐</td><td class="id">1</td><td class="n">Ceiling 2</td><td>Eurolite LED 4C-12 Slim Spot</td><td>9 ch</td><td>1</td><td>110</td></tr>
+          <tr class="gone"><td>☐</td><td class="id">2</td><td class="n">Ceiling 3</td><td>Eurolite LED 4C-12 Slim Spot</td><td>9 ch</td><td>1</td><td>119</td></tr>
+          <tr><td>☑</td><td class="id">6</td><td class="n">Silhouette (Drums)</td><td>Generic 7-Ch RGB LED PAR</td><td>7 ch</td><td>1</td><td>8</td></tr>
+          <tr><td>☑</td><td class="id">7</td><td class="n">Wing Left</td><td>Generic 7-Ch RGB LED PAR</td><td>7 ch</td><td>1</td><td>36</td></tr>
+          <tr><td>☑</td><td class="id">8</td><td class="n">Wing Right</td><td>Generic 7-Ch RGB LED PAR</td><td>7 ch</td><td>1</td><td>43</td></tr>
+          <tr><td>☑</td><td class="id">9</td><td class="n">Banner Center</td><td>Generic 7-Ch RGB LED PAR</td><td>7 ch</td><td>1</td><td>29</td></tr>
+          <tr><td>☑</td><td class="id">10</td><td class="n">Banner Left</td><td>Generic 7-Ch RGB LED PAR</td><td>7 ch</td><td>1</td><td>22</td></tr>
+          <tr><td>☑</td><td class="id">11</td><td class="n">PA Right (High Side)</td><td>Generic 7-Ch RGB LED PAR</td><td>7 ch</td><td>1</td><td>15</td></tr>
+        </table>
+      </div>
+      <div class="r panel">
+        <h4>What will change</h4>
+        <div class="big"><span>Fixtures removed</span><b>6</b></div>
+        <div class="big"><span>Functions removed or updated</span><b>11</b></div>
+        <div class="big"><span>VC widgets removed</span><b>6</b></div>
+        <div class="big"><span>Doctor on the result</span><b style="color:var(--ok)">nothing new</b></div>
+        <p style="margin:var(--sp-3) 0 6px;color:var(--dim);font-size:var(--fs-ui)">▸ Details (24 lines)</p>
+      </div>
+    </div>
+    <div class="ab">
+      <span class="chip show"><svg class="i" style="width:12px;height:12px"><use href="#info"/></svg>Changes the show in progress</span>
+      <span class="sum">6 fixtures and 11 functions go. You can undo it.</span>
+      <span class="sp"></span>
+      <span class="chip newfile">Writes a new file</span><button class="btn">Export a copy…</button>
+      <button class="btn primary">Apply to the show</button>
+    </div>
+  </main>
+</div>
+<p class="note">Kit pieces 1 to 6 (section 8). One primary button. The chip names what the button does before it is pressed; the summary uses real counts. If Apply were disabled, a line under the bar would say why (<code>data-why</code>).</p>
+</section>
+
+<!-- ───────────── Frame 4: Doctor ───────────── -->
+<section class="frame" id="f4">
+<div class="app">
+  <aside>
+    <div class="logo"><i>◆</i> SWISS KNIFE <span class="ver">v3.9.5</span></div>
+    <nav>
+      <div class="it"><svg class="i"><use href="#home"/></svg>Start</div>
+      <div class="grp-l"><span>5</span>Check &amp; fix</div>
+      <div class="it on"><svg class="i"><use href="#check"/></svg>Workspace Doctor<span class="dot" style="background:var(--err)"></span></div>
+    </nav>
+    <div class="hist"><h4>History <span>All ›</span></h4><div style="font-size:var(--fs-ui);color:var(--faint)">No changes yet.</div></div>
+  </aside>
+  <main>
+    <div class="ribbon"><div class="file"><b>Festival_14fix.qxw</b><small>opened, never touched</small></div><span class="pill err">1 error · 4 kinds of warning</span><div class="sp"></div><button class="btn primary" disabled>Save as new file…</button></div>
+    <div class="ph"><div class="ic"><svg class="i" style="width:20px;height:20px"><use href="#check"/></svg></div><div><h2>Workspace Doctor</h2><p>Check your show for errors, missing references and lighting problems, and fix what you choose.</p></div><div class="r"><button class="btn"><svg class="i"><use href="#check"/></svg>Check again</button></div></div>
+    <div class="page" style="padding:var(--sp-3) var(--sp-4)">
+      <div class="sumrow">
+        <div class="card" style="border-color:rgba(239,90,106,.4)"><b style="color:var(--err)">1</b><span>error<br><small style="color:var(--faint)">blocks saving</small></span></div>
+        <div class="card"><b style="color:var(--warn)">4</b><span>kinds of warning<br><small style="color:var(--faint)">856 places</small></span></div>
+        <div class="card"><b style="color:var(--dim)">91</b><span>notes for information<br><small style="color:var(--faint)">for you to read</small></span></div>
+      </div>
+      <div class="rule e"><span class="c">D002</span><div class="x"><b>Two widgets use the same ID</b><p>VC widget ID 0 is used by a frame and a button. Renumbering the later copies fixes it.</p></div><span class="k">1</span><button class="btn sm">Show</button><span class="chip">Renumber the later copies ▾</span></div>
+      <div class="rule"><span class="c">D005</span><div class="x"><b>A scene does not set every channel of a fixture</b><p>Channels left undeclared keep the value of the look before, so colours can bleed from one look into the next.</p></div><span class="k">851</span><button class="btn sm">Show</button><span class="chip">Add the missing channels ▾</span></div>
+      <div class="rule"><span class="c">D004</span><div class="x"><b>A chaser has no steps</b><p>Three of them are Setlist chasers. A cue that plays an empty chaser does nothing.</p></div><span class="k">4</span><button class="btn sm">Show</button><span class="chip">No automatic fix</span></div>
+      <div class="rule"><span class="c">D017</span><div class="x"><b>PANIC RESET is a plain scene</b><p>It cannot darken looks that are still running. A script can.</p></div><span class="k">1</span><button class="btn sm">Show</button><span class="chip">Wrap it in a script ▾</span></div>
+    </div>
+    <div class="ab">
+      <span class="chip show">Changes the show in progress</span><span class="sum">Fix 853 selected. No new error is expected.</span><span class="sp"></span>
+      <span class="chip newfile">Writes a new file</span><button class="btn">Export a fixed copy…</button><button class="btn primary">Fix 853 selected</button>
+    </div>
+  </main>
+</div>
+<p class="note">Section 9.2. Numbers and rule texts are illustrative, taken from the sample show's Doctor report. Same rules and same fixes as today; the summary row and plain one-line meanings are new. The counts in the pill and the summary come from the rules, so one noisy rule does not drown the rest.</p>
+</section>
+
+<!-- ───────────── Frame 5: Tablet on stage ───────────── -->
+<section class="frame" id="f5">
+<div class="app">
+  <aside>
+    <div class="logo"><i>◆</i> SWISS KNIFE <span class="ver">v3.9.0</span></div>
+    <nav>
+      <div class="it"><svg class="i"><use href="#home"/></svg>Start</div>
+      <div class="grp-l"><span>4</span>Run the show</div>
+      <div class="it"><svg class="i"><use href="#music"/></svg>Setlist</div>
+      <div class="it on"><svg class="i"><use href="#tablet"/></svg>Tablet on stage</div>
+    </nav>
+    <div class="hist"><h4>History <span>All ›</span></h4><div style="font-size:var(--fs-ui);color:var(--faint)">No changes yet.</div></div>
+  </aside>
+  <main>
+    <div class="ribbon"><div class="file"><b>Festival_14fix.qxw</b><small>opened, never touched</small></div><span class="pill ok">clean</span><div class="sp"></div><button class="btn">Open… ▾</button></div>
+    <div class="ph"><div class="ic"><svg class="i" style="width:20px;height:20px"><use href="#tablet"/></svg></div><div><h2>Tablet on stage</h2><p>Put tonight's setlist on a tablet for the band.</p></div><div class="r"><button class="btn ghost"><svg class="i"><use href="#help"/></svg></button></div></div>
+    <div class="tb">
+      <div class="seg"><button class="on">Live monitor</button><button>Simple page</button></div>
+      <span style="color:var(--dim);font-size:var(--fs-ui)">Follows QLC+ live. Needs QLC+ with web access.</span>
+      <span class="sp"></span>
+      <div class="seg"><button class="on">Set A</button><button>Set B</button></div>
+      <span style="color:var(--dim);font-size:var(--fs-ui)">21 shown · 3 hidden</span>
+    </div>
+    <div class="split">
+      <div class="l">
+        <div class="song"><span class="no">1</span>☑ Walk-in<span class="t"><span class="badge">card ✓</span></span></div>
+        <div class="song"><span class="no">2</span>☑ Intro<span class="t"></span></div>
+        <div class="song sel"><span class="no">3</span>☑ <b>Song 34</b><span class="t"><span class="badge b-ex">♪ 128</span><span class="badge">Drop D</span><span class="badge">card ✓</span></span></div>
+        <div class="song off"><span class="no">4</span>☐ Song 30 (hidden)</div>
+        <div class="song"><span class="no">6</span>☑ Song 09<span class="t"><span class="badge b-ex">♪ 96</span><span class="badge">E std</span><span class="badge">card ✓</span></span></div>
+        <div class="song"><span class="no">7</span>☑ Song 08<span class="t"><span class="badge">note</span></span></div>
+        <div class="song"><span class="no">9</span>☑ Song 01</div>
+        <div class="song"><span class="no">10</span>☑ Song 02</div>
+        <div class="song"><span class="no">11</span>☑ Song 22</div>
+      </div>
+      <div class="r" style="width:460px">
+        <div class="tabs"><span class="on">Song card</span><span>Page</span><span>Send to the tablet</span></div>
+        <div class="panel"><h4>Card for 3 · Song 34</h4>
+          <div class="field"><label>Tuning</label><div><div class="in mono">Drop D</div><div class="diff">▲ differs from the song before (E standard)</div></div></div>
+          <div class="field"><label>Tempo</label><div style="color:var(--dim)">128 BPM <a style="color:var(--accent)">set in the Setlist</a></div></div>
+          <div class="field"><label>Starts</label><div class="in">Drums, 4 bars count-in</div></div>
+          <div class="field"><label>Guitar</label><div class="in">Delay on, boost off</div></div>
+          <div class="field"><label></label><div><button class="btn sm">+ Add a player</button></div></div>
+          <div class="field"><label>Note</label><div class="in">Capo 2</div></div>
+          <div class="field"><label>Start from</label><div><span class="chip">Dictionary: “Song 34 …”</span> <button class="btn sm">Use</button></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="ab">
+      <span class="chip">Saved next to the show</span><span class="sum">Reads the show. Writes the page and Gig.stage.json.</span><span class="sp"></span>
+      <span class="chip replace">Replaces the earlier page, after asking</span><button class="btn">Preview</button><button class="btn primary">Export the page</button>
+    </div>
+  </main>
+</div>
+<p class="note">Section 10.2. The pilot of the page kit: the first screen built on <code>kit.css</code>. One entry for the Stage Monitor and the Setlist's tablet page; cards live on the right and follow the song picked on the left.</p>
+</section>
+
+<!-- ───────────── Frame 6: Tablet pages ───────────── -->
+<section class="frame" id="f6">
+<div class="stagewrap">
+  <div>
+    <div class="rolebar"><div class="seg"><button class="on">Band</button><button>Commander</button><button>Vocals</button></div></div>
+    <div class="dev p">
+      <div class="top"><b>Festival</b><span><i>●</i> Connected</span></div>
+      <div class="sets"><span class="on">Set A</span><span>Set B</span><span style="margin-left:auto;border:0;color:#9aa3b5">4 / 21</span></div>
+      <div class="row"><b>2</b>Intro</div>
+      <div class="cur">3  Song 34<small>Capo 2 · drums count in</small></div>
+      <div class="row"><b>6</b>Song 09</div>
+      <div class="row"><b>7</b>Song 08</div>
+      <div class="nx"><div class="k">NEXT UP</div><div class="t">Song 09</div><span class="tu">▲ TUNING CHANGE  Drop D → E</span><p>96 BPM · Drums count in, 4 bars<br>Guitar: delay on, boost off</p></div>
+      <div class="ctl"><span>◀ Previous</span><span class="stop">■ Stop</span><span>Next ▶</span></div>
+    </div>
+    <p class="cap">Band view, portrait. The banner shows when the step changes and stays 6 seconds or until the next step. The tuning change is written out, not only coloured.</p>
+  </div>
+  <div>
+    <div class="rolebar"><div class="seg"><button>Band</button><button class="on">Commander</button><button>Vocals</button></div></div>
+    <div class="dev l">
+      <div class="top"><b>Festival · Set A</b><span><i>●</i> Connected · 4 / 21</span></div>
+      <div class="cols">
+        <div>
+          <div class="row"><b>2</b>Intro</div>
+          <div class="cur" style="font-size:24px">3  Song 34<small>Capo 2</small></div>
+          <div class="row"><b>6</b>Song 09</div>
+          <div class="row"><b>7</b>Song 08</div>
+        </div>
+        <div>
+          <div class="nx" style="margin-top:10px"><div class="k">NEXT UP</div><div class="t">Song 09</div><span class="tu">▲ TUNING CHANGE  Drop D → E</span><p>96 BPM · Drums count in, 4 bars<br>Guitar: delay on, boost off<br>Key of E</p></div>
+        </div>
+      </div>
+      <div class="ctl" style="padding:6px 10px"><span>◀ Previous</span><span class="stop">■ Stop</span><span>Next ▶</span></div>
+    </div>
+    <p class="cap">Commander view (<code>?role=commander</code>), landscape. Cues on the left, the card of the next song on the right, Control buttons below (56 px, hold to act).</p>
+  </div>
+</div>
+<p class="note">Section 10.3. Stage rules: 7:1 contrast for the current song, 56 px targets, no motion, colour never alone. Same page, same export; the role is in the address.</p>
+</section>
+
+<script>
+(function(){
+  var btns=document.querySelectorAll('.switch button'), frames=document.querySelectorAll('.frame');
+  btns.forEach(function(b){b.addEventListener('click',function(){
+    btns.forEach(function(x){x.classList.remove('on')}); b.classList.add('on');
+    frames.forEach(function(f){f.classList.toggle('on',f.id===b.dataset.f)});
+  })});
+  document.querySelectorAll('.seg').forEach(function(seg){
+    seg.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      seg.querySelectorAll('button').forEach(function(x){x.classList.remove('on')}); b.classList.add('on');
+    })});
+  });
+})();
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.7.0, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.8.0, 20 October 2026.** Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -30,10 +30,10 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux, with an update check and *Update and restart*. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | An MCP server with 28 tools (among them `guide`), seven ready requests, the guide as resources. Claude Desktop connects with one `.mcpb` file, Claude Code with one command. Claude gets only the folders you list and writes only new files (the Stage Monitor's own page and settings are the exception). |
-| Tests | 1145 automated tests pass (1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | The suite passes in CI (1145 tests at 3.7.0, more since: 3.8.0 added tests for tempo and layouts; 1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
-**Order agreed on 20 October** (giopas): 3.6.1 gig-ready pass, 3.7.0 another computer and another screen, 3.8.0 stage layouts and per-song tempo, 3.8.5 plain-language wiki and README, 3.9.0 Stage Monitor song cards and one Tablet entry, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye.
+**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words), 3.9.6 plain-language wiki and README, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
 
 ## 2. Next releases
 
@@ -125,7 +125,7 @@ QLC+ places Virtual Console widgets at fixed pixel positions, so a console made 
 
 ### 3.8.0 · Stage layouts and per-song tempo
 
-**Status (20 October): built, tests green, not committed, not released.** Also in: Hold has a tick *Wait for the pedal (Inf)*; an empty Hold box now means 0. New: `core/setlist_tempo.py`, `core/stage_layouts.py`, tests `test_setlist_tempo_380.py` and `test_stage_layouts_380.py`, CHANGELOG under `[Unreleased]`, release notes, wiki pages, translations in the seven languages. To do by giopas: live checks on the Mac, version bump, commit and push.
+**Released 20 October (tag `v3.8.0`).** Also in: Hold has a tick *Wait for the pedal (Inf)*; an empty Hold box now means 0. New: `core/setlist_tempo.py`, `core/stage_layouts.py`, tests `test_setlist_tempo_380.py` and `test_stage_layouts_380.py`, release notes, wiki pages, translations in the seven languages.
 
 Deviations from the plan below:
 - A chaser used by two songs is not named `<name> · 128 BPM`; the clone is named after the song as every setlist clone is, and each song has its own, so the CueList already points to it.
@@ -152,9 +152,37 @@ Decided 18 October, from the wiki of mjcmatrix's fork of QLC+ (https://github.co
 - A chaser used by two songs at different tempos is copied per song (`<name> · 128 BPM`) and each song's CueList step points to its copy.
 - Every change goes through the show in progress, the History and the Doctor. Claude's `setlist` tool reads and writes the tempo.
 
-### 3.8.5 · Plain-language wiki and README
+### 3.9.0 · Tablet on stage (song cards and one Tablet entry)
 
-Decided 20 October (giopas): Swiss Knife is a powerful tool and must also be extremely clear to everyone. No new features; the words change.
+The cheap part of the teleprompter idea: what each player needs to know about the next song, on the stage tablet, from data Swiss Knife already has.
+
+Design in [DESIGN_v2.md](DESIGN_v2.md) section 10. The new screen is also the pilot of the page kit that 3.9.5 rolls out.
+
+- **Step 0, the page kit.** `static/css/kit.css` and `skActionBar()` (DESIGN_v2.md section 8): page header, toolbar, change panel, sticky action bar with a chip that names what the main button does, `data-why` for a disabled button, empty and done states, a segmented control. Used only by this screen; no existing screen changes in 3.9.0. Tokens are not touched.
+
+- A card per song: tuning, tempo (from 3.8.0), who starts and how (count-in, drums 4 bars), pedal or FX settings per player, a free note. Edited on the Stage Monitor screen, kept in `<show>.stage.json` (shared by every version of the show), with the Dictionary's descriptions offered as a start.
+- *Next song* alert: when the setlist reaches a new song, a large banner shows its card for a few seconds or until the next step; a change of tuning from the previous song is shown in its own colour.
+- Views by role in the address: `?role=commander` (cues and card side by side, for the player with the pedal), `?role=vocals`, `?role=band`. Same page, same export, no setup on the tablet.
+- From the 3.5.0 phase 3: chosen VC buttons (PANIC RESET) as big tiles in control mode, the Setlist screen's order, a QR code for the address if a small pure-Python encoder fits.
+- The page stays offline (nothing from the internet) and read-only by default.
+- **One Tablet entry** (giopas, 20 October). The Setlist screen's *📱 Tablet page…* (a static `.html` with every song, ticked off by tap) and the Stage Monitor (live from QLC+) do the same job, putting the setlist on a tablet on stage, and are two places today. Bring them into one *Tablet on stage* area with two modes, *Simple page (no network)* and *Live monitor*. Shared settings (theme, text size, songs shown) are set once. The Setlist button leads there. Rename the sidebar entry, keep the old wiki titles as redirects, and move the wiki text into one page.
+- The screen: one sidebar entry *Tablet on stage* with two modes (*Live monitor*, *Simple page*), the song list on the left and a right pane with the tabs *Song card*, *Page* and *Send to the tablet*; the pages follow the stage rules of DESIGN_v2.md section 10.3 (7:1 contrast for the current song, 56 px targets, no motion, colour never alone). Open questions in section 10.4 (cards in the Simple page, one renderer, QR code).
+
+### 3.9.5 · A clearer Swiss Knife
+
+Decided 21 October (giopas). Design: [DESIGN_v2.md](DESIGN_v2.md); mockups: `mockups/mockup_D_v2.html`. Look, structure and words of the app, from three outside UX reviews checked against the code. **No change to `core/`, to the API routes or to what any button writes**; recorded sessions replay to the same file. One branch, five stages, each ending with the tests green and a before and after contact sheet from `tools/shots.py`. Details, files and acceptance in DESIGN_v2.md section 12.2.
+
+- **A. Foundation.** Five type steps with a floor of 11 px, shared spacing and radii, semantic colours with soft and text pairs, `:focus-visible`, reduced motion, emoji replaced by the icon sprite (first a script that strips the emoji from the keys of the seven language files), inline styles in the shell to classes, the button classes folded into four. Decide whether to bundle a font.
+- **B. Shell and Start.** Ribbon (room for the file name, the Doctor pill counts kinds of problem, save states, a split *Open…*), sidebar (recent tools, active bar, label contrast), Start that follows the state (no show, route in progress, error, unsaved changes, clean), recent shows with date and Doctor result.
+- **C. The kit on every tool.** `skActionBar` everywhere, one meaning for each verb that writes (Apply to the show, Save as new file, Export, Save to settings), `data-why` on disabled buttons, the change panel, toast and History highlight; an audit of every button that writes, in the CHANGELOG.
+- **D. Key screens.** Doctor summary by kind, Function Porter step 3 opening on the mapping list, Setlist rail and match pills, tables.
+- **E. In-app words.** Header sentences, tooltips, empty states, confirmed tool renames; the seven languages once.
+- New automatic checks: `tests/test_tokens_contrast.py` (WCAG ratios of the token pairs in the three themes) and `tests/test_ui_lint.py` (no Apply without summary and `data-why`, no literal font size below 11 px, no inline style in the shell and the kit).
+- Checks for giopas: **D2** the Start screen in each of its five states, a new user finds where to start in five seconds; **D3** a guided route with the keyboard only; the Pub test again from a clean profile, 12 minutes or less, same file byte for byte.
+
+### 3.9.6 · Plain-language wiki and README
+
+Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki describes the screens 3.9.5 changes and its pictures are retaken then. Docs only, so no installer test. Swiss Knife is a powerful tool and must also be extremely clear to everyone. No new features; the words change.
 
 - Review every wiki page and the README, and rewrite where needed so that a reader of 10 or 15 can follow each feature. Not every page needs a full rewrite: add an intro box and a worked example where the page is dense.
 - Each feature page starts with a short box *In one minute*: what it is for, in everyday words, with an example from a real gig (a pub, a band of five, a pedal).
@@ -163,18 +191,9 @@ Decided 20 October (giopas): Swiss Knife is a powerful tool and must also be ext
 - The README gets the same treatment: what Swiss Knife is in three sentences, who it is for, the first ten minutes (install, open, Quick Start), then the feature list in plain words.
 - The Pub test (section 5) is the test: someone who has never used the tool follows a page and gets the result.
 - Plain prose rules stay: no dashes as connectors, no marketing tone. Plain does not mean childish.
-- In-app texts (tooltips, the guide) are checked against the same wording; any change goes into the seven language files.
-
-### 3.9.0 · Stage Monitor song cards and one Tablet entry
-
-The cheap part of the teleprompter idea: what each player needs to know about the next song, on the stage tablet, from data Swiss Knife already has.
-
-- A card per song: tuning, tempo (from 3.8.0), who starts and how (count-in, drums 4 bars), pedal or FX settings per player, a free note. Edited on the Stage Monitor screen, kept in `<show>.stage.json` (shared by every version of the show), with the Dictionary's descriptions offered as a start.
-- *Next song* alert: when the setlist reaches a new song, a large banner shows its card for a few seconds or until the next step; a change of tuning from the previous song is shown in its own colour.
-- Views by role in the address: `?role=commander` (cues and card side by side, for the player with the pedal), `?role=vocals`, `?role=band`. Same page, same export, no setup on the tablet.
-- From the 3.5.0 phase 3: chosen VC buttons (PANIC RESET) as big tiles in control mode, the Setlist screen's order, a QR code for the address if a small pure-Python encoder fits.
-- The page stays offline (nothing from the internet) and read-only by default.
-- **One Tablet entry** (giopas, 20 October). The Setlist screen's *📱 Tablet page…* (a static `.html` with every song, ticked off by tap) and the Stage Monitor (live from QLC+) do the same job, putting the setlist on a tablet on stage, and are two places today. Bring them into one *Tablet on stage* area with two modes, *Simple page (no network)* and *Live monitor*. Shared settings (theme, text size, songs shown) are set once. The Setlist button leads there. Rename the sidebar entry, keep the old wiki titles as redirects, and move the wiki text into one page.
+- In-app texts (tooltips, the guide) are done in 3.9.5 stage E; the wiki uses the same wording.
+- Page shape, the *Words used here* page and the order of the pages: DESIGN_v2.md sections 11 and 12.3. `tools/plain_check.py` (advisory) lists long sentences, terms used before they are explained and pages without the *In one minute* box.
+- Check **D1**: the Pub test for the docs, two readers, one of them not a lighting person.
 
 ### 3.10.0 · Teleprompter (later stage)
 
@@ -244,6 +263,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.6.0 | 20 Oct | Cabling: a DMX cabling planner with the kit you own, 24 checks, plot, pick list, labels and load-in order; Claude's `cabling` tool. |
 | 3.6.1 | 20 Oct | Ready for the gig: the show path checked on stage (A1 to A6); fixture definitions and input profiles found in every folder QLC+ uses. |
 | 3.7.0 | 20 Oct | Another computer, another screen: definitions that travel (Doctor D021 to D023, I009, the travel zip); the Virtual Console fitted to a screen (Fit, Stretch, Page size, Check, tap-size warning). |
+| 3.8.0 | 20 Oct | Stage layouts and per-song tempo: saved layouts of the stage and the band (three built in, shared through the Library), a tempo per song in the setlist with *Apply tempo*, *Wait for the pedal* on Hold. |
 
 ## 5. Goal and the Pub test
 
@@ -263,6 +283,7 @@ These apply to every change.
 6. **QLC+ is the reference.** Every generator has a manual open-check (section 9) before release.
 7. **Conventions are data.** Naming, palettes, VC screen sizes and templates live in JSON profiles that users can share.
 8. **Tests and CI are green before a merge.** Nothing merges without tests.
+9. **A visual change does not change what a button writes.** Look, wording and structure may change in a redesign; `core/`, the API routes and the files written do not, unless a defect is found and justified separately.
 
 ## 7. Standing decisions
 
@@ -287,6 +308,8 @@ The reasons and dates are in the archives.
 | Test data | Real shows are renamed and scrubbed. The public repository carries no real names. Commits use the author *giopas*. |
 | Ideas from others | Credited by name and link in the CHANGELOG, release notes and wiki. Ideas only, no code. |
 | README | A presentation only. History lives in the CHANGELOG. |
+| Verbs that write | Four meanings: *Apply to the show* (changes the show in progress, nothing on disk), *Save as new file* (a new `_vN.qxw`, ribbon), *Export* (a file that is not a show: PDF, CSV, page, zip), *Save to settings* (Swiss Knife's settings or a side file next to the show). Each button's footer says which one it is (DESIGN_v2.md section 6). |
+| Design | One teal accent, no new framework, five type steps with a floor of 11 px, one primary button per screen (DESIGN_v2.md section 5). |
 | Forum | One complete post at 2.0, one at 3.0. No post per release. Drafts stay out of the repository. |
 | Signing | Apps are not signed or notarised; the README and wiki explain the warning. No Linux AppImage unless someone asks. |
 

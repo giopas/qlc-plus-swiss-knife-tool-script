@@ -46,12 +46,38 @@ async function showRefresh() {
     st = await r.json();
   } catch { return; }
   const changed = st.active && _show.active && st.version !== _show.version;
+  const before = _show;
   _show = st;
+  _skAnnounce(before, st);
   _renderShowBar();
   _renderSideChanges();
   if (typeof routeSync === 'function') routeSync(st.changed_tools);
   if (changed) _showChangedElsewhere();
   if (document.getElementById('show-history')?.classList.contains('open')) showHistoryRender();
+}
+
+/** A step was added to the History (not by an undo or a redo): say so once, with Undo and History
+ *  beside it, and light the new step up in the History (3.9.5, stage C). */
+let _skQuietUntil = 0;
+async function _skAnnounce(before, st) {
+  const quiet = Date.now() < _skQuietUntil;
+  // tools whose edits go straight in (Triggers, VC Editor) have no Apply button: no toast per edit
+  const here = document.querySelector('.screen.active');
+  if (here && here.querySelector('.out-footer') && !here.querySelector('.out-footer .btn-accent')) return;
+  if (!before.active || !st.active || quiet || !(st.steps > before.steps) || before.version < 0) return;
+  const k = st.steps - before.steps;
+  let what = '';
+  try {
+    const steps = (await (await _origFetch('/api/show/history')).json()).steps || [];
+    const s = steps[steps.length - 1];
+    if (s) what = _tr(s.tool_title) + ' — ' + _stepTitle(s.title);
+  } catch { /* the toast still says something */ }
+  window._skNewStep = st.steps;
+  if (typeof skDone !== 'function') return;
+  skDone(k > 1 ? t('{0} changes added to the show.', k) : (what ? t('Applied to the show: {0}', what) : t('Applied to the show.')), {
+    undo: () => showUndo(st.steps),
+    history: () => showHistoryToggle(true),
+  });
 }
 
 function _renderShowBar() {
@@ -182,6 +208,7 @@ async function showFlushPending() {
 // ── Undo / History ───────────────────────────────────────────────────────────
 
 async function showUndo(n) {
+  _skQuietUntil = Date.now() + 4000;
   await showFlushPending();
   const r = await _origFetch('/api/show/undo', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -198,6 +225,7 @@ async function showUndo(n) {
 }
 
 async function showRedo() {
+  _skQuietUntil = Date.now() + 4000;
   const r = await _origFetch('/api/show/redo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   const d = await r.json();
   if (!r.ok || d.error) { setStatus(d.error || 'Nothing to redo.', 'error'); return; }
@@ -272,7 +300,7 @@ async function showHistoryRender() {
   html += steps.map(s => {
     const doc = s.doctor ? `Doctor after: ${s.doctor.error || 0} errors · ${s.doctor.warning || 0} warnings` : '';
     const sub = [s.detail, s.edits > 1 ? `${s.edits} edits` : '', doc, time(s.time)].filter(Boolean).join(' · ');
-    return `<li class="sh-step${s.saved ? ' sh-saved' : ''}">
+    return `<li class="sh-step${s.saved ? ' sh-saved' : ''}${s.n === window._skNewStep ? ' sh-new' : ''}">
       <span class="sh-n">${s.n}</span>
       <div class="sh-body">
         <div class="sh-title"><b>${_esc(s.tool_title)}</b> — <span data-i18n="off">${_esc(_stepTitle(s.title))}</span>${s.saved ? ' <span class="sh-tag">saved</span>' : ''}</div>

@@ -4029,5 +4029,18 @@
  "{0} has {1} error to look at.": "{0} a {1} erreur à examiner.",
  "{0} has {1} errors to look at.": "{0} a {1} erreurs à examiner.",
  "{0} is ready. What next?": "{0} est prêt. Et maintenant ?",
- "Recent tools": "Outils récents"
+ "Recent tools": "Outils récents",
+ "Open a library file and tick what to install.": "Ouvrez un fichier de bibliothèque et cochez ce qu'il faut installer.",
+ "Pick a setlist and match its songs first.": "Choisissez d'abord un setlist et associez ses morceaux.",
+ "Fix the errors in the plan first.": "Corrigez d'abord les erreurs du plan.",
+ "Pick groups and tick effects first.": "Choisissez d'abord des groupes et cochez des effets.",
+ "Tick the problems you want fixed.": "Cochez les problèmes à corriger.",
+ "Tick a repair to make.": "Cochez une réparation à faire.",
+ "Tick an upgrade step.": "Cochez une étape de mise à niveau.",
+ "{0} changes added to the show.": "{0} modifications ajoutées au show.",
+ "Applied to the show: {0}": "Appliqué au show : {0}",
+ "Applied to the show.": "Appliqué au show.",
+ "Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show.": "Garde les associations et les durées dans cette session. Cela se fait aussi quand vous changez de setlist ou appuyez sur Appliquer au show.",
+ "Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.": "Chaque modification va tout de suite dans le show en cours. Enregistrer comme nouveau fichier… (en haut à droite) la conserve ; le fichier ouvert n'est jamais touché.",
+ "Untick the fixtures the venue does not have.": "Décochez les projecteurs que la salle n'a pas."
 }

@@ -607,13 +607,10 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes only your own template folders — <b>&nbsp;no show is touched</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-settings" data-verb="settings">Saved in your settings</span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="libFolders()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Where my items are</button>
-      <button class="btn btn-accent" id="lib-install-btn" onclick="libInstall()" disabled><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> Install</button>
+      <button class="btn btn-accent" id="lib-install-btn" onclick="libInstall()" disabled data-needs="Open a library file and tick what to install."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> Install</button>
     </div>
 
   </section>
@@ -648,10 +645,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Read-only — <b>&nbsp;nothing is changed</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="compareCopy()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy report</button>
       <button class="btn btn-surface" onclick="compareSaveReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save report…</button>
@@ -830,9 +824,9 @@
 
         <!-- Save always visible at bottom -->
         <div class="fb-actions-footer">
-          <button class="btn btn-surface fb-wide-btn" id="btn-save-songs"
+          <button class="btn btn-ghost fb-wide-btn" id="btn-save-songs"
                   onclick="slSaveDetails()" disabled
-                  data-tooltip="Save song assignments and timing to the server (required before Generate)"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save Songs</button>
+                  data-tooltip="Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save Songs</button>
         </div>
       </div>
 
@@ -887,10 +881,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-setlist" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-export-sl-pdf"
@@ -907,7 +898,7 @@
               data-tooltip="Save a copy with the setlist chasers as a separate file">Export a copy…</button>
       <button class="btn btn-accent" id="btn-apply-setlist"
               onclick="slApply()" disabled
-              data-tooltip="Clone each song's base function and build the setlist chasers in the show in progress">✓ Apply to the show</button>
+              data-tooltip="Clone each song's base function and build the setlist chasers in the show in progress" data-needs="Pick a setlist and match its songs first." data-needs-show>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -1024,10 +1015,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.">Changes the show in progress</span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="saveTriggersAs()" data-tooltip="Save the show with these bindings as a separate file">Export a copy…</button>
     </div>
@@ -1092,10 +1080,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Saves a <b>&nbsp;.txt dictionary&nbsp;</b> — workspace untouched
-      </span>
+      <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="exportDictTxt()"
               data-tooltip="Download the dictionary as a pipe-delimited .txt file"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> Export TXT</button>
@@ -1263,10 +1248,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Writes a <b>&nbsp;new .qxw&nbsp;</b> — original untouched
-      </span>
+      <span class="out-note kit-chip kit-chip-new" data-verb="new">Writes a new file</span>
       <div class="spacer"></div>
       <select id="fix-pdf-paper" class="filter-input" style="width:160px"
               data-tooltip="Paper size for the exported blueprint PDF">
@@ -1347,10 +1329,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-brightness" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="brtGenerateQxw()"
@@ -1402,10 +1381,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note ro">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Read-only — exports <b>&nbsp;CSV / PDF&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
       <div class="spacer"></div>
     </div>
 
@@ -1649,10 +1625,7 @@
     </div><!-- end #vce-wrap -->
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="vceApplyAndExport()"
               data-tooltip="Save the show with these edits as a separate file">Export a copy…</button>
@@ -1719,10 +1692,7 @@
       </div>
 
       <div class="porter-nav-bar out-footer">
-        <span class="out-note new" title="Keep it with Save as new file… in the header — the files you picked are never touched">
-          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
-        </span>
+        <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
                 <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(2)">Next: Select Functions →</button>
       </div>
@@ -1788,10 +1758,7 @@
       </div>
 
       <div class="porter-nav-bar out-footer">
-        <span class="out-note new" title="Keep it with Save as new file… in the header — the files you picked are never touched">
-          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
-        </span>
+        <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
         <span class="out-outcome" id="oc-porter2" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(1)">← Back</button>
         <div class="spacer"></div>
@@ -1814,10 +1781,7 @@
       </div>
 
       <div class="porter-nav-bar out-footer">
-        <span class="out-note new" title="Keep it with Save as new file… in the header — the files you picked are never touched">
-          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
-        </span>
+        <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
         <span class="out-outcome" id="oc-porter3" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(2)">← Back</button>
         <select id="porter-automap-strategy" class="filter-input" style="flex:0 0 auto"
@@ -1876,15 +1840,12 @@
       </div>
 
       <div class="porter-nav-bar out-footer">
-        <span class="out-note new" title="Keep it with Save as new file… in the header — the files you picked are never touched">
-          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
-        </span>
+        <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
         <span class="out-outcome" id="oc-porter4" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(3)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy Report</button>
         <div class="spacer"></div>
-        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled>Next: Apply →</button>
+        <button id="porter-export-btn" class="btn btn-accent" onclick="porterGoStep(5)" disabled data-needs="Fix the errors in the plan first.">Next: Apply →</button>
       </div>
     </div>
 
@@ -1896,10 +1857,7 @@
         </div>
       </div>
       <div class="porter-nav-bar out-footer" id="porter-export-nav">
-        <span class="out-note new" title="Keep it with Save as new file… in the header — the files you picked are never touched">
-          <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-          Adds to the <b>&nbsp;show in progress&nbsp;</b> (or exports a copy)
-        </span>
+        <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the files you picked are never touched">Changes the show in progress</span>
         <span class="out-outcome" id="oc-porter5" aria-live="polite"></span>
                 <button class="btn btn-surface" onclick="porterGoStep(4)">← Back</button>
         <button class="btn btn-surface" onclick="porterReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy Report</button>
@@ -2003,10 +1961,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Read-only — the show is <b>&nbsp;never modified</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-export" data-verb="export">Does not change the show</span>
       <div class="spacer"></div>
       <select id="sb-paper" class="filter-input" style="flex:0 0 170px" data-tooltip="Paper size of the PDF" onchange="if(typeof _markDirty==='function')_markDirty()">
         <option>A4 Landscape</option><option>A4 Portrait</option>
@@ -2044,10 +1999,7 @@
     <div id="st-body" class="lb-body"><div class="porter-placeholder">Open a workspace to see its 3D stage.</div></div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Every edit goes straight into the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.">Changes the show in progress</span>
       <div class="spacer"></div>
       <button id="st-go" class="btn btn-surface btn-ghost" onclick="stageSave()" disabled
               data-tooltip="Save the show with this stage as a separate file, with a stage report">Export a copy…</button>
@@ -2075,15 +2027,12 @@
     <div id="lb-body" class="lb-body"><div class="porter-placeholder">Open a workspace to build looks and chasers for its fixture groups.</div></div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Adds to the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-looks" aria-live="polite"></span>
       <div class="spacer"></div>
       <button id="lb-export" class="btn btn-surface btn-ghost" onclick="looksBuild()" disabled
               data-tooltip="Save a copy with the looks as a separate file; the show in progress stays as it is">Export a copy…</button>
-      <button id="lb-go" class="btn btn-accent" onclick="looksApply()" disabled>✓ Add to the show</button>
+      <button id="lb-go" class="btn btn-accent" onclick="looksApply()" disabled data-needs="Pick groups and tick effects first." data-needs-show>✓ Add to the show</button>
     </div>
 
   </section>
@@ -2115,15 +2064,12 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-reducer" aria-live="polite"></span>
       <div class="spacer"></div>
       <button id="rr-export" class="btn btn-surface btn-ghost" onclick="reducerRun()" disabled
               data-tooltip="Save a reduced copy as a separate file; the show in progress stays as it is">Export a copy…</button>
-      <button id="rr-go" class="btn btn-accent" onclick="reducerApply()" disabled>✓ Apply to the show</button>
+      <button id="rr-go" class="btn btn-accent" onclick="reducerApply()" disabled data-needs="Untick the fixtures the venue does not have." data-needs-show>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -2158,10 +2104,7 @@
     <div id="doc-result" class="porter-summary-box" hidden></div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Fixes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-doctor" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="doctorCopyReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy Report</button>
@@ -2169,7 +2112,7 @@
               data-tooltip="The show, the fixture definitions QLC+ does not ship with, the side files and a short text, in one zip for another computer"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
       <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
               data-tooltip="Fix only a copy: save it as a separate file, the show in progress stays as it is">Export a fixed copy…</button>
-      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled>✓ Fix selected in the show</button>
+      <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled data-needs="Tick the problems you want fixed." data-needs-show>✓ Fix selected in the show</button>
     </div>
 
   </section>
@@ -2198,13 +2141,10 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-wizard" aria-live="polite"></span>
       <div class="spacer"></div>
-      <button id="wz-go" class="btn btn-accent" onclick="wizardApply()" disabled>✓ Apply to the show</button>
+      <button id="wz-go" class="btn btn-accent" onclick="wizardApply()" disabled data-needs="Tick a repair to make." data-needs-show>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -2239,13 +2179,10 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="Keep it with Save as new file… in the header — the file you opened is never touched">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Changes the <b>&nbsp;show in progress&nbsp;</b>
-      </span>
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-upgrade" aria-live="polite"></span>
       <div class="spacer"></div>
-      <button id="up-go" class="btn btn-accent" onclick="upgradeApply()" disabled>✓ Apply to the show</button>
+      <button id="up-go" class="btn btn-accent" onclick="upgradeApply()" disabled data-needs="Tick an upgrade step." data-needs-show>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -2508,10 +2445,7 @@
     </div>
 
     <div class="out-footer">
-      <span class="out-note new" title="The show is not changed; the plan is kept in <show>.cabling.json next to it and your kit in your settings">
-        <svg class="ic"><use href="/static/icons.svg#shield"/></svg>
-        Reads the show, keeps the plan next to it
-      </span>
+      <span class="out-note kit-chip kit-chip-settings" data-verb="beside" title="The show is not changed; the plan is kept in <show>Saved next to the show</span>
       <span class="out-outcome" id="oc-cabling" aria-live="polite"></span>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="cb-back" onclick="cablingStep(-1)">‹ Back</button>

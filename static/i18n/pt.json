@@ -4080,5 +4080,18 @@
  "{0} has {1} error to look at.": "{0} tem {1} erro para ver.",
  "{0} has {1} errors to look at.": "{0} tem {1} erros para ver.",
  "{0} is ready. What next?": "{0} está pronto. E agora?",
- "Recent tools": "Ferramentas recentes"
+ "Recent tools": "Ferramentas recentes",
+ "Open a library file and tick what to install.": "Abre um ficheiro de biblioteca e assinala o que instalar.",
+ "Pick a setlist and match its songs first.": "Escolhe primeiro um alinhamento e associa as músicas.",
+ "Fix the errors in the plan first.": "Corrige primeiro os erros do plano.",
+ "Pick groups and tick effects first.": "Escolhe primeiro os grupos e assinala os efeitos.",
+ "Tick the problems you want fixed.": "Assinala os problemas que queres corrigir.",
+ "Tick a repair to make.": "Assinala uma reparação a fazer.",
+ "Tick an upgrade step.": "Assinala um passo de atualização.",
+ "{0} changes added to the show.": "{0} alterações adicionadas ao show.",
+ "Applied to the show: {0}": "Aplicado ao show: {0}",
+ "Applied to the show.": "Aplicado ao show.",
+ "Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show.": "Guarda as associações e os tempos nesta sessão. Também acontece ao mudar de alinhamento ou ao carregar em Aplicar ao espetáculo.",
+ "Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.": "Cada alteração entra logo no show em curso. Guardar como novo ficheiro… (em cima, à direita) mantém-na; o ficheiro que abriste nunca é alterado.",
+ "Untick the fixtures the venue does not have.": "Desassinala os projetores que o local não tem."
 }

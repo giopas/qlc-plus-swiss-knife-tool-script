@@ -4080,5 +4080,18 @@
  "{0} has {1} error to look at.": "{0} に確認が必要なエラーが {1} 件あります。",
  "{0} has {1} errors to look at.": "{0} に確認が必要なエラーが {1} 件あります。",
  "{0} is ready. What next?": "{0} の準備ができました。次は？",
- "Recent tools": "最近使ったツール"
+ "Recent tools": "最近使ったツール",
+ "Open a library file and tick what to install.": "ライブラリファイルを開き、インストールする項目にチェックを入れてください。",
+ "Pick a setlist and match its songs first.": "先にセットリストを選び、曲を割り当ててください。",
+ "Fix the errors in the plan first.": "先にプランのエラーを直してください。",
+ "Pick groups and tick effects first.": "先にグループを選び、エフェクトにチェックを入れてください。",
+ "Tick the problems you want fixed.": "修正したい問題にチェックを入れてください。",
+ "Tick a repair to make.": "行う修復にチェックを入れてください。",
+ "Tick an upgrade step.": "アップグレードの手順にチェックを入れてください。",
+ "{0} changes added to the show.": "ショーに{0}件の変更を追加しました。",
+ "Applied to the show: {0}": "ショーに適用しました: {0}",
+ "Applied to the show.": "ショーに適用しました。",
+ "Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show.": "割り当てとタイミングをこのセッションに保持します。セットリストを切り替えたとき、またはショーに適用を押したときにも行われます。",
+ "Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.": "変更はすぐ進行中のショーに入ります。新しいファイルとして保存…(右上)で残せます。開いたファイルは変更されません。",
+ "Untick the fixtures the venue does not have.": "会場にない機材のチェックを外してください。"
 }

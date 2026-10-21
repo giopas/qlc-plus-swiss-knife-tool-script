@@ -21,6 +21,33 @@ No change to `core/`, to the API routes or to what any button writes.
 - **Inter is bundled.** The interface now draws its letters with Inter (variable font, Latin and Latin Extended, 133 KB, SIL Open Font License, `static/fonts/Inter-OFL.txt`), so a button label is the same width on every computer and still works with no internet. Japanese and Chinese use the system fonts. If the font is missing the old system stack takes over.
 - **The shell has no inline styles.** The few left became classes.
 
+### Changed (3.9.5, stage C: the kit on every tool)
+
+No change to `core/`, to the API routes or to what any button writes.
+
+- **One chip per footer, in the kit's words.** Every tool footer says in one line, and never wraps, what its main button does: *Changes the show in progress*, *Writes a new file*, *Does not change the show*, *Saved in your settings*, *Saved next to the show*. The old sentences ("Read-only, nothing is changed", "Adds to the show in progress (or exports a copy)", the shield icon) are gone; `tests/test_ui_lint.py` checks the words.
+- **A disabled main button says why.** Next to it, in words: "Open a show first.", "Tick the problems you want fixed.", "Pick groups and tick effects first." and so on, also as `data-why` and `aria-describedby` for screen readers (`skFooters()` in `kit.js`; the reason lives in `data-needs` on the button).
+- **After an Apply, a toast with Undo and History.** Any step added to the History says "Applied to the show: <tool> - <step>" for six seconds, and the step is lit in the History panel. Undo and Redo stay quiet; tools whose edits go straight in (Triggers, VC Editor) do not toast on every edit.
+- **Setlist: one main button.** *Save Songs* only keeps the matches and timings in the session, and Apply and switching setlist already do that, so it is now a quiet ghost button with a tooltip that says so. *Apply to the show* is the only filled button of the screen.
+- Footers wrap on a narrow window instead of cutting the main button off; the toast sits above the footer.
+
+#### Audit: every button that writes (3.9.5)
+
+| Tool | Button | What it writes | Chip |
+| --- | --- | --- | --- |
+| Setlist | Apply to the show | chasers in the show in progress | Changes the show in progress |
+| Setlist | Export a copy... | a new .qxw | (secondary) |
+| Setlist | PDF, Multi PDF, XML TXT | a document | (secondary) |
+| Rig Reducer, Look Builder, Workspace Doctor, Wizard repair, Upgrade, Brightness, Function Porter (step 5) | Apply to the show / Fix selected / Add to the show | one step in the show in progress | Changes the show in progress |
+| Triggers, VC Editor | each edit | one step, straight away | Changes the show in progress (tooltip explains) |
+| Fixtures | Save as new file... | a new .qxw | Writes a new file |
+| Quick Start | Export | a new .qxw | Writes a new file |
+| Compare, Show Book | none on the show | a report or nothing | Does not change the show |
+| Dictionary | Save | a .txt dictionary | Does not change the show |
+| Library | Install | your own template folders | Saved in your settings |
+| Cabling | Next / Save | the plan next to the show | Saved next to the show |
+| Tablet on stage | Export | the tablet page folder | its own chips (3.9.0) |
+
 ### Changed (3.9.5, stage B: the shell and Start)
 
 No change to `core/` or to what any button writes. One field is added to `/api/show/status`: the Doctor's `rules`.

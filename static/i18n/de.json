@@ -4080,5 +4080,18 @@
  "{0} has {1} error to look at.": "{0} hat {1} Fehler zu prüfen.",
  "{0} has {1} errors to look at.": "{0} hat {1} Fehler zu prüfen.",
  "{0} is ready. What next?": "{0} ist bereit. Und jetzt?",
- "Recent tools": "Zuletzt genutzte Werkzeuge"
+ "Recent tools": "Zuletzt genutzte Werkzeuge",
+ "Open a library file and tick what to install.": "Öffne eine Bibliotheksdatei und hake an, was installiert werden soll.",
+ "Pick a setlist and match its songs first.": "Wähle zuerst eine Setlist und ordne ihre Songs zu.",
+ "Fix the errors in the plan first.": "Behebe zuerst die Fehler im Plan.",
+ "Pick groups and tick effects first.": "Wähle zuerst Gruppen und hake Effekte an.",
+ "Tick the problems you want fixed.": "Hake die Probleme an, die behoben werden sollen.",
+ "Tick a repair to make.": "Hake eine Reparatur an.",
+ "Tick an upgrade step.": "Hake einen Upgrade-Schritt an.",
+ "{0} changes added to the show.": "{0} Änderungen zur Show hinzugefügt.",
+ "Applied to the show: {0}": "Auf die Show angewendet: {0}",
+ "Applied to the show.": "Auf die Show angewendet.",
+ "Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show.": "Behält die Zuordnungen und Zeiten in dieser Sitzung. Das geschieht auch beim Wechsel der Setlist oder bei Auf die Show anwenden.",
+ "Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.": "Jede Änderung geht sofort in die laufende Show. Als neue Datei speichern… (oben rechts) behält sie; die geöffnete Datei wird nie angetastet.",
+ "Untick the fixtures the venue does not have.": "Entferne den Haken bei den Geräten, die der Veranstaltungsort nicht hat."
 }

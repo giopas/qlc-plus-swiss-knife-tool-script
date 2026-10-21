@@ -683,6 +683,14 @@ select.search { cursor: pointer; }
 .out-note.ow  { color: var(--orange); }
 .out-note.ro  { color: var(--text-dim); }   /* read-only / non-workspace outputs */
 .out-note svg { width: 14px; height: 14px; }
+/* 3.9.5 stage C: the chip is one line, always (P13); the reason is the part that gives way */
+.out-footer .out-note { flex: 0 0 auto; white-space: nowrap; }
+.out-footer { flex-wrap: wrap; row-gap: 8px; }
+.out-footer .out-why { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--fs-ui); color: var(--text-dim); }
+.out-footer .out-why[hidden] { display: none; }
+.out-footer .out-why::before { content: "i"; display: inline-block; width: 14px; height: 14px; margin-right: 6px;
+  border: 1px solid currentColor; border-radius: 50%; font: italic 600 11px/12px var(--font); text-align: center; vertical-align: 1px; }
 
 /* ── Side sections ─────────────────────────────────────────────────────────── */
 .side-sec {
@@ -3739,6 +3747,7 @@ body.nav-min .sn-dot { position: absolute; top: 6px; right: 8px; margin: 0; }
 .sh-list { list-style: none; margin: 0; padding: 8px 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 7px; }
 .sh-step { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 11px; background: var(--surface-1); }
 .sh-step.sh-saved { opacity: .72; }
+.sh-step.sh-new { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
 .sh-step:last-child:not(.sh-start) { border-color: var(--accent); }
 .sh-n { font-family: var(--mono, monospace); color: var(--text-faint); width: 18px; flex-shrink: 0; padding-top: 1px; }
 .sh-body { flex: 1; min-width: 0; }
@@ -4114,7 +4123,7 @@ td.gridjs-td { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, tr
 .oc-chip.oc-warn { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 35%, transparent); background: var(--warning-soft); }
 .oc-chip.oc-error { color: var(--error); border-color: color-mix(in srgb, var(--error) 35%, transparent); background: var(--error-soft); }
 .out-outcome.oc-error > b { color: var(--error); }
-.out-footer .out-note { color: var(--text-faint); }
+.out-footer .out-note:not(.kit-chip) { color: var(--text-faint); }
 .out-footer .out-outcome + .spacer, .out-footer .out-outcome ~ .spacer { min-width: var(--sp-2); }
 
 /* Rig Reducer: the changes as groups, not a log dump */

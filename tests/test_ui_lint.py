@@ -90,3 +90,53 @@ def test_inter_is_bundled_with_its_licence():
     assert "SIL OPEN FONT LICENSE" in (fonts / "Inter-OFL.txt").read_text(encoding="utf-8").upper()
     assert '--font: "Inter"' in tokens
     assert "http" not in re.sub(r"/\*.*?\*/", "", tokens, flags=re.S).split("--font:")[0].split("@font-face")[1]
+
+
+# ── stage C: the footers ────────────────────────────────────────────────────
+
+CHIP_TEXT = {"apply": "Changes the show in progress", "new": "Writes a new file", "export": "Does not change the show",
+             "settings": "Saved in your settings", "beside": "Saved next to the show"}
+
+
+def _footers():
+    return re.findall(r'<div class="[^"]*out-footer[^"]*"[^>]*>.*?\n\s*</div>(?=\n)', HTML, flags=re.S)
+
+
+def test_footer_chips_use_the_words_of_the_kit():
+    kit = JS["kit.js"]
+    for verb, text in CHIP_TEXT.items():
+        assert "'%s'" % text in kit, (verb, text)
+    seen = 0
+    for f in _footers():
+        m = re.search(r'<span class="out-note kit-chip kit-chip-(\w+)" data-verb="(\w+)"[^>]*>([^<]*)</span>', f)
+        if not m:
+            continue
+        seen += 1
+        verb = m.group(2)
+        assert verb in CHIP_TEXT, verb
+        assert m.group(3).strip() == CHIP_TEXT[verb] or (verb == "beside" and m.group(3).strip().startswith("Reads the show")), m.group(3)
+    assert seen >= 20, seen
+
+
+def test_a_footer_that_can_be_disabled_says_why():
+    """Every main button that starts disabled has its reason in words (stage C)."""
+    for f in _footers():
+        for b in re.findall(r'<button[^>]*\bbtn-accent\b[^>]*>', f):
+            if re.search(r"\sdisabled(?:\s|>|=)", b):
+                assert "data-needs=" in b, b[:120]
+
+
+def test_every_footer_has_one_main_button_at_most():
+    for f in _footers():
+        assert len(re.findall(r'<button[^>]*\bbtn-accent\b', f)) <= 2, f[:80]   # qs-btn-next / qs-btn-export swap
+
+
+def test_the_apply_verbs_say_what_happens_in_one_line():
+    css = CSS
+    assert re.search(r"\.out-footer \.out-note\s*\{[^}]*white-space:\s*nowrap", css)
+
+
+def test_a_step_added_to_the_history_is_announced():
+    show = JS["show.js"]
+    assert "_skAnnounce" in show and "skDone(" in show and "sh-new" in show
+    assert "showUndo(" in show.split("_skAnnounce", 1)[1][:1800]

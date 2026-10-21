@@ -4080,5 +4080,18 @@
  "{0} has {1} error to look at.": "{0} 有 {1} 个错误需要查看。",
  "{0} has {1} errors to look at.": "{0} 有 {1} 个错误需要查看。",
  "{0} is ready. What next?": "{0} 已就绪。接下来做什么？",
- "Recent tools": "最近使用的工具"
+ "Recent tools": "最近使用的工具",
+ "Open a library file and tick what to install.": "打开库文件并勾选要安装的内容。",
+ "Pick a setlist and match its songs first.": "请先选择一个歌单并匹配其歌曲。",
+ "Fix the errors in the plan first.": "请先修复方案中的错误。",
+ "Pick groups and tick effects first.": "请先选择分组并勾选效果。",
+ "Tick the problems you want fixed.": "勾选要修复的问题。",
+ "Tick a repair to make.": "勾选要进行的修复。",
+ "Tick an upgrade step.": "勾选一个升级步骤。",
+ "{0} changes added to the show.": "已向演出添加 {0} 项更改。",
+ "Applied to the show: {0}": "已应用到演出：{0}",
+ "Applied to the show.": "已应用到演出。",
+ "Keeps the matches and timings in this session. It also happens when you switch setlist or press Apply to the show.": "在本次会话中保留匹配和时间。切换歌单或点击“应用到演出”时也会保存。",
+ "Every edit goes straight into the show in progress. Save as new file… (top right) keeps it; the file you opened is never touched.": "每次编辑都会直接进入当前演出。点击右上角的“另存为新文件…”即可保留；你打开的文件不会被改动。",
+ "Untick the fixtures the venue does not have.": "取消勾选场地没有的设备。"
 }

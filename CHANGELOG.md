@@ -21,7 +21,23 @@ No change to `core/`, to the API routes or to what any button writes.
 - **Inter is bundled.** The interface now draws its letters with Inter (variable font, Latin and Latin Extended, 133 KB, SIL Open Font License, `static/fonts/Inter-OFL.txt`), so a button label is the same width on every computer and still works with no internet. Japanese and Chinese use the system fonts. If the font is missing the old system stack takes over.
 - **The shell has no inline styles.** The few left became classes.
 
+### Changed (3.9.5, stage B: the shell and Start)
+
+No change to `core/` or to what any button writes. One field is added to `/api/show/status`: the Doctor's `rules`.
+
+- **The ribbon.** The file name has room (240 px or more) and a middle ellipsis (`Festival…_14fix.qxw`), with a second line that says *opened, never touched* or *Saved as …*. The three count cards are one quiet line (`14 fixtures · 286 functions · 113 widgets`), shown from 1700 px wide and otherwise in the file's tooltip. The changes read as a sentence (*3 changes, not saved*, with a teal dot, or *Saved as …*, or *No changes*) and open the History.
+- **The Doctor pill counts kinds, not places.** `1 error · 6 kinds of warning` instead of `1 · 856`. Red is only for errors, amber for warnings, green with a tick when clean. The hover lists the rules with their counts (`D005 ×801, D004 ×4`).
+- **Save and Open.** *Save as new file…* is filled when there is something to save and an ordinary button when there is not. *Open…* is a split button: its menu has *Reload from disk* and the recent shows.
+- **Start follows the state.** A zone at the top picks one of five states by a fixed order: no show open, a route in progress (*You are on step 4 of 9 …*, *Continue*), the Doctor has errors (*Open the Doctor*), changes not saved (*Save as new file…*, *History*), clean and saved (*… is ready. What next?*). The others become small lines under it. The drop zone and the recent list show only when no show is open. The job cards come before the guided routes, and the last tool used on a card is marked.
+- **Recent shows** show the date (today, yesterday, a weekday), the fixture count and the Doctor result, and each has an *Open* button.
+- **The side menu.** An accent bar on the active tool, the last three tools used under Start, groups that fold (the choice is kept), and labels in the dim text colour instead of the faint one.
+
 ### Added
+
+- `static/js/start_state.js` (`skStartState()`, a pure function) and `tests/test_start_state.py` (the rule order of the five states, run with node), `tests/test_show_doctor_rules.py` (the rules in the show status).
+- 47 strings in the seven languages, with separate singular and plural forms where English has them.
+
+### Added (stage A)
 
 - `tests/test_tokens_contrast.py` (WCAG ratios of the token pairs in three themes) and `tests/test_ui_lint.py` (no emoji, no key starting with a picture, no font size below 11 px, no inline style in the shell and the kit, every icon exists in the sprite, only the four button kinds).
 

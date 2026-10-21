@@ -72,6 +72,12 @@
       <span>Start</span>
     </button>
 
+    <!-- Recent tools (3.9.5): the last three you used, filled by skRenderRecentTools() -->
+    <div class="sn-recent" id="sn-recent" hidden>
+      <div class="sn-label">Recent tools</div>
+      <div id="sn-recent-list"></div>
+    </div>
+
     <!-- 1 · New show -->
     <div class="sn-group-label" id="sn-grp-1"><span class="sn-gnum">1</span><span class="sn-gtxt">New show</span></div>
     <button class="sn-item" id="sn-quickstart" data-tip="Quick Start" data-desc="A new show from your fixtures: looks, effects, PANIC RESET and a Virtual Console, ready to run. Use this when you start from nothing; Fixtures when you only need the rig placed and patched." onclick="go('quickstart')">
@@ -242,14 +248,12 @@
   <div class="metrics-strip" id="metrics-strip">
     <div class="ms-file ws-unloaded" id="ms-file">
       <span class="ms-dot"></span>
-      <span id="ms-file-name">No workspace loaded</span>
+      <span class="ms-file-txt"><span id="ms-file-name">No workspace loaded</span><small id="ms-file-sub"></small></span>
     </div>
-    <div class="ms-stat" title="Fixtures in the show"><span class="ms-n" id="ms-fixtures">—</span><span class="ms-l">Fixtures</span></div>
-    <div class="ms-stat" title="Functions in the show"><span class="ms-n" id="ms-functions">—</span><span class="ms-l">Functions</span></div>
-    <div class="ms-stat" title="Virtual Console widgets in the show"><span class="ms-n" id="ms-vcwidgets">—</span><span class="ms-l">VC Widgets</span></div>
+    <div class="ms-stats" id="ms-stats"><b id="ms-fixtures">—</b> fixtures · <b id="ms-functions">—</b> functions · <b id="ms-vcwidgets">—</b> widgets</div>
     <div class="show-bar" id="show-bar" hidden>
-      <span class="sb-pill sb-card" id="sb-changes" onclick="showHistoryToggle(true)"><b>0</b><small>changes</small></span>
-      <span class="sb-pill sb-doctor" id="sb-doctor" hidden onclick="go('doctor')" title="The Workspace Doctor on the show as it is now — click to open it"></span>
+      <button class="sb-link" id="sb-changes" onclick="showHistoryToggle(true)"></button>
+      <button class="sb-link sb-doctor" id="sb-doctor" hidden onclick="go('doctor')" title="The Workspace Doctor on the show as it is now: click to open it"></button>
     </div>
     <div class="ms-actions">
       <button class="btn btn-accent btn-sm" id="update-badge" hidden onclick="updToggle()"
@@ -261,10 +265,13 @@
       <button class="btn btn-surface btn-sm" onclick="showHistoryToggle()"
               data-tooltip="Every change to the show, step by step — open a tool again, go back to any step"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clock"/></svg> History</button>
       <button class="btn btn-accent btn-sm" id="sb-save" onclick="showSave()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file…</button>
-      <button class="btn btn-surface btn-sm" onclick="browseWorkspace()"
-              data-tooltip="Open a .qxw workspace — every tool works on it"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open…</button>
-      <button class="btn btn-surface btn-sm" onclick="reloadFromDisk()"
-              data-tooltip="Re-read the open workspace from disk (discards unsaved changes)">↻<span class="ms-lbl"> Reload</span></button>
+      <div class="split" id="open-split">
+        <button class="btn btn-surface btn-sm split-main" onclick="browseWorkspace()"
+                data-tooltip="Open a .qxw workspace — every tool works on it"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open…</button>
+        <button class="btn btn-surface btn-sm split-caret" id="open-caret" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to open"
+                onclick="openMenuToggle(event)">▾</button>
+        <div class="split-menu" id="open-menu" role="menu" hidden></div>
+      </div>
     </div>
   </div>
 
@@ -430,6 +437,9 @@
         <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained">?</button>
       </div>
 
+      <!-- Top zone: follows the state of the show (start_state.js) -->
+      <div class="start-state" id="start-state" hidden></div>
+
       <div class="start-drop-zone" id="start-drop-zone">
         <p><b>Open a show</b> — drag a <b>.qxw</b> workspace here, or</p>
         <div class="start-drop-btns">
@@ -453,6 +463,41 @@
       <div id="recent-list" class="recents"></div>
 
       <!-- Guided routes, first (v2.2 UI review: the workflows are the product) -->
+      <h3 class="start-h">What do you want to do?</h3>
+      <!-- Workflow cards: the numbers match the groups of the side menu -->
+      <div class="start-workflow">
+        <div class="wf-card" data-grp="1">
+          <div class="wf-head"><div class="wf-num">1</div><div class="wf-title">New show</div></div>
+          <div class="wf-desc">Start from your fixtures: a ready-to-run show with looks, effects, PANIC RESET and a Virtual Console — or place and patch the rig by hand.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('quickstart')">Quick Start</button><button class="wf-chip" onclick="go('fixtures')">Fixtures</button></div>
+        </div>
+        <div class="wf-card" data-grp="2">
+          <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
+          <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
+        </div>
+        <div class="wf-card" data-grp="3">
+          <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
+          <div class="wf-desc">Build looks and chasers, lay out the Virtual Console, place the 3D meshes and fixtures on the stage — and share your templates with other QLC+ users.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('looks')">Look Builder</button><button class="wf-chip" onclick="go('vceditor')">VC Visual Editor</button><button class="wf-chip" onclick="go('stage')">Stage &amp; Meshes</button><button class="wf-chip" onclick="go('library')">Library</button></div>
+        </div>
+        <div class="wf-card" data-grp="4">
+          <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
+          <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
+        </div>
+        <div class="wf-card" data-grp="5">
+          <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
+          <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; a QLC+ Show Wizard show finished, an older show upgraded to QLC+ 5.3; every ID in a table.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('wizard')">Wizard Repair</button><button class="wf-chip" onclick="go('upgrade')">Upgrade to QLC+ 5.3</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
+        </div>
+        <div class="wf-card" data-grp="6">
+          <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
+          <div class="wf-desc">The paper for each reader, in one tool: tech rider for the venue, crew checklist for load-in, show book with decoded DMX values for you — PDF or CSV.</div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('patch')">Patch sheet</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
+        </div>
+      </div>
+
       <h3 class="start-h">Guided routes <small class="sb-optional">— the tools in order, one step at a time; any step, any order</small></h3>
       <div class="start-routes">
         <div class="rt-card">
@@ -497,41 +542,6 @@
           <ol class="rt-steps" id="rt-prof-list"></ol>
           <button class="btn btn-accent btn-sm" onclick="startProfiles()">▶ Apply a profile…</button>
           <button class="btn btn-surface btn-sm" onclick="startProfiles(true)" title="A profile that keeps its own rig builds a show from nothing">▶ Start a show from a profile</button>
-        </div>
-      </div>
-
-      <h3 class="start-h">Or pick a tool by job</h3>
-      <!-- Workflow cards: the numbers match the groups of the side menu -->
-      <div class="start-workflow">
-        <div class="wf-card" data-grp="1">
-          <div class="wf-head"><div class="wf-num">1</div><div class="wf-title">New show</div></div>
-          <div class="wf-desc">Start from your fixtures: a ready-to-run show with looks, effects, PANIC RESET and a Virtual Console — or place and patch the rig by hand.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('quickstart')">Quick Start</button><button class="wf-chip" onclick="go('fixtures')">Fixtures</button></div>
-        </div>
-        <div class="wf-card" data-grp="2">
-          <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
-          <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
-        </div>
-        <div class="wf-card" data-grp="3">
-          <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
-          <div class="wf-desc">Build looks and chasers, lay out the Virtual Console, place the 3D meshes and fixtures on the stage — and share your templates with other QLC+ users.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('looks')">Look Builder</button><button class="wf-chip" onclick="go('vceditor')">VC Visual Editor</button><button class="wf-chip" onclick="go('stage')">Stage &amp; Meshes</button><button class="wf-chip" onclick="go('library')">Library</button></div>
-        </div>
-        <div class="wf-card" data-grp="4">
-          <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
-          <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
-        </div>
-        <div class="wf-card" data-grp="5">
-          <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
-          <div class="wf-desc">Broken references, channels left unset, strobe left on, a PANIC RESET that can’t reset — found and fixed; a QLC+ Show Wizard show finished, an older show upgraded to QLC+ 5.3; every ID in a table.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('doctor')">Workspace Doctor</button><button class="wf-chip" onclick="go('wizard')">Wizard Repair</button><button class="wf-chip" onclick="go('upgrade')">Upgrade to QLC+ 5.3</button><button class="wf-chip" onclick="go('idbrowser')">ID Browser</button><button class="wf-chip" onclick="go('compare')">Compare</button></div>
-        </div>
-        <div class="wf-card" data-grp="6">
-          <div class="wf-head"><div class="wf-num">6</div><div class="wf-title">Document</div></div>
-          <div class="wf-desc">The paper for each reader, in one tool: tech rider for the venue, crew checklist for load-in, show book with decoded DMX values for you — PDF or CSV.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('showbook');sbPreset('rider')">Tech rider</button><button class="wf-chip" onclick="go('showbook');sbPreset('checklist')">Crew checklist</button><button class="wf-chip" onclick="go('showbook');sbPreset('patch')">Patch sheet</button><button class="wf-chip" onclick="go('showbook');sbPreset('operator')">Show book</button></div>
         </div>
       </div>
 
@@ -2996,6 +3006,7 @@
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>
 <script src="/static/js/show.js?v={{ asset_v }}"></script>
 <script src="/static/js/route.js?v={{ asset_v }}"></script>
+<script src="/static/js/start_state.js?v={{ asset_v }}"></script>
 <script src="/static/js/palette.js?v={{ asset_v }}"></script>
 <script src="/static/js/compare.js?v={{ asset_v }}"></script>
 <script src="/static/js/library.js?v={{ asset_v }}"></script>

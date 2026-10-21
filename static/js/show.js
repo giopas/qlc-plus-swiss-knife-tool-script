@@ -61,24 +61,26 @@ function _renderShowBar() {
   const n = _show.unsaved || 0;
   const ch = document.getElementById('sb-changes');
   if (ch) {
-    ch.innerHTML = n ? `<b>${n}</b><small>unsaved change${n > 1 ? 's' : ''}</small>`
-      : (_show.saved_name ? `<b>✓</b><small title="${_esc(_show.saved_name)}">saved</small>` : '<b>0</b><small>changes</small>');
-    ch.className = 'sb-pill sb-card' + (n ? ' sb-unsaved' : '');
-    ch.title = n ? 'Open the History to see every change' : '';
+    ch.textContent = skChangesText(_show);
+    ch.className = 'sb-link sb-changes' + (n ? ' sb-unsaved' : '');
+    ch.title = t('Open the History to see every change');
   }
+  const sub = document.getElementById('ms-file-sub');
+  if (sub) sub.textContent = _show.active ? (_show.saved_name ? t('Saved as {0}', _show.saved_name) : t('opened, never touched')) : '';
   const d = _show.doctor, dr = document.getElementById('sb-doctor');
   if (dr) {
     if (d) {
-      const e = d.error || 0, w = d.warning || 0;
-      dr.innerHTML = `<b>${e} · ${w}</b><small>Doctor err · warn</small>`;
-      dr.title = `Workspace Doctor on the show as it is now: ${e} error${e === 1 ? '' : 's'}, ${w} warning${w === 1 ? '' : 's'} — click to open it`;
-      dr.className = 'sb-pill sb-card sb-doctor ' + (e ? 'sb-bad' : w ? 'sb-warn' : 'sb-good');
+      const sum = skDoctorSummary(d);
+      dr.innerHTML = sum.html;
+      dr.title = sum.tip + ' ' + t('Click to open the Doctor.');
+      dr.className = 'sb-link sb-doctor';
       dr.hidden = false;
     } else dr.hidden = true;
   }
   const u = document.getElementById('sb-undo');
   if (u) u.disabled = !(_show.steps > 0);
   const s = document.getElementById('sb-save');
+  if (s) s.className = 'btn btn-sm ' + (n ? 'btn-accent' : 'btn-surface');   // filled only when there is something to save
   if (s) s.title = `Save the show as a new file (${_show.suggested_name || ''}) with a report of every change — the file you opened is never touched`;
   // orange dots: tools that changed the show since it was opened / saved
   document.querySelectorAll('.sn-item[id^="sn-"]').forEach(btn => {
@@ -92,7 +94,67 @@ function _renderShowBar() {
     }
   });
   window._showUnsaved = n;
+  if (typeof skRememberRecent === 'function') skRememberRecent();
+  if (typeof renderStart === 'function') renderStart();
 }
+
+/** "3 changes, not saved" | "Saved as X" | "No changes" (the ribbon, 3.9.5). */
+function skChangesText(show) {
+  const n = (show && show.unsaved) || 0;
+  if (n) return t(n === 1 ? '{0} change, not saved' : '{0} changes, not saved', n);
+  return show && show.saved_name ? t('Saved as {0}', show.saved_name) : t('No changes');
+}
+
+/** The Doctor pill counts kinds of problem, not places (3.9.5):
+ *  "1 error · 4 kinds of warning"; the hover lists the rules with their counts. */
+function skDoctorSummary(d) {
+  const e = d.error || 0, w = d.warning || 0;
+  const rules = d.rules || {};
+  const kinds = sev => Object.keys(rules).filter(c => rules[c].severity === sev).sort();
+  const wk = kinds('warning').length;
+  const listing = sev => kinds(sev).map(c => c + ' ×' + rules[c].n).join(', ');
+  const nE = n => t(n === 1 ? '{0} error' : '{0} errors', n), nW = n => t(n === 1 ? '{0} warning' : '{0} warnings', n);
+  const eTxt = e ? nE(e) : '';
+  const wTxt = w ? (wk ? t(wk === 1 ? '{0} kind of warning' : '{0} kinds of warning', wk) : nW(w)) : '';
+  const tip = [e ? nE(e) + (listing('error') ? ': ' + listing('error') : '') : '',
+    w ? nW(w) + (listing('warning') ? ': ' + listing('warning') : '') : ''].filter(Boolean).join('; ');
+  return {
+    html: (!e && !w) ? '<span class="sb-ok">✓ ' + _esc(t('Doctor: clean')) + '</span>'
+      : [e ? '<span class="sb-e">' + _esc(eTxt) + '</span>' : '', w ? '<span class="sb-w">' + _esc(wTxt) + '</span>' : ''].filter(Boolean).join(' · '),
+    tip: tip ? t('Workspace Doctor') + ': ' + tip + '.' : t('Workspace Doctor: no errors or warnings.'),
+  };
+}
+
+// ── The Open… split button: reload and the recent shows (3.9.5) ──────────────
+function openMenuToggle(ev) {
+  if (ev) ev.stopPropagation();
+  const m = document.getElementById('open-menu'), c = document.getElementById('open-caret');
+  if (!m) return;
+  const open = m.hidden;
+  if (open) _renderOpenMenu();
+  m.hidden = !open;
+  if (c) c.setAttribute('aria-expanded', String(open));
+}
+function _renderOpenMenu() {
+  const m = document.getElementById('open-menu');
+  if (!m) return;
+  let recents = [];
+  try { recents = JSON.parse(localStorage.getItem('sk-recents') || '[]').filter(r => r.type !== 'qsk'); } catch { /* none */ }
+  const loaded = !!window._wsPath;
+  m.innerHTML =
+    `<button role="menuitem" class="split-item" ${loaded ? '' : 'disabled'} onclick="openMenuToggle();reloadFromDisk()">${_esc(t('Reload from disk'))} <small>${_esc(t('discards unsaved changes'))}</small></button>` +
+    (recents.length ? `<div class="split-sep">${_esc(t('Recent shows'))}</div>` : '') +
+    recents.map(r => `<button role="menuitem" class="split-item" title="${_esc(r.path)}" data-path="${_esc(r.path)}" onclick="openMenuPick(this)">${_esc(r.path.split(/[\\/]/).pop())}</button>`).join('');
+}
+function openMenuPick(el) { openMenuToggle(); loadRecentFile(el.dataset.path, 'qxw'); }
+document.addEventListener('click', e => {
+  const m = document.getElementById('open-menu');
+  if (m && !m.hidden && !e.target.closest('#open-split')) openMenuToggle();
+});
+document.addEventListener('keydown', e => {
+  const m = document.getElementById('open-menu');
+  if (e.key === 'Escape' && m && !m.hidden) { openMenuToggle(); document.getElementById('open-caret')?.focus(); }
+});
 
 // Every change a tool makes goes through a POST/PATCH to /api/…: refresh the
 // bar shortly after (tools don't need to know about the show bar).

@@ -262,6 +262,7 @@ function routeSync(changedTools) {
 }
 
 function routeRender() {
+  if (typeof renderStart === 'function') renderStart();
   const el = document.getElementById('route-strip');
   const sub = document.getElementById('route-sub');
   if (!el) return;

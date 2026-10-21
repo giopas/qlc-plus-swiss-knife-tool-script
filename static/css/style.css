@@ -4611,3 +4611,81 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible, [role="
 
 /* an icon inside running text sits on the text's baseline (flex parents ignore this) */
 svg.ic { vertical-align: -.2em; }
+
+/* ── 3.9.5 stage B: the ribbon ───────────────────────────────────────────────
+   The file gets room and a second line, the counts become one quiet line, the
+   changes and the Doctor read as sentences, Open is a split button. */
+.metrics-strip { gap: var(--sp-3); }
+.ms-file { min-width: 240px; max-width: 340px; border-right: 0; padding-right: 0; margin-right: 0; gap: var(--sp-2); }
+.ms-file-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.ms-file-txt > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.ms-file-txt small { font-size: var(--fs-small); font-weight: 400; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ms-stats { font-size: var(--fs-ui); color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+.ms-stats b { font: 600 var(--fs-ui) var(--mono); color: var(--text); }
+.sb-link {
+  background: none; border: 0; padding: 4px 6px; border-radius: var(--radius-sm); cursor: pointer;
+  font: inherit; font-size: var(--fs-ui); font-weight: 600; color: var(--text-dim); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+}
+.sb-link:hover { background: var(--surface-1); color: var(--text); }
+.sb-link.sb-unsaved::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+.sb-link.sb-unsaved { color: var(--text); }
+.sb-doctor .sb-e { color: var(--error-text); }
+.sb-doctor .sb-w { color: var(--warning-text); }
+.sb-doctor .sb-ok { color: var(--success-text); }
+.show-bar { display: flex; align-items: center; gap: var(--sp-1); }
+.show-bar[hidden] { display: none; }
+/* the counts also sit in the file's tooltip; the ribbon has no room for both below 1700 px */
+@media (max-width: 1700px) { .ms-stats { display: none; } }
+@media (max-width: 1360px) { .ms-file { min-width: 180px; } }
+
+.split { position: relative; display: inline-flex; }
+.split .split-main { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.split .split-caret { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid var(--border-strong); padding-left: var(--sp-2); padding-right: var(--sp-2); }
+.split-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 260px; max-width: 420px;
+  background: var(--surface-0); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  box-shadow: var(--shadow-2); padding: var(--sp-1); display: flex; flex-direction: column;
+}
+.split-menu[hidden] { display: none; }
+.split-item {
+  background: none; border: 0; text-align: left; padding: 6px var(--sp-2); border-radius: var(--radius-sm);
+  font: inherit; font-size: var(--fs-ui); color: var(--text); cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.split-item:hover:not(:disabled) { background: var(--row-hover); }
+.split-item:disabled { color: var(--text-faint); cursor: not-allowed; }
+.split-item small { color: var(--text-dim); margin-left: var(--sp-2); }
+.split-sep { font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); padding: var(--sp-2) var(--sp-2) var(--sp-1); }
+
+/* ── 3.9.5 stage B: Start follows the state; recents; the job cards come first ── */
+.start-state { margin: 0 0 var(--sp-4); padding: var(--sp-3) var(--sp-4); background: var(--surface-0);
+  border: 1px solid var(--border); border-left: 4px solid var(--border-strong); border-radius: var(--radius); }
+.start-state[hidden] { display: none; }
+.start-state.tone-route { border-left-color: var(--accent); }
+.start-state.tone-error { border-left-color: var(--error); background: var(--error-soft); }
+.start-state.tone-unsaved { border-left-color: var(--warning); }
+.start-state.tone-ready { border-left-color: var(--success); }
+.ss-head { display: flex; flex-direction: column; gap: var(--sp-1); }
+.ss-head b { font-size: var(--fs-section); font-weight: 600; }
+.ss-head span { font-size: var(--fs-body); color: var(--text-dim); }
+.ss-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); flex-wrap: wrap; }
+.ss-note { display: flex; gap: var(--sp-2); align-items: baseline; margin-top: var(--sp-2); font-size: var(--fs-ui); color: var(--text-dim); }
+.recent-item { display: flex; align-items: center; gap: var(--sp-3); }
+.recent-item .recent-name { font-weight: 600; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-item .recent-meta { flex: 1; color: var(--text-dim); font-size: var(--fs-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-item .recent-ago { color: var(--text-dim); font-size: var(--fs-ui); white-space: nowrap; }
+.recent-item .recent-open { pointer-events: none; }
+.wf-chip.wf-last { border-color: var(--accent); color: var(--accent); }
+
+/* ── 3.9.5 stage B: the side menu ─────────────────────────────────────────────
+   An active bar, labels that can be read, folding groups, the last three tools. */
+.sn-item.active::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.sn-label, .sn-group-label, .fp-title, .fp-item .fp-label { color: var(--text-dim); }
+.sn-group-label { cursor: pointer; user-select: none; }
+.sn-group-label::after { content: "▾"; margin-left: auto; font-size: var(--fs-small); color: var(--text-dim); }
+.sn-group-label.sn-collapsed::after { content: "▸"; }
+.sn-folded { display: none; }
+.sn-recent[hidden] { display: none; }
+.sn-recent .sn-label { padding-bottom: var(--sp-1); }
+body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }

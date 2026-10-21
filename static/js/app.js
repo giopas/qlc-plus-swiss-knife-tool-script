@@ -92,6 +92,7 @@ function go(screenId) {
     const sb = document.getElementById('app-statusbar');
     if (sb) { sb.textContent = typeof t === 'function' ? t('Ready.') : 'Ready.'; sb.className = 'app-statusbar status-ok'; }
   }
+  if (screenId !== 'start') { skRememberTool(screenId); }
   // Update sidebar
   document.querySelectorAll('.sn-item').forEach(b => {
     b.classList.toggle('active', b.id === `sn-${screenId}`);
@@ -100,6 +101,7 @@ function go(screenId) {
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.toggle('active', s.id === `scr-${screenId}`);
   });
+  if (screenId === 'start' && typeof renderStart === 'function') renderStart();
   // Lazy-load
   const loader = _LAZY[screenId];
   if (loader) loader();
@@ -371,17 +373,88 @@ function _renderRecents() {
   try {
     const recents = JSON.parse(localStorage.getItem('sk-recents') || '[]');
     if (!recents.length) { wrap.innerHTML = ''; return; }
-    wrap.innerHTML = '<div class="recents-title">Recent files</div>' +
+    wrap.innerHTML = '<div class="recents-title">Recent</div>' +
       recents.map(r => {
         const name = r.path.split(/[\\/]/).pop();
-        const ago  = _timeAgo(r.ts);
-        return `<div class="recent-item" onclick="loadRecentFile('${r.path.replace(/'/g, "\\'")}', '${r.type}')">
-          <svg class="ic"><use href="/static/icons.svg#clock"/></svg>
-          <span class="recent-name">${name}</span>
-          <span class="recent-ago">${ago}</span>
+        const ago  = skDateLabel(r.ts);
+        const bits = [];
+        if (Number.isInteger(r.fixtures)) bits.push(t(r.fixtures === 1 ? '{0} fixture' : '{0} fixtures', r.fixtures));
+        if (r.doctor) bits.push(r.doctor.error ? t(r.doctor.error === 1 ? '{0} error' : '{0} errors', r.doctor.error) : t('clean'));
+        return `<div class="recent-item" onclick="loadRecentFile('${r.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', '${r.type}')" title="${_esc(r.path)}">
+          <svg class="ic"><use href="/static/icons.svg#${r.type === 'qsk' ? 'clipboard' : 'clock'}"/></svg>
+          <span class="recent-name">${_esc(name)}</span>
+          <span class="recent-meta">${_esc(bits.join(' · '))}</span>
+          <span class="recent-ago">${_esc(ago)}</span>
+          <span class="btn btn-surface btn-sm recent-open">${_esc(t('Open'))}</span>
         </div>`;
       }).join('');
   } catch {}
+}
+
+/** The tools used last: the Start cards mark the last one, the sidebar lists the last three (3.9.5). */
+function skRememberTool(id) {
+  try {
+    localStorage.setItem('sk-lasttool', id);
+    const list = JSON.parse(localStorage.getItem('sk-recent-tools') || '[]').filter(x => x !== id);
+    list.unshift(id);
+    localStorage.setItem('sk-recent-tools', JSON.stringify(list.slice(0, 3)));
+  } catch { /* per-browser convenience */ }
+  skRenderRecentTools();
+}
+
+function skRenderRecentTools() {
+  const box = document.getElementById('sn-recent'), list = document.getElementById('sn-recent-list');
+  if (!box || !list) return;
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem('sk-recent-tools') || '[]'); } catch { /* none */ }
+  ids = ids.filter(id => document.getElementById('sn-' + id));
+  box.hidden = !ids.length;
+  list.innerHTML = '';
+  ids.forEach(id => {
+    const src = document.getElementById('sn-' + id);
+    const b = document.createElement('button');
+    b.className = 'sn-item sn-recent-item' + (src.classList.contains('active') ? ' active' : '');
+    b.innerHTML = src.innerHTML.replace(/<i class="sn-dot"[^>]*><\/i>/, '');
+    b.addEventListener('click', () => go(id));
+    list.appendChild(b);
+  });
+}
+document.addEventListener('DOMContentLoaded', skRenderRecentTools);
+
+/** Groups of the side menu fold away; the choice is remembered (3.9.5). */
+function skGroupToggle(label) {
+  const closed = !label.classList.contains('sn-collapsed');
+  label.classList.toggle('sn-collapsed', closed);
+  label.setAttribute('aria-expanded', String(!closed));
+  for (let el = label.nextElementSibling; el && !el.classList.contains('sn-group-label'); el = el.nextElementSibling) {
+    if (el.classList.contains('sn-item')) el.classList.toggle('sn-folded', closed);
+  }
+  try {
+    const set = new Set(JSON.parse(localStorage.getItem('sk-folded-groups') || '[]'));
+    if (closed) set.add(label.id); else set.delete(label.id);
+    localStorage.setItem('sk-folded-groups', JSON.stringify([...set]));
+  } catch { /* per-browser convenience */ }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  let folded = [];
+  try { folded = JSON.parse(localStorage.getItem('sk-folded-groups') || '[]'); } catch { /* none */ }
+  document.querySelectorAll('.sn-group-label').forEach(l => {
+    l.setAttribute('role', 'button'); l.setAttribute('tabindex', '0'); l.setAttribute('aria-expanded', 'true');
+    l.addEventListener('click', () => skGroupToggle(l));
+    l.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); skGroupToggle(l); } });
+    if (folded.includes(l.id)) skGroupToggle(l);
+  });
+});
+
+/** today, yesterday, a weekday within the week, else the date (3.9.5). */
+function skDateLabel(ts) {
+  const d = new Date(ts), now = new Date();
+  const day = x => Math.floor(new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime() / 86400000);
+  const diff = day(now) - day(d);
+  if (diff <= 0) return t('today');
+  if (diff === 1) return t('yesterday');
+  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: 'short' });
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 function _timeAgo(ts) {
@@ -671,6 +744,14 @@ function _updateNeedWsBanners(loaded) {
 }
 document.addEventListener('DOMContentLoaded', () => _updateNeedWsBanners(false));
 
+/** A long file name keeps its start and its end: Festival…_14fix.qxw (3.9.5). */
+function skMidEllipsis(name, max) {
+  const s = String(name || '');
+  if (s.length <= max) return s;
+  const tail = Math.max(8, Math.floor((max - 1) * 0.4));
+  return s.slice(0, max - 1 - tail) + '…' + s.slice(s.length - tail);
+}
+
 /** Populate the persistent top metrics strip. Mirrors _updateHeader's logic
  *  so the strip and the Start-screen file panel never disagree. */
 function _updateMetricsStrip(state) {
@@ -685,18 +766,24 @@ function _updateMetricsStrip(state) {
     let label = 'Workspace loaded';
     if (state.path) label = state.path.split(/[\\/]/).pop();
     else if (state.original_name) label = state.original_name + '  (uploaded)';
-    if (nameEl) nameEl.textContent = label;
+    if (nameEl) nameEl.textContent = skMidEllipsis(label, 30);
     fileEl.className = 'ms-file ws-loaded';
-    fileEl.title = state.path || state.original_name || '';
+    window._wsPath = state.path || '';
+    window._wsLabel = label;
+    fileEl.title = (state.path || state.original_name || '') + ' (' + (state.fixture_count ?? '—') + ' fixtures, ' +
+      (state.func_count ?? '—') + ' functions, ' + (state.vc_widget_count ?? '—') + ' widgets)';
   } else {
     if (nameEl) nameEl.textContent = 'No workspace loaded';
     fileEl.className = 'ms-file ws-unloaded';
     fileEl.title = '';
+    window._wsPath = ''; window._wsLabel = '';
+    const sub = document.getElementById('ms-file-sub'); if (sub) sub.textContent = '';
   }
 
   if (fixEl)  fixEl.textContent  = state.fixture_count   ?? '—';
   if (funcEl) funcEl.textContent = state.func_count       ?? '—';
   if (vcEl)   vcEl.textContent   = state.vc_widget_count  ?? '—';
+  if (typeof renderStart === 'function') renderStart();
 }
 
 // =============================================================================

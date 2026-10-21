@@ -21,7 +21,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 1. Where we are
 
-**Version 3.9.0, 21 October 2026** (built on `feat/v3.9.0`, to be merged and tagged; 3.8.0 was released on 20 October). Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
+**Version 3.9.5, 21 October 2026** (released: tag `v3.9.5` is on `main` and on origin; 3.9.0 and 3.8.0 are tagged too). Now in work: 3.9.6, the plain-language wiki and README. Swiss Knife opens a QLC+ 5 workspace once, lets any tool change it as the show in progress, checks it with the Workspace Doctor and saves it as a new file with a report and a recipe.
 
 | Area | State |
 |---|---|
@@ -30,10 +30,10 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 | Install | Packages for macOS (Apple silicon and Intel), Windows (installer and zip) and Linux, with an update check and *Update and restart*. |
 | Language | English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. |
 | Claude | An MCP server with 28 tools (among them `guide`), seven ready requests, the guide as resources. Claude Desktop connects with one `.mcpb` file, Claude Code with one command. Claude gets only the folders you list and writes only new files (the Stage Monitor's own page and settings are the exception). |
-| Tests | The suite passes in CI (1145 tests at 3.7.0, more since: 3.8.0 added tests for tempo and layouts; 1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
+| Tests | The suite passes in CI (1145 tests at 3.7.0, 1246 at 3.9.5 stage A, more since; 1 skipped without the `websocket` module). A live check against QLC+ 5.2.2 runs in CI (advisory). |
 | Documentation | README, wiki (35 pages), CHANGELOG, release notes per version. |
 
-**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words), 3.9.6 plain-language wiki and README, 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
+**Order agreed on 21 October** (giopas, after the three outside UX reviews; design in [DESIGN_v2.md](DESIGN_v2.md), mockups in `mockups/mockup_D_v2.html`): 3.8.0 stage layouts and per-song tempo (released), 3.9.0 Tablet on stage (song cards, one entry, the page kit as pilot; released), 3.9.5 a clearer Swiss Knife (look, Start, page kit, in-app words; released 21 October), 3.9.6 plain-language wiki and README (in work), 3.10.0 teleprompter, 3.11.0 colour themes and porting by eye. Before, the plain-language release (then 3.8.5) came before the Tablet release; it now comes after the screens it describes.
 
 ## 2. Next releases
 
@@ -154,7 +154,7 @@ Decided 18 October, from the wiki of mjcmatrix's fork of QLC+ (https://github.co
 
 ### 3.9.0 · Tablet on stage (song cards and one Tablet entry)
 
-**Status, 21 October: built on `feat/v3.9.0`, to be pushed and tagged by giopas.** Done: step 0 (the page kit), song cards, Next song banner, views by role, the one screen with two modes, translations. Also done: QR code for the address and the role views. Cards in the Simple page (question 10.4, decided yes by giopas on 21 October) and views by role of your own (id, layout, fields, one player) are in too. Left for later: VC button tiles in control mode, the Setlist order on the live page, shared text size and colours with the Simple page.
+**Status: released (tag `v3.9.0`, 21 October).** Done: step 0 (the page kit), song cards, Next song banner, views by role, the one screen with two modes, translations. Also done: QR code for the address and the role views. Cards in the Simple page (question 10.4, decided yes by giopas on 21 October) and views by role of your own (id, layout, fields, one player) are in too. Left for later: VC button tiles in control mode, the Setlist order on the live page, shared text size and colours with the Simple page.
 
 The cheap part of the teleprompter idea: what each player needs to know about the next song, on the stage tablet, from data Swiss Knife already has.
 
@@ -171,6 +171,8 @@ Design in [DESIGN_v2.md](DESIGN_v2.md) section 10. The new screen is also the pi
 - The screen: one sidebar entry *Tablet on stage* with two modes (*Live monitor*, *Simple page*), the song list on the left and a right pane with the tabs *Song card*, *Page* and *Send to the tablet*; the pages follow the stage rules of DESIGN_v2.md section 10.3 (7:1 contrast for the current song, 56 px targets, no motion, colour never alone). Open questions in section 10.4 (cards in the Simple page, one renderer, QR code).
 
 ### 3.9.5 · A clearer Swiss Knife
+
+**Released 21 October 2026 (tag `v3.9.5`, merged to `main` and pushed; `tools/ground_truth.py` found nothing unpushed). All five stages are in, the pictures were retaken in the 3.9.5 look (commit `b370fa2`) and the release commit is `e271f1c`. Still open and giopas's: check D2 (Start in its five states, five seconds), check D3 (a guided route with the keyboard only, and the Pub test again from a clean profile), A7 for this version (*Update and restart* from 3.9.0), and the open look at Doctor, Porter step 3 and Setlist in a browser. The status paragraphs below are the working log, kept as written.**
 
 **Status, 21 October: stage A built on `feat/v3.9.5` (three local commits, not pushed; the release is merged only after stage E).** Done: five type steps with the 11 px floor, radii 8/6/pill, motion tokens and the reduced-motion rule, `--*-text` colour pairs and `--accent-ring` in all three themes (`tests/test_tokens_contrast.py`), `:focus-visible` everywhere, the four button kinds (`btn-accent`, `btn-surface`, `btn-ghost`, `btn-danger`), no inline style in the shell, and every emoji replaced by a sprite icon (20 new symbols), with the i18n keys and translations of the seven languages migrated in one step (`tests/test_ui_lint.py`). 1246 tests pass. Not done in A, on purpose: bundling a font (open question 3 of DESIGN_v2.md, waiting for giopas), the 6/10/5/3 px padding and the 86 hex colours in `style.css` (the design leaves tools on their own spacing until they move to the kit in stage C), the before and after contact sheet (`python3 tools/shots.py all` on the Mac). Two server messages in `routes/` still name *Open…* by its old emoji. Inter is bundled (`static/fonts/`, licence included). The light theme's teal (`#0b7a70`) and orange (`#a05508`) are a little darker so that text on them passes 4.5:1.
 
@@ -196,6 +198,8 @@ Decided 21 October (giopas). Design: [DESIGN_v2.md](DESIGN_v2.md); mockups: `moc
 
 ### 3.9.6 · Plain-language wiki and README
 
+**Status: started 21 October (branch `docs/v3.9.6` in the main repository and in `wiki/`). Progress is logged under *Log* at the end of this entry.**
+
 Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki describes the screens 3.9.5 changes and its pictures are retaken then. Docs only, so no installer test. Swiss Knife is a powerful tool and must also be extremely clear to everyone. No new features; the words change.
 
 - Review every wiki page and the README, and rewrite where needed so that a reader of 10 or 15 can follow each feature. Not every page needs a full rewrite: add an intro box and a worked example where the page is dense.
@@ -208,6 +212,15 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 - In-app texts (tooltips, the guide) are done in 3.9.5 stage E; the wiki uses the same wording.
 - Page shape, the *Words used here* page and the order of the pages: DESIGN_v2.md sections 11 and 12.3. `tools/plain_check.py` (advisory) lists long sentences, terms used before they are explained and pages without the *In one minute* box.
 - Check **D1**: the Pub test for the docs, two readers, one of them not a lighting person.
+
+**Log (3.9.6)**
+
+- 21 October: `ground_truth.py` clean apart from two stale `maintenance.lock` files, which were removed.
+- 21 October, steps 1 to 3 of DESIGN_v2.md 12.3 done: *Words used here* (new wiki page), the README, and every wiki page to the template of 11.2 (box, before you start, example, if it does not work, words), the 36 pages and the three stubs apart. `tools/plain_check.py` and its test are in; it reports 0 pages without the box, an average sentence of 14 to 16 words, and Cabling, Look Builder and the tablet page as the longest (about 17). The full suite passes (1286 tests, 1 skipped without `websocket`).
+- Tablet on stage is documented in the `Stage-Monitor` wiki page, which keeps its file name because the app's **?** button and `tests/test_ui_consistency.py` use it. Renaming the page to `Tablet-on-stage` (the plan in 12.3) needs a one-line change in `templates/index.html` and the wiki list in the test, so it is left for a decision: it is not docs only.
+- The wiki and README button names follow the app since 3.9.5 (no emoji).
+- Left: **step 4**, the pictures (the 3.9.5 pictures were retaken in `b370fa2`; run `python3 tools/shots.py all` only if a screen changed since), **step 5**, check **D1** (the Pub test for the docs, two readers, one of them not a lighting person, on Quick Start and Rig Reducer), the Italian text of the new page read by giopas, then the release: bump `VERSION` and the README title to 3.9.6, move `[Unreleased]`, `python3 tools/release_notes.py v3.9.6`, merge, tag, push (section 8).
+- Git: the sandbox cannot push. Both repositories carry a local commit on `docs/v3.9.6`.
 
 ### 3.10.0 · Teleprompter (later stage)
 
@@ -279,6 +292,7 @@ Details of each release are in [CHANGELOG.md](CHANGELOG.md), `docs/release-notes
 | 3.7.0 | 20 Oct | Another computer, another screen: definitions that travel (Doctor D021 to D023, I009, the travel zip); the Virtual Console fitted to a screen (Fit, Stretch, Page size, Check, tap-size warning). |
 | 3.8.0 | 20 Oct | Stage layouts and per-song tempo: saved layouts of the stage and the band (three built in, shared through the Library), a tempo per song in the setlist with *Apply tempo*, *Wait for the pedal* on Hold. |
 | 3.9.0 | 21 Oct | Tablet on stage: song cards, the Next song banner, views by role, a QR code, one screen for the live monitor and the simple page, the first use of the page kit. |
+| 3.9.5 | 21 Oct | A clearer Swiss Knife: type scale and bundled Inter, four button kinds, ribbon and Start that follow the state, the kit's chip and reason on every footer, Doctor by kind, plain words under every tool title. No change to `core/` or to what a button writes. |
 
 ## 5. Goal and the Pub test
 

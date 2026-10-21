@@ -4,57 +4,77 @@
 
 [![tests](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml/badge.svg)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/actions/workflows/tests.yml)
 
-**Build, adapt, check and document QLC+ 5 shows.** Swiss Knife opens your QLC+ workspace (`.qxw`) in a native window or your browser and does the long, fiddly jobs for you: a new show from your fixtures, the same show on a smaller or different rig, looks and chasers, the Virtual Console, the 3D stage, tonight's setlist, a health check, and the paperwork for the venue and the crew. You can also connect Claude, which then uses the same tools on the folders you choose.
-
-Swiss Knife is tested with QLC+ 5.x: the output has been opened and run in QLC+ 5.2.2 and 5.3.0.
+**Swiss Knife is a free app that does the long, fiddly jobs on QLC+ 5 show files.** You open a show once, use the tools you need, and save the result as a new file. The file you opened is never changed. It runs on your own computer, and the few things that use the internet are optional (see [Privacy and security](#privacy-and-security)).
 
 > ⚠️ **Independent project.** Swiss Knife is not affiliated with, endorsed by or connected to the QLC+ project or its team. All credit for QLC+ goes to the [QLC+ team](https://www.qlcplus.org/). Swiss Knife works on top of QLC+ workspace files.
 
 ![A festival show becomes a pub show: the guided route in Swiss Knife](screenshots/route.gif)
 
-*A real festival show rebuilt for a small pub (6 PARs, tonight's 34 songs) in 12 minutes with the guided route. Step by step: [the tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub).*
+*A real festival show rebuilt for a small pub (6 lights, tonight's 34 songs) in 12 minutes with the guided route. Step by step: [the tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub).*
+
+---
+
+## Who it is for
+
+Anyone who plays lights with [QLC+](https://www.qlcplus.org/): a band that runs its own lights, a small venue, a DJ, a theatre or church crew, a technician who moves one show between rigs. You do not need to program anything.
+
+A typical use: your band plays a festival with 14 lights, then a pub with 6. Instead of rebuilding the show by hand, you open the festival show, tick the 6 lights the pub has, and Swiss Knife cleans up everything that used the others. It also makes tonight's setlist, checks the show for mistakes and prints the paper for the venue.
+
+Swiss Knife is tested with QLC+ 5.2.2 and 5.3.0. If a word in this page is new to you, the wiki has a page that explains each one: [Words used here](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Words-used-here).
+
+---
+
+## Your first ten minutes
+
+1. **Install it (3 minutes).** Download the file for your computer from the [latest release](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest) and open it, as in [Install](#install) below. The system asks once because the app is not signed.
+2. **Open a show (1 minute).** Click **Open…** at the top, or drop a `.qxw` file onto the window. Swiss Knife loads it as the **show in progress**, a working copy in memory.
+3. **Look at the Doctor's verdict (1 minute).** The top bar tells you whether the show has errors or warnings. Click it to see each one in plain words.
+4. **Try one tool (4 minutes).** Open **Rig Reducer** in the side menu, untick a few lights and read what it will change. If you have no show yet, start with **Quick Start** instead: pick your lights and it builds a ready-to-play show.
+5. **Save (1 minute).** Click **Save as new file…**. You get `<name>_v2.qxw` and a report next to it. Open it in QLC+ and press a button.
+
+Stuck? Every tool has a **?** that opens its page in the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
 
 ---
 
 ## How it works
 
-1. **Open a show.** It becomes the **show in progress**, a working copy in memory.
-2. **Use any tool, in any order, as often as you like.** The main button of each tool is **✓ Apply to the show**. The header counts the changes and shows the Workspace Doctor's verdict on the show as it is now.
-3. **Go back** to any step in the **History** (undo, redo).
-4. **💾 Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change and a *recipe* that the command line can replay to the same file. The file you opened is never overwritten.
-5. **Do it again on another show.** Save your changes as a **Show Profile** and apply it to tonight's venue, next month's rig or a friend's show, in the app (History › *Do it again*) or from the command line: `python -m core.profile build Pub.profile.json --show Venue.qxw`. Each step finds what it changes by name, type and place, and tells you what it left out. See [Show Profiles](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Profiles).
-6. **Ask Claude to do it.** *🔌 Connect to Claude* in the menu connects Claude Desktop or Claude Code to Swiss Knife. Claude can then open a show, run the Doctor, shrink a rig, port functions, build looks and chasers, edit the Virtual Console, turn a setlist into a chaser, compare two shows, draft the Dictionary descriptions, set up the Stage Monitor page and plan the DMX cabling. See [Claude and your shows](#claude-and-your-shows) below.
+1. **Open a show.** It becomes the show in progress.
+2. **Use any tool, in any order, as often as you like.** The main button of each tool is **✓ Apply to the show**. The top bar counts the changes and shows the Doctor's verdict on the show as it is now.
+3. **Go back** to any step in the **History** (undo and redo).
+4. **Save as new file…** writes `<name>_v<N+1>.qxw` with one report of every change and a *recipe*, a record that Swiss Knife can replay to get the same file again. The file you opened is never overwritten.
+5. **Do it again on another show.** Save your changes as a **Show Profile** and apply it to another venue, a new rig or a friend's show, in the app (History, *Do it again*) or from the command line: `python -m core.profile build Pub.profile.json --show Venue.qxw`. See [Show Profiles](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Profiles).
+6. **Ask Claude to do it.** *Connect to Claude* in the menu lets Claude Desktop or Claude Code use the same tools on the folders you choose. See [Claude and your shows](#claude-and-your-shows).
 
-For jobs that take several tools, *guided routes* (for example *adapt a show to a new venue*) list the steps above the tools. See the [tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub). Every tool has a **?** that opens its page in the [wiki](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/).
+For a job that takes several tools, the Start screen has *guided routes* such as *Adapt a show to a new venue*. They list the steps above the tools. The [tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub) walks through one.
 
 ---
 
 ## The tools
 
-The tools are grouped by job and numbered 1 to 6, like the side menu and the Start screen.
+The tools are in six groups, numbered 1 to 6 like the side menu and the Start screen. Each name links to its wiki page.
 
-| | Tool | What it does |
+| | Tool | What it is for |
 |---|---|---|
-| **1 · New show** | [Quick Start](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Quick-Start) | A ready-to-run show from your fixtures: looks, effects, fixture groups, PANIC RESET and a Virtual Console, in about five minutes. Fixtures without a dimmer get colour-wheel looks. |
-| | [Fixtures](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Fixture-Configurator) | Place and patch a rig on a 2D stage, print a blueprint PDF, or save a rig-only workspace. |
-| **2 · Adapt a show** | [Rig Reducer](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer) | Keep the fixtures of a smaller rig. Everything that used the others is cleaned up, and you can re-patch. |
-| | [Function Porter](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter) | Bring looks, chasers, effects and their buttons from another show, with fixtures, groups and meshes. Copied fixtures can join the show's own looks (*plays like*), other fixture types are translated by capability, 14 fixtures can fan in to 6, and key and MIDI bindings come along. |
-| | [Brightness](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Brightness) | Scale the master dimmer of each fixture type across every scene. Colours stay as they are. |
-| **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks and effects for your fixture groups in the QLC+ 5.3 wizard's families: colours, gobos, strobes, chasers, movement effects and matrices, each greyed out when a group can't do it. Buttons on a page per group. Every look sets every channel. |
-| | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | The Virtual Console as a canvas: add and wire widgets, pages, templates and screen sizes, align, distribute and sort. |
-| | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage from above and from the front. Put band members and set pieces on the floor, aim fixtures at a mesh, hide meshes, and make and edit fixture groups. |
-| | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share VC templates, palettes, look presets, naming profiles, VC styles, Show Profiles and your cabling kit as one plain file, and install what other QLC+ users shared. Items are checked first, and there is no server. |
-| **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, the clipboard or a CSV, matched to functions with fades, in the setlist CueList. Setlist PDFs, and one HTML page for a tablet on stage. |
-| | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every keyboard and MIDI binding in one table: clashes, gaps, bulk MIDI shift, the input device of each universe and a MIDI simulator. |
-| | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A description for every function, shown in the other tools. Swiss Knife drafts them from the show's colours and steps, and Claude can write them. |
-| | [Stage Monitor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-Monitor) | A page for a tablet on stage: the cue playing now in big type and the next one, live from QLC+. For the player who steps through the setlist with a pedal and cannot see the laptop. It can be all black with only the current song lit. |
-| | [Cabling](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Cabling) | Plans the DMX cables with the kit you own: splitter outputs, the order of each chain, which cable goes where, adapters (a 5-pin interface into 3-pin fixtures) and terminators, around the band and up the truss. A plot, a pick list, labels for each cable and a load-in order, and a shopping list of what is missing. |
-| **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Finds broken references, scenes that leave channels unset, strobe left on, a PANIC RESET that cannot reset and more, and fixes them. Also from the command line. |
-| | [Wizard Repair](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Wizard-Repair) | Finishes a show made by the QLC+ 5.3 Show Wizard: the effects it loses, buttons for what it leaves off the console, group grids that follow the stage, palettes that do nothing on some fixtures, a PANIC RESET on every page. Shows made by the wizard are read correctly by every tool, palettes included. |
-| | [Upgrade to QLC+ 5.3](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Upgrade-Older-Shows) | Gives a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers: folders, palettes named like the Show Wizard's, an All Fixtures group, positions for moving heads, a page per group with XY pads, locked fixtures. Your looks keep every channel. |
-| | [Compare](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Compare) | This show next to another one, by what they do: patch, groups, looks (decoded colour and level), chasers, VC pages, setlist. |
-| | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and VC widget in sortable, filterable tables, with CSV and PDF export. |
-| **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: a tech rider for the venue (it never carries your show's internals), a crew checklist for load-in (with the cabling plan), a patch sheet with DIP-switch diagrams (also as a thermal-printer ticket), and a show book for you, with a stage plot. PDF or CSV. |
+| **1 · New show** | [Quick Start](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Quick-Start) | Pick your lights and get a ready-to-play show: looks, effects, groups, a PANIC RESET button and a Virtual Console. About five minutes. |
+| | [Fixtures](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Fixture-Configurator) | Place your lights on a stage plan, give them DMX addresses and print a blueprint. |
+| **2 · Adapt a show** | [Rig Reducer](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Rig-Reducer) | Make a show for a smaller rig. Tick the lights you will have and everything that used the others is cleaned up. |
+| | [Function Porter](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter) | Bring looks, chasers and their buttons from another show, even when the lights are different models. |
+| | [Brightness](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Brightness) | Make one type of light brighter or dimmer in every scene. Colours stay as they are. |
+| **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks and effects for each group of lights, with their buttons: colours, gobos, strobes, chasers and movement. A look is greyed out when a group cannot do it. |
+| | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | Lay out the Virtual Console, the screen of buttons you play, on a canvas. Fit it to a tablet or a small touchscreen. |
+| | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage: put the band and the set pieces on it, aim lights at them, make groups of lights, and save a stage layout. |
+| | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share templates, palettes, presets, profiles and your cable kit as one plain file. There is no server. |
+| **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, matched to your chasers, in a cue list you step through with a key or a pedal. A tempo for each song, and PDFs. |
+| | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every key and MIDI control in one table, with clashes and gaps marked. |
+| | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A short description for every function, shown in the other tools. |
+| | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-Monitor) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |
+| | [Cabling](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Cabling) | Plan the DMX cables with the kit you own: which cable goes where, adapters and terminators. A plot, a pick list, labels and a load-in order. |
+| **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Reads the show for mistakes, explains each one and fixes what you tick. Also from the command line. |
+| | [Wizard Repair](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Wizard-Repair) | Finishes a show made by the QLC+ 5.3 Show Wizard: the effects it loses, buttons it leaves out, a PANIC RESET on every page. |
+| | [Upgrade to QLC+ 5.3](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Upgrade-Older-Shows) | Gives a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers: folders, palettes, a page per group. Your looks keep every channel. |
+| | [Compare](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Compare) | Put two shows side by side and see what differs in what they do. |
+| | [ID Browser](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/ID-Browser) | Every function and Virtual Console widget in a table you can sort and filter, with CSV and PDF export. |
+| **6 · Document** | [Show Paperwork](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Show-Paperwork) | The paper for each reader: a tech rider for the venue, a checklist for the crew, a patch sheet for whoever sets the addresses, and a show book for you. PDF or CSV. |
 
 **Language.** The interface speaks English, Italian, French, German, Spanish, Portuguese, Japanese and Chinese. Pick it at the bottom of the left menu ([Language](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Language)). Shows, reports and the wiki stay as they are.
 
@@ -62,13 +82,11 @@ The tools are grouped by job and numbered 1 to 6, like the side menu and the Sta
 
 ## Claude and your shows
 
-Swiss Knife can act as an MCP server, which is the way Claude Desktop and Claude Code use outside tools. Once connected, you ask in plain language ("open Festival_14fix, run the Doctor and fix what is safe, save it as a new file") and Claude uses the same tools you use in the window. It can also write a description for every function in the Dictionary: the **🤖 Ask Claude…** button there gives you the request to paste in Claude Desktop.
+Swiss Knife can work with Claude, the AI assistant, through Claude Desktop or Claude Code. Once connected, you ask in plain words ("open Festival_14fix, run the Doctor and fix what is safe, save it as a new file") and Claude uses the same tools you use in the window. This works through MCP, the way these programs talk to outside tools.
 
-Claude has a `guide` tool that explains any other tool, with its arguments and an example, and the connection offers Claude Desktop a few ready requests (write the Dictionary, check and fix a show, adapt a show to fewer fixtures, add buttons for looks that have none, make the Stage Monitor page, plan the DMX cabling, add a fixture to your cabling kit). The wiki page [Claude's tools](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Claude-Tools) lists every tool with the same text Claude reads.
+**What Claude can reach.** Only the folders you list and Swiss Knife's tools. It cannot browse your disk, run commands, open other programs or use the network, and a path outside your folders is refused. Claude writes new files only and never deletes one. There are a few exceptions you confirm first: a page from an earlier Stage Monitor export, the cabling plan next to the show, and your cabling kit. Every change is a History step you can undo, and the Doctor refuses a result with new errors, as it does in the window.
 
-**What Claude can reach.** Claude gets the folders you list and Swiss Knife's tools, nothing else on your computer. It cannot browse your disk, run commands, open other programs or use the network. A path outside your folders is refused. Claude only writes new files (the show, its report, its recipe, a dictionary `.txt`), never overwrites or deletes one (the exceptions: a page from an earlier Stage Monitor export, which it replaces only after asking you, and the cabling plan next to the show and your cabling kit, which it keeps up to date when you confirm), and every change is a History step you can undo. The Doctor refuses a result with new errors, as it does in the window.
-
-**To connect Claude Desktop**, start Swiss Knife once, open *🔌 Connect to Claude* in the menu and click **Connect Claude Desktop**. Claude Desktop opens an install window and asks which folders to share. The same `…-claude.mcpb` file is attached to every release if you prefer to double-click it. The wiki page [Connect Claude to Swiss Knife](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Connect-Claude-to-Swiss-Knife) has the steps, example requests and troubleshooting, including the way for Claude Code.
+**To connect Claude Desktop**, start Swiss Knife once, open *Connect to Claude* in the menu and click **Connect Claude Desktop**. Claude Desktop opens an install window and asks which folders to share. The same `…-claude.mcpb` file is attached to every release if you prefer to double-click it. The wiki page [Connect Claude to Swiss Knife](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Connect-Claude-to-Swiss-Knife) has the steps, example requests and the way for Claude Code. [Claude's tools](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Claude-Tools) lists every tool with the text Claude reads.
 
 ---
 
@@ -200,7 +218,7 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the
 ### Loading a workspace
 
 - **Start screen:** drag a `.qxw` file anywhere onto the window, or use the **Open Workspace** and **Open Session** buttons.
-- **📂 Open…** in the header works from any tool. In a plain browser without a native file dialog, paste the full path into the Start screen's path field and click **Load**.
+- **Open…** in the header works from any tool. In a plain browser without a native file dialog, paste the full path into the Start screen's path field and click **Load**.
 - **Recent files:** workspaces you opened before appear in the Start screen's recents panel.
 
 ---
@@ -209,9 +227,9 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the
 
 | Platform | Status |
 |---|---|
-| Windows 10/11 | ✅ Tested |
-| macOS 12+ | ✅ Tested |
-| Linux (Ubuntu / Debian) | ✅ Tested |
+| Windows 10/11 | Tested |
+| macOS 12+ | Tested |
+| Linux (Ubuntu / Debian) | Tested |
 
 ---
 
@@ -258,7 +276,7 @@ Swiss Knife is released under the **MIT License**. See [LICENSE](LICENSE) for th
 
 **Please consider donating to the QLC+ project.** Even a small contribution helps keep QLC+ alive and pays for new features, so that this open-source lighting software stays available to everyone, from bedroom DJs to professional stage crews.
 
-👉 **[Donate to QLC+ on GitHub](https://github.com/mcallegari/qlcplus)**: look for the **Sponsor** button on the repository page.
+**[Donate to QLC+ on GitHub](https://github.com/mcallegari/qlcplus)**: look for the **Sponsor** button on the repository page.
 
 If QLC+ has ever saved you time, money or a gig, give something back.
 

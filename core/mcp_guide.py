@@ -504,13 +504,16 @@ def answer(topic: str, tools: List[dict], titles: Dict[str, str], read_only: set
 
 def wiki_page(tools: List[dict], titles: Dict[str, str], read_only: set) -> str:
     """The wiki page ``Claude-Tools.md``, from the same text Claude reads."""
-    md = ["# 🤖 Claude's tools", "",
+    md = ["# Claude's tools", "",
+          "> **In one minute.** Once Claude is connected, you ask it in plain words and it uses these tools, the same ones you use in "
+          "the window, only on the folders you list and saving new files only. Example: *Open Festival_14fix, run the Doctor and fix "
+          "what is safe, save it as a new file.* You do not need to know the tool names. This page is the reference that Claude reads.", "",
           "This page lists every tool Claude can use through the Swiss Knife connection: what it is for, "
           "its arguments, what it answers and an example. Claude reads the same text with the `guide` tool, "
           "so the two never differ. Setting up the connection is on [[Connect Claude to Swiss Knife]].", "",
           "*This page is written by `python tools/make_claude_tools_wiki.py`; edit `core/mcp_guide.py`, not this page.*", "",
           "## Ready requests", "",
-          "Claude Desktop can offer these from the Swiss Knife connection. The Dictionary's **🤖 Ask Claude…** "
+          "Claude Desktop can offer these from the Swiss Knife connection. The Dictionary's **Ask Claude…** "
           "button copies the first one with your show filled in.", "",
           "| Request | What Claude does |", "|---|---|"]
     for p in PROMPTS:

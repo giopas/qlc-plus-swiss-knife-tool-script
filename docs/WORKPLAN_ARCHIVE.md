@@ -268,7 +268,7 @@ The result must pass Doctor with zero errors and, compared with the hand-made `P
 *Do not push the feature branch* (it would start a third run of the tests for the same commit). Merge locally, tag, push `main` and the tag together, then the wiki:
 
 ```
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script && git status --short
+cd <repository folder> && git status --short
 git checkout main && git merge --ff-only feat/vX.Y.Z && git tag vX.Y.Z && git push origin main vX.Y.Z && (cd wiki && git push origin master)
 ```
 
@@ -848,7 +848,7 @@ Checks (★ = included in Phase 1.0):
 
 **giopas, before the next session (Phase 1.2 + 1.2b) — push and merge:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect all green
 git push -u origin feat/porter-vc                                    # CI runs on the branch
 git checkout main && git pull --ff-only
@@ -860,7 +860,7 @@ git checkout -b feat/quickstart-porter                               # branch fo
 
 **giopas, before the next session (Phase 1.5 part 1):**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 397 passed
 python3 tools/qlc_check.py tests/manual/Festival_to_club_translated.qxw   # QLC+ closed; expect RESULT: PASS
 git push -u origin feat/quickstart-porter
@@ -871,7 +871,7 @@ Then in the app: Quick Start with a rig of *different* types (e.g. 2 × Intimida
 
 **giopas, before the next session (Phase 1.6):**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/porter-midi
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 420 passed
 git push -u origin feat/quickstart-porter feat/porter-midi
@@ -881,7 +881,7 @@ Try in the app: Porter, source BarShow_v14, target SmallShow, step 2 tick *1. SE
 
 **giopas, before the next session (Phase 1.3):**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git -C .wt-showbook log --oneline -2                 # feat/showbook
 git push -u origin feat/showbook
 cd wiki && git push origin master && cd ..
@@ -891,7 +891,7 @@ Try: open a show → Show Book → Generate Preview → VC Layout (pages, indent
 
 **giopas — v1.4.1 (Porter MIDI fixes):**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git worktree remove .wt-fix                           # branch fix/porter-midi-feedback stays
 git checkout fix/porter-midi-feedback
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q   # expect 448 passed
@@ -908,7 +908,7 @@ GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.4.1.md`.
 
 **giopas — release v1.4.0 (done 28 Sep):**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git worktree remove .wt-release                       # branch chore/release-1.4.0 stays
 source ~/.venvs/swissknife/bin/activate
 git checkout chore/release-1.4.0 && python -m pytest -q          # expect 443 passed
@@ -923,7 +923,7 @@ Then on GitHub: *Releases → Draft a new release → tag v1.4.0*, title "v1.4.0
 
 **giopas — release v2.0.0 (the Pub test + the recipe), branch `feat/recipe`** (it contains `feat/pub-test`):
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/recipe
 source ~/.venvs/swissknife/bin/activate
 python -m pytest -q
@@ -943,7 +943,7 @@ cd ..
 
 **giopas — release v1.10.0 (Grow a rig), branch `feat/grow-rig`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/grow-rig
 source ~/.venvs/swissknife/bin/activate
 python -m pytest -q
@@ -963,7 +963,7 @@ cd ..
 
 **giopas — release v1.9.0 (the show in progress, UI audit 2.6), branch `feat/show-in-progress`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/show-in-progress
 source ~/.venvs/swissknife/bin/activate
 python -m pytest -q
@@ -983,7 +983,7 @@ cd ..
 
 **giopas — release v1.8.1 (fixtures in the Stage placement + Start and menu by job), branch `feat/start-sidebar`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/start-sidebar
 source ~/.venvs/swissknife/bin/activate
 python -m pytest -q
@@ -1003,7 +1003,7 @@ cd ..
 
 **giopas — release v1.8.0 (done 29 Sep), branch `feat/stage-meshes`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/stage-meshes
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q
 python3 app.py
@@ -1021,7 +1021,7 @@ GitHub Release body: `docs/release-notes/RELEASE_NOTES_v1.8.0.md`; forum: `docs/
 
 **giopas — release v1.7.0 (done 29 Sep), branch `feat/vc-builder`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/vc-builder
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 508 passed
 python3 app.py                                                        # restart the app → VC Visual Editor
@@ -1037,7 +1037,7 @@ Try first: open `tests/manual/Festival_vc_builder.qxw` in QLC+ → page 2 *Built
 
 **giopas — release v1.6.0 (done 29 Sep), branch `feat/look-builder`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/look-builder
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 497 passed
 python3 app.py                                                        # restart the app → Look Builder
@@ -1053,7 +1053,7 @@ Try first: open `tests/manual/Festival_looks.qxw` in QLC+ (functions in the *Loo
 
 **giopas — release v1.5.0 (done 29 Sep), branch `feat/rig-reducer`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/rig-reducer
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q      # expect 476 passed
 python3 app.py                                                        # restart the app, try both tabs
@@ -1069,7 +1069,7 @@ Try first: Workspace Doctor on BarShow_v14 (D017 → open the fixed file in QLC+
 
 **giopas — Phase 2.1 (Doctor fixes) — superseded by the v1.5.0 steps above:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/doctor-fixes
 source ~/.venvs/swissknife/bin/activate && python -m pytest -q     # expect 469 passed
 python3 app.py                                                       # restart the app
@@ -1080,7 +1080,7 @@ Try: open BarShow_v14 → Workspace Doctor → 🔍 Check → D017 is ticked →
 
 **giopas — release v2.2.1 (the UI polish finished + the white-window fix), branch `feat/v2.2.1`:**
 ```bash
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script
+cd <repository folder>
 git checkout feat/v2.2.1
 source ~/.venvs/swissknife/bin/activate
 python -m pytest -q

@@ -474,7 +474,7 @@ Run `python3 tools/ground_truth.py` before trusting this file or any note. It sa
 Do not push the feature branch, because that starts a third run of the tests for the same commit. Merge locally, tag, push `main` and the tag together, then the wiki:
 
 ```
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script && git status --short
+cd <repository folder> && git status --short
 git checkout main && git merge --ff-only feat/vX.Y.Z && git tag vX.Y.Z && git push origin main vX.Y.Z && (cd wiki && git push origin master)
 ```
 

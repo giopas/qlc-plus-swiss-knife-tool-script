@@ -351,11 +351,11 @@ Run `python3 tools/ground_truth.py` before trusting this file or any note. It sa
 Do not push the feature branch (that starts a third test run for the same commit). Merge locally, tag, push `main` and the tag together, then the wiki:
 
 ```
-cd ~/Documents/QLC+/qlc-plus-swiss-knife-tool-script && git status --short
+cd <repository folder> && git status --short
 git checkout main && git merge --ff-only feat/vX.Y.Z && git tag vX.Y.Z && git push origin main vX.Y.Z && (cd wiki && git push origin master)
 ```
 
-**How Claude hands over the push.** Always as these two lines in one code block, with the real folder and the real version filled in, so giopas can paste them as they are. Not as a list of steps and not with a different command order. Only when this cannot work (for example the branch is not fast-forwardable) say so first and give the changed commands in the same two-line shape.
+**How Claude hands over the push.** Always as these two lines in one code block, with the real folder and the real version filled in, so giopas can paste them as they are (his real folder goes in the chat message, never in a file of the repository: here it is written `<repository folder>`). Not as a list of steps and not with a different command order. Only when this cannot work (for example the branch is not fast-forwardable) say so first and give the changed commands in the same two-line shape.
 
 `git status --short` must print nothing first. For a change that is not a release, leave out the `git tag` part. If a change is risky, push `main` first, wait for `tests` to pass, then push the tag.
 

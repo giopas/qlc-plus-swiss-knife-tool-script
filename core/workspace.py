@@ -191,6 +191,7 @@ def get_functions() -> list:
     # Pre-build set of base IDs that have at least one clone
     cloned_base_ids = set(_state['clone_base_map'].values())
     dark = _dark_functions()
+    lengths = _show_lengths()
 
     rows = []
     for fid, info in _state['func_detailed'].items():
@@ -214,9 +215,60 @@ def get_functions() -> list:
             'base_id':   base_id,
             'has_clone': has_clone,
             'dark':      fid in dark,
+            'show_ms':   lengths.get(fid, 0),
         })
     rows.sort(key=lambda r: _int(r['id']))
     return rows
+
+
+def _show_signature(show) -> tuple:
+    """What a Show plays and when, as something two Shows can be compared by."""
+    return tuple(sorted(
+        (tr.get('Name', ''), it.get('ID', ''), it.get('StartTime', ''), it.get('Duration', ''))
+        for tr in show.findall('q:Track', NS) for it in tr.findall('q:ShowFunction', NS)))
+
+
+def _note_edited_show_copies(master, engine) -> None:
+    """Apply rebuilds every cue from its original, so an item someone added to
+    the *copy* of a Show inside QLC+ would be lost.  Before the copies are
+    thrown away, list the ones that no longer match their original, so the
+    person is told (``_state['setlist_edited_copies']``)."""
+    for step in master.findall('q:Step', NS):
+        cp = _find_by_id(engine, 'Function', (step.text or '').strip())
+        if cp is None or cp.get('Type') != 'Show' or not cp.get('SwissKnifeClone'):
+            continue
+        orig = _find_by_id(engine, 'Function', cp.get('SwissKnifeClone'))
+        if orig is not None and _show_signature(cp) != _show_signature(orig):
+            _state.setdefault('setlist_edited_copies', []).append(cp.get('Name', ''))
+
+
+def _contained_ids(func) -> list:
+    """IDs of the functions *func* runs: the steps of a Chaser or Collection,
+    the items on the tracks of a Show (each once, in timeline order)."""
+    ids = [s.text for s in func.findall('q:Step', NS) if s.text]
+    for tr in func.findall('q:Track', NS):
+        for it in tr.findall('q:ShowFunction', NS):
+            i = it.get('ID')
+            if i and i not in ids:
+                ids.append(i)
+    return ids
+
+
+def _show_lengths() -> dict:
+    """{Show id: length in ms}, for the Setlist's Show pill."""
+    root = _state.get('qxw_root')
+    out: dict = {}
+    if root is None:
+        return out
+    try:
+        from core import media
+        eng = root.find('q:Engine', NS)
+        for f in (eng.findall('q:Function', NS) if eng is not None else []):
+            if f.get('Type') == 'Show':
+                out[f.get('ID')] = media.show_length_ms(f)
+    except Exception:  # noqa: BLE001 — a hint only
+        pass
+    return out
 
 
 def _dark_functions() -> set:
@@ -910,6 +962,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None, apply_
         master = _find_by_id(engine, 'Function', mc_id)
         if master is None:
             raise ValueError(f'Chaser ID {mc_id} not found in workspace.')
+        _note_edited_show_copies(master, engine)
         for step in master.findall('q:Step', NS):
             _keep_user_note(step, engine, user_notes)
             master.remove(step)
@@ -964,7 +1017,7 @@ def generate_slot_qxw_content(slot_id: str, target_chaser_id: str = None, apply_
         _state['clone_base_map'][cid] = bid
         _state['func_by_name'][txt_n] = cid
         _state['func_by_id'][cid]     = txt_n
-        contains_ids = [s.text for s in clone.findall('q:Step', NS) if s.text]
+        contains_ids = _contained_ids(clone)
         _state['func_detailed'][cid]  = {
             'name':     txt_n,
             'type':     clone.get('Type', ''),
@@ -1233,7 +1286,7 @@ def _parse_shared_data(qxw_root: ET.Element):
             if f_type == 'Chaser':
                 _state['chasers'][f_name] = f_id
 
-            contains = [s.text for s in func.findall('q:Step', NS) if s.text]
+            contains = _contained_ids(func)
             _state['func_detailed'][f_id] = {
                 'name':     f_name,
                 'type':     f_type or '',

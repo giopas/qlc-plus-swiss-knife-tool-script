@@ -4268,5 +4268,13 @@
  "Not on paper that leaves your hands": "Nicht auf Papier, das Ihre Hände verlässt",
  "{0} of {1} sections": "{0} von {1} Abschnitten",
  "Changed by hand": "Von Hand geändert",
- "Preview ready. Look it over, then export.": "Vorschau fertig. Sehen Sie sie durch und exportieren Sie dann."
+ "Preview ready. Look it over, then export.": "Vorschau fertig. Sehen Sie sie durch und exportieren Sie dann.",
+ "A sound or video file this show plays is not on this computer, so it plays in silence.": "Eine Audio- oder Videodatei, die diese Show abspielt, ist auf diesem Computer nicht vorhanden, daher läuft sie ohne Ton.",
+ "A cue lasts less time than the show it plays, so the show is cut off before its end.": "Ein Cue dauert kürzer als die Show, die er abspielt, daher wird die Show vor ihrem Ende abgeschnitten.",
+ "This Show has nothing on its timeline.": "Diese Show hat nichts auf ihrer Timeline.",
+ "empty Show": "leere Show",
+ "The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.": "Der Cue dauert kürzer als die Show, daher geht QLC+ weiter und stoppt die Show vor ihrem Ende. Stelle den Cue auf „Warten auf das Pedal“.",
+ "Show {0} s · cut off after {1} s": "Show {0} s · abgeschnitten nach {1} s",
+ "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Eine Show läuft auf ihrer eigenen Timeline. Wartet der Cue auf das Pedal, läuft sie bis zum Ende; erst der nächste Tritt geht weiter.",
+ "Show {0} s": "Show {0} s"
 }

@@ -78,6 +78,15 @@ def show_facts(root, names: Dict[str, str], fxinfo: Dict[str, dict]) -> Dict[str
             if sp is not None and sp.get("Duration"):
                 bits.append(f"{sp.get('Duration')} ms per step")
             info["facts"] = ", ".join(bits)
+        elif typ == "Show":
+            its = [(ti.get("Name", ""), si.get("ID", ""), int(si.get("StartTime", "0") or 0),
+                    int(si.get("Duration", "0") or 0))
+                   for ti in f.findall("Track") for si in ti.findall("ShowFunction")]
+            end = max((a + b for _n, _i, a, b in its), default=0)
+            ids = list(dict.fromkeys(i for _n, i, _a, _b in its))
+            info["facts"] = ("show: " + (f"{len(its)} item(s) on its timeline, {end / 1000:g} s long, plays "
+                                         + ", ".join(names.get(i, "?") for i in ids[:6]) + ("…" if len(ids) > 6 else "")
+                                         if its else "nothing on its timeline"))
         elif typ == "Script":
             starts, stops = [], []
             for c in f.iter("Command"):
@@ -189,6 +198,8 @@ def draft_text(fx: dict, row: dict) -> str:
     facts = fx.get("facts", "")
     if typ == "Script" and facts.startswith("script: "):
         return _cap(facts[len("script: "):].replace("; ", ", ")) + "."
+    if typ == "Show" and facts.startswith("show: "):
+        return _cap(facts[len("show: "):]) + "."
     if typ in ("EFX", "RGBMatrix") and facts:
         return _cap(facts) + "."
     if typ == "Scene" and "all values 0" in facts:

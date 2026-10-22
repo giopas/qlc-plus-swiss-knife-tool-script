@@ -37,6 +37,8 @@ TITLES = {
     "D021": "Fixture mode missing from its definition (QLC+ makes a generic dimmer)",
     "D022": "Channel count differs from the definition's mode",
     "D023": "Scene sets a channel the fixture does not have",
+    "D024": "Sound or video file not found",
+    "D025": "Cue ends before its show does",
     "I001": "Caption-only button (used as a label)",
     "I002": "Virtual Console pages",
     "I003": "No fixture definition — channel checks skipped",

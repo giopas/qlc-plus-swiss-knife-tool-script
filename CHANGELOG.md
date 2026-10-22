@@ -7,6 +7,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — Shows in the Setlist (3.9.8)
+
+A cue list can already play a QLC+ Show (a timeline) for a click song and a plain scene for the others; this release makes the tool see what is inside a Show.
+
+- **Doctor.** An empty Show is flagged (D004); a Show with no light on its timeline counts as a dark song in the Setlist (D018). **D024** warns when an Audio or Video file is not on this computer. **D025** warns when a cue lasts less than the Show it plays, which cuts the Show off.
+- **Setlist.** A song that is a Show gets a pill with its length (`Show 90 s`), or a warning when the cue would cut it off. Apply tells you when it replaced a copy of a Show you had edited inside QLC+ (the cues are rebuilt from the originals on every Apply).
+- **Take the show elsewhere.** The READ ME lists the sound and video files the show plays and whether each was found. The files themselves are not packed.
+- **Dictionary draft** describes a Show (length, what it plays). `get_functions` rows carry `show_ms`; a Show's `contains` lists the functions on its tracks.
+
 ---
 
 ## [3.9.7] — 2026-10-21 — Security audit and clearer Show Paperwork

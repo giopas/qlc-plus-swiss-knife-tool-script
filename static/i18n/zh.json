@@ -4268,5 +4268,13 @@
  "Not on paper that leaves your hands": "不会出现在离开你手的纸面上",
  "{0} of {1} sections": "{1} 个部分中的 {0} 个",
  "Changed by hand": "已手动修改",
- "Preview ready. Look it over, then export.": "预览已就绪。看一遍，再导出。"
+ "Preview ready. Look it over, then export.": "预览已就绪。看一遍，再导出。",
+ "A sound or video file this show plays is not on this computer, so it plays in silence.": "此演出播放的音频或视频文件不在这台电脑上，因此将无声播放。",
+ "A cue lasts less time than the show it plays, so the show is cut off before its end.": "提示(cue)的时长短于它播放的演出，因此演出会在结束前被截断。",
+ "This Show has nothing on its timeline.": "此Show的时间线上没有任何内容。",
+ "empty Show": "空Show",
+ "The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.": "该cue比Show短，QLC+会继续前进并在结束前停止Show。请将cue设为等待踏板。",
+ "Show {0} s · cut off after {1} s": "Show {0} 秒 · {1} 秒后被截断",
+ "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Show在自己的时间线上播放。cue设为等待踏板时会播放到结束，再踩一次才前进。",
+ "Show {0} s": "Show {0} 秒"
 }

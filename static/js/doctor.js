@@ -59,6 +59,8 @@ const _DOC_PLAIN = {
   D021: 'The fixture mode is not in its definition, so QLC+ treats it as a plain dimmer.',
   D022: 'The channel count differs from the one in the definition.',
   D023: 'A scene sets a channel the fixture does not have.',
+  D024: 'A sound or video file this show plays is not on this computer, so it plays in silence.',
+  D025: 'A cue lasts less time than the show it plays, so the show is cut off before its end.',
   I001: 'A button used only as a text label.',
   I002: 'The pages of your Virtual Console.',
   I003: 'No fixture definition found, so channel checks are skipped.',

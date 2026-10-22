@@ -262,9 +262,10 @@ function _renderSongList() {
       originHtml = `<div class="fb-song-origin">→ ${parts.join(' ')}</div>`;
     }
     const kind = hasAssign ? _slMatchKind(row.txt_name, row.qxw_name || (fn && fn.name)) : '';
+    const showPill = (fn && fn.type === 'Show') ? _showPill(row, fn) : '';
     const tags = hasAssign
       ? `<div class="fb-song-tags">${fn && fn.type ? `<span class="badge badge-${_esc(fn.type)}">${_esc(fn.type)}</span>` : ''}`
-        + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + '</div>'
+        + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + + showPill + '</div>'
       : '';
     const assignHtml = hasAssign
       ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
@@ -293,6 +294,20 @@ function _renderSongList() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ── v3.9.8 Shows in the setlist ───────────────────────────────────────────────
+// A Show plays on its own timeline.  With the cue waiting for the pedal it plays
+// to its end; a cue with a time shorter than the Show cuts it off.
+function _showPill(row, fn) {
+  const len = Number(fn.show_ms) || 0;
+  const secs = (len / 1000).toFixed(len % 1000 ? 1 : 0);
+  const hold = Number(row.hold === undefined || row.hold === '' ? 4294967294 : row.hold);
+  const lasts = hold + (Number(row.in) || 0);
+  if (!len) return `<span class="fb-pill fb-pill-similar" data-tooltip="${_esc(t('This Show has nothing on its timeline.'))}">${_esc(t('empty Show'))}</span>`;
+  if (hold < 4294967294 && lasts < len)
+    return `<span class="fb-pill fb-pill-similar" data-tooltip="${_esc(t('The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.'))}">⚠ ${_esc(t('Show {0} s · cut off after {1} s', secs, (lasts / 1000).toFixed(lasts % 1000 ? 1 : 0)))}</span>`;
+  return `<span class="fb-pill fb-pill-same" data-tooltip="${_esc(t('A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.'))}">${_esc(t('Show {0} s', secs))}</span>`;
 }
 
 // ── v3.8.0 Per-song tempo ─────────────────────────────────────────────────────

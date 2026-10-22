@@ -390,13 +390,20 @@ def apply_slot(slot_id):
         from core import show
         ws._state['setlist_skipped'] = []
         ws._state['setlist_tempo_log'] = []
+        ws._state['setlist_edited_copies'] = []
         ws.generate_slot_qxw_content(slot_id, target, data.get('apply_tempo') is not False)
         skipped = list(ws._state.get('setlist_skipped') or [])
+        edited = list(dict.fromkeys(ws._state.get('setlist_edited_copies') or []))
+        notes = []
         if skipped:
-            show.set_detail('Left out (no function assigned): ' + ', '.join(skipped))
+            notes.append('Left out (no function assigned): ' + ', '.join(skipped))
+        if edited:
+            notes.append('Replaced Show copies you had changed in QLC+ (their additions are gone): ' + ', '.join(edited))
+        if notes:
+            show.set_detail(' · '.join(notes))
         tempo = _tempo_summary(show)
         show.close_step()
-        return jsonify({'ok': True, 'skipped': skipped, 'tempo': tempo, 'show': show.status()})
+        return jsonify({'ok': True, 'skipped': skipped, 'edited_copies': edited, 'tempo': tempo, 'show': show.status()})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
@@ -470,13 +477,20 @@ def apply_all():
         data = request.get_json(silent=True) or {}
         ws._state['setlist_skipped'] = []
         ws._state['setlist_tempo_log'] = []
+        ws._state['setlist_edited_copies'] = []
         ws.generate_all_slots_qxw_content(data.get('apply_tempo') is not False)
         skipped = list(ws._state.get('setlist_skipped') or [])
+        edited = list(dict.fromkeys(ws._state.get('setlist_edited_copies') or []))
+        notes = []
         if skipped:
-            show.set_detail('Left out (no function assigned): ' + ', '.join(skipped))
+            notes.append('Left out (no function assigned): ' + ', '.join(skipped))
+        if edited:
+            notes.append('Replaced Show copies you had changed in QLC+ (their additions are gone): ' + ', '.join(edited))
+        if notes:
+            show.set_detail(' · '.join(notes))
         tempo = _tempo_summary(show)
         show.close_step()
-        return jsonify({'ok': True, 'skipped': skipped, 'tempo': tempo, 'show': show.status()})
+        return jsonify({'ok': True, 'skipped': skipped, 'edited_copies': edited, 'tempo': tempo, 'show': show.status()})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:

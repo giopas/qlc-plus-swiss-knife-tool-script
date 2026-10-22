@@ -4294,7 +4294,6 @@
  "Beats per bar": "Schläge pro Takt",
  "Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a).": "Nur nötig, wenn die Länge der Datei nicht lesbar ist (mp3 ohne Kopfdaten, flac, m4a).",
  "Chasers only: how many beats one step lasts, so the chaser follows the BPM.": "Nur Chaser: wie viele Schläge ein Schritt dauert, damit der Chaser den BPM folgt.",
- "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "Länge: Sekunden (5s), eine Zeit (0:05), Takte (8 bars) oder Schläge (16 beats). Zeilen mit gleichem Namen teilen eine Spur. Wiederholen reiht den Teil hintereinander.",
  "— music file by path —": "— Musikdatei per Pfad —",
  "— a new song —": "— ein neuer Song —",
  "Uses the sound function “{0}” already in the show.": "Nutzt die Audiofunktion „{0}“, die schon in der Show ist.",
@@ -4313,5 +4312,19 @@
  "Parts": "Teile",
  "Not covered by any part": "Von keinem Teil abgedeckt",
  "Past the end of the music": "Über das Ende der Musik hinaus",
- "Music": "Musik"
+ "Music": "Musik",
+ "Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.": "Länge: eine Zahl in der oben gewählten Einheit. „to the end“ füllt bis zum Ende der Musik (nur letzter Teil), „until 1:20“ hört an diesem Punkt auf, vom Anfang gezählt. Zeilen mit demselben Teilnamen teilen sich eine Spur. Wiederholen legt den Teil hintereinander. ⧉ kopiert eine Zeile.",
+ "A number, “to the end” (last part only) or “until 1:20” (a point from the start).": "Eine Zahl, „to the end“ (nur letzter Teil) oder „until 1:20“ (ein Punkt vom Anfang).",
+ "Bars": "Takte",
+ "Seconds": "Sekunden",
+ "Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM.": "Wähle einmal, wie dieser Song geschnitten wird: Sekunden, Takte oder Schläge. Takte und Schläge brauchen die BPM.",
+ "Copy this row": "Diese Zeile kopieren",
+ "Free {0}": "Frei {0}",
+ "Free: {0} not covered by any part": "Frei: {0} von keinem Teil abgedeckt",
+ "Give the parts a length to see the song here": "Gib den Teilen eine Länge, um den Song hier zu sehen",
+ "Row {0}: {1}": "Zeile {0}: {1}",
+ "bar {0}": "Takt {0}",
+ "beat {0}": "Schlag {0}",
+ "{0} bars": "{0} Takte",
+ "{0} beats": "{0} Schläge"
 }

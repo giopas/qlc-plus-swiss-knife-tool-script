@@ -4294,7 +4294,6 @@
  "Beats per bar": "每小节拍数",
  "Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a).": "仅在无法读取文件时长时需要（无头信息的mp3、flac、m4a）。",
  "Chasers only: how many beats one step lasts, so the chaser follows the BPM.": "仅追逐：每一步持续几拍，使追逐跟随BPM。",
- "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "时长：秒（5s）、时间（0:05）、小节（8 bars）或拍（16 beats）。同名的行共用一条轨道。重复会把该段连续排列。",
  "— music file by path —": "— 按路径指定音乐文件 —",
  "— a new song —": "— 新歌曲 —",
  "Uses the sound function “{0}” already in the show.": "使用演出中已有的音频功能“{0}”。",
@@ -4313,5 +4312,19 @@
  "Parts": "段落",
  "Not covered by any part": "没有任何段落覆盖",
  "Past the end of the music": "超出音乐结尾",
- "Music": "音乐"
+ "Music": "音乐",
+ "Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.": "长度：使用上面所选单位的数字。“to the end”填充到音乐结尾（仅最后一个部分），“until 1:20”在从开头算起的该时间点停止。部分名称相同的行共用一条轨道。重复会把该部分连续排列。⧉ 复制一行。",
+ "A number, “to the end” (last part only) or “until 1:20” (a point from the start).": "数字、“to the end”（仅最后一个部分）或“until 1:20”（从开头算起的时间点）。",
+ "Bars": "小节",
+ "Seconds": "秒",
+ "Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM.": "一次性选择这首歌的切分方式：秒、小节或拍。小节和拍需要BPM。",
+ "Copy this row": "复制此行",
+ "Free {0}": "空闲 {0}",
+ "Free: {0} not covered by any part": "空闲：{0} 未被任何部分占用",
+ "Give the parts a length to see the song here": "给各部分设置长度，即可在此看到整首歌",
+ "Row {0}: {1}": "第 {0} 行：{1}",
+ "bar {0}": "第 {0} 小节",
+ "beat {0}": "第 {0} 拍",
+ "{0} bars": "{0} 小节",
+ "{0} beats": "{0} 拍"
 }

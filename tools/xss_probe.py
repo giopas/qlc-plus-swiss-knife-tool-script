@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
 SCREENS = ["start", "quickstart", "fixtures", "reducer", "porter", "brightness", "looks", "vceditor", "stage",
-           "setlist", "triggers", "dictionary", "stagemon", "cabling", "doctor", "wizard", "upgrade", "compare",
+           "setlist", "songbuilder", "triggers", "dictionary", "stagemon", "cabling", "doctor", "wizard", "upgrade", "compare",
            "idbrowser", "library", "showbook"]
 # buttons that only read; anything that writes, deletes, quits or leaves is never pressed
 SKIP = r"save|export|apply|delete|remove|quit|write|install|replace|discard|clear|reset|stop|download|kill|travel|undo|redo"

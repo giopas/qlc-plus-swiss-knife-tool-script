@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.9.7
+# QLC+ Swiss Knife v3.9.8
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -65,6 +65,7 @@ The tools are in six groups, numbered 1 to 6 like the side menu and the Start sc
 | | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage: put the band and the set pieces on it, aim lights at them, make groups of lights, and save a stage layout. |
 | | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share templates, palettes, presets, profiles and your cable kit as one plain file. There is no server. |
 | **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, matched to your chasers, in a cue list you step through with a key or a pedal. A tempo for each song, and PDFs. |
+| | [Song Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Song-Builder) | A song as a table of parts (intro, verse, chorus…): pick a scene or chaser, a length in seconds, bars or beats, and a repeat for each. It makes one Show with the music, shown as a bar so you see what is still free. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every key and MIDI control in one table, with clashes and gaps marked. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A short description for every function, shown in the other tools. |
 | | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tablet-on-stage) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |

@@ -38,6 +38,13 @@ LOOK_TYPES = ("Scene", "Chaser", "Collection", "RGBMatrix", "EFX", "Script")
 COLORS = ["#d9534f", "#f0ad4e", "#5cb85c", "#5bc0de", "#9b59b6", "#e67e22", "#1abc9c", "#e91e63"]
 MUSIC_COLOR = "#4a90d9"
 
+MAX_PARTS = 300                       # a table this long is a mistake, and a Show of it would be slow
+MAX_ITEMS = 3000                      # parts x repeats in one Show
+MAX_MS = 24 * 3600 * 1000             # no part, and no song, lasts a day
+UNITS = ("seconds", "bars", "beats")
+_END = re.compile(r"^(?:until the end|to the end|to end|until end|till the end|end)$", re.I)
+_UNTIL = re.compile(r"^(?:until|till|to|up to)\s+(.+)$", re.I)
+
 _LEN = re.compile(r"^(\d+(?:[.,]\d+)?)\s*(bars?|beats?|ms|s|sec)?$", re.I)
 _CLOCK = re.compile(r"^(\d+):(\d{1,2})(?:[.,](\d{1,3}))?$")
 
@@ -49,8 +56,18 @@ def clock(ms: int) -> str:
     return f"{m}:{s - m * 60:04.1f}"
 
 
-def parse_length(text, bpm: float = 0, beats_per_bar: int = 4) -> int:
-    """'8 bars', '16 beats', '5s', '0:05', '1500ms', '12' (seconds) → ms."""
+def _plain(v: float, unit: str, bpm: float, beats_per_bar: int, text: str) -> int:
+    """A bare number in the unit the song works in (seconds, bars or beats) → ms."""
+    if unit == "seconds":
+        return round(v * 1000)
+    if bpm <= 0:
+        raise ValueError(f"'{text}' needs a tempo: fill in the BPM")
+    return round(v * (beats_per_bar if unit == "bars" else 1) * 60000 / bpm)
+
+
+def parse_length(text, bpm: float = 0, beats_per_bar: int = 4, unit: str = "seconds") -> int:
+    """'8 bars', '16 beats', '5s', '0:05', '1500ms' → ms; a bare number is in *unit*
+    (the song's choice: seconds, bars or beats)."""
     s = str(text if text is not None else "").strip()
     if not s:
         raise ValueError("a part has no length")
@@ -62,17 +79,40 @@ def parse_length(text, bpm: float = 0, beats_per_bar: int = 4) -> int:
     m = _LEN.match(s)
     if not m:
         raise ValueError(f"'{s}' is not a length (5s, 0:05, 8 bars, 16 beats)")
-    v, unit = float(m.group(1).replace(",", ".")), (m.group(2) or "s").lower()
-    if unit.startswith(("bar", "beat")):
-        if bpm <= 0:
-            raise ValueError(f"'{s}' needs a tempo: fill in the BPM")
-        beats = v * (beats_per_bar if unit.startswith("bar") else 1)
-        ms = round(beats * 60000 / bpm)
+    v, u = float(m.group(1).replace(",", ".")), (m.group(2) or "").lower()
+    if not u:
+        ms = _plain(v, unit, bpm, beats_per_bar, s)
+    elif u.startswith(("bar", "beat")):
+        ms = _plain(v, "bars" if u.startswith("bar") else "beats", bpm, beats_per_bar, s)
     else:
-        ms = round(v if unit == "ms" else v * 1000)
+        ms = round(v if u == "ms" else v * 1000)
     if ms <= 0:
         raise ValueError(f"'{s}': a part must last more than 0")
+    if ms > MAX_MS:
+        raise ValueError(f"'{s}' is longer than a day")
     return ms
+
+
+def parse_point(text, bpm: float = 0, beats_per_bar: int = 4, unit: str = "seconds") -> int:
+    """A place in the song, counted from its beginning, for 'until …': a time (1:32, 92s),
+    'bar 17', 'beat 65'; a bare number is a second, a bar or a beat as the song works.
+    Bars and beats count from 1, so 'bar 1' is the beginning."""
+    s = str(text or "").strip()
+    m = re.match(r"^(?:bar|measure)\s*(\d+)$", s, re.I)
+    if m:
+        return _plain(int(m.group(1)) - 1, "bars", bpm, beats_per_bar, s) if int(m.group(1)) >= 1 else _bad(s)
+    m = re.match(r"^beat\s*(\d+)$", s, re.I)
+    if m:
+        return _plain(int(m.group(1)) - 1, "beats", bpm, beats_per_bar, s) if int(m.group(1)) >= 1 else _bad(s)
+    m = re.match(r"^\d+(?:[.,]\d+)?$", s)
+    if m and unit in ("bars", "beats"):                   # a bare number is a bar (or beat) NUMBER here
+        n = float(s.replace(",", "."))
+        return _plain(n - 1, unit, bpm, beats_per_bar, s) if n >= 1 else _bad(s)
+    return parse_length(s, bpm, beats_per_bar, "seconds")
+
+
+def _bad(s: str) -> int:
+    raise ValueError(f"'{s}': bars and beats start at 1")
 
 
 def parse_fade(text) -> int:
@@ -122,11 +162,14 @@ def _set_loop(fn) -> bool:
     return True
 
 
-def _clean(spec: dict) -> dict:
-    """The table with types and blanks tidied; raises ValueError on what cannot be built."""
+def _clean(spec: dict, lenient: bool = False) -> dict:
+    """The table with types and blanks tidied; raises ValueError on what cannot be built.
+    *lenient* (the live preview): a half-filled table is accepted, the gaps are noted per part."""
     name = str(spec.get("name") or "").strip()
-    if not name:
+    if not name and not lenient:
         raise ValueError("give the Show a name")
+    if len(name) > 120 or any(ord(c) < 32 for c in name):
+        raise ValueError("the Show name is too long or has control characters")
     try:
         bpm = float(spec.get("bpm") or 0)
         bpb = int(spec.get("beats_per_bar") or 4)
@@ -136,38 +179,55 @@ def _clean(spec: dict) -> dict:
         raise ValueError("the BPM must be from 20 to 400")
     if not 1 <= bpb <= 16:
         raise ValueError("a bar has 1 to 16 beats")
+    unit = str(spec.get("unit") or "seconds")
+    if unit not in UNITS:
+        raise ValueError("lengths are in seconds, bars or beats")
+    raw = spec.get("parts") or []
+    if len(raw) > MAX_PARTS:
+        raise ValueError(f"a song has at most {MAX_PARTS} parts")
     parts = []
-    for n, p in enumerate(spec.get("parts") or [], 1):
+    for n, p in enumerate(raw, 1):
         fid = str(p.get("function_id") or "").strip()
+        issue = ""
         if not fid:
-            raise ValueError(f"part {n} has no look: pick a scene or a chaser")
+            issue = f"part {n} has no look: pick a scene or a chaser"
+            if not lenient:
+                raise ValueError(issue)
         try:
             rep = int(p.get("repeat") if p.get("repeat") not in (None, "") else 1)
+            if not 1 <= rep <= 64:
+                raise ValueError
         except (TypeError, ValueError):
-            raise ValueError(f"part {n}: repeat must be a whole number")
-        if not 1 <= rep <= 64:
-            raise ValueError(f"part {n}: repeat must be from 1 to 64")
+            rep = 1
+            issue = issue or f"part {n}: repeat must be a whole number from 1 to 64"
+            if not lenient:
+                raise ValueError(issue)
         beats = str(p.get("beats") or "").strip()
         if beats:
             try:
                 if not setlist_tempo.BEATS_MIN <= float(beats.replace(",", ".")) <= setlist_tempo.BEATS_MAX:
                     raise ValueError
             except ValueError:
-                raise ValueError(f"part {n}: beats per step must be from 1/8 to 64")
-        parts.append({"name": str(p.get("name") or "").strip() or f"Part {n}", "function_id": fid,
+                issue = issue or f"part {n}: beats per step must be from 1/8 to 64"
+                if not lenient:
+                    raise ValueError(issue)
+        parts.append({"name": str(p.get("name") or "").strip()[:120] or f"Part {n}", "function_id": fid,
                       "length": str(p.get("length") or "").strip(), "repeat": rep,
                       "fade_in": str(p.get("fade_in") or "").strip(),
-                      "fade_out": str(p.get("fade_out") or "").strip(), "beats": beats})
-    if not parts:
+                      "fade_out": str(p.get("fade_out") or "").strip(), "beats": beats, "issue": issue})
+    if not parts and not lenient:
         raise ValueError("add at least one part")
     music = spec.get("music") or {}
     out_music = {}
     if music.get("function_id"):
         out_music = {"function_id": str(music["function_id"])}
     elif str(music.get("path") or "").strip():
-        out_music = {"path": str(music["path"]).strip(), "name": str(music.get("name") or "").strip(),
+        path = str(music["path"]).strip()
+        if len(path) > 1000 or any(ord(c) < 32 for c in path):
+            raise ValueError("the music path is not a path")
+        out_music = {"path": path, "name": str(music.get("name") or "").strip()[:200],
                      "length": str(music.get("length") or "").strip()}
-    return {"name": name, "bpm": bpm, "beats_per_bar": bpb, "parts": parts, "music": out_music,
+    return {"name": name, "bpm": bpm, "beats_per_bar": bpb, "unit": unit, "parts": parts, "music": out_music,
             "show_id": str(spec.get("show_id") or "")}
 
 
@@ -190,37 +250,79 @@ def music_info(music: dict, funcs: Dict[str, object]) -> Dict[str, object]:
     return {"name": music.get("name") or os.path.basename(path), "path": path, "length_ms": length, "source": "path"}
 
 
-def plan(engine, spec: dict) -> Dict[str, object]:
-    """What the table makes, without changing anything: part starts, the length and warnings."""
-    s = _clean(spec)
+def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
+    """What the table makes, without changing anything: part starts, the length, the free
+    time and warnings.  *lenient* is for the live preview: a part with no look or a length
+    that cannot be read is listed with its ``issue`` and counts for nothing, instead of stopping."""
+    s = _clean(spec, lenient)
     funcs = _funcs(engine)
-    t, rows, warns = 0, [], []
-    for n, p in enumerate(s["parts"], 1):
-        f = funcs.get(p["function_id"])
-        if f is None:
-            raise ValueError(f"part {n} '{p['name']}': its look is not in the show")
-        if f.get("Type") not in LOOK_TYPES:
-            raise ValueError(f"part {n} '{p['name']}': a {f.get('Type')} cannot be a look; pick a scene or a chaser")
-        dur = parse_length(p["length"], s["bpm"], s["beats_per_bar"])
-        fi, fo = parse_fade(p["fade_in"]), parse_fade(p["fade_out"])
-        if fi + fo > dur:
-            warns.append(f"'{p['name']}': the fades ({(fi + fo) / 1000:g} s) are longer than the part ({dur / 1000:g} s)")
-        rows.append({"name": p["name"], "look": f.get("Name", ""), "start_ms": t, "length_ms": dur,
-                     "repeat": p["repeat"], "end_ms": t + dur * p["repeat"]})
-        t += dur * p["repeat"]
-    mlen = None
+    unit, bpm, bpb = s["unit"], s["bpm"], s["beats_per_bar"]
+    mlen, minfo, warns = None, None, []
     if s["music"]:
-        mi = music_info(s["music"], funcs)
-        mlen = mi["length_ms"]
+        try:
+            minfo = music_info(s["music"], funcs)
+            mlen = minfo["length_ms"]
+        except ValueError as e:
+            if not lenient:
+                raise
+            warns.append(str(e))
+    t, rows, items = 0, [], 0
+    last = len(s["parts"]) - 1
+    for n, p in enumerate(s["parts"], 1):
+        issue, dur, f = p["issue"], 0, None
+        try:
+            if not issue:
+                f = funcs.get(p["function_id"])
+                if f is None:
+                    raise ValueError(f"part {n} '{p['name']}': its look is not in the show")
+                if f.get("Type") not in LOOK_TYPES:
+                    raise ValueError(f"part {n} '{p['name']}': a {f.get('Type')} cannot be a look; pick a scene or a chaser")
+            text = p["length"]
+            if _END.match(text):
+                if n - 1 != last:
+                    raise ValueError(f"part {n} '{p['name']}': 'to the end' can only be the last part")
+                if p["repeat"] != 1:
+                    raise ValueError(f"part {n} '{p['name']}': 'to the end' cannot be repeated")
+                if mlen is None:
+                    raise ValueError(f"part {n} '{p['name']}': 'to the end' needs the length of the music")
+                dur = mlen - t
+                if dur <= 0:
+                    raise ValueError(f"part {n} '{p['name']}': nothing is left before the end of the music")
+            elif _UNTIL.match(text):
+                if p["repeat"] != 1:
+                    raise ValueError(f"part {n} '{p['name']}': 'until' cannot be repeated")
+                dur = parse_point(_UNTIL.match(text).group(1), bpm, bpb, unit) - t
+                if dur <= 0:
+                    raise ValueError(f"part {n} '{p['name']}': '{text}' is not after the start of the part ({clock(t)})")
+            else:
+                dur = parse_length(text, bpm, bpb, unit)
+            if dur > MAX_MS:
+                raise ValueError(f"part {n} '{p['name']}' is longer than a day")
+        except ValueError as e:
+            if not lenient:
+                raise
+            issue, dur = issue or str(e), 0
+        if f is not None and dur:
+            fi, fo = parse_fade(p["fade_in"]), parse_fade(p["fade_out"])
+            if fi + fo > dur:
+                warns.append(f"'{p['name']}': the fades ({clock(fi + fo)}) are longer than the part ({clock(dur)})")
+        items += p["repeat"] if dur else 0
+        if items > MAX_ITEMS:
+            raise ValueError(f"the table makes more than {MAX_ITEMS} items: lower the repeats")
+        rows.append({"name": p["name"], "look": f.get("Name", "") if f is not None else "", "start_ms": t,
+                     "length_ms": dur, "repeat": p["repeat"], "end_ms": t + dur * p["repeat"], "issue": issue})
+        t += dur * p["repeat"]
+    if minfo:
         if mlen is None:
             warns.append("the length of the music is not known: type it in (for example 3:45)")
         elif mlen > t:
             warns.append(f"the music is {clock(mlen - t)} longer than the parts: the lights stop first")
         elif mlen < t:
             warns.append(f"the parts run {clock(t - mlen)} past the end of the music")
-        if mi["path"] and media.media_status(mi["path"]) == "missing":
+        if minfo["path"] and media.media_status(minfo["path"]) == "missing":
             warns.append("the music file is not found on this computer")
-    return {"parts": rows, "length_ms": t, "music_ms": mlen, "warnings": warns}
+    free = max(mlen - t, 0) if mlen else 0
+    return {"parts": rows, "length_ms": t, "music_ms": mlen, "free_ms": free, "warnings": warns}
 
 
 def build(engine, spec: dict, next_id: int):
@@ -329,11 +431,13 @@ def build(engine, spec: dict, next_id: int):
 def spec_of(show) -> Optional[dict]:
     """The table a Show was built from, or None."""
     raw = show.get(SONG_ATTR)
-    if not raw:
+    if not raw or len(raw) > 200_000:                    # the table of a real song is a few KB
         return None
     try:
         d = json.loads(raw)
     except ValueError:
+        return None
+    if not isinstance(d, dict):
         return None
     d["show_id"] = show.get("ID")
     return d

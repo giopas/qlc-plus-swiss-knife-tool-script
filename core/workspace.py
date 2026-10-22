@@ -30,7 +30,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "3.9.7"  # single source of truth — must match CHANGELOG
+VERSION = "3.9.8"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -1942,9 +1942,9 @@ def _builder_engine():
     return engine
 
 
-def song_plan(spec: dict) -> dict:
+def song_plan(spec: dict, lenient: bool = False) -> dict:
     from core import song_builder
-    return song_builder.plan(_builder_engine(), spec)
+    return song_builder.plan(_builder_engine(), spec, lenient)
 
 
 def song_build(spec: dict) -> dict:

@@ -4294,7 +4294,6 @@
  "Beats per bar": "1小節の拍数",
  "Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a).": "ファイルの長さを読み取れない場合のみ必要です（ヘッダーなしのmp3、flac、m4a）。",
  "Chasers only: how many beats one step lasts, so the chaser follows the BPM.": "チェイサーのみ：1ステップの拍数。チェイサーがBPMに合います。",
- "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "長さ：秒（5s）、時刻（0:05）、小節（8 bars）、拍（16 beats）。同じパート名の行は同じトラックを共有します。繰り返しはパートを連続して置きます。",
  "— music file by path —": "— パスで指定する音楽ファイル —",
  "— a new song —": "— 新しい曲 —",
  "Uses the sound function “{0}” already in the show.": "ショーにある音声ファンクション「{0}」を使います。",
@@ -4313,5 +4312,19 @@
  "Parts": "パート",
  "Not covered by any part": "どのパートにも含まれていません",
  "Past the end of the music": "音楽の終わりを過ぎています",
- "Music": "音楽"
+ "Music": "音楽",
+ "Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.": "長さ：上で選んだ単位の数字。「to the end」は音楽の終わりまで埋めます（最後のパートのみ）。「until 1:20」は曲の頭から数えたその地点で止まります。同じパート名の行は1つのトラックを共有します。繰り返しはパートを続けて並べます。⧉ で行をコピーします。",
+ "A number, “to the end” (last part only) or “until 1:20” (a point from the start).": "数字、「to the end」（最後のパートのみ）、または「until 1:20」（頭からの地点）。",
+ "Bars": "小節",
+ "Seconds": "秒",
+ "Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM.": "この曲を区切る方法を一度選びます：秒、小節、または拍。小節と拍にはBPMが必要です。",
+ "Copy this row": "この行をコピー",
+ "Free {0}": "空き {0}",
+ "Free: {0} not covered by any part": "空き：{0} はどのパートにも使われていません",
+ "Give the parts a length to see the song here": "パートに長さを入れると、ここに曲が表示されます",
+ "Row {0}: {1}": "{0}行目：{1}",
+ "bar {0}": "{0}小節目",
+ "beat {0}": "{0}拍目",
+ "{0} bars": "{0}小節",
+ "{0} beats": "{0}拍"
 }

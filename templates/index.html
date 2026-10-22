@@ -678,6 +678,7 @@
       <div class="sbd-top">
         <div><label class="field-label">Show name</label><input id="sbd-name" class="field-input" type="text" placeholder="e.g. Galvanize" style="width:220px" oninput="sbdChanged()"></div>
         <div><label class="field-label">BPM</label><input id="sbd-bpm" class="field-input" type="text" placeholder="–" style="width:80px" oninput="sbdChanged()"></div>
+        <div><label class="field-label">Lengths in</label><select id="sbd-unit" class="field-input" data-tooltip="Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM." onchange="sbdUnitChanged()"><option value="seconds">Seconds</option><option value="bars">Bars</option><option value="beats">Beats</option></select></div>
         <div><label class="field-label">Beats per bar</label><input id="sbd-bpb" class="field-input" type="text" value="4" style="width:80px" oninput="sbdChanged()"></div>
         <div><label class="field-label">Shows built here</label><select id="sbd-open" class="field-input" onchange="sbdOpen(this.value)"></select></div>
       </div>
@@ -691,11 +692,11 @@
         <div id="sbd-music-note" class="sbd-note"></div>
       </div>
       <table class="sbd-table">
-        <thead><tr><th>#</th><th>Part</th><th>Look (scene or chaser)</th><th>Length</th><th>Repeat</th><th>Fade in</th><th>Fade out</th><th data-tooltip="Chasers only: how many beats one step lasts, so the chaser follows the BPM.">Beats/step</th><th>Starts</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Part</th><th>Look (scene or chaser)</th><th id="sbd-th-len" data-tooltip="A number, “to the end” (last part only) or “until 1:20” (a point from the start).">Length</th><th>Repeat</th><th>Fade in</th><th>Fade out</th><th data-tooltip="Chasers only: how many beats one step lasts, so the chaser follows the BPM.">Beats/step</th><th>Starts</th><th></th></tr></thead>
         <tbody id="sbd-rows"></tbody>
       </table>
       <button class="btn btn-surface" onclick="sbdAddRow()">+ Add part</button>
-      <div class="sbd-note">Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.</div>
+      <div class="sbd-note">Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.</div>
       <div class="sbd-bars" id="sbd-bars"></div>
       <div id="sbd-out" class="sbd-out"></div>
     </div>

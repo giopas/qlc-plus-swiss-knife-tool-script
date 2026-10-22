@@ -4294,7 +4294,6 @@
  "Beats per bar": "Tempos por compasso",
  "Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a).": "Só é preciso quando a duração do ficheiro não pode ser lida (mp3 sem cabeçalho, flac, m4a).",
  "Chasers only: how many beats one step lasts, so the chaser follows the BPM.": "Só chasers: quantos tempos dura um passo, para o chaser seguir os BPM.",
- "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "Duração: segundos (5s), um tempo (0:05), compassos (8 bars) ou tempos (16 beats). Linhas com o mesmo nome partilham uma faixa. Repetir põe a parte seguida.",
  "— music file by path —": "— ficheiro de música por caminho —",
  "— a new song —": "— uma música nova —",
  "Uses the sound function “{0}” already in the show.": "Usa a função de áudio «{0}» que já está no show.",
@@ -4313,5 +4312,19 @@
  "Parts": "Partes",
  "Not covered by any part": "Não coberto por nenhuma parte",
  "Past the end of the music": "Para além do fim da música",
- "Music": "Música"
+ "Music": "Música",
+ "Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.": "Duração: um número na unidade escolhida acima. “to the end” preenche até ao fim da música (só a última parte), “until 1:20” pára nesse ponto contando desde o início. As linhas com o mesmo nome de parte partilham uma faixa. Repetir põe a parte seguida. ⧉ copia uma linha.",
+ "A number, “to the end” (last part only) or “until 1:20” (a point from the start).": "Um número, “to the end” (só última parte) ou “until 1:20” (um ponto desde o início).",
+ "Bars": "Compassos",
+ "Seconds": "Segundos",
+ "Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM.": "Escolha uma vez como esta canção é cortada: segundos, compassos ou tempos. Compassos e tempos precisam dos BPM.",
+ "Copy this row": "Copiar esta linha",
+ "Free {0}": "Livre {0}",
+ "Free: {0} not covered by any part": "Livre: {0} não coberto por nenhuma parte",
+ "Give the parts a length to see the song here": "Dê uma duração às partes para ver aqui a canção",
+ "Row {0}: {1}": "Linha {0}: {1}",
+ "bar {0}": "compasso {0}",
+ "beat {0}": "tempo {0}",
+ "{0} bars": "{0} compassos",
+ "{0} beats": "{0} tempos"
 }

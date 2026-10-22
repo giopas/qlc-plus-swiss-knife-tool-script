@@ -4243,7 +4243,6 @@
  "Beats per bar": "Temps par mesure",
  "Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a).": "Utile seulement si la durée du fichier ne peut pas être lue (mp3 sans en-tête, flac, m4a).",
  "Chasers only: how many beats one step lasts, so the chaser follows the BPM.": "Chasers seulement : combien de temps dure un pas, pour que le chaser suive les BPM.",
- "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "Durée : secondes (5s), un temps (0:05), mesures (8 bars) ou temps (16 beats). Les lignes de même nom partagent une piste. Répéter enchaîne la partie.",
  "— music file by path —": "— fichier musical par chemin —",
  "— a new song —": "— un nouveau morceau —",
  "Uses the sound function “{0}” already in the show.": "Utilise la fonction audio « {0} » déjà dans le show.",
@@ -4262,5 +4261,19 @@
  "Parts": "Parties",
  "Not covered by any part": "Couvert par aucune partie",
  "Past the end of the music": "Au-delà de la fin de la musique",
- "Music": "Musique"
+ "Music": "Musique",
+ "Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.": "Durée : un nombre dans l’unité choisie ci-dessus. « to the end » remplit jusqu’à la fin de la musique (dernière partie seulement), « until 1:20 » s’arrête à ce point en comptant depuis le début. Les lignes avec le même nom de partie partagent une piste. Répéter met la partie à la suite. ⧉ copie une ligne.",
+ "A number, “to the end” (last part only) or “until 1:20” (a point from the start).": "Un nombre, « to the end » (dernière partie seulement) ou « until 1:20 » (un point depuis le début).",
+ "Bars": "Mesures",
+ "Seconds": "Secondes",
+ "Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM.": "Choisissez une fois comment ce morceau est découpé : secondes, mesures ou temps. Les mesures et les temps demandent les BPM.",
+ "Copy this row": "Copier cette ligne",
+ "Free {0}": "Libre {0}",
+ "Free: {0} not covered by any part": "Libre : {0} non couvert par aucune partie",
+ "Give the parts a length to see the song here": "Donnez une durée aux parties pour voir le morceau ici",
+ "Row {0}: {1}": "Ligne {0} : {1}",
+ "bar {0}": "mesure {0}",
+ "beat {0}": "temps {0}",
+ "{0} bars": "{0} mesures",
+ "{0} beats": "{0} temps"
 }

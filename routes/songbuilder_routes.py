@@ -43,7 +43,7 @@ def song_open():
 @bp.route('/preview', methods=['POST'])
 def song_preview():
     try:
-        return jsonify(ws.song_plan(request.get_json(force=True) or {}))
+        return jsonify(ws.song_plan(request.get_json(force=True) or {}, lenient=True))
     except ValueError as e:
         return _err(e)
 

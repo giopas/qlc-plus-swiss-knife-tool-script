@@ -4269,7 +4269,6 @@
  "Beats per bar": "Battiti per battuta",
  "Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a).": "Serve solo quando la durata del file non si legge (mp3 senza intestazione, flac, m4a).",
  "Chasers only: how many beats one step lasts, so the chaser follows the BPM.": "Solo chaser: quanti battiti dura uno step, così il chaser segue i BPM.",
- "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "Durata: secondi (5s), un tempo (0:05), battute (8 bars) o battiti (16 beats). Le righe con lo stesso nome di parte condividono una traccia. Ripeti mette la parte di seguito.",
  "— music file by path —": "— file musicale da percorso —",
  "— a new song —": "— una nuova canzone —",
  "Uses the sound function “{0}” already in the show.": "Usa la funzione audio «{0}» già nello show.",
@@ -4288,5 +4287,19 @@
  "Parts": "Parti",
  "Not covered by any part": "Non coperto da nessuna parte",
  "Past the end of the music": "Oltre la fine della musica",
- "Music": "Musica"
+ "Music": "Musica",
+ "Length: a number in the unit you chose above. “to the end” fills up to the end of the music (last part only), “until 1:20” stops at that point from the start. Rows with the same part name share a track. Repeat puts the part back to back. ⧉ copies a row.": "Durata: un numero nell’unità scelta qui sopra. “to the end” riempie fino alla fine della musica (solo l’ultima parte), “until 1:20” si ferma in quel punto contando dall’inizio. Le righe con lo stesso nome di parte condividono una traccia. Ripeti mette la parte una dopo l’altra. ⧉ copia una riga.",
+ "A number, “to the end” (last part only) or “until 1:20” (a point from the start).": "Un numero, “to the end” (solo ultima parte) o “until 1:20” (un punto dall’inizio).",
+ "Bars": "Battute",
+ "Seconds": "Secondi",
+ "Choose once how this song is cut: seconds, bars or beats. Bars and beats need the BPM.": "Scegli una volta come si taglia questa canzone: secondi, battute o battiti. Battute e battiti richiedono i BPM.",
+ "Copy this row": "Copia questa riga",
+ "Free {0}": "Libero {0}",
+ "Free: {0} not covered by any part": "Libero: {0} non coperti da nessuna parte",
+ "Give the parts a length to see the song here": "Dai una durata alle parti per vedere qui la canzone",
+ "Row {0}: {1}": "Riga {0}: {1}",
+ "bar {0}": "battuta {0}",
+ "beat {0}": "battito {0}",
+ "{0} bars": "{0} battute",
+ "{0} beats": "{0} battiti"
 }

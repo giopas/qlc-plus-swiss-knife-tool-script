@@ -190,7 +190,9 @@ def test_routes_preview_build_open(tmp_path):
     workspace.load_qxw(str(p))
     r = client.post("/api/songbuilder/preview", json=spec())
     assert r.status_code == 200 and r.get_json()["length_ms"] == 12000
-    bad = client.post("/api/songbuilder/preview", json=spec(name=""))
+    half = client.post("/api/songbuilder/preview", json=spec(name=""))          # a live preview accepts a half-filled table
+    assert half.status_code == 200
+    bad = client.post("/api/songbuilder/build", json=spec(name=""))
     assert bad.status_code == 400 and "name" in bad.get_json()["error"]
     r = client.post("/api/songbuilder/build", json=spec())
     assert r.status_code == 200
@@ -204,3 +206,112 @@ def test_routes_preview_build_open(tmp_path):
     m = client.post("/api/songbuilder/music", json={"path": str(w)}).get_json()
     assert m == {"name": "a.wav", "found": True, "length_ms": 1000}
     assert client.post("/api/songbuilder/music", json={"path": "/etc/passwd"}).status_code == 400
+
+
+# ── units, to the end, until, half-filled tables ─────────────────────────────
+
+def test_the_song_counts_in_seconds_bars_or_beats():
+    eng = engine_of(scene("5") + scene("6"))
+    for unit, text, ms in [("seconds", "8", 8000), ("bars", "2", 4000), ("beats", "8", 4000)]:
+        t = spec(unit=unit, parts=[{"name": "A", "function_id": "5", "length": text}])
+        assert sb.plan(eng, t)["length_ms"] == ms, unit
+    # an explicit unit still wins, as in 'sixteen beats' on a song that counts in bars
+    assert sb.plan(eng, spec(unit="bars", parts=[{"name": "A", "function_id": "5", "length": "16 beats"}]))["length_ms"] == 8000
+    with pytest.raises(ValueError, match="BPM"):
+        sb.plan(eng, spec(unit="bars", bpm=0, parts=[{"name": "A", "function_id": "5", "length": "2"}]))
+    with pytest.raises(ValueError, match="seconds, bars or beats"):
+        sb.plan(eng, spec(unit="days"))
+
+
+def test_to_the_end_fills_up_to_the_music(tmp_path):
+    w = tmp_path / "m.wav"
+    with wave.open(str(w), "wb") as f:
+        f.setnchannels(1); f.setsampwidth(2); f.setframerate(8000); f.writeframes(b"\0\0" * 8000 * 30)    # 30 s
+    eng = engine_of(scene("5") + scene("6"))
+    t = spec(music={"path": str(w)}, parts=[{"name": "A", "function_id": "5", "length": "10s"},
+                                             {"name": "B", "function_id": "6", "length": "to the end"}])
+    p = sb.plan(eng, t)
+    assert [r["length_ms"] for r in p["parts"]] == [10000, 20000] and p["free_ms"] == 0 and p["warnings"] == []
+    first = [{"name": "A", "function_id": "5", "length": "to the end"}, {"name": "B", "function_id": "6", "length": "5s"}]
+    with pytest.raises(ValueError, match="only be the last"):
+        sb.plan(eng, spec(music={"path": str(w)}, parts=first))
+    with pytest.raises(ValueError, match="needs the length of the music"):
+        sb.plan(eng, spec(parts=[{"name": "A", "function_id": "5", "length": "end"}]))
+    with pytest.raises(ValueError, match="cannot be repeated"):
+        sb.plan(eng, spec(music={"path": str(w)}, parts=[{"name": "A", "function_id": "5", "length": "end", "repeat": 2}]))
+
+
+def test_until_counts_from_the_beginning_of_the_song():
+    eng = engine_of(scene("5") + scene("6"))
+    t = spec(parts=[{"name": "A", "function_id": "5", "length": "10s"},
+                    {"name": "B", "function_id": "6", "length": "until 0:25"},
+                    {"name": "C", "function_id": "5", "length": "until bar 17"}])            # bar 17 at 120 BPM = 32 s
+    assert [r["length_ms"] for r in sb.plan(eng, t)["parts"]] == [10000, 15000, 7000]
+    with pytest.raises(ValueError, match="not after the start"):
+        sb.plan(eng, spec(parts=[{"name": "A", "function_id": "5", "length": "10s"},
+                                 {"name": "B", "function_id": "6", "length": "until 5"}]))
+    # in a song that counts in bars a bare number after 'until' is a bar NUMBER: bar 1 is the beginning
+    t = spec(unit="bars", parts=[{"name": "A", "function_id": "5", "length": "until 3"}])
+    assert sb.plan(eng, t)["length_ms"] == 4000          # bar 3 starts after two bars of 2 s
+
+
+def test_a_half_filled_table_still_gives_a_preview():
+    eng = engine_of(scene("5"))
+    t = spec(name="", parts=[{"name": "A", "function_id": "5", "length": "10s"},
+                             {"name": "B", "function_id": "", "length": "5s"},
+                             {"name": "C", "function_id": "5", "length": "soon"}])
+    p = sb.plan(eng, t, lenient=True)
+    assert [r["length_ms"] for r in p["parts"]] == [10000, 5000, 0]       # no look keeps its length, so the bar can show it
+    assert "no look" in p["parts"][1]["issue"] and "not a length" in p["parts"][2]["issue"]
+    with pytest.raises(ValueError):
+        sb.plan(eng, t)                                           # building stays strict
+
+
+def test_free_time_is_what_the_music_has_left(tmp_path):
+    w = tmp_path / "m.wav"
+    with wave.open(str(w), "wb") as f:
+        f.setnchannels(1); f.setsampwidth(2); f.setframerate(8000); f.writeframes(b"\0\0" * 8000 * 30)
+    eng = engine_of(scene("5"))
+    p = sb.plan(eng, spec(music={"path": str(w)}, parts=[{"name": "A", "function_id": "5", "length": "10s"}]))
+    assert p["free_ms"] == 20000
+
+
+def test_limits():
+    eng = engine_of(scene("5"))
+    many = [{"name": "A", "function_id": "5", "length": "1s", "repeat": 64}] * 60               # 3840 items
+    with pytest.raises(ValueError, match="more than"):
+        sb.plan(eng, spec(parts=many))
+    with pytest.raises(ValueError, match="at most"):
+        sb.plan(eng, spec(parts=[{"name": "A", "function_id": "5", "length": "1s"}] * 301))
+    with pytest.raises(ValueError, match="longer than a day"):
+        sb.plan(eng, spec(parts=[{"name": "A", "function_id": "5", "length": "999999s"}]))
+    with pytest.raises(ValueError, match="not a path"):
+        sb.plan(eng, spec(music={"path": "/x/\n/a.mp3"}))
+    bad = ET.fromstring('<Function xmlns="%s" ID="10" Type="Show" Name="x" SwissKnifeSong="[1,2]"/>' % workspace.NS['q'])
+    assert sb.spec_of(bad) is None                                                              # a table must be an object
+
+
+# ── security (3.9.8) ─────────────────────────────────────────────────────────
+
+def test_song_builder_page_has_no_inline_handler_that_carries_a_name_or_id_from_the_show():
+    import os
+    js = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static/js/songbuilder.js"), encoding="utf-8").read()
+    assert "sbdPickChoose('" not in js                         # ids travel in data-id, read by one listener
+    assert "innerHTML = d.error" not in js and "_sbdOut(d.error" not in js
+    for line in js.splitlines():                               # every inline handler passes only the row number
+        for call in __import__("re").findall(r'on\w+="([^"]*)"', line):
+            assert "${_sbdEsc" not in call and "${f." not in call, call
+
+
+def test_music_route_only_looks_at_sound_files(tmp_path):
+    from app import create_app
+    c = create_app().test_client()
+    secret = tmp_path / "passwd.txt"; secret.write_text("x")
+    r = c.post("/api/songbuilder/music", json={"path": str(secret)})
+    assert r.status_code == 400 and "sound file" in r.get_json()["error"]
+    assert c.post("/api/songbuilder/music", json={"path": ""}).status_code == 400
+
+
+def test_a_huge_or_wrong_table_stored_on_a_show_is_ignored():
+    big = '<Function xmlns="%s" ID="10" Type="Show" Name="x" SwissKnifeSong="%s"/>' % (workspace.NS["q"], "a" * 300_000)
+    assert sb.spec_of(ET.fromstring(big)) is None

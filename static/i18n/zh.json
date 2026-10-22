@@ -4281,8 +4281,6 @@
  "Song Builder": "歌曲构建器",
  "Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track.": "用分段表格构建一首歌的Show：每段设定灯光、时长和重复次数，并配一条音乐轨。",
  "Build a song’s Show from a table of parts, with one music track.": "用分段表格构建一首歌的Show，配一条音乐轨。",
- "Song name": "歌曲名称",
- "Built before": "已构建",
  "Music (one track, never cut)": "音乐（一条轨，不会被截断）",
  "Look (scene or chaser)": "灯光（场景或追逐）",
  "Part": "段落",
@@ -4299,7 +4297,6 @@
  "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "时长：秒（5s）、时间（0:05）、小节（8 bars）或拍（16 beats）。同名的行共用一条轨道。重复会把该段连续排列。",
  "— music file by path —": "— 按路径指定音乐文件 —",
  "— a new song —": "— 新歌曲 —",
- "Search a scene or chaser…": "搜索场景或追逐…",
  "Uses the sound function “{0}” already in the show.": "使用演出中已有的音频功能“{0}”。",
  "Not found on this computer: check the path.": "在这台电脑上找不到：请检查路径。",
  "Found, {0} long.": "已找到，时长{0}。",
@@ -4307,5 +4304,14 @@
  "Total {0}": "总计 {0}",
  "music {0}": "音乐 {0}",
  "✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist.": "✓ 已构建Show“{0}”（ID {1}）。请在Setlist中把它分配给歌曲。",
- "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ 已构建Show“{0}”——准备好后请“另存为新文件…”。"
+ "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ 已构建Show“{0}”——准备好后请“另存为新文件…”。",
+ "e.g. Galvanize": "例如 Galvanize",
+ "Shows built here": "在此构建的Show",
+ "Pick a look": "选择灯光",
+ "Pick a scene or chaser…": "选择场景或追逐…",
+ "No results": "无结果",
+ "Parts": "段落",
+ "Not covered by any part": "没有任何段落覆盖",
+ "Past the end of the music": "超出音乐结尾",
+ "Music": "音乐"
 }

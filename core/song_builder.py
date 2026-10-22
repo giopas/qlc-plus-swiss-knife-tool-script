@@ -42,6 +42,13 @@ _LEN = re.compile(r"^(\d+(?:[.,]\d+)?)\s*(bars?|beats?|ms|s|sec)?$", re.I)
 _CLOCK = re.compile(r"^(\d+):(\d{1,2})(?:[.,](\d{1,3}))?$")
 
 
+def clock(ms: int) -> str:
+    """92500 → '1:32.5' (a time a person reads at a glance)."""
+    s = ms / 1000
+    m = int(s // 60)
+    return f"{m}:{s - m * 60:04.1f}"
+
+
 def parse_length(text, bpm: float = 0, beats_per_bar: int = 4) -> int:
     """'8 bars', '16 beats', '5s', '0:05', '1500ms', '12' (seconds) → ms."""
     s = str(text if text is not None else "").strip()
@@ -119,7 +126,7 @@ def _clean(spec: dict) -> dict:
     """The table with types and blanks tidied; raises ValueError on what cannot be built."""
     name = str(spec.get("name") or "").strip()
     if not name:
-        raise ValueError("give the song a name")
+        raise ValueError("give the Show a name")
     try:
         bpm = float(spec.get("bpm") or 0)
         bpb = int(spec.get("beats_per_bar") or 4)
@@ -208,9 +215,9 @@ def plan(engine, spec: dict) -> Dict[str, object]:
         if mlen is None:
             warns.append("the length of the music is not known: type it in (for example 3:45)")
         elif mlen > t:
-            warns.append(f"the music is {(mlen - t) / 1000:g} s longer than the parts: the lights stop first")
+            warns.append(f"the music is {clock(mlen - t)} longer than the parts: the lights stop first")
         elif mlen < t:
-            warns.append(f"the parts run {(t - mlen) / 1000:g} s past the end of the music")
+            warns.append(f"the parts run {clock(t - mlen)} past the end of the music")
         if mi["path"] and media.media_status(mi["path"]) == "missing":
             warns.append("the music file is not found on this computer")
     return {"parts": rows, "length_ms": t, "music_ms": mlen, "warnings": warns}

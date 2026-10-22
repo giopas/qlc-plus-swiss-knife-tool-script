@@ -122,13 +122,13 @@
 
     <!-- 4 · Run the show -->
     <div class="sn-group-label" id="sn-grp-4"><span class="sn-gnum">4</span><span class="sn-gtxt">Run the show</span></div>
-    <button class="sn-item" id="sn-songbuilder" data-tip="Song Builder" data-desc="Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track." onclick="go('songbuilder')">
-      <svg class="ic"><use href="/static/icons.svg#list"/></svg>
-      <span>Song Builder</span>
-    </button>
     <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Tonight’s songs matched to functions, with fade timings, into the setlist CueList." onclick="go('setlist')">
       <svg class="ic"><use href="/static/icons.svg#music"/></svg>
       <span>Setlist</span>
+    </button>
+    <button class="sn-item" id="sn-songbuilder" data-tip="Song Builder" data-desc="Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track." onclick="go('songbuilder')">
+      <svg class="ic"><use href="/static/icons.svg#list"/></svg>
+      <span>Song Builder</span>
     </button>
     <button class="sn-item" id="sn-triggers" data-tip="Trigger Manager" data-desc="Audit and edit every keyboard &amp; MIDI binding in the Virtual Console." onclick="go('triggers')">
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
@@ -484,7 +484,7 @@
         <div class="wf-card" data-grp="4">
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('songbuilder')">Song Builder</button><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('songbuilder')">Song Builder</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -665,19 +665,28 @@
       <button class="help-btn" onclick="openHelp('Song-Builder')" title="How this tool works — opens the Song Builder page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
     </div>
+    <div id="sbd-pick-modal" class="modal-overlay sbd-hidden">
+      <div class="modal-box sbd-pick-box">
+        <div class="pane-header" style="margin-bottom:8px">Pick a look</div>
+        <input id="sbd-pick-q" class="field-input" type="text" placeholder="Search…" oninput="sbdPickRender()">
+        <select id="sbd-pick-type" class="field-input sbd-pick-type" onchange="sbdPickRender()"></select>
+        <div id="sbd-pick-list" class="sbd-pick-list"></div>
+        <div class="sbd-pick-foot"><button class="btn btn-surface" onclick="sbdPickClose()">Cancel</button></div>
+      </div>
+    </div>
     <div class="sbd-body">
       <div class="sbd-top">
-        <div><label class="field-label">Song name</label><input id="sbd-name" class="field-input" type="text" placeholder="Galvanize" oninput="sbdDirty()"></div>
-        <div><label class="field-label">BPM</label><input id="sbd-bpm" class="field-input" type="text" placeholder="–" style="width:80px" oninput="sbdDirty()"></div>
-        <div><label class="field-label">Beats per bar</label><input id="sbd-bpb" class="field-input" type="text" value="4" style="width:80px" oninput="sbdDirty()"></div>
-        <div><label class="field-label">Built before</label><select id="sbd-open" class="field-input" onchange="sbdOpen(this.value)"></select></div>
+        <div><label class="field-label">Show name</label><input id="sbd-name" class="field-input" type="text" placeholder="e.g. Galvanize" style="width:220px" oninput="sbdChanged()"></div>
+        <div><label class="field-label">BPM</label><input id="sbd-bpm" class="field-input" type="text" placeholder="–" style="width:80px" oninput="sbdChanged()"></div>
+        <div><label class="field-label">Beats per bar</label><input id="sbd-bpb" class="field-input" type="text" value="4" style="width:80px" oninput="sbdChanged()"></div>
+        <div><label class="field-label">Shows built here</label><select id="sbd-open" class="field-input" onchange="sbdOpen(this.value)"></select></div>
       </div>
       <div class="sbd-music">
         <label class="field-label">Music (one track, never cut)</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <select id="sbd-audio" class="field-input" style="width:230px" onchange="sbdMusicChanged()"></select>
           <input id="sbd-path" class="field-input" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()">
-          <input id="sbd-mlen" class="field-input" type="text" placeholder="3:45" style="width:80px" data-tooltip="Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a)." onchange="sbdDirty()">
+          <input id="sbd-mlen" class="field-input" type="text" placeholder="3:45" style="width:80px" data-tooltip="Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a)." onchange="sbdChanged()">
         </div>
         <div id="sbd-music-note" class="sbd-note"></div>
       </div>
@@ -685,9 +694,9 @@
         <thead><tr><th>#</th><th>Part</th><th>Look (scene or chaser)</th><th>Length</th><th>Repeat</th><th>Fade in</th><th>Fade out</th><th data-tooltip="Chasers only: how many beats one step lasts, so the chaser follows the BPM.">Beats/step</th><th>Starts</th><th></th></tr></thead>
         <tbody id="sbd-rows"></tbody>
       </table>
-      <datalist id="sbd-looks"></datalist>
       <button class="btn btn-surface" onclick="sbdAddRow()">+ Add part</button>
       <div class="sbd-note">Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.</div>
+      <div class="sbd-bars" id="sbd-bars"></div>
       <div id="sbd-out" class="sbd-out"></div>
     </div>
     <div class="tool-foot">

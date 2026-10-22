@@ -4230,8 +4230,6 @@
  "Song Builder": "Song Builder",
  "Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track.": "Construisez le Show d’un morceau à partir d’un tableau de parties : un look, une durée et une répétition pour chacune, et une piste musicale.",
  "Build a song’s Show from a table of parts, with one music track.": "Construisez le Show d’un morceau à partir d’un tableau de parties, avec une piste musicale.",
- "Song name": "Nom du morceau",
- "Built before": "Déjà construits",
  "Music (one track, never cut)": "Musique (une piste, jamais coupée)",
  "Look (scene or chaser)": "Look (scène ou chaser)",
  "Part": "Partie",
@@ -4248,7 +4246,6 @@
  "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "Durée : secondes (5s), un temps (0:05), mesures (8 bars) ou temps (16 beats). Les lignes de même nom partagent une piste. Répéter enchaîne la partie.",
  "— music file by path —": "— fichier musical par chemin —",
  "— a new song —": "— un nouveau morceau —",
- "Search a scene or chaser…": "Chercher une scène ou un chaser…",
  "Uses the sound function “{0}” already in the show.": "Utilise la fonction audio « {0} » déjà dans le show.",
  "Not found on this computer: check the path.": "Introuvable sur cet ordinateur : vérifiez le chemin.",
  "Found, {0} long.": "Trouvé, dure {0}.",
@@ -4256,5 +4253,14 @@
  "Total {0}": "Total {0}",
  "music {0}": "musique {0}",
  "✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist.": "✓ Show « {0} » construit (ID {1}). Assignez-le à un morceau dans la Setlist.",
- "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ Show « {0} » construit — Enregistrer sous un nouveau fichier… quand vous voulez."
+ "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ Show « {0} » construit — Enregistrer sous un nouveau fichier… quand vous voulez.",
+ "e.g. Galvanize": "ex. Galvanize",
+ "Shows built here": "Shows construits ici",
+ "Pick a look": "Choisir un look",
+ "Pick a scene or chaser…": "Choisir une scène ou un chaser…",
+ "No results": "Aucun résultat",
+ "Parts": "Parties",
+ "Not covered by any part": "Couvert par aucune partie",
+ "Past the end of the music": "Au-delà de la fin de la musique",
+ "Music": "Musique"
 }

@@ -13,9 +13,6 @@ async function sbdInit() {
     const f = await (await fetch('/api/functions')).json();
     _sbd.funcs = Array.isArray(f) ? f : [];
   } catch (e) { _sbd.funcs = []; }
-  const looks = _sbd.funcs.filter(f => _SBD_LOOK_TYPES.includes(f.type));
-  document.getElementById('sbd-looks').innerHTML =
-    looks.map(f => `<option value="${_sbdEsc(f.name)} [${_sbdEsc(f.id)}]">${_sbdEsc(f.type)}</option>`).join('');
   const audios = _sbd.funcs.filter(f => f.type === 'Audio');
   document.getElementById('sbd-audio').innerHTML =
     `<option value="">${_sbdEsc(t('— music file by path —'))}</option>` +
@@ -45,6 +42,7 @@ function sbdNew() {
   document.getElementById('sbd-music-note').textContent = '';
   _sbd.parts = [_sbdBlank('Intro'), _sbdBlank('Verse'), _sbdBlank('Chorus')];
   document.getElementById('sbd-out').innerHTML = '';
+  document.getElementById('sbd-bars').innerHTML = '';
   _sbdRender();
 }
 
@@ -72,16 +70,16 @@ function _sbdRender() {
   const body = document.getElementById('sbd-rows');
   if (!body) return;
   body.innerHTML = _sbd.parts.map((p, i) => {
-    const label = p.function_id ? `${p.look} [${p.function_id}]` : '';
+    const swatch = `<span class="sbd-swatch" style="background:${_sbdColor(p.name)}"></span>`;
     return `<tr data-i="${i}">
-      <td>${i + 1}</td>
-      <td><input type="text" value="${_sbdEsc(p.name)}" oninput="sbdCell(${i},'name',this.value)" placeholder="${_sbdEsc(t('Part'))}"></td>
-      <td><input type="text" list="sbd-looks" value="${_sbdEsc(label)}" onchange="sbdLook(${i},this)" placeholder="${_sbdEsc(t('Search a scene or chaser…'))}"></td>
-      <td style="width:90px"><input type="text" value="${_sbdEsc(p.length)}" oninput="sbdCell(${i},'length',this.value)" placeholder="8 bars"></td>
-      <td style="width:60px"><input type="text" value="${_sbdEsc(p.repeat)}" oninput="sbdCell(${i},'repeat',this.value)"></td>
-      <td style="width:70px"><input type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="0"></td>
-      <td style="width:70px"><input type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="0"></td>
-      <td style="width:70px"><input type="text" value="${_sbdEsc(p.beats)}" oninput="sbdCell(${i},'beats',this.value)" placeholder="–"></td>
+      <td>${swatch}${i + 1}</td>
+      <td><input class="field-input" type="text" value="${_sbdEsc(p.name)}" oninput="sbdCell(${i},'name',this.value)" placeholder="${_sbdEsc(t('Part'))}"></td>
+      <td><input class="field-input sbd-look" type="text" readonly value="${_sbdEsc(p.function_id ? p.look : '')}" onclick="sbdPick(${i})" placeholder="${_sbdEsc(t('Pick a scene or chaser…'))}"></td>
+      <td style="width:90px"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" oninput="sbdCell(${i},'length',this.value)" placeholder="8 bars"></td>
+      <td style="width:60px"><input class="field-input" type="text" value="${_sbdEsc(p.repeat)}" oninput="sbdCell(${i},'repeat',this.value)"></td>
+      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="0"></td>
+      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="0"></td>
+      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.beats)}" oninput="sbdCell(${i},'beats',this.value)" placeholder="–"></td>
       <td class="sbd-start" id="sbd-start-${i}">${p.start_ms === undefined ? '' : _sbdFmt(p.start_ms)}</td>
       <td style="white-space:nowrap"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},-1)" aria-label="${_sbdEsc(t('Up'))}">↑</button>
         <button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},1)" aria-label="${_sbdEsc(t('Down'))}">↓</button>
@@ -90,25 +88,77 @@ function _sbdRender() {
   }).join('');
 }
 
-function sbdDirty() { /* the preview is stale; nothing to do until the next Preview */ }
-function sbdCell(i, key, val) { if (_sbd.parts[i]) _sbd.parts[i][key] = val; }
-function sbdAddRow() { _sbd.parts.push(_sbdBlank('')); _sbdRender(); }
-function sbdRemove(i) { _sbd.parts.splice(i, 1); _sbdRender(); }
+// Colours by part name in order of first appearance: the same as the tracks of the Show (core/song_builder.py).
+const _SBD_COLORS = ['#d9534f', '#f0ad4e', '#5cb85c', '#5bc0de', '#9b59b6', '#e67e22', '#1abc9c', '#e91e63'];
+const _SBD_MUSIC = '#4a90d9';
+function _sbdColor(name) {
+  const names = [...new Set(_sbd.parts.map((p, i) => (p.name || '').trim() || `Part ${i + 1}`))];
+  const k = names.indexOf((name || '').trim() || `Part ${_sbd.parts.findIndex(p => p.name === name) + 1}`);
+  return _SBD_COLORS[(k < 0 ? 0 : k) % _SBD_COLORS.length];
+}
+
+// ── the look picker: the same list as the Setlist's function list ─────────────
+let _sbdPickRow = -1;
+
+function sbdPick(i) {
+  _sbdPickRow = i;
+  const types = [...new Set(_sbd.funcs.filter(f => _SBD_LOOK_TYPES.includes(f.type)).map(f => f.type))];
+  document.getElementById('sbd-pick-type').innerHTML =
+    `<option value="">${_sbdEsc(t('All types'))}</option>` + types.map(x => `<option value="${_sbdEsc(x)}">${_sbdEsc(x)}</option>`).join('');
+  document.getElementById('sbd-pick-q').value = '';
+  document.getElementById('sbd-pick-modal').classList.remove('sbd-hidden');
+  sbdPickRender();
+  document.getElementById('sbd-pick-q').focus();
+}
+
+function sbdPickClose() { document.getElementById('sbd-pick-modal').classList.add('sbd-hidden'); }
+
+function sbdPickRender() {
+  const q = document.getElementById('sbd-pick-q').value.trim().toLowerCase();
+  const ty = document.getElementById('sbd-pick-type').value;
+  const list = _sbd.funcs.filter(f => _SBD_LOOK_TYPES.includes(f.type) && (!ty || f.type === ty)
+    && (!q || (f.name + ' ' + (f.vc_button || '') + ' ' + (f.desc || '')).toLowerCase().includes(q)));
+  const groups = {};
+  list.forEach(f => (groups[f.type] = groups[f.type] || []).push(f));
+  let html = list.length ? '' : `<div class="slot-empty">${_sbdEsc(t('No results'))}</div>`;
+  Object.keys(groups).sort((a, b) => _SBD_LOOK_TYPES.indexOf(a) - _SBD_LOOK_TYPES.indexOf(b)).forEach(type => {
+    html += `<div class="pool-type-header"><span>${_sbdEsc(type)}</span><span class="pool-grp-count">${groups[type].length}</span></div>`;
+    groups[type].forEach(f => {
+      const vc = f.vc_button || f.vc_inherited || '';
+      html += `<div class="fn-pool-item" onclick="sbdPickChoose('${_sbdEsc(f.id)}')">
+        <div class="pool-item-row"><span class="pool-col-name fn-pool-name">${_sbdEsc(f.name)}</span><span class="fn-pool-id">${_sbdEsc(f.id)}</span></div>
+        ${vc ? `<div class="pool-item-vc">${_sbdEsc(vc)}</div>` : ''}${f.desc ? `<div class="pool-item-desc">${_sbdEsc(f.desc)}</div>` : ''}</div>`;
+    });
+  });
+  document.getElementById('sbd-pick-list').innerHTML = html;
+}
+
+function sbdPickChoose(id) {
+  const f = _sbd.funcs.find(x => x.id === id), row = _sbd.parts[_sbdPickRow];
+  if (f && row) { row.function_id = f.id; row.look = f.name; if (!(row.name || '').trim()) row.name = f.name; }
+  sbdPickClose();
+  _sbdRender();
+  sbdChanged();
+}
+
+let _sbdTimer = null;
+// Every edit refreshes the preview (and the bars) a moment after the last key.
+function sbdChanged() { clearTimeout(_sbdTimer); _sbdTimer = setTimeout(sbdPreview, 350); }
+function sbdCell(i, key, val) { if (_sbd.parts[i]) { _sbd.parts[i][key] = val; if (key === 'name') _sbdRecolor(); sbdChanged(); } }
+function _sbdRecolor() { document.querySelectorAll('#sbd-rows tr').forEach((tr, i) => { const sw = tr.querySelector('.sbd-swatch'); if (sw && _sbd.parts[i]) sw.style.background = _sbdColor(_sbd.parts[i].name); }); }
+function sbdAddRow() { _sbd.parts.push(_sbdBlank('')); _sbdRender(); sbdChanged(); }
+function sbdRemove(i) { _sbd.parts.splice(i, 1); _sbdRender(); sbdChanged(); }
 function sbdMove(i, d) {
   const j = i + d;
   if (j < 0 || j >= _sbd.parts.length) return;
   [_sbd.parts[i], _sbd.parts[j]] = [_sbd.parts[j], _sbd.parts[i]];
   _sbdRender();
-}
-
-function sbdLook(i, el) {
-  const m = /\[(\d+)\]\s*$/.exec(el.value);
-  const f = m ? _sbd.funcs.find(x => x.id === m[1]) : _sbd.funcs.find(x => x.name === el.value.trim() && _SBD_LOOK_TYPES.includes(x.type));
-  if (f) { _sbd.parts[i].function_id = f.id; _sbd.parts[i].look = f.name; if (!_sbd.parts[i].name) { _sbd.parts[i].name = f.name; } el.value = `${f.name} [${f.id}]`; }
-  else { _sbd.parts[i].function_id = ''; _sbd.parts[i].look = ''; }
+  sbdChanged();
+  sbdChanged();
 }
 
 async function sbdMusicChanged() {
+  sbdChanged();
   const note = document.getElementById('sbd-music-note');
   const fid = document.getElementById('sbd-audio').value;
   const path = document.getElementById('sbd-path').value.trim();
@@ -138,10 +188,24 @@ function _sbdSpec() {
   };
 }
 
-function _sbdOut(html, cls) { document.getElementById('sbd-out').innerHTML = `<div class="${cls === 'err' ? 'sbd-err' : ''}">${html}</div>`; }
+function _sbdOut(html, cls) { document.getElementById('sbd-out').innerHTML = `<div class="${cls === 'err' ? 'sbd-err' : cls === 'hint' ? 'sbd-hint' : ''}">${html}</div>`; }
+
+function _sbdBars(res) {
+  const total = res.length_ms || 0, music = res.music_ms || 0, scale = Math.max(total, music, 1);
+  const pct = ms => (100 * ms / scale).toFixed(3) + '%';
+  const seg = (name, a, b, color) => `<div class="sbd-seg" style="left:${pct(a)};width:${pct(b - a)};background:${color}" data-tooltip="${_sbdEsc(name)} · ${_sbdFmt(a)}–${_sbdFmt(b)}"><span>${_sbdEsc(name)}</span></div>`;
+  const lights = (res.parts || []).map(r => seg(r.name, r.start_ms, r.end_ms, _sbdColor(r.name))).join('');
+  const musicBar = music ? `<div class="sbd-seg" style="left:0;width:${pct(music)};background:${_SBD_MUSIC}"><span>${_sbdEsc(t('Music'))} ${_sbdFmt(music)}</span></div>` : '';
+  const gap = (music && total < music) ? `<div class="sbd-gap" style="left:${pct(total)};width:${pct(music - total)}" data-tooltip="${_sbdEsc(t('Not covered by any part'))}"></div>` : '';
+  const over = (music && total > music) ? `<div class="sbd-gap" style="left:${pct(music)};width:${pct(total - music)}" data-tooltip="${_sbdEsc(t('Past the end of the music'))}"></div>` : '';
+  return `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Parts'))}</span><div class="sbd-bar">${lights}${gap}</div></div>`
+       + (music ? `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Music'))}</span><div class="sbd-bar">${musicBar}${over}</div></div>` : '')
+       + `<div class="sbd-bar-row"><span class="sbd-bar-lbl"></span><div class="sbd-ruler"><span>0:00</span><span>${_sbdFmt(scale)}</span></div></div>`;
+}
 
 function _sbdShowPlan(res) {
   (res.parts || []).forEach((r, i) => { const el = document.getElementById('sbd-start-' + i); if (el) el.textContent = _sbdFmt(r.start_ms); if (_sbd.parts[i]) _sbd.parts[i].start_ms = r.start_ms; });
+  document.getElementById('sbd-bars').innerHTML = _sbdBars(res);
   const total = t('Total {0}', _sbdFmt(res.length_ms || 0)) + (res.music_ms ? ' · ' + t('music {0}', _sbdFmt(res.music_ms)) : '');
   const warns = (res.warnings || []).map(w => `<div class="sbd-warn">⚠ ${_sbdEsc(w)}</div>`).join('');
   return `<div>${_sbdEsc(total)}</div>${warns}`;
@@ -149,7 +213,7 @@ function _sbdShowPlan(res) {
 
 async function sbdPreview() {
   const res = await _sbdPost('/api/songbuilder/preview');
-  if (res.error) { _sbdOut(_sbdEsc(res.error), 'err'); return; }
+  if (res.error) { document.getElementById('sbd-bars').innerHTML = ''; _sbdOut(_sbdEsc(res.error), 'hint'); return; }
   document.getElementById('sbd-out').innerHTML = _sbdShowPlan(res);
 }
 

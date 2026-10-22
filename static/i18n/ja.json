@@ -4281,8 +4281,6 @@
  "Song Builder": "ソングビルダー",
  "Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track.": "パートの表から曲のShowを作ります。各パートにルック・長さ・繰り返しを指定し、音楽は1トラックです。",
  "Build a song’s Show from a table of parts, with one music track.": "パートの表から曲のShowを作ります。音楽は1トラックです。",
- "Song name": "曲名",
- "Built before": "作成済み",
  "Music (one track, never cut)": "音楽（1トラック、カットしない）",
  "Look (scene or chaser)": "ルック（シーンまたはチェイサー）",
  "Part": "パート",
@@ -4299,7 +4297,6 @@
  "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "長さ：秒（5s）、時刻（0:05）、小節（8 bars）、拍（16 beats）。同じパート名の行は同じトラックを共有します。繰り返しはパートを連続して置きます。",
  "— music file by path —": "— パスで指定する音楽ファイル —",
  "— a new song —": "— 新しい曲 —",
- "Search a scene or chaser…": "シーンまたはチェイサーを検索…",
  "Uses the sound function “{0}” already in the show.": "ショーにある音声ファンクション「{0}」を使います。",
  "Not found on this computer: check the path.": "このコンピューターに見つかりません。パスを確認してください。",
  "Found, {0} long.": "見つかりました。長さ {0}。",
@@ -4307,5 +4304,14 @@
  "Total {0}": "合計 {0}",
  "music {0}": "音楽 {0}",
  "✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist.": "✓ Show「{0}」を作成しました（ID {1}）。Setlistで曲に割り当ててください。",
- "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ Show「{0}」を作成しました。準備ができたら「新しいファイルとして保存…」を。"
+ "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ Show「{0}」を作成しました。準備ができたら「新しいファイルとして保存…」を。",
+ "e.g. Galvanize": "例：Galvanize",
+ "Shows built here": "ここで作成したShow",
+ "Pick a look": "ルックを選ぶ",
+ "Pick a scene or chaser…": "シーンまたはチェイサーを選ぶ…",
+ "No results": "結果なし",
+ "Parts": "パート",
+ "Not covered by any part": "どのパートにも含まれていません",
+ "Past the end of the music": "音楽の終わりを過ぎています",
+ "Music": "音楽"
 }

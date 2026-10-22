@@ -4281,8 +4281,6 @@
  "Song Builder": "Song Builder",
  "Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track.": "Baue die Show eines Songs aus einer Tabelle von Teilen: je ein Look, eine Länge und eine Wiederholung, dazu eine Musikspur.",
  "Build a song’s Show from a table of parts, with one music track.": "Baue die Show eines Songs aus einer Tabelle von Teilen, mit einer Musikspur.",
- "Song name": "Songname",
- "Built before": "Schon gebaut",
  "Music (one track, never cut)": "Musik (eine Spur, nie geschnitten)",
  "Look (scene or chaser)": "Look (Szene oder Chaser)",
  "Part": "Teil",
@@ -4299,7 +4297,6 @@
  "Length: seconds (5s), a time (0:05), bars (8 bars) or beats (16 beats). Rows with the same part name share a track. Repeat puts the part back to back.": "Länge: Sekunden (5s), eine Zeit (0:05), Takte (8 bars) oder Schläge (16 beats). Zeilen mit gleichem Namen teilen eine Spur. Wiederholen reiht den Teil hintereinander.",
  "— music file by path —": "— Musikdatei per Pfad —",
  "— a new song —": "— ein neuer Song —",
- "Search a scene or chaser…": "Szene oder Chaser suchen…",
  "Uses the sound function “{0}” already in the show.": "Nutzt die Audiofunktion „{0}“, die schon in der Show ist.",
  "Not found on this computer: check the path.": "Auf diesem Computer nicht gefunden: prüfe den Pfad.",
  "Found, {0} long.": "Gefunden, {0} lang.",
@@ -4307,5 +4304,14 @@
  "Total {0}": "Gesamt {0}",
  "music {0}": "Musik {0}",
  "✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist.": "✓ Show „{0}“ gebaut (ID {1}). Weise ihn in der Setlist einem Song zu.",
- "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ Show „{0}“ gebaut — Als neue Datei speichern… wenn du soweit bist."
+ "✓ Show “{0}” built — Save as new file… when you’re ready.": "✓ Show „{0}“ gebaut — Als neue Datei speichern… wenn du soweit bist.",
+ "e.g. Galvanize": "z. B. Galvanize",
+ "Shows built here": "Hier gebaute Shows",
+ "Pick a look": "Look wählen",
+ "Pick a scene or chaser…": "Szene oder Chaser wählen…",
+ "No results": "Keine Ergebnisse",
+ "Parts": "Teile",
+ "Not covered by any part": "Von keinem Teil abgedeckt",
+ "Past the end of the music": "Über das Ende der Musik hinaus",
+ "Music": "Musik"
 }

@@ -753,6 +753,8 @@ function _updatePoolAssignBtn() {
       && [..._selectedSongs].some(i => !!_songRows[i]?.qxw_id);
     clrBtn.disabled = !hasAssign || !_selectedSlot;
   }
+  const sp = document.getElementById('btn-split-show');
+  if (sp) sp.disabled = !_splitCandidate();
 }
 
 // ── Assignment actions ────────────────────────────────────────────────────────
@@ -1409,4 +1411,82 @@ async function slTabletPage(opts = {}) {
   const blob = await r.blob();
   const saved = await saveFileWithPicker(blob, `${title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_')}_setlist.html`, null, 'Save the tablet page as');
   if (saved) setStatus(`Tablet page saved → ${saved}. Open it on the tablet (AirDrop, mail, cloud drive).`, 'ok');
+}
+
+
+// ── v3.9.8 Split a Show into sections ─────────────────────────────────────────
+// The Show picked in the function list, or else the Show of the selected song.
+function _splitCandidate() {
+  const pick = _selectedPoolIdx >= 0 ? _poolFiltered[_selectedPoolIdx] : null;
+  if (pick && pick.type === 'Show') return pick;
+  const row = _selectedSongs.size === 1 ? _songRows[[..._selectedSongs][0]] : null;
+  const fn = row && row.qxw_id ? _functions.find(f => f.id === row.qxw_id) : null;
+  return fn && fn.type === 'Show' ? fn : null;
+}
+
+let _splitShowId = '';
+
+function _splitRowHtml(name, at, first) {
+  return `<div class="sl-split-row" style="display:flex;gap:8px;margin-bottom:6px">`
+    + `<input class="field-input sl-split-name" type="text" value="${_esc(name)}" placeholder="${_esc(t('Section'))}" style="flex:1">`
+    + `<input class="field-input sl-split-at" type="text" value="${_esc(at)}" placeholder="0:00" style="width:110px"${first ? ' readonly' : ''}>`
+    + (first ? '<span style="width:28px"></span>' : `<button class="btn btn-surface" style="width:28px;padding:0" onclick="this.closest('.sl-split-row').remove()" aria-label="${_esc(t('Remove'))}">×</button>`)
+    + `</div>`;
+}
+
+function slSplitAddRow() {
+  const box = document.getElementById('sl-split-rows');
+  if (box) box.insertAdjacentHTML('beforeend', _splitRowHtml('', '', false));
+}
+
+async function slSplitOpen() {
+  const fn = _splitCandidate();
+  if (!fn) return;
+  const info = await (await fetch('/api/setlist/split/info?id=' + encodeURIComponent(fn.id))).json();
+  if (info.error) { setStatus(info.error, 'error'); return; }
+  _splitShowId = fn.id;
+  const secs = (info.length_ms / 1000).toFixed(info.length_ms % 1000 ? 1 : 0);
+  document.getElementById('sl-split-intro').textContent =
+    t('“{0}” is {1} s long. One new Show per section, one cue each. The original Show is not changed.', info.name, secs);
+  document.getElementById('sl-split-bpm').value = info.bpm || '';
+  document.getElementById('sl-split-bpb').value = info.beats_per_bar || 4;
+  document.getElementById('sl-split-rows').innerHTML = _splitRowHtml(t('Section') + ' 1', '0:00', true) + _splitRowHtml(t('Section') + ' 2', '', false);
+  document.getElementById('sl-split-out').textContent = '';
+  document.getElementById('sl-split-modal').style.display = '';
+}
+
+function slSplitClose() { document.getElementById('sl-split-modal').style.display = 'none'; }
+
+function _splitBody() {
+  return {
+    show_id: _splitShowId,
+    bpm: document.getElementById('sl-split-bpm').value.trim(),
+    beats_per_bar: document.getElementById('sl-split-bpb').value.trim(),
+    sections: [...document.querySelectorAll('#sl-split-rows .sl-split-row')].map(r => ({
+      name: r.querySelector('.sl-split-name').value.trim(), at: r.querySelector('.sl-split-at').value.trim() })),
+  };
+}
+
+function _splitShow(out, res) {
+  const lines = (res.sections || []).map(s => `${_esc(s.name)}: ${(s.start_ms / 1000).toFixed(1)}–${(s.end_ms / 1000).toFixed(1)} s, ${s.items} ${_esc(t('item(s)'))}`);
+  const warns = (res.warnings || []).map(w => `<div style="color:var(--warning-text)">⚠ ${_esc(w)}</div>`).join('');
+  out.innerHTML = lines.join('<br>') + warns;
+}
+
+async function slSplitPreview() {
+  const out = document.getElementById('sl-split-out');
+  const res = await _apiPost('/api/setlist/split/preview', _splitBody());
+  if (res.error) { out.innerHTML = `<span style="color:var(--error-text, #e66)">${_esc(res.error)}</span>`; return; }
+  _splitShow(out, res);
+}
+
+async function slSplitApply() {
+  const out = document.getElementById('sl-split-out');
+  const res = await _apiPost('/api/setlist/split/apply', _splitBody());
+  if (res.error) { out.innerHTML = `<span style="color:var(--error-text, #e66)">${_esc(res.error)}</span>`; return; }
+  slSplitClose();
+  await _fetchFunctions();
+  setStatus(t('✓ {0} Shows made: {1}. Assign them to songs, one cue each.', res.ids.length, res.names.join(', ')) +
+            (res.warnings.length ? ' ⚠ ' + t('{0} item(s) run past a cut and were kept whole: see History.', res.warnings.length) : ''),
+            res.warnings.length ? 'warn' : 'ok');
 }

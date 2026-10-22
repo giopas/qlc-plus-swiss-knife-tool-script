@@ -290,7 +290,7 @@ The idea: a setlist cue plays a QLC+ Show (a timeline made in the Show Manager) 
    - A Doctor check for an audio or video file that is not found on this computer, with a note that the file has to travel with the show.
    - *Take the show elsewhere* lists the audio and video files a Show uses (and may pack them in the zip).
    - The Setlist keeps what was added to a Show: either it warns that audio put into a copy is lost on the next Apply, or it carries the extra tracks over to the new copy. The wiki says to edit the original Show.
-3. **Split at markers.** One Show becomes one Show per section (verse, chorus 2) with one cue per section. It warns when an item crosses a cut instead of cutting it silently, and it is recorded in the recipe like any other change.
+3. **Split at markers — built on `feat/v3.9.8` (23 October 2026): a *Split Show…* dialog in the Setlist; cut times typed as a time or as a bar or beat at a BPM (giopas's choice); `core/show_split.py`; tests in `tests/test_shows_398.py`. A REAPER marker CSV import stays a possible later input.** Original plan: One Show becomes one Show per section (verse, chorus 2) with one cue per section. It warns when an item crosses a cut instead of cutting it silently, and it is recorded in the recipe like any other change.
 
 Music is optional in a Show: a Show can be lights only, and an audio file is one more track. When a Show has audio, the audio and the lights stay in step inside that Show.
 

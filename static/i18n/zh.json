@@ -4277,5 +4277,16 @@
  "Show {0} s · cut off after {1} s": "Show {0} 秒 · {1} 秒后被截断",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Show在自己的时间线上播放。cue设为等待踏板时会播放到结束，再踩一次才前进。",
  "Show {0} s": "Show {0} 秒",
- "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Show在自己的时间线上运行，In、Out和BPM对它不起作用。请让Hold保持“等待踏板”。"
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Show在自己的时间线上运行，In、Out和BPM对它不起作用。请让Hold保持“等待踏板”。",
+ "Split Show…": "拆分Show…",
+ "Split a Show into sections": "将Show拆分为段落",
+ "Section": "段落",
+ "Beats per bar": "每小节拍数",
+ "+ Add section": "+ 添加段落",
+ "A start is a time (1:32 or 92.5s) or a bar or beat (bar 17, beat 65; they need the BPM). The first section starts at 0:00.": "起点可以是时间（1:32 或 92.5s），也可以是小节或拍（bar 17、beat 65，需要BPM）。第一段从0:00开始。",
+ "“{0}” is {1} s long. One new Show per section, one cue each. The original Show is not changed.": "“{0}”长{1}秒。每段生成一个新Show，各对应一个cue。原Show不会改变。",
+ "item(s)": "项",
+ "✓ {0} Shows made: {1}. Assign them to songs, one cue each.": "✓ 已创建{0}个Show：{1}。请分配给歌曲，每首一个cue。",
+ "{0} item(s) run past a cut and were kept whole: see History.": "{0}个项目越过切点，已完整保留：见历史记录。",
+ "Cut the selected Show into one Show per section, so each can be a cue. The original stays.": "把所选Show按段落切成多个Show，每个都可作为cue。原Show保留。"
 }

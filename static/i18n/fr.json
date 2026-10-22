@@ -4226,5 +4226,16 @@
  "Show {0} s · cut off after {1} s": "Show {0} s · coupé après {1} s",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Un Show suit sa propre timeline. Avec la cue qui attend la pédale, il va jusqu’au bout, puis l’appui suivant passe à la suite.",
  "Show {0} s": "Show {0} s",
- "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Un Show suit sa propre timeline : In, Out et BPM ne le concernent pas. Laissez Hold sur « Attendre la pédale »."
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Un Show suit sa propre timeline : In, Out et BPM ne le concernent pas. Laissez Hold sur « Attendre la pédale ».",
+ "Split Show…": "Diviser le Show…",
+ "Split a Show into sections": "Diviser un Show en sections",
+ "Section": "Section",
+ "Beats per bar": "Temps par mesure",
+ "+ Add section": "+ Ajouter une section",
+ "A start is a time (1:32 or 92.5s) or a bar or beat (bar 17, beat 65; they need the BPM). The first section starts at 0:00.": "Un début est un temps (1:32 ou 92.5s) ou une mesure ou un temps (bar 17, beat 65 ; il faut les BPM). La première section commence à 0:00.",
+ "“{0}” is {1} s long. One new Show per section, one cue each. The original Show is not changed.": "« {0} » dure {1} s. Un nouveau Show par section, une cue chacun. Le Show d’origine n’est pas modifié.",
+ "item(s)": "élément(s)",
+ "✓ {0} Shows made: {1}. Assign them to songs, one cue each.": "✓ {0} Shows créés : {1}. Assignez-les aux morceaux, une cue chacun.",
+ "{0} item(s) run past a cut and were kept whole: see History.": "{0} élément(s) dépassent une coupe et ont été gardés entiers : voir l’Historique.",
+ "Cut the selected Show into one Show per section, so each can be a cue. The original stays.": "Découpe le Show choisi en un Show par section, chacun peut être une cue. L’original reste."
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retake the README screenshots (screenshots/01..18) with Playwright.
+"""Retake the README screenshots (screenshots/01..18 and 25) with Playwright.
 
 Easier: python3 tools/shots.py readme (starts the app, compares, contact sheet).
 
@@ -140,6 +140,16 @@ def main():
         pg.wait_for_timeout(500)
         pg.get_by_role("button", name="Opened file").first.click()
         shot("17-compare.png", None, 2500)
+        # 25 · Song Builder (3.9.8): the demo song, its parts and the bar next to the music
+        load(os.path.join(CORPUS, "SongBuilder_demo.qxw"))
+        pg.click("#sn-songbuilder")
+        pg.wait_for_timeout(1200)
+        try:
+            pg.evaluate("async () => { const l = await (await fetch('/api/songbuilder/list')).json();"
+                        " const s = l.find(x => x.name === 'Demo Song'); await sbdOpen(s.id); }")
+        except Exception as e:  # noqa: BLE001
+            print("  ! songbuilder:", str(e)[:120])
+        shot("25-song-builder.png", None, 1500)
         b.close()
 
 

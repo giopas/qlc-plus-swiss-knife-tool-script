@@ -458,3 +458,28 @@ def test_stage_monitor_takes_views_and_cards(work):
         {"id": cid, "label": "", "mode": "read", "steps": {"2": {"card": {"tuning": "Drop D", "bpm": 120}}}}]})
     assert d["config"]["views"][0]["id"] == "keys"                       # cleaned like any other setting
     assert d["config"]["lists"][0]["steps"]["2"]["card"] == {"tuning": "Drop D", "bpm": 120}
+
+
+def _call(work, tool, **args):
+    r = work.rpc("tools/call", {"name": tool, "arguments": args})["result"]
+    assert not r.get("isError"), r
+    return json.loads(r["content"][0]["text"])
+
+
+def test_song_builder_tool_previews_then_builds(work):
+    work.ok("open_show", path=str(work.folder / "Pub_6fix.qxw"))
+    assert work.ok("song_builder")["built_here"] == []
+    import xml.etree.ElementTree as ET
+    ids = [f.get("ID") for f in ET.parse(work.folder / "Pub_6fix.qxw").getroot().iter()
+           if f.tag.endswith("Function") and f.get("Type") == "Scene"][:2]
+    table = {"name": "MCP song", "unit": "seconds",
+             "parts": [{"name": "Intro", "function_id": ids[0], "length": "8s"},
+                       {"name": "Verse", "function_id": ids[1], "length": "0:12"}]}
+    p = _call(work, "song_builder", apply=False, **table)
+    assert p["length_ms"] == 20000 and [r["start_ms"] for r in p["parts"]] == [0, 8000]
+    b = _call(work, "song_builder", **table)
+    assert "MCP song" in json.dumps(b)
+    listed = work.ok("song_builder")["built_here"]
+    assert [s["name"] for s in listed] == ["MCP song"]
+    assert work.ok("song_builder", show_id=listed[0]["id"])["parts"][1]["length"] in ("0:12", "12s")
+    assert "song_builder" in json.dumps(work.ok("guide", tool="song_builder"))

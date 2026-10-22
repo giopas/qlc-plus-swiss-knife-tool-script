@@ -35,7 +35,8 @@ def doctor_counts() -> dict:
     from core.doctor import check
     from routes.doctor_routes import _defs
     st = workspace._state
-    rep = check(st['qxw_root'], _defs(st.get('path') or ''))
+    _p = st.get('path') or ''
+    rep = check(st['qxw_root'], _defs(_p), base_dir=os.path.dirname(os.path.abspath(_p)) if _p else '')
     counts = dict(rep.severity_counts())
     from core.doctor.report import TITLES
     rules: dict = {}

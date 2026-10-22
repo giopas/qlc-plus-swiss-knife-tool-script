@@ -5,7 +5,21 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
-## [Unreleased]
+## [3.9.8] — 2026-10-23 — Shows in the Setlist and the Song Builder
+
+### Added — Shows in the Setlist (3.9.8)
+
+A cue list can already play a QLC+ Show (a timeline) for a click song and a plain scene for the others; this release makes the tool see what is inside a Show.
+
+- **Doctor.** An empty Show is flagged (D004); a Show with no light on its timeline counts as a dark song in the Setlist (D018). **D024** warns when an Audio or Video file is not on this computer. **D025** warns when a cue lasts less than the Show it plays, which cuts the Show off.
+- **Setlist.** A song that is a Show gets a pill with its length (`Show 90 s`), or a warning when the cue would cut it off. Apply tells you when it replaced a copy of a Show you had edited inside QLC+ (the cues are rebuilt from the originals on every Apply).
+- **Take the show elsewhere.** The READ ME lists the sound and video files the show plays and whether each was found. The files themselves are not packed.
+- **Song Builder (new tool, group 4).** A song's Show built from a table: one row per part with a look (scene or chaser), a length (counted in seconds, bars or beats, one choice for the whole song; or *to the end* of the music; or *until* a point from the start), a repeat, a fade in and out and, for a chaser, beats per step. One music track that is never cut: a sound function already in the show, or a file by path (the length of `.wav` and most `.mp3` files is read). Fades are made as a copy of the scene with that fade; a chaser copy loops and follows the BPM. Parts with the same name share a track, as in a hand-made Show. A second build replaces the Show and the copies of the first; the table is kept on the Show so it can be opened again. A step in the History, with Undo. A coloured bar, there from the start, shows the parts next to the music's own bar and the free time that is left (like a disk partition map), and updates as you type. Rows can be copied (verses, refrains). Looks are picked from the Setlist's function list. Wiki page *Song-Builder*.
+- **Dictionary draft** describes a Show (length, what it plays). `get_functions` rows carry `show_ms`; a Show's `contains` lists the functions on its tracks.
+- **Song Builder details.** The music box has an explicit *no music* choice (the path boxes appear only for *music file by path*). Fade boxes: empty keeps the scene's own fade, `0` makes a copy with no fade. The Setlist's copy of a built Show is no longer listed under *Shows built here*.
+- **Demo and test shows.** `tests/corpus/SongBuilder_demo.qxw` (QLC+ 5.3, two songs built by the Song Builder, one with a short music file and one without), made by `tools/make_songbuilder_sample.py`; wiki page *Test-Shows* lists every file and the QLC+ version it was written by. The README screenshot set gains `25-song-builder.png`.
+- **Claude.** New tool `song_builder` (preview with `apply=false`, build, list, read a table back) and its guide entry; the wiki page *Claude-Tools* is regenerated. A ⇥ button in each length box fills the number that ends the part where the music ends.
+- **Security.** Song Builder: part, show and music names are escaped everywhere they are drawn and a look is chosen through a data attribute, not an inline handler; at most 300 parts, 3000 items and 24 hours; names, paths and music only as plain text (no control characters, sound files only, only the first 16 KB of a file is read); the table stored on a Show is ignored if it is larger than 200 KB or not a table. The XSS probe now visits the Song Builder screen.
 
 ---
 

@@ -262,9 +262,10 @@ function _renderSongList() {
       originHtml = `<div class="fb-song-origin">→ ${parts.join(' ')}</div>`;
     }
     const kind = hasAssign ? _slMatchKind(row.txt_name, row.qxw_name || (fn && fn.name)) : '';
+    const showPill = (fn && fn.type === 'Show') ? _showPill(row, fn) : '';
     const tags = hasAssign
       ? `<div class="fb-song-tags">${fn && fn.type ? `<span class="badge badge-${_esc(fn.type)}">${_esc(fn.type)}</span>` : ''}`
-        + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + '</div>'
+        + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + showPill + '</div>'
       : '';
     const assignHtml = hasAssign
       ? `<div class="fb-song-assign">${_esc(row.qxw_name || row.qxw_id)}</div>`
@@ -293,6 +294,20 @@ function _renderSongList() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ── v3.9.8 Shows in the setlist ───────────────────────────────────────────────
+// A Show plays on its own timeline.  With the cue waiting for the pedal it plays
+// to its end; a cue with a time shorter than the Show cuts it off.
+function _showPill(row, fn) {
+  const len = Number(fn.show_ms) || 0;
+  const secs = (len / 1000).toFixed(len % 1000 ? 1 : 0);
+  const hold = Number(row.hold === undefined || row.hold === '' ? 4294967294 : row.hold);
+  const lasts = hold + (Number(row.in) || 0);
+  if (!len) return `<span class="fb-pill fb-pill-similar" data-tooltip="${_esc(t('This Show has nothing on its timeline.'))}">${_esc(t('empty Show'))}</span>`;
+  if (hold < 4294967294 && lasts < len)
+    return `<span class="fb-pill fb-pill-similar" data-tooltip="${_esc(t('The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.'))}">⚠ ${_esc(t('Show {0} s · cut off after {1} s', secs, (lasts / 1000).toFixed(lasts % 1000 ? 1 : 0)))}</span>`;
+  return `<span class="fb-pill fb-pill-same" data-tooltip="${_esc(t('A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.'))}">${_esc(t('Show {0} s', secs))}</span>`;
 }
 
 // ── v3.8.0 Per-song tempo ─────────────────────────────────────────────────────
@@ -417,6 +432,24 @@ function _updateTimingPanel() {
   const bpmEl = document.getElementById('timing-bpm'), beatsEl = document.getElementById('timing-beats');
   if (bpmEl)   bpmEl.value   = row.bpm || '';
   if (beatsEl) { beatsEl.value = row.beats || '1'; beatsEl.disabled = !row.bpm; }
+  _greyTimingForShow(row);
+}
+
+// A Show runs on its own timeline: QLC+ gives its items no fades and the tempo
+// fit works on chasers, so In, Out, BPM and Beats do not apply.  Hold still does.
+function _greyTimingForShow(row) {
+  const fn = row && row.qxw_id ? _functions.find(f => f.id === row.qxw_id) : null;
+  const isShow = !!(fn && fn.type === 'Show');
+  ['timing-in', 'timing-out', 'timing-bpm', 'timing-beats'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && isShow) el.disabled = true;
+    if (el) el.closest('.fb-timing-row')?.classList.toggle('fb-timing-na', isShow);
+  });
+  const note = document.getElementById('timing-show-note');
+  if (note) {
+    note.style.display = isShow ? '' : 'none';
+    note.textContent = isShow ? t('A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.') : '';
+  }
 }
 
 function _updateTimingLabel() {
@@ -736,30 +769,12 @@ function slAssignFromPool() {
   }
 
   if (targets.length === 1) {
-    // Single: in-place DOM update + flash + auto-advance
+    // Single: redraw the list (so the type badge, the Show pill and the "lights
+    // nothing" warning appear at once), flash the row, auto-advance
     const songIdx = targets[0];
+    _renderSongList();
     const listEl = document.querySelector(`#fb-song-list .fb-song-item[data-idx="${songIdx}"]`);
     if (listEl) {
-      const dot = listEl.querySelector('.fb-assign-dot');
-      if (dot) { dot.classList.add('fb-assign-dot-ok'); dot.title = `Assigned: ${fn.name}`; }
-      let assignDiv = listEl.querySelector('.fb-song-assign');
-      if (!assignDiv) {
-        assignDiv = document.createElement('div');
-        assignDiv.className = 'fb-song-assign';
-        listEl.querySelector('.fb-song-content')?.appendChild(assignDiv);
-      }
-      assignDiv.textContent = fn.name;
-      // Add/update origin line (child ID + VC button)
-      let originDiv = listEl.querySelector('.fb-song-origin');
-      const originParts = [`[${_esc(fn.id)}]`];
-      const vcCap = fn.vc_button || fn.vc_inherited;
-      if (vcCap) originParts.push(`${vcCap}`);
-      if (!originDiv) {
-        originDiv = document.createElement('div');
-        originDiv.className = 'fb-song-origin';
-        assignDiv.after(originDiv);
-      }
-      originDiv.textContent = `→ ${originParts.join(' ')}`;
       listEl.classList.add('row-flash');
       setTimeout(() => listEl.classList.remove('row-flash'), 600);
     }
@@ -769,6 +784,7 @@ function slAssignFromPool() {
     setStatus(`Assigned "${fn.name}" to ${targets.length} songs.`, 'ok');
   }
   _renderFnPool(_poolFiltered);
+  _updateTimingPanel();
 }
 
 function slClearAssignment() {
@@ -780,6 +796,7 @@ function slClearAssignment() {
   _renderSongList();
   _renderFnPool(_poolFiltered);
   _updatePoolAssignBtn();
+  _updateTimingPanel();
 }
 
 async function slDeleteWorkspaceClones() {

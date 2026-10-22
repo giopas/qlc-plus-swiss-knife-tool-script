@@ -138,10 +138,32 @@ in the show. Sliders, channel names and colours are then wrong.
 Definitions in this zip
 -----------------------
 {defs}
-{missing}{side}"""
+{missing}{side}{media}"""
 
 
-def _readme(show_name: str, rows: List[dict], side: List[str]) -> str:
+def _media_text(show_bytes: bytes, show_dir: str = "") -> str:
+    """The sound and video files the show plays.  They are not packed (they can be
+    large and are not ours to copy); the text says where each one was and whether
+    it was found, so they can be copied by hand next to the show."""
+    from core import media
+    try:
+        root = qxw_io.loads_qxw(show_bytes)
+    except Exception:  # noqa: BLE001 — the zip is built even from a file we cannot read
+        return ""
+    files = media.media_files(root, show_dir)
+    if not files:
+        return ""
+    label = {"found": "found", "missing": "NOT FOUND here", "url": "stream", "empty": "no file set",
+             "unknown": "not checked"}
+    return ("\nSound and video files (NOT in this zip)\n"
+            "---------------------------------------\n"
+            "The show plays these files. Copy them to the other computer and, if their\n"
+            "folder is different there, point each Audio / Video function to the new place.\n"
+            + "\n".join(f"  {r['source'] or '(none)'}   [{label.get(r['status'], r['status'])}; {r['name']}]"
+                       for r in files) + "\n")
+
+
+def _readme(show_name: str, rows: List[dict], side: List[str], media_text: str = "") -> str:
     travel = [r for r in rows if r["travels"]]
     defs = "\n".join(f"  {r['file']}   ({r['source']}; {r['fixtures']} fixture(s); mode "
                      f"{', '.join(r['modes']) or '?'})" for r in travel) or "  (none: every definition is in QLC+'s stock library)"
@@ -158,7 +180,7 @@ def _readme(show_name: str, rows: List[dict], side: List[str]) -> str:
                  "-------------------------------------------------------\n"
                  + "\n".join(f"  {os.path.basename(p)}" for p in side) + "\n")
     return _README.format(show=show_name, rule="=" * (len(show_name) + 53), defs=defs,
-                          missing=missing, side=sides)
+                          missing=missing, side=sides, media=media_text)
 
 
 def build_zip(show_name: str, show_bytes: bytes, rows: List[dict], show_path: str = "") -> bytes:
@@ -172,7 +194,8 @@ def build_zip(show_name: str, show_bytes: bytes, rows: List[dict], show_path: st
     for p in side:
         with open(p, "rb") as fh:
             files.setdefault(os.path.basename(p), fh.read())
-    files["READ ME.txt"] = _readme(show_name, rows, side).encode("utf-8")
+    files["READ ME.txt"] = _readme(show_name, rows, side, _media_text(
+        show_bytes, os.path.dirname(os.path.abspath(show_path)) if show_path else "")).encode("utf-8")
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for name in sorted(files):

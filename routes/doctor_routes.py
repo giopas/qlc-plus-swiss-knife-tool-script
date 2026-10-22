@@ -73,7 +73,8 @@ def run_check():
     if root is None:
         return jsonify({'error': 'No workspace open.'}), 400
     try:
-        rep = check(root, _defs(path), source=name)
+        rep = check(root, _defs(path), source=name,
+                    base_dir=os.path.dirname(os.path.abspath(path)) if path else '')
         return jsonify({
             'source': name, 'stats': rep.stats, 'summary': rep.severity_counts(),
             'counts': rep.counts(), 'titles': TITLES,

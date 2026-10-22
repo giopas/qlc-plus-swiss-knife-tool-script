@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
-from core import palettes, qxw_io, script_cmds
+from core import media, palettes, qxw_io, script_cmds
 from core.doctor.report import ERROR, INFO, WARNING, Finding, Report, make_report
 
 NONE_ID = "4294967295"          # QLC+ "no function" sentinel
@@ -111,8 +111,9 @@ def _int(s, default=None):
 class _Workspace:
     """Indexed, read-only view of a namespace-stripped workspace."""
 
-    def __init__(self, root: ET.Element, defs):
+    def __init__(self, root: ET.Element, defs, base_dir: str = ""):
         self.root = root
+        self.base_dir = base_dir
         self.engine = root.find("Engine")
         if self.engine is None:
             self.engine = ET.Element("Engine")
@@ -368,6 +369,9 @@ def _d004_empty(ws: _Workspace):
                               {"function": fid, "steps": n})
         elif ftype == "Collection" and not f.findall("Step"):
             yield Finding("D004", WARNING, ws.fn_loc(fid), "empty collection", {"function": fid})
+        elif ftype == "Show" and not media.show_items(f):
+            yield Finding("D004", WARNING, ws.fn_loc(fid), "empty show (nothing on its timeline)",
+                          {"function": fid})
 
 
 def _scene_pairs(v: ET.Element) -> Dict[int, int]:
@@ -638,6 +642,16 @@ def _lights_nothing(ws: _Workspace, fid: str, seen=None) -> bool:
     if t in ("Chaser", "Collection"):
         steps = [(s.text or "").strip() for s in f.findall("Step") if (s.text or "").strip()]
         return all(_lights_nothing(ws, x, seen) for x in steps)
+    if t == "Show":
+        # a Show lights something when one of its items does; sound and
+        # video items add no light
+        for it in media.show_items(f):
+            g = ws.functions.get(str(it["function"]))
+            if g is not None and g.get("Type") in media.MEDIA_TYPES:
+                continue
+            if not _lights_nothing(ws, str(it["function"]), set(seen)):
+                return False
+        return True
     return False
 
 
@@ -659,6 +673,50 @@ def _d018_setlist_dark_song(ws: _Workspace):
                               f"cue {n} '{name}' lights nothing (no steps or empty scene) — "
                               "the stage goes dark on that song",
                               {"widget": w.get("ID"), "function": sid, "cue": n})
+
+
+def _d024_media_missing(ws: _Workspace):
+    """An Audio / Video function whose file is not on this computer: the show
+    plays, but in silence (or with a black screen)."""
+    for row in media.media_files(ws.root, ws.base_dir):
+        if row["status"] == "missing":
+            yield Finding("D024", WARNING, ws.fn_loc(row["id"]),
+                          f"{row['type'].lower()} file not found on this computer: {row['source']}",
+                          {"function": row["id"], "source": row["source"]})
+        elif row["status"] == "empty":
+            yield Finding("D024", WARNING, ws.fn_loc(row["id"]),
+                          f"{row['type'].lower()} function has no file set",
+                          {"function": row["id"], "source": ""})
+
+
+HOLD_INFINITE = 4294967294
+
+
+def _d025_show_cut(ws: _Workspace):
+    """A CueList step that runs a Show but lasts less than the Show: when the
+    step's time is up the chaser moves on and stops the Show half way."""
+    for w, page in ws.widgets:
+        if w.tag != "CueList":
+            continue
+        c = ws.functions.get((w.findtext("Chaser") or NONE_ID).strip())
+        if c is None or c.get("Type") != "Chaser":
+            continue
+        for n, st in enumerate(c.findall("Step"), 1):
+            sid = (st.text or "").strip()
+            f = ws.functions.get(sid)
+            if f is None or f.get("Type") != "Show":
+                continue
+            hold = _int(st.get("Hold"), 0)
+            if hold is None or hold >= HOLD_INFINITE:
+                continue
+            length = media.show_length_ms(f)
+            lasts = (_int(st.get("FadeIn"), 0) or 0) + hold
+            if length > lasts:
+                yield Finding("D025", WARNING, ws.widget_loc(w, page),
+                              f"cue {n} '{f.get('Name', '')}' lasts {lasts / 1000:g} s but the show "
+                              f"is {length / 1000:g} s long — it is cut off at {lasts / 1000:g} s",
+                              {"widget": w.get("ID"), "function": sid, "cue": n,
+                               "lasts_ms": lasts, "show_ms": length})
 
 
 def _d009_overlap(ws: _Workspace):
@@ -1012,7 +1070,7 @@ def _i008_qlc53_only(ws: _Workspace):
 # ═════════════════════════════════════════════════════════════════════════════
 
 def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
-          source: str = "") -> Report:
+          source: str = "", base_dir: str = "") -> Report:
     """Run every read-only check on a workspace tree and return a Report.
 
     *root*      ``ET.Element`` / ``ET.ElementTree`` (namespaced or stripped)
@@ -1023,7 +1081,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
     if isinstance(root, ET.ElementTree):
         root = root.getroot()
     root = qxw_io.strip_ns(copy.deepcopy(root))
-    ws = _Workspace(root, _normalise_defs(qxf_defs))
+    ws = _Workspace(root, _normalise_defs(qxf_defs), base_dir)
     allow = {str(a) for a in allow_fx}
     findings: List[Finding] = []
     layers: Dict[str, str] = {}
@@ -1037,6 +1095,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
                 _i004_layers(ws, layers), _i005_wizard_unused(ws), _i006_infrastructure(ws),
                 _i007_wizard_lost(ws), _i008_qlc53_only(ws),
                 _d021_mode_missing(ws), _d022_channel_count(ws), _d023_channel_beyond(ws),
+                _d024_media_missing(ws), _d025_show_cut(ws),
                 _i009_travels(ws)):
         findings.extend(gen)
     stats = {"fixtures": len(ws.fixture_els), "functions": len(ws.function_els),
@@ -1069,6 +1128,7 @@ def check_file(path: str, qxf_defs=None, *, allow_fx: Iterable[str] = ()) -> Rep
     if root.tag not in (qxw_io._NS_PREFIX + "Workspace", "Workspace"):
         return make_report(src, pre + [Finding(
             "D001", ERROR, src, f"root element is <{root.tag}>, not <Workspace>")], {})
-    rep = check(root, qxf_defs, allow_fx=allow_fx, source=src)
+    rep = check(root, qxf_defs, allow_fx=allow_fx, source=src,
+                base_dir=os.path.dirname(os.path.abspath(path)))
     rep.findings[:0] = pre
     return rep

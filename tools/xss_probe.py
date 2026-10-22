@@ -22,9 +22,10 @@ from xml.sax.saxutils import escape
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
+sys.path.insert(0, ROOT)                      # shots.py imports app from the repo folder
 
 SCREENS = ["start", "quickstart", "fixtures", "reducer", "porter", "brightness", "looks", "vceditor", "stage",
-           "setlist", "triggers", "dictionary", "stagemon", "cabling", "doctor", "wizard", "upgrade", "compare",
+           "setlist", "songbuilder", "triggers", "dictionary", "stagemon", "cabling", "doctor", "wizard", "upgrade", "compare",
            "idbrowser", "library", "showbook"]
 # buttons that only read; anything that writes, deletes, quits or leaves is never pressed
 SKIP = r"save|export|apply|delete|remove|quit|write|install|replace|discard|clear|reset|stop|download|kill|travel|undo|redo"
@@ -76,7 +77,7 @@ async def probe(url: str, show: str) -> int:
             flag = "FAIL" if ran or live else "ok"
             bad += 1 if ran or live else 0
             print(f"  {s:<11} {flag:<4} ran={ran} injected={live} payload text shown={shown}")
-        await page.evaluate("go('showbook'); sbSelectAll(); sbGenerate()")
+        await page.evaluate("go('showbook'); sbSelectAll(); void sbGenerate()")
         await page.wait_for_timeout(5000)
         ran, live = await page.evaluate("[(window.__xss || []).length, document.querySelectorAll('img[src=x]').length]")
         print(f"  {'preview':<11} {'FAIL' if ran or live else 'ok':<4} ran={ran} injected={live}")

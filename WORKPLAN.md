@@ -260,6 +260,52 @@ Chords and lyrics following the setlist on the stage tablet. **The source is not
 
 **2. Porting by eye.** The Function Porter already translates between fixture types by capability (`core/capability_map.py`). What is missing is seeing it: a table per fixture pair (source channel, what it does, target channel) shown before porting, and the choices kept as a Library item for the next port between the same two models.
 
+### Later · Shows in the setlist (idea of 22 October 2026)
+
+**Status: idea, not scheduled. Test it in QLC+ first.**
+
+The idea: a setlist cue plays a QLC+ Show (a timeline made in the Show Manager) for a song played to a click, and a plain scene or chaser for the songs without one. A CueList step is a step of a chaser, and a chaser step can start any function, a Show included. With the hold at infinite, which is the Setlist's default, the cue waits for the pedal. The next cue should stop the Show before it, but that is not yet checked.
+
+**What the code does today** (read on 22 October at 3.9.7):
+
+- The Setlist already lists Show and Audio functions in its pool and copies a song's function whatever its type, with an infinite hold.
+- The Doctor and the Porter already read a Show's `Track` and `ShowFunction` elements.
+- A Show is a timeline of items, and QLC+ cannot start one at a chosen point. To start a song at its second chorus, the song has to be one Show per section.
+
+**What is missing**
+
+1. `contains` is built from `Step` elements only (`core/workspace.py`, when a show is read and when a clone is built), so a Show looks empty in the Dictionary and in the button hints.
+2. The Doctor's dark-song test (`_lights_nothing`, D018) says nothing about a Show, so an empty Show is never flagged.
+3. No file of the test corpus holds a Show.
+4. Nothing cuts a Show into sections.
+
+**Steps, in this order**
+
+1. **Hand test in QLC+ 5.3.** Two small Shows as two steps of a chaser on a CueList, hold infinite. Does the next click stop the first Show, and its audio track if it has one? The answer decides the rest.
+   *Simulated on 22 October on a copy of a test show (one scene song, two Show songs): the Setlist built a chaser of three steps with infinite holds and a full copy of the Show for each song (3 tracks, 6 items), the CueList points at it, and the Doctor reported no new error. The only finding was an empty scene picked by mistake in the test. Not yet played in QLC+.*
+   *Played in QLC+ on 22 October (giopas, a ready-made test file with three plain scenes and two Shows, followed on a tablet through the web client): Play starts step 1, and the next key moves from scene to Show to scene to Show to scene. With infinite holds nothing advanced by itself. A Show that reaches its end goes to black and the list waits for the next click. Confirmed in a second run the same evening (giopas): the next click cuts a running Show completely, and nothing of it comes back over the next scene. Also confirmed: a Show followed directly by a Show replaces it with no trace of the first; Previous brings a Show back from 0:00; Stop in the middle of a Show darkens everything at once. With an audio track in a Show, the sound starts together with the lights and stops at once on the next click and on Stop.*
+   **Result: step 1 passed on 22 October. A Setlist cue can play a Show, and the next click, Previous and Stop behave as wanted, sound included. The idea is feasible.**
+   Two things the test showed about audio: the audio function stores the file as an absolute path on the computer where it was added (here a cloud-synced folder, which can be online-only at a gig), and the audio was added to the Setlist's *copy* of a Show, which a later *Apply to the show* rebuilds from the original and would lose.
+2. **Show awareness — built on `feat/v3.9.8` (23 October 2026), awaiting release.** `core/media.py`; Doctor D004 (empty Show), D018 (Show with no light), D024 (missing sound or video file), D025 (cue shorter than its Show); `contains` and `show_ms`; Setlist Show pill; edited-copy warning on Apply; media list in the travel zip READ ME; dictionary draft; 13 tests in `tests/test_shows_398.py` (Shows built synthetically, not added to the corpus); 8 new sentences in 7 languages. Original plan: read the tracks into `contains`, a D018 case for a Show with no items, a Show in the test corpus with tests, a Setlist badge such as *Show, waits for the pedal*, and a mention in the wiki's Setlist page. From the audio test:
+   - A Doctor check for an audio or video file that is not found on this computer, with a note that the file has to travel with the show.
+   - *Take the show elsewhere* lists the audio and video files a Show uses (and may pack them in the zip).
+   - The Setlist keeps what was added to a Show: either it warns that audio put into a copy is lost on the next Apply, or it carries the extra tracks over to the new copy. The wiki says to edit the original Show.
+3. **Split at markers.** One Show becomes one Show per section (verse, chorus 2) with one cue per section. It warns when an item crosses a cut instead of cutting it silently, and it is recorded in the recipe like any other change.
+   **Dropped on 23 October 2026 (giopas): built and tried, then taken out again (commit 8a6a050, reverted).** A song with its music stays one Show and one cue. A Show item always plays from its start, so a sound that runs past a cut cannot be cut: it stays whole in the first section and stops when the next cue is pressed. Splitting a song into cues is left to the old way, done by hand in the cue list. Section splitting may come back as a small helper inside the Song Builder.
+
+Music is optional in a Show: a Show can be lights only, and an audio file is one more track. When a Show has audio, the audio and the lights stay in step inside that Show.
+
+**Song Builder — built on `feat/v3.9.8` on 23 October 2026 (decided with giopas: own tool in the side menu, everything in the first version, music added by path).** `core/song_builder.py`, `routes/songbuilder_routes.py`, `static/js/songbuilder.js`, wiki *Song-Builder*, `tests/test_song_builder.py`. A table of parts with a look, a length (one unit for the whole song: seconds, bars or beats at a BPM; also *to the end* of the music, last part only, and *until* a point counted from the start), a repeat, a copy button for rows, fades (made as a copy of the scene) and, for a chaser, beats per step (a looping copy fitted with `setlist_tempo.fit_chaser`); one music track, a sound function or a file by path. Parts of the same name share a track, as in giopas's own Shows (tracks Intro, Verse, Bridge, Refrain). The table is kept in the attribute `SwissKnifeSong` on the Show; a rebuild replaces the Show and its copies. From QLC+'s source: the Show runner passes no fade or speed to an item, a scene fades out with its own fade-out when stopped. Refined the same day after giopas's screenshots: a coloured bar there from the start with the free time hatched and named (like a disk map), unfinished rows drawn grey and hatched with the reason below the bar, the look picker's header fixed, picks through a data attribute (no inline handler). Security pass: escaping, caps (300 parts, 3000 items, 24 h), plain-text names and paths, 16 KB read of a music file, stored table capped at 200 KB; the XSS probe visits the screen (not run: no Playwright on the Mac VM, run `python3 tools/xss_probe.py` once). Version 3.9.8 and the CHANGELOG are dated 23 October 2026; Hand tests done by giopas on 23 October 2026: a 10-part song with music ends with the music, the Show plays as a cue, a 3 s fade in and out on a scene is visible (a scene's own fade is kept when the boxes are empty, `0` forces none). Still open by hand: a chaser copy that loops for the whole part. Demo show `tests/corpus/SongBuilder_demo.qxw` and wiki *Test-Shows* added; the screenshots (`python3 tools/shots.py readme`, new `25-song-builder.png`) are to be retaken by giopas before the release. **Release pending: giopas merges, tags and pushes.** Still to try by hand in QLC+: a chaser copy that loops for the whole length of its item; fades heard on a real build; the Show from a built song in the cue list. Not planned: a drag and drop timeline. Original notes:
+
+ A screen that builds a song's Show from sections, as a table and not as a timeline. What QLC+ does, read in its source on 22 October: a Show item has only a function, a start, a length, a colour and a lock; the Show runner starts the function at the start and stops it at the end of the item, and it never loops or stretches it and sets no fade. So fades, loops and lengths have to come from the functions themselves or from repeated items.
+
+- One row per section: a function picked from the pool (search by name, with its button and description), a length (seconds, or bars at a BPM), a repeat count, a fade in and out (made as a copy of the function with its own fade, as the Setlist's copies are) and a track.
+- A chaser is fitted to the section's tempo with the Setlist's tempo fit (`setlist_tempo.fit_chaser`).
+- Output: one Show with the sections back to back, and optionally one Show per section. That makes the section splitter of step 3 a by-product. It is recorded in the recipe, so a song structure can be applied to another show as a Profile.
+- Later, optional: a click track made by the tool as a plain audio file (standard library `wave`), written as a new file.
+- Not planned: a drag and drop timeline editor. QLC+ has one for fine hand work; at most a read-only picture of the Show.
+- To check in QLC+ first: does a chaser item longer than the chaser's own cycle keep looping (by its own run order), and does a scene fade out when its item ends.
+
 ## 3. Wishlist and dropped ideas
 
 **Wishlist** (no date)
@@ -267,6 +313,7 @@ Chords and lyrics following the setlist on the stage tablet. **The source is not
 | Item | Note |
 |---|---|
 | DAW markers to a song chaser | The band has song sessions with markers but uses no DAW at gigs. REAPER marker CSV only: each marker becomes a step, with infinite hold (pedal) or its duration (backing track). Fits after 3.8.0's tempo. |
+| Shows in the setlist | A cue plays a QLC+ Show for songs with a click. See *Later: Shows in the setlist* in section 2. |
 | Compare, more detail | Widget position and size, key and MIDI bindings, timings in seconds, a Markdown export. Compare stays read-only. |
 | Power planning | Circuits and powerCON chains from `PowerConsumption`, on the Cabling kit model. |
 | Cabling extras | A network switch or Wi-Fi between computer and node, cables in QLC+'s 3D view, trusses in 3D, links to shops. |

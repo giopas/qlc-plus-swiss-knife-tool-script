@@ -54,6 +54,7 @@ const _LAZY = {
   looks:      () => typeof looksInit              === 'function' && looksInit(),
   stage:      () => typeof stageInit              === 'function' && stageInit(),
   brightness: () => typeof ensureBrightnessLoaded === 'function' && ensureBrightnessLoaded(),
+  songbuilder: () => typeof sbdInit               === 'function' && sbdInit(),
   // initVcEditor() attaches the canvas mouse handlers (once); _vceLoad() re-reads the tree
   vceditor:   () => typeof vcEditorOnTabShow     === 'function' && vcEditorOnTabShow(),
   quickstart: () => typeof ensureQuickStartLoaded  === 'function' && ensureQuickStartLoaded(),
@@ -725,7 +726,7 @@ function _updateHeader(state) {
 // Tools that work on the open workspace show the same banner when none is open,
 // so "where do I load the file?" has one answer everywhere: Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
-const _WS_SCREENS = ['setlist', 'triggers', 'dictionary',
+const _WS_SCREENS = ['setlist', 'songbuilder', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
                      'wizard', 'upgrade', 'stagemon', 'cabling'];
 

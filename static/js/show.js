@@ -676,7 +676,9 @@ async function slApply() {
   const r = await fetch('/api/setlist/apply-all', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   const d = await r.json();
   if (!r.ok || d.error) { setStatus(d.error || 'Failed.', 'error'); return; }
-  if (d.skipped && d.skipped.length)
+  if (d.edited_copies && d.edited_copies.length)
+    setStatus(`⚠ Setlist built. You had changed the copy of a Show inside QLC+ (${d.edited_copies.join(', ')}); Apply rebuilt it from the original, so those additions are gone. Edit the original Show instead.`, 'warn');
+  else if (d.skipped && d.skipped.length)
     setStatus(`⚠ Setlist built, but ${d.skipped.length} song(s) have no function and are not in the cue list: ${d.skipped.join(', ')} — assign them and apply again.`, 'warn');
   else if (d.tempo && d.tempo.fitted)
     setStatus(`✓ Setlist chasers built in the show, ${d.tempo.fitted} song(s) timed to their BPM — Save as new file… when you're ready.`, 'ok');

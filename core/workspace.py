@@ -1931,58 +1931,6 @@ def reparse_after_vc_edit() -> None:
     _parse_cuelist_slots(root)
 
 
-# ── Split a Show into sections (3.9.8) ────────────────────────────────────────
-
-def _split_target(show_id: str):
-    if not _state['loaded'] or _state['qxw_root'] is None:
-        raise ValueError('No workspace loaded.')
-    engine = _state['qxw_root'].find('q:Engine', NS)
-    show = _find_by_id(engine, 'Function', str(show_id)) if engine is not None else None
-    if show is None or show.get('Type') != 'Show':
-        raise ValueError('That function is not a Show.')
-    names = {f.get('ID'): f.get('Name', '') for f in engine.findall('q:Function', NS)}
-    return engine, show, names
-
-
-def split_show_info(show_id: str) -> dict:
-    """Name, length and tempo of a Show, for the split dialog."""
-    from core import media
-    _engine, show, _names = _split_target(show_id)
-    td = show.find('q:TimeDivision', NS)
-    kind = (td.get('Type') if td is not None else '') or ''
-    bpm, bpb = 0, 4
-    if kind.startswith('BPM'):
-        try:
-            bpm = float(td.get('BPM', '0') or 0)
-        except ValueError:
-            bpm = 0
-        m = re.match(r'^BPM_(\d+)_\d+$', kind)
-        bpb = int(m.group(1)) if m else 4
-    return {'id': show_id, 'name': show.get('Name', ''), 'length_ms': media.show_length_ms(show),
-            'bpm': bpm, 'beats_per_bar': bpb}
-
-
-def split_show_preview(show_id: str, sections: list, bpm: float = 0, beats_per_bar: int = 4) -> dict:
-    from core import show_split
-    _engine, show, names = _split_target(show_id)
-    return show_split.plan(show, sections, bpm, beats_per_bar, names)
-
-
-def split_show_apply(show_id: str, sections: list, bpm: float = 0, beats_per_bar: int = 4) -> dict:
-    """Add one Show per section next to the original (which is not changed)."""
-    from core import show_split
-    engine, show, names = _split_target(show_id)
-    show_split.plan(show, sections, bpm, beats_per_bar, names)     # refuse bad input before the step opens
-    _show_touch('setlist', f"Show '{show.get('Name', '')}' split into sections")
-    first = max([_int(f.get('ID')) for f in engine.findall('q:Function', NS)] + [_state['highest_func_id']]) + 1
-    made, p = show_split.build(show, sections, first, bpm, beats_per_bar, names)
-    for el in made:
-        engine.append(el)
-    _state['highest_func_id'] = first + len(made) - 1
-    reparse_after_vc_edit()
-    return {'ids': [m.get('ID') for m in made], 'names': [m.get('Name') for m in made], **p}
-
-
 # Undo stack for VC edits: snapshots of <VirtualConsole> (deep copies) taken
 # before every server-side change (patch flush or structural op).
 _vc_undo: list = []

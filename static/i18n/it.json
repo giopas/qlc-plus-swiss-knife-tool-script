@@ -4252,16 +4252,5 @@
  "Show {0} s · cut off after {1} s": "Show {0} s · tagliato dopo {1} s",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Uno Show va sulla sua timeline. Con la cue in attesa del pedale arriva fino in fondo, poi la pressione successiva passa oltre.",
  "Show {0} s": "Show {0} s",
- "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Uno Show va sulla sua timeline: In, Out e BPM non valgono per lui. Lascia Hold su “Aspetta il pedale”.",
- "Split Show…": "Dividi lo Show…",
- "Split a Show into sections": "Dividi uno Show in sezioni",
- "Section": "Sezione",
- "Beats per bar": "Battiti per battuta",
- "+ Add section": "+ Aggiungi sezione",
- "A start is a time (1:32 or 92.5s) or a bar or beat (bar 17, beat 65; they need the BPM). The first section starts at 0:00.": "Un inizio è un tempo (1:32 o 92.5s) oppure una battuta o un battito (bar 17, beat 65; servono i BPM). La prima sezione inizia a 0:00.",
- "“{0}” is {1} s long. One new Show per section, one cue each. The original Show is not changed.": "«{0}» dura {1} s. Uno Show nuovo per sezione, una cue ciascuno. Lo Show originale non cambia.",
- "item(s)": "elemento/i",
- "✓ {0} Shows made: {1}. Assign them to songs, one cue each.": "✓ {0} Show creati: {1}. Assegnali alle canzoni, una cue ciascuno.",
- "{0} item(s) run past a cut and were kept whole: see History.": "{0} elemento/i superano un taglio e sono rimasti interi: vedi Cronologia.",
- "Cut the selected Show into one Show per section, so each can be a cue. The original stays.": "Taglia lo Show scelto in uno Show per sezione, così ognuno può essere una cue. L’originale resta."
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Uno Show va sulla sua timeline: In, Out e BPM non valgono per lui. Lascia Hold su “Aspetta il pedale”."
 }

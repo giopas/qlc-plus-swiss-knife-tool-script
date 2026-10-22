@@ -14,8 +14,6 @@ A cue list can already play a QLC+ Show (a timeline) for a click song and a plai
 - **Doctor.** An empty Show is flagged (D004); a Show with no light on its timeline counts as a dark song in the Setlist (D018). **D024** warns when an Audio or Video file is not on this computer. **D025** warns when a cue lasts less than the Show it plays, which cuts the Show off.
 - **Setlist.** A song that is a Show gets a pill with its length (`Show 90 s`), or a warning when the cue would cut it off. Apply tells you when it replaced a copy of a Show you had edited inside QLC+ (the cues are rebuilt from the originals on every Apply).
 - **Take the show elsewhere.** The READ ME lists the sound and video files the show plays and whether each was found. The files themselves are not packed.
-- **Split Show… (Setlist).** Cuts one Show into one Show per section (verse, chorus 2…). Each section starts at a time (`1:32`, `92.5s`) or at a bar or beat at a BPM (`bar 17`, `beat 65`; the BPM is read from the Show when it has one). The original is not changed. An item that runs past a cut is kept whole in the section where it starts and listed in History, never cut. It is a step in the History like any other change.
-- **Show cues grey out In, Out, BPM and Beats** (a Show runs on its own timeline); Hold stays.
 - **Dictionary draft** describes a Show (length, what it plays). `get_functions` rows carry `show_ms`; a Show's `contains` lists the functions on its tracks.
 
 ---

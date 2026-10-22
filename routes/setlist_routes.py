@@ -497,53 +497,6 @@ def apply_all():
         return jsonify({'error': _safe_err(e)}), 500
 
 
-# ── Split a Show into sections (3.9.8) ────────────────────────────────────────
-
-def _split_args(data):
-    try:
-        bpm = float(data.get('bpm') or 0)
-        bpb = int(data.get('beats_per_bar') or 4)
-    except (TypeError, ValueError):
-        raise ValueError('The BPM and the beats per bar must be numbers.')
-    if bpm < 0 or bpm > 400 or not 1 <= bpb <= 16:
-        raise ValueError('The BPM must be 20 to 400 and a bar has 1 to 16 beats.')
-    return str(data.get('show_id') or ''), data.get('sections') or [], bpm, bpb
-
-
-@bp.route('/split/info')
-def split_info():
-    try:
-        return jsonify(ws.split_show_info(request.args.get('id', '')))
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-
-
-@bp.route('/split/preview', methods=['POST'])
-def split_preview():
-    try:
-        sid, sections, bpm, bpb = _split_args(request.get_json(force=True) or {})
-        return jsonify(ws.split_show_preview(sid, sections, bpm, bpb))
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-
-
-@bp.route('/split/apply', methods=['POST'])
-def split_apply():
-    try:
-        from core import show
-        sid, sections, bpm, bpb = _split_args(request.get_json(force=True) or {})
-        out = ws.split_show_apply(sid, sections, bpm, bpb)
-        if out['warnings']:
-            show.set_detail('Items kept whole across a cut: ' + ' | '.join(out['warnings']))
-        show.close_step()
-        out['show'] = show.status()
-        return jsonify(out)
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': _safe_err(e)}), 500
-
-
 # ── PDF export ────────────────────────────────────────────────────────────────
 
 @bp.route('/<slot_id>/export-pdf', methods=['POST'])

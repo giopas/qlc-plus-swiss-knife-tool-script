@@ -4277,16 +4277,5 @@
  "Show {0} s · cut off after {1} s": "Show {0} s · abgeschnitten nach {1} s",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Eine Show läuft auf ihrer eigenen Timeline. Wartet der Cue auf das Pedal, läuft sie bis zum Ende; erst der nächste Tritt geht weiter.",
  "Show {0} s": "Show {0} s",
- "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Eine Show läuft auf ihrer eigenen Timeline: In, Out und BPM gelten für sie nicht. Lass Hold auf „Warten auf das Pedal“.",
- "Split Show…": "Show teilen…",
- "Split a Show into sections": "Eine Show in Abschnitte teilen",
- "Section": "Abschnitt",
- "Beats per bar": "Schläge pro Takt",
- "+ Add section": "+ Abschnitt hinzufügen",
- "A start is a time (1:32 or 92.5s) or a bar or beat (bar 17, beat 65; they need the BPM). The first section starts at 0:00.": "Ein Start ist eine Zeit (1:32 oder 92.5s) oder ein Takt bzw. Schlag (bar 17, beat 65; dafür braucht es die BPM). Der erste Abschnitt beginnt bei 0:00.",
- "“{0}” is {1} s long. One new Show per section, one cue each. The original Show is not changed.": "„{0}“ ist {1} s lang. Eine neue Show pro Abschnitt, je ein Cue. Die ursprüngliche Show bleibt unverändert.",
- "item(s)": "Element(e)",
- "✓ {0} Shows made: {1}. Assign them to songs, one cue each.": "✓ {0} Shows erstellt: {1}. Weise sie den Songs zu, je ein Cue.",
- "{0} item(s) run past a cut and were kept whole: see History.": "{0} Element(e) laufen über einen Schnitt hinaus und wurden ganz belassen: siehe Verlauf.",
- "Cut the selected Show into one Show per section, so each can be a cue. The original stays.": "Schneidet die gewählte Show in eine Show pro Abschnitt, jede kann ein Cue sein. Das Original bleibt."
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Eine Show läuft auf ihrer eigenen Timeline: In, Out und BPM gelten für sie nicht. Lass Hold auf „Warten auf das Pedal“."
 }

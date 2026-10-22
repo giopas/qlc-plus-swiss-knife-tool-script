@@ -4277,16 +4277,5 @@
  "Show {0} s · cut off after {1} s": "Show {0} 秒 · {1} 秒で途中終了",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Showは独自のタイムラインで再生されます。キューがペダル待ちなら最後まで再生され、次に踏むと進みます。",
  "Show {0} s": "Show {0} 秒",
- "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Showは独自のタイムラインで動くため、In・Out・BPMは効きません。Holdは「ペダル待ち」のままにしてください。",
- "Split Show…": "Showを分割…",
- "Split a Show into sections": "Showをセクションに分割",
- "Section": "セクション",
- "Beats per bar": "1小節の拍数",
- "+ Add section": "+ セクションを追加",
- "A start is a time (1:32 or 92.5s) or a bar or beat (bar 17, beat 65; they need the BPM). The first section starts at 0:00.": "開始は時間（1:32 または 92.5s）か、小節・拍（bar 17、beat 65。BPMが必要）で指定します。最初のセクションは0:00から始まります。",
- "“{0}” is {1} s long. One new Show per section, one cue each. The original Show is not changed.": "「{0}」の長さは{1}秒です。セクションごとに新しいShowを作り、キューを1つずつ割り当てます。元のShowは変わりません。",
- "item(s)": "アイテム",
- "✓ {0} Shows made: {1}. Assign them to songs, one cue each.": "✓ {0}個のShowを作成: {1}。曲に割り当ててください（1つにつき1キュー）。",
- "{0} item(s) run past a cut and were kept whole: see History.": "{0}個のアイテムが区切りをまたぎ、そのまま残しました。履歴を参照してください。",
- "Cut the selected Show into one Show per section, so each can be a cue. The original stays.": "選んだShowをセクションごとのShowに分け、それぞれをキューにできます。元のShowは残ります。"
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Showは独自のタイムラインで動くため、In・Out・BPMは効きません。Holdは「ペダル待ち」のままにしてください。"
 }

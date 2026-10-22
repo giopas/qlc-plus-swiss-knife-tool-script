@@ -7,6 +7,8 @@ Upgrade tool, with two songs built by the Song Builder itself:
 * *Demo Song*          120 BPM, 16 bars with a short music file (the .wav next to the show)
 * *Demo Instrumental*  100 BPM, 8 bars, no music
 
+Both are put into the first setlist slot and applied, so the cue list plays them (the Setlist screen itself reads its song list from a setlist text, so paste the two names to see them there).
+
     python3 tools/make_songbuilder_sample.py            # write both files into tests/corpus
     python3 tools/make_songbuilder_sample.py OUT_DIR    # somewhere else
 
@@ -67,6 +69,17 @@ def main(out_dir=CORPUS):
         r = c.post("/api/songbuilder/build", json=spec)
         if r.status_code != 200:
             raise SystemExit(r.get_data(as_text=True))
+    # both songs go into the first setlist slot, each playing its Show, waiting for the pedal
+    slot = c.get("/api/setlist/slots").get_json()[0]
+    slot = slot.get("id") or slot.get("slot_id")
+    shows = {f["name"]: f["id"] for f in c.get("/api/functions").get_json() if f["type"] == "Show"}
+    rows = [{"txt_name": n, "qxw_id": shows[n], "qxw_name": n, "in": 0, "hold": 4294967294, "out": 0}
+            for n in ("Demo Song", "Demo Instrumental")]
+    c.post(f"/api/setlist/{slot}/songs", json={"songs": [r["txt_name"] for r in rows]})
+    c.post(f"/api/setlist/{slot}/details", json={"rows": rows})
+    r = c.post(f"/api/setlist/{slot}/apply", json={})
+    if r.status_code != 200:
+        raise SystemExit(r.get_data(as_text=True))
     data = qxw_io.qxw_bytes(workspace._state["qxw_root"]).decode("utf-8")
     data = data.replace(wav, WAV).replace(wav.replace("&", "&amp;"), WAV)          # the file is next to the show
     data = data.replace("<Version>5.2.2</Version>", "<Version>5.3.0</Version>", 1)      # what QLC+ 5.3 writes after the upgrade

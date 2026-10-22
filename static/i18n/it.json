@@ -4304,5 +4304,7 @@
  "{0} beats": "{0} battiti",
  "Fill to the end of the music": "Riempi fino alla fine della musica",
  "Pick the music first, and put this part after the ones before it.": "Scegli prima la musica e metti questa parte dopo le precedenti.",
- "e.g. {0}": "es. {0}"
+ "e.g. {0}": "es. {0}",
+ "— no music —": "— nessuna musica —",
+ "Empty keeps the scene’s own fade. Type 0 for no fade.": "Vuoto mantiene la dissolvenza propria della scena. Scrivi 0 per nessuna dissolvenza."
 }

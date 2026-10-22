@@ -4329,5 +4329,7 @@
  "{0} beats": "{0} 拍",
  "Fill to the end of the music": "填充到音乐结尾",
  "Pick the music first, and put this part after the ones before it.": "请先选择音乐，并把此部分放在前面各部分之后。",
- "e.g. {0}": "例如 {0}"
+ "e.g. {0}": "例如 {0}",
+ "— no music —": "— 无音乐 —",
+ "Empty keeps the scene’s own fade. Type 0 for no fade.": "留空则保留场景自己的渐变。输入 0 表示无渐变。"
 }

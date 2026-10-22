@@ -4329,5 +4329,7 @@
  "{0} beats": "{0}拍",
  "Fill to the end of the music": "音楽の終わりまで埋める",
  "Pick the music first, and put this part after the ones before it.": "先に音楽を選び、このパートを前のパートの後ろに置いてください。",
- "e.g. {0}": "例：{0}"
+ "e.g. {0}": "例：{0}",
+ "— no music —": "— 音楽なし —",
+ "Empty keeps the scene’s own fade. Type 0 for no fade.": "空欄ならシーン自身のフェードのまま。フェードなしにするには 0 を入力。"
 }

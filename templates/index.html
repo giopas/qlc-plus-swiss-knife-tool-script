@@ -686,13 +686,13 @@
         <label class="field-label">Music (one track, never cut)</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <select id="sbd-audio" class="field-input" style="width:230px" onchange="sbdMusicChanged()"></select>
-          <input id="sbd-path" class="field-input" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()">
-          <input id="sbd-mlen" class="field-input" type="text" placeholder="3:45" style="width:80px" data-tooltip="Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a)." onchange="sbdChanged()">
+          <input id="sbd-path" class="field-input sbd-hidden" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()">
+          <input id="sbd-mlen" class="field-input sbd-hidden" type="text" placeholder="3:45" style="width:80px" data-tooltip="Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a)." onchange="sbdChanged()">
         </div>
         <div id="sbd-music-note" class="sbd-note"></div>
       </div>
       <table class="sbd-table">
-        <thead><tr><th>#</th><th>Part</th><th>Look (scene or chaser)</th><th id="sbd-th-len" data-tooltip="A number, “to the end” (last part only) or “until 1:20” (a point from the start).">Length</th><th>Repeat</th><th>Fade in</th><th>Fade out</th><th data-tooltip="Chasers only: how many beats one step lasts, so the chaser follows the BPM.">Beats/step</th><th>Starts</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Part</th><th>Look (scene or chaser)</th><th id="sbd-th-len" data-tooltip="A number, “to the end” (last part only) or “until 1:20” (a point from the start).">Length</th><th>Repeat</th><th data-tooltip="Empty keeps the scene’s own fade. Type 0 for no fade.">Fade in</th><th data-tooltip="Empty keeps the scene’s own fade. Type 0 for no fade.">Fade out</th><th data-tooltip="Chasers only: how many beats one step lasts, so the chaser follows the BPM.">Beats/step</th><th>Starts</th><th></th></tr></thead>
         <tbody id="sbd-rows"></tbody>
       </table>
       <button class="btn btn-surface" onclick="sbdAddRow()">+ Add part</button>

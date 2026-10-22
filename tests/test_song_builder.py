@@ -331,3 +331,21 @@ def test_the_setlist_copy_of_a_built_show_is_not_listed_as_a_song(tmp_path):
     engine.append(copy)                                        # what Apply in the Setlist makes
     assert [s["id"] for s in workspace.song_list()] == [out["show_id"]]
     assert workspace.song_build(dict(workspace.song_open(out["show_id"]), show_id="999"))["show_id"] != "999"
+
+
+def test_a_typed_zero_is_a_fade_of_none_and_an_empty_box_keeps_the_scene_own_fade():
+    own = scene("5").replace('<FixtureVal', '<Speed FadeIn="1000" FadeOut="1000" Duration="0"/><FixtureVal', 1)
+    eng = engine_of(own)
+    t = spec(parts=[{"name": "A", "function_id": "5", "length": "8s"}])
+    assert sb.build(eng, t, 100)["copies"] == []                                    # both empty: the scene as it is
+    eng = engine_of(own)
+    t["parts"][0].update(fade_in="0", fade_out="0")
+    out = sb.build(eng, t, 100)
+    copy = [f for f in eng if f.get(sb.PART_ATTR)][0]
+    sp = [c for c in copy if c.tag.endswith("Speed")][0]
+    assert (sp.get("FadeIn"), sp.get("FadeOut")) == ("0", "0") and len(out["copies"]) == 1
+    eng = engine_of(own)
+    t["parts"][0].update(fade_in="3", fade_out="")
+    sb.build(eng, t, 100)
+    sp = [c for c in [f for f in eng if f.get(sb.PART_ATTR)][0] if c.tag.endswith("Speed")][0]
+    assert (sp.get("FadeIn"), sp.get("FadeOut")) == ("3000", "1000")           # the empty one keeps its own

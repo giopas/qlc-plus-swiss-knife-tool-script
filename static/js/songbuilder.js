@@ -15,7 +15,7 @@ async function sbdInit() {
   } catch (e) { _sbd.funcs = []; }
   const audios = _sbd.funcs.filter(f => f.type === 'Audio');
   document.getElementById('sbd-audio').innerHTML =
-    `<option value="">${_sbdEsc(t('— music file by path —'))}</option>` +
+    `<option value="">${_sbdEsc(t('— no music —'))}</option><option value="__path">${_sbdEsc(t('— music file by path —'))}</option>` +
     audios.map(f => `<option value="${_sbdEsc(f.id)}">${_sbdEsc(f.name)}</option>`).join('');
   await _sbdLoadList();
   if (!_sbd.parts.length) { sbdNew(); }
@@ -38,6 +38,7 @@ function sbdNew() {
   document.getElementById('sbd-bpb').value = '4';
   document.getElementById('sbd-unit').value = 'seconds';
   document.getElementById('sbd-audio').value = '';
+  _sbdMusicShow();
   document.getElementById('sbd-path').value = '';
   document.getElementById('sbd-mlen').value = '';
   document.getElementById('sbd-music-note').textContent = '';
@@ -59,7 +60,8 @@ async function sbdOpen(id) {
   document.getElementById('sbd-bpb').value = d.beats_per_bar || 4;
   document.getElementById('sbd-unit').value = ['seconds', 'bars', 'beats'].includes(d.unit) ? d.unit : 'seconds';
   const m = d.music || {};
-  document.getElementById('sbd-audio').value = m.function_id || '';
+  document.getElementById('sbd-audio').value = m.function_id || (m.path ? '__path' : '');
+  _sbdMusicShow();
   document.getElementById('sbd-path').value = m.path || '';
   document.getElementById('sbd-mlen').value = m.length || '';
   _sbd.parts = (d.parts || []).map(p => ({ ...p, look: (_sbd.funcs.find(f => f.id === p.function_id) || {}).name || '' }));
@@ -96,8 +98,8 @@ function _sbdRender() {
       <td><input class="field-input sbd-look" type="text" readonly value="${_sbdEsc(p.function_id ? p.look : '')}" onclick="sbdPick(${i})" placeholder="${_sbdEsc(t('Pick a scene or chaser…'))}"></td>
       <td style="width:120px"><div class="sbd-len"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" oninput="sbdCell(${i},'length',this.value)" placeholder="${_sbdEsc(_sbdLenHint())}"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdFillEnd(${i})" aria-label="${_sbdEsc(t('Fill to the end of the music'))}" data-tooltip="${_sbdEsc(t('Fill to the end of the music'))}">⇥</button></div></td>
       <td style="width:60px"><input class="field-input" type="text" value="${_sbdEsc(p.repeat)}" oninput="sbdCell(${i},'repeat',this.value)"></td>
-      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="0"></td>
-      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="0"></td>
+      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="–"></td>
+      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="–"></td>
       <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.beats)}" oninput="sbdCell(${i},'beats',this.value)" placeholder="–"></td>
       <td class="sbd-start" id="sbd-start-${i}">${p.start_ms === undefined ? '' : _sbdEsc(_sbdPos(p.start_ms))}</td>
       <td style="white-space:nowrap"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},-1)" aria-label="${_sbdEsc(t('Up'))}">↑</button>
@@ -201,12 +203,19 @@ function sbdMove(i, d) {
   sbdChanged();
 }
 
+function _sbdMusicShow() {
+  const on = document.getElementById('sbd-audio').value === '__path';
+  document.getElementById('sbd-path').classList.toggle('sbd-hidden', !on);
+  document.getElementById('sbd-mlen').classList.toggle('sbd-hidden', !on);
+}
+
 async function sbdMusicChanged() {
+  _sbdMusicShow();
   sbdChanged();
   const note = document.getElementById('sbd-music-note');
   const fid = document.getElementById('sbd-audio').value;
   const path = document.getElementById('sbd-path').value.trim();
-  if (fid) {
+  if (fid && fid !== '__path') {
     const f = _sbd.funcs.find(x => x.id === fid);
     note.textContent = f ? t('Uses the sound function “{0}” already in the show.', f.name) : '';
     return;
@@ -227,7 +236,7 @@ function _sbdSpec() {
     beats_per_bar: document.getElementById('sbd-bpb').value.trim(),
     unit: _sbdUnit(),
     show_id: _sbd.showId,
-    music: fid ? { function_id: fid } : (path ? { path, length: document.getElementById('sbd-mlen').value.trim() } : {}),
+    music: (fid && fid !== '__path') ? { function_id: fid } : (fid === '__path' && path ? { path, length: document.getElementById('sbd-mlen').value.trim() } : {}),
     parts: _sbd.parts.map(p => ({ name: p.name, function_id: p.function_id, length: p.length, repeat: p.repeat,
                                   fade_in: p.fade_in, fade_out: p.fade_out, beats: p.beats })),
   };

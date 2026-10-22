@@ -4329,5 +4329,7 @@
  "{0} beats": "{0} tempos",
  "Fill to the end of the music": "Preencher até ao fim da música",
  "Pick the music first, and put this part after the ones before it.": "Escolha primeiro a música e ponha esta parte depois das anteriores.",
- "e.g. {0}": "p. ex. {0}"
+ "e.g. {0}": "p. ex. {0}",
+ "— no music —": "— sem música —",
+ "Empty keeps the scene’s own fade. Type 0 for no fade.": "Vazio mantém o fade próprio da cena. Escreva 0 para nenhum fade."
 }

@@ -4329,5 +4329,7 @@
  "{0} beats": "{0} Schläge",
  "Fill to the end of the music": "Bis zum Ende der Musik auffüllen",
  "Pick the music first, and put this part after the ones before it.": "Wähle zuerst die Musik und setze diesen Teil hinter die vorherigen.",
- "e.g. {0}": "z. B. {0}"
+ "e.g. {0}": "z. B. {0}",
+ "— no music —": "— keine Musik —",
+ "Empty keeps the scene’s own fade. Type 0 for no fade.": "Leer behält die eigene Blende der Szene. 0 eingeben für keine Blende."
 }

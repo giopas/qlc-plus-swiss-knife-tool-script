@@ -143,15 +143,18 @@ def _child(el, name: str):
     return next((c for c in el if _local(c.tag) == name), None)
 
 
-def _set_speed(fn, fade_in: int, fade_out: int) -> None:
+def _set_speed(fn, fade_in: Optional[int], fade_out: Optional[int]) -> None:
+    """Set the fades of a copy; None keeps the function's own value."""
     ns = _ns(fn)
     sp = _child(fn, "Speed")
     if sp is None:
         import xml.etree.ElementTree as ET  # nosec B405
         sp = ET.Element(f"{ns}Speed", {"FadeIn": "0", "FadeOut": "0", "Duration": "0"})
         fn.insert(0, sp)
-    sp.set("FadeIn", str(fade_in))
-    sp.set("FadeOut", str(fade_out))
+    if fade_in is not None:
+        sp.set("FadeIn", str(fade_in))
+    if fade_out is not None:
+        sp.set("FadeOut", str(fade_out))
 
 
 def _set_loop(fn) -> bool:
@@ -372,7 +375,8 @@ def build(engine, spec: dict, next_id: int):
         base = funcs[p_in["function_id"]]
         fi, fo = parse_fade(p_in["fade_in"]), parse_fade(p_in["fade_out"])
         use = base
-        need_copy = fi or fo
+        in_set, out_set = bool(p_in["fade_in"].strip()), bool(p_in["fade_out"].strip())   # "0" is a choice: no fade
+        need_copy = in_set or out_set
         typ = base.get("Type")
         fit_beats = p_in["beats"] and s["bpm"] and typ == "Chaser"
         if typ == "Chaser" and (fit_beats or need_copy or (_child(base, "RunOrder") is not None
@@ -384,8 +388,8 @@ def build(engine, spec: dict, next_id: int):
             use.set("ID", new_id())
             use.set("Name", f"{s['name']} - {p_in['name']} ({base.get('Name', '')})")
             use.set(PART_ATTR, show_id)
-            if fi or fo:
-                _set_speed(use, fi, fo)
+            if in_set or out_set:
+                _set_speed(use, fi if in_set else None, fo if out_set else None)
             if typ == "Chaser":
                 _set_loop(use)
                 if fit_beats:

@@ -194,6 +194,23 @@ GUIDE: Dict[str, dict] = {
                  "A tempo changes a copy of the song's chaser, never the original; scenes, chasers that follow QLC+'s own "
                  "tempo and chasers that wait for the pedal are left alone and listed in `left_alone`.",
     },
+    "song_builder": {
+        "use": "Build a song's Show from a table of parts (intro, verse, chorus…) with one music track that is never cut.",
+        "args": [("name", "The Show's name (usually the song's)."),
+                 ("unit", "seconds, bars or beats: one for the whole song. Bars and beats need `bpm`."),
+                 ("bpm", "Beats per minute; `beats_per_bar` defaults to 4."),
+                 ("music", "{function_id} of a sound function in the show, or {path, length} for a file on this computer "
+                           "(length like \"3:45\" only when the file's length cannot be read)."),
+                 ("parts", "[{name, function_id, length, repeat, fade_in, fade_out, beats}] in order. function_id is a "
+                           "scene or chaser. Same name = same track. `beats` = beats per step of a chaser."),
+                 ("show_id", "Rebuild this Show instead of making a new one."),
+                 ("apply", "false: only show the starts, the free time and warnings.")],
+        "returns": "Preview: parts with start_ms, end_ms and any issue, length_ms, music_ms, free_ms, warnings. "
+                   "Build: the Show's id and name, and what was written.",
+        "notes": "length is a number in the unit, `to the end` (last part only; needs the music's length) or "
+                 "`until 1:20` / `until bar 17` (a point counted from the start of the song). Show the preview first. "
+                 "The music is never cut and QLC+ always plays it from its start. A fade makes a copy of the scene.",
+    },
     "stage_monitor": {
         "use": "Make the Stage Monitor page: a tablet on stage shows the cue that is playing and the next one, "
                "live from QLC+, for a player who steps through the setlist with a pedal and cannot see the laptop.",
@@ -347,6 +364,7 @@ WORKFLOWS = """Usual sequences:
 - Bring looks from another show: source_functions → port_functions (preview) → port_functions → save_show.
 - New looks and buttons: looks_options → build_looks (check_only) → build_looks → vc_pages → save_show.
 - Buttons for existing functions: vc_pages → edit_vc new_page → edit_vc create (SoloFrame) → edit_vc create (Button, func_id) → save_show.
+- A song with music as one Show: list_shows → open_show → song_builder (apply=false) → song_builder → setlist → save_show.
 - Tonight's setlist: setlist (apply=false) → show the matches → setlist → save_show.
 - Dictionary: dictionary_context → dictionary_set (auto_steps, draft_missing) → dictionary_save.
 - A tablet on stage: stage_monitor (to see the cue lists) → stage_monitor config → stage_monitor export.

@@ -77,7 +77,7 @@ async def probe(url: str, show: str) -> int:
             flag = "FAIL" if ran or live else "ok"
             bad += 1 if ran or live else 0
             print(f"  {s:<11} {flag:<4} ran={ran} injected={live} payload text shown={shown}")
-        await page.evaluate("go('showbook'); sbSelectAll(); sbGenerate()")
+        await page.evaluate("go('showbook'); sbSelectAll(); void sbGenerate()")
         await page.wait_for_timeout(5000)
         ran, live = await page.evaluate("[(window.__xss || []).length, document.querySelectorAll('img[src=x]').length]")
         print(f"  {'preview':<11} {'FAIL' if ran or live else 'ok':<4} ran={ran} injected={live}")

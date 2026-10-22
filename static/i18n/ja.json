@@ -4328,5 +4328,6 @@
  "{0} bars": "{0}小節",
  "{0} beats": "{0}拍",
  "Fill to the end of the music": "音楽の終わりまで埋める",
- "Pick the music first, and put this part after the ones before it.": "先に音楽を選び、このパートを前のパートの後ろに置いてください。"
+ "Pick the music first, and put this part after the ones before it.": "先に音楽を選び、このパートを前のパートの後ろに置いてください。",
+ "e.g. {0}": "例：{0}"
 }

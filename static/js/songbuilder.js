@@ -69,7 +69,7 @@ async function sbdOpen(id) {
 }
 
 function _sbdUnit() { return document.getElementById('sbd-unit').value || 'seconds'; }
-function _sbdLenHint() { return { seconds: '8s  ·  0:08', bars: '8', beats: '16' }[_sbdUnit()]; }
+function _sbdLenHint() { return t('e.g. {0}', { seconds: '8s', bars: '8', beats: '16' }[_sbdUnit()]); }
 function sbdUnitChanged() { _sbdRender(); sbdChanged(); }
 // Where a moment falls in the song, in the unit of the song: "bar 3", "beat 9" (counted from 1) or the time.
 function _sbdPos(ms) {

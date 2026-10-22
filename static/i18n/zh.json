@@ -4328,5 +4328,6 @@
  "{0} bars": "{0} 小节",
  "{0} beats": "{0} 拍",
  "Fill to the end of the music": "填充到音乐结尾",
- "Pick the music first, and put this part after the ones before it.": "请先选择音乐，并把此部分放在前面各部分之后。"
+ "Pick the music first, and put this part after the ones before it.": "请先选择音乐，并把此部分放在前面各部分之后。",
+ "e.g. {0}": "例如 {0}"
 }

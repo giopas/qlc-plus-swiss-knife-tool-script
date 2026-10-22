@@ -4328,5 +4328,6 @@
  "{0} bars": "{0} compases",
  "{0} beats": "{0} tiempos",
  "Fill to the end of the music": "Rellenar hasta el final de la música",
- "Pick the music first, and put this part after the ones before it.": "Elige primero la música y pon esta parte después de las anteriores."
+ "Pick the music first, and put this part after the ones before it.": "Elige primero la música y pon esta parte después de las anteriores.",
+ "e.g. {0}": "p. ej. {0}"
 }

@@ -4328,5 +4328,6 @@
  "{0} bars": "{0} Takte",
  "{0} beats": "{0} Schläge",
  "Fill to the end of the music": "Bis zum Ende der Musik auffüllen",
- "Pick the music first, and put this part after the ones before it.": "Wähle zuerst die Musik und setze diesen Teil hinter die vorherigen."
+ "Pick the music first, and put this part after the ones before it.": "Wähle zuerst die Musik und setze diesen Teil hinter die vorherigen.",
+ "e.g. {0}": "z. B. {0}"
 }

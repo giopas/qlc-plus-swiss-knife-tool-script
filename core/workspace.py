@@ -1931,6 +1931,54 @@ def reparse_after_vc_edit() -> None:
     _parse_cuelist_slots(root)
 
 
+# ── Song Builder (3.9.8) ──────────────────────────────────────────────────────
+
+def _builder_engine():
+    if not _state['loaded'] or _state['qxw_root'] is None:
+        raise ValueError('No workspace loaded.')
+    engine = _state['qxw_root'].find('q:Engine', NS)
+    if engine is None:
+        raise ValueError('The workspace has no <Engine> element.')
+    return engine
+
+
+def song_plan(spec: dict) -> dict:
+    from core import song_builder
+    return song_builder.plan(_builder_engine(), spec)
+
+
+def song_build(spec: dict) -> dict:
+    """Build (or rebuild) the Show of a Song Builder table in the show in progress."""
+    from core import song_builder
+    engine = _builder_engine()
+    song_builder.plan(engine, spec)                       # refuse a bad table before a step opens
+    _show_touch('songbuilder', f"Song Builder: {spec.get('name', '')}")
+    first = max([_int(f.get('ID')) for f in engine.findall('q:Function', NS)] + [_state['highest_func_id']]) + 1
+    out = song_builder.build(engine, spec, first)
+    _state['highest_func_id'] = max(_state['highest_func_id'], out['next_id'] - 1)
+    reparse_after_vc_edit()
+    return out
+
+
+def song_open(show_id: str) -> dict:
+    """The table a Show was built with, so it can be edited."""
+    from core import song_builder
+    engine = _builder_engine()
+    show = _find_by_id(engine, 'Function', str(show_id))
+    spec = song_builder.spec_of(show) if show is not None else None
+    if spec is None:
+        raise ValueError('That Show was not made by the Song Builder.')
+    return spec
+
+
+def song_list() -> list:
+    """The Shows the Song Builder made: [{id, name}]."""
+    from core import song_builder
+    engine = _builder_engine()
+    return [{'id': f.get('ID'), 'name': f.get('Name', '')} for f in engine.findall('q:Function', NS)
+            if f.get('Type') == 'Show' and song_builder.SONG_ATTR in f.attrib]
+
+
 # Undo stack for VC edits: snapshots of <VirtualConsole> (deep copies) taken
 # before every server-side change (patch flush or structural op).
 _vc_undo: list = []

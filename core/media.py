@@ -87,3 +87,62 @@ def show_length_ms(func) -> int:
 
 def base_dir_of(path: Optional[str]) -> str:
     return os.path.dirname(os.path.abspath(path)) if path else ""
+
+
+# ── length of a sound file (3.9.8, Song Builder) ─────────────────────────────
+
+AUDIO_EXTS = (".wav", ".mp3", ".ogg", ".flac", ".m4a", ".aac")
+_MP3_BITRATES = {  # (version, layer 3) → kbps by index
+    1: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0],
+    2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0],
+}
+_MP3_RATES = {1: [44100, 48000, 32000], 2: [22050, 24000, 16000], 25: [11025, 12000, 8000]}
+
+
+def _mp3_ms(data: bytes, size: int) -> Optional[int]:
+    """Length of an MP3 (layer III) from its first frame: the Xing/Info frame
+    count when there is one, else the file size at the constant bitrate."""
+    pos = 0
+    if data[:3] == b"ID3" and len(data) >= 10:
+        pos = 10 + ((data[6] & 0x7F) << 21 | (data[7] & 0x7F) << 14 | (data[8] & 0x7F) << 7 | (data[9] & 0x7F))
+    for i in range(pos, min(len(data) - 4, pos + 8192)):
+        if data[i] == 0xFF and (data[i + 1] & 0xE0) == 0xE0:
+            b1, b2, b3 = data[i + 1], data[i + 2], data[i + 3]
+            ver_bits, layer = (b1 >> 3) & 3, (b1 >> 1) & 3
+            if ver_bits == 1 or layer != 1:            # reserved version / not layer III
+                continue
+            ver = {3: 1, 2: 2, 0: 25}[ver_bits]
+            kbps = _MP3_BITRATES[1 if ver == 1 else 2][(b2 >> 4) & 15]
+            rate_i = (b2 >> 2) & 3
+            if not kbps or rate_i == 3:
+                continue
+            rate = _MP3_RATES[ver][rate_i]
+            spf = 1152 if ver == 1 else 576
+            mono = ((b3 >> 6) & 3) == 3
+            off = i + 4 + (17 if ver == 1 and mono else 32 if ver == 1 else 9 if mono else 17)
+            tag = data[off:off + 4]
+            if tag in (b"Xing", b"Info") and len(data) >= off + 12 and data[off + 7] & 1:
+                frames = int.from_bytes(data[off + 8:off + 12], "big")
+                return round(frames * spf * 1000 / rate)
+            return round((size - i) * 8 / (kbps * 1000) * 1000)
+    return None
+
+
+def audio_length_ms(path: str) -> Optional[int]:
+    """Length in ms of a .wav or .mp3 file, or None when it cannot be told
+    (another format, a missing file).  Reads only the start of the file."""
+    import wave
+    try:
+        if not os.path.isfile(path):
+            return None
+        ext = os.path.splitext(path)[1].lower()
+        if ext == ".wav":
+            with wave.open(path, "rb") as w:
+                return round(w.getnframes() * 1000 / w.getframerate())
+        if ext == ".mp3":
+            size = os.path.getsize(path)
+            with open(path, "rb") as fh:
+                return _mp3_ms(fh.read(16384), size)
+    except (OSError, EOFError, wave.Error, ValueError):
+        return None
+    return None

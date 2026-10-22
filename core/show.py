@@ -38,7 +38,7 @@ TOOL_TITLES = {
     'triggers': 'Trigger Manager', 'vceditor': 'VC Editor', 'porter': 'Function Porter',
     'merger': 'QXW Merger', 'dictionary': 'Dictionary', 'fixtures': 'Fixtures',
     'quickstart': 'Quick Start', 'idbrowser': 'ID Browser', 'inputs': 'Inputs & MIDI',
-    'wizard': 'Wizard Repair',
+    'wizard': 'Wizard Repair', 'songbuilder': 'Song Builder',
     'upgrade': 'Upgrade to QLC+ 5.3',
 }
 

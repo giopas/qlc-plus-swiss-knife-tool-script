@@ -4753,3 +4753,17 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 /* 3.9.8: a Show ignores In, Out and BPM */
 .fb-timing-na { opacity: .45; }
 .fb-timing-note { font-size: 11px; color: var(--text-dim); padding: 6px 2px 0; line-height: 1.35; }
+
+/* 3.9.8 Song Builder */
+.sbd-body { padding: 16px; overflow: auto; }
+.sbd-top { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+.sbd-music { margin-bottom: 14px; }
+.sbd-note { font-size: 11px; color: var(--text-dim); margin: 6px 0; }
+.sbd-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.sbd-table th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-dim); padding: 4px 6px; }
+.sbd-table td { padding: 3px 4px; vertical-align: middle; }
+.sbd-table input { width: 100%; box-sizing: border-box; }
+.sbd-out { font-size: 12px; margin-top: 12px; line-height: 1.5; }
+.sbd-warn { color: var(--warning-text); }
+.sbd-err { color: var(--error-text, #e66); }
+.sbd-start { color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }

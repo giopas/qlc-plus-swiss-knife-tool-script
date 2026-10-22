@@ -196,7 +196,7 @@ def _swap(obj: Any, mapping: dict) -> Any:
 
 _TOOLS = [("/api/reducer", "Rig Reducer"), ("/api/doctor", "Workspace Doctor"),
           ("/api/looks", "Look Builder"), ("/api/vc", "VC Editor"), ("/api/stage", "Stage & Meshes"),
-          ("/api/setlist", "Setlist"), ("/api/brightness", "Brightness"),
+          ("/api/setlist", "Setlist"), ("/api/songbuilder", "Song Builder"), ("/api/brightness", "Brightness"),
           ("/api/porter", "Function Porter"), ("/api/triggers", "Trigger Manager"),
           ("/api/wizard", "Wizard Repair"),
           ("/api/upgrade", "Upgrade to QLC+ 5.3"),

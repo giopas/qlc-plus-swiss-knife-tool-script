@@ -178,3 +178,29 @@ def test_in_the_workspace_the_built_show_is_found_and_edited(tmp_path):
     assert again["show_id"] == out["show_id"]
     assert [f for f in workspace.get_functions() if f["type"] == "Show"][0]["show_ms"] == media.show_length_ms(
         workspace._find_by_id(workspace._state["qxw_root"].find("q:Engine", workspace.NS), "Function", out["show_id"]))
+
+
+# ── the routes ───────────────────────────────────────────────────────────────
+
+def test_routes_preview_build_open(tmp_path):
+    import app as app_mod
+    client = app_mod.create_app().test_client()
+    p = tmp_path / "s.qxw"
+    p.write_bytes(qxw_io.qxw_bytes(ws(scene("5") + scene("6"))))
+    workspace.load_qxw(str(p))
+    r = client.post("/api/songbuilder/preview", json=spec())
+    assert r.status_code == 200 and r.get_json()["length_ms"] == 12000
+    bad = client.post("/api/songbuilder/preview", json=spec(name=""))
+    assert bad.status_code == 400 and "name" in bad.get_json()["error"]
+    r = client.post("/api/songbuilder/build", json=spec())
+    assert r.status_code == 200
+    sid = r.get_json()["show_id"]
+    assert client.get("/api/songbuilder/list").get_json() == [{"id": sid, "name": "Galvanize"}]
+    assert client.get("/api/songbuilder/open?id=" + sid).get_json()["parts"][1]["repeat"] == 2
+    assert client.get("/api/songbuilder/open?id=5").status_code == 400        # a scene, not a built song
+    w = tmp_path / "a.wav"
+    with wave.open(str(w), "wb") as f:
+        f.setnchannels(1); f.setsampwidth(2); f.setframerate(8000); f.writeframes(b"\0\0" * 8000)
+    m = client.post("/api/songbuilder/music", json={"path": str(w)}).get_json()
+    assert m == {"name": "a.wav", "found": True, "length_ms": 1000}
+    assert client.post("/api/songbuilder/music", json={"path": "/etc/passwd"}).status_code == 400

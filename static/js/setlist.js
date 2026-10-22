@@ -751,30 +751,12 @@ function slAssignFromPool() {
   }
 
   if (targets.length === 1) {
-    // Single: in-place DOM update + flash + auto-advance
+    // Single: redraw the list (so the type badge, the Show pill and the "lights
+    // nothing" warning appear at once), flash the row, auto-advance
     const songIdx = targets[0];
+    _renderSongList();
     const listEl = document.querySelector(`#fb-song-list .fb-song-item[data-idx="${songIdx}"]`);
     if (listEl) {
-      const dot = listEl.querySelector('.fb-assign-dot');
-      if (dot) { dot.classList.add('fb-assign-dot-ok'); dot.title = `Assigned: ${fn.name}`; }
-      let assignDiv = listEl.querySelector('.fb-song-assign');
-      if (!assignDiv) {
-        assignDiv = document.createElement('div');
-        assignDiv.className = 'fb-song-assign';
-        listEl.querySelector('.fb-song-content')?.appendChild(assignDiv);
-      }
-      assignDiv.textContent = fn.name;
-      // Add/update origin line (child ID + VC button)
-      let originDiv = listEl.querySelector('.fb-song-origin');
-      const originParts = [`[${_esc(fn.id)}]`];
-      const vcCap = fn.vc_button || fn.vc_inherited;
-      if (vcCap) originParts.push(`${vcCap}`);
-      if (!originDiv) {
-        originDiv = document.createElement('div');
-        originDiv.className = 'fb-song-origin';
-        assignDiv.after(originDiv);
-      }
-      originDiv.textContent = `→ ${originParts.join(' ')}`;
       listEl.classList.add('row-flash');
       setTimeout(() => listEl.classList.remove('row-flash'), 600);
     }

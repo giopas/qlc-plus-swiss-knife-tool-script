@@ -343,7 +343,7 @@ def build(engine, spec: dict, next_id: int):
 
     # the Show: reuse the one this table built before, else a new id
     old = funcs.get(s["show_id"]) if s["show_id"] else None
-    if old is not None and (old.get("Type") != "Show" or SONG_ATTR not in old.attrib):
+    if old is not None and (old.get("Type") != "Show" or SONG_ATTR not in old.attrib or old.get("SwissKnifeClone")):
         old = None
     show_id = old.get("ID") if old is not None else new_id()
     for f in [f for f in funcs.values() if f.get(PART_ATTR) == show_id]:       # copies of the last build
@@ -360,7 +360,9 @@ def build(engine, spec: dict, next_id: int):
         show = ET.SubElement(engine, f"{ns}Function", {"ID": show_id, "Type": "Show"})
         ET.SubElement(show, f"{ns}TimeDivision", {"Type": "Time", "BPM": str(int(s["bpm"] or 120))})
     show.set("Name", s["name"])
-    show.set(SONG_ATTR, json.dumps(s, ensure_ascii=False, separators=(",", ":"), sort_keys=True))
+    keep = dict(s, parts=[{k: v for k, v in p.items() if k != "issue"} for p in s["parts"]])
+    keep.pop("show_id", None)                              # the Show's own ID is read from the Show
+    show.set(SONG_ATTR, json.dumps(keep, ensure_ascii=False, separators=(",", ":"), sort_keys=True))
 
     copies: List[str] = []
     tracks: Dict[str, object] = {}

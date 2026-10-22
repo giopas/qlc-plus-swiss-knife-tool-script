@@ -315,3 +315,19 @@ def test_music_route_only_looks_at_sound_files(tmp_path):
 def test_a_huge_or_wrong_table_stored_on_a_show_is_ignored():
     big = '<Function xmlns="%s" ID="10" Type="Show" Name="x" SwissKnifeSong="%s"/>' % (workspace.NS["q"], "a" * 300_000)
     assert sb.spec_of(ET.fromstring(big)) is None
+
+
+def test_the_setlist_copy_of_a_built_show_is_not_listed_as_a_song(tmp_path):
+    root = ws(scene("5") + scene("6"))
+    p = tmp_path / "s.qxw"
+    p.write_bytes(qxw_io.qxw_bytes(root))
+    workspace.load_qxw(str(p))
+    out = workspace.song_build(spec())
+    engine = workspace._builder_engine()
+    orig = workspace._find_by_id(engine, "Function", out["show_id"])
+    assert "issue" not in orig.get(sb.SONG_ATTR) and '"show_id"' not in orig.get(sb.SONG_ATTR)
+    copy = ET.fromstring(ET.tostring(orig))
+    copy.set("ID", "999"); copy.set("Name", "Step 0"); copy.set("SwissKnifeClone", out["show_id"])
+    engine.append(copy)                                        # what Apply in the Setlist makes
+    assert [s["id"] for s in workspace.song_list()] == [out["show_id"]]
+    assert workspace.song_build(dict(workspace.song_open(out["show_id"]), show_id="999"))["show_id"] != "999"

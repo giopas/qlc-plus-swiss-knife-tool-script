@@ -1976,7 +1976,8 @@ def song_list() -> list:
     from core import song_builder
     engine = _builder_engine()
     return [{'id': f.get('ID'), 'name': f.get('Name', '')} for f in engine.findall('q:Function', NS)
-            if f.get('Type') == 'Show' and song_builder.SONG_ATTR in f.attrib]
+            if f.get('Type') == 'Show' and song_builder.SONG_ATTR in f.attrib
+            and 'SwissKnifeClone' not in f.attrib]          # the Setlist's copy of a Show is not a song of its own
 
 
 # Undo stack for VC edits: snapshots of <VirtualConsole> (deep copies) taken

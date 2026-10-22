@@ -432,6 +432,24 @@ function _updateTimingPanel() {
   const bpmEl = document.getElementById('timing-bpm'), beatsEl = document.getElementById('timing-beats');
   if (bpmEl)   bpmEl.value   = row.bpm || '';
   if (beatsEl) { beatsEl.value = row.beats || '1'; beatsEl.disabled = !row.bpm; }
+  _greyTimingForShow(row);
+}
+
+// A Show runs on its own timeline: QLC+ gives its items no fades and the tempo
+// fit works on chasers, so In, Out, BPM and Beats do not apply.  Hold still does.
+function _greyTimingForShow(row) {
+  const fn = row && row.qxw_id ? _functions.find(f => f.id === row.qxw_id) : null;
+  const isShow = !!(fn && fn.type === 'Show');
+  ['timing-in', 'timing-out', 'timing-bpm', 'timing-beats'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && isShow) el.disabled = true;
+    if (el) el.closest('.fb-timing-row')?.classList.toggle('fb-timing-na', isShow);
+  });
+  const note = document.getElementById('timing-show-note');
+  if (note) {
+    note.style.display = isShow ? '' : 'none';
+    note.textContent = isShow ? t('A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.') : '';
+  }
 }
 
 function _updateTimingLabel() {
@@ -766,6 +784,7 @@ function slAssignFromPool() {
     setStatus(`Assigned "${fn.name}" to ${targets.length} songs.`, 'ok');
   }
   _renderFnPool(_poolFiltered);
+  _updateTimingPanel();
 }
 
 function slClearAssignment() {
@@ -777,6 +796,7 @@ function slClearAssignment() {
   _renderSongList();
   _renderFnPool(_poolFiltered);
   _updatePoolAssignBtn();
+  _updateTimingPanel();
 }
 
 async function slDeleteWorkspaceClones() {

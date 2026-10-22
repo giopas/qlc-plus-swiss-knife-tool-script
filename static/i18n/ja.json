@@ -4276,5 +4276,6 @@
  "The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.": "キューがShowより短いため、QLC+は次に進みShowを最後の前に止めます。キューをペダル待ちにしてください。",
  "Show {0} s · cut off after {1} s": "Show {0} 秒 · {1} 秒で途中終了",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Showは独自のタイムラインで再生されます。キューがペダル待ちなら最後まで再生され、次に踏むと進みます。",
- "Show {0} s": "Show {0} 秒"
+ "Show {0} s": "Show {0} 秒",
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Showは独自のタイムラインで動くため、In・Out・BPMは効きません。Holdは「ペダル待ち」のままにしてください。"
 }

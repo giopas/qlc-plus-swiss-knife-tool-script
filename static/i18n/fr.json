@@ -4225,5 +4225,6 @@
  "The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.": "La cue dure moins longtemps que le Show, donc QLC+ passe à la suite et arrête le Show avant sa fin. Réglez la cue pour attendre la pédale.",
  "Show {0} s · cut off after {1} s": "Show {0} s · coupé après {1} s",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Un Show suit sa propre timeline. Avec la cue qui attend la pédale, il va jusqu’au bout, puis l’appui suivant passe à la suite.",
- "Show {0} s": "Show {0} s"
+ "Show {0} s": "Show {0} s",
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Un Show suit sa propre timeline : In, Out et BPM ne le concernent pas. Laissez Hold sur « Attendre la pédale »."
 }

@@ -4276,5 +4276,6 @@
  "The cue lasts less time than the Show, so QLC+ moves on and stops the Show before its end. Set the cue to wait for the pedal.": "该cue比Show短，QLC+会继续前进并在结束前停止Show。请将cue设为等待踏板。",
  "Show {0} s · cut off after {1} s": "Show {0} 秒 · {1} 秒后被截断",
  "A Show plays on its own timeline. With the cue waiting for the pedal it plays to its end, then the next press moves on.": "Show在自己的时间线上播放。cue设为等待踏板时会播放到结束，再踩一次才前进。",
- "Show {0} s": "Show {0} 秒"
+ "Show {0} s": "Show {0} 秒",
+ "A Show runs on its own timeline: In, Out and BPM do not apply to it. Leave Hold on “Wait for the pedal”.": "Show在自己的时间线上运行，In、Out和BPM对它不起作用。请让Hold保持“等待踏板”。"
 }

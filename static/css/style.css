@@ -4749,3 +4749,7 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .sb-w-event { flex: 0 0 220px; } .sb-w-name { flex: 0 0 200px; } .sb-w-date { flex: 0 0 150px; }
 .sb-w-dip { flex: 0 0 70px; } .sb-w-paper { flex: 0 0 170px; }
 @media (max-width: 900px) { .sb-detail-t { min-width: 0; } }
+
+/* 3.9.8: a Show ignores In, Out and BPM */
+.fb-timing-na { opacity: .45; }
+.fb-timing-note { font-size: 11px; color: var(--text-dim); padding: 6px 2px 0; line-height: 1.35; }

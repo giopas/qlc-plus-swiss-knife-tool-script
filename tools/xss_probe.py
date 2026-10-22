@@ -22,6 +22,7 @@ from xml.sax.saxutils import escape
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
+sys.path.insert(0, ROOT)                      # shots.py imports app from the repo folder
 
 SCREENS = ["start", "quickstart", "fixtures", "reducer", "porter", "brightness", "looks", "vceditor", "stage",
            "setlist", "songbuilder", "triggers", "dictionary", "stagemon", "cabling", "doctor", "wizard", "upgrade", "compare",

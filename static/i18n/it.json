@@ -4301,5 +4301,7 @@
  "bar {0}": "battuta {0}",
  "beat {0}": "battito {0}",
  "{0} bars": "{0} battute",
- "{0} beats": "{0} battiti"
+ "{0} beats": "{0} battiti",
+ "Fill to the end of the music": "Riempi fino alla fine della musica",
+ "Pick the music first, and put this part after the ones before it.": "Scegli prima la musica e metti questa parte dopo le precedenti."
 }

@@ -4326,5 +4326,7 @@
  "bar {0}": "compás {0}",
  "beat {0}": "tiempo {0}",
  "{0} bars": "{0} compases",
- "{0} beats": "{0} tiempos"
+ "{0} beats": "{0} tiempos",
+ "Fill to the end of the music": "Rellenar hasta el final de la música",
+ "Pick the music first, and put this part after the ones before it.": "Elige primero la música y pon esta parte después de las anteriores."
 }

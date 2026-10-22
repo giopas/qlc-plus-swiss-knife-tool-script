@@ -94,7 +94,7 @@ function _sbdRender() {
       <td>${swatch}${i + 1}</td>
       <td><input class="field-input" type="text" value="${_sbdEsc(p.name)}" oninput="sbdCell(${i},'name',this.value)" placeholder="${_sbdEsc(t('Part'))}"></td>
       <td><input class="field-input sbd-look" type="text" readonly value="${_sbdEsc(p.function_id ? p.look : '')}" onclick="sbdPick(${i})" placeholder="${_sbdEsc(t('Pick a scene or chaser…'))}"></td>
-      <td style="width:90px"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" oninput="sbdCell(${i},'length',this.value)" placeholder="${_sbdEsc(_sbdLenHint())}"></td>
+      <td style="width:120px"><div class="sbd-len"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" oninput="sbdCell(${i},'length',this.value)" placeholder="${_sbdEsc(_sbdLenHint())}"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdFillEnd(${i})" aria-label="${_sbdEsc(t('Fill to the end of the music'))}" data-tooltip="${_sbdEsc(t('Fill to the end of the music'))}">⇥</button></div></td>
       <td style="width:60px"><input class="field-input" type="text" value="${_sbdEsc(p.repeat)}" oninput="sbdCell(${i},'repeat',this.value)"></td>
       <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="0"></td>
       <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="0"></td>
@@ -172,6 +172,19 @@ function sbdChanged() { clearTimeout(_sbdTimer); _sbdTimer = setTimeout(sbdPrevi
 function sbdCell(i, key, val) { if (_sbd.parts[i]) { _sbd.parts[i][key] = val; if (key === 'name') _sbdRecolor(); sbdChanged(); } }
 function _sbdRecolor() { document.querySelectorAll('#sbd-rows tr').forEach((tr, i) => { const sw = tr.querySelector('.sbd-swatch'); if (sw && _sbd.parts[i]) sw.style.background = _sbdColor(_sbd.parts[i].name); }); }
 function sbdAddRow() { _sbd.parts.push(_sbdBlank('')); _sbdRender(); sbdChanged(); }
+// ⇥ writes the number that makes this part end exactly where the music ends (what is left after the parts above it).
+function sbdFillEnd(i) {
+  const p = _sbd.parts[i], music = _sbd.musicMs || 0, start = p && p.start_ms;
+  if (!p || !music || start === undefined || music <= start) { _sbdOut(_sbdEsc(t('Pick the music first, and put this part after the ones before it.')), 'hint'); return; }
+  const rem = music - start, bpm = parseFloat(document.getElementById('sbd-bpm').value), bpb = parseFloat(document.getElementById('sbd-bpb').value) || 4, u = _sbdUnit();
+  let txt;
+  if (u === 'seconds' || !(bpm > 0)) txt = (+(rem / 1000).toFixed(2)) + 's';
+  else { const beats = rem / (60000 / bpm); txt = String(+(u === 'bars' ? beats / bpb : beats).toFixed(2)); }
+  p.length = txt; p.repeat = 1;
+  _sbdRender();
+  sbdChanged();
+}
+
 function sbdCopy(i) {
   const p = _sbd.parts[i];
   if (!p) return;
@@ -253,6 +266,7 @@ function _sbdShowPlan(res) {
 
 async function sbdPreview() {
   const res = await _sbdPost('/api/songbuilder/preview');
+  if (!res.error) _sbd.musicMs = res.music_ms || 0;
   if (res.error) { _sbdOut(_sbdEsc(res.error), 'hint'); return; }
   document.getElementById('sbd-out').innerHTML = _sbdShowPlan(res);
 }

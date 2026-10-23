@@ -161,6 +161,8 @@ def main():
         shot("26-vc-widgets.png", None, 1200)
         # 27 · the picture of a Show (3.10.0): the demo song's Show, read only
         load(os.path.join(CORPUS, "SongBuilder_demo.qxw"))
+        pg.click("#sn-songbuilder")
+        pg.wait_for_timeout(1000)
         try:
             pg.evaluate("async () => { const l = await (await fetch('/api/songbuilder/list')).json();"
                         " const s = l.find(x => x.name === 'Demo Song'); await showPicOpen(s.id); }")

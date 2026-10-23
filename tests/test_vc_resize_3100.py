@@ -107,3 +107,18 @@ def test_the_editor_uses_it_and_pushes_one_history_step_per_drag():
     assert "vceResizeRect(" in move and "_vceChanges" in move
     assert "Math.min(g, 50)" in src                                              # the grid step is the box's, 1 to 50
     assert not re.search(r"_vceResize\s*=\s*\{[^}]*grid:\s*snap", src)           # resizing does not depend on the move checkbox
+
+
+# ── after giopas's hand test (23 Oct): a duplicated ID must not change how far a widget may grow ──
+
+def test_the_frame_size_comes_from_the_tree_not_from_an_id_map():
+    """A page and a widget that share ID 0 made the page's size read from the widget (so a widget could
+    not grow to the right). The bounds are the parent's size taken while the tree is flattened."""
+    src = open(os.path.join(os.path.dirname(__file__), "..", "static", "js", "vc_editor.js"), encoding="utf-8").read()
+    assert "_pw: parentSize" in src and "bounds: n._pw != null" in src
+    assert "_vceNodes[n._parentId]" not in src.split("function _vceOnMouseDown")[1].split("function _vceOnMouseUp")[0]
+
+
+def test_one_grid_number_in_toolbar_and_panel():
+    html = open(os.path.join(os.path.dirname(__file__), "..", "templates", "index.html"), encoding="utf-8").read()
+    assert 'id="vce-grid-top"' in html and 'id="vce-snap-grid"' in html and "Mask ±" in html

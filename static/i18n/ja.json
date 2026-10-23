@@ -4375,5 +4375,9 @@
  "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "クリックの音色：各小節の1拍目は常に高いか厚みがあり、より大きく鳴ります。",
  "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "このショーはQLC+ {0}で保存されました。新しいウィジェットはQLC+ 5.3でのみ確認済みです。「QLC+ 5.3 へアップグレード」画面で追加内容を確認でき、クリックするまで何も書き込みません。",
  "Review the upgrade": "アップグレードを確認",
- "Not now": "今はしない"
+ "Not now": "今はしない",
+ "{0} ID {1} is used by {2} widgets ({3}), so it cannot be moved or copied safely. Click 'Fix duplicate IDs' (the orange note at the top of the right panel, or in Pages) first, then try again.": "{0}（ID {1}）は {2} 個のウィジェット（{3}）で使われているため、安全に移動やコピーができません。先に「重複 ID を修正」（右パネル上部のオレンジ色の注記、またはページ内）を押してから、もう一度お試しください。",
+ "Mask ±": "マスク ±",
+ "The grid step in pixels. Resizing and moving snap to it; a larger step is coarser.": "グリッドの間隔（ピクセル）。サイズ変更と移動はこれに合わせて動き、大きいほど粗くなります。",
+ "Mask view: the alignment limits, in pixels": "マスク表示：整列の許容範囲（ピクセル）"
 }

@@ -4375,5 +4375,9 @@
  "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "节拍音色：每小节第一拍始终更高或更厚实，并且更响。",
  "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "此演出由 QLC+ {0} 保存。新控件仅在 QLC+ 5.3 中验证过：“升级到 QLC+ 5.3”页面会显示将添加的内容，点击之前不会写入任何内容。",
  "Review the upgrade": "查看升级",
- "Not now": "暂不"
+ "Not now": "暂不",
+ "{0} ID {1} is used by {2} widgets ({3}), so it cannot be moved or copied safely. Click 'Fix duplicate IDs' (the orange note at the top of the right panel, or in Pages) first, then try again.": "{0}（ID {1}）被 {2} 个控件（{3}）共用，因此无法安全地移动或复制。请先点击“修复重复 ID”（右侧面板顶部的橙色提示，或在“页面”中），然后重试。",
+ "Mask ±": "蒙版 ±",
+ "The grid step in pixels. Resizing and moving snap to it; a larger step is coarser.": "网格步长（像素）。调整大小和移动都会对齐到它，步长越大越粗。",
+ "Mask view: the alignment limits, in pixels": "蒙版视图：对齐的容差范围（像素）"
 }

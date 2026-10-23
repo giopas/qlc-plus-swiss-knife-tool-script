@@ -357,9 +357,8 @@ function _vcbShowUpg() {
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-vcb-upg]');
   if (!b) return;
-  const go_ = b.dataset.vcbUpg === 'go';
+  if (b.dataset.vcbUpg === 'go') { if (typeof go === 'function') go('upgrade'); return; }   // the note stays until "Not now"
   _vcbUpg = null; _vcbShowUpg();
-  if (go_ && typeof go === 'function') go('upgrade');
 });
 
 async function vcbRenamePage() {

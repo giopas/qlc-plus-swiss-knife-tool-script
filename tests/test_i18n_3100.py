@@ -33,6 +33,10 @@ KEYS = [
     "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.",
     "Review the upgrade",
     "Not now",
+    "{0} ID {1} is used by {2} widgets ({3}), so it cannot be moved or copied safely. Click 'Fix duplicate IDs' (the orange note at the top of the right panel, or in Pages) first, then try again.",
+    "Mask ±",
+    "The grid step in pixels. Resizing and moving snap to it; a larger step is coarser.",
+    "Mask view: the alignment limits, in pixels",
 ]
 
 

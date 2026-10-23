@@ -4375,5 +4375,9 @@
  "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "Der Klang des Klicks: Der erste Schlag jedes Takts ist immer höher oder voller und lauter.",
  "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "Diese Show wurde mit QLC+ {0} gespeichert. Die neuen Widgets wurden nur mit QLC+ 5.3 geprüft: Der Bildschirm „Auf QLC+ 5.3 aktualisieren“ zeigt, was er hinzufügen würde, und schreibt nichts, bevor Sie klicken.",
  "Review the upgrade": "Aktualisierung ansehen",
- "Not now": "Jetzt nicht"
+ "Not now": "Jetzt nicht",
+ "{0} ID {1} is used by {2} widgets ({3}), so it cannot be moved or copied safely. Click 'Fix duplicate IDs' (the orange note at the top of the right panel, or in Pages) first, then try again.": "{0} mit ID {1} wird von {2} Widgets verwendet ({3}) und kann deshalb nicht sicher verschoben oder kopiert werden. Klicke zuerst auf „Doppelte IDs reparieren“ (die orange Notiz oben im rechten Bereich oder unter Seiten) und versuche es dann erneut.",
+ "Mask ±": "Maske ±",
+ "The grid step in pixels. Resizing and moving snap to it; a larger step is coarser.": "Die Rasterweite in Pixeln. Größe ändern und Verschieben rasten darauf ein; eine größere Weite ist gröber.",
+ "Mask view: the alignment limits, in pixels": "Maskenansicht: die Ausrichtungsgrenzen in Pixeln"
 }

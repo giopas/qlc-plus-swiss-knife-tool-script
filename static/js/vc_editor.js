@@ -134,16 +134,18 @@ function _vceSelectPage(idx) {
 }
 
 // Build flat id→node map with absolute canvas coords
-function _vceFlattenNode(node, parentId, absX, absY) {
+function _vceFlattenNode(node, parentId, absX, absY, parentSize) {
   const nx = absX + (node.x || 0);
   const ny = absY + (node.y || 0);
   const pending = _vceChanges[node.id] || {};
   _vceNodes[node.id] = Object.assign({}, node, pending, {
     _absX: nx, _absY: ny,
     _parentId: parentId,
+    _pw: parentSize ? parentSize.w : null, _ph: parentSize ? parentSize.h : null,   // the frame's size, from the tree itself
     _alignQ: 0,
   });
-  (node.children || []).forEach(c => _vceFlattenNode(c, node.id, nx, ny));
+  const mine = { w: pending.w ?? node.w, h: pending.h ?? node.h };
+  (node.children || []).forEach(c => _vceFlattenNode(c, node.id, nx, ny, mine));
 }
 
 // Re-flatten after edits (preserves _alignQ computed separately)
@@ -538,6 +540,10 @@ function _vceHitTest(ax, ay) {
   return null;
 }
 
+/** The toolbar's grid box and the panel's Snap to grid box are one number. */
+function vceGridFromToolbar(v) { const p = document.getElementById('vce-snap-grid'); if (p) p.value = v; }
+function vceGridFromPanel(v) { const p = document.getElementById('vce-grid-top'); if (p) p.value = v; }
+
 /** The grid step (px) of the editor's "Snap to grid" box; resizing always snaps to it. */
 function _vceGridStep() {
   const g = parseInt(document.getElementById('vce-snap-grid')?.value);
@@ -616,9 +622,9 @@ function _vceOnMouseDown(e) {
   // Press on a handle of the one selected widget → drag to resize, always snapped to the grid.
   const hh = _vceHandleHit(ax, ay);
   if (hh) {
-    const n = hh.n, par = n._parentId && _vceNodes[n._parentId];
+    const n = hh.n;
     _vceResize = { h: hh.h, id: n.id, orig: { x: n.x, y: n.y, w: n.w, h: n.h }, ax, ay, sx: e.clientX, sy: e.clientY,
-                   grid: _vceGridStep(), bounds: par ? { w: par.w, h: par.h } : null, moved: false, before: _vceLocalSnapshot() };
+                   grid: _vceGridStep(), bounds: n._pw != null ? { w: n._pw, h: n._ph } : null, moved: false, before: _vceLocalSnapshot() };
     e.preventDefault();
     return;
   }

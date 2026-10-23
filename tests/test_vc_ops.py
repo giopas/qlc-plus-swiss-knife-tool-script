@@ -200,3 +200,15 @@ def test_undo_route():
     import app
     c = app.create_app().test_client()
     assert c.post("/api/vc/undo").status_code == 400      # no workspace
+
+
+def test_duplicate_id_message_names_the_widgets_and_the_button():
+    from core import vc_builder
+    root = vc_builder.ET.fromstring(
+        '<Workspace><VirtualConsole><Frame Caption="Page" ID="0"><WindowState X="0" Y="0" Width="900" Height="600"/>'
+        '<Button Caption="Ice Arena" ID="0"><WindowState X="0" Y="0" Width="50" Height="30"/></Button></Frame>'
+        '</VirtualConsole></Workspace>')
+    with pytest.raises(vc_ops.VcOpError) as e:
+        vc_builder.create_widget(root, "0", "Knob")
+    m = str(e.value)
+    assert "“Page”" in m and "“Ice Arena”" in m and "orange note" in m and "Fix duplicate IDs" in m

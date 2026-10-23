@@ -95,9 +95,11 @@ def _get(by_id, wid: str, what: str = "widget") -> ET.Element:
     if not els:
         raise VcOpError(f"{what.capitalize()} ID {wid} not found.")
     if len(els) > 1:
+        names = " + ".join("\u201c%s\u201d" % (e.get("Caption", "") or _local(e.tag)) for e in els[:4])
         raise VcOpError(
-            f"{what.capitalize()} ID {wid} is used by {len(els)} widgets, so it cannot be "
-            f"moved or copied safely. Click 'Fix duplicate IDs' in the Pages section first.")
+            f"{what.capitalize()} ID {wid} is used by {len(els)} widgets ({names}), so it cannot be "
+            f"moved or copied safely. Click 'Fix duplicate IDs' (the orange note at the top of the "
+            f"right panel, or in Pages) first, then try again.")
     return els[0]
 
 

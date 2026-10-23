@@ -1546,8 +1546,18 @@
         <button class="vce-xb"    id="vce-btn-mask"   onclick="vceSetMode('mask')">Mask</button>
         <div class="vce-sep"></div>
 
+        <!-- Grid step (the same number as Snap to grid in the panel) -->
+        <span style="font-size:11px;color:var(--text-muted)">Grid</span>
+        <input id="vce-grid-top" type="number" min="1" max="50" value="5" aria-label="Grid step in pixels"
+               title="The grid step in pixels. Resizing and moving snap to it; a larger step is coarser."
+               style="width:36px;font-size:11px;padding:2px 4px;background:var(--surface-0);
+                      border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
+               oninput="vceGridFromToolbar(this.value)">
+        <span style="font-size:11px;color:var(--text-muted)">px</span>
+        <div class="vce-sep"></div>
+
         <!-- Mask thresholds -->
-        <span style="font-size:11px;color:var(--text-muted)">±</span>
+        <span style="font-size:11px;color:var(--text-muted)" title="Mask view: the alignment limits, in pixels">Mask ±</span>
         <input id="vce-thresh0" type="number" min="1" max="20" value="2" title="Minor threshold (px)"
                style="width:36px;font-size:11px;padding:2px 4px;background:var(--surface-0);
                       border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary);font-family:var(--font-mono)"
@@ -1656,7 +1666,7 @@
 
               <div class="vce-sec">Snap to grid</div>
               <div class="vce-row">
-                <input id="vce-snap-grid" type="number" min="1" max="50" value="5" class="vce-pi vce-n" aria-label="Grid step in pixels" title="The grid step. Dragging a handle to resize a widget always snaps to it: a larger step is coarser, a smaller one is finer.">
+                <input id="vce-snap-grid" type="number" min="1" max="50" value="5" class="vce-pi vce-n" oninput="vceGridFromPanel(this.value)" aria-label="Grid step in pixels" title="The grid step. Dragging a handle to resize a widget always snaps to it: a larger step is coarser, a smaller one is finer.">
                 <span class="vce-lb">px</span>
                 <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap selection</button>
                 <label class="vce-lb" title="Drag a selected widget to move it; positions snap to this grid. Resizing by its handles always snaps."><input type="checkbox" id="vce-snap-drag" checked> while moving</label>

@@ -5,6 +5,23 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [Unreleased]
+
+### Added — VC Editor and Song Builder extras (3.10.0, in progress)
+
+- **Resize by dragging handles (VC Editor).** One selected widget or frame shows eight handles; dragging one moves the edges it stands on. The edges always land on the grid of *Snap to grid* (1 to 50 px, changeable); a widget keeps a minimum size (10 px, or one grid step) and is not dragged out of its frame (one that already reaches out keeps its edge). One drag is one step in the editor's Undo. Resizing a frame below its contents says how many widgets now reach outside. The *while dragging* box is now *while moving* (it only affects moves). The arithmetic is `static/js/vc_resize.js`, tested with node.
+- **Templates with keys and MIDI (VC Builder).** *Save this page* can keep each widget's key and MIDI input (universe and channel). Adding such a template first shows every binding: taken from the template, or to set again because the show already uses it (the Trigger Manager's check: a key, or a universe and channel, belongs to one widget) or because the template repeats it. A clash is never written. The panel also says when a MIDI universe has no input device in the show (the device is not part of a page and never travels with a template). `bindings` `keep` or `drop` and a preview for Claude's `edit_vc` `apply_template`; `POST /api/vc/template-preview`. Templates saved before, or without the box, behave as before. Odd bindings in a template from the Library (a long key text, a universe that is not a number) are dropped.
+- **Click track (Song Builder).** *Make a click track* writes a mono 16-bit `.wav` (22.05 kHz, standard library only) with a click on every beat and a higher, louder one on the first beat of each bar, at the song's BPM and as long as the parts, next to the saved show as `<song> click <BPM> BPM.wav`. A taken name gets `2`, `3` … (the file is opened with `x`, so nothing is ever replaced); the page sends no path, only the song's name, reduced to a plain file name; at most 20 minutes. The same bytes for the same input. It becomes the song's music. Claude: `song_builder` `click=true` answers with the file's path. `core/click_track.py`, `POST /api/songbuilder/click`.
+- **A picture of any Show.** The Song Builder's coloured bars for every Show of the open file (a row for each track, a bar for each item, sound and video items marked when the file is missing, muted tracks dimmed), read only. A **Picture** button sits next to the Show tag in the Setlist and on the Doctor's findings about a Show (D004, D025). `core/show_picture.py`, `GET /api/showpic/list` and `/api/showpic/<id>`. Ids travel as data attributes, never inside a handler; colours must be `#rrggbb`; at most 200 tracks and 5000 items.
+- **Security.** The click track and the picture are listed in the audit's *Repeat* section with tests (`tests/test_click_track_3100.py`, `tests/test_show_picture_3100.py`).
+- **Not yet in:** the knob, XY pad, speed dial and clock widgets wait for a file saved by QLC+ 5.3 that has all four; nothing is written from memory (WORKPLAN 3.10.0, A.2).
+
+### Fixed
+
+- The wiki's Setlist page still described *Split Show…*, which was dropped in 3.9.8.
+
+---
+
 ## [3.9.8] — 2026-10-23 — Shows in the Setlist and the Song Builder
 
 ### Added — Shows in the Setlist (3.9.8)

@@ -8,6 +8,7 @@ Flask routes for the Song Builder (3.9.8): a table of parts becomes one Show.
   POST /api/songbuilder/preview   — part starts, length, warnings; changes nothing
   POST /api/songbuilder/music     — name and length of a sound file (by path)
   POST /api/songbuilder/build     — build or rebuild the Show in the show in progress
+  POST /api/songbuilder/click     — make a click track (.wav) next to the show (3.10.0)
 """
 
 import os
@@ -71,3 +72,17 @@ def song_build():
         return _err(e)
     except Exception as e:  # noqa: BLE001
         return jsonify({'error': str(e)[:300]}), 500
+
+
+@bp.route('/click', methods=['POST'])
+def song_click():
+    """A click track at the table's BPM and length, saved next to the show under a free name.
+    The page sends no path: the folder is the show's, the name is reduced to a plain file name."""
+    try:
+        out = ws.song_click(request.get_json(force=True) or {})
+        out['found'] = True
+        return jsonify(out)
+    except ValueError as e:
+        return _err(e)
+    except OSError as e:
+        return jsonify({'error': 'The click track could not be saved: ' + str(e.strerror or e)[:200]}), 500

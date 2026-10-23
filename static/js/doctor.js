@@ -155,6 +155,7 @@ function doctorRender() {
           ${f.fixable ? `<input type="checkbox" ${_docSel.has(f.key) ? 'checked' : ''} onchange="doctorTick(${JSON.stringify(f.key).replace(/"/g, '&quot;')}, this.checked)">` : '<span class="doc-nobox"></span>'}
           <span class="doc-loc">${_esc(f.location)}</span>
           <span class="doc-msg">${_esc(f.message)}</span>
+          ${f.show_id ? `<button type="button" class="btn btn-surface sp-btn" data-showpic="${_esc(f.show_id)}">${_esc(t('Picture'))}</button>` : ''}
         </label>`).join('') + (items.length > _DOC_SHOW
           ? `<div class="doc-more">… ${items.length - _DOC_SHOW} more — they follow the group tick box.</div>` : '')
       : '';

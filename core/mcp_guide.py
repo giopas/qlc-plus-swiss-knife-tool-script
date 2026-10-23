@@ -204,9 +204,11 @@ GUIDE: Dict[str, dict] = {
                  ("parts", "[{name, function_id, length, repeat, fade_in, fade_out, beats}] in order. function_id is a "
                            "scene or chaser. Same name = same track. `beats` = beats per step of a chaser."),
                  ("show_id", "Rebuild this Show instead of making a new one."),
-                 ("apply", "false: only show the starts, the free time and warnings.")],
+                 ("apply", "false: only show the starts, the free time and warnings."),
+                 ("click", "true: make a click track instead (needs `bpm` and `parts` with lengths): a new .wav next to "
+                           "the show, as long as the parts. Then call again with music {path} set to the file it returns.")],
         "returns": "Preview: parts with start_ms, end_ms and any issue, length_ms, music_ms, free_ms, warnings. "
-                   "Build: the Show's id and name, and what was written.",
+                   "Build: the Show's id and name, and what was written. Click: the new file's path, name and length.",
         "notes": "length is a number in the unit, `to the end` (last part only; needs the music's length) or "
                  "`until 1:20` / `until bar 17` (a point counted from the start of the song). Show the preview first. "
                  "The music is never cut and QLC+ always plays it from its start. A fade makes a copy of the scene.",
@@ -350,7 +352,12 @@ EDIT_VC_OPS: Dict[str, str] = {
               "buttons and sliders too small to tap. Add preview: true to see that without changing the show. Screens: "
               + ", ".join(f"{x['id']} ({x['w']}x{x['h']}{', touch' if x['touch'] else ''})" for x in vc_screens.BUILTIN)
               + ". Without mode, scale true stretches and false sets the page size only (older recipes).",
-    "apply_template": "name, caption: add a saved VC template as a page.",
+    "apply_template": "name, caption, bindings: add a saved VC template as a page. A template saved with its keys and "
+                      "MIDI inputs brings them (bindings keep, the default for it) except those the show already uses "
+                      "(Trigger Manager's check): it never makes a clash. Those come back in `bindings` with status "
+                      "clash/repeat/dropped = set them again; `kept` are taken from the template; `universes` says "
+                      "whether the MIDI universe has an input device in this show. bindings drop leaves all out. "
+                      "Add preview: true to see this without changing the show.",
     "setlist_cuelist": "chaser_id, cuelist_id, page_id: show a setlist chaser in a CueList widget.",
     "fix_ids": "(no arguments): give duplicate widget ids new ones.",
 }

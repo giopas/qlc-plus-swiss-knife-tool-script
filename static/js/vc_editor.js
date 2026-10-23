@@ -37,6 +37,8 @@ let _vceDragStart  = null;   // {ax, ay, sx, sy, add} where the drag started
 let _vceDragRect   = null;   // {x1,y1,x2,y2} current rubber-band rect
 let _vceSuppressClick = false;  // true right after a rubber-band drag
 let _vceMoveDrag   = null;   // {ax, ay, sx, sy, ids, orig:{id:{x,y}}, snap, moved} drag-to-move
+let _vceResize     = null;   // {h, id, orig:{x,y,w,h}, ax, ay, sx, sy, grid, bounds, moved, before} drag-to-resize (3.10.0)
+const VCE_HANDLE_PX = 7;     // how close (screen pixels) a press must be to a handle
 const VCE_DRAG_PX  = 4;      // screen pixels before a press becomes a drag
 const VCE_ZOOM_MIN = 0.1, VCE_ZOOM_MAX = 4.0;
 
@@ -368,11 +370,11 @@ function _vceRender() {
 
   const s = _vceZoom;
 
-  // Draw grid overlay in mask mode
-  if (_vceMode === 'mask') {
-    ctx.strokeStyle = '#cdd6f408';
+  // Draw grid overlay in mask mode, and while a handle is dragged (the grid it snaps to)
+  if (_vceMode === 'mask' || _vceResize) {
+    ctx.strokeStyle = _vceResize ? '#89b4fa30' : '#cdd6f408';
     ctx.lineWidth   = 0.5;
-    const gs = 10 * s;
+    const gs = Math.max((_vceResize ? _vceResize.grid : 10) * s, 4);
     for (let gx = 0; gx < cv.width; gx += gs) {
       ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, cv.height); ctx.stroke();
     }
@@ -387,6 +389,7 @@ function _vceRender() {
   const widgets = allNodes.filter(n => n.type !== 'Frame' && n.type !== 'SoloFrame');
 
   [...frames, ...widgets].forEach(n => _vceDrawNode(ctx, n, s));
+  _vceDrawHandles(ctx, s);          // on top, so a frame's handles are not hidden by its children
 
   // The outline of the screen the console is being fitted to (VC Builder, Screen size)
   if (window._vceOutline) {
@@ -421,6 +424,22 @@ function _vceRender() {
 function _vceRR(ctx, x, y, w, h, r) {
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
   else ctx.rect(x, y, w, h);
+}
+
+/** Resize handles: the one selected widget or frame (not the page) gets eight (3.10.0). */
+function _vceDrawHandles(ctx, s) {
+  if (_vceSel.size !== 1) return;
+  const n = _vceNodes[[..._vceSel][0]];
+  if (!n || (_vcePage && n.id === _vcePage.id)) return;
+  const hs = VCE_HANDLE_PX, pts = vceHandlePoints(n);
+  ctx.save();
+  ctx.fillStyle = '#89b4fa'; ctx.strokeStyle = '#11111b'; ctx.lineWidth = 1;
+  VCE_HANDLES.forEach(k => {
+    const hx = pts[k][0] * s, hy = pts[k][1] * s;
+    ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
+    ctx.strokeRect(hx - hs / 2, hy - hs / 2, hs, hs);
+  });
+  ctx.restore();
 }
 
 function _vceDrawNode(ctx, n, s) {
@@ -488,8 +507,8 @@ function _vceDrawNode(ctx, n, s) {
                    sx + sw - 2 * s, sy + 2 * s);
     }
 
-    // Selection corner handles
-    if (isSel) {
+    // Selection corner handles (several widgets selected)
+    if (isSel && _vceSel.size > 1) {
       const hs = Math.max(3, 4 * s);
       ctx.fillStyle = '#89b4fa';
       [[sx,sy],[sx+sw,sy],[sx,sy+sh],[sx+sw,sy+sh]].forEach(([hx,hy]) => {
@@ -519,8 +538,35 @@ function _vceHitTest(ax, ay) {
   return null;
 }
 
+/** The grid step (px) of the editor's "Snap to grid" box; resizing always snaps to it. */
+function _vceGridStep() {
+  const g = parseInt(document.getElementById('vce-snap-grid')?.value);
+  return g >= 1 ? Math.min(g, 50) : 5;
+}
+
+/** The one selected widget (not the page) whose resize handle is under the pointer: {n, h} or null. */
+function _vceHandleHit(ax, ay) {
+  if (_vceSel.size !== 1) return null;
+  const n = _vceNodes[[..._vceSel][0]];
+  if (!n || (_vcePage && n.id === _vcePage.id)) return null;
+  const h = vceHandleAt(n, ax, ay, VCE_HANDLE_PX / _vceZoom);
+  return h ? { n, h } : null;
+}
+
 function _vceOnMouseMove(e) {
   const [ax, ay] = _vceCanvasXY(e);
+  if (_vceResize) {
+    const m = _vceResize;
+    if (!m.moved && Math.hypot(e.clientX - m.sx, e.clientY - m.sy) < VCE_DRAG_PX) return;
+    if (!m.moved) { m.moved = true; _vcePush(m.before); }          // one History step per drag
+    const n = _vceNodes[m.id]; if (!n) return;
+    const r = vceResizeRect(m.orig, m.h, ax - m.ax, ay - m.ay, m.grid, m.bounds);
+    Object.assign(n, r); n._alignQ = 0;
+    Object.assign(_vceChanges[m.id] = _vceChanges[m.id] || {}, r);
+    _vceRedrawPage();
+    _vceStatus(`Resizing — x:${r.x} y:${r.y} w:${r.w} h:${r.h} (grid ${m.grid}px)`, 'ok');
+    return;
+  }
   if (_vceMoveDrag) {
     const m = _vceMoveDrag;
     if (!m.moved && Math.hypot(e.clientX - m.sx, e.clientY - m.sy) < VCE_DRAG_PX) return;
@@ -541,7 +587,8 @@ function _vceOnMouseMove(e) {
   const hit = _vceHitTest(ax, ay);
   const newHov = hit ? hit.id : null;
   if (newHov !== _vceHov) { _vceHov = newHov; _vceRender(); }
-  document.getElementById(VCE_CV_ID).style.cursor = hit ? 'pointer' : 'default';
+  const hh = _vceHandleHit(ax, ay);
+  document.getElementById(VCE_CV_ID).style.cursor = hh ? vceHandleCursor(hh.h) : (hit ? 'pointer' : 'default');
 
   // Update rubber-band (only after the mouse really moved)
   if (_vceDragStart && !_vceDragRect &&
@@ -566,6 +613,15 @@ function _vceOnMouseMove(e) {
 function _vceOnMouseDown(e) {
   if (e.button !== 0) return;
   const [ax, ay] = _vceCanvasXY(e);
+  // Press on a handle of the one selected widget → drag to resize, always snapped to the grid.
+  const hh = _vceHandleHit(ax, ay);
+  if (hh) {
+    const n = hh.n, par = n._parentId && _vceNodes[n._parentId];
+    _vceResize = { h: hh.h, id: n.id, orig: { x: n.x, y: n.y, w: n.w, h: n.h }, ax, ay, sx: e.clientX, sy: e.clientY,
+                   grid: _vceGridStep(), bounds: par ? { w: par.w, h: par.h } : null, moved: false, before: _vceLocalSnapshot() };
+    e.preventDefault();
+    return;
+  }
   // Press on an already selected widget (not the page) → drag to move the
   // selection, snapped to the grid when "snap while dragging" is on.
   const hit0 = _vceHitTest(ax, ay);
@@ -590,6 +646,17 @@ function _vceOnMouseDown(e) {
 }
 
 function _vceOnMouseUp(e) {
+  if (_vceResize) {
+    const m = _vceResize, n = _vceNodes[m.id];
+    _vceResize = null;
+    if (m.moved && n) {
+      _vceSuppressClick = true;
+      const out = (n.children || []).filter(c => c.x + c.w > n.w || c.y + c.h > n.h).length;
+      _vceStatus(`Resized to ${n.w}×${n.h}` + (out ? ` · ${out} widget(s) now reach outside this frame` : '') + ' · not saved yet', out ? 'warn' : 'ok');
+      _vceRender();
+    }
+    return;
+  }
   if (_vceMoveDrag) {
     if (_vceMoveDrag.moved) { _vceSuppressClick = true; _vceStatus(`Moved ${_vceMoveDrag.ids.length} widget(s) · not saved yet`, 'ok'); }
     _vceMoveDrag = null;

@@ -56,14 +56,23 @@ def _defs(path: str) -> dict:
     return defs
 
 
-def _finding(f):
+def _show_ids(root):
+    """The ids of the Shows in the file (the Doctor links their findings to a picture)."""
+    return frozenset(el.get('ID') for el in root.iter()
+                     if el.tag.endswith('Function') and el.get('Type') == 'Show')
+
+
+def _finding(f, shows=frozenset()):
     ok = fixes.fixable(f)
+    fn = (f.ref or {}).get('function')
     return {
         'key': fixes.finding_key(f), 'code': f.code, 'severity': f.severity,
         'location': f.location, 'message': f.message, 'fixable': ok,
         'hint': fixes.fix_hint(f),
         'removing': f.code in fixes.REMOVING,
         'default': ok and f.code in fixes.DEFAULT_CODES,
+        # 3.10.0: a finding about a Show gets a read-only picture of it
+        **({'show_id': str(fn)} if fn is not None and str(fn) in shows else {}),
     }
 
 
@@ -75,10 +84,11 @@ def run_check():
     try:
         rep = check(root, _defs(path), source=name,
                     base_dir=os.path.dirname(os.path.abspath(path)) if path else '')
+        shows = _show_ids(root)
         return jsonify({
             'source': name, 'stats': rep.stats, 'summary': rep.severity_counts(),
             'counts': rep.counts(), 'titles': TITLES,
-            'findings': [_finding(f) for f in rep.findings],
+            'findings': [_finding(f, shows) for f in rep.findings],
         })
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500

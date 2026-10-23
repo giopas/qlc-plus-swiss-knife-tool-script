@@ -603,20 +603,26 @@ def list_templates() -> List[dict]:
                         t = json.load(fh)
                     out.append({"name": t.get("name", fn[:-5]), "caption": t.get("caption", ""),
                                 "widgets": t.get("widgets", 0), "functions": len(t.get("functions", {})),
+                                "bindings": sum((t.get("bindings") or {}).values()) if isinstance(t.get("bindings"), dict) else 0,
                                 "file": fn})
                 except (OSError, ValueError):
                     continue
     return out
 
 
-def save_template(root, page_id: str, name: str) -> dict:
-    """Save a page (layout, colours, function *names*; no key/MIDI bindings)
-    as a reusable template."""
+def save_template(root, page_id: str, name: str, keep_bindings: bool = False) -> dict:
+    """Save a page (layout, colours, function *names*) as a reusable template.
+
+    By default the key and MIDI bindings are left out (as before 3.10.0).  With *keep_bindings*
+    each widget keeps the key and the MIDI input (universe and channel) it has; applying the
+    template says what comes from it and what must be set again (see :func:`preview_template`).
+    The input *device* of a universe is not part of a page, so it never travels with a template."""
     vc = _vc(root)
     page = copy.deepcopy(_page(vc, page_id))
     from core.qxw_io import strip_ns
     page = strip_ns(page)
-    _strip_bindings(page)
+    if not keep_bindings:
+        _strip_bindings(page)
     fns = functions(root)
     used = {}
     for el in page.iter():
@@ -627,11 +633,16 @@ def save_template(root, page_id: str, name: str) -> dict:
             "widgets": sum(1 for w in page.iter() if _is_widget(w)),
             "functions": used,
             "xml": ET.tostring(page, encoding="unicode")}  # qxw-io: not output (template JSON)
+    nb = _page_bindings(page) if keep_bindings else []
+    if keep_bindings:
+        data["bindings"] = {"keys": sum(1 for b in nb if b["kind"] == "key"),
+                            "inputs": sum(1 for b in nb if b["kind"] == "input")}
     os.makedirs(templates_dir(), exist_ok=True)
     path = os.path.join(templates_dir(), _slug(name) + ".json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=1)
-    return {"template": data["name"], "widgets": data["widgets"], "functions": len(used)}
+    return {"template": data["name"], "widgets": data["widgets"], "functions": len(used),
+            "bindings": len(nb)}
 
 
 def delete_template(name: str) -> bool:
@@ -654,16 +665,87 @@ def _refs(el: ET.Element) -> List[str]:
     return []
 
 
-def apply_template(root, name: str, caption: str = "") -> dict:
-    """Add a saved template as a new page; functions are matched **by name and
-    type** in this workspace (unmatched → unwired, listed)."""
+def _page_bindings(page) -> List[dict]:
+    """The key and MIDI bindings of the widgets of a namespace-free *page*, in document order:
+    ``[{widget: element, label, kind: key|input, key: binding key, binding: element}]``."""
+    from core import porter_input as pi
+    out = []
+    for w in page.iter():
+        if not _is_widget(w):
+            continue
+        for _slot, parent, el in pi.widget_bindings(w):
+            k = pi.binding_key(el)
+            if k is not None:
+                out.append({"widget": w, "label": f"{_local(w.tag)} '{w.get('Caption', '')}'",
+                            "kind": k[0], "key": k, "binding": el, "parent": parent})
+    return out
+
+
+def _binding_is_sane(k) -> bool:
+    """A template can come from anywhere (the Library): only a plain key name or digits are accepted."""
+    if k[0] == "key":
+        return 0 < len(k[1]) <= 40 and all(c.isprintable() for c in k[1])
+    return k[1].isdigit() and k[2].isdigit() and len(k[1]) <= 3 and len(k[2]) <= 5
+
+
+def _load_template(name: str) -> dict:
     path = os.path.join(templates_dir(), _slug(name) + ".json")
     if not os.path.isfile(path):
         raise VcOpError(f"Template '{name}' not found.")
     with open(path, encoding="utf-8") as fh:
-        t = json.load(fh)
+        return json.load(fh)
+
+
+def _template_page(root, t: dict, bindings: str):
+    """The template's page ready to be added to *root* (namespace of the show, function ids mapped),
+    and what was decided about its bindings.  Returns ``(page, mapping, missing, report)``.
+
+    *bindings* is ``keep`` (take the template's keys and MIDI inputs, except where the show already
+    uses them) or ``drop``.  The check is the Trigger Manager's: a key, or a universe and channel,
+    used by two widgets.  A binding that would clash is **not** written; it is listed so the
+    user sets it again."""
+    from core import porter_input as pi
+    from core.qxw_io import strip_ns
+    if bindings not in ("keep", "drop"):
+        raise VcOpError("bindings must be 'keep' or 'drop'.")
     vc = _vc(root)
     page = ET.fromstring(t["xml"])  # nosec B314 — our own file
+    report = {"bindings": [], "universes": [], "kept": 0, "set_again": 0}
+    present = _page_bindings(page)
+    owners = {}
+    if bindings == "keep" and present:
+        owners = pi.target_binding_owners(strip_ns(copy.deepcopy(vc)))
+    taken, kept_universes = set(), set()
+    for b in present:
+        k, entry = b["key"], {"widget": b["label"], "binding": pi.describe(b["key"]), "kind": b["kind"]}
+        if bindings == "drop":
+            entry["status"] = "dropped"
+        elif not _binding_is_sane(k):
+            entry["status"] = "dropped"
+            entry["note"] = "not a valid key or input"
+        elif owners.get(k):
+            entry["status"] = "clash"
+            entry["owners"] = [pi.widget_label(w) for w in owners[k]][:5]
+        elif k in taken:
+            entry["status"] = "repeat"
+            entry["note"] = "used twice in the template"
+        else:
+            entry["status"] = "kept"
+            taken.add(k)
+            if k[0] == "input":
+                kept_universes.add(k[1])
+        if entry["status"] != "kept":
+            b["parent"].remove(b["binding"])
+            report["set_again"] += 1
+        else:
+            report["kept"] += 1
+        report["bindings"].append(entry)
+    _strip_empty_slots(page)
+    if kept_universes:
+        patch = pi.read_patch(strip_ns(copy.deepcopy(root)))
+        for u in sorted(kept_universes, key=int):
+            dev = patch.get(u, {}).get("device", "")
+            report["universes"].append({"universe": u, "device": dev, "patched": bool(dev)})
     if vc.tag.startswith(vc_ops._NS):
         for el in page.iter():
             el.tag = vc_ops._NS + el.tag
@@ -682,12 +764,53 @@ def apply_template(root, name: str, caption: str = "") -> dict:
             el.set("ID", mapping[el.get("ID")])
         elif tag in ("Function", "Chaser") and (el.text or "").strip() in mapping:
             el.text = mapping[(el.text or "").strip()]
+    return page, mapping, missing, report
+
+
+def _strip_empty_slots(page) -> None:
+    """After bindings were taken out: drop <Next/>, <Enable/> … that are left empty."""
+    for p in list(page.iter()):
+        for c in list(p):
+            if (_local(c.tag) in {"Next", "Previous", "Stop", "Playback", "CrossFade", "Enable"}
+                    and len(c) == 0 and not (c.text or "").strip() and not c.attrib):
+                p.remove(c)
+
+
+def preview_template(root, name: str, caption: str = "", bindings: str = "") -> dict:
+    """What :func:`apply_template` would do, on a copy: the show is not touched.  Says which functions
+    are found, and for each key or MIDI binding of the template whether it is taken from it
+    (``kept``) or must be set again (``clash`` with a widget of the show, ``repeat`` inside the
+    template, ``dropped``), and whether the universe of a MIDI input has a device in this show."""
+    t = _load_template(name)
+    has = bool(t.get("bindings")) and any((t.get("bindings") or {}).values()) if isinstance(t.get("bindings"), dict) else False
+    mode = bindings or ("keep" if has else "drop")
+    _page, mapping, missing, rep = _template_page(copy.deepcopy(root), t, mode)
+    return {"name": t.get("name", name), "mode": mode, "has_bindings": has, "matched": len(mapping) - len(missing),
+            "missing": sorted(missing), **rep}
+
+
+def apply_template(root, name: str, caption: str = "", bindings: str = "") -> dict:
+    """Add a saved template as a new page; functions are matched **by name and
+    type** in this workspace (unmatched → unwired, listed).
+
+    A template saved with its key and MIDI bindings (3.10.0) brings them along (*bindings*
+    ``keep``, the default for such a template), except those the show already uses: it
+    never creates a clash.  Those are returned in ``bindings`` with their status so they can be
+    set again.  ``drop`` leaves every binding out.  A template saved without them is applied
+    as before."""
+    t = _load_template(name)
+    has = bool(t.get("bindings")) and any((t.get("bindings") or {}).values()) if isinstance(t.get("bindings"), dict) else False
+    mode = bindings or ("keep" if has else "drop")
+    vc = _vc(root)
+    page, mapping, missing, rep = _template_page(root, t, mode)
     _renumber(page, _next_id(vc))
     page.set("Caption", (caption or "").strip() or t.get("caption") or t["name"])
     vc_ops._set_xy(page, 0, 0)
     vc_ops._append_page(vc, page)
     return {"page_id": page.get("ID"), "matched": len(mapping) - len(missing),
-            "missing": sorted(missing)}
+            "missing": sorted(missing), **({"bindings": rep["bindings"], "kept": rep["kept"],
+                                            "set_again": rep["set_again"], "universes": rep["universes"]}
+                                           if rep["bindings"] else {})}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

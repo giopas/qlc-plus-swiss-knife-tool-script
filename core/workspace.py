@@ -1960,6 +1960,27 @@ def song_build(spec: dict) -> dict:
     return out
 
 
+def click_folder() -> str:
+    """Where a click track is saved: the folder of the open show (or the chosen output folder
+    when the show was uploaded and has no folder of its own)."""
+    if not _state['loaded']:
+        raise ValueError('No workspace loaded.')
+    if _state.get('original_name'):
+        return _state.get('output_dir') or ''
+    return os.path.dirname(os.path.abspath(_state['path'])) if _state.get('path') else (_state.get('output_dir') or '')
+
+
+def song_click(spec: dict) -> dict:
+    """Make a click track for a Song Builder table: a new .wav next to the show, never over a file.
+    The length is the table's (parts, or the music when that is longer); BPM and bar from the table."""
+    from core import click_track, song_builder
+    engine = _builder_engine()
+    name = str(spec.get('name') or '').strip()
+    plan = song_builder.plan(engine, {**spec, 'music': {}}, lenient=True)
+    length = int(spec.get('length_ms') or plan['length_ms'] or 0)
+    return click_track.write(click_folder(), name, spec.get('bpm'), spec.get('beats_per_bar'), length)
+
+
 def song_open(show_id: str) -> dict:
     """The table a Show was built with, so it can be edited."""
     from core import song_builder

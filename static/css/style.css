@@ -4788,3 +4788,13 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .sbd-pick-type { margin-top: 6px; }
 .sbd-pick-list { overflow: auto; flex: 1; margin-top: 8px; min-height: 200px; }
 .sbd-pick-foot { display: flex; gap: 8px; margin-top: 10px; }
+
+/* A read-only picture of a Show (3.10.0) */
+.sp-box { width: 760px; max-width: 94vw; }
+.sp-lbl { width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-muted { opacity: .55; }
+.sp-btn { margin-left: 4px; padding: 0 6px; font-size: 11px; }
+.vcb-bind { font-size: 11px; padding: 2px 0; }
+.vcb-bind-kept span:first-child { color: var(--success-text, #6c6); }
+.vcb-bind-clash span:first-child, .vcb-bind-repeat span:first-child, .vcb-bind-dropped span:first-child { color: var(--warning-text); }
+.vcb-warn { color: var(--warning-text); }

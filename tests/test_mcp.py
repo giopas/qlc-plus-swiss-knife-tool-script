@@ -483,3 +483,20 @@ def test_song_builder_tool_previews_then_builds(work):
     assert [s["name"] for s in listed] == ["MCP song"]
     assert work.ok("song_builder", show_id=listed[0]["id"])["parts"][1]["length"] in ("0:12", "12s")
     assert "song_builder" in json.dumps(work.ok("guide", tool="song_builder"))
+
+
+def test_song_builder_tool_makes_a_click_track(work):
+    """3.10.0: click=true writes a new .wav next to the show and leaves the show alone."""
+    work.ok("open_show", path=str(work.folder / "Pub_6fix.qxw"))
+    import xml.etree.ElementTree as ET
+    sid = next(f.get("ID") for f in ET.parse(work.folder / "Pub_6fix.qxw").getroot().iter()
+               if f.tag.endswith("Function") and f.get("Type") == "Scene")
+    table = {"name": "Clicky", "bpm": 120, "unit": "bars",
+             "parts": [{"name": "A", "function_id": sid, "length": "2"}]}
+    d = _call(work, "song_builder", click=True, **table)
+    assert d["file"]["name"] == "Clicky click 120 BPM.wav" and d["file"]["length_ms"] == 4000
+    assert (work.folder / d["file"]["name"]).is_file() and "step" not in d
+    again = _call(work, "song_builder", click=True, **table)
+    assert again["file"]["name"] == "Clicky click 120 BPM 2.wav"             # never over a file
+    p = _call(work, "song_builder", apply=False, music={"path": d["file"]["path"]}, **table)
+    assert p["music_ms"] == 4000 and p["warnings"] == []

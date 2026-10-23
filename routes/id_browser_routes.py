@@ -156,7 +156,7 @@ _BUILDER_ARGS = {
     'auto_arrange':    {'frame_id': str, 'profile': str, 'columns': int},
     'screen':          {'profile_id': str, 'page_ids': list, 'scale': bool, 'width': int, 'height': int,
                         'orientation': str, 'mode': str, 'touch': bool},
-    'apply_template':  {'name': str, 'caption': str},
+    'apply_template':  {'name': str, 'caption': str, 'bindings': str},
     'setlist_cuelist': {'chaser_id': str, 'cuelist_id': str, 'page_id': str},
 }
 
@@ -197,6 +197,21 @@ def vc_screen_preview():
         return jsonify({'error': str(e)}), 400
 
 
+@bp.route('/vc/template-preview', methods=['POST'])
+def vc_template_preview():
+    """What adding a template would do (same body as the `apply_template` operation), worked out on a
+    copy: which functions are found, and for each key or MIDI binding whether it comes from the
+    template or must be set again (it clashes with a widget of the show).  Nothing changes."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import vc_builder, vc_ops
+    try:
+        kw = _builder_kw('apply_template', request.get_json(force=True) or {})
+        return jsonify({'ok': True, **vc_builder.preview_template(ws._state['qxw_root'], **kw)})
+    except vc_ops.VcOpError as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @bp.route('/vc/builder-info')
 def vc_builder_info():
     """Functions (with nomenclature prefix), kinds, screens, templates, profiles."""
@@ -231,7 +246,7 @@ def vc_builder_info():
 
 @bp.route('/vc/template', methods=['POST'])
 def vc_template():
-    """{"action": "save", "page_id", "name"} | {"action": "delete", "name"}"""
+    """{"action": "save", "page_id", "name", "keep_bindings"} | {"action": "delete", "name"}"""
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
     from core import vc_builder, vc_ops
@@ -242,7 +257,7 @@ def vc_template():
             return (jsonify({'ok': True, 'templates': vc_builder.list_templates()}) if ok
                     else (jsonify({'error': 'Template not found.'}), 404))
         res = vc_builder.save_template(ws._state['qxw_root'], str(d.get('page_id', '')),
-                                       str(d.get('name', '')))
+                                       str(d.get('name', '')), keep_bindings=bool(d.get('keep_bindings')))
         return jsonify({'ok': True, **res, 'templates': vc_builder.list_templates()})
     except vc_ops.VcOpError as e:
         return jsonify({'error': str(e)}), 400

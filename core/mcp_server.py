@@ -147,16 +147,16 @@ TOOLS: List[dict] = [
                           "title": _S, "profile": _S, "profile_id": _S, "page_ids": _IDS, "name": _S,
                           "chaser_id": _S, "cuelist_id": _S, "width": {"type": "integer"},
                           "height": {"type": "integer"}, "orientation": _S, "mode": _S, "scale": {"type": "boolean"},
-                          "touch": {"type": "boolean"}, "preview": {"type": "boolean"}}, ["op"])},
+                          "touch": {"type": "boolean"}, "preview": {"type": "boolean"}, "bindings": _S}, ["op"])},
     {"name": "setlist", "handler": "t_setlist",
      "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). A song may carry its tempo: \"Song name | 128BPM\" (spaces, case and the BPM word optional after the bar). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out, bpm, beats}. A song with a BPM gets the steps of its chaser (a copy; the original is not touched) timed to it, `beats` beats a step (default 1); functions that cannot follow a tempo are left as they are and named in `tempo.left_alone`. With apply=false only shows the matches and which ones the tempo would change.",
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
                           "apply": {"type": "boolean"}, "target_chaser_id": _S})},
     {"name": "song_builder", "handler": "t_song_builder",
-     "description": "Build a song's Show (a timeline with the music) from a table of parts. Give `name`, `unit` (seconds, bars or beats: one for the whole song), `bpm` and `beats_per_bar` for bars or beats, `music` ({function_id} of a sound already in the show, or {path, length}) and `parts` [{name, function_id, length, repeat, fade_in, fade_out, beats}]. A length is a number in the unit, or `to the end` (last part, needs the music's length) or `until 1:20` (a point counted from the start). With apply=false only shows when each part starts, the free time and warnings. With no arguments lists the Shows built this way; with `show_id` only, gives the table it was built from. Building again with the same `show_id` replaces that Show.",
+     "description": "Build a song's Show (a timeline with the music) from a table of parts. Give `name`, `unit` (seconds, bars or beats: one for the whole song), `bpm` and `beats_per_bar` for bars or beats, `music` ({function_id} of a sound already in the show, or {path, length}) and `parts` [{name, function_id, length, repeat, fade_in, fade_out, beats}]. A length is a number in the unit, or `to the end` (last part, needs the music's length) or `until 1:20` (a point counted from the start). With apply=false only shows when each part starts, the free time and warnings. With no arguments lists the Shows built this way; with `show_id` only, gives the table it was built from. Building again with the same `show_id` replaces that Show. With click=true (and `bpm`, `parts`) it first makes a click track: a new .wav next to the show, a click on every beat and a higher one on the first beat of each bar, as long as the parts; it never replaces a file. The reply gives its `path`: pass it as `music` {path} in the next call to use it as the song's music.",
      "inputSchema": _obj({"name": _S, "unit": {"type": "string", "enum": ["seconds", "bars", "beats"]},
                           "bpm": {}, "beats_per_bar": {}, "music": {"type": "object"}, "parts": {"type": "array"},
-                          "show_id": _S, "apply": {"type": "boolean"}})},
+                          "show_id": _S, "apply": {"type": "boolean"}, "click": {"type": "boolean"}})},
     {"name": "stage_monitor", "handler": "t_stage_monitor",
      "description": "Tablet on stage (the Stage Monitor): a page for a tablet on stage that shows the current and the next cue of chosen CueLists, live from QLC+. Without arguments, lists the show's CueLists (id, caption, where, chaser, step names) and the saved settings (read only). `config` changes the settings and keeps them in <show>.stage.json: title, font (S M L XL), theme (dark, contrast, black = white song on black, dim = grey song on black), show_next, show_clock, show_numbers, show_notes (the CueList step notes), hold_ms (Control mode safety hold for Previous/Next: 0 = a tap acts, 300, 600 default, 1000, 1500; Stop needs at least 1200 and twice this), ws_port, http_port, and lists [{id, label, mode (read | control: Previous, Stop and Next buttons on the tablet), steps {\"<index>\": {hide, label, card}}}] in page order (give the whole list). A step's `card` is {tuning, bpm, starts (who starts and how), note, players [{who, note}]}: the Next song banner and the role views show it, and the Simple page of the Setlist folds it under the song. `views` [{id, label, layout (commander: cues and card with the buttons | band: small cue list, large card | vocals: the card alone), fields (any of tuning, bpm, starts, players, note), who (one player's line)}] are the addresses ?role=<id> of the page (give the whole list; leave it out for commander, band and vocals). export=true writes index.html, serve_stage.py and the Start Stage Monitor launchers into `folder` (default: a stage_monitor folder next to the show). When the folder already has a page from an earlier export, the export stops and names the files: ask the user, then call again with replace=true (the only case where Swiss Knife writes over files; it never touches files the Stage Monitor did not write). The show itself is never changed. Serving the page to the tablet is done with Start Stage Monitor in the exported folder or ▶ Serve in the Swiss Knife window.",
      "inputSchema": _obj({"config": {"type": "object"}, "export": {"type": "boolean"}, "folder": _S,
@@ -458,11 +458,11 @@ class Server:
 
     def t_edit_vc(self, a: dict) -> Any:
         self.need_show()
-        if a.get("preview"):                      # screen only: what it would do, nothing changes
-            if a.get("op") != "screen":
-                raise ToolError("`preview` is for op `screen` only.")
+        if a.get("preview"):                      # screen and apply_template: what it would do, nothing changes
+            if a.get("op") not in ("screen", "apply_template"):
+                raise ToolError("`preview` is for op `screen` or `apply_template` only.")
             body = {k: v for k, v in a.items() if k not in ("preview", "op")}
-            return self.api("POST", "/api/vc/screen-preview", body)
+            return self.api("POST", "/api/vc/screen-preview" if a["op"] == "screen" else "/api/vc/template-preview", body)
         r = self.api("POST", "/api/vc/op", dict(a))
         w = self._written(r, f"Virtual Console: {a.get('op')}")
         if isinstance(r, dict):
@@ -520,6 +520,11 @@ class Server:
                 return self.api("GET", "/api/songbuilder/open?id=" + urllib.parse.quote(str(a["show_id"])))
             return {"built_here": self.api("GET", "/api/songbuilder/list")}
         body = {k: a[k] for k in ("name", "unit", "bpm", "beats_per_bar", "music", "parts", "show_id") if k in a}
+        if a.get("click"):
+            r = self.api("POST", "/api/songbuilder/click", body)
+            return {"done": f"Click track \u201c{(r or {}).get('name', '')}\u201d saved next to the show",
+                    "file": {k: v for k, v in (r or {}).items() if k != "found"},
+                    "note": "A new sound file; the show is not changed. Use its path as `music` in the next call."}
         if a.get("apply") is False:
             return self.api("POST", "/api/songbuilder/preview", body)
         r = self.api("POST", "/api/songbuilder/build", body)

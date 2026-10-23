@@ -134,6 +134,7 @@ from routes.triggers_routes   import bp as triggers_bp
 from routes.fixture_routes    import bp as fixture_bp
 from routes.brightness_routes import bp as brightness_bp
 from routes.songbuilder_routes import bp as songbuilder_bp
+from routes.showpic_routes import bp as showpic_bp
 from routes.session_routes    import bp as session_bp
 from routes.native_picker_routes import bp as picker_bp
 from routes.quick_start_routes   import bp as quickstart_bp
@@ -232,6 +233,7 @@ def create_app():
     app.register_blueprint(fixture_bp)
     app.register_blueprint(brightness_bp)
     app.register_blueprint(songbuilder_bp)
+    app.register_blueprint(showpic_bp)
     app.register_blueprint(session_bp)
     app.register_blueprint(picker_bp)
     app.register_blueprint(quickstart_bp)

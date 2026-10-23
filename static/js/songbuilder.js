@@ -297,3 +297,16 @@ async function sbdBuild() {
   if (typeof showRefresh === 'function') showRefresh();
   if (typeof setStatus === 'function') setStatus(t('✓ Show “{0}” built — Save as new file… when you’re ready.', res.name), (res.warnings || []).length ? 'warn' : 'ok');
 }
+
+// A click track (3.10.0): a .wav with a click on every beat, saved next to the show and used as the music.
+async function sbdClick() {
+  const res = await _sbdPost('/api/songbuilder/click');
+  if (res.error) { _sbdOut(_sbdEsc(res.error), 'err'); return; }
+  document.getElementById('sbd-audio').value = '__path';
+  _sbdMusicShow();
+  document.getElementById('sbd-path').value = res.path;
+  document.getElementById('sbd-mlen').value = '';
+  await sbdMusicChanged();
+  sbdPreview();
+  setStatus(t('✓ Click track saved: {0}', res.name), 'ok');
+}

@@ -262,7 +262,7 @@ function _renderSongList() {
       originHtml = `<div class="fb-song-origin">→ ${parts.join(' ')}</div>`;
     }
     const kind = hasAssign ? _slMatchKind(row.txt_name, row.qxw_name || (fn && fn.name)) : '';
-    const showPill = (fn && fn.type === 'Show') ? _showPill(row, fn) : '';
+    const showPill = (fn && fn.type === 'Show') ? _showPill(row, fn) + _showPicBtn(fn) : '';
     const tags = hasAssign
       ? `<div class="fb-song-tags">${fn && fn.type ? `<span class="badge badge-${_esc(fn.type)}">${_esc(fn.type)}</span>` : ''}`
         + (kind ? `<span class="fb-pill fb-pill-${kind}" data-tooltip="${_esc(t(_SL_MATCH_TEXT[kind][1]))}">${_esc(t(_SL_MATCH_TEXT[kind][0]))}</span>` : '') + showPill + '</div>'
@@ -299,6 +299,12 @@ function _renderSongList() {
 // ── v3.9.8 Shows in the setlist ───────────────────────────────────────────────
 // A Show plays on its own timeline.  With the cue waiting for the pedal it plays
 // to its end; a cue with a time shorter than the Show cuts it off.
+// The read-only picture of the Show (3.10.0): tracks and items as bars.
+function _showPicBtn(fn) {
+  const label = t('Show the picture of this Show');
+  return `<button type="button" class="btn btn-surface sp-btn" aria-label="${_esc(label)}" data-tooltip="${_esc(label)}" data-showpic="${_esc(fn.id)}">${_esc(t('Picture'))}</button>`;
+}
+
 function _showPill(row, fn) {
   const len = Number(fn.show_ms) || 0;
   const secs = (len / 1000).toFixed(len % 1000 ? 1 : 0);

@@ -657,6 +657,13 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        SETLIST MANAGER
   ══════════════════════════════════════════════════════════════════════ -->
+  <div id="showpic-modal" class="modal-overlay sbd-hidden" role="dialog" aria-modal="true" aria-labelledby="showpic-title">
+    <div class="modal-box sp-box">
+      <div class="pane-header" id="showpic-title">Show</div>
+      <div id="showpic-body"></div>
+      <div class="sbd-pick-foot"><button class="btn btn-surface" id="showpic-close" onclick="showPicClose()">Close</button></div>
+    </div>
+  </div>
   <section class="screen" id="scr-songbuilder">
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#list"/></svg></div>
@@ -688,6 +695,7 @@
           <select id="sbd-audio" class="field-input" style="width:230px" onchange="sbdMusicChanged()"></select>
           <input id="sbd-path" class="field-input sbd-hidden" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()">
           <input id="sbd-mlen" class="field-input sbd-hidden" type="text" placeholder="3:45" style="width:80px" data-tooltip="Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a)." onchange="sbdChanged()">
+          <button class="btn btn-surface" id="sbd-click-btn" onclick="sbdClick()" data-tooltip="Makes a click-track sound file at this BPM, as long as the parts, next to the show.">Make a click track</button>
         </div>
         <div id="sbd-music-note" class="sbd-note"></div>
       </div>
@@ -1647,10 +1655,10 @@
 
               <div class="vce-sec">Snap to grid</div>
               <div class="vce-row">
-                <input id="vce-snap-grid" type="number" min="1" max="50" value="5" class="vce-pi vce-n">
+                <input id="vce-snap-grid" type="number" min="1" max="50" value="5" class="vce-pi vce-n" aria-label="Grid step in pixels" title="The grid step. Dragging a handle to resize a widget always snaps to it: a larger step is coarser, a smaller one is finer.">
                 <span class="vce-lb">px</span>
                 <button class="vce-ab" onclick="vceSnapToGrid()">⊞ Snap selection</button>
-                <label class="vce-lb" title="Drag a selected widget to move it; positions snap to this grid"><input type="checkbox" id="vce-snap-drag" checked> while dragging</label>
+                <label class="vce-lb" title="Drag a selected widget to move it; positions snap to this grid. Resizing by its handles always snaps."><input type="checkbox" id="vce-snap-drag" checked> while moving</label>
               </div>
             </div>
           </div>
@@ -2994,6 +3002,7 @@
 <script src="/static/js/app.js?v={{ asset_v }}"></script>
 <script src="/static/js/setlist.js?v={{ asset_v }}"></script>
 <script src="/static/js/songbuilder.js?v={{ asset_v }}"></script>
+<script src="/static/js/showpic.js?v={{ asset_v }}"></script>
 <script src="/static/js/dictionary.js?v={{ asset_v }}"></script>
 <script src="/static/js/triggers.js?v={{ asset_v }}"></script>
 <script src="/static/js/inputs.js?v={{ asset_v }}"></script>
@@ -3010,6 +3019,7 @@
 <script src="/static/js/stage3d.js?v={{ asset_v }}"></script>
 <script src="/static/js/brightness.js?v={{ asset_v }}"></script>
 <script src="/static/js/session.js?v={{ asset_v }}"></script>
+<script src="/static/js/vc_resize.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_editor.js?v={{ asset_v }}"></script>
 <script src="/static/js/vc_builder.js?v={{ asset_v }}"></script>
 <script src="/static/js/quickstart.js?v={{ asset_v }}"></script>

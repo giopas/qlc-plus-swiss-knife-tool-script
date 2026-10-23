@@ -252,15 +252,19 @@ function _vcbRenderPanel() {
     <div class="vce-sec">Templates <span class="vce-hint">reuse a page in another show</span></div>
     <div class="vce-row">
       <input id="vcb-tname" class="vce-pi" style="flex:1;min-width:80px" placeholder="template name">
-      <button class="vce-ab" onclick="vcbSaveTemplate()" title="Layout, colours and function names — no key/MIDI"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save this page</button>
+      <button class="vce-ab" onclick="vcbSaveTemplate()" title="Layout, colours and function names. Keys and MIDI only if you tick the box below."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save this page</button>
+    </div>
+    <div class="vce-row">
+      <label class="vce-lb" title="Each widget keeps its key and its MIDI input. When the template is added, any key or input the show already uses is left out and listed, so it never makes a clash."><input type="checkbox" id="vcb-tkeep"> keep keys and MIDI inputs</label>
     </div>
     <div class="vce-hint" style="margin-bottom:4px">Saved templates — ＋ adds one as a new page; its buttons find their functions by name:</div>
     ${I.templates.length ? I.templates.map(t => `
       <div class="vce-row" style="justify-content:space-between">
-        <span>${_esc(t.name)} <span class="vce-hint">${t.widgets} widgets · ${t.functions} functions</span></span>
-        <span><button class="vce-ab" onclick="vcbApplyTemplate('${q(t.name)}')">＋ Add as page</button>
+        <span>${_esc(t.name)} <span class="vce-hint">${t.widgets} widgets · ${t.functions} functions${t.bindings ? ` · ${t.bindings} keys and MIDI inputs` : ''}</span></span>
+        <span><button class="vce-ab" onclick="vcbApplyTemplate('${q(t.name)}', ${t.bindings ? 'true' : 'false'})">＋ Add as page${t.bindings ? '…' : ''}</button>
               <button class="vce-ab" onclick="vcbDeleteTemplate('${q(t.name)}')" title="Delete template"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button></span>
-      </div>`).join('') : '<div class="vce-hint">none yet</div>'}`;
+      </div>`).join('') : '<div class="vce-hint">none yet</div>'}
+    <div id="vcb-tpl-out"></div>`;
   _vcbRenderFnList();
 }
 
@@ -458,18 +462,64 @@ async function vcbSaveTemplate() {
   const name = document.getElementById('vcb-tname').value.trim();
   if (!name || !_vcePage) { _vceStatus('Type a template name.', 'warn'); return; }
   if (!(await _vceFlush())) return;
+  const keep = !!document.getElementById('vcb-tkeep')?.checked;
   const r = await fetch('/api/vc/template', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'save', page_id: _vcePage.id, name }) });
+    body: JSON.stringify({ action: 'save', page_id: _vcePage.id, name, keep_bindings: keep }) });
   const d = await r.json();
   if (!r.ok) { _vceStatus('✗ ' + d.error, 'error'); return; }
   _vcbInfo.templates = d.templates; _vcbRenderPanel();
-  _vceStatus(`✓ Template '${d.template}' saved — ${d.widgets} widgets, ${d.functions} function(s) by name`, 'ok');
+  _vceStatus(`✓ Template '${d.template}' saved — ${d.widgets} widgets, ${d.functions} function(s) by name` +
+             (keep ? `, ${d.bindings} key and MIDI binding(s)` : ''), 'ok');
 }
 
-async function vcbApplyTemplate(name) {
-  const d = await _vcbRun({ op: 'apply_template', name }, null, [],
+// A template with keys and MIDI inputs is shown first: what comes from it, and what must be set again.
+const _VCB_BIND_TEXT = {
+  kept: ['✓', 'from the template'],
+  clash: ['✎', 'set again: already used by'],
+  repeat: ['✎', 'set again: used twice in the template'],
+  dropped: ['✎', 'set again'],
+};
+
+async function vcbApplyTemplate(name, hasBindings) {
+  if (!hasBindings) { await vcbApplyTemplateNow(name, ''); return; }
+  const out = document.getElementById('vcb-tpl-out');
+  if (!out) return;
+  let d;
+  try {
+    const r = await fetch('/api/vc/template-preview', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }) });
+    d = await r.json();
+    if (!r.ok) { _vceStatus('✗ ' + d.error, 'error'); return; }
+  } catch (e) { _vceStatus('✗ ' + e.message, 'error'); return; }
+  const rows = d.bindings.map(b => {
+    const [mark, text] = _VCB_BIND_TEXT[b.status] || ['', b.status];
+    const who = b.owners ? ' ' + b.owners.map(_esc).join(', ') : (b.note ? ' (' + _esc(b.note) + ')' : '');
+    return `<div class="vcb-bind vcb-bind-${_esc(b.status)}"><span>${mark}</span> ${_esc(b.widget)} · ${_esc(b.binding)} <span class="vce-hint">${_esc(text)}${who}</span></div>`;
+  }).join('');
+  const unpatched = d.universes.filter(u => !u.patched).map(u => 'U' + (Number(u.universe) + 1));
+  out.innerHTML = `
+    <div class="vcb-card">
+      <div class="vcb-card-t">Keys and MIDI of “${_esc(d.name)}”</div>
+      <div class="vce-hint">${d.kept} taken from the template · ${d.set_again} to set again. The page never uses a key or input another widget already has.</div>
+      ${rows}
+      ${unpatched.length ? `<div class="vce-hint vcb-warn">No input device on ${unpatched.join(', ')} in this show: those inputs listen to nothing until a controller is patched there.</div>` : ''}
+      <div class="vce-row">
+        <button class="vce-ab vcb-primary" data-tpl="${_esc(name)}" data-mode="keep" onclick="vcbApplyTemplateNow(this.dataset.tpl, this.dataset.mode)">Add the page with ${d.kept} binding(s)</button>
+        <button class="vce-ab" data-tpl="${_esc(name)}" data-mode="drop" onclick="vcbApplyTemplateNow(this.dataset.tpl, this.dataset.mode)">Add it without keys and MIDI</button>
+        <button class="vce-ab" onclick="document.getElementById('vcb-tpl-out').innerHTML=''">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function vcbApplyTemplateNow(name, bindings) {
+  const body = { op: 'apply_template', name };
+  if (bindings) body.bindings = bindings;
+  const d = await _vcbRun(body, null, [],
     d => `Template added as a new page — ${d.matched} function(s) found` +
-         (d.missing.length ? `, not in this show: ${d.missing.slice(0, 5).join(', ')}${d.missing.length > 5 ? '…' : ''} (buttons left unwired)` : ''));
+         (d.missing.length ? `, not in this show: ${d.missing.slice(0, 5).join(', ')}${d.missing.length > 5 ? '…' : ''} (buttons left unwired)` : '') +
+         (d.bindings ? `; ${d.kept} key/MIDI binding(s) taken, ${d.set_again} to set again in the Trigger Manager` : ''));
+  const out = document.getElementById('vcb-tpl-out');
+  if (out) out.innerHTML = '';
   if (d) await _vceReloadAt(d.page_id, []);
 }
 

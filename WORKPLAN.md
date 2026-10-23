@@ -248,20 +248,25 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 
 ### 3.10.0 · VC Editor and Song Builder extras (next release, not started)
 
-**Status: scheduled on 23 October 2026 (giopas). Implementation starts in a separate chat, after this file is copied back to the repo.** Both parts improve tools that exist; neither adds a new screen. Work on a branch `feat/v3.10.0`. Hand checks in QLC+ are listed at the end, as in section 9.
+**Status: scheduled on 23 October 2026 (giopas); scope decided the same morning (see *Decisions* below). Implementation starts in a separate chat; the file is already in step with the repo.** Both parts improve tools that exist; neither adds a new screen. Work on a branch `feat/v3.10.0`. Hand checks in QLC+ are listed at the end, as in section 9.
 
 **A. VC Editor extras** (from the wishlist, written out)
 
-1. **Resize by dragging handles.** Today a widget's size is typed. A widget selected in the editor gets handles on its corners and sides; dragging changes `w` and `h` (and `x`, `y` for the left and top handles) in steps of the grid when it is on. One History step per drag, not one per pixel. Works for frames and their children, and keeps a child inside its frame.
+1. **Resize by dragging handles.** Today a widget's size is typed. A widget selected in the editor gets handles on its corners and sides; dragging changes `w` and `h` (and `x`, `y` for the left and top handles). **It always snaps to a grid, and the grid step can be changed (coarser or denser) in the editor** (giopas). One History step per drag, not one per pixel. Works for frames and their children, and keeps a child inside its frame.
 2. **More widgets: knob, XY pad, speed dial, clock.** Each becomes a kind that *Create* offers beside Button, Frame, SoloFrame, Slider, Label and CueList, with the settings QLC+ 5.x writes for it. The rule from the Porter and the Doctor stays: write only what QLC+ itself writes, and check every new kind against a real file made in QLC+ first.
 3. **Templates with key or MIDI bindings.** A template (for example a page of song buttons) can carry the key or MIDI input that a widget uses, with a clear marker for what is taken from the template and what must be set again. Applying a template must not create a clash: the Trigger Manager's clash check runs on the result and is shown before apply.
 
-*To settle at the start of the chat:* which of the four widgets QLC+ 5.3 and 5.2.2 both write the same way; what to do on a show saved for 5.2.2 when a widget kind only exists in 5.3 (refuse, or warn, as Upgrade to QLC+ 5.3 does); whether a dragged resize snaps to the *Fit* grid of 3.7.0.
+**Decisions (giopas, 23 October 2026)**
+- **All four widgets** in this release: knob, XY pad, speed dial, clock.
+- **A widget kind that only QLC+ 5.3 reads, in a show saved for 5.2.2:** the editor says the show needs QLC+ 5.3.x or later, and **allows it and converts the file to 5.3 compliance** (it does not refuse). The conversion uses the existing *Upgrade to QLC+ 5.3* steps; which steps run by default, and whether the user sees them first, is settled at the start of the implementation chat (proposal: show the steps, as the Upgrade screen does, and write nothing without a click).
+- **Resize snaps always**, to a grid whose step the user can change. The *Fit* grid of 3.7.0 is the starting point.
+- **Needed from giopas before the widgets are written:** one `.qxw` saved by QLC+ 5.3.x that has a knob, an XY pad, a speed dial and a clock on a page. The XML QLC+ writes for each is the only reference; nothing is written from memory.
+*Still to settle at the start of the chat:* what a template keeps of key and MIDI bindings (see A.3).
 
-**B. Song Builder extras** (from the wishlist, written out)
+**B. Song Builder extras** (from the wishlist, written out; two items remain: the click track and the picture of a Show)
 
 1. **A click track made by the tool.** A plain audio file (standard library `wave`) with a click on every beat and a louder one on the first beat of each bar, at the song's BPM and for its length, written as a new `.wav` next to the saved show, never over a file. It can then be chosen as the song's music. No dependency is added.
-2. **A split helper: one cue per section.** The first try (3.9.8, commit 8a6a050) was dropped because a music item cannot be cut. The helper comes back only in the form giopas can use: it **never touches the music**; it makes, from a built song, one Show per section for the *lights only*, and says plainly in the Song Builder that the music keeps playing from the start of the song. Decide in the chat whether that is still wanted before building it; if not, drop the item.
+2. **The split helper is dropped** (giopas, 23 October 2026): splitting a song into cues stays the old way, by hand in the cue list (see 3.9.8, commit 8a6a050).
 3. **A read-only picture of a Show.** The coloured bar of the Song Builder, but for any Show of the open file (tracks, items, music), shown in the Setlist next to the Show pill and in the Doctor's findings for Shows. No dragging: QLC+ has its own timeline editor for fine work.
 
 *Not planned:* a drag and drop timeline editor.
@@ -270,6 +275,7 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 
 **Hand checks before the release (QLC+ 5.3)**
 - A resized widget keeps its size after saving and reopening in QLC+.
+- A show saved for 5.2.2, given a 5.3-only widget and converted, opens in QLC+ 5.3 with the widget working.
 - Each new widget kind opens, shows and works in QLC+ (the knob, the XY pad, the speed dial and the clock each tried once).
 - A template applied with bindings triggers the right function by key and by MIDI.
 - The click track plays in QLC+ in step with a built song.

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Workspace>
+<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="VC">
+ <Creator>
+  <Name>Q Light Controller Plus</Name>
+  <Version>5.3.0</Version>
+  <Author>Giovanni Cataldi</Author>
+ </Creator>
+ <Engine>
+  <InputOutputMap>
+   <BeatGenerator BeatType="Internal" BPM="120"/>
+   <NetworkServer Type="Native" AutoStart="False" Name="QLC+_C0A8018D" Password=""/>
+   <Universe Name="Universe 1" ID="0"/>
+   <Universe Name="Universe 2" ID="1"/>
+   <Universe Name="Universe 3" ID="2"/>
+   <Universe Name="Universe 4" ID="3"/>
+  </InputOutputMap>
+  <Monitor DisplayMode="0" ShowLabels="0">
+   <Font>Arial,12,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
+   <ChannelStyle>0</ChannelStyle>
+   <ValueStyle>0</ValueStyle>
+   <Grid Width="5" Height="3" Depth="5" Units="0" POV="1"/>
+   <StageItem>0</StageItem>
+  </Monitor>
+ </Engine>
+ <VirtualConsole>
+  <Frame Caption="Page 1" ID="0">
+   <Appearance>
+    <Font>Roboto Condensed,16,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
+   </Appearance>
+   <WindowState Visible="True" X="0" Y="0" Width="1920" Height="1080"/>
+   <AllowResize>False</AllowResize>
+   <ShowHeader>False</ShowHeader>
+   <ShowEnableButton>True</ShowEnableButton>
+   <Collapsed>False</Collapsed>
+   <Disabled>False</Disabled>
+   <Frame Caption="Frame 6" ID="5">
+    <WindowState Visible="True" X="0" Y="161" Width="1148" Height="843"/>
+    <AllowResize>True</AllowResize>
+    <ShowHeader>True</ShowHeader>
+    <ShowEnableButton>True</ShowEnableButton>
+    <Collapsed>False</Collapsed>
+    <Disabled>False</Disabled>
+    <Frame Caption="Frame 13" ID="12">
+     <WindowState Visible="True" X="377" Y="664" Width="516" Height="112"/>
+     <AllowResize>True</AllowResize>
+     <ShowHeader>False</ShowHeader>
+     <ShowEnableButton>True</ShowEnableButton>
+     <Collapsed>False</Collapsed>
+     <Disabled>False</Disabled>
+     <Button Caption="Button 17" ID="16">
+      <WindowState Visible="True" X="308" Y="5" Width="101" Height="101"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="4294967295"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="Button 15" ID="14">
+      <WindowState Visible="True" X="106" Y="5" Width="101" Height="101"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="4294967295"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="Button 14" ID="13">
+      <WindowState Visible="True" X="5" Y="5" Width="101" Height="101"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="4294967295"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="Button 18" ID="17">
+      <WindowState Visible="True" X="409" Y="5" Width="101" Height="101"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="4294967295"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="Button 16" ID="15">
+      <WindowState Visible="True" X="207" Y="5" Width="101" Height="101"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="4294967295"/>
+      <Action>Toggle</Action>
+     </Button>
+    </Frame>
+    <SpeedDial Caption="Speed 5" ID="4">
+     <WindowState Visible="True" X="17" Y="89" Width="478" Height="299"/>
+     <Visibility>644</Visibility>
+     <Time>0</Time>
+     <AbsoluteValue Minimum="0" Maximum="10000"/>
+    </SpeedDial>
+    <Clock Enable="False" Type="Clock" Caption="Clock 10" ID="9">
+     <WindowState Visible="True" X="682" Y="89" Width="239" Height="59"/>
+     <Appearance>
+      <Font>Roboto Condensed,29,-1,5,700,0,0,0,0,0,0,0,0,0,0,1</Font>
+     </Appearance>
+    </Clock>
+    <Slider Caption="Knob 8" ID="7" WidgetStyle="Knob" InvertedAppearance="false">
+     <WindowState Visible="True" X="538" Y="251" Width="89" Height="131"/>
+     <Appearance>
+      <BackgroundColor>4282664004</BackgroundColor>
+     </Appearance>
+     <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
+     <Level LowLimit="0" HighLimit="255" Value="0"/>
+    </Slider>
+    <Slider Caption="Knob 7" ID="6" WidgetStyle="Knob" InvertedAppearance="false">
+     <WindowState Visible="True" X="538" Y="89" Width="89" Height="131"/>
+     <Appearance>
+      <BackgroundColor>4282664004</BackgroundColor>
+     </Appearance>
+     <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
+     <Level LowLimit="0" HighLimit="255" Value="83"/>
+    </Slider>
+    <AudioTriggers BarsNumber="16" Caption="Audio Trigger 12" ID="11">
+     <WindowState Visible="True" X="664" Y="251" Width="299" Height="299"/>
+     <Appearance>
+      <Font>Roboto Condensed,29,-1,5,700,0,0,0,0,0,0,0,0,0,0,1</Font>
+     </Appearance>
+    </AudioTriggers>
+    <Label Caption="Label 11" ID="10">
+     <WindowState Visible="True" X="682" Y="161" Width="149" Height="47"/>
+    </Label>
+    <XYPad Caption="XY Pad 9" ID="8" InvertedAppearance="0">
+     <WindowState Visible="True" X="17" Y="430" Width="299" Height="299"/>
+     <Appearance>
+      <Font>Roboto Condensed,29,-1,5,700,0,0,0,0,0,0,0,0,0,0,1</Font>
+     </Appearance>
+     <Window hMin="0" hMax="255" vMin="0" vMax="255"/>
+     <Pan Position="133.774"/>
+     <Tilt Position="166.13"/>
+     <FloorPosition X="2.5" Y="0" Z="2.5"/>
+    </XYPad>
+   </Frame>
+  </Frame>
+  <Frame Caption="Page 2" ID="1">
+   <Appearance>
+    <Font>Roboto Condensed,16,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
+   </Appearance>
+   <WindowState Visible="True" X="0" Y="0" Width="1920" Height="1080"/>
+   <AllowResize>False</AllowResize>
+   <ShowHeader>False</ShowHeader>
+   <ShowEnableButton>True</ShowEnableButton>
+   <Collapsed>False</Collapsed>
+   <Disabled>False</Disabled>
+  </Frame>
+  <Frame Caption="Page 3" ID="2">
+   <Appearance>
+    <Font>Roboto Condensed,16,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
+   </Appearance>
+   <WindowState Visible="True" X="0" Y="0" Width="1920" Height="1080"/>
+   <AllowResize>False</AllowResize>
+   <ShowHeader>False</ShowHeader>
+   <ShowEnableButton>True</ShowEnableButton>
+   <Collapsed>False</Collapsed>
+   <Disabled>False</Disabled>
+  </Frame>
+  <Frame Caption="Page 4" ID="3">
+   <Appearance>
+    <Font>Roboto Condensed,16,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
+   </Appearance>
+   <WindowState Visible="True" X="0" Y="0" Width="1920" Height="1080"/>
+   <AllowResize>False</AllowResize>
+   <ShowHeader>False</ShowHeader>
+   <ShowEnableButton>True</ShowEnableButton>
+   <Collapsed>False</Collapsed>
+   <Disabled>False</Disabled>
+  </Frame>
+ </VirtualConsole>
+</Workspace>

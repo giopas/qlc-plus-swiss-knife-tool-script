@@ -4367,5 +4367,13 @@
  "Add the page with {0} binding(s)": "{0} 件の割り当て付きでページを追加",
  "Add it without keys and MIDI": "キーとMIDIなしで追加",
  "✓ Template added as a new page — {0} function(s) found · not saved yet": "✓ テンプレートを新しいページとして追加しました — 機能 {0} 件が見つかりました · 未保存",
- "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ テンプレートを新しいページとして追加しました — 機能 {0} 件が見つかりました；キー/MIDI割り当て {1} 件を取得、{2} 件はTrigger Managerで設定し直し · 未保存"
+ "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ テンプレートを新しいページとして追加しました — 機能 {0} 件が見つかりました；キー/MIDI割り当て {1} 件を取得、{2} 件はTrigger Managerで設定し直し · 未保存",
+ "Beep": "ビープ",
+ "Wood block": "ウッドブロック",
+ "Soft tick": "やわらかいチック",
+ "Click sound": "クリック音",
+ "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "クリックの音色：各小節の1拍目は常に高いか厚みがあり、より大きく鳴ります。",
+ "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "このショーはQLC+ {0}で保存されました。新しいウィジェットはQLC+ 5.3でのみ確認済みです。「QLC+ 5.3 へアップグレード」画面で追加内容を確認でき、クリックするまで何も書き込みません。",
+ "Review the upgrade": "アップグレードを確認",
+ "Not now": "今はしない"
 }

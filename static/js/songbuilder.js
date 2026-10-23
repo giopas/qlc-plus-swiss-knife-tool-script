@@ -280,9 +280,9 @@ async function sbdPreview() {
   document.getElementById('sbd-out').innerHTML = _sbdShowPlan(res);
 }
 
-async function _sbdPost(url) {
+async function _sbdPost(url, extra) {
   try {
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_sbdSpec()) });
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ..._sbdSpec(), ...(extra || {}) }) });
     return await r.json();
   } catch (e) { return { error: String(e) }; }
 }
@@ -300,7 +300,7 @@ async function sbdBuild() {
 
 // A click track (3.10.0): a .wav with a click on every beat, saved next to the show and used as the music.
 async function sbdClick() {
-  const res = await _sbdPost('/api/songbuilder/click');
+  const res = await _sbdPost('/api/songbuilder/click', { sound: document.getElementById('sbd-click-sound').value });
   if (res.error) { _sbdOut(_sbdEsc(res.error), 'err'); return; }
   document.getElementById('sbd-audio').value = '__path';
   _sbdMusicShow();

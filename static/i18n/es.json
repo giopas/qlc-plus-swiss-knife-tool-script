@@ -4367,5 +4367,13 @@
  "Add the page with {0} binding(s)": "Añadir la página con {0} asignación(es)",
  "Add it without keys and MIDI": "Añadirla sin teclas ni MIDI",
  "✓ Template added as a new page — {0} function(s) found · not saved yet": "✓ Plantilla añadida como página nueva — {0} función(es) encontrada(s) · aún sin guardar",
- "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ Plantilla añadida como página nueva — {0} función(es) encontrada(s); {1} asignación(es) de teclas/MIDI tomada(s), {2} por configurar de nuevo en el Trigger Manager · aún sin guardar"
+ "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ Plantilla añadida como página nueva — {0} función(es) encontrada(s); {1} asignación(es) de teclas/MIDI tomada(s), {2} por configurar de nuevo en el Trigger Manager · aún sin guardar",
+ "Beep": "Pitido",
+ "Wood block": "Caja china",
+ "Soft tick": "Tic suave",
+ "Click sound": "Sonido del clic",
+ "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "El sonido del clic: el primer tiempo de cada compás es siempre más agudo o más lleno, y más fuerte.",
+ "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "Este show fue guardado por QLC+ {0}. Los widgets nuevos solo se han comprobado con QLC+ 5.3: la pantalla Actualizar a QLC+ 5.3 muestra lo que añadiría y no escribe nada hasta que hagas clic.",
+ "Review the upgrade": "Ver la actualización",
+ "Not now": "Ahora no"
 }

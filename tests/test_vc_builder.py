@@ -59,7 +59,7 @@ def test_create_every_kind_and_wire():
     assert "Chaser 0" in vb.wire(r, cl, "0")["wired"]
     assert _errors(r) <= before                                     # nothing new for the Doctor
     with pytest.raises(VcOpError):
-        vb.create_widget(r, page.get("ID"), "Knob")
+        vb.create_widget(r, page.get("ID"), "VUMeter")
     with pytest.raises(VcOpError):
         vb.wire(r, ids[0], "99999")
 

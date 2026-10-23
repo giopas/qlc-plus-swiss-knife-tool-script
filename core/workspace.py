@@ -1978,7 +1978,7 @@ def song_click(spec: dict) -> dict:
     name = str(spec.get('name') or '').strip()
     plan = song_builder.plan(engine, {**spec, 'music': {}}, lenient=True)
     length = int(spec.get('length_ms') or plan['length_ms'] or 0)
-    return click_track.write(click_folder(), name, spec.get('bpm'), spec.get('beats_per_bar'), length)
+    return click_track.write(click_folder(), name, spec.get('bpm'), spec.get('beats_per_bar'), length, spec.get('sound'))
 
 
 def song_open(show_id: str) -> dict:

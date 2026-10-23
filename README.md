@@ -61,11 +61,11 @@ The tools are in six groups, numbered 1 to 6 like the side menu and the Start sc
 | | [Function Porter](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Function-Porter) | Bring looks, chasers and their buttons from another show, even when the lights are different models. |
 | | [Brightness](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Brightness) | Make one type of light brighter or dimmer in every scene. Colours stay as they are. |
 | **3 · Create** | [Look Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Look-Builder) | Looks and effects for each group of lights, with their buttons: colours, gobos, strobes, chasers and movement. A look is greyed out when a group cannot do it. |
-| | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | Lay out the Virtual Console, the screen of buttons you play, on a canvas. Fit it to a tablet or a small touchscreen. |
+| | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | Lay out the Virtual Console, the screen of buttons you play, on a canvas: drag the handles to resize, add knobs, XY pads, speed dials and clocks, keep keys and MIDI in page templates. Fit it to a tablet or a small touchscreen. |
 | | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage: put the band and the set pieces on it, aim lights at them, make groups of lights, and save a stage layout. |
 | | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share templates, palettes, presets, profiles and your cable kit as one plain file. There is no server. |
 | **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, matched to your chasers, in a cue list you step through with a key or a pedal. A tempo for each song, and PDFs. |
-| | [Song Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Song-Builder) | A song as a table of parts (intro, verse, chorus…): pick a scene or chaser, a length in seconds, bars or beats, and a repeat for each. It makes one Show with the music, shown as a bar so you see what is still free. |
+| | [Song Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Song-Builder) | A song as a table of parts (intro, verse, chorus…): pick a scene or chaser, a length in seconds, bars or beats, and a repeat for each. It makes one Show with the music, shown as a bar so you see what is still free. It can also make a click track (beep, wood block or tick), and any Show can be seen as a picture from the Setlist or the Doctor. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every key and MIDI control in one table, with clashes and gaps marked. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A short description for every function, shown in the other tools. |
 | | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tablet-on-stage) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |
@@ -111,6 +111,8 @@ Swiss Knife can work with Claude, the AI assistant, through Claude Desktop or Cl
 | Stage Monitor: the cue lists and the page | On the tablet, live from QLC+ | Black, white song: for a dark stage |
 | ![Cabling: the plan](screenshots/22-cabling-plan.png) | ![Cabling: my kit](screenshots/23-cabling-kit.png) | ![Cabling: checks and export](screenshots/24-cabling-check.png) |
 | Cabling: three alternatives and the chains on the stage | Cabling: my kit, every show | Cabling: the checks, the load-in order and the files for the crew |
+| ![Song Builder](screenshots/25-song-builder.png) | ![VC Visual Editor: the new widgets and the resize handles](screenshots/26-vc-widgets.png) | ![The picture of a Show](screenshots/27-show-picture.png) |
+| Song Builder: parts, lengths and the bar | VC Visual Editor: knob, XY pad, speed dial, clock; resize handles | A Show as a picture, read only |
 
 ---
 

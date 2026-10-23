@@ -150,6 +150,23 @@ def main():
         except Exception as e:  # noqa: BLE001
             print("  ! songbuilder:", str(e)[:120])
         shot("25-song-builder.png", None, 1500)
+        # 26 · the four widgets of 3.10.0 (written by QLC+ 5.3.0) with resize handles on a frame
+        load(os.path.join(CORPUS, "VC_widgets_qlc530.qxw"))
+        pg.click("#sn-vceditor")
+        pg.wait_for_timeout(1500)
+        try:
+            pg.evaluate("() => { _vceSel = new Set(['5']); _vceRedrawPage(); }")
+        except Exception as e:  # noqa: BLE001
+            print("  ! vc widgets:", str(e)[:120])
+        shot("26-vc-widgets.png", None, 1200)
+        # 27 · the picture of a Show (3.10.0): the demo song's Show, read only
+        load(os.path.join(CORPUS, "SongBuilder_demo.qxw"))
+        try:
+            pg.evaluate("async () => { const l = await (await fetch('/api/songbuilder/list')).json();"
+                        " const s = l.find(x => x.name === 'Demo Song'); await showPicOpen(s.id); }")
+        except Exception as e:  # noqa: BLE001
+            print("  ! show picture:", str(e)[:120])
+        shot("27-show-picture.png", None, 1500)
         b.close()
 
 

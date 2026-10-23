@@ -4342,5 +4342,13 @@
  "Add the page with {0} binding(s)": "Aggiungi la pagina con {0} assegnazioni",
  "Add it without keys and MIDI": "Aggiungila senza tasti e MIDI",
  "✓ Template added as a new page — {0} function(s) found · not saved yet": "✓ Modello aggiunto come nuova pagina — {0} funzioni trovate · non ancora salvato",
- "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ Modello aggiunto come nuova pagina — {0} funzioni trovate; {1} assegnazioni tasti/MIDI prese, {2} da impostare di nuovo nel Trigger Manager · non ancora salvato"
+ "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ Modello aggiunto come nuova pagina — {0} funzioni trovate; {1} assegnazioni tasti/MIDI prese, {2} da impostare di nuovo nel Trigger Manager · non ancora salvato",
+ "Beep": "Segnale acuto",
+ "Wood block": "Woodblock",
+ "Soft tick": "Tic leggero",
+ "Click sound": "Suono del click",
+ "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "Il suono del click: il primo battito di ogni battuta è sempre più acuto o più pieno e più forte.",
+ "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "Questo show è stato salvato da QLC+ {0}. I nuovi widget sono stati verificati solo con QLC+ 5.3: la schermata Aggiorna a QLC+ 5.3 mostra cosa aggiungerebbe e non scrive nulla finché non fai clic.",
+ "Review the upgrade": "Vedi l’aggiornamento",
+ "Not now": "Non ora"
 }

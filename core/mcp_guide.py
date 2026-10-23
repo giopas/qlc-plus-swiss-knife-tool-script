@@ -206,7 +206,9 @@ GUIDE: Dict[str, dict] = {
                  ("show_id", "Rebuild this Show instead of making a new one."),
                  ("apply", "false: only show the starts, the free time and warnings."),
                  ("click", "true: make a click track instead (needs `bpm` and `parts` with lengths): a new .wav next to "
-                           "the show, as long as the parts. Then call again with music {path} set to the file it returns.")],
+                           "the show, as long as the parts. Then call again with music {path} set to the file it returns."),
+                 ("sound", "With click: beep (default), wood (a wood block) or tick (a soft tick). The first beat of each "
+                           "bar is always higher or fuller, and louder.")],
         "returns": "Preview: parts with start_ms, end_ms and any issue, length_ms, music_ms, free_ms, warnings. "
                    "Build: the Show's id and name, and what was written. Click: the new file's path, name and length.",
         "notes": "length is a number in the unit, `to the end` (last part only; needs the music's length) or "
@@ -331,7 +333,7 @@ GUIDE: Dict[str, dict] = {
 # ── the operations of edit_vc ─────────────────────────────────────────────────
 
 EDIT_VC_OPS: Dict[str, str] = {
-    "create": "parent_id (page or frame id), kind (Button, Frame, SoloFrame, Slider, Label, CueList), caption, "
+    "create": "parent_id (page or frame id), kind (Button, Frame, SoloFrame, Slider, Label, CueList, Knob, XYPad, SpeedDial, Clock), caption, "
               "x, y, w, h (optional), func_id (wire a Button to a function), bg_color (#RRGGBB).",
     "wire": "widget_id, func_id: make a button start a function.",
     "delete": "ids: widgets to remove (with what is inside a frame).",

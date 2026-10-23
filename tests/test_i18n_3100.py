@@ -25,6 +25,14 @@ KEYS = [
     "No input device on {0} in this show: those inputs listen to nothing until a controller is patched there.",
     "Add the page with {0} binding(s)",
     "Add it without keys and MIDI",
+    "Beep",
+    "Wood block",
+    "Soft tick",
+    "Click sound",
+    "The sound of the click: the first beat of each bar is always higher or fuller and louder.",
+    "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.",
+    "Review the upgrade",
+    "Not now",
 ]
 
 

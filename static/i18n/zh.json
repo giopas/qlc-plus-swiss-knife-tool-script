@@ -4367,5 +4367,13 @@
  "Add the page with {0} binding(s)": "添加页面（含 {0} 个绑定）",
  "Add it without keys and MIDI": "不含按键和 MIDI 添加",
  "✓ Template added as a new page — {0} function(s) found · not saved yet": "✓ 模板已作为新页面添加 — 找到 {0} 个功能 · 尚未保存",
- "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ 模板已作为新页面添加 — 找到 {0} 个功能；已取得 {1} 个按键/MIDI 绑定，{2} 个需在 Trigger Manager 中重新设置 · 尚未保存"
+ "✓ Template added as a new page — {0} function(s) found; {1} key/MIDI binding(s) taken, {2} to set again in the Trigger Manager · not saved yet": "✓ 模板已作为新页面添加 — 找到 {0} 个功能；已取得 {1} 个按键/MIDI 绑定，{2} 个需在 Trigger Manager 中重新设置 · 尚未保存",
+ "Beep": "哔声",
+ "Wood block": "木鱼",
+ "Soft tick": "轻柔滴答",
+ "Click sound": "节拍音色",
+ "The sound of the click: the first beat of each bar is always higher or fuller and louder.": "节拍音色：每小节第一拍始终更高或更厚实，并且更响。",
+ "This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.": "此演出由 QLC+ {0} 保存。新控件仅在 QLC+ 5.3 中验证过：“升级到 QLC+ 5.3”页面会显示将添加的内容，点击之前不会写入任何内容。",
+ "Review the upgrade": "查看升级",
+ "Not now": "暂不"
 }

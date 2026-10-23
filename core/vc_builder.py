@@ -30,9 +30,16 @@ from core.vc_ops import (CONTAINERS, VcOpError, _get, _index, _int, _is_widget, 
 
 NONE_ID = "4294967295"
 MARGIN, GAP = 10, 6
-KINDS = ("Button", "Frame", "SoloFrame", "Slider", "Label", "CueList")
+KINDS = ("Button", "Frame", "SoloFrame", "Slider", "Label", "CueList",
+         "Knob", "XYPad", "SpeedDial", "Clock")
+# The four added in 3.10.0, written as QLC+ 5.3.0 saves them (tests/corpus/VC_widgets_qlc530.qxw).
+# A Knob is a Slider with WidgetStyle="Knob"; there is no <Knob> tag.
+EXTRA_KINDS = ("Knob", "XYPad", "SpeedDial", "Clock")
 DEFAULT_SIZE = {"Button": (110, 55), "Frame": (400, 250), "SoloFrame": (400, 250),
-                "Slider": (60, 200), "Label": (150, 30), "CueList": (720, 420)}   # wide enough for every column, Note included
+                "Slider": (60, 200), "Label": (150, 30), "CueList": (720, 420),   # wide enough for every column, Note included
+                "Knob": (89, 131), "XYPad": (299, 299), "SpeedDial": (300, 200), "Clock": (239, 59)}
+_BIG_FONT = "Roboto Condensed,29,-1,5,700,0,0,0,0,0,0,0,0,0,0,1"
+_KNOB_BG = "4282664004"
 SCREENS = {x["id"]: {"label": x["label"], "w": x["w"], "h": x["h"]} for x in vc_screens.BUILTIN}   # kept for old callers
 _FONT = "Roboto,12,-1,5,50,0,0,0,0,0,0,0,0,0,0,1"
 
@@ -146,8 +153,73 @@ def _qlc_colour(hx: str) -> str:
 # create / delete / duplicate
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _new_extra(like: ET.Element, kind: str, wid: int, caption: str, w: int, h: int,
+               bg: Optional[str] = None) -> ET.Element:
+    """Knob, XY pad, speed dial or clock, with the children and attributes
+    QLC+ 5.3.0 writes for them and nothing else."""
+    attrs = {"Caption": caption, "ID": str(wid)}
+    if kind == "Knob":
+        tag, attrs = "Slider", {**attrs, "WidgetStyle": "Knob", "InvertedAppearance": "false"}
+    elif kind == "XYPad":
+        tag, attrs = kind, {**attrs, "InvertedAppearance": "0"}
+    elif kind == "Clock":
+        tag, attrs = kind, {"Enable": "False", "Type": "Clock", **attrs}
+    else:
+        tag = kind
+    el = ET.Element(_q(tag, like), attrs)
+    _sub(el, "WindowState", Visible="True", X=0, Y=0, Width=w, Height=h)
+    if kind == "Knob":
+        app = _sub(el, "Appearance")
+        _sub(app, "BackgroundColor", _qlc_colour(bg) if bg else _KNOB_BG)
+        _sub(el, "SliderMode", "Adjust", ValueDisplayStyle="Exact")
+        _sub(el, "Level", LowLimit=0, HighLimit=255, Value=0)
+    elif kind in ("XYPad", "Clock"):
+        app = _sub(el, "Appearance")
+        _sub(app, "Font", _BIG_FONT)
+        if bg:
+            _sub(app, "BackgroundColor", _qlc_colour(bg))
+        if kind == "XYPad":
+            _sub(el, "Window", hMin=0, hMax=255, vMin=0, vMax=255)
+            _sub(el, "Pan", Position="127.5")
+            _sub(el, "Tilt", Position="127.5")
+            _sub(el, "FloorPosition", X="2.5", Y="0", Z="2.5")
+    else:   # SpeedDial
+        if bg:
+            _sub(_sub(el, "Appearance"), "BackgroundColor", _qlc_colour(bg))
+        _sub(el, "Visibility", 644)
+        _sub(el, "Time", 0)
+        _sub(el, "AbsoluteValue", Minimum=0, Maximum=10000)
+    return el
+
+
+def show_version(root: ET.Element) -> Tuple[int, ...]:
+    """The QLC+ version that saved the file, e.g. (5, 2, 2); () when unknown."""
+    if isinstance(root, ET.ElementTree):
+        root = root.getroot()
+    for c in root:
+        if _local(c.tag) == "Creator":
+            for v in c:
+                if _local(v.tag) == "Version":
+                    return tuple(int(n) for n in re.findall(r"\d+", v.text or "")[:3])
+    return ()
+
+
+def upgrade_offer(root: ET.Element, kinds) -> Optional[dict]:
+    """Set when new widgets go into a show saved before QLC+ 5.3: they were
+    checked against QLC+ 5.3.0, so the Upgrade to QLC+ 5.3 screen is offered.
+    Nothing is written for it."""
+    ver = show_version(root)
+    if not ver or ver >= (5, 3) or not any(k in EXTRA_KINDS for k in kinds):
+        return None
+    return {"version": ".".join(str(n) for n in ver), "kinds": sorted({k for k in kinds if k in EXTRA_KINDS}),
+            "message": "This show was saved by QLC+ %s. The new widgets were checked against QLC+ 5.3 only; "
+                       "Upgrade to QLC+ 5.3 is the next step." % ".".join(str(n) for n in ver)}
+
+
 def _new_element(like: ET.Element, kind: str, wid: int, caption: str, w: int, h: int,
                  bg: Optional[str] = None) -> ET.Element:
+    if kind in EXTRA_KINDS:
+        return _new_extra(like, kind, wid, caption, w, h, bg)
     el = ET.Element(_q(kind, like), {"Caption": caption, "ID": str(wid)})
     if kind in ("Button",):
         el.set("Icon", "")
@@ -200,6 +272,9 @@ def create_widget(root: ET.Element, parent_id: str, kind: str, caption: str = ""
     out = {"new_ids": [el.get("ID")], "x": int(x), "y": int(y)}
     if func_id not in (None, "", NONE_ID):
         out["wired"] = wire(root, el.get("ID"), str(func_id))["wired"]
+    offer = upgrade_offer(root, [kind])
+    if offer:
+        out["upgrade53"] = offer
     return out
 
 

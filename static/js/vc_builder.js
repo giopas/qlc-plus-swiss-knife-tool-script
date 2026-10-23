@@ -163,6 +163,7 @@ function _vcbRenderPanel() {
       <button class="vce-ab" onclick="vcbCreate()">＋ Add</button>
     </div>
     <div class="vce-hint">goes into <span id="vcb-target">${_vcbTargetLabel()}</span> at the first free spot — select a frame first to put it there</div>
+    <div id="vcb-upg">${_vcbUpgHtml()}</div>
 
     <div class="vce-sec"><span class="vce-step">2</span>Wire to a function</div>
     <div class="vce-hint" style="margin-bottom:5px">
@@ -336,8 +337,30 @@ async function vcbCreate() {
   const caption = document.getElementById('vcb-caption').value;
   const parent = _vcbTarget();
   if (!parent) return;
-  await _vcbRun({ op: 'create', parent_id: parent, kind, caption }, parent, null, `${kind} added`);
+  const d = await _vcbRun({ op: 'create', parent_id: parent, kind, caption }, parent, null, `${kind} added`);
+  if (d && d.upgrade53) { _vcbUpg = d.upgrade53; _vcbShowUpg(); }
 }
+
+// A knob, XY pad, speed dial or clock in a show saved before QLC+ 5.3: offer the upgrade (3.10.0).
+// The offer changes nothing; the Upgrade screen shows the steps and writes only after a click.
+let _vcbUpg = null;
+function _vcbUpgHtml() {
+  if (!_vcbUpg) return '';
+  return `<div class="vcb-warn">${_esc(t('This show was saved by QLC+ {0}. The new widgets were checked against QLC+ 5.3 only: the Upgrade to QLC+ 5.3 screen shows what it would add, and writes nothing until you click.', _vcbUpg.version))}
+    <div class="vce-row" style="margin-top:4px"><button class="vce-ab" data-vcb-upg="go">${_esc(t('Review the upgrade'))}</button>
+    <button class="vce-ab" data-vcb-upg="no">${_esc(t('Not now'))}</button></div></div>`;
+}
+function _vcbShowUpg() {
+  const el = document.getElementById('vcb-upg');
+  if (el) el.innerHTML = _vcbUpgHtml();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-vcb-upg]');
+  if (!b) return;
+  const go_ = b.dataset.vcbUpg === 'go';
+  _vcbUpg = null; _vcbShowUpg();
+  if (go_ && typeof go === 'function') go('upgrade');
+});
 
 async function vcbRenamePage() {
   if (!_vcePage) return;

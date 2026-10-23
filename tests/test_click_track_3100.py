@@ -105,3 +105,58 @@ def test_the_show_is_not_changed_by_a_click_track(tmp_path):
                                                   "parts": [{"name": "A", "function_id": fid, "length": "5"}]}).status_code == 200
     assert workspace.get_state()["func_count"] == before
     assert c.get("/api/show/history").get_json()["steps"] == []
+
+
+# ── 3.10.0: a choice of sound ────────────────────────────────────────────────
+
+import io
+import wave as _wave
+
+from core import click_track as _ct
+
+
+def _pcm(sound, bpm=120, bpb=4, ms=4000):
+    b = io.BytesIO()
+    _ct.write_frames(b, bpm, bpb, ms, sound)
+    b.seek(0)
+    with _wave.open(b) as w:
+        import array as _a
+        a = _a.array("h")
+        a.frombytes(w.readframes(w.getnframes()))
+        return a
+
+
+def test_every_sound_is_a_valid_wave_of_the_right_length():
+    for s in _ct.SOUNDS:
+        a = _pcm(s)
+        assert len(a) == round(4000 * _ct.RATE / 1000) and max(map(abs, a)) > 5000
+
+
+def test_first_beat_of_the_bar_is_louder_in_every_sound():
+    for s in _ct.SOUNDS:
+        a = _pcm(s)
+        beat = _ct.beat_frames(1, 120)
+        first = max(abs(x) for x in a[:beat])
+        second = max(abs(x) for x in a[beat:2 * beat])
+        fifth = max(abs(x) for x in a[_ct.beat_frames(4, 120):_ct.beat_frames(5, 120)])
+        assert first > second * 1.2, s
+        assert abs(first - fifth) <= 1, s            # the next bar starts the same way
+
+
+def test_the_sounds_differ_and_beep_is_unchanged():
+    outs = {s: _pcm(s).tobytes() for s in _ct.SOUNDS}
+    assert len(set(outs.values())) == 3
+    a, b = io.BytesIO(), io.BytesIO()
+    _ct.write_frames(a, 120, 4, 4000)                # no sound given = beep
+    _ct.write_frames(b, 120, 4, 4000, "beep")
+    assert a.getvalue() == b.getvalue()
+
+
+def test_same_input_same_bytes_and_bad_sound_refused(tmp_path):
+    for s in _ct.SOUNDS:
+        assert _pcm(s).tobytes() == _pcm(s).tobytes()
+    with pytest.raises(ValueError):
+        _ct.check_sound("gong")
+    r = _ct.write(str(tmp_path), "Song", 120, 4, 2000, "wood")
+    assert r["sound"] == "wood" and (tmp_path / r["name"]).exists()
+    assert _ct.write(str(tmp_path), "Song", 120, 4, 2000, "wood")["name"] != r["name"]   # never over a file

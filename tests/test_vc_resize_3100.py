@@ -122,3 +122,8 @@ def test_the_frame_size_comes_from_the_tree_not_from_an_id_map():
 def test_one_grid_number_in_toolbar_and_panel():
     html = open(os.path.join(os.path.dirname(__file__), "..", "templates", "index.html"), encoding="utf-8").read()
     assert 'id="vce-grid-top"' in html and 'id="vce-snap-grid"' in html and "Mask ±" in html
+
+
+def test_the_resize_message_is_not_wiped_by_hovering():
+    src = open(os.path.join(os.path.dirname(__file__), "..", "static", "js", "vc_editor.js"), encoding="utf-8").read()
+    assert "_vceKeepMsg = true;" in src and "if (_vceKeepMsg)" in src and "_vceKeepMsg = false;" in src

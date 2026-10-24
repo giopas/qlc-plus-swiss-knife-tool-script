@@ -37,6 +37,7 @@ let _vceDragStart  = null;   // {ax, ay, sx, sy, add} where the drag started
 let _vceDragRect   = null;   // {x1,y1,x2,y2} current rubber-band rect
 let _vceSuppressClick = false;  // true right after a rubber-band drag
 let _vceMoveDrag   = null;   // {ax, ay, sx, sy, ids, orig:{id:{x,y}}, snap, moved} drag-to-move
+let _vceKeepMsg    = false;  // the message after a resize stays until the next press (hovering would wipe it)
 let _vceResize     = null;   // {h, id, orig:{x,y,w,h}, ax, ay, sx, sy, grid, bounds, moved, before} drag-to-resize (3.10.0)
 const VCE_HANDLE_PX = 7;     // how close (screen pixels) a press must be to a handle
 const VCE_DRAG_PX  = 4;      // screen pixels before a press becomes a drag
@@ -609,7 +610,8 @@ function _vceOnMouseMove(e) {
   }
 
   // Show position in status bar
-  if (hit) {
+  if (_vceKeepMsg) { /* keep the message about the last resize */ }
+  else if (hit) {
     _vceStatus(`${hit.caption || hit.type} [${hit.id}]  x:${hit.x} y:${hit.y} w:${hit.w} h:${hit.h}  abs x:${hit._absX} y:${hit._absY}`, 'ok');
   } else {
     _vceStatus('', '');
@@ -618,6 +620,7 @@ function _vceOnMouseMove(e) {
 
 function _vceOnMouseDown(e) {
   if (e.button !== 0) return;
+  _vceKeepMsg = false;
   const [ax, ay] = _vceCanvasXY(e);
   // Press on a handle of the one selected widget → drag to resize, always snapped to the grid.
   const hh = _vceHandleHit(ax, ay);
@@ -658,6 +661,7 @@ function _vceOnMouseUp(e) {
     if (m.moved && n) {
       _vceSuppressClick = true;
       const out = (n.children || []).filter(c => c.x + c.w > n.w || c.y + c.h > n.h).length;
+      _vceKeepMsg = true;
       _vceStatus(`Resized to ${n.w}×${n.h}` + (out ? ` · ${out} widget(s) now reach outside this frame` : '') + ' · not saved yet', out ? 'warn' : 'ok');
       _vceRender();
     }

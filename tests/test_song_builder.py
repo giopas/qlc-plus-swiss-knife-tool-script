@@ -349,3 +349,24 @@ def test_a_typed_zero_is_a_fade_of_none_and_an_empty_box_keeps_the_scene_own_fad
     sb.build(eng, t, 100)
     sp = [c for c in [f for f in eng if f.get(sb.PART_ATTR)][0] if c.tag.endswith("Speed")][0]
     assert (sp.get("FadeIn"), sp.get("FadeOut")) == ("3000", "1000")           # the empty one keeps its own
+
+
+def test_a_rebuild_updates_the_setlist_copy_so_it_does_not_point_at_deleted_lights():
+    eng = engine_of(scene("5") + scene("6"))
+    t = spec()
+    t["parts"][0].update(fade_in="1s")
+    first = sb.build(eng, t, 100)
+    show = next(f for f in eng if f.get("ID") == first["show_id"])
+    clone = ET.fromstring(ET.tostring(show))                    # what the Setlist keeps: a copy of the Show
+    clone.set("ID", "900")
+    clone.set("SwissKnifeClone", first["show_id"])
+    eng.append(clone)
+    again = spec(show_id=first["show_id"])
+    again["parts"][0].update(fade_in="2s")
+    second = sb.build(eng, again, first["next_id"])
+    ids = {f.get("ID") for f in eng}
+    used = {i.get("ID") for tr in clone.findall(f"{{{NS}}}Track") for i in tr.findall(f"{{{NS}}}ShowFunction")}
+    assert second["setlist_copies"] == ["900"]
+    assert used <= ids                                          # every light the copy plays still exists
+    assert clone.get("SwissKnifeClone") == first["show_id"] and clone.get("ID") == "900"
+    assert items(clone) == items(show)

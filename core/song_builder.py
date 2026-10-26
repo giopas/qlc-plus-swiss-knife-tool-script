@@ -430,8 +430,32 @@ def build(engine, spec: dict, next_id: int):
         ET.SubElement(tr, f"{ns}ShowFunction", {"ID": mid, "StartTime": "0",
                                                 "Duration": str(mi["length_ms"] or p["length_ms"]),
                                                 "Color": MUSIC_COLOR})
+    refreshed = _refresh_setlist_copies(engine, show)
     return {"show_id": show_id, "name": s["name"], "copies": copies, "audio_id": audio_id,
-            "next_id": nid, **p}
+            "next_id": nid, "setlist_copies": refreshed, **p}
+
+
+def _refresh_setlist_copies(engine, show) -> List[str]:
+    """The Setlist plays its own copy of a Show (marked SwissKnifeClone).  After a
+    rebuild the old part copies are gone, so the Setlist's copy must follow the
+    new timeline, else it points at lights that no longer exist.  Returns the IDs."""
+    sid, done = show.get("ID"), []
+    for f in list(engine):
+        if _local(f.tag) != "Function" or f.get("Type") != "Show" or f.get("SwissKnifeClone") != sid:
+            continue
+        for c in [c for c in f if _local(c.tag) != "TimeDivision"]:
+            f.remove(c)
+        for c in show:
+            if _local(c.tag) != "TimeDivision":
+                f.append(copy.deepcopy(c))
+        td, src = _child(f, "TimeDivision"), _child(show, "TimeDivision")
+        if td is not None and src is not None:
+            td.set("BPM", src.get("BPM", "120"))
+        f.set("Name", show.get("Name", ""))
+        if SONG_ATTR in show.attrib:
+            f.set(SONG_ATTR, show.get(SONG_ATTR))
+        done.append(f.get("ID"))
+    return done
 
 
 def spec_of(show) -> Optional[dict]:

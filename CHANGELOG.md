@@ -19,6 +19,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Security.** The click track and the picture are listed in the audit's *Repeat* section with tests (`tests/test_click_track_3100.py`, `tests/test_show_picture_3100.py`).
 
 ### Fixed
+- **Song Builder:** building a song again now also updates the Setlist's copy of that Show. Before, the copy kept pointing at lights the new build had deleted, so it played with the old music and missing parts.
 
 - **VC Editor, after the first hand test.** A widget could not be resized to the right or downwards when its page and another widget shared an ID (the page's size was read from the wrong one); the frame's size now comes from the tree. The grid step has its own **Grid** box in the toolbar (the mask limits are labelled *Mask ±*). The note offering the upgrade to 5.3 stays after *Review the upgrade* (only *Not now* hides it). The message about a duplicated ID names the widgets and says where the *Fix duplicate IDs* button is.
 - The wiki's Setlist page still described *Split Show…*, which was dropped in 3.9.8.

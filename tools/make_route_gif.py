@@ -103,7 +103,11 @@ def main():
                 inp = rows.nth(i).locator("input:not([type=checkbox])").first
                 inp.fill(nm)
                 inp.dispatch_event("change")
-            frame("01-rig-reducer.png", 900)
+            # leave the last name box first: its change event redraws the table, and a click
+            # that lands during the redraw is lost (nothing is applied)
+            pg.evaluate("document.activeElement && document.activeElement.blur()")
+            pg.wait_for_timeout(900)
+            frame("01-rig-reducer.png", 600)
             pg.get_by_role("button", name="Apply to the show").click()
             frame(None, 1500)
             done()
@@ -180,6 +184,8 @@ def main():
         def s8():
             pg.wait_for_timeout(1500)
             pg.locator("#slot-list > *").first.click()
+            # the Setlist TXT group is folded: open it before the click
+            pg.evaluate("document.querySelectorAll('#scr-setlist details').forEach(d => d.open = true)")
             pg.get_by_role("button", name="Import").first.click()
             pg.wait_for_timeout(500)
             pg.fill("#sl-imp-text", "\n".join(SONGS))

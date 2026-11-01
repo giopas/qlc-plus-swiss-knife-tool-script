@@ -730,7 +730,9 @@ const _WS_SCREENS = ['setlist', 'songbuilder', 'triggers', 'dictionary',
                      'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
                      'wizard', 'upgrade', 'stagemon', 'cabling'];
 
+let _wsLoadedKnown = false;   // the last state we were told: a late DOMContentLoaded must not undo it
 function _updateNeedWsBanners(loaded) {
+  _wsLoadedKnown = !!loaded;
   _WS_SCREENS.forEach(id => {
     const scr = document.getElementById(`scr-${id}`);
     if (!scr) return;
@@ -746,7 +748,7 @@ function _updateNeedWsBanners(loaded) {
     b.style.display = loaded ? 'none' : '';
   });
 }
-document.addEventListener('DOMContentLoaded', () => _updateNeedWsBanners(false));
+document.addEventListener('DOMContentLoaded', () => _updateNeedWsBanners(_wsLoadedKnown));
 
 /** A long file name keeps its start and its end: Festival…_14fix.qxw (3.9.5). */
 function skMidEllipsis(name, max) {

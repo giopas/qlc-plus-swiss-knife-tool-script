@@ -108,6 +108,8 @@ def main():
         pg.wait_for_timeout(1200)
         try:
             pg.locator("#slot-list > *").first.click()
+            # the Setlist TXT group is folded since 3.9.5: open it before the click
+            pg.evaluate("document.querySelectorAll('#scr-setlist details').forEach(d => d.open = true)")
             pg.click("#btn-import-paste")
             pg.fill("#sl-imp-text", "\n".join(f"Song {n:02d}" for n in range(1, 38) if n not in (17, 25, 33)))
             pg.dispatch_event("#sl-imp-text", "input")

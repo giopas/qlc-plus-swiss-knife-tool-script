@@ -1,4 +1,5 @@
 """Song Builder (3.9.8): a table of parts becomes one Show."""
+import os
 import struct
 import wave
 import xml.etree.ElementTree as ET
@@ -370,3 +371,8 @@ def test_a_rebuild_updates_the_setlist_copy_so_it_does_not_point_at_deleted_ligh
     assert used <= ids                                          # every light the copy plays still exists
     assert clone.get("SwissKnifeClone") == first["show_id"] and clone.get("ID") == "900"
     assert items(clone) == items(show)
+
+
+def test_the_setlist_function_list_hides_the_setlist_copy_of_a_show():
+    js = open(os.path.join(os.path.dirname(__file__), "..", "static", "js", "setlist.js"), encoding="utf-8").read()
+    assert "!(f.type === 'Show' && f.is_clone)" in js

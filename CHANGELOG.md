@@ -18,6 +18,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ### Fixed
 
+- **Setlist:** the list of QLC+ functions shows each Show once. The Setlist's own copy of a Show is no longer listed beside the original.
 - **Song Builder:** building a song again now also updates the Setlist's copy of it. Before, the copy lost its lights and its new music.
 - **VC Editor:** a widget can be resized to the right and downwards even when two items share an ID; the Grid box is in the toolbar (the mask limits are now labelled *Mask ±*); the upgrade note stays until you click *Not now*; the duplicate-ID message names the widgets and says where the *Fix duplicate IDs* button is.
 - The wiki's Setlist page no longer mentions *Split Show…*, dropped in 3.9.8.

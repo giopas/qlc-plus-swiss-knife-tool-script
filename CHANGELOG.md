@@ -7,7 +7,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
-### Added — VC Editor and Song Builder extras (3.10.0, in progress)
+---
+
+## [3.10.0] — 2026-11-01 — New widgets, click track
+
+### Added — VC Editor and Song Builder extras (3.10.0)
 
 - **Resize a widget by dragging.** Pick a widget or frame, grab one of the eight handles and drag. It snaps to the grid (you choose the grid size in the **Grid** box) and stays inside its frame. One drag is one step for Undo.
 - **Four new widgets:** Knob, XY pad, Speed dial and Clock. They are written the way QLC+ 5.3 writes them. In a show made with an older QLC+, the tool offers the upgrade to 5.3, and only does it when you click.
@@ -15,6 +19,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Click track.** In the Song Builder, **Make a click track** makes a sound file that clicks on every beat at the song's tempo, with a higher, louder click on the first beat of each bar. Choose Beep, Wood block or Soft tick. It never replaces a file that exists.
 - **A picture of any Show** (read only) from the Setlist and from the Doctor's findings: one row per track, one bar per item.
 - Screenshots 26 and 27, the wiki, the README and all seven languages are updated.
+
+### Changed
+
+- **The Setlist screen is now called Setlist Manager** in the menu, the page title, the guided routes and the texts that mention it, in all seven languages.
 
 ### Fixed
 

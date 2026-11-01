@@ -64,8 +64,8 @@ The tools are in six groups, numbered 1 to 6 like the side menu and the Start sc
 | | [VC Visual Editor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/VC-Visual-Editor) | Lay out the Virtual Console, the screen of buttons you play, on a canvas: drag the handles to resize, add knobs, XY pads, speed dials and clocks, keep keys and MIDI in page templates. Fit it to a tablet or a small touchscreen. |
 | | [Stage & Meshes](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Stage-and-Meshes) | The 3D stage: put the band and the set pieces on it, aim lights at them, make groups of lights, and save a stage layout. |
 | | [Library](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Community-Library) | Share templates, palettes, presets, profiles and your cable kit as one plain file. There is no server. |
-| **4 · Run the show** | [Setlist](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, matched to your chasers, in a cue list you step through with a key or a pedal. A tempo for each song, and PDFs. |
-| | [Song Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Song-Builder) | A song as a table of parts (intro, verse, chorus…): pick a scene or chaser, a length in seconds, bars or beats, and a repeat for each. It makes one Show with the music, shown as a bar so you see what is still free. It can also make a click track (beep, wood block or tick), and any Show can be seen as a picture from the Setlist or the Doctor. |
+| **4 · Run the show** | [Setlist Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Setlist-Manager) | Tonight's songs from a text file, matched to your chasers, in a cue list you step through with a key or a pedal. A tempo for each song, and PDFs. |
+| | [Song Builder](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Song-Builder) | A song as a table of parts (intro, verse, chorus…): pick a scene or chaser, a length in seconds, bars or beats, and a repeat for each. It makes one Show with the music, shown as a bar so you see what is still free. It can also make a click track (beep, wood block or tick), and any Show can be seen as a picture from the Setlist Manager or the Doctor. |
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every key and MIDI control in one table, with clashes and gaps marked. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A short description for every function, shown in the other tools. |
 | | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tablet-on-stage) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |
@@ -99,8 +99,8 @@ Swiss Knife can work with Claude, the AI assistant, through Claude Desktop or Cl
 | Quick Start: the Virtual Console it will build | Fixtures | Rig Reducer: what will change |
 | ![Function Porter](screenshots/05-function-porter.png) | ![Brightness](screenshots/06-brightness.png) | ![Look Builder](screenshots/07-look-builder.png) |
 | Function Porter: map the fixtures | Brightness | Look Builder |
-| ![VC Visual Editor](screenshots/08-vc-editor.png) | ![Stage & Meshes](screenshots/09-stage-meshes.png) | ![Setlist](screenshots/10-setlist.png) |
-| VC Visual Editor | Stage & Meshes | Setlist |
+| ![VC Visual Editor](screenshots/08-vc-editor.png) | ![Stage & Meshes](screenshots/09-stage-meshes.png) | ![Setlist Manager](screenshots/10-setlist.png) |
+| VC Visual Editor | Stage & Meshes | Setlist Manager |
 | ![Trigger Manager](screenshots/11-trigger-manager.png) | ![Dictionary](screenshots/12-dictionary.png) | ![Workspace Doctor](screenshots/13-workspace-doctor.png) |
 | Trigger Manager | Dictionary | Workspace Doctor |
 | ![ID Browser](screenshots/14-id-browser.png) | ![Show Paperwork](screenshots/15-show-paperwork.png) | ![History](screenshots/16-show-in-progress.png) |

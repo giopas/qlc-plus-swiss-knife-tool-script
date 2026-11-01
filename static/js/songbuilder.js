@@ -293,7 +293,7 @@ async function sbdBuild() {
   _sbd.showId = res.show_id;
   await _sbdLoadList();
   document.getElementById('sbd-out').innerHTML =
-    `<div>${_sbdEsc(t('✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist.', res.name, res.show_id))}</div>` + _sbdShowPlan(res);
+    `<div>${_sbdEsc(t('✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist Manager.', res.name, res.show_id))}</div>` + _sbdShowPlan(res);
   if (typeof showRefresh === 'function') showRefresh();
   if (typeof setStatus === 'function') setStatus(t('✓ Show “{0}” built — Save as new file… when you’re ready.', res.name), (res.warnings || []).length ? 'warn' : 'ok');
 }

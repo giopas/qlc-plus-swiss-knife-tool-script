@@ -215,7 +215,7 @@ function _renderModal() {
             + Object.entries(slotPaths).map(([sid, p]) =>
                 `<div class="sess-field-hint sess-muted" style="margin-top:3px">Slot ${_esc(sid)}: ${_truncPath(p)}</div>`
               ).join('')
-          : `<span class="sess-muted">No setlist files saved yet — use "Save setlist…" in the Setlist tab</span>`}
+          : `<span class="sess-muted">No setlist files saved yet — use "Save setlist…" in the Setlist Manager tab</span>`}
       </div>
     </div>
 

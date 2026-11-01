@@ -211,7 +211,7 @@ function _smRender() {
   note.innerHTML = warn.map(w => `<div class="sm-warn">${w}</div>`).join('');
 
   if (!_sm.lists.length) {
-    el.innerHTML = `<div class="porter-placeholder">${_esc('This show has no CueList on its Virtual Console. Add one with the Setlist or the VC Visual Editor.')}</div>`;
+    el.innerHTML = `<div class="porter-placeholder">${_esc('This show has no CueList on its Virtual Console. Add one with the Setlist Manager or the VC Visual Editor.')}</div>`;
     _smSettings(); _smCardPane(); _smSync(); return;
   }
   if (!_smList(_smCur)) _smCur = (cfg.lists[0] && cfg.lists[0].id) || _sm.lists[0].id;
@@ -327,8 +327,8 @@ function _smCardPane() {
     ${_smField('Tuning', `<input class="field-input" list="sm-tunings" maxlength="40" value="${_esc(c.tuning || '')}" oninput="stagemonCard('tuning', this.value)">
        <datalist id="sm-tunings">${[...used].map(x => `<option value="${_esc(x)}">`).join('')}</datalist>`)}
     <div class="sm-tc" id="sm-tc" aria-live="polite"></div>
-    ${_smField('Tempo', `<span class="sm-tempo">${own ? _esc(`${own} BPM from the Setlist`) : _esc('No tempo set on the Setlist')}</span>
-       <input class="field-input sm-bpm" type="number" min="20" max="400" value="${c.bpm || ''}" placeholder="${own || 'BPM'}" title="A tempo of your own for this card: it wins over the Setlist's"
+    ${_smField('Tempo', `<span class="sm-tempo">${own ? _esc(`${own} BPM from the Setlist Manager`) : _esc('No tempo set on the Setlist Manager')}</span>
+       <input class="field-input sm-bpm" type="number" min="20" max="400" value="${c.bpm || ''}" placeholder="${own || 'BPM'}" title="A tempo of your own for this card: it wins over the Setlist Manager's"
               oninput="stagemonCard('bpm', this.value)">`)}
     ${_smField('Starts', `<input class="field-input" maxlength="80" value="${_esc(c.starts || '')}" placeholder="${_esc('Drums, 4 bars count-in')}" oninput="stagemonCard('starts', this.value)">`)}
     <div class="sm-field sm-players"><span>${_esc('Per player')}</span><div>${players}

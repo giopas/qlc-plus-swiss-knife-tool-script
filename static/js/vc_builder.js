@@ -63,7 +63,7 @@ function _vcbSelectionHtml(selArr) {
       </div>${first.type === 'CueList' ? `
       <div class="vce-row">
         <button class="vce-ab" onclick="vcbNewSetlistFor('${_esc(first.id)}')" title="Creates an empty chaser 'Setlist' and wires this CueList to it">▶ Use for a new setlist</button>
-        <span class="vce-hint">then fill it in the <a href="#" onclick="go('setlist');return false">Setlist</a></span>
+        <span class="vce-hint">then fill it in the <a href="#" onclick="go('setlist');return false">Setlist Manager</a></span>
       </div>` : ''}`;
   }
   if (!isPage) {
@@ -286,7 +286,7 @@ function _vcbSetlistCard() {
   const cls = I.cuelists || [];
   const state = cls.length
     ? `This show has ${cls.length} CueList${cls.length > 1 ? 's' : ''}: ${cls.slice(0, 3).map(c => `<b>${_esc(c.caption || 'CueList')}</b>`).join(', ')}${cls.length > 3 ? '…' : ''}.`
-    : '<b style="color:var(--warning)">This show has no CueList yet</b> — add one here and the Setlist can fill it.';
+    : '<b style="color:var(--warning)">This show has no CueList yet</b> — add one here and the Setlist Manager can fill it.';
   return `
     <div class="vcb-card">
       <div class="vcb-card-t">▶ Setlist cue list</div>
@@ -298,7 +298,7 @@ function _vcbSetlistCard() {
       <div class="vce-row">
         <button class="vce-ab vcb-primary" id="vcb-sl-btn" onclick="vcbSetlist()">${_vcbSetlistBtnLabel()}</button>
       </div>
-      <div class="vce-hint">Select a CueList on the canvas to re-wire it instead. Then fill the songs in the <a href="#" onclick="go('setlist');return false">Setlist</a>.</div>
+      <div class="vce-hint">Select a CueList on the canvas to re-wire it instead. Then fill the songs in the <a href="#" onclick="go('setlist');return false">Setlist Manager</a>.</div>
     </div>`;
 }
 
@@ -556,7 +556,7 @@ async function vcbDeleteTemplate(name) {
 
 async function vcbNewSetlistFor(cl) {
   await _vcbRun({ op: 'setlist_cuelist', chaser_id: '__new__', cuelist_id: cl }, cl, [cl],
-    () => 'CueList wired to a new, empty setlist chaser — fill it in the Setlist');
+    () => 'CueList wired to a new, empty setlist chaser — fill it in the Setlist Manager');
   vcbLoadInfo();
 }
 
@@ -566,6 +566,6 @@ async function vcbSetlist() {
   const s = [..._vceSel].map(id => _vceNodes[id]).filter(Boolean);
   const cl = s.length === 1 && s[0].type === 'CueList' ? s[0].id : '';
   await _vcbRun({ op: 'setlist_cuelist', chaser_id, cuelist_id: cl, page_id: _vcePage && _vcePage.id },
-    cl || null, cl ? [cl] : null, d => (d.wired || 'CueList added') + ' — fill it in the Setlist');
+    cl || null, cl ? [cl] : null, d => (d.wired || 'CueList added') + ' — fill it in the Setlist Manager');
   vcbLoadInfo();
 }

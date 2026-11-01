@@ -53,3 +53,15 @@ def test_every_sentence_the_code_draws_is_a_key():
     js = (ROOT / "static" / "js" / "vc_editor.js").read_text(encoding="utf-8")
     assert "Resizing — x:${r.x} y:${r.y} w:${r.w} h:${r.h} (grid ${m.grid}px)" in js
     assert "`Resized to ${n.w}×${n.h}`" in js
+
+
+def test_the_setlist_screen_is_called_setlist_manager_in_the_page_and_in_every_language():
+    import json
+    import os
+    base = os.path.join(os.path.dirname(__file__), "..")
+    page = open(os.path.join(base, "templates", "index.html"), encoding="utf-8").read()
+    assert "<span>Setlist Manager</span>" in page and "<h2>Setlist Manager</h2>" in page
+    for lang in ("it", "fr", "de", "es", "pt", "ja", "zh"):
+        d = json.load(open(os.path.join(base, "static", "i18n", f"{lang}.json"), encoding="utf-8"))
+        assert d.get("Setlist Manager") and d["Setlist Manager"] != "Setlist Manager" or lang == "de", lang
+        assert not any("Manager Manager" in k for k in d)

@@ -122,9 +122,9 @@
 
     <!-- 4 · Run the show -->
     <div class="sn-group-label" id="sn-grp-4"><span class="sn-gnum">4</span><span class="sn-gtxt">Run the show</span></div>
-    <button class="sn-item" id="sn-setlist" data-tip="Setlist" data-desc="Tonight’s songs matched to functions, with fade timings, into the setlist CueList." onclick="go('setlist')">
+    <button class="sn-item" id="sn-setlist" data-tip="Setlist Manager" data-desc="Tonight’s songs matched to functions, with fade timings, into the setlist CueList." onclick="go('setlist')">
       <svg class="ic"><use href="/static/icons.svg#music"/></svg>
-      <span>Setlist</span>
+      <span>Setlist Manager</span>
     </button>
     <button class="sn-item" id="sn-songbuilder" data-tip="Song Builder" data-desc="Build a song’s Show from a table of parts: a look, a length and a repeat for each, and one music track." onclick="go('songbuilder')">
       <svg class="ic"><use href="/static/icons.svg#list"/></svg>
@@ -134,7 +134,7 @@
       <svg class="ic"><use href="/static/icons.svg#sliders"/></svg>
       <span>Trigger Manager</span>
     </button>
-    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does — the descriptions show in the Setlist and the Show Paperwork." onclick="go('dictionary')">
+    <button class="sn-item" id="sn-dictionary" data-tip="Dictionary" data-desc="Describe what every function does — the descriptions show in the Setlist Manager and the Show Paperwork." onclick="go('dictionary')">
       <svg class="ic"><use href="/static/icons.svg#book"/></svg>
       <span>Dictionary</span>
     </button>
@@ -484,7 +484,7 @@
         <div class="wf-card" data-grp="4">
           <div class="wf-head"><div class="wf-num">4</div><div class="wf-title">Run the show</div></div>
           <div class="wf-desc">Tonight’s setlist into a CueList, keyboard and MIDI bindings without clashes, a description of every function, the current cue on a tablet on stage.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist</button><button class="wf-chip" onclick="go('songbuilder')">Song Builder</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('setlist')">Setlist Manager</button><button class="wf-chip" onclick="go('songbuilder')">Song Builder</button><button class="wf-chip" onclick="go('triggers')">Trigger Manager</button><button class="wf-chip" onclick="go('dictionary')">Dictionary</button><button class="wf-chip" onclick="go('stagemon')">Tablet on stage</button><button class="wf-chip" onclick="go('cabling')">Cabling</button></div>
         </div>
         <div class="wf-card" data-grp="5">
           <div class="wf-head"><div class="wf-num">5</div><div class="wf-title">Check &amp; fix</div></div>
@@ -719,7 +719,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
-      <div><h2>Setlist</h2><div class="p-desc">Match each song to its look, set the timing and build the setlist chaser.</div></div>
+      <div><h2>Setlist Manager</h2><div class="p-desc">Match each song to its look, set the timing and build the setlist chaser.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Setlist-Manager')" title="How this tool works — opens the Setlist Manager page of the wiki">?</button>
       <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
@@ -1092,7 +1092,7 @@
 
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
-      <div><h2>Dictionary</h2><div class="p-desc">Write what each function does; the notes show up in the Setlist and everywhere else.</div></div>
+      <div><h2>Dictionary</h2><div class="p-desc">Write what each function does; the notes show up in the Setlist Manager and everywhere else.</div></div>
       <div class="spacer"></div>
       <button class="btn btn-surface" id="btn-dict-claude" onclick="dictAskClaude()" style="display:none"
               data-tooltip="Copy a ready request for Claude Desktop, which writes the descriptions and saves them next to the show.">
@@ -2659,7 +2659,7 @@
             <input id="sm-simple-title" class="field-input" maxlength="120" placeholder="The show’s name" oninput="stagemonSet('title', this.value)"></label>
           <label class="sm-check"><input type="checkbox" id="sm-tab-notes"> with the QLC+ function names</label>
           <label class="sm-check" data-tooltip="Under each song, a Card button opens its tuning, tempo, who starts and note."><input type="checkbox" id="sm-tab-cards" checked> with the song cards</label>
-          <p class="sm-meta sm-simple-p">The songs come from the Setlist screen. Song cards are written in the Live monitor, which also has the Next song banner.</p>
+          <p class="sm-meta sm-simple-p">The songs come from the Setlist Manager screen. Song cards are written in the Live monitor, which also has the Next song banner.</p>
         </div>
       </div>
     </div>

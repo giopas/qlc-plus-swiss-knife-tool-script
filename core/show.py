@@ -34,7 +34,7 @@ MAX_STEPS = 60
 
 TOOL_TITLES = {
     'doctor': 'Workspace Doctor', 'reducer': 'Rig Reducer', 'looks': 'Look Builder',
-    'stage': 'Stage & Meshes', 'brightness': 'Brightness', 'setlist': 'Setlist',
+    'stage': 'Stage & Meshes', 'brightness': 'Brightness', 'setlist': 'Setlist Manager',
     'triggers': 'Trigger Manager', 'vceditor': 'VC Editor', 'porter': 'Function Porter',
     'merger': 'QXW Merger', 'dictionary': 'Dictionary', 'fixtures': 'Fixtures',
     'quickstart': 'Quick Start', 'idbrowser': 'ID Browser', 'inputs': 'Inputs & MIDI',

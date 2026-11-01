@@ -87,4 +87,6 @@ python3 -m pytest -q tests/test_click_track_3100.py tests/test_show_picture_3100
 
 Added in 3.10.0, as the rule above asks: the **click track** route writes a file but takes no path from the page (the folder is the show's, the name is reduced to a plain file name, the file is opened with `x` so nothing is replaced, at most 20 minutes; the sound must be one of three names, anything else is refused); the **Show picture** routes only read, send colours only as `#rrggbb`, cap tracks and items, and the Picture buttons carry the Show's id as a data attribute, not inside a handler; a **template** from the Library may now hold key and MIDI bindings, and only a plain key name or digits are accepted when it is applied.
 
+Bandit on 1 November 2026 (3.10.0): 0 high, 22 medium, 96 low, the same totals as 3.9.8; `pip-audit` found no known vulnerabilities. No personal names or paths are in the files that are pushed (checked with `git grep`).
+
 `tools/xss_probe.py` was run by giopas on 23 October 2026 on 3.10.0 so far: 475 poisoned fields, every screen clean (nothing ran, nothing injected). The probe, the Bandit and pip-audit runs are advisory; the tests are part of CI.

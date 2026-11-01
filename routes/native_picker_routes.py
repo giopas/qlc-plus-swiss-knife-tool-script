@@ -14,7 +14,7 @@ Body for /pick:
   {
     "title":       "Select dictionary",           // dialog prompt
     "types":       [{"label": "Text", "exts": [".txt"]}],
-    "initial_dir": "/Users/gio/Shows"             // optional starting dir
+    "initial_dir": "/Users/me/Shows"             // optional starting dir
   }
 
 Response:

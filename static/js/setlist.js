@@ -607,8 +607,9 @@ function _buildSetlistCloneSet() {
 
 function _applyPoolFilters() {
   const q   = (document.getElementById('fn-pool-filter')?.value || '').toLowerCase().trim();
-  // The Setlist's own copy of a Show is not something to pick: one entry for each song
-  let result = _functions.filter(f => !(f.type === 'Show' && f.is_clone));
+  // The copies the Setlist makes for its cues are not something to pick: one entry for each original
+  // (the ✦ beside an original says it has a copy)
+  let result = _functions.filter(f => !f.is_clone);
   if (_poolTypeFilter)
     result = result.filter(f => (f.type || '') === _poolTypeFilter);
   if (_poolVcFilter === 'has')

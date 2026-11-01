@@ -373,6 +373,6 @@ def test_a_rebuild_updates_the_setlist_copy_so_it_does_not_point_at_deleted_ligh
     assert items(clone) == items(show)
 
 
-def test_the_setlist_function_list_hides_the_setlist_copy_of_a_show():
+def test_the_setlist_function_list_hides_the_copies_the_setlist_makes():
     js = open(os.path.join(os.path.dirname(__file__), "..", "static", "js", "setlist.js"), encoding="utf-8").read()
-    assert "!(f.type === 'Show' && f.is_clone)" in js
+    assert "_functions.filter(f => !f.is_clone)" in js

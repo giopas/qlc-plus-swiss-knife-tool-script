@@ -201,19 +201,26 @@ GUIDE: Dict[str, dict] = {
                  ("bpm", "Beats per minute; `beats_per_bar` defaults to 4."),
                  ("music", "{function_id} of a sound function in the show, or {path, length} for a file on this computer "
                            "(length like \"3:45\" only when the file's length cannot be read)."),
-                 ("parts", "[{name, function_id, length, repeat, fade_in, fade_out, beats}] in order. function_id is a "
-                           "scene or chaser. Same name = same track. `beats` = beats per step of a chaser."),
+                 ("parts", "[{name, function_id, length, repeat, fade_in, fade_out, beats, bpm}] in order. function_id "
+                           "is a scene or chaser. Same name = same track. `beats` = beats per step of a chaser. `bpm` "
+                           "(3.13.0) is optional: when set, it becomes the tempo from that part on, until another part "
+                           "sets its own; leave it out to keep the tempo already running (a bridge or an outro at a "
+                           "different speed)."),
                  ("show_id", "Rebuild this Show instead of making a new one."),
-                 ("apply", "false: only show the starts, the free time and warnings."),
+                 ("apply", "false: only show the starts, the free time, each part's tempo and warnings."),
                  ("click", "true: make a click track instead (needs `bpm` and `parts` with lengths): a new .wav next to "
-                           "the show, as long as the parts. Then call again with music {path} set to the file it returns."),
+                           "the show, as long as the parts, at the song-level `bpm` throughout (a part's own `bpm` is "
+                           "not yet followed by the click track). Then call again with music {path} set to the file it "
+                           "returns."),
                  ("sound", "With click: beep (default), wood (a wood block) or tick (a soft tick). The first beat of each "
                            "bar is always higher or fuller, and louder.")],
-        "returns": "Preview: parts with start_ms, end_ms and any issue, length_ms, music_ms, free_ms, warnings. "
+        "returns": "Preview: parts with start_ms, end_ms, bpm and any issue, length_ms, music_ms, free_ms, warnings. "
                    "Build: the Show's id and name, and what was written. Click: the new file's path, name and length.",
         "notes": "length is a number in the unit, `to the end` (last part only; needs the music's length) or "
-                 "`until 1:20` / `until bar 17` (a point counted from the start of the song). Show the preview first. "
-                 "The music is never cut and QLC+ always plays it from its start. A fade makes a copy of the scene.",
+                 "`until 1:20` / `until bar 17` (a point counted from the start of the song; a bar or beat target is "
+                 "worked out with each part's own tempo along the way, so it still lands right across a tempo change). "
+                 "Show the preview first. The music is never cut and QLC+ always plays it from its start. A fade makes "
+                 "a copy of the scene.",
     },
     "stage_monitor": {
         "use": "Make the Stage Monitor page: a tablet on stage shows the cue that is playing and the next one, "

@@ -4519,5 +4519,7 @@
  "Sliders set so the brightest scene lands at {0}%.": "Cursori impostati perché la scena più luminosa arrivi al {0}%.",
  "{0} card(s) without dimmer values left as they are.": "{0} scheda/e senza valori di dimmer lasciata/e com'è.",
  "{0} value(s) brought down to the limit": "Valori portati al limite: {0}",
- "After your change: brightest scene {0}%": "Dopo la tua modifica: scena più luminosa {0}%"
+ "After your change: brightest scene {0}%": "Dopo la tua modifica: scena più luminosa {0}%",
+ "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "Cambia il tempo da qui in avanti, finché un'altra parte non imposta il proprio. Vuoto mantiene il tempo in corso.",
+ "Changes the tempo from here on. Empty keeps the running tempo.": "Cambia il tempo da qui in avanti. Vuoto mantiene il tempo in corso."
 }

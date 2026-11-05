@@ -256,6 +256,56 @@ def test_until_counts_from_the_beginning_of_the_song():
     assert sb.plan(eng, t)["length_ms"] == 4000          # bar 3 starts after two bars of 2 s
 
 
+def test_a_part_can_set_its_own_tempo_and_it_carries_forward():
+    # A at the song's 120 BPM (4 bars = 8s); B switches to 60 BPM (4 bars = 16s);
+    # C has no bpm of its own, so it keeps B's 60 BPM (2 bars = 8s).
+    eng = engine_of(scene("5") + scene("6"))
+    t = spec(bpm=120, parts=[{"name": "A", "function_id": "5", "length": "4 bars"},
+                             {"name": "B", "function_id": "6", "length": "4 bars", "bpm": 60},
+                             {"name": "C", "function_id": "5", "length": "2 bars"}])
+    rows = sb.plan(eng, t)["parts"]
+    assert [r["length_ms"] for r in rows] == [8000, 16000, 8000]
+    assert [r["bpm"] for r in rows] == [120, 60, 60]
+
+
+def test_until_resolves_correctly_across_a_tempo_change():
+    # A runs 4 bars at 120 BPM (8s, 16 beats gone by); B drops to 60 BPM and runs
+    # 'until bar 7' — two bars further on, which at 60 BPM is 8s, not 4s.
+    eng = engine_of(scene("5") + scene("6"))
+    t = spec(bpm=120, parts=[{"name": "A", "function_id": "5", "length": "4 bars"},
+                             {"name": "B", "function_id": "6", "length": "until bar 7", "bpm": 60}])
+    rows = sb.plan(eng, t)["parts"]
+    assert [r["length_ms"] for r in rows] == [8000, 8000]
+
+
+def test_a_bad_tempo_on_a_part_says_why():
+    eng = engine_of(scene("5"))
+    with pytest.raises(ValueError, match="BPM must be from"):
+        sb.plan(eng, spec(parts=[{"name": "A", "function_id": "5", "length": "1s", "bpm": 5000}]))
+    p = sb.plan(eng, spec(parts=[{"name": "A", "function_id": "5", "length": "1s", "bpm": "nope"}]), lenient=True)
+    assert "BPM" in p["parts"][0]["issue"]
+
+
+def test_a_chaser_fit_to_beats_follows_the_part_own_tempo():
+    eng = engine_of(scene("5") + chaser_fn("7"))
+    t = spec(bpm=120, parts=[{"name": "A", "function_id": "7", "length": "4 beats", "beats": "1", "bpm": 60}])
+    out = sb.build(eng, t, 100)
+    cp = next(f for f in eng if f.get("ID") == out["copies"][0])
+    assert {s.get("Hold") for s in cp.findall(f"{{{NS}}}Step")} == {"1000"}     # 1 beat at 60 BPM, not 120
+
+
+def test_a_part_own_tempo_round_trips_through_rebuild(tmp_path):
+    root = ws(scene("5") + scene("6"))
+    p = tmp_path / "s.qxw"
+    p.write_bytes(qxw_io.qxw_bytes(root))
+    workspace.load_qxw(str(p))
+    t = spec(parts=[{"name": "A", "function_id": "5", "length": "4 bars"},
+                    {"name": "B", "function_id": "6", "length": "4 bars", "bpm": 60}])
+    out = workspace.song_build(t)
+    got = workspace.song_open(out["show_id"])
+    assert got["parts"][1]["bpm"] == "60"
+
+
 def test_a_half_filled_table_still_gives_a_preview():
     eng = engine_of(scene("5"))
     t = spec(name="", parts=[{"name": "A", "function_id": "5", "length": "10s"},

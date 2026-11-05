@@ -4543,5 +4543,7 @@
  "Sliders set so the brightest scene lands at {0}%.": "已设置滑块，使最亮场景落在 {0}%。",
  "{0} card(s) without dimmer values left as they are.": "{0} 张没有调光值的卡片保持不变。",
  "{0} value(s) brought down to the limit": "{0} 个值降到上限",
- "After your change: brightest scene {0}%": "更改后：最亮场景 {0}%"
+ "After your change: brightest scene {0}%": "更改后：最亮场景 {0}%",
+ "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "从这里开始更改节奏，直到另一部分设定自己的节奏。留空则保持当前节奏。",
+ "Changes the tempo from here on. Empty keeps the running tempo.": "从这里开始更改节奏。留空则保持当前节奏。"
 }

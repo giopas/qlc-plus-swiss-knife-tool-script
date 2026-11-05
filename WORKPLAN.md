@@ -37,7 +37,27 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.12.0, Brightness levels** (giopas, 5 November 2026). 3.11.0, notes from a gig, was released the same morning: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.12.0, Brightness levels** (giopas, 5 November 2026). 3.11.0, notes from a gig, was released the same morning: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. **Built the same day: 3.13.0, Song Builder tempo changes** (giopas, 5 November 2026), moved here from the wishlist. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+
+### 3.13.0 · Song Builder: tempo changes within a song
+
+**Status, 5 November 2026: built.** `core/song_builder.py` keeps a running BPM as it walks the parts (a part's own `bpm`, when set, takes over from there on); `_until_dur` resolves `until bar N` / `until beat N` by the beats gone by so far at each part's own tempo, so a bar or beat target still lands right after a tempo change (a clock time such as `until 1:20` needed no change: it was always an absolute position). `build()` fits a chaser's beats per step to the part's own effective BPM, not the song-level one. New column **BPM** in the table (`templates/index.html`, `static/js/songbuilder.js`); the coloured bar carries a small ♩ BPM mark on a part whose tempo differs from the one before it (`_sbdBars`). Five new tests in `tests/test_song_builder.py` (29 pass, 1,685 in the full suite); the seven languages have the two new tooltips. Claude's `song_builder` tool and the wiki *Song-Builder* page are updated; `tools/make_claude_tools_wiki.py` run again.
+
+**Asked by giopas on 5 November 2026**, while discussing an upstream QLC+ feature request (timecode sync for the Show Manager, not part of this tool). Today `song_builder` takes one BPM for the whole song, so every part's position is one multiplication off that single number. A song with a bridge or an outro at a different speed cannot be built right: timecode would fix QLC+'s own clock drifting from the real one, but it cannot fix a song that changes tempo mid-way if the Song Builder still assumes one BPM throughout.
+
+**What it is.** Let a part set a new BPM from that point on, instead of only the song-level one. A short tempo map: each part either keeps the running BPM or declares its own, and bars, beats and the *to the end* / *until* positions are then worked out piece by piece, part by part, rather than off a single BPM for the whole song.
+
+| # | What | Status |
+|---|---|---|
+| 1 | A part can optionally carry its own `bpm`; when absent, it keeps the BPM in force from the part before it (or the song-level one for the first part). | done |
+| 2 | Bar/beat-to-seconds conversion walks the parts in order, applying each part's own BPM, instead of one multiplication for the whole song. | done |
+| 3 | `to the end` and `until 1:20` keep working across a tempo change (they already count from the start in the song's unit; the conversion from part 2 makes that correct again once BPM varies). | done |
+| 4 | The coloured bar and the preview (`apply=false`) show each part's BPM when it differs from the one before it. | done |
+| 5 | Claude's `song_builder` tool and the wiki *Song-Builder* page updated for the optional per-part BPM. | done |
+
+**Settled, 5 November 2026:** a changed BPM does **not** yet feed the click track (built in 3.10.0); it keeps running at the song-level BPM throughout. A multi-tempo song keeps using its own backing track for now; feeding the click track a tempo map is left on the wishlist if it is ever asked for.
+
+**Left for giopas:** hand check in QLC+ — a song with a tempo change plays each part at its own speed and a chaser's steps follow it; `python3 tools/shots.py all` if the new BPM column should appear in a screenshot; then merge and tag with the other work of this release, or as its own `v3.13.0` (to decide at release time).
 
 ### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 

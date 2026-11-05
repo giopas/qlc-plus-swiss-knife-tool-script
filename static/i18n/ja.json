@@ -4543,5 +4543,7 @@
  "Sliders set so the brightest scene lands at {0}%.": "最も明るいシーンが {0}% になるようスライダーを設定しました。",
  "{0} card(s) without dimmer values left as they are.": "調光値のない {0} 枚のカードはそのままです。",
  "{0} value(s) brought down to the limit": "{0} 個の値を上限まで下げます",
- "After your change: brightest scene {0}%": "変更後：最も明るいシーン {0}%"
+ "After your change: brightest scene {0}%": "変更後：最も明るいシーン {0}%",
+ "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "ここからテンパを変更し、別のパートが独自のテンパを設定するまで影響します。空にすると現在のテンパのままです。",
+ "Changes the tempo from here on. Empty keeps the running tempo.": "ここからテンパを変更します。空にすると現在のテンパのままです。"
 }

@@ -48,7 +48,7 @@ function sbdNew() {
   sbdPreview();
 }
 
-function _sbdBlank(name) { return { name: name || '', look: '', function_id: '', length: '', repeat: 1, fade_in: '', fade_out: '', beats: '' }; }
+function _sbdBlank(name) { return { name: name || '', look: '', function_id: '', length: '', repeat: 1, fade_in: '', fade_out: '', beats: '', bpm: '' }; }
 
 async function sbdOpen(id) {
   if (!id) { sbdNew(); return; }
@@ -101,6 +101,7 @@ function _sbdRender() {
       <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="–"></td>
       <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="–"></td>
       <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.beats)}" oninput="sbdCell(${i},'beats',this.value)" placeholder="–"></td>
+      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.bpm)}" oninput="sbdCell(${i},'bpm',this.value)" placeholder="–" data-tooltip="${_sbdEsc(t('Changes the tempo from here on. Empty keeps the running tempo.'))}"></td>
       <td class="sbd-start" id="sbd-start-${i}">${p.start_ms === undefined ? '' : _sbdEsc(_sbdPos(p.start_ms))}</td>
       <td style="white-space:nowrap"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},-1)" aria-label="${_sbdEsc(t('Up'))}">↑</button>
         <button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},1)" aria-label="${_sbdEsc(t('Down'))}">↓</button>
@@ -238,7 +239,7 @@ function _sbdSpec() {
     show_id: _sbd.showId,
     music: (fid && fid !== '__path') ? { function_id: fid } : (fid === '__path' && path ? { path, length: document.getElementById('sbd-mlen').value.trim() } : {}),
     parts: _sbd.parts.map(p => ({ name: p.name, function_id: p.function_id, length: p.length, repeat: p.repeat,
-                                  fade_in: p.fade_in, fade_out: p.fade_out, beats: p.beats })),
+                                  fade_in: p.fade_in, fade_out: p.fade_out, beats: p.beats, bpm: p.bpm })),
   };
 }
 
@@ -247,13 +248,16 @@ function _sbdOut(html, cls) { document.getElementById('sbd-out').innerHTML = `<d
 function _sbdBars(res) {
   const total = res.length_ms || 0, music = res.music_ms || 0, scale = Math.max(total, music, 1);
   const pct = ms => (100 * ms / scale).toFixed(3) + '%';
-  const seg = (r) => {
+  const seg = (r, i, arr) => {
     const bad = r.issue ? ' sbd-seg-bad' : '';
-    const tip = `${r.name || ''} · ${_sbdPos(r.start_ms)}–${_sbdPos(r.end_ms)}` + (r.issue ? ` · ${r.issue}` : '');
+    const prevBpm = i > 0 ? arr[i - 1].bpm : null;
+    const bpmChanged = r.bpm && r.bpm !== prevBpm;
+    const chip = bpmChanged ? ` <span class="sbd-bpm-chip">♩${_sbdEsc(r.bpm)}</span>` : '';
+    const tip = `${r.name || ''} · ${_sbdPos(r.start_ms)}–${_sbdPos(r.end_ms)}` + (r.bpm ? ` · ${r.bpm} BPM` : '') + (r.issue ? ` · ${r.issue}` : '');
     const color = r.issue ? '' : `background:${_sbdColor(r.name)}`;
-    return `<div class="sbd-seg${bad}" style="left:${pct(r.start_ms)};width:${pct(r.end_ms - r.start_ms)};${color}" data-tooltip="${_sbdEsc(tip)}"><span>${_sbdEsc(r.name)}</span></div>`;
+    return `<div class="sbd-seg${bad}" style="left:${pct(r.start_ms)};width:${pct(r.end_ms - r.start_ms)};${color}" data-tooltip="${_sbdEsc(tip)}"><span>${_sbdEsc(r.name)}${chip}</span></div>`;
   };
-  const lights = (res.parts || []).map(seg).join('');
+  const lights = (res.parts || []).map((r, i, arr) => seg(r, i, arr)).join('');
   const free = (res.free_ms || 0) > 0
     ? `<div class="sbd-gap" style="left:${pct(total)};width:${pct(res.free_ms)}" data-tooltip="${_sbdEsc(t('Free: {0} not covered by any part', _sbdSpan(res.free_ms)))}"><span>${_sbdEsc(t('Free {0}', _sbdSpan(res.free_ms)))}</span></div>` : '';
   const empty = scale <= 1 ? `<div class="sbd-gap sbd-gap-all" style="left:0;width:100%"><span>${_sbdEsc(t('Give the parts a length to see the song here'))}</span></div>` : '';

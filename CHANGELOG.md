@@ -7,6 +7,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — Song Builder: tempo changes within a song (3.13.0)
+
+- **A part can set its own tempo.** Fill in a BPM on any row of the Song Builder table and, from that part onward, the song runs at that tempo, until another part sets its own. Leave it empty to keep the tempo already running. Made for a song with a bridge or an outro at a different speed, instead of one BPM for the whole song.
+- **Bars, beats and `until`.** A part's length in bars or beats, and an `until bar 17` / `until beat 33` target, now follow the tempo in force at each point, part by part, instead of one BPM for the whole song.
+- **The coloured bar** shows a small ♩ BPM mark on a part whose tempo differs from the one before it; the preview (apply=false) also gives each part's tempo.
+- Claude's `song_builder` tool takes the same optional `bpm` on a part; the wiki *Song-Builder* page is updated.
+- Not yet followed: the click track (3.10.0) still runs at the song's own BPM throughout, even when a part sets its own.
+
 ---
 
 ## [3.12.0] — 2026-11-05 — Brightness levels

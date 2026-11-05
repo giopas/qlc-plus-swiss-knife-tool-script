@@ -4492,5 +4492,7 @@
  "Sliders set so the brightest scene lands at {0}%.": "Curseurs réglés pour que la scène la plus lumineuse arrive à {0}%.",
  "{0} card(s) without dimmer values left as they are.": "{0} carte(s) sans valeurs de gradateur laissée(s) telle(s) quelle(s).",
  "{0} value(s) brought down to the limit": "Valeurs ramenées à la limite : {0}",
- "After your change: brightest scene {0}%": "Après votre changement : scène la plus lumineuse {0}%"
+ "After your change: brightest scene {0}%": "Après votre changement : scène la plus lumineuse {0}%",
+ "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "Change le tempo à partir d'ici, jusqu'à ce qu'une autre partie fixe le sien. Vide garde le tempo en cours.",
+ "Changes the tempo from here on. Empty keeps the running tempo.": "Change le tempo à partir d'ici. Vide garde le tempo en cours."
 }

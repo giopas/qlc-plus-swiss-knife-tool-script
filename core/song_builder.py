@@ -19,6 +19,11 @@ What QLC+ does (read in its source, 22 to 23 October 2026):
 The table is kept on the Show (attribute ``SwissKnifeSong``) so it can be opened
 again; a second build replaces the Show and the copies of the first.
 Nothing here opens a file but the music's header, to read its length.
+
+A part can also carry its own ``bpm`` (3.13.0): when set it becomes the tempo in
+force from that part onward, so a song that changes speed mid-way (a bridge, an
+outro) still works out its bars and beats correctly, part by part, rather than
+off one BPM for the whole song.
 """
 
 from __future__ import annotations
@@ -113,6 +118,42 @@ def parse_point(text, bpm: float = 0, beats_per_bar: int = 4, unit: str = "secon
 
 def _bad(s: str) -> int:
     raise ValueError(f"'{s}': bars and beats start at 1")
+
+
+def _until_dur(text, t_so_far: int, beats_so_far: float, bpm: float, beats_per_bar: int, unit: str) -> int:
+    """How long the current part must still run to reach an 'until' target, counted
+    from the song's start.  A clock time ('1:20') is an absolute position in real
+    time, so it needs no tempo.  A bar or beat number counts from 1 at the song's
+    start, in beats already gone by at each part's own tempo (*beats_so_far*); the
+    distance still to go is covered at *bpm*, the only tempo this part can answer
+    for (3.13.0: a song whose tempo changes mid-way still resolves correctly, part
+    by part)."""
+    s = str(text or "").strip()
+    m = re.match(r"^(?:bar|measure)\s*(\d+(?:[.,]\d+)?)$", s, re.I)
+    if m:
+        n = float(m.group(1).replace(",", "."))
+        if n < 1:
+            _bad(s)
+        target_beats = (n - 1) * beats_per_bar
+    else:
+        m = re.match(r"^beat\s*(\d+(?:[.,]\d+)?)$", s, re.I)
+        if m:
+            n = float(m.group(1).replace(",", "."))
+            if n < 1:
+                _bad(s)
+            target_beats = n - 1
+        else:
+            m = re.match(r"^\d+(?:[.,]\d+)?$", s)
+            if m and unit in ("bars", "beats"):
+                n = float(s.replace(",", "."))
+                if n < 1:
+                    _bad(s)
+                target_beats = (n - 1) * (beats_per_bar if unit == "bars" else 1)
+            else:
+                return parse_length(s, 0, beats_per_bar, "seconds") - t_so_far
+    if bpm <= 0:
+        raise ValueError(f"'{s}' needs a tempo: fill in the BPM")
+    return round((target_beats - beats_so_far) * 60000 / bpm)
 
 
 def parse_fade(text) -> int:
@@ -214,10 +255,20 @@ def _clean(spec: dict, lenient: bool = False) -> dict:
                 issue = issue or f"part {n}: beats per step must be from 1/8 to 64"
                 if not lenient:
                     raise ValueError(issue)
+        p_bpm = str(p.get("bpm") or "").strip()
+        if p_bpm:
+            try:
+                if not setlist_tempo.BPM_MIN <= float(p_bpm.replace(",", ".")) <= setlist_tempo.BPM_MAX:
+                    raise ValueError
+            except ValueError:
+                issue = issue or f"part {n}: its own BPM must be from {setlist_tempo.BPM_MIN:g} to {setlist_tempo.BPM_MAX:g}"
+                if not lenient:
+                    raise ValueError(issue)
         parts.append({"name": str(p.get("name") or "").strip()[:120] or f"Part {n}", "function_id": fid,
                       "length": str(p.get("length") or "").strip(), "repeat": rep,
                       "fade_in": str(p.get("fade_in") or "").strip(),
-                      "fade_out": str(p.get("fade_out") or "").strip(), "beats": beats, "issue": issue})
+                      "fade_out": str(p.get("fade_out") or "").strip(), "beats": beats, "bpm": p_bpm,
+                      "issue": issue})
     if not parts and not lenient:
         raise ValueError("add at least one part")
     music = spec.get("music") or {}
@@ -256,10 +307,13 @@ def music_info(music: dict, funcs: Dict[str, object]) -> Dict[str, object]:
 def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
     """What the table makes, without changing anything: part starts, the length, the free
     time and warnings.  *lenient* is for the live preview: a part with no look or a length
-    that cannot be read is listed with its ``issue`` and counts for nothing, instead of stopping."""
+    that cannot be read is listed with its ``issue`` and counts for nothing, instead of stopping.
+    A part's own BPM (3.13.0), when set, becomes the tempo for it and every part after it
+    until the next one that sets its own; lengths and 'until' targets are then worked out
+    with that running tempo, part by part, instead of one BPM for the whole song."""
     s = _clean(spec, lenient)
     funcs = _funcs(engine)
-    unit, bpm, bpb = s["unit"], s["bpm"], s["beats_per_bar"]
+    unit, bpb = s["unit"], s["beats_per_bar"]
     mlen, minfo, warns = None, None, []
     if s["music"]:
         try:
@@ -270,8 +324,15 @@ def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
                 raise
             warns.append(str(e))
     t, rows, items = 0, [], 0
+    beats_elapsed, running_bpm = 0.0, s["bpm"]
     last = len(s["parts"]) - 1
     for n, p in enumerate(s["parts"], 1):
+        if p["bpm"]:
+            try:
+                running_bpm = float(p["bpm"].replace(",", "."))
+            except ValueError:
+                pass
+        bpm = running_bpm
         issue, dur, f = p["issue"], 0, None
         try:
             if not issue:
@@ -294,7 +355,7 @@ def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
             elif _UNTIL.match(text):
                 if p["repeat"] != 1:
                     raise ValueError(f"part {n} '{p['name']}': 'until' cannot be repeated")
-                dur = parse_point(_UNTIL.match(text).group(1), bpm, bpb, unit) - t
+                dur = _until_dur(_UNTIL.match(text).group(1), t, beats_elapsed, bpm, bpb, unit)
                 if dur <= 0:
                     raise ValueError(f"part {n} '{p['name']}': '{text}' is not after the start of the part ({clock(t)})")
             else:
@@ -312,9 +373,12 @@ def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
         items += p["repeat"] if dur else 0
         if items > MAX_ITEMS:
             raise ValueError(f"the table makes more than {MAX_ITEMS} items: lower the repeats")
+        total = dur * p["repeat"]
         rows.append({"name": p["name"], "look": f.get("Name", "") if f is not None else "", "start_ms": t,
-                     "length_ms": dur, "repeat": p["repeat"], "end_ms": t + dur * p["repeat"], "issue": issue})
-        t += dur * p["repeat"]
+                     "length_ms": dur, "repeat": p["repeat"], "end_ms": t + total, "issue": issue, "bpm": bpm})
+        if total and bpm:
+            beats_elapsed += total * bpm / 60000.0
+        t += total
     if minfo:
         if mlen is None:
             warns.append("the length of the music is not known: type it in (for example 3:45)")
@@ -378,7 +442,7 @@ def build(engine, spec: dict, next_id: int):
         in_set, out_set = bool(p_in["fade_in"].strip()), bool(p_in["fade_out"].strip())   # "0" is a choice: no fade
         need_copy = in_set or out_set
         typ = base.get("Type")
-        fit_beats = p_in["beats"] and s["bpm"] and typ == "Chaser"
+        fit_beats = p_in["beats"] and row["bpm"] and typ == "Chaser"
         if typ == "Chaser" and (fit_beats or need_copy or (_child(base, "RunOrder") is not None
                                                              and (_child(base, "RunOrder").text or "").strip() != "Loop")):
             need_copy = True
@@ -393,7 +457,7 @@ def build(engine, spec: dict, next_id: int):
             if typ == "Chaser":
                 _set_loop(use)
                 if fit_beats:
-                    setlist_tempo.fit_chaser(use, s["bpm"], float(p_in["beats"].replace(",", ".")))
+                    setlist_tempo.fit_chaser(use, row["bpm"], float(p_in["beats"].replace(",", ".")))
             engine.append(use)
             copies.append(use.get("ID"))
         key = row["name"]

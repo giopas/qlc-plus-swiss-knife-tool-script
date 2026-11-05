@@ -5,6 +5,10 @@
 - A limit is kept in the recipe and shown in the history box of later versions (*limit 90%*).
 - The wiki and all seven languages are updated.
 
+### Fixed
+
+- **Screenshots:** in 3.11.0 the *Tablet on stage* picture (19) showed an empty screen. It shows the cue list again, and the Tablet GIF is retaken too.
+
 ---
 
 Downloads for macOS, Windows and Linux, the Claude Desktop file (.mcpb) and the checksums are below. The whole history is in the [CHANGELOG](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/blob/main/CHANGELOG.md).

@@ -18,6 +18,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - A limit is kept in the recipe and shown in the history box of later versions (*limit 90%*).
 - The wiki and all seven languages are updated.
 
+### Fixed
+
+- **Screenshots:** in 3.11.0 the *Tablet on stage* picture (19) showed an empty screen. It shows the cue list again, and the Tablet GIF is retaken too.
+
 ---
 
 ## [3.11.0] — 2026-11-05 — Notes from a gig

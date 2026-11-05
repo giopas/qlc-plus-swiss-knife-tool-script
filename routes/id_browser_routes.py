@@ -149,6 +149,7 @@ _BUILDER_ARGS = {
     'duplicate':       {'ids': list, 'keep_bindings': bool},
     'wire':            {'widget_id': str, 'func_id': str},
     'rename_page':     {'page_id': str, 'caption': str},
+    'rename_widget':   {'widget_id': str, 'caption': str, 'chaser_too': bool},
     'move_page':       {'page_id': str, 'index': int},
     'delete_page':     {'page_id': str},
     'label_panel':     {'parent_id': str, 'lines': list, 'columns': int, 'title': str,

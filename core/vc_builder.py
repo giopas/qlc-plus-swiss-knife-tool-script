@@ -394,6 +394,37 @@ def rename_page(root, page_id: str, caption: str) -> dict:
     return {"page_id": str(page_id)}
 
 
+def rename_widget(root, widget_id: str, caption: str, chaser_too: bool = False) -> dict:
+    """Give a widget a new caption (3.11.0, first asked for the setlist CueList).
+    With *chaser_too*, a CueList's chaser gets the same name, unless another
+    function already has that name (two functions with one name confuse QLC+'s
+    function list and the Setlist Manager)."""
+    caption = " ".join((caption or "").split())
+    if not caption:
+        raise VcOpError("A widget needs a name.")
+    if len(caption) > 120:
+        raise VcOpError("That name is too long (120 characters at most).")
+    vc = _vc(root)
+    by_id, _ = _index(vc)
+    w = _get(by_id, str(widget_id))
+    w.set("Caption", caption)
+    out = {"widget_id": str(widget_id), "caption": caption, "chaser_renamed": False}
+    if chaser_too and _local(w.tag) == "CueList":
+        ch = _child(w, "Chaser")
+        cid = (ch.text or "").strip() if ch is not None else ""
+        eng = _engine(root)
+        fn = next((f for f in (eng if eng is not None else [])
+                   if _local(f.tag) == "Function" and f.get("ID") == cid), None)
+        if fn is not None:
+            taken = {f["name"] for k, f in functions(root).items() if k != cid}
+            if caption in taken:
+                out["chaser_note"] = f"Another function is already called '{caption}': the chaser keeps its name."
+            else:
+                fn.set("Name", caption)
+                out["chaser_renamed"] = True
+    return out
+
+
 def move_page(root, page_id: str, index: int) -> dict:
     """Move a page to position *index* (0 = first page, the one QLC+ opens on)."""
     vc = _vc(root)
@@ -968,7 +999,7 @@ def _new_setlist_chaser(root) -> str:
 
 OPS = {
     "create": create_widget, "delete": delete_widgets, "duplicate": duplicate_widgets,
-    "wire": wire, "rename_page": rename_page, "move_page": move_page,
+    "wire": wire, "rename_page": rename_page, "rename_widget": rename_widget, "move_page": move_page,
     "delete_page": delete_page, "label_panel": label_panel, "auto_arrange": auto_arrange,
     "screen": apply_screen, "apply_template": apply_template, "setlist_cuelist": setlist_cuelist,
 }

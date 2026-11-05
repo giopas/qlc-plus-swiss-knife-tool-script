@@ -799,8 +799,54 @@ def purge_workspace_clones() -> dict:
 
 
 def get_slot_details(slot_id: str) -> list:
-    """Return the detailed song list for a slot."""
+    """Return the detailed song list for a slot.
+
+    3.11.0: a slot nobody has edited yet in this session starts with the songs
+    its CueList already plays (see :func:`rows_from_cuelist`), so an existing
+    show opens with its setlist in place instead of an empty list."""
+    if slot_id not in _slot_details:
+        rows = rows_from_cuelist(slot_id)
+        if rows:
+            set_slot_details(slot_id, rows)
     return list(_slot_details.get(slot_id, []))
+
+
+def rows_from_cuelist(slot_id: str) -> list:
+    """The song rows a CueList already plays, read from the steps of its chaser.
+
+    A step that plays a copy made by an earlier *Apply* (``SwissKnifeClone``)
+    becomes the song named like the copy, matched to the original function;
+    any other step becomes a song named like its function, matched to it.
+    Fades and hold come from the step.  Nothing in the show changes."""
+    slot = next((s for s in _state['cuelist_slots'] if s.get('id') == slot_id), None)
+    root = _state.get('qxw_root')
+    if not slot or root is None:
+        return []
+    cid = slot.get('chaser_id') or ''
+    if cid in _SENTINEL_IDS or not cid:
+        return []
+    engine = root.find('q:Engine', NS)
+    chaser = _find_by_id(engine, 'Function', cid) if engine is not None else None
+    if chaser is None:
+        return []
+    rows = []
+    for step in chaser.findall('q:Step', NS):
+        sid = (step.text or '').strip()
+        fn = _find_by_id(engine, 'Function', sid) if sid else None
+        if fn is None:
+            continue
+        name = fn.get('Name', '')
+        base_id = fn.get('SwissKnifeClone') or _state['clone_base_map'].get(sid, '')
+        base = _find_by_id(engine, 'Function', base_id) if base_id else None
+        if base is not None:
+            qid, qname = base_id, base.get('Name', '')
+        else:
+            qid, qname = sid, name
+        rows.append({'txt_name': name.replace(' (Setlist)', '') or qname,
+                     'qxw_id': qid, 'qxw_name': qname,
+                     'in': step.get('FadeIn', '0'), 'hold': step.get('Hold', '4294967294'),
+                     'out': step.get('FadeOut', '0')})
+    return rows
 
 
 def set_slot_details(slot_id: str, rows: list):

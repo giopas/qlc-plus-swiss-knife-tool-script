@@ -343,6 +343,7 @@ EDIT_VC_OPS: Dict[str, str] = {
     "new_page": "caption: an empty page styled like the first one; answers `page_id`.",
     "copy_page": "page_id, caption, keep_bindings.",
     "rename_page": "page_id, caption.",
+    "rename_widget": "widget_id, caption, chaser_too (a CueList's chaser gets the same name, when no other function has it).",
     "move_page": "page_id, index (0 = first).",
     "delete_page": "page_id.",
     "label_panel": "parent_id, lines (texts), columns, title, label_w, label_h: a frame of labels, e.g. a legend.",

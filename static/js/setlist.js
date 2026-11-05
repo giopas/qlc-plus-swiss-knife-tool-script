@@ -49,6 +49,8 @@ async function ensureSetlistLoaded() {
   if (_setlistLoaded) return;
   _setlistLoaded = true;
   await Promise.all([refreshSlots(), _fetchChasers()]);
+  // 3.11.0: open on the first CueList, with the songs it already plays
+  if (!_selectedSlot && _slotData.length) await selectSlot(_slotData[0].id);
 }
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
@@ -130,9 +132,51 @@ function _renderSlots(slots) {
       <div style="flex:1;min-width:0">
         <div class="slot-caption">${_esc(s.caption)}</div>
         <div class="slot-sub">${s.chaser_name ? '↪ ' + _esc(s.chaser_name) : 'No chaser linked'}</div>
+        <div class="sl-rename" id="sl-rename-${_esc(s.id)}" style="display:none" onclick="event.stopPropagation()">
+          <input type="text" class="sl-rename-input" value="${_esc(s.caption)}" maxlength="120"
+                 onkeydown="if(event.key==='Enter')slRenameSave('${_esc(s.id)}');if(event.key==='Escape')slRenameToggle('${_esc(s.id)}',false)">
+          <label style="font-size:var(--fs-small)" title="The chaser the CueList plays gets the same name">
+            <input type="checkbox" class="sl-rename-chaser" ${s.chaser_name && s.chaser_name === s.caption ? 'checked' : ''}> rename its chaser too</label>
+          <span style="display:flex;gap:4px;margin-top:3px">
+            <button class="btn btn-sm" onclick="slRenameSave('${_esc(s.id)}')">Rename</button>
+            <button class="btn btn-sm btn-ghost" onclick="slRenameToggle('${_esc(s.id)}',false)">Cancel</button>
+          </span>
+        </div>
       </div>
+      <button class="btn btn-sm btn-ghost sl-rename-btn" title="Rename this CueList"
+              onclick="event.stopPropagation();slRenameToggle('${_esc(s.id)}',true)">✎</button>
     </div>
   `).join('');
+}
+
+/** Show or hide the inline rename box of a CueList (3.11.0). */
+function slRenameToggle(slotId, on) {
+  const box = document.getElementById('sl-rename-' + slotId);
+  if (!box) return;
+  box.style.display = on ? '' : 'none';
+  if (on) { const i = box.querySelector('input[type=text]'); i.focus(); i.select(); }
+}
+
+/** Rename a CueList widget (and, when ticked, the chaser it plays). One History step. */
+async function slRenameSave(slotId) {
+  const box = document.getElementById('sl-rename-' + slotId);
+  if (!box) return;
+  const caption = box.querySelector('input[type=text]').value.trim();
+  const chaserToo = box.querySelector('.sl-rename-chaser').checked;
+  if (!caption) { setStatus('✗ ' + I18N.t('A widget needs a name.'), 'error'); return; }
+  if (_selectedSlot && _songRows.length) await slSaveDetails(true);
+  const r = await fetch('/api/vc/op', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ op: 'rename_widget', widget_id: slotId, caption, chaser_too: chaserToo }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || d.error) { setStatus('✗ ' + (d.error || 'Could not rename the CueList.'), 'error'); return; }
+  await Promise.all([refreshSlots(), _fetchChasers()]);
+  if (_selectedSlot === slotId) {
+    const t = document.getElementById('song-pane-title');
+    if (t) t.textContent = caption;
+  }
+  const extra = d.chaser_renamed ? ' ' + I18N.t('Its chaser has the same name now.') : (d.chaser_note ? ' ' + d.chaser_note : '');
+  setStatus('✓ ' + I18N.t('CueList renamed to “{0}”.', caption) + extra + ' ' + I18N.t('A step of the History (↶ to undo); Save as new file… to keep it.'), 'ok');
+  if (typeof showRefresh === 'function') showRefresh();
 }
 
 async function selectSlot(slotId) {

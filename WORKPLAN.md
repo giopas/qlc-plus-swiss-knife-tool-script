@@ -37,7 +37,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Next release: 3.10.0, VC Editor and Song Builder extras** (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Next release: 3.11.0, notes from preparing a gig** (giopas, 5 November 2026; table below). 3.10.0 was the release before: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
 ### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 
@@ -245,6 +245,30 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 - **Dropped.** *Split at markers* (one Show per section) was built, tried and reverted on 23 October (commit 8a6a050): a song with its music stays one Show and one cue; a sound item cannot be cut. Splitting into cues stays the old, by-hand way.
 - **Hand checks done by giopas on 23 October.** A ten-part song with music ends with the music; the Show plays as a cue; a 3 s fade in and out on a scene is visible; a chaser copy (3 steps, 2 beats a step at 60 BPM) keeps cycling for the whole 16 s part. Nothing is open.
 - **Left for the wishlist.** A click track made by the tool, a section-split helper, a read-only picture of a Show (see section 3).
+
+### 3.11.0 · Notes from preparing a gig (built, waiting for giopas's hand test, branch `feat/v3.11.0`)
+
+**Asked by giopas on 5 November 2026**, after preparing a new show file from an old one. Fifteen points, in his order. Status, 5 November: all fifteen built, with tests (1,667 pass), the seven languages, the wiki pages (Setlist Manager, Stage and Meshes, Cabling, Tablet on stage, Connect Claude, Community Library), the Claude tools page and the CHANGELOG. Checked on screen with the Festival test show. Left: giopas's hand test on the Mac, then version, release notes and pictures (section 8).
+
+**Hand checks for giopas:** rename a CueList and its chaser, then open the saved file in QLC+; open an older show and see its songs; the beams on a show with tilted heads (do they point where QLC+'s 3D view shows?); click a fixture in Cabling and connect it by radio; mark a cable venue and read the pick list; a request to Claude from *Describe the wiring* with the same show open in the window; pull the network cable and watch the dot; switch the views by role off and open `?role=band` on the tablet.
+
+| # | Where | What | Status |
+|---|---|---|---|
+| 1 | Setlist Manager | Rename a CueList (✎ beside it; can rename its chaser too). New VC operation `rename_widget`, also for Claude's `edit_vc`. | done |
+| 2 | Setlist Manager | A show opens with the songs its CueList already plays, matched to the original functions (a copy made by *Apply* points back to its original). The first CueList is selected. | done |
+| 3 | Stage and Meshes | Show or hide meshes and fixtures in the two views, and choose which are drawn on top, so a fixture inside a truss can be clicked. View only. | done |
+| 4 | Stage and Meshes | A rough beam from each fixture (its rotation and the lens of its definition, 25° when unknown), on the plan and the front view. | done |
+| 5 | Cabling | Click a fixture on the plan (or its name in a chain): after another fixture, first on an output, or by radio through a wireless receiver (placed beside it; a transmitter chain is added when none sends to it). | done |
+| 6 | Cabling | The terminator mark sits inside the last fixture, drawn after the fixtures. | done |
+| 7 | Cabling | *Show the meshes (band floor)* on Places and Plan (`hide_band` in the plan file); routing still avoids them. | done |
+| 8 | Cabling | *Describe the wiring to Claude* makes a request to paste in Claude Desktop; new `cabling` *action=wire* (layout without chains, then chains by name or id, cable marks); the page reloads the plan when the plan file changes (`/api/cabling/rev`, the file time: the MCP server is another process). Swiss Knife itself still never calls an AI. | done |
+| 9 | Cabling | `cable_marks` per destination device (`f:<id>` / `i:<id>`): buy (shopping list, no C005), borrowed or venue (not taken from the kit; own pick list sections; label on the plot). | done |
+| 10 | Cabling | ☆ on an alternative (`preferred` in the plan file); *Propose* picks it first; Claude's `choose` marks it too. Reading chosen by Claude: one preferred alternative, not several saved plans (giopas to confirm). | done |
+| 11 | Settings, Claude | `core/netcheck.py`: a TCP connection to claude.ai and github.com, nothing sent, kept 20 s. Dot beside *Connect to Claude*, *Check now* and in the card; checked every 30 s while the window is visible. | done |
+| 12 | Tablet on stage | Column names; *Name shown on the tablet (optional)*, the cue name as hint. | done |
+| 13 | Tablet on stage | Plain explanation; each view shows *Name of the view* and *Its address ends with …/?role=word*. | done |
+| 14 | Tablet on stage | *Use views by role* (`roles: false` in the settings; the page then gets no views). | done |
+| 15 | Library | *My kit (Cabling)* in *Where my items are*. | done |
 
 ### 3.10.0 · VC Editor and Song Builder extras (finished, waiting for the push)
 

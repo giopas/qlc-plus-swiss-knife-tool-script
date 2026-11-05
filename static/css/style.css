@@ -1756,6 +1756,11 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
 .sl-multi-label input { width: 14px; height: 14px; cursor: pointer; }
 .slot-item:hover  { background: var(--surface-1); }
 .slot-item.active { background: var(--surface-2); }
+/* 3.11.0: rename a CueList in place */
+.slot-item .sl-rename-btn { opacity: .45; padding: 0 5px; align-self: flex-start; }
+.slot-item:hover .sl-rename-btn, .slot-item.active .sl-rename-btn { opacity: 1; }
+.sl-rename { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+.sl-rename-input { width: 100%; font-size: 12px; padding: 2px 4px; }
 .slot-caption { font-size: var(--fs-ui); font-weight: 600; color: var(--text); }
 .slot-item.active .slot-caption { color: var(--accent); }
 .slot-sub { font-size: var(--fs-small); color: var(--text-dim); margin-top: 2px;
@@ -4798,3 +4803,44 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .vcb-bind-kept span:first-child { color: var(--success-text, #6c6); }
 .vcb-bind-clash span:first-child, .vcb-bind-repeat span:first-child, .vcb-bind-dropped span:first-child { color: var(--warning-text); }
 .vcb-warn { color: var(--warning-text); }
+
+/* 3.11.0 Stage & Meshes: what the views draw, and where fixtures point */
+.st-viewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: var(--fs-small);
+              margin-bottom: 6px; }
+.st-viewbar label { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
+.st-beam { pointer-events: none; }
+.st-beam polygon, .st-beam ellipse { fill: rgba(249,226,175,.07); stroke: rgba(249,226,175,.28); stroke-width: 1; }
+.st-beam .st-aimline { stroke: rgba(249,226,175,.75); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.st-beam.sel polygon, .st-beam.sel ellipse { fill: rgba(166,227,161,.16); stroke: rgba(166,227,161,.7); }
+.st-beam.sel .st-aimline { stroke: #a6e3a1; }
+.st-view svg { overflow: hidden; }
+.st-viewbar .st-beams-sel { width: auto; flex: none; padding: 1px 4px; font-size: var(--fs-small); margin-left: 4px; }
+
+/* 3.11.0 Cabling: meshes shown or not, a fixture linked by hand, cable marks, the preferred plan, Claude */
+.cb-viewbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 4px 0 6px; font-size: var(--fs-small); }
+.cb-hit { fill: transparent; stroke: transparent; stroke-width: 40; cursor: pointer; }
+.cb-hit:hover { stroke: rgba(56,189,248,.6); }
+.cb-hit.on { stroke: #0ea5e9; stroke-width: 60; }
+#cb-fxlink .cb-row { gap: 6px; flex-wrap: wrap; }
+.cb-mark-tag { font-size: var(--fs-small); padding: 0 5px; border-radius: 8px; border: 1px solid var(--warning, #df8e1d);
+               color: var(--warning, #df8e1d); white-space: nowrap; }
+.cb-star { float: right; cursor: pointer; font-size: 15px; color: var(--text-dim); padding: 0 3px; }
+.cb-star.on { color: #f5c542; }
+.cb-alt.pref { box-shadow: inset 3px 0 0 #f5c542; }
+.cb-best.cb-pref { background: #f5c542; color: #1e1e2e; }
+.cb-describe textarea { width: 100%; margin: 6px 0; resize: vertical; }
+
+/* 3.11.0: internet dot */
+.net-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle;
+           background: var(--text-faint, #888); cursor: pointer; flex: none; }
+.net-dot.net-online { background: #40a02b; box-shadow: 0 0 0 2px rgba(64,160,43,.2); }
+.net-dot.net-limited { background: #df8e1d; box-shadow: 0 0 0 2px rgba(223,142,29,.2); }
+.net-dot.net-offline { background: #d20f39; box-shadow: 0 0 0 2px rgba(210,15,57,.2); }
+.net-line { display: flex; align-items: center; gap: 4px; }
+#fp-mcp { display: flex; align-items: center; }
+
+/* 3.11.0 Tablet on stage: clearer table head and the views by role switch */
+.sm-steps thead th { font-size: var(--fs-small); font-weight: 600; color: var(--text-dim); text-align: left; padding: 2px 4px; }
+#sm-views.sm-off { opacity: .45; pointer-events: none; }
+.sm-view-h { flex-wrap: wrap; }
+.sm-view-h .sm-field { margin: 0; }

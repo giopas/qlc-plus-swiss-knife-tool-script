@@ -43,10 +43,11 @@ function _smViewsDraw() {
       onchange="stagemonView(${i}, 'field:${k}', this.checked)"> ${_esc(l)}</label>`).join('');
     const lay = _SM_LAYOUTS.map(([k, l]) => `<option value="${k}" ${v.layout === k ? 'selected' : ''}>${_esc(l)}</option>`).join('');
     return `<div class="sm-view">
-      <div class="sm-view-h"><input class="field-input" maxlength="30" value="${_esc(v.label)}" aria-label="${_esc('Name')}"
-        oninput="stagemonView(${i}, 'label', this.value)">
-        <code>?role=<input class="field-input sm-view-id" maxlength="20" value="${_esc(v.id)}" aria-label="${_esc('Address word')}"
-        onchange="stagemonView(${i}, 'id', this.value)"></code>
+      <div class="sm-view-h"><label class="sm-field sm-view-name"><span>${_esc('Name of the view')}</span><input class="field-input" maxlength="30" value="${_esc(v.label)}" aria-label="${_esc('Name of the view')}"
+        oninput="stagemonView(${i}, 'label', this.value)"></label>
+        <label class="sm-field" title="${_esc('The word at the end of the address of this view. Letters, digits and dashes.')}"><span>${_esc('Its address ends with')}</span>
+        <code>…/?role=<input class="field-input sm-view-id" maxlength="20" value="${_esc(v.id)}" aria-label="${_esc('Address word')}"
+        onchange="stagemonView(${i}, 'id', this.value)"></code></label>
         <button class="btn btn-surface btn-sm" onclick="stagemonViewDel(${i})">${_esc('Remove this view')}</button></div>
       <select class="field-input" aria-label="${_esc('Layout')}" onchange="stagemonView(${i}, 'layout', this.value)">${lay}</select>
       <div class="sm-view-f">${f}</div>
@@ -55,6 +56,11 @@ function _smViewsDraw() {
         oninput="stagemonView(${i}, 'who', this.value)"></label></div>`;
   }).join('') || `<div class="sm-meta">${_esc('No views: the tablet shows the plain page.')}</div>`;
   document.getElementById('sm-views-reset').hidden = !_smCfg().views;
+  // 3.11.0: views by role can be switched off; the list stays, greyed, for when they are on again
+  const on = _smCfg().roles !== false;
+  const rb = document.getElementById('sm-roles'); if (rb) rb.checked = on;
+  box.classList.toggle('sm-off', !on);
+  const act = document.getElementById('sm-views-act'); if (act) act.hidden = !on;
 }
 function stagemonView(i, key, value) {
   const vs = _smOwnViews(), v = vs[i];
@@ -277,11 +283,15 @@ function _smSongs() {
       <td class="sm-fn" tabindex="0" role="button" onclick="stagemonSelect(${st.index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();stagemonSelect(${st.index})}"
           data-i18n="off">${_esc(st.name)}${st.note ? `<div class="sm-meta" style="margin:0">${_esc(st.note)}</div>` : ''}</td>
       <td class="sm-chips">${chips}</td>
-      <td><input class="field-input" maxlength="120" value="${_esc(s.label || '')}" placeholder="${_esc('Name on the page')}"
+      <td><input class="field-input" maxlength="120" value="${_esc(s.label || '')}" placeholder="${_esc(st.name)}"
+                 data-i18n="off" title="${_esc('Name shown on the tablet. Leave it empty to show the name of the cue; QLC+ is not changed.')}"
+                 aria-label="${_esc('Name shown on the tablet')}"
                  oninput="stagemonStep('${cl.id}', ${st.index}, 'label', this.value)"></td>
     </tr>`;
   }).join('');
-  box.innerHTML = `<div class="sm-steps"><table>${rows}</table></div>`;
+  const head = `<thead><tr><th title="${_esc('Show this step on the tablet')}">${_esc('Shown')}</th><th>#</th><th>${_esc('Cue in QLC+')}</th><th></th>
+    <th title="${_esc('Leave it empty to show the name of the cue')}">${_esc('Name shown on the tablet (optional)')}</th></tr></thead>`;
+  box.innerHTML = `<div class="sm-steps"><table>${head}${rows}</table></div>`;
 }
 
 function stagemonSelect(idx) {
@@ -620,7 +630,7 @@ function _smServer(sv) {
     el.innerHTML = `<div>${_esc('Serving — open on the tablet:')}</div>` + urls.map(u =>
       `<div class="sm-url"><code>${_esc(u)}</code>${copy(u)}</div>`).join('');
     const qrBtn = u => `<button class="btn btn-surface btn-sm" onclick="stagemonQr('${_esc(u)}')">${_esc('QR code')}</button>`;
-    el.innerHTML += `<div class="sm-roles"><div class="sm-meta" style="margin:6px 0 0">${_esc('A view for each player:')}</div>` +
+    if (_smCfg().roles !== false) el.innerHTML += `<div class="sm-roles"><div class="sm-meta" style="margin:6px 0 0">${_esc('A view for each player:')}</div>` +
       _smViews().map(v => `<div class="sm-url sm-role"><span>${_esc(v.label)}</span><code>${_esc(urls[0] + '?role=' + v.id)}</code>${copy(urls[0] + '?role=' + v.id)}${qrBtn(urls[0] + '?role=' + v.id)}</div>`).join('') + '</div>';
     el.innerHTML += `<div class="sm-qrbox" id="sm-qrbox"></div>`;
     stagemonQr(_smQrFor && _smQrFor.startsWith(urls[0]) ? _smQrFor : urls[0]);

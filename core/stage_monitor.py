@@ -360,6 +360,8 @@ def clean_config(cfg: Optional[dict]) -> dict:
     out["http_port"] = _port(cfg.get("http_port"), DEFAULT_HTTP_PORT)
     if isinstance(cfg.get("views"), list):          # absent: the three that come with the page
         out["views"] = clean_views(cfg["views"])
+    if cfg.get("roles") is False:                   # 3.11.0: views by role switched off (on unless said)
+        out["roles"] = False
     seen = set()
     for item in cfg.get("lists") or []:
         if not isinstance(item, dict):
@@ -501,7 +503,7 @@ def page_data(cfg: dict, lists: List[dict], lang: str = "en") -> dict:
             "showNext": cfg["show_next"], "showClock": cfg["show_clock"],
             "showNumbers": cfg["show_numbers"], "showNotes": cfg["show_notes"], "holdMs": cfg["hold_ms"],
             "stopHoldMs": max(STOP_HOLD_MIN, 2 * cfg["hold_ms"]), "wsPort": cfg["ws_port"],
-            "views": views_of(cfg), "lists": out_lists, "lang": lang if lang in LANGS else "en", "t": page_strings(lang)}
+            "views": views_of(cfg) if cfg.get("roles", True) else [], "lists": out_lists, "lang": lang if lang in LANGS else "en", "t": page_strings(lang)}
 
 
 def _inline_json(data: dict) -> str:

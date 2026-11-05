@@ -4,6 +4,7 @@
   POST /api/update/settings          → {"check": true|false}
   POST /api/update/install           → download, verify, swap on exit, then quit
   POST /api/update/open              → open the release page in the system browser
+  GET  /api/net/status[?force=1]     → is this computer online? green, orange, red (3.11.0)
 """
 import os
 import signal
@@ -22,6 +23,15 @@ def api_check():
     if current_app.config.get("TESTING") and not os.environ.get("QSK_UPDATE_FEED"):
         return jsonify(update.status())          # tests never reach GitHub
     return jsonify(update.check(force=request.args.get("force") == "1"))
+
+
+@bp.route("/api/net/status")
+def api_net():
+    """3.11.0: the dot beside the update check and Connect to Claude."""
+    from core import netcheck
+    if current_app.config.get("TESTING") and not os.environ.get("QSK_NET_CHECK"):
+        return jsonify({"state": "unknown", "claude": False, "other": False, "checked": 0})   # tests stay offline
+    return jsonify(netcheck.check(force=request.args.get("force") == "1"))
 
 
 @bp.route("/api/update/settings", methods=["POST"])

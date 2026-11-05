@@ -20,7 +20,7 @@ function _updApply(d) {
   const cb = document.getElementById('upd-enabled');
   if (cb) cb.checked = !!d.enabled;
   const m = document.getElementById('upd-now-msg');
-  if (m && d.error) m.textContent = d.error;
+  if (m && d.error) m.textContent = _net.state === 'offline' ? t('Could not check for updates: this computer is offline.') : d.error;
   const b = document.getElementById('update-badge');
   if (d.newer) {
     document.getElementById('update-badge-v').textContent = `v${d.latest} available`;
@@ -36,7 +36,7 @@ async function updCheckNow() {
   try { d = await (await fetch('/api/update/check?force=1')).json(); }
   catch { if (m) m.textContent = t('Could not check for updates.'); return; }
   _updApply(d);
-  if (d.error) { if (m) m.textContent = d.error; return; }
+  if (d.error) { netCheck(true); if (m) m.textContent = _net.state === 'offline' ? t('Could not check for updates: this computer is offline.') : d.error; return; }
   if (d.newer) { if (m) m.textContent = ''; updToggle(true); }
   else if (m) m.textContent = t('You have the latest version (v{0}).', d.current);
 }
@@ -91,3 +91,30 @@ async function updSetEnabled(on) {
 }
 
 setTimeout(updInit, 1500);
+
+/* ── 3.11.0: is this computer online? ───────────────────────────────────────
+   Claude Desktop needs the internet even when the MCP server is connected (the
+   server runs here, Claude does not).  Green: claude.ai answers.  Orange:
+   something answers but not claude.ai, or slowly.  Red: offline. */
+let _net = { state: 'unknown' };
+const NET_TEXT = {
+  online: 'Internet: online. Claude can be reached.',
+  limited: 'Internet: limited. This network answers, but claude.ai does not (or slowly): Claude may not work.',
+  offline: 'Internet: offline. Claude does not work without the internet, even with the MCP connected.',
+  unknown: 'Internet: not checked yet.',
+};
+async function netCheck(force) {
+  try { _net = await (await fetch('/api/net/status' + (force ? '?force=1' : ''))).json(); }
+  catch { _net = { state: 'unknown' }; }
+  const txt = t(NET_TEXT[_net.state] || NET_TEXT.unknown);
+  document.querySelectorAll('[data-net]').forEach(el => {
+    el.className = 'net-dot net-' + (_net.state || 'unknown');
+    el.title = txt; el.setAttribute('aria-label', txt);
+  });
+  const line = document.getElementById('net-text');
+  if (line) line.textContent = txt;
+}
+setTimeout(() => netCheck(false), 1200);
+setInterval(() => { if (!document.hidden) netCheck(false); }, 30000);
+window.addEventListener('online', () => netCheck(true));
+window.addEventListener('offline', () => netCheck(true));

@@ -27,7 +27,7 @@ function _libRenderItems() {
   const el = document.getElementById('lib-items');
   if (!el || !_libS) return;
   if (!_libS.items.length) {
-    el.innerHTML = '<div class="porter-placeholder">You have nothing to share yet. Save a VC page as a template (VC Visual Editor), a palette or preset (Look Builder), or a Show Profile (History › Do it again) — it shows up here.</div>';
+    el.innerHTML = '<div class="porter-placeholder">You have nothing to share yet. Save a VC page as a template (VC Visual Editor), a palette or preset (Look Builder), a Show Profile (History › Do it again) or your kit (Cabling › My kit) — it shows up here.</div>';
     return;
   }
   let out = '', last = '';

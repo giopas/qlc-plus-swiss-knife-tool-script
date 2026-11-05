@@ -4,6 +4,8 @@ routes/brightness_routes.py
 Flask routes for the Brightness tab.
 
   GET  /api/brightness/fixtures        — fixture list with channel info
+  GET  /api/brightness/history         — Brightness changes made before (from the recipes, 3.11.0)
+  GET  /api/brightness/groups          — the show's fixture groups (3.11.0)
   POST /api/brightness/preview         — count scenes/values that would change
   POST /api/brightness/apply           — generate scaled QXW and stream to browser
   POST /api/brightness/upload-qxf      — accept one or more QXF files and rebuild cache
@@ -42,6 +44,30 @@ def baseline():
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
     return jsonify(br.get_fixture_baseline_stats())
+
+
+@bp.route('/history')
+def history():
+    """3.11.0: was the brightness changed before? Read from the recipe next to
+    the open file and the recipes of the files it was made from."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    from core import recipe
+    st = ws.get_state()
+    path = '' if st.get('original_name') else (st.get('path') or '')
+    return jsonify(br.history(path, (recipe._rec or {}).get('calls')))
+
+
+@bp.route('/groups')
+def groups():
+    """3.11.0: the fixture groups of the show, to scale a group at once."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    import copy
+    from core import fixture_groups, qxw_io
+    root = qxw_io.strip_ns(copy.deepcopy(ws._state['qxw_root']))
+    return jsonify([{'id': g['id'], 'name': g['name'], 'fixtures': g['fixtures']}
+                    for g in fixture_groups.groups(root)])
 
 
 # ── Preview ───────────────────────────────────────────────────────────────────

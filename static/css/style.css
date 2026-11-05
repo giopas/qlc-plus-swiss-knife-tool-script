@@ -4844,3 +4844,26 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 #sm-views.sm-off { opacity: .45; pointer-events: none; }
 .sm-view-h { flex-wrap: wrap; }
 .sm-view-h .sm-field { margin: 0; }
+
+/* 3.11.0 Brightness: room to go brighter, earlier changes, by group, the reset button under the slider */
+.brt-group-header .brt-group-slider { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.brt-group-header .brt-group-slider .brt-slider { width: 100%; min-width: 0; }
+.brt-group-num { display: flex; align-items: center; gap: 6px; }
+.brt-group-num .brt-reset-btn { margin-left: auto; white-space: nowrap; }
+.brt-room { flex: 1 1 100%; display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-small); color: var(--text-dim); }
+.brt-room-ok { color: var(--accent); }
+.brt-room-full { color: var(--warning, #df8e1d); }
+.brt-room-over { color: var(--error, #d20f39); font-weight: 600; }
+.brt-room-earlier { color: var(--warning, #df8e1d); font-weight: 600; }
+.brt-room-none { color: var(--text-faint); }
+.brt-fx-name .brt-fx-room { display: block; font-size: var(--fs-small); color: var(--text-dim); }
+.brt-fixture-row .brt-fx-name { display: flex; flex-direction: column; }
+.brt-history { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-0);
+               padding: 10px 14px; font-size: var(--fs-ui); }
+.brt-history-on { border-color: var(--warning, #df8e1d); }
+.brt-history ul { margin: 6px 0; padding-left: 18px; }
+.brt-hist-date { color: var(--text-dim); font-size: var(--fs-small); }
+.brt-hist-note { color: var(--text-dim); font-size: var(--fs-small); margin-top: 3px; }
+.brt-viewbar { display: flex; align-items: center; gap: 14px; font-size: var(--fs-ui); color: var(--text-dim); }
+.brt-viewbar label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.brt-preview-warn { color: var(--warning, #df8e1d) !important; }

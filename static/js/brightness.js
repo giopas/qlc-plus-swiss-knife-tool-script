@@ -14,7 +14,10 @@ let _brtScales     = {};   // fixture_id → scale (0.0–2.0, default 1.0)
 let _brtManual     = {};   // fixture_id → dimmer_offset (for QXF-not-found fixtures)
 let _brtLinked     = {};   // model_key  → bool (true = sliders move together)
 let _brtPreviewTm  = null; // debounce timer for preview
-let _brtBaseline   = {};   // fixture_id → {peak, mean, scene_count} (from current scene values)
+let _brtBaseline   = {};   // fixture_id → {peak, mean, scene_count, room_pct, at_full} (from current scene values)
+let _brtHistory    = null; // 3.11.0: /api/brightness/history (changes made before, from the recipes)
+let _brtGroupsList = [];   // 3.11.0: the show's fixture groups [{id, name, fixtures}]
+let _brtView       = (() => { try { return localStorage.getItem('sk.brt.view') || 'type'; } catch (e) { return 'type'; } })();
 
 // ── Public API (called from app.js) ──────────────────────────────────────────
 
@@ -25,6 +28,8 @@ function invalidateBrightness() {
   _brtManual   = {};
   _brtLinked   = {};
   _brtBaseline = {};
+  _brtHistory  = null;
+  _brtGroupsList = [];
   const wrap = document.getElementById('brt-fixture-wrap');
   if (wrap) wrap.innerHTML = '<div class="brt-placeholder"><a class="open-ws-link"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open a workspace</a> to adjust brightness.</div>';
   _brtSetPreview(null);
@@ -41,10 +46,14 @@ async function ensureBrightnessLoaded() {
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 async function _brtLoadFixtures() {
-  const [data, baselineData] = await Promise.all([
+  const [data, baselineData, hist, grps] = await Promise.all([
     _apiJson('/api/brightness/fixtures'),
     _apiJson('/api/brightness/baseline'),
+    _apiJson('/api/brightness/history'),
+    _apiJson('/api/brightness/groups'),
   ]);
+  _brtHistory = hist && !hist.error ? hist : null;
+  _brtGroupsList = Array.isArray(grps) ? grps : [];
   if (data.error) { setStatus(data.error, 'error'); return; }
   _brtFixtures = Array.isArray(data) ? data : [];
 
@@ -88,39 +97,127 @@ function _brtMissingFixtures() {
   }));
 }
 
-// ── Baseline indicator helpers ────────────────────────────────────────────────
+// ── Room and history helpers (3.11.0) ───────────────────────────────────────
 
-/** Compute peak dimmer % (0-100) for a group, averaged across all its fixtures. */
-function _brtGroupPeakPct(fixtures) {
-  let sum = 0, n = 0;
+const _brtPct = v => Math.round(v * 100);
+
+/** The brightest scene of these fixtures (% of full) and how far they can go up
+ *  before the brightest scene of one of them is at full. */
+function _brtRoom(fixtures) {
+  let peak = null, room = null;
   for (const fx of fixtures) {
     const b = _brtBaseline[fx.id];
-    if (b && b.scene_count > 0) { sum += b.peak; n++; }
+    if (!b || !b.scene_count || !b.peak) continue;
+    const p = b.peak / 255 * 100;
+    peak = peak === null ? p : Math.max(peak, p);
+    if (b.room_pct != null) room = room === null ? b.room_pct : Math.min(room, b.room_pct);
   }
-  return n > 0 ? sum / n / 255 * 100 : null;
+  return { peak, room };
 }
 
-/**
- * Build the baseline indicator HTML for a group header.
- * @param {number|null} pct   - this group's peak %
- * @param {number|null} maxPct - highest peak % across all groups (null = only one group)
- */
-function _brtBaselineBadge(pct, maxPct) {
-  if (pct === null) return ''; // no scene data
-  const rounded = Math.round(pct);
-  // Relative diff vs the brightest group (skip if this IS the brightest)
-  let diffHtml = '';
-  if (maxPct !== null && maxPct > 0 && Math.round(pct) < Math.round(maxPct)) {
-    const diff = Math.round(pct - maxPct);
-    diffHtml = `<span class="brt-baseline-diff" title="vs brightest group">${diff}%</span>`;
+/** What was done before to these fixtures: [lowest %, highest %] of the total change, or null. */
+function _brtEarlier(fixtures) {
+  const tot = (_brtHistory && _brtHistory.total) || {};
+  const vals = fixtures.map(f => tot[f.id]).filter(v => v !== undefined && Math.abs(v - 1) > 0.004);
+  if (!vals.length) return null;
+  return [_brtPct(Math.min(...vals)), _brtPct(Math.max(...vals)), vals.length === fixtures.length];
+}
+
+function _brtRoomHtml(fixtures, scalePct) {
+  const { peak, room } = _brtRoom(fixtures);
+  const bits = [];
+  if (peak === null) bits.push(`<span class="brt-room-none">${_esc(t('No scene sets its dimmer'))}</span>`);
+  else {
+    const over = room !== null && scalePct > room;
+    bits.push(`<span>${_esc(t('Brightest scene: {0}% of full', Math.round(peak)))}</span>`);
+    bits.push(room !== null && room > 100
+      ? `<span class="${over ? 'brt-room-over' : 'brt-room-ok'}">${_esc(t('Room to go brighter: up to {0}%', room))}</span>`
+      : `<span class="${scalePct > 100 ? 'brt-room-over' : 'brt-room-full'}">${_esc(t('No room to go brighter: the brightest scenes are at full'))}</span>`);
   }
-  // Colour: green ≥ 95%, yellow 70-94%, orange 40-69%, red < 40%
-  const cls = rounded >= 95 ? 'brt-bl-full'
-            : rounded >= 70 ? 'brt-bl-ok'
-            : rounded >= 40 ? 'brt-bl-low'
-            :                  'brt-bl-dim';
-  return `<span class="brt-baseline ${cls}" title="Peak dimmer value in scenes: ${rounded}% of full (${Math.round(pct/100*255)}/255). Reflects the actual current scene values — a value below 100% means this group was already scaled down in the loaded file.">` +
-         `⟂ ${rounded}%${diffHtml}</span>`;
+  const e = _brtEarlier(fixtures);
+  if (e) bits.push(`<span class="brt-room-earlier" title="${_esc(t('From the recipes saved next to this show and its earlier versions'))}">${_esc(
+    e[0] === e[1] ? t('Changed before: {0}%', e[0]) : t('Changed before: {0}% to {1}%', e[0], e[1]))}</span>`);
+  return `<div class="brt-room">${bits.join('')}</div>`;
+}
+
+function _brtFxRoomHtml(fx) {
+  const b = _brtBaseline[fx.id];
+  const tot = (_brtHistory && _brtHistory.total) || {};
+  const bits = [];
+  if (b && b.scene_count && b.peak) bits.push(t('max {0}%', Math.round(b.peak / 255 * 100)));
+  if (tot[fx.id] !== undefined && Math.abs(tot[fx.id] - 1) > 0.004) bits.push(t('before {0}%', _brtPct(tot[fx.id])));
+  return bits.length ? `<span class="brt-fx-room" title="${_esc(t('Brightest scene of this fixture, and what Swiss Knife changed before'))}">${_esc(bits.join(' · '))}</span>` : '';
+}
+
+/** Names for the fixtures of a change: one line per fixture type when the whole type had the same change. */
+function _brtScalesText(scales) {
+  const byType = {};
+  for (const fx of _brtFixtures) (byType[_brtModelKey(fx)] = byType[_brtModelKey(fx)] || []).push(fx);
+  const done = new Set(), parts = [];
+  for (const [mk, fxs] of Object.entries(byType)) {
+    const v = fxs.map(f => scales[f.id]);
+    if (v.every(x => x !== undefined && Math.abs(x - v[0]) < 0.004)) {
+      parts.push(`${fxs[0].manufacturer} ${fxs[0].model}: ${_brtPct(v[0])}%`);
+      fxs.forEach(f => done.add(f.id));
+    }
+  }
+  const names = Object.fromEntries(_brtFixtures.map(f => [f.id, f.name]));
+  for (const [id, v] of Object.entries(scales)) if (!done.has(id)) parts.push(`${names[id] || t('fixture {0}', id)}: ${_brtPct(v)}%`);
+  return parts.join(', ');
+}
+
+function _brtHistoryHtml() {
+  const h = _brtHistory;
+  if (!h) return '';
+  const rows = [];
+  if (Object.keys(h.session || {}).length)
+    rows.push(`<li><b>${_esc(t('In the show in progress'))}</b>: <span data-i18n="off">${_esc(_brtScalesText(h.session))}</span></li>`);
+  for (const c of h.changes || [])
+    rows.push(`<li><b data-i18n="off">${_esc(c.file)}</b> <span class="brt-hist-date">${_esc(c.date)}</span>: <span data-i18n="off">${_esc(_brtScalesText(c.scales))}</span></li>`);
+  const checked = (h.checked || []).length;
+  let ends = '';
+  if (h.ends === 'no_recipe' && checked) ends = t('{0} has no recipe, so changes made before it are not known.', h.checked[checked - 1]);
+  else if (h.ends && h.ends.startsWith('missing:')) ends = t('{0} is not in this folder, so changes made before it are not known.', h.ends.slice(8));
+  else if (h.ends === 'no_folder') ends = t('The show was opened without its folder, so its recipes cannot be read.');
+  const notes = [];
+  if (h.edited_after) notes.push(t('This file was changed after Swiss Knife saved it (in QLC+, for example): changes made there are not listed.'));
+  if (h.sure === false) notes.push(t('The History was used to jump between steps: the list may be off.'));
+  if (ends) notes.push(ends);
+  const head = rows.length ? t('Brightness was changed before') : t('No earlier Brightness change found');
+  const sub = rows.length ? '' : (checked ? t('Checked the recipes of {0} file(s).', checked) : '');
+  return `<div class="brt-history ${rows.length ? 'brt-history-on' : ''}">
+    <div class="brt-history-h"><b>${_esc(head)}</b> ${sub ? `<span class="brt-hist-date">${_esc(sub)}</span>` : ''}</div>
+    ${rows.length ? `<ul>${rows.join('')}</ul>` : ''}
+    ${notes.map(n => `<div class="brt-hist-note">${_esc(n)}</div>`).join('')}
+    <div class="brt-hist-note">${_esc(t('The brightest scene of each card is read from the show itself, so it is always right, whatever was done before.'))}</div>
+  </div>`;
+}
+
+// ── Cards: by fixture type or by fixture group (3.11.0) ─────────────────────
+
+function _brtCards() {
+  if (_brtView === 'group' && _brtGroupsList.length) {
+    const byId = Object.fromEntries(_brtFixtures.map(f => [String(f.id), f]));
+    const cards = _brtGroupsList.map(g => ({ key: 'g:' + g.id, title: g.name, group: true,
+      fixtures: g.fixtures.map(id => byId[String(id)]).filter(Boolean) })).filter(c => c.fixtures.length);
+    const inGroup = new Set(cards.flatMap(c => c.fixtures.map(f => f.id)));
+    const rest = _brtFixtures.filter(f => !inGroup.has(f.id));
+    if (rest.length) cards.push({ key: 'g:_none', title: t('Not in any group'), group: true, fixtures: rest });
+    return cards;
+  }
+  const groups = {}, order = [];
+  for (const fx of _brtFixtures) {
+    const mk = _brtModelKey(fx);
+    if (!groups[mk]) { groups[mk] = { key: mk, fixtures: [], group: false }; order.push(mk); }
+    groups[mk].fixtures.push(fx);
+  }
+  return order.map(k => groups[k]);
+}
+
+function brtView(v) {
+  _brtView = v === 'group' ? 'group' : 'type';
+  try { localStorage.setItem('sk.brt.view', _brtView); } catch (e) { /* private window */ }
+  _brtRender();
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
@@ -134,37 +231,21 @@ function _brtRender() {
     return;
   }
 
-  // Group by manufacturer/model/mode
-  const groups = {};
-  const groupOrder = [];
-  for (const fx of _brtFixtures) {
-    const mk = _brtModelKey(fx);
-    if (!groups[mk]) { groups[mk] = { fixtures: [], mk }; groupOrder.push(mk); }
-    groups[mk].fixtures.push(fx);
-  }
+  const hasGroups = _brtGroupsList.length > 0;
+  let html = _brtHistoryHtml() + `<div class="brt-viewbar">
+    <span>${_esc(t('Sliders by'))}</span>
+    <label><input type="radio" name="brt-view" ${_brtView !== 'group' ? 'checked' : ''} onchange="brtView('type')"> ${_esc(t('fixture type'))}</label>
+    <label title="${_esc(hasGroups ? t('The fixture groups of the show. A fixture in several groups keeps the value you set last.') : t('This show has no fixture groups (make them in Stage & Meshes › Groups).'))}">
+      <input type="radio" name="brt-view" ${_brtView === 'group' ? 'checked' : ''} ${hasGroups ? '' : 'disabled'} onchange="brtView('group')"> ${_esc(t('fixture group'))}</label>
+  </div>`;
 
-  // Pre-compute baseline peaks per group to find the global max
-  const groupPeaks = {};
-  let globalMaxPct = null;
-  for (const mk of groupOrder) {
-    const p = _brtGroupPeakPct(groups[mk].fixtures);
-    groupPeaks[mk] = p;
-    if (p !== null && (globalMaxPct === null || p > globalMaxPct)) globalMaxPct = p;
-  }
-  // Only show relative diff if there are at least 2 groups with scene data
-  const validGroups = groupOrder.filter(mk => groupPeaks[mk] !== null);
-  const showRelative = validGroups.length >= 2;
-
-  let html = '';
-  for (const mk of groupOrder) {
-    const grp    = groups[mk];
-    const fx0    = grp.fixtures[0];
+  for (const card of _brtCards()) {
+    const mk     = card.key;
+    const fxs    = card.fixtures;
+    const fx0    = fxs[0];
     const linked = _brtLinked[mk] !== false;
-    const noQxf  = !fx0.qxf_found;
-
-    const grpScale = linked
-      ? grp.fixtures.reduce((s, f) => s + (_brtScales[f.id] ?? 1), 0) / grp.fixtures.length
-      : (_brtScales[fx0.id] ?? 1);
+    const noQxf  = fxs.some(f => !f.qxf_found);
+    const grpScale = fxs.reduce((s2, f) => s2 + (_brtScales[f.id] ?? 1), 0) / fxs.length;
     const pct    = Math.round(grpScale * 100);
     const mkSafe = _esc(mk);
 
@@ -172,62 +253,54 @@ function _brtRender() {
       ? `<span class="brt-badge brt-badge-warn" title="QXF not found — enter dimmer channel manually, upload/fetch the QXF, or assign one below">⚠ No QXF</span>`
       : `<span class="brt-badge brt-badge-ok"   title="QXF loaded from: ${_esc(fx0.qxf_path || 'local filesystem')}">✓ QXF</span>`;
 
-    // Baseline indicator badge
-    const blPct    = groupPeaks[mk];
-    const blMaxPct = showRelative ? globalMaxPct : null;
-    const blBadge  = _brtBaselineBadge(blPct, blMaxPct);
-
-    // Per-group QXF assign button — always visible, lets user force any .qxf to this group
     const mfrSafe   = _esc(fx0.manufacturer);
     const modelSafe = _esc(fx0.model);
     const assignId  = `brt-assign-${mkSafe.replace(/[^a-z0-9]/gi,'_')}`;
+    const title = card.group
+      ? `<strong data-i18n="off">${_esc(card.title)}</strong> <span class="brt-group-mode">${_esc(t('{0} fixtures', fxs.length))}</span>`
+      : `<strong>${mfrSafe} ${modelSafe}</strong> <span class="brt-group-mode">${_esc(fx0.mode)}</span>`;
 
     html += `
     <div class="brt-group" data-model="${mkSafe}">
       <div class="brt-group-header">
-        <span class="brt-group-name">
-          <strong>${mfrSafe} ${modelSafe}</strong>
-          <span class="brt-group-mode">${_esc(fx0.mode)}</span>
-          ${qxfBadge}
-          ${blBadge}
-        </span>
-        <label class="brt-link-label" title="Move all fixtures in this group together">
+        <span class="brt-group-name">${title} ${qxfBadge}</span>
+        ${_brtRoomHtml(fxs, pct)}
+        <label class="brt-link-label" title="Move all fixtures of this card together">
           <input type="checkbox" class="brt-link-cb"
                  data-model="${mkSafe}" ${linked ? 'checked' : ''}
                  onchange="brtToggleLink(this)">
           Link group
         </label>
-        <!-- Per-group QXF override picker -->
+        ${card.group ? '' : `
         <label class="btn btn-surface brt-assign-qxf-btn"
                title="Manually assign a QXF file to this fixture group, bypassing automatic name matching">
           <svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Assign QXF
           <input type="file" accept=".qxf" style="display:none" id="${assignId}"
                  onchange="brtAssignQxf(this,'${mfrSafe}','${modelSafe}')">
-        </label>
+        </label>`}
         ${linked ? `
-        <div class="brt-slider-row brt-group-slider">
+        <div class="brt-group-slider">
           <input type="range"  min="0" max="200" step="1" value="${pct}" class="brt-slider"
                  data-model="${mkSafe}" data-linked="1" oninput="brtGroupSlider(this)">
-          <input type="number" min="0" max="200" step="1" value="${pct}" class="brt-num"
-                 data-model="${mkSafe}" data-linked="1" oninput="brtGroupNum(this)">
-          <span class="brt-pct-label">%</span>
-          <button class="btn btn-surface brt-reset-btn" title="Reset group to 100%"
-                  onclick="brtResetGroup('${mkSafe}')">↺</button>
+          <div class="brt-group-num">
+            <input type="number" min="0" max="200" step="1" value="${pct}" class="brt-num"
+                   data-model="${mkSafe}" data-linked="1" oninput="brtGroupNum(this)">
+            <span class="brt-pct-label">%</span>
+            <button class="btn btn-surface brt-reset-btn" title="Back to 100%"
+                    onclick="brtResetGroup(this.closest('.brt-group').dataset.model)">↺ 100%</button>
+          </div>
         </div>` : ''}
       </div>
       <div class="brt-fixture-list ${linked ? 'brt-list-linked' : ''}">`;
 
-    for (const fx of grp.fixtures) {
+    for (const fx of fxs) {
       const fPct    = Math.round((_brtScales[fx.id] ?? 1) * 100);
-      // Dimmer channel: manual override wins, then auto-detected, then empty
       const manualVal = _brtManual[fx.id];
       const autoOff   = fx.dimmer_offset;
       const doff      = manualVal !== undefined ? manualVal : (autoOff ?? '');
       const hasAuto   = autoOff !== null && autoOff !== undefined;
-      // Channel info label (left of input)
       const chLabel   = hasAuto && manualVal === undefined
         ? `${fx.channels}&nbsp;ch&nbsp;·` : '';
-      // Style: yellow/highlighted when no QXF or manual override active; muted otherwise
       const chClass   = (!hasAuto || manualVal !== undefined) ? 'brt-manual-ch' : 'brt-manual-ch brt-ch-override';
       const chTitle   = hasAuto
         ? (manualVal !== undefined
@@ -237,7 +310,7 @@ function _brtRender() {
 
       html += `
         <div class="brt-fixture-row" data-id="${_esc(fx.id)}">
-          <span class="brt-fx-name">${_esc(fx.name)}</span>
+          <span class="brt-fx-name"><span data-i18n="off">${_esc(fx.name)}</span>${_brtFxRoomHtml(fx)}</span>
           <label class="brt-manual-label" title="${_esc(chTitle)}">
             ${chLabel} Dimmer&nbsp;ch:
             <input type="number" min="0" max="511" step="1"
@@ -281,7 +354,7 @@ function brtGroupNum(el)    { _brtSyncGroup(el.dataset.model, Math.max(0, Math.m
 function brtFixtureSlider(el) { _brtSyncFixture(el.dataset.id, parseInt(el.value, 10)); }
 function brtFixtureNum(el)    { _brtSyncFixture(el.dataset.id, Math.max(0, Math.min(200, parseInt(el.value, 10) || 0))); }
 function brtToggleLink(cb)  { _brtLinked[cb.dataset.model] = cb.checked; _brtRender(); }
-function brtResetGroup(mk)  { _brtSyncGroup(decodeURIComponent(mk), 100); }
+function brtResetGroup(mk)  { _brtSyncGroup(mk, 100); }
 function brtResetAll()      { for (const fx of _brtFixtures) _brtScales[fx.id] = 1.0; _brtRender(); }
 function brtSetManual(el) {
   const raw = el.value.trim();
@@ -323,21 +396,35 @@ async function brtAssignQxf(input, manufacturer, model) {
 // ── Internal sync helpers ─────────────────────────────────────────────────────
 
 function _brtSyncGroup(mk, pct) {
+  const card = _brtCards().find(c => c.key === mk);
+  if (!card) return;
   const scale = pct / 100;
-  for (const fx of _brtFixtures) if (_brtModelKey(fx) === mk) _brtScales[fx.id] = scale;
+  for (const fx of card.fixtures) _brtScales[fx.id] = scale;
   for (const el of document.querySelectorAll(`[data-model="${CSS.escape(mk)}"][data-linked="1"]`)) el.value = pct;
-  for (const row of document.querySelectorAll('.brt-fixture-row')) {
-    const fx = _brtFixtures.find(f => f.id === row.dataset.id);
-    if (!fx || _brtModelKey(fx) !== mk) continue;
-    for (const inp of row.querySelectorAll('.brt-slider,.brt-num')) inp.value = pct;
-  }
-  _brtSchedulePreview();
+  _brtRefreshValues(mk);
 }
 
 function _brtSyncFixture(id, pct) {
   _brtScales[id] = pct / 100;
-  for (const el of document.querySelectorAll(`[data-id="${CSS.escape(id)}"]`))
-    if (el.type === 'range' || el.type === 'number') el.value = pct;
+  _brtRefreshValues(null);
+}
+
+/** After a change: every fixture input, every other card's slider (a fixture may be in
+ *  several groups) and the room notes follow the values; *skip* is the card being moved. */
+function _brtRefreshValues(skip) {
+  for (const el of document.querySelectorAll('.brt-fixture-row .brt-slider, .brt-fixture-row .brt-num')) {
+    const v = Math.round((_brtScales[el.dataset.id] ?? 1) * 100);
+    if (document.activeElement !== el) el.value = v;
+  }
+  for (const card of _brtCards()) {
+    const pct = Math.round(card.fixtures.reduce((s2, f) => s2 + (_brtScales[f.id] ?? 1), 0) / card.fixtures.length * 100);
+    const box = document.querySelector(`.brt-group[data-model="${CSS.escape(card.key)}"]`);
+    if (!box) continue;
+    if (card.key !== skip)
+      for (const el of box.querySelectorAll('[data-linked="1"]')) if (document.activeElement !== el) el.value = pct;
+    const room = box.querySelector('.brt-room');
+    if (room) room.outerHTML = _brtRoomHtml(card.fixtures, pct);
+  }
   _brtSchedulePreview();
 }
 
@@ -366,6 +453,11 @@ function _brtSetPreview(stats) {
     : 'nothing yet — move a slider', '', v ? 'Apply will change' : 'Apply will do');
   el.textContent = t('{0} will change', [skPlural(f, '{0} fixture', '{0} fixtures'), skPlural(s, '{0} scene', '{0} scenes'), skPlural(v, '{0} value', '{0} values')].join(', '));
   el.className   = `brt-preview-count ${v > 0 ? 'brt-preview-active' : ''}`;
+  // 3.11.0: say when going brighter cuts scenes at full, or dimming switches lit scenes off
+  const warn = [];
+  if (stats.clipped) warn.push(t('{0} value(s) would go above full: they stay at 100%, so some scenes look alike', stats.clipped));
+  if (stats.to_zero) warn.push(t('{0} lit value(s) would go dark', stats.to_zero));
+  if (warn.length) { el.textContent += ' · ⚠ ' + warn.join(' · '); el.classList.add('brt-preview-warn'); }
 }
 
 // ── Generate QXW ──────────────────────────────────────────────────────────────

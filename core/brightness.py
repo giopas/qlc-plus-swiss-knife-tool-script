@@ -642,15 +642,21 @@ def get_fixture_baseline_stats() -> list:
     for fid, b in buckets.items():
         vals   = b['values']
         active = [v for v in vals if v > 0]
+        peak = max(vals) if vals else 0
         result.append({
             'id':           fid,
             'name':         b['name'],
             'manufacturer': b['manufacturer'],
             'model':        b['model'],
             'mode':         b['mode'],
-            'peak':         max(vals) if vals else 0,
+            'peak':         peak,
             'mean':         round(sum(active) / len(active), 1) if active else 0.0,
             'scene_count':  len(vals),
+            # 3.11.0: how far it can go up before its brightest scene is at full,
+            # and how many scenes already are at full
+            'room_pct':     round(255 / peak * 100) if peak else None,
+            'at_full':      sum(1 for v in vals if v >= 255),
+            'lowest':       min(active) if active else 0,
         })
 
     return result
@@ -677,6 +683,8 @@ def preview_scales(scales: dict) -> dict:
     scenes_hit  = 0
     values_hit  = 0
     fids_active = set()
+    clipped     = 0      # 3.11.0: values that would go past full and stop at 255
+    to_zero     = 0      # values that were lit and would go dark
 
     for func in engine.findall('q:Function', NS):
         if func.get('Type') != 'Scene':
@@ -700,6 +708,11 @@ def preview_scales(scales: dict) -> dict:
                         values_hit  += 1
                         fids_active.add(fid)
                         scene_touched = True
+                        v = int(pairs[i + 1])
+                        if v > 0 and v * scales[fid] > 255.5:
+                            clipped += 1
+                        if v > 0 and round(v * scales[fid]) <= 0:
+                            to_zero += 1
             except (ValueError, IndexError):
                 continue
         if scene_touched:
@@ -709,6 +722,8 @@ def preview_scales(scales: dict) -> dict:
         'scenes':          scenes_hit,
         'values':          values_hit,
         'fixtures_active': len(fids_active),
+        'clipped':         clipped,
+        'to_zero':         to_zero,
     }
 
 
@@ -811,3 +826,131 @@ def apply_brightness_scales(
         'values_changed':  values_changed,
         'palette_scenes_left': palette_left,
     }
+
+
+# =============================================================================
+# HISTORY (3.11.0): was the brightness changed before?
+# =============================================================================
+
+HISTORY_MAX_FILES = 60
+_APPLY_PATHS = ('/api/brightness/apply-show',)
+
+
+def _read_recipe(path: str):
+    try:
+        if os.path.getsize(path) > 8 * 1024 * 1024:
+            return None
+        with open(path, encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _scales_of(call: dict) -> dict:
+    body = call.get('body') if isinstance(call, dict) else None
+    out = {}
+    for k, v in ((body or {}).get('scales') or {}).items():
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            continue
+        if abs(f - 1.0) > 1e-9:
+            out[str(k)] = f
+    return out
+
+
+def _live_scales(calls) -> tuple:
+    """The Brightness changes of a list of recorded calls that are still in
+    the show: an undo takes back the last change, a redo brings it back.
+    Returns ``({fixture id: scale}, sure)``; *sure* is False when the list
+    jumps in the History (travel), so the result may be off."""
+    done, undone, sure = [], [], True
+    for c in calls or []:
+        if not isinstance(c, dict):
+            continue
+        p = c.get('path') or ''
+        if p == '/api/show/undo':
+            if done:
+                undone.append(done.pop())
+        elif p == '/api/show/redo':
+            if undone:
+                done.append(undone.pop())
+        elif p == '/api/show/travel':
+            sure = False
+        elif p.startswith('/api/') and c.get('method', 'POST') != 'GET':
+            done.append(c)
+            undone.clear()
+    scales = {}
+    for c in done:
+        if c.get('path') in _APPLY_PATHS:
+            for k, v in _scales_of(c).items():
+                scales[k] = scales.get(k, 1.0) * v
+    return scales, sure
+
+
+def history(qxw_path: str = '', session_calls=None) -> dict:
+    """The Brightness changes made to this show by Swiss Knife, read from the
+    recipes kept next to each version (``<show>.recipe.json``): this file's
+    recipe names the file it was made from, whose recipe names the one
+    before, and so on.  Only files in the same folder are read.
+
+    Returns ``{"changes": [{file, made_from, date, version, scales}], newest
+    first, "session": {fixture id: scale} (applied in the show in progress,
+    not saved yet), "total": {fixture id: product of every change},
+    "checked": [file names], "ends": why the search stopped,
+    "edited_after": the open file is not the one Swiss Knife saved}``."""
+    from core import recipe as recipe_mod
+    out = {'changes': [], 'session': {}, 'total': {}, 'checked': [], 'ends': '', 'edited_after': False,
+           'sure': True}
+    out['session'], sure = _live_scales(session_calls)
+    out['sure'] = out['sure'] and sure
+    path = qxw_path if qxw_path and os.path.isfile(qxw_path) else ''
+    if not path:
+        out['ends'] = 'no_folder'
+        return out
+    folder = os.path.dirname(os.path.abspath(path))
+    seen = set()
+    first = True
+    while path and len(out['checked']) < HISTORY_MAX_FILES:
+        name = os.path.basename(path)
+        if name in seen:
+            out['ends'] = 'loop'
+            break
+        seen.add(name)
+        out['checked'].append(name)
+        rec = _read_recipe(recipe_mod.recipe_path(path))
+        if rec is None:
+            out['ends'] = 'no_recipe'
+            break
+        res = rec.get('result') or {}
+        if first and res.get('sha256'):
+            try:
+                out['edited_after'] = recipe_mod._sha(path) != res['sha256']
+            except OSError:
+                pass
+        first = False
+        scales, sure = _live_scales(rec.get('calls'))
+        out['sure'] = out['sure'] and sure
+        src = os.path.basename(str((rec.get('source') or {}).get('name') or ''))
+        if scales:
+            out['changes'].append({'file': name, 'made_from': src, 'date': str(rec.get('created') or '')[:16],
+                                   'version': str(rec.get('swiss_knife') or ''),
+                                   'scales': {k: round(v, 4) for k, v in scales.items()}})
+        if not src or src == name:
+            out['ends'] = 'start'
+            break
+        nxt = os.path.join(folder, src)
+        if not os.path.isfile(nxt):
+            out['ends'] = 'missing:' + src
+            break
+        path = nxt
+    else:
+        if not out['ends']:
+            out['ends'] = 'limit'
+    total = dict(out['session'])
+    for ch in out['changes']:
+        for k, v in ch['scales'].items():
+            total[k] = round(total.get(k, 1.0) * v, 4)
+    out['total'] = total
+    return out

@@ -16,6 +16,89 @@ let _stLib = null;        // {dirs, items}
 let _stDrag = null;
 const ST_SNAP = 10;       // mm
 
+// 3.11.0: what the two views draw (view only, never written to the show)
+const _stView = (() => {
+  const d = { meshes: true, fixtures: true, front: 'fixtures', beams: 'all' };
+  try { return { ...d, ...JSON.parse(localStorage.getItem('sk.stage.view') || '{}') }; } catch (e) { return d; }
+})();
+function stageView(k, v) {
+  _stView[k] = v;
+  try { localStorage.setItem('sk.stage.view', JSON.stringify(_stView)); } catch (e) { /* private window */ }
+  _stDraw();
+}
+function _stBeamMode() {            // older settings kept true / false
+  const b = _stView.beams;
+  return b === true ? 'all' : b === false ? 'none' : (['none', 'sel', 'all'].includes(b) ? b : 'all');
+}
+function _stViewbarHtml() {
+  const ck = (k, label, tip) => `<label title="${tip}"><input type="checkbox" ${_stView[k] ? 'checked' : ''}
+    onchange="stageView('${k}', this.checked)"> ${label}</label>`;
+  return `<div class="st-viewbar">
+    <span class="vce-hint">In the views:</span>
+    ${ck('meshes', 'Meshes', 'Draw the meshes in the two views (QLC+ is not changed)')}
+    ${ck('fixtures', 'Fixtures', 'Draw the fixtures in the two views (QLC+ is not changed)')}
+    <label title="A rough beam from each fixture, from its rotation and its lens (25° when the fixture definition gives none)">Where they point
+      <select class="filter-input st-beams-sel" onchange="stageView('beams', this.value)">${[['none', 'none'], ['sel', 'selected fixtures'], ['all', 'all fixtures']].map(([v, l]) =>
+        `<option value="${v}" ${_stBeamMode() === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <span class="vce-hint" style="margin-left:8px">On top:</span>
+    <label title="Fixtures are drawn over the meshes, so you can click a fixture inside a truss"><input type="radio" name="st-front" ${_stView.front === 'fixtures' ? 'checked' : ''}
+      onchange="stageView('front','fixtures')"> Fixtures</label>
+    <label title="Meshes are drawn over the fixtures"><input type="radio" name="st-front" ${_stView.front === 'meshes' ? 'checked' : ''}
+      onchange="stageView('front','meshes')"> Meshes</label>
+  </div>`;
+}
+
+/** Where a fixture points, roughly: the beam direction (x right, y up, z to the
+ *  audience) from its rotation.  0° tilt points straight down; a positive tilt
+ *  (XRot) points toward the audience, as the Aim tool writes it; pan (YRot)
+ *  turns it around the vertical, roll (ZRot) to the side. */
+function _stBeamDir(rot) {
+  const r = v => (Number(v) || 0) * Math.PI / 180;
+  const a = r(rot[0]), b = r(rot[1]), c = r(rot[2]);
+  let x = 0, y = -Math.cos(a), z = Math.sin(a);                 // tilt
+  [x, y] = [x * Math.cos(c) - y * Math.sin(c), x * Math.sin(c) + y * Math.cos(c)];   // roll
+  [x, z] = [x * Math.cos(b) + z * Math.sin(b), -x * Math.sin(b) + z * Math.cos(b)];  // pan
+  return [x, y, z];
+}
+
+/** The beam of fixture *f* in mm: apex, end (on the floor, or 4 m out when it
+ *  does not reach the floor), width at the end, and whether it lands on the floor. */
+function _stBeam(f) {
+  const p = f.place, d = _stBeamDir(f.rot || [0, 0, 0]);
+  const A = [p.x, (p.bottom + p.top) / 2, p.z];
+  let t = 4000, floor = false;
+  if (d[1] < -0.05) { t = Math.min(A[1] / -d[1], 20000); floor = true; }
+  const E = [A[0] + d[0] * t, Math.max(0, A[1] + d[1] * t), A[2] + d[2] * t];
+  return { A, E, d, half: t * Math.tan((f.beam || 25) * Math.PI / 360), floor };
+}
+
+/** SVG of a beam projected on one view: a wedge and, on the plan, the spot on the floor. */
+function _stBeamSvg(f, k, pad, floorY, view) {
+  const b = _stBeam(f);
+  const P = view === 'plan' ? (v => [pad + v[0] * k, pad + v[2] * k]) : (v => [pad + v[0] * k, floorY - v[1] * k]);
+  const [ax, ay] = P(b.A), [ex, ey] = P(b.E);
+  const w = b.half * k;
+  let dx = ex - ax, dy = ey - ay; const L = Math.hypot(dx, dy);
+  let out = '';
+  if (L > 2) {
+    const nx = -dy / L * w, ny = dx / L * w;
+    out += `<polygon points="${ax},${ay} ${ex + nx},${ey + ny} ${ex - nx},${ey - ny}"/>`;
+    out += `<line class="st-aimline" x1="${ax}" y1="${ay}" x2="${ex}" y2="${ey}"/>`;
+  }
+  if (view === 'plan' && b.floor) {
+    const h = Math.hypot(b.d[0], b.d[2]);
+    const ang = h > 1e-3 ? Math.atan2(b.d[2], b.d[0]) * 180 / Math.PI : 0;
+    const stretch = Math.min(4, 1 / Math.max(0.25, Math.abs(b.d[1])));
+    out += `<ellipse cx="${ex}" cy="${ey}" rx="${w * stretch}" ry="${w}" transform="rotate(${ang} ${ex} ${ey})"/>`;
+  }
+  return `<g class="st-beam${_stSet.has(f.key) ? ' sel' : ''}"><title>${_esc(f.name)}: ${_stRotText(f)}</title>${out}</g>`;
+}
+
+function _stRotText(f) {
+  const [x, y, z] = (f.rot || [0, 0, 0]).map(v => Math.round(Number(v) || 0));
+  return t('tilt {0}°, pan {1}°, roll {2}°', x, y, z) + (f.beam_known ? ` · ${t('beam {0}°', Math.round(f.beam))}` : ` · ${t('beam unknown, 25° drawn')}`);
+}
+
 function stageInit() { if (!_stS) _stLoad(); }
 
 function invalidateStage() {
@@ -242,6 +325,7 @@ function _stRender() {
   el.innerHTML = `
   <div class="st-cols">
     <div class="st-views">
+      ${_stViewbarHtml()}
       <div class="st-vh">Plan — seen from above <span class="vce-hint">back at the top, audience at the bottom · drag a mesh to move it</span></div>
       <div id="st-plan" class="st-view"></div>
       <div class="st-vh">Front — seen from the audience <span class="vce-hint">drag a mesh sideways or up/down</span></div>
@@ -289,7 +373,7 @@ function _stRender() {
         <details class="vce-sub" ${_stKinds().fx ? 'open' : ''}><summary>Fixtures (${_stS.fixtures.length}) — select them to place meshes around them, or to move them</summary>
           <div class="st-list">${_stS.fixtures.map(f => `<div class="st-item ${_stSet.has(f.key) ? 'on' : ''}" onclick="stageSelect('${f.key}', event)">
             <span><i class="st-k st-k-f"></i>${_esc(f.name)}</span>
-            <span class="vce-hint">${f.place.bottom} mm up${f.size_known ? '' : ' · size ?'}</span></div>`).join('') || '<div class="vce-hint">No fixtures on the 3D stage.</div>'}</div>
+            <span class="vce-hint" title="${_esc(_stRotText(f))}">${f.place.bottom} mm up${f.size_known ? '' : ' · size ?'}${(f.rot || []).some(v => Math.abs(v) > 0.05) ? ' · ↻ ' + (f.rot || []).map(v => Math.round(v)).join('/') + '°' : ''}</span></div>`).join('') || '<div class="vce-hint">No fixtures on the 3D stage.</div>'}</div>
           <div class="lb-row"><button class="btn btn-surface btn-sm" onclick="stageSelectFixtures()">Select all fixtures</button></div>
         </details>
       </div>
@@ -604,32 +688,41 @@ function _stDraw() {
   const vw = Math.max(300, box.clientWidth || 600);
   const k = Math.min((vw - 2 * pad) / W, 420 / D);
   const ph = D * k + 2 * pad, fh = H * k + 2 * pad;
-  const fx = _stS.fixtures;
-  const ms = _stS.meshes.filter(m => m.place);
+  const fx = _stView.fixtures ? _stS.fixtures : [];
+  const ms = _stView.meshes ? _stS.meshes.filter(m => m.place) : [];
+  const fxOnTop = _stView.front !== 'meshes';
   const cls = m => 'st-m' + (_stSet.has(m.id) ? ' sel' : '') + (m.hidden ? ' hid' : '');
   // plan
+  const planFx = fx.map(f => `<g class="st-fx${_stSet.has(f.key) ? ' sel' : ''}" data-id="${f.key}" onmousedown="_stDown(event,'plan','${f.key}')"><title>${_esc(f.name)} · ${_esc(_stRotText(f))}</title>
+      <rect x="${pad + f.place.x0 * k}" y="${pad + f.place.z0 * k}" width="${Math.max(6, f.place.w * k)}" height="${Math.max(6, f.place.d * k)}" rx="2"/></g>`).join('');
+  const planMs = ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'plan','${m.id}')">
+      <rect x="${pad + m.place.x0 * k}" y="${pad + m.place.z0 * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.d * k)}"/>
+      <text x="${pad + m.place.x * k}" y="${pad + m.place.z * k + 4}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('');
+  const floorY = fh - pad;
+  const bm = _stBeamMode();
+  const bfx = bm === 'none' ? [] : bm === 'sel' ? fx.filter(f => _stSet.has(f.key)) : fx;
+  const planBeams = bfx.map(f => _stBeamSvg(f, k, pad, floorY, 'plan')).join('');
+  const frontBeams = bfx.map(f => _stBeamSvg(f, k, pad, floorY, 'front')).join('');
   box.innerHTML = `<svg width="${W * k + 2 * pad}" height="${ph}" data-k="${k}">
     <rect x="${pad}" y="${pad}" width="${W * k}" height="${D * k}" class="st-floor"/>
     <text x="${pad + W * k / 2}" y="${pad - 6}" class="st-t" text-anchor="middle">back</text>
     <text x="${pad + W * k / 2}" y="${ph - 4}" class="st-t" text-anchor="middle">front · audience</text>
-    ${fx.map(f => `<g class="st-fx${_stSet.has(f.key) ? ' sel' : ''}" data-id="${f.key}" onmousedown="_stDown(event,'plan','${f.key}')"><title>${_esc(f.name)}</title>
-      <rect x="${pad + f.place.x0 * k}" y="${pad + f.place.z0 * k}" width="${Math.max(6, f.place.w * k)}" height="${Math.max(6, f.place.d * k)}" rx="2"/></g>`).join('')}
-    ${ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'plan','${m.id}')">
-      <rect x="${pad + m.place.x0 * k}" y="${pad + m.place.z0 * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.d * k)}"/>
-      <text x="${pad + m.place.x * k}" y="${pad + m.place.z * k + 4}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('')}
+    ${planBeams}
+    ${fxOnTop ? planMs + planFx : planFx + planMs}
   </svg>`;
   // front
   const fbox = document.getElementById('st-front');
-  const floorY = fh - pad;
+  const frontFx = fx.map(f => `<g class="st-fx${_stSet.has(f.key) ? ' sel' : ''}" data-id="${f.key}" onmousedown="_stDown(event,'front','${f.key}')"><title>${_esc(f.name)} · ${_esc(_stRotText(f))}</title>
+      <rect x="${pad + f.place.x0 * k}" y="${floorY - f.place.top * k}" width="${Math.max(6, f.place.w * k)}" height="${Math.max(6, f.place.h * k)}" rx="2"/></g>`).join('');
+  const frontMs = ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'front','${m.id}')">
+      <rect x="${pad + m.place.x0 * k}" y="${floorY - m.place.top * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.h * k)}"/>
+      <text x="${pad + m.place.x * k}" y="${floorY - m.place.top * k - 3}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('');
   fbox.innerHTML = `<svg width="${W * k + 2 * pad}" height="${fh}">
     <line x1="0" x2="${W * k + 2 * pad}" y1="${floorY}" y2="${floorY}" class="st-fl"/>
     <rect x="${pad}" y="${floorY - S.h * 1000 * k}" width="${W * k}" height="${S.h * 1000 * k}" class="st-space"/>
     <text x="${pad + 4}" y="${floorY - 4}" class="st-t">floor</text>
-    ${fx.map(f => `<g class="st-fx${_stSet.has(f.key) ? ' sel' : ''}" data-id="${f.key}" onmousedown="_stDown(event,'front','${f.key}')"><title>${_esc(f.name)}</title>
-      <rect x="${pad + f.place.x0 * k}" y="${floorY - f.place.top * k}" width="${Math.max(6, f.place.w * k)}" height="${Math.max(6, f.place.h * k)}" rx="2"/></g>`).join('')}
-    ${ms.map(m => `<g class="${cls(m)}" data-id="${m.id}" onmousedown="_stDown(event,'front','${m.id}')">
-      <rect x="${pad + m.place.x0 * k}" y="${floorY - m.place.top * k}" width="${Math.max(3, m.place.w * k)}" height="${Math.max(3, m.place.h * k)}"/>
-      <text x="${pad + m.place.x * k}" y="${floorY - m.place.top * k - 3}" text-anchor="middle">${_esc(m.label.slice(0, 16))}</text></g>`).join('')}
+    ${frontBeams}
+    ${fxOnTop ? frontMs + frontFx : frontFx + frontMs}
   </svg>`;
   _stS._k = k;
   const miss = _stS.meshes.filter(m => !m.place).length;

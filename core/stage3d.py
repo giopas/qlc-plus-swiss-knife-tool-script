@@ -259,6 +259,26 @@ def _fx_size(fx_el: Optional[ET.Element], qxf_defs) -> Tuple[Tuple[float, float,
     return DEFAULT_FX_SIZE, False
 
 
+DEFAULT_BEAM = 25.0   # degrees, when the .qxf gives no lens (3.11.0, drawing only)
+
+
+def _fx_beam(fx_el: Optional[ET.Element], qxf_defs) -> Tuple[float, bool]:
+    """Beam angle (degrees) from the .qxf ``<Lens>``: the widest it opens to.
+    Used only to draw where a fixture points; never written to the show."""
+    if fx_el is not None and qxf_defs:
+        key = ((fx_el.findtext("Manufacturer") or "").strip().lower(),
+               (fx_el.findtext("Model") or "").strip().lower())
+        ph = ((qxf_defs.get(key) or {}).get("physical") or {})
+        for k in ("lens_max", "lens_min"):
+            try:
+                v = float(ph.get(k) or 0)
+            except (TypeError, ValueError):
+                v = 0
+            if 0 < v <= 180:
+                return v, True
+    return DEFAULT_BEAM, False
+
+
 def fixtures(root: ET.Element, qxf_defs=None) -> List[dict]:
     """Fixtures on the 3D stage with their placement (mm), like meshes.
 
@@ -276,12 +296,14 @@ def fixtures(root: ET.Element, qxf_defs=None) -> List[dict]:
         fid = el.get("ID", "")
         fx = els.get(fid)
         (w, h, d), known = _fx_size(fx, qxf_defs)
+        beam, beam_known = _fx_beam(fx, qxf_defs)
         x, y, z = _f(el, "XPos"), _f(el, "YPos"), _f(el, "ZPos")
         bottom = round(y - st["floor"] * 1000)
         out.append({"id": fid, "key": f"f:{fid}",
                     "name": (fx.findtext("Name") or "").strip() if fx is not None else f"Fixture {fid}",
                     "x": x, "y": y, "z": z, "size_known": known,
                     "rot": [_f(el, "XRot"), _f(el, "YRot"), _f(el, "ZRot")],
+                    "beam": beam, "beam_known": beam_known,
                     "place": {"x": round(x + w / 2), "z": round(z + d / 2), "bottom": bottom,
                               "top": round(bottom + h), "w": round(w), "h": round(h), "d": round(d),
                               "x0": round(x), "z0": round(z)}})

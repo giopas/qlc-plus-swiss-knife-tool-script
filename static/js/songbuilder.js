@@ -251,7 +251,7 @@ function _sbdBars(res) {
   const seg = (r, i, arr) => {
     const bad = r.issue ? ' sbd-seg-bad' : '';
     const prevBpm = i > 0 ? arr[i - 1].bpm : null;
-    const bpmChanged = r.bpm && r.bpm !== prevBpm;
+    const bpmChanged = i > 0 && r.bpm && r.bpm !== prevBpm;
     const chip = bpmChanged ? ` <span class="sbd-bpm-chip">♩${_sbdEsc(r.bpm)}</span>` : '';
     const tip = `${r.name || ''} · ${_sbdPos(r.start_ms)}–${_sbdPos(r.end_ms)}` + (r.bpm ? ` · ${r.bpm} BPM` : '') + (r.issue ? ` · ${r.issue}` : '');
     const color = r.issue ? '' : `background:${_sbdColor(r.name)}`;

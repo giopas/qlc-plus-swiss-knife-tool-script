@@ -37,7 +37,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Next release: 3.11.0, notes from preparing a gig** (giopas, 5 November 2026; table below). 3.10.0 was the release before: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.11.0, notes from a gig** (giopas, 5 November 2026; table below). 3.10.0 was the release before: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
 ### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 
@@ -246,9 +246,9 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 - **Hand checks done by giopas on 23 October.** A ten-part song with music ends with the music; the Show plays as a cue; a 3 s fade in and out on a scene is visible; a chaser copy (3 steps, 2 beats a step at 60 BPM) keeps cycling for the whole 16 s part. Nothing is open.
 - **Left for the wishlist.** A click track made by the tool, a section-split helper, a read-only picture of a Show (see section 3).
 
-### 3.11.0 · Notes from preparing a gig (built, waiting for giopas's hand test, branch `feat/v3.11.0`)
+### 3.11.0 · Notes from a gig (finished, waiting for the push, branch `feat/v3.11.0`)
 
-**Asked by giopas on 5 November 2026**, after preparing a new show file from an old one. Fifteen points, in his order. Status, 5 November: all fifteen built, with tests (1,667 pass), the seven languages, the wiki pages (Setlist Manager, Stage and Meshes, Cabling, Tablet on stage, Connect Claude, Community Library), the Claude tools page and the CHANGELOG. Checked on screen with the Festival test show. Left: giopas's hand test on the Mac, then version, release notes and pictures (section 8).
+**Asked by giopas on 5 November 2026**, after preparing a new show file from an old one. Fifteen points, in his order. Status, 5 November: all fifteen built, with tests (1,667 pass), the seven languages, the wiki pages (Setlist Manager, Stage and Meshes, Cabling, Tablet on stage, Connect Claude, Community Library), the Claude tools page and the CHANGELOG. Checked on screen with the Festival test show. **Release, 5 November (giopas asked for it the same morning):** version 3.11.0, CHANGELOG section *Notes from a gig*, release notes in `docs/release-notes/RELEASE_NOTES_v3.11.0.md`, every picture retaken (`tools/shots.py all`), `tools/xss_probe.py` clean, a plain-language pass on the new texts and their seven translations. Left: merge, tag and push (section 8).
 
 **Hand checks for giopas:** rename a CueList and its chaser, then open the saved file in QLC+; open an older show and see its songs; the beams on a show with tilted heads (do they point where QLC+'s 3D view shows?); click a fixture in Cabling and connect it by radio; mark a cable venue and read the pick list; a request to Claude from *Describe the wiring* with the same show open in the window; pull the network cable and watch the dot; switch the views by role off and open `?role=band` on the tablet.
 

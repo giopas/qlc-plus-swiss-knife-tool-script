@@ -7,28 +7,33 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.11.0] — 2026-11-05 — Notes from a gig
+
 ### Added — notes from preparing a gig (3.11.0)
 
-- **Setlist Manager: rename a CueList.** Press ✎ beside it. Tick *rename its chaser too* to give the chaser the same name. One step of the History. Claude can do it too (`edit_vc`, operation `rename_widget`).
-- **Setlist Manager: a show opens with its songs.** The first CueList is selected and lists the songs its chaser already plays, with their fades and hold, each matched to the original function (a copy made by *Apply* points back to it).
-- **Stage & Meshes: choose what the views draw.** Show or hide the meshes and the fixtures, and choose which are drawn on top, so a fixture inside a truss can be clicked. Only the drawing changes.
-- **Stage & Meshes: where the fixtures point.** A rough beam from each fixture (all, the selected ones, or none), from its tilt, pan and roll and the lens of its definition (25° when unknown), with the spot on the floor on the plan. The fixture list shows each rotation.
-- **Cabling: connect a fixture by hand.** Click a fixture on the plan: after another fixture, first on an output, or by radio through a wireless receiver.
-- **Cabling: where a cable comes from.** Mark a cable as to buy, borrowed or from the venue. Borrowed and venue cables are not taken from your kit and have their own sections on the pick list; a cable to buy goes on the shopping list.
-- **Cabling: a preferred plan.** ☆ on an alternative keeps it as preferred with the plan; *Propose* picks it first next time.
-- **Cabling: hide the meshes** (band floor) on the Places and Plan steps. Cables still go round them.
-- **Cabling: describe the wiring to Claude.** Write it in your own words; the page makes the request to paste in Claude Desktop. Claude wires the plan with the new `cabling` *action=wire*, and the page shows it by itself when the same show is open.
-- **Internet dot.** Green, orange or red beside *Connect to Claude* and *Check now*: whether claude.ai can be reached. Claude needs the internet even with the connection in place. The update check says when the computer is offline.
-- **Tablet on stage: views by role can be switched off** (*Use views by role* on the Page tab). Off, every tablet shows the plain page.
+- **Setlist Manager: rename a CueList.** Press ✎ beside it and type the new name. Tick *rename its chaser too* to give its chaser the same name. Undo takes it back.
+- **Setlist Manager: a show opens with its songs.** When you open a show, the first CueList is selected and its songs are already in the list, each matched to its look, with its fades and hold.
+- **Stage & Meshes: choose what you see.** Show or hide the meshes and the fixtures, and choose which ones are drawn on top. So you can click a fixture that sits inside a truss. The show does not change.
+- **Stage & Meshes: where the fixtures point.** A rough beam shows where each fixture points, from its tilt, pan and roll and its lens. On the plan you also see the spot on the floor. Show it for all fixtures, only the selected ones, or none.
+- **Cabling: connect a fixture by hand.** Click a fixture on the plan and say where its DMX comes from: after another fixture, first on an output, or by radio through a wireless receiver.
+- **Cabling: where a cable comes from.** Mark a cable as *to buy*, *borrowed* or *from the venue*. Borrowed and venue cables are not taken from your kit and are listed apart on the pick list. A cable to buy goes on the shopping list.
+- **Cabling: your preferred plan.** Press ☆ on an alternative to keep it as your preferred plan. Next time, *Propose* picks it first.
+- **Cabling: hide the meshes** (the band floor) on the Places and Plan steps. Cables still go round them.
+- **Cabling: tell Claude how to wire it.** Write the wiring in your own words and copy the request into Claude Desktop. Claude makes the plan, and the Cabling page shows it by itself.
+- **A dot for the internet.** Green, orange or red, next to *Connect to Claude* and *Check now*. It tells you if Claude can be reached: Claude needs the internet even when it is connected to Swiss Knife. The update check now says when the computer is offline.
+- **Tablet on stage: views by role can be turned off** (*Use views by role* on the Page tab). When they are off, every tablet shows the same page.
+- The screenshots, the wiki, the README and all seven languages are updated.
 
 ### Changed
 
-- **Tablet on stage:** the cue list has column names, and *Name on the page* is now *Name shown on the tablet (optional)*, with the cue's own name as the grey hint. The *Views by role* part explains in plain words what a view is and shows each view's address as *…/?role=word*.
-- **Library:** *Where my items are* lists *My kit (Cabling)*.
+- **Tablet on stage:** the list of cues has column names. *Name on the page* is now *Name shown on the tablet (optional)*, and the cue's own name shows in grey until you type one. *Views by role* explains in plain words what a view is, and shows the address of each view.
+- **Library:** *Where my items are* now lists *My kit* from Cabling.
 
 ### Fixed
 
-- **Cabling:** the terminator mark (T) is drawn inside the last fixture of its chain, on top, instead of half hidden behind it.
+- **Cabling:** the terminator mark (T) is drawn inside the last fixture of its chain. Before, a fixture could hide it.
 
 ---
 

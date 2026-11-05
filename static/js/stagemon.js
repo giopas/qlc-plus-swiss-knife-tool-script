@@ -284,7 +284,7 @@ function _smSongs() {
           data-i18n="off">${_esc(st.name)}${st.note ? `<div class="sm-meta" style="margin:0">${_esc(st.note)}</div>` : ''}</td>
       <td class="sm-chips">${chips}</td>
       <td><input class="field-input" maxlength="120" value="${_esc(s.label || '')}" placeholder="${_esc(st.name)}"
-                 data-i18n="off" title="${_esc('Name shown on the tablet. Leave it empty to show the name of the cue; QLC+ is not changed.')}"
+                 data-i18n="off" title="${_esc('The name the tablet shows. Leave it empty to show the name of the cue. QLC+ does not change.')}"
                  aria-label="${_esc('Name shown on the tablet')}"
                  oninput="stagemonStep('${cl.id}', ${st.index}, 'label', this.value)"></td>
     </tr>`;

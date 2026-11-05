@@ -1194,7 +1194,7 @@ function cablingFxLink(fid, how) {
       let src = null;
       items.filter(x => x.kind === 'interface' && x.count > 0).some(x => (x.ports || []).filter(q => q.role === 'out' || q.role === 'thru')
         .some((q, k) => { if (q.role === 'out' && !busy.has(x.id + '|' + k)) { src = { item: x.id, port: k }; return true; } return false; }));
-      if (!src) { setStatus(_cbT('No free interface output for the radio link: free one, or connect the transmitter by hand.'), 'warn'); return; }
+      if (!src) { setStatus(_cbT('No interface output is free for the radio link. Free one, or connect the transmitter by hand.'), 'warn'); return; }
       p.chains.push({ source: src, devices: [...(tx ? [{ item: tx.id }] : []), { item: rx }, me], cables: [], label: _cbT('Radio') });
     }
     const f = _cb.evaluation.fixtures.find(x => String(x.id) === fid);
@@ -1233,7 +1233,7 @@ async function _cbWatch() {
     if (_cbRev && d.rev && d.rev !== _cbRev) {
       _cbRev = d.rev;
       await cablingLoad();
-      setStatus(_cbT('The plan was changed outside this page (by Claude): it is shown again.'), 'ok');
+      setStatus(_cbT('Claude changed the plan. It is shown here again.'), 'ok');
       return;
     }
     _cbRev = d.rev;

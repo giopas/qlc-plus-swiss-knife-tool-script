@@ -99,8 +99,8 @@ setTimeout(updInit, 1500);
 let _net = { state: 'unknown' };
 const NET_TEXT = {
   online: 'Internet: online. Claude can be reached.',
-  limited: 'Internet: limited. This network answers, but claude.ai does not (or slowly): Claude may not work.',
-  offline: 'Internet: offline. Claude does not work without the internet, even with the MCP connected.',
+  limited: 'Internet: limited. This network works, but claude.ai does not answer, or answers slowly. Claude may not work.',
+  offline: 'Internet: offline. Claude needs the internet, even when the MCP is connected.',
   unknown: 'Internet: not checked yet.',
 };
 async function netCheck(force) {

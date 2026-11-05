@@ -37,7 +37,7 @@ function _stViewbarHtml() {
     <span class="vce-hint">In the views:</span>
     ${ck('meshes', 'Meshes', 'Draw the meshes in the two views (QLC+ is not changed)')}
     ${ck('fixtures', 'Fixtures', 'Draw the fixtures in the two views (QLC+ is not changed)')}
-    <label title="A rough beam from each fixture, from its rotation and its lens (25° when the fixture definition gives none)">Where they point
+    <label title="A rough beam for each fixture, from its rotation and its lens (25° if the fixture definition has none)">Where they point
       <select class="filter-input st-beams-sel" onchange="stageView('beams', this.value)">${[['none', 'none'], ['sel', 'selected fixtures'], ['all', 'all fixtures']].map(([v, l]) =>
         `<option value="${v}" ${_stBeamMode() === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <span class="vce-hint" style="margin-left:8px">On top:</span>

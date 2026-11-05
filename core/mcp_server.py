@@ -138,7 +138,7 @@ TOOLS: List[dict] = [
      "description": "List the Virtual Console pages and their widgets.",
      "inputSchema": _obj()},
     {"name": "edit_vc", "handler": "t_edit_vc",
-     "description": "One Virtual Console edit (one History step). `op` is one of: create, wire, delete, duplicate, copy, move, new_page, copy_page, rename_page, move_page, delete_page, label_panel, auto_arrange, screen, apply_template, setlist_cuelist, fix_ids. Put that operation's arguments next to `op`, e.g. create: parent_id, kind (Button, Frame, SoloFrame, Slider, Label, CueList, Knob, XYPad, SpeedDial, Clock), caption, x, y, w, h, func_id, bg_color. In a show saved before QLC+ 5.3 a Knob, XYPad, SpeedDial or Clock adds an `upgrade53` note: offer the user the Upgrade to QLC+ 5.3 steps (upgrade_show). Call guide with `edit_vc:<op>` for any other operation. Get the page and frame ids from vc_pages.",
+     "description": "One Virtual Console edit (one History step). `op` is one of: create, wire, delete, duplicate, copy, move, new_page, copy_page, rename_page, rename_widget, move_page, delete_page, label_panel, auto_arrange, screen, apply_template, setlist_cuelist, fix_ids. Put that operation's arguments next to `op`, e.g. create: parent_id, kind (Button, Frame, SoloFrame, Slider, Label, CueList, Knob, XYPad, SpeedDial, Clock), caption, x, y, w, h, func_id, bg_color. In a show saved before QLC+ 5.3 a Knob, XYPad, SpeedDial or Clock adds an `upgrade53` note: offer the user the Upgrade to QLC+ 5.3 steps (upgrade_show). Call guide with `edit_vc:<op>` for any other operation. Get the page and frame ids from vc_pages.",
      "inputSchema": _obj({"op": _S, "parent_id": _S, "kind": _S, "caption": _S, "x": {"type": "integer"},
                           "y": {"type": "integer"}, "w": {"type": "integer"}, "h": {"type": "integer"},
                           "func_id": _S, "bg_color": _S, "widget_id": _S, "ids": _IDS, "target_id": _S,
@@ -147,7 +147,8 @@ TOOLS: List[dict] = [
                           "title": _S, "profile": _S, "profile_id": _S, "page_ids": _IDS, "name": _S,
                           "chaser_id": _S, "cuelist_id": _S, "width": {"type": "integer"},
                           "height": {"type": "integer"}, "orientation": _S, "mode": _S, "scale": {"type": "boolean"},
-                          "touch": {"type": "boolean"}, "preview": {"type": "boolean"}, "bindings": _S}, ["op"])},
+                          "touch": {"type": "boolean"}, "preview": {"type": "boolean"}, "bindings": _S,
+                          "chaser_too": {"type": "boolean"}}, ["op"])},
     {"name": "setlist", "handler": "t_setlist",
      "description": "Turn a setlist into a chaser. Give `songs` (titles, in order) or `text` (pasted list). A song may carry its tempo: \"Song name | 128BPM\" (spaces, case and the BPM word optional after the bar). Songs are matched to the show's functions; `rows` may override with {txt_name, qxw_id, in, hold, out, bpm, beats}. A song with a BPM gets the steps of its chaser (a copy; the original is not touched) timed to it, `beats` beats a step (default 1); functions that cannot follow a tempo are left as they are and named in `tempo.left_alone`. With apply=false only shows the matches and which ones the tempo would change.",
      "inputSchema": _obj({"songs": _IDS, "text": _S, "slot": _S, "rows": {"type": "array"},
@@ -163,8 +164,10 @@ TOOLS: List[dict] = [
                           "replace": {"type": "boolean"},
                           "lang": {"type": "string", "enum": ["en", "it", "fr", "de", "es", "pt", "ja", "zh"]}})},
     {"name": "cabling", "handler": "t_cabling",
-     "description": "The DMX cabling planner: tonight's kit, chains, cables, adapters, terminators, the pick list and labels. `action` is one of kit, fixture, plan, check. kit: without `kit` lists your kit and the presets; with `kit` {items:[...]} keeps it as your kit (settings). fixture: a fixture model for the kit from what you found (a name, a link, a photo of the back panel): give manufacturer, model, connectors (e.g. [\"xlr3\"]), thru, termination (none, switch, auto, unknown), power_w, sources {field: manual|photo|qxf|guess} and count; without confirmed=true it only returns the proposal to show the user; with confirmed=true it adds it to your kit. plan (needs an open show): `controller` {mode: stand|foh|auto, side, distance_m, route, computer: laptop|pi|other}, `owners` {fixture id: mine|borrowed|venue}, `stage_m` [width, depth] for tonight's stage when it differs from the show's (the show is not changed); presets include Art-Net nodes (fed by a network cable from the computer) and wireless transmitters/receivers, and the plan offers a wireless feed when the kit has a pair; returns two or three alternatives; choose=\"A\" keeps that one next to the show as <show>.cabling.json. check: the checks, totals, load-in order and pick list of the kept plan; export=[plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt] with `folder` writes those as NEW files. The show itself is never changed.",
-     "inputSchema": _obj({"action": {"type": "string", "enum": ["kit", "fixture", "plan", "check"]},
+     "description": "The DMX cabling planner: tonight's kit, chains, cables, adapters, terminators, the pick list and labels. `action` is one of kit, fixture, plan, wire, check. kit: without `kit` lists your kit and the presets; with `kit` {items:[...]} keeps it as your kit (settings). fixture: a fixture model for the kit from what you found (a name, a link, a photo of the back panel): give manufacturer, model, connectors (e.g. [\"xlr3\"]), thru, termination (none, switch, auto, unknown), power_w, sources {field: manual|photo|qxf|guess} and count; without confirmed=true it only returns the proposal to show the user; with confirmed=true it adds it to your kit. plan (needs an open show): `controller` {mode: stand|foh|auto, side, distance_m, route, computer: laptop|pi|other}, `owners` {fixture id: mine|borrowed|venue}, `stage_m` [width, depth] for tonight's stage when it differs from the show's (the show is not changed); presets include Art-Net nodes (fed by a network cable from the computer) and wireless transmitters/receivers, and the plan offers a wireless feed when the kit has a pair; returns two or three alternatives; choose=\"A\" keeps that one next to the show as <show>.cabling.json and marks it preferred. wire (needs an open show): for a wiring the user describes in plain words (\"the four PARs on the left in a row from splitter output 1, the moving heads by the wireless receiver\"). Call it first without `chains` to get the fixtures (id, name, x_mm from the left, z_mm from the back, height, universe, chain), the outputs (kit item id, name, kind, outputs) and the chains now; then call it with `chains` [{from: kit item id or name, port: 1-based number or output name, devices: [fixture id or name, or \"item:<kit item id>\"], label}] in cable order from the output (a radio link is devices [\"item:<wireless transmitter>\", \"item:<wireless receiver>\", fixtures…] from an interface output); replace=false adds those chains and takes their fixtures off the chains they were on. `marks` {fixture id or name: buy|borrowed|venue|\"\"} says where the cable to a fixture comes from. Show the user the result (issues, totals) in plain words; the Cabling page of the Swiss Knife window reloads the plan by itself when the same show is open there. check: the checks, totals, load-in order and pick list of the kept plan; export=[plot_pdf, plot_svg, pick_pdf, pick_csv, pick_txt, labels_pdf, labels_txt, loadin_txt] with `folder` writes those as NEW files. The show itself is never changed.",
+     "inputSchema": _obj({"action": {"type": "string", "enum": ["kit", "fixture", "plan", "wire", "check"]},
+                          "chains": {"type": "array", "items": {"type": "object"}}, "marks": {"type": "object"},
+                          "replace": {"type": "boolean"},
                           "kit": {"type": "object"}, "manufacturer": _S, "model": _S, "connectors": _IDS,
                           "thru": {"type": "boolean"}, "termination": _S, "power_w": {"type": "number"},
                           "sources": {"type": "object"}, "count": {"type": "integer"},
@@ -750,6 +753,21 @@ class Server:
             self.api("POST", "/api/cabling/kit", {"kit": {"items": items, "units": kit.get("units", "m")}})
             return {"added": item["name"], "to_check": to_check,
                     "note": "In your kit now. Values from a photo or a guess stay to check (C105) until seen at load-in."}
+        if act == "wire":
+            self.need_show()
+            if a.get("chains") is None and not a.get("marks"):
+                lay = self.api("GET", "/api/cabling/layout")
+                return {**lay, "next": "Turn the user's words into `chains` (and `marks`), say back in one or two "
+                                       "lines what you will wire, then call cabling action=wire with them."}
+            r = self.api("POST", "/api/cabling/wire", {"chains": a.get("chains"), "marks": a.get("marks"),
+                                                       "replace": a.get("replace", True) is not False})
+            ev = r["evaluation"]
+            issues = [i for c in ev["chains"] for i in c["issues"]] + ev["issues"]
+            return {"kept": r.get("sidecar") or "(in memory: the show has no folder)",
+                    "chains": [{"name": c["name"], "to": [l["to"] for l in c["links"]]} for c in ev["chains"]],
+                    "totals": ev["totals"], "summary": ev["summary"],
+                    "issues": [{k: i.get(k) for k in ("code", "severity", "text", "fix")} for i in issues],
+                    "note": "Kept next to the show; the Cabling page shows it when the same show is open in the window. The show itself is not changed."}
         if act in ("plan", "check"):
             self.need_show()
             st = self.api("GET", "/api/cabling/state")
@@ -772,6 +790,7 @@ class Server:
                 if a.get("choose") and pick is None:
                     raise ToolError("choose must be one of " + ", ".join(x["key"] for x in alts) + ".")
                 if pick is not None:
+                    pick["plan"]["preferred"] = {"key": pick["key"], "name": pick.get("name", "")}
                     r = self.api("POST", "/api/cabling/plan", {"plan": pick["plan"]})
                     out["kept"] = r.get("sidecar") or "(in memory: the show has no folder)"
                 else:
@@ -804,7 +823,7 @@ class Server:
                     written.append(path)
                 out["written"] = written
             return out
-        raise ToolError("action must be kit, fixture, plan or check.")
+        raise ToolError("action must be kit, fixture, plan, wire or check.")
 
     def t_show_history(self, a: dict) -> Any:
         self.need_show()

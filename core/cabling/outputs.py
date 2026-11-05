@@ -80,7 +80,7 @@ def numbered(ev: dict, plan: dict) -> List[dict]:
                             "from": short.get(link["from"], link["from"]), "to": short.get(link["to"], link["to"]),
                             "joined": len(cabs) > 1, "part": j + 1 if len(cabs) > 1 else 0,
                             "missing": bool(c.get("missing")), "house": link["to"] in house,
-                            "to_full": link["to"]})
+                            "to_full": link["to"], "source": c.get("source", "")})
     return out
 
 
@@ -95,9 +95,10 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     st = rig["stage"]
     sh: List[tuple] = []
     sh.append(("rect", 0, 0, st["w"], st["d"], "#f1f5f9", "#475569", None))
-    for k in rig["keep_out"]:
+    band = [] if plan.get("hide_band") else rig["keep_out"]   # 3.11.0: the meshes can be hidden
+    for k in band:
         sh.append(("rect", k["x0"], k["z0"], k["x1"], k["z1"], "#fee2e2", "#ef4444", (4, 3)))
-    for k in rig["keep_out"]:                      # names on top of every box
+    for k in band:                                 # names on top of every box
         if k.get("label"):
             sh.append(("text", k["x0"] + 80, k["z0"] + 170, k["label"][:24], 110, "#b91c1c", "start"))
     for w in plan.get("walkways", []):
@@ -114,17 +115,19 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
                 a, b = pts[len(pts) // 2 - 1], pts[len(pts) // 2]
                 if link.get("cables"):
                     L, col = " + ".join(fmt(c["length"]) for c in link["cables"]), colour
+                    if link.get("mark") in ("borrowed", "venue"):
+                        L += f" ({link['mark']})"
                 else:                              # none in the kit is long enough: the length to buy
                     L, col = f"{fmt(link['missing_m'])} to buy", "#dc2626"
                 sh.append(("text", (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 80, L, 150, col, "middle"))
+    terms = []
+    for w in ev["chains"]:
         if w.get("terminator"):
             last = w["links"][-1]["route"]["points"][-1] if w["links"] else None
             if last:
                 ok = w["terminator"].get("id") is not None and not any(
                     i["code"] == "C002" and w["terminator"]["at"] in i["text"] for i in ev["issues"])
-                sh.append(("circle", last[0] + 220, last[1] - 220, 110, "#ffffff" if ok else "#fee2e2",
-                           "#16a34a" if ok else "#dc2626"))
-                sh.append(("text", last[0] + 220, last[1] - 170, "T", 150, "#16a34a" if ok else "#dc2626", "middle"))
+                terms.append((last, ok))
     for f in ev["fixtures"]:
         if not f.get("place"):
             continue
@@ -132,6 +135,10 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
         venue = f["owner"] == "venue"
         sh.append(("circle", x, z, 170, "#ffffff" if venue else "#fecaca", "#334155"))
         sh.append(("text", x, z + 330, f["name"], 120, "#0f172a", "middle"))
+    # 3.11.0: the terminator sits inside the last device, drawn after the fixtures so it is never hidden
+    for last, ok in terms:
+        sh.append(("circle", last[0], last[1], 120, "#ffffff" if ok else "#fee2e2", "#16a34a" if ok else "#dc2626"))
+        sh.append(("text", last[0], last[1] + 52, "T", 150, "#16a34a" if ok else "#dc2626", "middle"))
     ctl = ev["controller"]
     sh.append(("rect", ctl["x"] - 300, ctl["z"] - 200, ctl["x"] + 300, ctl["z"] + 200, "#e2e8f0", "#0f172a", None))
     sh.append(("text", ctl["x"], ctl["z"] + 380, "Computer", 130, "#0f172a", "middle"))
@@ -149,7 +156,7 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
             zs += [p[1] for p in s[1]]
     pad = 500
     x0, z0, x1, z1 = min(xs) - pad, min(zs) - pad, max(xs) + pad, max(zs) + pad
-    if rig["keep_out"]:                            # the legend, bottom right
+    if band:                                       # the legend, bottom right
         z1 += 250
         sh.append(("rect", x1 - 3700, z1 - 330, x1 - 3450, z1 - 170, "#fee2e2", "#ef4444", (4, 3)))
         sh.append(("text", x1 - 3380, z1 - 190, "Band floor (meshes and the space round them): cables go round it", 120,
@@ -271,8 +278,12 @@ def pick_list(ev: dict, plan: dict) -> dict:
         if t and t.get("id") and t["id"] in items:
             add(items[t["id"]]["name"])
     cab: Dict[float, int] = {}
+    other: Dict[str, Dict[str, int]] = {"venue": {}, "borrowed": {}}   # 3.11.0: cables not from your kit
     for c in numbered(ev, plan):
-        if not c["missing"]:
+        if c.get("source") in other:
+            what = c["name"].rsplit(" (", 1)[0]
+            other[c["source"]][what] = other[c["source"]].get(what, 0) + 1
+        elif not c["missing"]:
             key = (c["name"])
             add(key)
             cab[c["length"]] = cab.get(c["length"], 0) + 1
@@ -288,15 +299,18 @@ def pick_list(ev: dict, plan: dict) -> dict:
             if left > 0:
                 spares.append({"what": it["name"], "count": 1})
     return {"bag": [{"what": k, "count": v} for k, v in sorted(bag.items()) if v > 0],
-            "spares": spares, "buy": list(ev.get("shopping", []))}
+            "spares": spares, "buy": list(ev.get("shopping", [])),
+            "venue": [{"what": k, "count": v} for k, v in sorted(other["venue"].items())],
+            "borrowed": [{"what": k, "count": v} for k, v in sorted(other["borrowed"].items())]}
 
 
 def pick_list_csv(pl: dict) -> str:
     buf = io.StringIO()
     wr = csv.writer(buf, lineterminator="\n")
     wr.writerow(["Section", "Item", "Count"])
-    for sec, key in (("Bag", "bag"), ("Spare", "spares"), ("To buy", "buy")):
-        for r in pl[key]:
+    for sec, key in (("Bag", "bag"), ("Spare", "spares"), ("To buy", "buy"),
+                     ("From the venue", "venue"), ("Borrowed", "borrowed")):
+        for r in pl.get(key, []):
             wr.writerow([sec, r["what"], r["count"]])
     return buf.getvalue()
 
@@ -314,6 +328,8 @@ def pick_list_text(pl: dict, show: str, date: str, width: int = 32) -> str:
     block("IN THE BAG", pl["bag"])
     block("SPARES", pl["spares"])
     block("TO BUY", pl["buy"])
+    block("FROM THE VENUE", pl.get("venue", []))
+    block("BORROWED", pl.get("borrowed", []))
     return "\n".join(lines) + "\n"
 
 
@@ -349,8 +365,9 @@ def _table_pages(title: str, sub: str, sections: List[Tuple[str, List[List[str]]
 
 def pick_list_pdf(pl: dict, show: str, date: str) -> bytes:
     secs = []
-    for name, key in (("In the bag", "bag"), ("Spares", "spares"), ("To buy", "buy")):
-        if pl[key]:
+    for name, key in (("In the bag", "bag"), ("Spares", "spares"), ("To buy", "buy"),
+                      ("From the venue", "venue"), ("Borrowed", "borrowed")):
+        if pl.get(key):
             secs.append((name, [["[ ]", f"{r['count']} x {r['what']}"] for r in pl[key]]))
     pages = _table_pages(f"{show} - DMX pick list", f"Cabling plan of {date}", secs)
     return assemble_pdf(pages, 595.0, 842.0)

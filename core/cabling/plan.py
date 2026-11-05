@@ -20,7 +20,13 @@ every version of the show shares it (like the Stage Monitor's
   back edge); an interface not placed sits at the controller, a splitter
   not placed too;
 * ``walkways`` — ``[{"x0", "z0", "x1", "z1", "ramp"}]``; ``outlets`` —
-  power outlets ``[{"x", "z"}]``; ``slack_m`` at each cable end.
+  power outlets ``[{"x", "z"}]``; ``slack_m`` at each cable end;
+* ``cable_marks`` (3.11.0) — where the cable *to* a device comes from when it
+  is not from your kit: ``{"f:<fixture id>" | "i:<kit item id>": "buy" |
+  "borrowed" | "venue"}``; such a cable is not taken from tonight's stock;
+* ``preferred`` (3.11.0) — the alternative you prefer, ``{"key", "name"}``;
+* ``hide_band`` (3.11.0) — the meshes (band floor) are not drawn; cables
+  still go round them.
 
 Stage left is the performers' left, the audience's right: the high X side.
 
@@ -59,6 +65,7 @@ BAND_REPORT_M = 1.0              # m of band floor crossed before it is reported
 LONG_CHAIN_M = 300
 DAISY_FIXTURES, DAISY_M = 8, 30
 OFFSTAGE = 1000             # mm beside / behind / in front of the stage for the controller
+CABLE_MARKS = ("buy", "borrowed", "venue")   # 3.11.0: a cable not from your kit
 
 
 def sidecar_path(qxw_path: str) -> str:
@@ -229,6 +236,28 @@ def _clean_stage(st) -> Optional[dict]:
     return {"w": w, "d": d} if 1000 <= w <= 100000 and 1000 <= d <= 100000 else None
 
 
+def _clean_marks(v) -> dict:
+    """``{"f:<id>" | "i:<id>": "buy" | "borrowed" | "venue"}`` (3.11.0)."""
+    out = {}
+    for k, m in (v or {}).items() if isinstance(v, dict) else []:
+        k = str(k)[:64]
+        if m in CABLE_MARKS and re.match(r"^(f:(\d+|x\d+)|i:[A-Za-z0-9_.-]{1,60})$", k):
+            out[k] = m
+    return dict(sorted(out.items())[:200])
+
+
+def _clean_preferred(v) -> Optional[dict]:
+    """The alternative giopas prefers: ``{"key": "A".."Z", "name"}`` (3.11.0)."""
+    if not isinstance(v, dict) or not re.match(r"^[A-Z]$", str(v.get("key") or "")):
+        return None
+    return {"key": str(v["key"]), "name": str(v.get("name") or "")[:60]}
+
+
+def device_key(d: dict) -> str:
+    """The key a cable mark uses for the device a cable goes *to*."""
+    return f"f:{d['fixture']}" if d.get("fixture") is not None else f"i:{d.get('item', '')}"
+
+
 def clean_plan(p) -> dict:
     p = p if isinstance(p, dict) else {}
     out = {"version": PLAN_VERSION,
@@ -243,6 +272,9 @@ def clean_plan(p) -> dict:
            "controller": clean_controller(p.get("controller")),
            **({"stage": _clean_stage(p.get("stage"))} if _clean_stage(p.get("stage")) else {}),
            **({"band": _clean_band(p.get("band"))} if _clean_band(p.get("band")) else {}),
+           **({"cable_marks": _clean_marks(p.get("cable_marks"))} if _clean_marks(p.get("cable_marks")) else {}),
+           **({"preferred": _clean_preferred(p.get("preferred"))} if _clean_preferred(p.get("preferred")) else {}),
+           **({"hide_band": True} if p.get("hide_band") is True else {}),
            "chains": [c for c in (_clean_chain(x) for x in p.get("chains") or []) if c]}
     out["tonight"].pop("dropped", None)
     return out
@@ -364,22 +396,26 @@ def evaluate(plan: dict, rig: dict) -> dict:
     walked, issues = [], []
     on_chain: Dict[str, int] = {}
     hops = []
+    marks = plan.get("cable_marks") or {}
+    marked_buy: Dict[tuple, int] = {}        # (conn, length) -> count: cables you chose to buy
     for n, ch in enumerate(plan["chains"]):
         src = items.get(ch["source"]["item"])
         outs = [p for p in (src or {}).get("ports", []) if p["role"] in ("out", "thru")]
         if src is None or not 0 <= ch["source"]["port"] < len(outs):
             issues.append(chain_mod._issue("C006", f"Chain {n + 1} starts from an output that is not in tonight's kit."))
             continue
-        devs, pts = [], [item_point(plan, rig, src["id"], items)]
+        devs, pts, keys = [], [item_point(plan, rig, src["id"], items)], []
         for d in ch["devices"]:
             if "fixture" in d and d["fixture"] in fx:
                 f = fx[d["fixture"]]
                 devs.append(chain_mod.fixture_device(f, items.get(f["item_id"]) if f["item_id"] else None))
                 pts.append(_fixture_point(f, rig, trs))
                 on_chain[d["fixture"]] = n
+                keys.append(device_key(d))
             elif "item" in d and d["item"] in items:
                 devs.append(dict(items[d["item"]]))
                 pts.append(item_point(plan, rig, d["item"], items))
+                keys.append(device_key(d))
         fixed = [items.get(c) if c else None for c in ch["cables"]]
         fixed += [None] * (len(devs) - len(fixed))
         w = chain_mod.walk(src, outs[ch["source"]["port"]], devs, inv, fixed, ch["label"])
@@ -391,6 +427,10 @@ def evaluate(plan: dict, rig: dict) -> dict:
                                                 + ", ".join(str(int(u) + 1) for u in unis) + ".", w["name"],
                                                 "Move the fixtures, or use another output."))
         w["universes"] = unis
+        for link, key in zip(w["links"], keys):
+            link["dest"] = key
+            if marks.get(key):
+                link["mark"] = marks[key]
         for i, link in enumerate(w["links"]):
             if link["conn"] == "wireless":         # radio: a straight line, no cable
                 a, b = pts[i], pts[i + 1]
@@ -416,7 +456,17 @@ def evaluate(plan: dict, rig: dict) -> dict:
                     "C019", f"{link['from']} → {link['to']}: {fmt(link['need_m'])} of network cable; "
                     f"Ethernet reaches {fmt(ETHERNET_MAX_M)}.", link["to"],
                     "Put a network switch on the way, or the node nearer the computer."))
-            if link["conn"] in ("xlr3", "xlr5", "rj45") and not fixed[i]:
+            if link.get("mark") and link["conn"] in ("xlr3", "xlr5", "rj45"):
+                L = cables_mod.buy_length(link["need_m"])
+                word = kit_mod.cable_word(link["conn"])
+                if link["mark"] == "buy":          # not from the kit: on the shopping list
+                    link["cables"] = []
+                    link["bought_m"] = L
+                    marked_buy[(link["conn"], L)] = marked_buy.get((link["conn"], L), 0) + 1
+                else:                              # borrowed, or the venue's: not from the kit either
+                    link["cables"] = [{"id": "", "name": f"{word} {fmt(L)} ({link['mark']})", "length": L,
+                                       "type": "dmx", "source": link["mark"]}]
+            elif link["conn"] in ("xlr3", "xlr5", "rj45") and not fixed[i]:
                 hops.append({"key": f"{n}:{i}", "need": link["need_m"], "conn": link["conn"]})
             elif fixed[i]:
                 link["cables"] = [{"id": fixed[i]["id"], "name": fixed[i]["name"],
@@ -434,6 +484,8 @@ def evaluate(plan: dict, rig: dict) -> dict:
         total = 0.0
         for i, link in enumerate(w["links"]):
             got = assigned["by_hop"].get(f"{w['n']}:{i}")
+            if link.get("bought_m"):
+                link["missing_m"] = link["bought_m"]
             if got is not None:
                 link["cables"] = got["cables"]
                 link["joined"] = got["joined"]
@@ -530,6 +582,12 @@ def evaluate(plan: dict, rig: dict) -> dict:
         issues.append(chain_mod._issue(
             "C005", f"{m['count']} × {kit_mod.cable_word(m['conn'])} of {fmt(m['length'])} missing.",
             fix=f"Add {m['count']} × {fmt(m['length'])} to the shopping list."))
+    if marked_buy:                                 # cables marked "to buy" join the shopping list (no C005)
+        miss = {(m["conn"], m["length"]): m["count"] for m in assigned["missing"]}
+        for k, v in marked_buy.items():
+            miss[k] = miss.get(k, 0) + v
+        assigned = {**assigned, "missing": [{"conn": c, "length": L, "count": n}
+                                            for (c, L), n in sorted(miss.items())]}
     allis = [i for w in walked for i in w["issues"]] + issues
     summary = {s: sum(1 for i in allis if i["severity"] == s) for s in ("error", "warning", "info")}
     links = [l for w in walked for l in w["links"] if l.get("route")]
@@ -604,3 +662,147 @@ def not_in_inventory(plan: dict, rig: dict) -> List[dict]:
             g["ids"].append(f["id"])
             g["names"].append(f["name"])
     return list(groups.values())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# wiring from a description (3.11.0): Claude turns plain words into this
+# ─────────────────────────────────────────────────────────────────────────────
+
+class WiringError(ValueError):
+    """A wiring request names a fixture, a device or an output that is not there."""
+
+
+def _norm(s) -> str:
+    return " ".join(str(s or "").lower().split())
+
+
+def layout(plan: dict, rig: dict) -> dict:
+    """What a wiring request can name: the fixtures (id, name, where, universe,
+    chain), the outputs that can start a chain (kit item id, name, kind,
+    outputs) and the chains as they are now.  Read only."""
+    plan = clean_plan(plan)
+    r = with_extras(rig, plan)
+    on = {}
+    for n, c in enumerate(plan["chains"]):
+        for d in c["devices"]:
+            if d.get("fixture") is not None:
+                on[d["fixture"]] = n + 1
+    fixtures = [{"id": f["id"], "name": f["name"], "universe": int(f.get("universe") or 0) + 1,
+                 "x_mm": (f.get("place") or {}).get("x"), "z_mm": (f.get("place") or {}).get("z"),
+                 "height_mm": (f.get("place") or {}).get("bottom"), "chain": on.get(f["id"])}
+                for f in r["fixtures"]]
+    sources = []
+    for it in plan["tonight"]["items"]:
+        if it.get("kind") in ("interface", "splitter", "node", "wireless_rx", "wireless_tx") and it.get("count", 0) > 0:
+            outs = [q.get("name") or f"out {k + 1}" for k, q in
+                    enumerate(q for q in it.get("ports", []) if q["role"] in ("out", "thru"))]
+            sources.append({"id": it["id"], "name": it["name"], "kind": it["kind"], "outputs": outs})
+    names = {f["id"]: f["name"] for f in r["fixtures"]}
+    items = _items(plan["tonight"])
+    chains = [{"n": n + 1, "from": (items.get(c["source"]["item"]) or {}).get("name", c["source"]["item"]),
+               "port": c["source"]["port"],
+               "devices": [names.get(d["fixture"], d["fixture"]) if d.get("fixture") is not None
+                           else (items.get(d["item"]) or {}).get("name", d["item"]) for d in c["devices"]]}
+              for n, c in enumerate(plan["chains"])]
+    return {"fixtures": fixtures, "sources": sources, "chains": chains,
+            "marks": plan.get("cable_marks") or {}, "preferred": plan.get("preferred")}
+
+
+def apply_wiring(plan: dict, rig: dict, chains=None, marks=None, replace: bool = True) -> dict:
+    """A new plan with *chains* wired as asked: ``[{"from": kit item id or
+    name, "port": number (1 = first output) or output name, "devices":
+    [fixture id or name, or "item:<kit item id or name>"], "label"}]``.
+
+    *replace* (default) puts these chains in place of all of them; otherwise
+    they are added and each device named is taken off the chain it was on.
+    *marks* ``{fixture id or name: "buy" | "borrowed" | "venue" | ""}`` says
+    where the cable to that fixture comes from ("" goes back to your kit).
+    A wireless receiver that starts a chain and is not placed yet is placed
+    beside its first fixture.  Raises :class:`WiringError` on a name not found."""
+    plan = clean_plan(copy.deepcopy(plan))
+    r = with_extras(rig, plan)
+    fx_by_id = {f["id"]: f for f in r["fixtures"]}
+    fx_by_name: Dict[str, List[str]] = {}
+    for f in r["fixtures"]:
+        fx_by_name.setdefault(_norm(f["name"]), []).append(f["id"])
+    items = plan["tonight"]["items"]
+
+    def item_id(ref) -> str:
+        ref = str(ref or "").strip()
+        for it in items:
+            if it["id"] == ref and it.get("count", 0) > 0:
+                return it["id"]
+        hits = [it["id"] for it in items if _norm(it["name"]) == _norm(ref) and it.get("count", 0) > 0]
+        if len(hits) == 1:
+            return hits[0]
+        if not hits:
+            raise WiringError(f"No device called '{ref}' in tonight's kit.")
+        raise WiringError(f"Two devices are called '{ref}': use the kit item id ({', '.join(hits)}).")
+
+    used_names: Dict[str, int] = {}
+
+    def fixture_id(ref) -> str:
+        ref = str(ref or "").strip()
+        if ref in fx_by_id:
+            return ref
+        ids = fx_by_name.get(_norm(ref)) or []
+        if not ids:
+            raise WiringError(f"No fixture called '{ref}' in the show.")
+        k = used_names.get(_norm(ref), 0)          # the same name twice: the next one with that name
+        used_names[_norm(ref)] = k + 1
+        return ids[min(k, len(ids) - 1)]
+
+    new = []
+    for spec in chains or []:
+        if not isinstance(spec, dict):
+            raise WiringError("Each chain is {from, port, devices}.")
+        iid = item_id(spec.get("from"))
+        it = next(i for i in items if i["id"] == iid)
+        outs = [q for q in it.get("ports", []) if q["role"] in ("out", "thru")]
+        if not outs:
+            raise WiringError(f"{it['name']} has no DMX output.")
+        port = spec.get("port", 1)
+        if isinstance(port, str) and not port.strip().isdigit():
+            k = next((k for k, q in enumerate(outs) if _norm(q.get("name")) == _norm(port)), None)
+            if k is None:
+                raise WiringError(f"{it['name']} has no output called '{port}'.")
+        else:
+            k = int(port or 1) - 1
+            if not 0 <= k < len(outs):
+                raise WiringError(f"{it['name']} has {len(outs)} output(s); there is no output {k + 1}.")
+        devs = []
+        for d in spec.get("devices") or []:
+            d = str(d)
+            if d.startswith("item:"):
+                devs.append({"item": item_id(d[5:])})
+            else:
+                devs.append({"fixture": fixture_id(d)})
+        new.append({"source": {"item": iid, "port": k}, "devices": devs, "cables": [],
+                    "label": str(spec.get("label") or "")[:60]})
+        if it["kind"] == "wireless_rx" and iid not in plan["places"]:
+            first = next((fx_by_id[x["fixture"]] for x in devs if x.get("fixture") in fx_by_id
+                          and fx_by_id[x["fixture"]].get("place")), None)
+            if first:
+                plan["places"][iid] = {"x": first["place"]["x"] + 300, "z": first["place"]["z"], "h": 0}
+    if chains is not None:
+        if replace:
+            plan["chains"] = new
+        else:
+            taken = {device_key(d) for c in new for d in c["devices"]}
+            for c in plan["chains"]:
+                c["devices"] = [d for d in c["devices"] if device_key(d) not in taken]
+                c["cables"] = []
+            plan["chains"] = [c for c in plan["chains"] if c["devices"]] + new
+    if marks:
+        used_names.clear()
+        cm = dict(plan.get("cable_marks") or {})
+        for ref, m in dict(marks).items():
+            key = "f:" + fixture_id(ref)
+            if m in CABLE_MARKS:
+                cm[key] = m
+            elif not m:
+                cm.pop(key, None)
+            else:
+                raise WiringError(f"A cable mark is buy, borrowed or venue, not '{m}'.")
+        plan["cable_marks"] = cm
+    return clean_plan(plan)

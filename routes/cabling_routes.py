@@ -9,6 +9,10 @@ in settings.
     POST /api/cabling/export       {plan, what}: a download — plot (pdf, svg), pick list
                                    (pdf, csv, txt), labels (pdf, txt), load-in order (txt)
     POST /api/cabling/evaluate     {plan}: check a plan without keeping it
+    GET  /api/cabling/layout       what a wiring request can name (fixtures, outputs, chains)
+    POST /api/cabling/wire         {chains?, marks?, replace?, preferred?}: wire the kept plan
+                                   as described (3.11.0, Claude's cabling action=wire) and keep it
+    GET  /api/cabling/rev          a number that changes when the plan is changed from outside the page
     POST /api/cabling/auto         {plan}: two or three alternatives, best first
     GET  /api/cabling/kit          your kit and the presets
     POST /api/cabling/kit          {kit}: keep your kit (settings)
@@ -39,7 +43,7 @@ from routes.doctor_routes import _defs, _open_workspace
 
 bp = Blueprint('cabling', __name__, url_prefix='/api/cabling')
 
-_mem = {'for': None, 'plan': None}   # when the show has no folder of its own
+_mem = {'for': None, 'plan': None, 'rev': 0}   # plan when the show has no folder; rev: changes from Claude
 
 
 @bp.before_request
@@ -70,7 +74,7 @@ def _rig():
     if root is None:
         return None
     if _mem['for'] != (path, name):           # another show: its own plan
-        _mem.update({'for': (path, name), 'plan': None})
+        _mem.update({'for': (path, name), 'plan': None, 'rev': _mem.get('rev', 0) + 1})
     stripped = qxw_io.strip_ns(copy.deepcopy(root))
     return rig_mod.read_rig(stripped, _defs(path), path or '')
 
@@ -102,7 +106,7 @@ def state():
     if r is None:
         return jsonify({'error': 'No workspace open.'}), 400
     p, saved = _current_plan()
-    return jsonify({'rig': r, 'plan': p, 'saved': saved, 'show': _show_name(),
+    return jsonify({'rig': r, 'plan': p, 'saved': saved, 'show': _show_name(), 'rev': _rev(),
                     'sidecar': os.path.basename(_sidecar()) if _sidecar() else '',
                     'base': kit_mod.load_base(), 'presets': kit_mod.presets(),
                     'found': plan_mod.not_in_inventory(p, r), **_view(p, r)})
@@ -194,12 +198,70 @@ def save_plan():
     side = _sidecar()
     if not side:
         _mem['plan'] = p
-        return jsonify({'ok': True, 'saved': False, 'plan': p})
+        return jsonify({'ok': True, 'saved': False, 'plan': p, 'rev': _rev()})
     try:
         plan_mod.save_plan(p, side)
     except OSError as e:
         return jsonify({'error': _safe_err(e)}), 500
-    return jsonify({'ok': True, 'saved': True, 'sidecar': os.path.basename(side), 'plan': p})
+    return jsonify({'ok': True, 'saved': True, 'sidecar': os.path.basename(side), 'plan': p, 'rev': _rev()})
+
+
+def _keep(p: dict) -> dict:
+    """Keep *p* as tonight's plan (sidecar, or memory when the show has no folder)."""
+    side = _sidecar()
+    if not side:
+        _mem['plan'] = p
+        return {'saved': False}
+    plan_mod.save_plan(p, side)
+    return {'saved': True, 'sidecar': os.path.basename(side)}
+
+
+@bp.route('/layout')
+def layout():
+    r = _rig()
+    if r is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    p, _saved = _current_plan()
+    return jsonify(plan_mod.layout(p, r))
+
+
+@bp.route('/wire', methods=['POST'])
+def wire():
+    """Wire the kept plan as described (3.11.0): chains from an output, cable
+    marks, the preferred alternative.  The page sees the change through /rev."""
+    r = _rig()
+    if r is None:
+        return jsonify({'error': 'No workspace open.'}), 400
+    d = request.get_json(silent=True) or {}
+    p, _saved = _current_plan()
+    try:
+        p = plan_mod.apply_wiring(p, r, d.get('chains'), d.get('marks'), d.get('replace', True) is not False)
+    except plan_mod.WiringError as e:
+        return jsonify({'error': str(e)}), 400
+    if d.get('preferred'):
+        p['preferred'] = {'key': str(d['preferred'])[:1].upper(), 'name': str(d.get('preferred_name') or '')[:60]}
+        p = plan_mod.clean_plan(p)
+    try:
+        kept = _keep(p)
+    except OSError as e:
+        return jsonify({'error': _safe_err(e)}), 500
+    _mem['rev'] = _mem.get('rev', 0) + 1
+    return jsonify({'ok': True, 'plan': p, **kept, 'rev': _rev(), **_view(p, r)})
+
+
+def _rev() -> str:
+    """Changes whenever the kept plan changes: the plan file's time (Claude's
+    MCP server is another process and writes that file), else a counter."""
+    side = _sidecar()
+    try:
+        return f"f{os.stat(side).st_mtime_ns}" if side else f"m{_mem.get('rev', 0)}"
+    except OSError:
+        return 'none'
+
+
+@bp.route('/rev')
+def rev():
+    return jsonify({'rev': _rev()})
 
 
 def _kit_where() -> str:

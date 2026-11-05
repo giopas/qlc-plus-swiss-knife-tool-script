@@ -37,7 +37,7 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.11.0, notes from a gig** (giopas, 5 November 2026; table below). 3.10.0 was the release before: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.12.0, Brightness levels** (giopas, 5 November 2026). 3.11.0, notes from a gig, was released the same morning: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
 ### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 
@@ -246,7 +246,18 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 - **Hand checks done by giopas on 23 October.** A ten-part song with music ends with the music; the Show plays as a cue; a 3 s fade in and out on a scene is visible; a chaser copy (3 steps, 2 beats a step at 60 BPM) keeps cycling for the whole 16 s part. Nothing is open.
 - **Left for the wishlist.** A click track made by the tool, a section-split helper, a read-only picture of a Show (see section 3).
 
-### 3.11.0 · Notes from a gig (finished, waiting for the push, branch `feat/v3.11.0`)
+### 3.12.0 · Brightness levels (finished, waiting for the push, branch `feat/v3.12.0`)
+
+**Asked by giopas on 5 November 2026**, right after 3.11.0, on his SangAKlang show: the brightest scene alone does not show a limit chosen long ago (the Ceilings reach 100% in 2 scenes of 100, but nine in ten stop at 90%), and he wants to set the level directly (100, 75, 50) instead of scaling again.
+
+| # | What | Status |
+|---|---|---|
+| 1 | *Usually up to X%* per card and per fixture: the level nine lit scenes in ten stay at or below (`usual_top` in the baseline). | done |
+| 2 | *Brightest scene to __%* per card and for every card: **Scale** (slider so the brightest lands there), **Limit** (`caps`: only values above come down; applied after the scale, kept in the recipe, listed in the history as *limit X%*), **✕ limit**. *After your change* line on each card. | done |
+
+Built and tested (1,680 tests), seven languages, wiki Brightness page, screenshot 06. Note: while finishing, two files copied back in the wrong order brought older copies of `brightness.js` and `style.css` into the folder; found by a check, fixed before any commit. 3.11.0 as released was checked and is right.
+
+### 3.11.0 · Notes from a gig (released 5 November 2026, tag v3.11.0)
 
 **Asked by giopas on 5 November 2026**, after preparing a new show file from an old one. Fifteen points, in his order. Status, 5 November: all fifteen built, with tests (1,667 pass), the seven languages, the wiki pages (Setlist Manager, Stage and Meshes, Cabling, Tablet on stage, Connect Claude, Community Library), the Claude tools page and the CHANGELOG. Checked on screen with the Festival test show. **Release, 5 November (giopas asked for it the same morning):** version 3.11.0, CHANGELOG section *Notes from a gig*, release notes in `docs/release-notes/RELEASE_NOTES_v3.11.0.md`, every picture retaken (`tools/shots.py all`), `tools/xss_probe.py` clean, a plain-language pass on the new texts and their seven translations. Left: merge, tag and push (section 8).
 

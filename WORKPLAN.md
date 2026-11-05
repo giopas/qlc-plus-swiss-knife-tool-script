@@ -269,6 +269,9 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 | 13 | Tablet on stage | Plain explanation; each view shows *Name of the view* and *Its address ends with …/?role=word*. | done |
 | 14 | Tablet on stage | *Use views by role* (`roles: false` in the settings; the page then gets no views). | done |
 | 15 | Library | *My kit (Cabling)* in *Where my items are*. | done |
+| 16 | Brightness | Asked on 5 November during the release: *was it changed before, is there room?* Each card shows the brightest scene and the room to go brighter (read from the scenes, always right); a box lists earlier Brightness changes read from the recipe chain next to the file (`brightness.history`: undo and redo counted, a jump in the History flagged, a file edited after saving flagged); the counter warns about values cut at full or going dark. | done |
+| 17 | Brightness | Sliders by fixture group (the show's groups, plus *Not in any group*; a fixture in several groups keeps the last value). | done |
+| 18 | Brightness | The *↺* button sat over the fixture list: now *↺ 100%* under the card's slider. | done |
 
 ### 3.10.0 · VC Editor and Song Builder extras (finished, waiting for the push)
 

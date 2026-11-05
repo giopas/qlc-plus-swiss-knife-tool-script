@@ -657,6 +657,9 @@ def get_fixture_baseline_stats() -> list:
             'room_pct':     round(255 / peak * 100) if peak else None,
             'at_full':      sum(1 for v in vals if v >= 255),
             'lowest':       min(active) if active else 0,
+            # 3.12.0: where its scenes usually stop: nine lit values in ten are at or below it
+            'usual_top':    sorted(active)[max(0, -(-len(active) * 9 // 10) - 1)] if active else 0,
+            'top_count':    sum(1 for v in vals if v == peak) if peak else 0,
         })
 
     return result
@@ -666,13 +669,39 @@ def get_fixture_baseline_stats() -> list:
 # PREVIEW / APPLY
 # =============================================================================
 
-def preview_scales(scales: dict) -> dict:
+def clean_caps(caps) -> dict:
+    """``{fixture id: limit in % of full}`` (3.12.0) as DMX values 0 to 255.
+    A limit of 100% or more is no limit and is dropped."""
+    out = {}
+    for k, v in (caps or {}).items() if isinstance(caps, dict) else []:
+        try:
+            pct = float(v)
+        except (TypeError, ValueError):
+            continue
+        if 0 <= pct < 100:
+            out[str(k)] = int(round(pct * 255 / 100))
+    return out
+
+
+def _new_value(old: int, scale: float, cap) -> int:
+    """A dimmer value after the scale, then the limit (when there is one)."""
+    v = max(0, min(255, round(old * scale)))
+    return min(v, cap) if cap is not None else v
+
+
+def _touched(fid: str, scales: dict, caps: dict) -> bool:
+    return abs(scales.get(fid, 1.0) - 1.0) >= 0.001 or fid in caps
+
+
+def preview_scales(scales: dict, caps: dict | None = None) -> dict:
     """
     Count how many scenes and channel values would be affected by the given scales.
 
     scales: {fixture_id_str: float}
-    Returns {'scenes': int, 'values': int, 'fixtures_active': int}
+    caps:   {fixture_id_str: limit in % of full} (3.12.0)
+    Returns {'scenes', 'values', 'fixtures_active', 'clipped', 'to_zero', 'capped'}
     """
+    caps = clean_caps(caps)
     if not _state.get('loaded'):
         return {'scenes': 0, 'values': 0, 'fixtures_active': 0}
 
@@ -685,6 +714,7 @@ def preview_scales(scales: dict) -> dict:
     fids_active = set()
     clipped     = 0      # 3.11.0: values that would go past full and stop at 255
     to_zero     = 0      # values that were lit and would go dark
+    capped      = 0      # 3.12.0: values brought down to the limit
 
     for func in engine.findall('q:Function', NS):
         if func.get('Type') != 'Scene':
@@ -692,8 +722,9 @@ def preview_scales(scales: dict) -> dict:
         scene_touched = False
         for fv in func.findall('q:FixtureVal', NS):
             fid = fv.get('ID', '')
-            if fid not in scales or abs(scales[fid] - 1.0) < 0.001:
+            if not _touched(fid, scales, caps):
                 continue
+            sc = scales.get(fid, 1.0)
             fi   = fi_map.get(fid, {})
             doff = fi.get('dimmer_offset')
             if doff is None:
@@ -705,14 +736,19 @@ def preview_scales(scales: dict) -> dict:
                 pairs = raw.split(',')
                 for i in range(0, len(pairs) - 1, 2):
                     if int(pairs[i]) == doff:
+                        v = int(pairs[i + 1])
+                        new = _new_value(v, sc, caps.get(fid))
+                        if new == v:
+                            continue
                         values_hit  += 1
                         fids_active.add(fid)
                         scene_touched = True
-                        v = int(pairs[i + 1])
-                        if v > 0 and v * scales[fid] > 255.5:
+                        if v > 0 and v * sc > 255.5:
                             clipped += 1
-                        if v > 0 and round(v * scales[fid]) <= 0:
+                        if v > 0 and new <= 0:
                             to_zero += 1
+                        if fid in caps and round(v * sc) > caps[fid]:
+                            capped += 1
             except (ValueError, IndexError):
                 continue
         if scene_touched:
@@ -724,12 +760,14 @@ def preview_scales(scales: dict) -> dict:
         'fixtures_active': len(fids_active),
         'clipped':         clipped,
         'to_zero':         to_zero,
+        'capped':          capped,
     }
 
 
 def apply_brightness_scales(
     scales: dict,
     manual_dimmer_offsets: dict | None = None,
+    caps: dict | None = None,
 ) -> tuple:
     """
     Apply per-fixture brightness scales to a deep copy of the loaded workspace.
@@ -738,11 +776,16 @@ def apply_brightness_scales(
     manual_dimmer_offsets: {fixture_id_str: int}    override dimmer offset
                            for fixtures whose QXF was not found.
 
+    caps:                  {fixture_id_str: limit in % of full} (3.12.0):
+                           after the scale, no value goes above it.
+
     Returns (suggested_filename: str, xml_bytes: bytes, stats: dict)
     """
     if not _state.get('loaded') or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded.')
-    if not scales:
+    caps = clean_caps(caps)
+    scales = dict(scales or {})
+    if not scales and not caps:
         raise ValueError('No brightness scales provided.')
 
     root_copy = copy.deepcopy(_state['qxw_root'])
@@ -761,9 +804,9 @@ def apply_brightness_scales(
 
         for fv in func.findall('q:FixtureVal', NS):
             fid   = fv.get('ID', '')
-            scale = scales.get(fid)
-            if scale is None or abs(scale - 1.0) < 0.001:
+            if not _touched(fid, scales, caps):
                 continue
+            scale = scales.get(fid, 1.0)
 
             fi   = fi_map.get(fid, {})
             doff = fi.get('dimmer_offset')
@@ -785,7 +828,7 @@ def apply_brightness_scales(
             for i in range(0, len(parts) - 1, 2):
                 if parts[i] == doff:
                     old_val = parts[i + 1]
-                    new_val = max(0, min(255, round(old_val * scale)))
+                    new_val = _new_value(old_val, scale, caps.get(fid))
                     if new_val != old_val:
                         parts[i + 1] = new_val
                         values_changed += 1
@@ -804,7 +847,7 @@ def apply_brightness_scales(
     from core import palettes
     pals = palettes.read_palettes(root_copy)
     groups = palettes.groups_by_id(root_copy)
-    scaled = {k for k, v in scales.items() if abs(v - 1.0) >= 0.001}
+    scaled = {k for k, v in scales.items() if abs(v - 1.0) >= 0.001} | set(caps)
     palette_left = 0
     for func in engine.findall('q:Function', NS):
         if func.get('Type') != 'Scene':
@@ -860,6 +903,44 @@ def _scales_of(call: dict) -> dict:
     return out
 
 
+def _caps_of(call: dict) -> dict:
+    """The limits (% of full) of a recorded Brightness call (3.12.0)."""
+    body = call.get('body') if isinstance(call, dict) else None
+    out = {}
+    for k, v in ((body or {}).get('caps') or {}).items():
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            continue
+        if 0 <= f < 100:
+            out[str(k)] = f
+    return out
+
+
+def _live_caps(calls) -> dict:
+    """The limits still in the show after the calls (the lowest one counts)."""
+    done, undone = [], []
+    for c in calls or []:
+        if not isinstance(c, dict):
+            continue
+        p = c.get('path') or ''
+        if p == '/api/show/undo':
+            if done:
+                undone.append(done.pop())
+        elif p == '/api/show/redo':
+            if undone:
+                done.append(undone.pop())
+        elif p.startswith('/api/') and c.get('method', 'POST') != 'GET' and p != '/api/show/travel':
+            done.append(c)
+            undone.clear()
+    caps = {}
+    for c in done:
+        if c.get('path') in _APPLY_PATHS:
+            for k, v in _caps_of(c).items():
+                caps[k] = min(caps.get(k, 100.0), v)
+    return caps
+
+
 def _live_scales(calls) -> tuple:
     """The Brightness changes of a list of recorded calls that are still in
     the show: an undo takes back the last change, a redo brings it back.
@@ -904,6 +985,7 @@ def history(qxw_path: str = '', session_calls=None) -> dict:
     out = {'changes': [], 'session': {}, 'total': {}, 'checked': [], 'ends': '', 'edited_after': False,
            'sure': True}
     out['session'], sure = _live_scales(session_calls)
+    out['session_caps'] = _live_caps(session_calls)
     out['sure'] = out['sure'] and sure
     path = qxw_path if qxw_path and os.path.isfile(qxw_path) else ''
     if not path:
@@ -931,12 +1013,14 @@ def history(qxw_path: str = '', session_calls=None) -> dict:
                 pass
         first = False
         scales, sure = _live_scales(rec.get('calls'))
+        caps = _live_caps(rec.get('calls'))
         out['sure'] = out['sure'] and sure
         src = os.path.basename(str((rec.get('source') or {}).get('name') or ''))
-        if scales:
+        if scales or caps:
             out['changes'].append({'file': name, 'made_from': src, 'date': str(rec.get('created') or '')[:16],
                                    'version': str(rec.get('swiss_knife') or ''),
-                                   'scales': {k: round(v, 4) for k, v in scales.items()}})
+                                   'scales': {k: round(v, 4) for k, v in scales.items()},
+                                   'caps': caps})
         if not src or src == name:
             out['ends'] = 'start'
             break
@@ -953,4 +1037,9 @@ def history(qxw_path: str = '', session_calls=None) -> dict:
         for k, v in ch['scales'].items():
             total[k] = round(total.get(k, 1.0) * v, 4)
     out['total'] = total
+    tcaps = dict(out['session_caps'])
+    for ch in out['changes']:
+        for k, v in (ch.get('caps') or {}).items():
+            tcaps[k] = min(tcaps.get(k, 100.0), v)
+    out['total_caps'] = tcaps
     return out

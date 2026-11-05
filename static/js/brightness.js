@@ -15,6 +15,8 @@ let _brtManual     = {};   // fixture_id → dimmer_offset (for QXF-not-found fi
 let _brtLinked     = {};   // model_key  → bool (true = sliders move together)
 let _brtPreviewTm  = null; // debounce timer for preview
 let _brtBaseline   = {};   // fixture_id → {peak, mean, scene_count, room_pct, at_full} (from current scene values)
+let _brtLevelVal   = {};   // 3.12.0: the level typed in each card's box (kept across redraws)
+let _brtCaps       = {};   // 3.12.0: fixture_id → limit in % of full (no value goes above it)
 let _brtHistory    = null; // 3.11.0: /api/brightness/history (changes made before, from the recipes)
 let _brtGroupsList = [];   // 3.11.0: the show's fixture groups [{id, name, fixtures}]
 let _brtView       = (() => { try { return localStorage.getItem('sk.brt.view') || 'type'; } catch (e) { return 'type'; } })();
@@ -28,6 +30,7 @@ function invalidateBrightness() {
   _brtManual   = {};
   _brtLinked   = {};
   _brtBaseline = {};
+  _brtCaps     = {};
   _brtHistory  = null;
   _brtGroupsList = [];
   const wrap = document.getElementById('brt-fixture-wrap');
@@ -76,6 +79,7 @@ async function _brtLoadFixtures() {
     for (const fx of _brtFixtures) {
       if (rs.scales && rs.scales[fx.id] !== undefined) _brtScales[fx.id] = rs.scales[fx.id];
       if (rs.manual && rs.manual[fx.id] !== undefined) _brtManual[fx.id] = rs.manual[fx.id];
+      if (rs.caps && rs.caps[fx.id] !== undefined) _brtCaps[fx.id] = rs.caps[fx.id];
     }
     Object.assign(_brtLinked, rs.linked || {});
     window._brtPendingRestore = null;
@@ -104,15 +108,23 @@ const _brtPct = v => Math.round(v * 100);
 /** The brightest scene of these fixtures (% of full) and how far they can go up
  *  before the brightest scene of one of them is at full. */
 function _brtRoom(fixtures) {
-  let peak = null, room = null;
+  let peak = null, room = null, usual = null;
   for (const fx of fixtures) {
     const b = _brtBaseline[fx.id];
     if (!b || !b.scene_count || !b.peak) continue;
     const p = b.peak / 255 * 100;
     peak = peak === null ? p : Math.max(peak, p);
     if (b.room_pct != null) room = room === null ? b.room_pct : Math.min(room, b.room_pct);
+    if (b.usual_top) { const u = b.usual_top / 255 * 100; usual = usual === null ? u : Math.max(usual, u); }
   }
-  return { peak, room };
+  return { peak, room, usual };
+}
+
+/** The limit set on these fixtures now (%), when they all share one; '' when none, 'mixed' when they differ. */
+function _brtCardCap(fixtures) {
+  const v = fixtures.map(f => _brtCaps[f.id]);
+  if (v.every(x => x === undefined)) return '';
+  return v.every(x => x === v[0]) ? v[0] : 'mixed';
 }
 
 /** What was done before to these fixtures: [lowest %, highest %] of the total change, or null. */
@@ -124,16 +136,35 @@ function _brtEarlier(fixtures) {
 }
 
 function _brtRoomHtml(fixtures, scalePct) {
-  const { peak, room } = _brtRoom(fixtures);
+  const { peak, room, usual } = _brtRoom(fixtures);
   const bits = [];
   if (peak === null) bits.push(`<span class="brt-room-none">${_esc(t('No scene sets its dimmer'))}</span>`);
   else {
     const over = room !== null && scalePct > room;
     bits.push(`<span>${_esc(t('Brightest scene: {0}% of full', Math.round(peak)))}</span>`);
+    if (usual !== null && Math.round(usual) < Math.round(peak) - 2)
+      bits.push(`<span class="brt-room-usual" title="${_esc(t('Nine lit scenes in ten stay at or below this level. Only a few scenes go higher.'))}">${_esc(t('Usually up to {0}%', Math.round(usual)))}</span>`);
     bits.push(room !== null && room > 100
       ? `<span class="${over ? 'brt-room-over' : 'brt-room-ok'}">${_esc(t('Room to go brighter: up to {0}%', room))}</span>`
       : `<span class="${scalePct > 100 ? 'brt-room-over' : 'brt-room-full'}">${_esc(t('No room to go brighter: the brightest scenes are at full'))}</span>`);
   }
+  if (peak !== null) {
+    let after = 0;
+    for (const fx of fixtures) {
+      const b = _brtBaseline[fx.id];
+      if (!b || !b.peak) continue;
+      let v = Math.min(255, Math.round(b.peak * (_brtScales[fx.id] ?? 1)));
+      if (_brtCaps[fx.id] !== undefined) v = Math.min(v, Math.round(_brtCaps[fx.id] * 255 / 100));
+      after = Math.max(after, v);
+    }
+    const a = Math.round(after / 255 * 100);
+    if (a !== Math.round(peak)) bits.push(`<span class="brt-room-after">${_esc(t('After your change: brightest scene {0}%', a))}</span>`);
+  }
+  const cap = _brtCardCap(fixtures);
+  if (cap !== '') bits.push(`<span class="brt-room-cap">${_esc(cap === 'mixed' ? t('Limit: different for each fixture') : t('Limit now: {0}%, no scene goes above it', cap))}</span>`);
+  const tc = (_brtHistory && _brtHistory.total_caps) || {};
+  const ec = fixtures.map(f => tc[f.id]).filter(v => v !== undefined);
+  if (ec.length) bits.push(`<span class="brt-room-earlier">${_esc(t('Limited before to {0}%', Math.round(Math.min(...ec))))}</span>`);
   const e = _brtEarlier(fixtures);
   if (e) bits.push(`<span class="brt-room-earlier" title="${_esc(t('From the recipes saved next to this show and its earlier versions'))}">${_esc(
     e[0] === e[1] ? t('Changed before: {0}%', e[0]) : t('Changed before: {0}% to {1}%', e[0], e[1]))}</span>`);
@@ -144,7 +175,11 @@ function _brtFxRoomHtml(fx) {
   const b = _brtBaseline[fx.id];
   const tot = (_brtHistory && _brtHistory.total) || {};
   const bits = [];
-  if (b && b.scene_count && b.peak) bits.push(t('max {0}%', Math.round(b.peak / 255 * 100)));
+  if (b && b.scene_count && b.peak) {
+    const mx = Math.round(b.peak / 255 * 100), us = Math.round((b.usual_top || 0) / 255 * 100);
+    bits.push(us && us < mx - 2 ? t('max {0}%, usually {1}%', mx, us) : t('max {0}%', mx));
+  }
+  if (_brtCaps[fx.id] !== undefined) bits.push(t('limit {0}%', _brtCaps[fx.id]));
   if (tot[fx.id] !== undefined && Math.abs(tot[fx.id] - 1) > 0.004) bits.push(t('before {0}%', _brtPct(tot[fx.id])));
   return bits.length ? `<span class="brt-fx-room" title="${_esc(t('Brightest scene of this fixture, and what Swiss Knife changed before'))}">${_esc(bits.join(' · '))}</span>` : '';
 }
@@ -172,8 +207,13 @@ function _brtHistoryHtml() {
   const rows = [];
   if (Object.keys(h.session || {}).length)
     rows.push(`<li><b>${_esc(t('In the show in progress'))}</b>: <span data-i18n="off">${_esc(_brtScalesText(h.session))}</span></li>`);
+  const capText = caps => Object.keys(caps || {}).length
+    ? _brtScalesText(Object.fromEntries(Object.entries(caps).map(([k, v]) => [k, v / 100]))).replace(/(\d+)%/g, (m) => t('limit {0}', m)) : '';
+  if (Object.keys(h.session_caps || {}).length)
+    rows.push(`<li><b>${_esc(t('In the show in progress'))}</b>: <span data-i18n="off">${_esc(capText(h.session_caps))}</span></li>`);
   for (const c of h.changes || [])
-    rows.push(`<li><b data-i18n="off">${_esc(c.file)}</b> <span class="brt-hist-date">${_esc(c.date)}</span>: <span data-i18n="off">${_esc(_brtScalesText(c.scales))}</span></li>`);
+    rows.push(`<li><b data-i18n="off">${_esc(c.file)}</b> <span class="brt-hist-date">${_esc(c.date)}</span>: <span data-i18n="off">${_esc(
+      [Object.keys(c.scales || {}).length ? _brtScalesText(c.scales) : '', capText(c.caps)].filter(Boolean).join('; '))}</span></li>`);
   const checked = (h.checked || []).length;
   let ends = '';
   if (h.ends === 'no_recipe' && checked) ends = t('{0} has no recipe, so changes made before it are not known.', h.checked[checked - 1]);
@@ -214,6 +254,52 @@ function _brtCards() {
   return order.map(k => groups[k]);
 }
 
+/** "Brightest scene to __%": Scale moves the slider so the brightest scene lands there and keeps
+ *  every difference; Limit only brings down the scenes above it.  *keyJs* finds the card. */
+function _brtLevelHtml(keyJs, cap, all, key) {
+  const v = _brtLevelVal[key] ?? (cap !== '' && cap !== 'mixed' ? cap : '');
+  return `<div class="brt-level${all ? ' brt-level-all' : ''}">
+    <span>${_esc(all ? t('Every card: brightest scene to') : t('Brightest scene to'))}</span>
+    <input type="number" min="1" max="100" step="1" class="brt-num brt-level-num" value="${v}" placeholder="90"
+           title="${_esc(t('A level in % of full, for example 90'))}">
+    <span class="brt-pct-label">%</span>
+    <span class="brt-level-btns">
+    <button class="btn btn-surface btn-sm" title="${_esc(t('Moves the slider so the brightest scene lands at this level. Every scene changes in proportion, so the differences between scenes stay.'))}"
+            onclick="brtLevel(${keyJs}, 'scale', this)">${_esc(t('Scale'))}</button>
+    <button class="btn btn-surface btn-sm" title="${_esc(t('Only the scenes above this level come down to it. The dimmer scenes stay as they are.'))}"
+            onclick="brtLevel(${keyJs}, 'limit', this)">${_esc(t('Limit'))}</button>
+    ${cap !== '' ? `<button class="btn btn-surface btn-sm" title="${_esc(t('Remove the limit'))}" onclick="brtLevel(${keyJs}, 'nolimit', this)">✕ ${_esc(t('limit'))}</button>` : ''}
+    </span></div>`;
+}
+
+function brtLevel(key, how, btn) {
+  const cards = key === '*' ? [{ key: '*', fixtures: _brtFixtures }] : _brtCards().filter(c => c.key === key);
+  if (!cards.length) return;
+  const fxs = cards[0].fixtures;
+  if (how === 'nolimit') { fxs.forEach(f => delete _brtCaps[f.id]); _brtRender(); return; }
+  const inp = btn.closest('.brt-level').querySelector('.brt-level-num');
+  const lv = Math.round(Number(inp.value));
+  if (!(lv >= 1 && lv <= 100)) { setStatus(t('Type a level from 1 to 100%.'), 'warn'); inp.focus(); return; }
+  _brtLevelVal[key] = lv;
+  if (how === 'limit') {
+    fxs.forEach(f => { if (lv >= 100) delete _brtCaps[f.id]; else _brtCaps[f.id] = lv; });
+    setStatus(t('Limit {0}%: the scenes above it come down to it when you apply.', lv), 'ok');
+    _brtRender();
+    return;
+  }
+  // scale: per card, so that card's brightest scene lands at the level (a card of all = each fixture type)
+  const groups = key === '*' ? _brtCards() : cards;
+  let skipped = 0;
+  for (const c of groups) {
+    const { peak } = _brtRoom(c.fixtures);
+    if (!peak) { skipped++; continue; }
+    const sc = Math.max(0, Math.min(2, lv / peak));
+    c.fixtures.forEach(f => { _brtScales[f.id] = Math.round(sc * 100) / 100; });
+  }
+  setStatus(t('Sliders set so the brightest scene lands at {0}%.', lv) + (skipped ? ' ' + t('{0} card(s) without dimmer values left as they are.', skipped) : ''), 'ok');
+  _brtRender();
+}
+
 function brtView(v) {
   _brtView = v === 'group' ? 'group' : 'type';
   try { localStorage.setItem('sk.brt.view', _brtView); } catch (e) { /* private window */ }
@@ -232,7 +318,8 @@ function _brtRender() {
   }
 
   const hasGroups = _brtGroupsList.length > 0;
-  let html = _brtHistoryHtml() + `<div class="brt-viewbar">
+  let html = _brtHistoryHtml() + `<div class="brt-allbar">${_brtLevelHtml("'*'", _brtCardCap(_brtFixtures), true, '*')}</div>
+  <div class="brt-viewbar">
     <span>${_esc(t('Sliders by'))}</span>
     <label><input type="radio" name="brt-view" ${_brtView !== 'group' ? 'checked' : ''} onchange="brtView('type')"> ${_esc(t('fixture type'))}</label>
     <label title="${_esc(hasGroups ? t('The fixture groups of the show. A fixture in several groups keeps the value you set last.') : t('This show has no fixture groups (make them in Stage & Meshes › Groups).'))}">
@@ -290,6 +377,7 @@ function _brtRender() {
                     onclick="brtResetGroup(this.closest('.brt-group').dataset.model)">↺ 100%</button>
           </div>
         </div>` : ''}
+        ${_brtLevelHtml(`this.closest('.brt-group').dataset.model`, _brtCardCap(fxs), false, mk)}
       </div>
       <div class="brt-fixture-list ${linked ? 'brt-list-linked' : ''}">`;
 
@@ -354,8 +442,12 @@ function brtGroupNum(el)    { _brtSyncGroup(el.dataset.model, Math.max(0, Math.m
 function brtFixtureSlider(el) { _brtSyncFixture(el.dataset.id, parseInt(el.value, 10)); }
 function brtFixtureNum(el)    { _brtSyncFixture(el.dataset.id, Math.max(0, Math.min(200, parseInt(el.value, 10) || 0))); }
 function brtToggleLink(cb)  { _brtLinked[cb.dataset.model] = cb.checked; _brtRender(); }
-function brtResetGroup(mk)  { _brtSyncGroup(mk, 100); }
-function brtResetAll()      { for (const fx of _brtFixtures) _brtScales[fx.id] = 1.0; _brtRender(); }
+function brtResetGroup(mk)  {
+  const card = _brtCards().find(c => c.key === mk);
+  if (card && card.fixtures.some(f => _brtCaps[f.id] !== undefined)) { card.fixtures.forEach(f => delete _brtCaps[f.id]); _brtSyncGroup(mk, 100); _brtRender(); return; }
+  _brtSyncGroup(mk, 100);
+}
+function brtResetAll()      { for (const fx of _brtFixtures) _brtScales[fx.id] = 1.0; _brtCaps = {}; _brtRender(); }
 function brtSetManual(el) {
   const raw = el.value.trim();
   const val = parseInt(raw, 10);
@@ -439,7 +531,7 @@ async function _brtFetchPreview() {
   if (!_brtFixtures.length) return;
   const res = await _apiJson('/api/brightness/preview', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scales: _brtBuildScales() }),
+    body: JSON.stringify({ scales: _brtBuildScales(), caps: _brtBuildCaps() }),
   });
   if (!res.error) _brtSetPreview(res);
 }
@@ -457,6 +549,7 @@ function _brtSetPreview(stats) {
   const warn = [];
   if (stats.clipped) warn.push(t('{0} value(s) would go above full: they stay at 100%, so some scenes look alike', stats.clipped));
   if (stats.to_zero) warn.push(t('{0} lit value(s) would go dark', stats.to_zero));
+  if (stats.capped) el.textContent += ' · ' + t('{0} value(s) brought down to the limit', stats.capped);
   if (warn.length) { el.textContent += ' · ⚠ ' + warn.join(' · '); el.classList.add('brt-preview-warn'); }
 }
 
@@ -465,7 +558,8 @@ function _brtSetPreview(stats) {
 async function brtGenerateQxw() {
   if (!_brtFixtures.length) { setStatus('Load a workspace first.', 'warn'); return; }
   const scales = _brtBuildScales();
-  if (!Object.values(scales).some(v => Math.abs(v - 1.0) > 0.001)) {
+  const caps = _brtBuildCaps();
+  if (!Object.values(scales).some(v => Math.abs(v - 1.0) > 0.001) && !Object.keys(caps).length) {
     setStatus('All fixtures are at 100% — nothing to change.', 'warn'); return;
   }
   setStatus('Generating…');
@@ -473,7 +567,7 @@ async function brtGenerateQxw() {
   try {
     resp = await fetch('/api/brightness/apply', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scales, manual_dimmer_offsets: _brtManual }),
+      body: JSON.stringify({ scales, caps, manual_dimmer_offsets: _brtManual }),
     });
   } catch (e) { setStatus('Network error: ' + e.message, 'error'); return; }
   if (!resp.ok) {
@@ -579,6 +673,12 @@ async function brtFetchGithub() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function _brtBuildCaps() {
+  const out = {};
+  for (const fx of _brtFixtures) if (_brtCaps[fx.id] !== undefined && _brtCaps[fx.id] < 100) out[fx.id] = _brtCaps[fx.id];
+  return out;
+}
 
 function _brtBuildScales() {
   const out = {};

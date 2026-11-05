@@ -108,3 +108,47 @@ def test_groups_route(c):
     assert isinstance(g, list)
     for x in g:
         assert set(x) == {"id", "name", "fixtures"}
+
+
+# ── 3.12.0: where scenes usually stop, and a limit ───────────────────────────
+
+def test_baseline_says_where_scenes_usually_stop(c):
+    for b in c.get("/api/brightness/baseline").get_json():
+        if b["peak"]:
+            assert 0 < b["usual_top"] <= b["peak"]
+            assert b["top_count"] >= 1
+
+
+def test_clean_caps():
+    assert brightness.clean_caps({"1": 90, "2": 100, "3": "x", "4": -1, "5": 0}) == {"1": 230, "5": 0}
+
+
+def test_limit_only_brings_down_the_brighter_scenes(c):
+    from core import qxw_io, workspace
+    f = _dimmable(c)[0]
+    pv = c.post("/api/brightness/preview", json={"scales": {}, "caps": {f["id"]: 50}}).get_json()
+    assert pv["capped"] > 0 and pv["capped"] == pv["values"]
+    before = {b["id"]: b for b in c.get("/api/brightness/baseline").get_json()}[f["id"]]
+    r = c.post("/api/brightness/apply-show", json={"scales": {}, "caps": {f["id"]: 50}})
+    assert r.status_code == 200, r.get_json()
+    after = {b["id"]: b for b in c.get("/api/brightness/baseline").get_json()}[f["id"]]
+    assert after["peak"] == round(50 * 255 / 100)
+    if before["lowest"] < 127:
+        assert after["lowest"] == before["lowest"]      # the dimmer scenes stay as they are
+    h = c.get("/api/brightness/history").get_json()
+    assert h["session_caps"] == {f["id"]: 50.0}
+
+
+def test_scale_then_limit():
+    assert brightness._new_value(200, 1.5, None) == 255
+    assert brightness._new_value(200, 1.5, 230) == 230
+    assert brightness._new_value(100, 1.0, 230) == 100
+
+
+def test_limit_is_in_the_history_of_a_saved_version(c):
+    f = _dimmable(c)[0]
+    c.post("/api/brightness/apply-show", json={"scales": {}, "caps": {f["id"]: 90}})
+    c.post("/api/show/save", json={"path": str(c.tmp / "Gig_v2.qxw")})
+    c.post("/api/load", json={"path": str(c.tmp / "Gig_v2.qxw")})
+    h = c.get("/api/brightness/history").get_json()
+    assert h["changes"][0]["caps"] == {f["id"]: 90.0} and h["total_caps"] == {f["id"]: 90.0}

@@ -4867,3 +4867,14 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .brt-viewbar { display: flex; align-items: center; gap: 14px; font-size: var(--fs-ui); color: var(--text-dim); }
 .brt-viewbar label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 .brt-preview-warn { color: var(--warning, #df8e1d) !important; }
+
+/* 3.12.0 Brightness: where scenes usually stop, a level for the brightest scene (Scale or Limit) */
+.brt-room-usual { color: var(--text); }
+.brt-room-cap { color: var(--accent); font-weight: 600; }
+.brt-level { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+             font-size: var(--fs-small); color: var(--text-dim); }
+.brt-level .brt-level-num { width: 52px; }
+.brt-level-btns { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.brt-allbar { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-0); padding: 8px 14px; }
+.brt-allbar .brt-level { font-size: var(--fs-ui); }
+.brt-room-after { color: var(--accent); font-weight: 600; }

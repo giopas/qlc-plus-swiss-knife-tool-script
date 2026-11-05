@@ -327,7 +327,7 @@ function _collectToolState() {
     paper: { fixtures: val('fix-pdf-paper'), paperwork: val('sb-paper') },
   };
   if (typeof _brtScales !== 'undefined' && Object.keys(_brtScales).length) {
-    tools.brightness = { scales: _brtScales, manual: _brtManual, linked: _brtLinked };
+    tools.brightness = { scales: _brtScales, manual: _brtManual, linked: _brtLinked, caps: _brtCaps };
   } else if (_sess.tools && _sess.tools.brightness) {
     tools.brightness = _sess.tools.brightness;     // restored but tab not opened yet
   }

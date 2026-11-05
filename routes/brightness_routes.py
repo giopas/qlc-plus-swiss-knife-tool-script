@@ -80,7 +80,7 @@ def preview():
     raw_scales = data.get('scales', {})
     try:
         scales = {str(k): float(v) for k, v in raw_scales.items()}
-        stats  = br.preview_scales(scales)
+        stats  = br.preview_scales(scales, data.get('caps'))
         return jsonify(stats)
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
@@ -98,7 +98,7 @@ def apply_brightness():
     try:
         scales  = {str(k): float(v)  for k, v  in raw_scales.items()}
         manual  = {str(k): int(v)    for k, v  in raw_manual.items()}
-        fname, xml_bytes, stats = br.apply_brightness_scales(scales, manual or None)
+        fname, xml_bytes, stats = br.apply_brightness_scales(scales, manual or None, data.get('caps'))
         resp = Response(
             xml_bytes,
             mimetype='application/octet-stream',
@@ -128,9 +128,14 @@ def apply_to_show():
         from routes.show_routes import applied
         scales = {str(k): float(v) for k, v in (data.get('scales') or {}).items()}
         manual = {str(k): int(v) for k, v in (data.get('manual_dimmer_offsets') or {}).items()}
-        _, xml_bytes, stats = br.apply_brightness_scales(scales, manual or None)
+        caps = data.get('caps') or {}
+        _, xml_bytes, stats = br.apply_brightness_scales(scales, manual or None, caps)
         changed = {k: v for k, v in scales.items() if abs(v - 1.0) > 1e-9}
         detail = ', '.join(f'fixture {k}: {round(v * 100)}%' for k, v in sorted(changed.items()))
+        lim = br.clean_caps(caps)
+        if lim:
+            detail += ('; ' if detail else '') + ', '.join(
+                f'fixture {k}: limit {round(float(caps[k]))}%' for k in sorted(lim))
         if stats.get('palette_scenes_left'):
             detail += (f'; {stats["palette_scenes_left"]} palette scene(s) left as they are '
                        '(their Dimmer palette is shared by other scenes)')

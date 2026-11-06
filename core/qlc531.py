@@ -30,6 +30,7 @@ LATEST = (5, 3, 1)
 LATEST_TEXT = "5.3.1"
 
 UNIVERSE = 512
+INVALID_ID = 4294967295          # QLC+'s "no ID" (a button with no function)
 PAGE_TAGS = ("Frame", "SoloFrame")
 
 NONE, PIXEL, FILL, LEGACY = "none", "pixel", "fill", "legacy"
@@ -48,6 +49,12 @@ def _vc(root: ET.Element) -> Optional[ET.Element]:
     return None
 
 
+def _is_widget(el: ET.Element) -> bool:
+    """A Virtual Console widget has its own ``<WindowState>``; a reference
+    such as ``<Function ID="…"/>`` inside a button does not."""
+    return any(_local(c.tag) == "WindowState" for c in el)
+
+
 def pages(root: ET.Element) -> List[ET.Element]:
     """The Virtual Console pages: the frames right under ``<VirtualConsole>``."""
     vc = _vc(root)
@@ -55,16 +62,17 @@ def pages(root: ET.Element) -> List[ET.Element]:
 
 
 def give_pages_ids(root: ET.Element) -> int:
-    """Give every page without an ``ID`` the next free one (above every ID
-    in the Virtual Console), in page order.  Returns how many were given.
+    """Give every page without an ``ID`` the next free one (above every
+    widget ID, never QLC+'s "no ID" 4294967295), in page order.  Returns how many were given.
     Anything that is not a QLC+ workspace is left alone."""
     if root is None or _local(root.tag) != "Workspace":
         return 0
     missing = [p for p in pages(root) if not (p.get("ID") or "").strip()]
     if not missing:
         return 0
-    used = [int(v) for el in _vc(root).iter() for v in [el.get("ID")]
-            if v is not None and v.strip().isdigit()]
+    used = [int(v) for el in _vc(root).iter() if _is_widget(el)
+            for v in [(el.get("ID") or "").strip()]
+            if v.isdigit() and int(v) < INVALID_ID]
     nid = max(used + [-1]) + 1
     for p in missing:
         p.set("ID", str(nid))

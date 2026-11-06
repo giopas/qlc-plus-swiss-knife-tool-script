@@ -59,6 +59,14 @@ def test_a_page_id_in_the_file_is_kept(tmp_path):
     assert [x.get("ID") for x in _pages(qxw_io.load_qxw(str(p)).getroot())] == ["8", "9"]
 
 
+def test_no_id_references_are_not_counted():
+    # a button with no function carries <Function ID="4294967295"/> (QLC+'s "no ID")
+    text = VC_531.replace('<Function ID="1"/></Button>', '<Function ID="4294967295"/></Button>')
+    root = qxw_io.loads_qxw(text.encode())
+    assert [p.get("ID") for p in _pages(root)] == ["8", "9"]
+    assert int(vc_ops.new_page(root, "x")["page_id"]) < 4294967295
+
+
 def test_only_workspaces_are_touched():
     el = ET.fromstring('<FixtureDefinition><VirtualConsole><Frame/></VirtualConsole></FixtureDefinition>')
     assert qlc531.give_pages_ids(el) == 0

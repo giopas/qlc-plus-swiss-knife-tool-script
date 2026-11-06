@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.13.0] — 2026-11-06 — Tempo changes and QLC+ 5.3.1
+
 ### Added — Song Builder: tempo changes within a song (3.13.0)
 
 - **A part can set its own tempo.** Fill in a BPM on any row of the Song Builder table and, from that part onward, the song runs at that tempo, until another part sets its own. Leave it empty to keep the tempo already running. Made for a song with a bridge or an outro at a different speed, instead of one BPM for the whole song.

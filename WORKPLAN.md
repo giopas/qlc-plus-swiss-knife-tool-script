@@ -37,9 +37,9 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.12.0, Brightness levels** (giopas, 5 November 2026). 3.11.0, notes from a gig, was released the same morning: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. **Built the same day: 3.13.0, Song Builder tempo changes** (giopas, 5 November 2026), moved here from the wishlist. **Added to 3.13.0 on 6 November: ready for QLC+ 5.3.1.** Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.13.0, tempo changes and QLC+ 5.3.1** (giopas, 5 and 6 November 2026; release commit prepared on 6 November, branch `feat/v3.13.0`, waiting for the hand checks below and the push). 3.12.0, Brightness levels, and 3.11.0, notes from a gig, were released on 5 November. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
-### 3.13.0 · Ready for QLC+ 5.3.1 (same release as the tempo changes)
+### 3.13.0 · Ready for QLC+ 5.3.1 (same release as the tempo changes; finished, waiting for the push)
 
 **Asked by giopas on 6 November 2026**, the morning after QLC+ 5.3.1 came out (tag `QLC+_5.3.1`, 5 November). Read in the QLC+ source (`debian/changelog-v5` and the diff from 5.3.0): two changes reach the files Swiss Knife reads and writes. Decided by giopas: Swiss Knife must read and fix 5.3.1 files and the upgrade tool must follow the latest QLC+; ship it with the tempo changes as 3.13.0.
 
@@ -58,7 +58,9 @@ What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
 | 5 | Upgrade tool follows the latest QLC+: target *QLC+ 5.3.1 (latest)* or *QLC+ 5.2.2* (5.3.0 takes the same steps as 5.3.1), new step *Cross-universe fixtures* (same change as the D027 fix), labels and the seven languages. | done |
 | 6 | Tests (pages without ID through every page tool, addressing against the QLC+ code, the new rules and step), CHANGELOG, wiki pages *Upgrade-Older-Shows* and *Workspace-Doctor*, release notes. | done |
 
-**Built on 6 November 2026** (branch `feat/v3.13.0`). `core/qlc531.py`, called by `core/xml_safe.py` for every workspace read; Doctor D009 rewritten on it, D026 and D027 with its fix (ticked by default); `upgrade53`: step `crossuniverse` (ticked by default, every target), `target_of` takes 5.3, 5.3.0 and 5.3.1 as the same target, `latest` and `newer` in the analysis; MCP `upgrade_show` takes the step and 5.3.1. 20 tests in `tests/test_qlc531.py` (pages without ID through copy page, new page, the Doctor and the D010 fix, three corpus shows with page IDs taken out; addressing against the QLC+ code; the rules and the step). Seven languages, wiki *Workspace-Doctor* and *Upgrade-Older-Shows* (in the wiki repo, not committed there yet).
+**Built on 6 November 2026** (branch `feat/v3.13.0`). `core/qlc531.py`, called by `core/xml_safe.py` for every workspace read; Doctor D009 rewritten on it, D026 and D027 with its fix (ticked by default); `upgrade53`: step `crossuniverse` (ticked by default, every target), `target_of` takes 5.3, 5.3.0 and 5.3.1 as the same target, `latest` and `newer` in the analysis; MCP `upgrade_show` takes the step and 5.3.1. 20 tests in `tests/test_qlc531.py` (pages without ID through copy page, new page, the Doctor and the D010 fix, three corpus shows with page IDs taken out; addressing against the QLC+ code; the rules and the step). Seven languages, wiki *Workspace-Doctor* and *Upgrade-Older-Shows* (committed in the wiki repo, `91f51eb`, not pushed).
+
+**Release, 6 November:** version 3.13.0 in `core/workspace.py`, README, packaging; CHANGELOG `[3.13.0]` and `docs/release-notes/RELEASE_NOTES_v3.13.0.md` with both parts of the release. To push: merge `feat/v3.13.0` into `main`, tag `v3.13.0`, push `main`, the tag and the wiki (one local commit ahead).
 
 **Left for giopas:** install QLC+ 5.3.1 on the Mac; open a show, save it in 5.3.1, then in Swiss Knife copy a page, port a function to a page and run the Doctor; commit and push the wiki changes with the release.
 
@@ -80,7 +82,7 @@ What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
 
 **Settled, 5 November 2026:** a changed BPM does **not** yet feed the click track (built in 3.10.0); it keeps running at the song-level BPM throughout. A multi-tempo song keeps using its own backing track for now; feeding the click track a tempo map is left on the wishlist if it is ever asked for.
 
-**Left for giopas:** hand check in QLC+ — a song with a tempo change plays each part at its own speed and a chaser's steps follow it; `python3 tools/shots.py all` if the new BPM column should appear in a screenshot; then merge and tag with the other work of this release, or as its own `v3.13.0` (to decide at release time).
+**Left for giopas:** hand check in QLC+ — a song with a tempo change plays each part at its own speed and a chaser's steps follow it; `python3 tools/shots.py all` if the new BPM column should appear in a screenshot; then merge and tag. Decided on 6 November: it ships as `v3.13.0` together with *Ready for QLC+ 5.3.1*.
 
 ### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 
@@ -289,7 +291,7 @@ Decided 20 October (giopas), moved after 3.9.5 on 21 October because the wiki de
 - **Hand checks done by giopas on 23 October.** A ten-part song with music ends with the music; the Show plays as a cue; a 3 s fade in and out on a scene is visible; a chaser copy (3 steps, 2 beats a step at 60 BPM) keeps cycling for the whole 16 s part. Nothing is open.
 - **Left for the wishlist.** A click track made by the tool, a section-split helper, a read-only picture of a Show (see section 3).
 
-### 3.12.0 · Brightness levels (finished, waiting for the push, branch `feat/v3.12.0`)
+### 3.12.0 · Brightness levels (released 5 November 2026, tag v3.12.0)
 
 **Asked by giopas on 5 November 2026**, right after 3.11.0, on his SangAKlang show: the brightest scene alone does not show a limit chosen long ago (the Ceilings reach 100% in 2 scenes of 100, but nine in ten stop at 90%), and he wants to set the level directly (100, 75, 50) instead of scaling again.
 

@@ -4545,5 +4545,12 @@
  "{0} value(s) brought down to the limit": "{0} 個の値を上限まで下げます",
  "After your change: brightest scene {0}%": "変更後：最も明るいシーン {0}%",
  "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "ここからテンパを変更し、別のパートが独自のテンパを設定するまで影響します。空にすると現在のテンパのままです。",
- "Changes the tempo from here on. Empty keeps the running tempo.": "ここからテンパを変更します。空にすると現在のテンパのままです。"
+ "Changes the tempo from here on. Empty keeps the running tempo.": "ここからテンパを変更します。空にすると現在のテンパのままです。",
+ "write 'Fill', which keeps the addresses of QLC+ 5.3.0": "'Fill' を書き込み、QLC+ 5.3.0 のアドレスを保ちます",
+ "A fixture runs past channel 512 of its universe, so QLC+ moves it to address 1.": "フィクスチャーがユニバースのチャンネル512を超えているため、QLC+ はアドレス1に移動します。",
+ "A fixture that crosses universes gets other addresses in QLC+ 5.3.1 than in older versions.": "ユニバースをまたぐフィクスチャーは、QLC+ 5.3.1 では以前のバージョンと異なるアドレスになります。",
+ "Cross-universe fixtures for QLC+ 5.3.1": "QLC+ 5.3.1 向けのユニバースをまたぐフィクスチャー",
+ "A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.": "次のユニバースへ続くフィクスチャーは、今のアドレスを保ちます。QLC+ 5.3.1 は古い設定をヘッド単位のみと読み、一部のチャンネルを動かしてしまいます。Swiss Knife はアドレスを保つ設定を書き込み、どの QLC+ 5 でも読めます。",
+ "Saved by a QLC+ newer than {0}: check the result in QLC+": "{0} より新しい QLC+ で保存されています。QLC+ で結果を確認してください",
+ "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1（最新）"
 }

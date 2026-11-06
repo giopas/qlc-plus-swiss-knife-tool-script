@@ -67,7 +67,8 @@ def test_analyse_an_older_show(defs):
     assert c["allgroup"] == 0                        # All_Fixtures_Master holds the rig
     assert c["positions"] == 0 and "moving heads" in next(s for s in a["steps"] if s["id"] == "positions")["note"]
     assert c["frame"] == 12                          # 13 groups, two hold the same fixtures
-    assert a["defaults"] == ["folders", "palettes", "allgroup", "positions", "hide"]
+    assert a["defaults"] == ["folders", "palettes", "allgroup", "positions", "hide", "crossuniverse"]
+    assert c["crossuniverse"] == 0                   # no fixture crosses a universe (3.13.0)
 
 
 def test_target_522_leaves_out_the_53_steps(defs):

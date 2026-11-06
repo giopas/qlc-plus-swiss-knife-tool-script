@@ -1,5 +1,5 @@
 /**
- * Upgrade to QLC+ 5.3 (3.2.0).
+ * Upgrade to QLC+ 5.3 (3.2.0), up to QLC+ 5.3.1 (3.13.0).
  *
  * Gives a show made with QLC+ 5.0 to 5.2 what QLC+ 5.3 offers, in the show
  * in progress.  /api/upgrade/analyse says what each step would do; the ticked
@@ -26,6 +26,8 @@ const _UP_TEXT = {
               'The 1-channel dimmers that switch frame pages are hidden in the 2D and 3D views.'],
   lock:      ['Lock the fixtures in 2D and 3D',
               'Placed fixtures can’t be dragged by mistake.'],
+  crossuniverse: ['Cross-universe fixtures for QLC+ 5.3.1',
+              'A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.'],
 };
 
 function upgradeInit() {
@@ -108,8 +110,10 @@ function _upSync() {
   const chosen = _upChosen();
   if (b) b.disabled = !chosen.length;
   const ver = _up && _up.version ? _esc(`Version in the file: ${_up.version}`) : _esc('No version in the file');
+  const newer = _up && _up.newer
+    ? ` <span class="doc-chip doc-warning">${_esc(`Saved by a QLC+ newer than ${_up.latest}: check the result in QLC+`)}</span>` : '';
   if (s) s.innerHTML = _up
-    ? `<span class="doc-chip">${ver}</span>`
+    ? `<span class="doc-chip">${ver}</span>` + newer
       + ` <span class="doc-chip">${_esc(`${_up.steps.filter(x => x.count > 0 && _upUsable(x)).length} step(s) possible`)}</span>`
     : '';
   if (!chosen.length) { setOutcome('upgrade', ''); return; }

@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
-from core import media, palettes, qxw_io, script_cmds
+from core import media, palettes, qlc531, qxw_io, script_cmds
 from core.doctor.report import ERROR, INFO, WARNING, Finding, Report, make_report
 
 NONE_ID = "4294967295"          # QLC+ "no function" sentinel
@@ -133,11 +133,13 @@ class _Workspace:
                 "universe": _int(el.findtext("Universe"), 0),
                 "address": _int(el.findtext("Address"), 0),
                 "channels": _int(el.findtext("Channels"), 0),
+                "cross": qlc531.cross_mode(el),          # QLC+ 5.3.1 modes (3.13.0)
             }
             d = defs.get(_def_key(info["manufacturer"], info["model"]))
             names = (d or {}).get("mode_channels", {}).get(info["mode"])
             info["def"] = d if names else None
             info["channel_names"] = names or []
+            info["heads"] = (d or {}).get("mode_heads", {}).get(info["mode"]) or []
             # QLC+'s built-in generic dimmer needs no .qxf (3.1.0)
             info["builtin"] = info["def"] is None and palettes.is_builtin_generic(info)
             self.fixtures.setdefault(fid, info)
@@ -719,21 +721,67 @@ def _d025_show_cut(ws: _Workspace):
                                "lasts_ms": lasts, "show_ms": length})
 
 
+def _fixture_channels(fx: dict, version=qlc531.LATEST):
+    """``(universe, channel)`` of each channel, as QLC+ patches it (3.13.0)."""
+    return qlc531.addresses(fx["universe"], fx["address"], fx["channels"], fx["cross"],
+                            fx["heads"], version)
+
+
 def _d009_overlap(ws: _Workspace):
+    """Two fixtures on the same DMX channel, with the channels placed as
+    QLC+ 5.3.1 places them: a cross-universe fixture is checked in the next
+    universe too (3.13.0).  A fixture that does not fit is D026's."""
     owner: Dict[Tuple[int, int], str] = {}
     reported = set()
     for fid, fx in ws.fixtures.items():
-        for c in range(fx["address"], fx["address"] + max(fx["channels"], 0)):
-            key = (fx["universe"], c)
+        if fx["cross"] == qlc531.NONE and qlc531.does_not_fit(fx["address"], fx["channels"]):
+            continue
+        for key in _fixture_channels(fx):
             other = owner.get(key)
-            if other is not None and (other, fid) not in reported:
+            if other is not None and other != fid and (other, fid) not in reported:
                 reported.add((other, fid))
                 o = ws.fixtures[other]
                 yield Finding("D009", WARNING, f"Fixture {fid} '{fx['name']}'",
                               f"overlaps fixture {other} '{o['name']}' from "
-                              f"U{fx['universe'] + 1}.{c + 1}",
+                              f"U{key[0] + 1}.{key[1] + 1}",
                               {"fixture": fid, "other": other})
             owner.setdefault(key, fid)
+
+
+def _d026_no_fit(ws: _Workspace):
+    """A fixture without the cross-universe flag that runs past channel 512:
+    QLC+ moves it to address 1 when it loads the show (3.13.0)."""
+    for fid, fx in ws.fixtures.items():
+        if fx["cross"] != qlc531.NONE or fx["channels"] <= 0:
+            continue
+        if qlc531.does_not_fit(fx["address"], fx["channels"]):
+            last = fx["address"] + fx["channels"]
+            yield Finding("D026", WARNING, f"Fixture {fid} '{fx['name']}'",
+                          f"channels {fx['address'] + 1} to {last} of universe {fx['universe'] + 1} "
+                          f"run past channel 512 and the fixture does not cross universes: QLC+ "
+                          f"moves it to address 1 when it opens the show. Give it a lower address, "
+                          f"or let it continue in the next universe in QLC+'s fixture properties.",
+                          {"fixture": fid})
+
+
+def _d027_legacy_cross(ws: _Workspace):
+    """An old ``<CrossUniverse>True`` that QLC+ 5.3.1 patches differently
+    from QLC+ 5.3.0 and 5.2.2 (3.13.0)."""
+    for fid, fx in ws.fixtures.items():
+        if fx["cross"] != qlc531.LEGACY:
+            continue
+        new = _fixture_channels(fx, qlc531.LATEST)
+        old = _fixture_channels(fx, (5, 3, 0))
+        if new == old:
+            continue
+        moved = next(i for i, (a, b) in enumerate(zip(new, old)) if a != b)
+        a, b = old[moved], new[moved]
+        yield Finding("D027", WARNING, f"Fixture {fid} '{fx['name']}'",
+                      f"crosses universes with the flag of QLC+ 5.3.0 and older: QLC+ 5.3.1 reads it "
+                      f"as 'whole heads' and moves channel {moved + 1} from U{a[0] + 1}.{a[1] + 1} to "
+                      f"U{b[0] + 1}.{b[1] + 1}. The fix writes 'Fill', which keeps the addresses of "
+                      f"QLC+ 5.3.0 in every version.",
+                      {"fixture": fid})
 
 
 def _d012_inputs(ws: _Workspace):
@@ -1087,7 +1135,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
     layers: Dict[str, str] = {}
     for gen in (_d002_duplicates(ws), _d003_dangling(ws), _d019_palette_refs(ws), _d004_empty(ws),
                 _d005_incomplete(ws, layers), _d020_palette_noop(ws), _d006_strobe(ws, allow),
-                _d007_shared_scene(ws), _d008_panic(ws), _d009_overlap(ws),
+                _d007_shared_scene(ws), _d008_panic(ws), _d009_overlap(ws), _d026_no_fit(ws), _d027_legacy_cross(ws),
                 _d010_setlist_page(ws), _d011_overflow(ws), _d013_chaser_timing(ws),
                 _d014_cuelist_empty_chaser(ws), _d017_panic_scene(ws), _d018_setlist_dark_song(ws),
                 _d012_inputs(ws), _d015_unnamed(ws), _d016_unreferenced(ws),

@@ -1,5 +1,6 @@
 """
-Upgrade a QLC+ 5 show to what QLC+ 5.3 offers (3.2.0).
+Upgrade a QLC+ 5 show to what QLC+ 5.3 offers (3.2.0), up to the latest
+QLC+ Swiss Knife knows: 5.3.1 (3.13.0, ``core/qlc531.py``).
 
 Shows made with QLC+ 5.0 to 5.2, by hand or by Swiss Knife, open in QLC+ 5.3
 as they are: the source of 5.2.2 and 5.3.0 shows no change in how an older
@@ -27,7 +28,14 @@ frame      a *Groups* page: one page per group in a multipage frame,   5.2.2
            frame, its effects, and an XY pad for moving heads
 hide       page-switch fixtures hidden in 2D and 3D                     5.2.2
 lock       placed fixtures locked in 2D and 3D                          5.3
+crossuni…  an old cross-universe flag (``True``) written as ``Fill``    5.3.1
+           where QLC+ 5.3.1 would patch the fixture to other
+           addresses (Doctor D027); ``Fill`` keeps the 5.3.0
+           addresses and every QLC+ 5 reads it
 =========  ===========================================================  ========
+
+The target ``"5.3"`` means the latest QLC+ 5.3 (5.3.1 today); ``"5.3.1"`` and
+``"5.3.0"`` are taken as the same target, since the steps are the same.
 
 The XY pads list their fixtures one by one and set ``FloorControl``: QLC+ 5.3
 aims them at a point on the stage floor, QLC+ 5.2.2 ignores the flag and
@@ -48,13 +56,30 @@ import xml.etree.ElementTree as ET  # nosec B405
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from core import palettes as P
-from core import qxw_io
+from core import qlc531, qxw_io
 from core import wizard_repair as W
 
-STEPS = ("folders", "palettes", "allgroup", "grids", "positions", "frame", "hide", "lock")
-DEFAULT_STEPS = ("folders", "palettes", "allgroup", "positions", "hide")
+STEPS = ("folders", "palettes", "allgroup", "grids", "positions", "frame", "hide", "lock",
+         "crossuniverse")
+DEFAULT_STEPS = ("folders", "palettes", "allgroup", "positions", "hide", "crossuniverse")
 ONLY_53 = ("positions", "lock")
 TARGETS = ("5.3", "5.2.2")
+LATEST = qlc531.LATEST_TEXT
+
+
+def target_of(value) -> str:
+    """``"5.3"`` for any QLC+ 5.3 release (``"5.3.1"``, ``"5.3.0"``), ``"5.2.2"``
+    as it is; anything else is the latest."""
+    v = str(value or "").strip()
+    if v == "5.2.2":
+        return "5.2.2"
+    return "5.3"
+
+
+def newer_than_known(version_text: str) -> bool:
+    """The file was saved by a QLC+ newer than the one Swiss Knife knows."""
+    nums = tuple(int(n) for n in re.findall(r"\d+", version_text or "")[:3])
+    return bool(nums) and nums > qlc531.LATEST
 
 # Folder names (English, like the Show Wizard's own)
 F_SAFETY = "Safety"
@@ -211,6 +236,7 @@ class _Show:
         self.defs = _defs_dict(defs)
         self.R = P.Resolver(root, self.defs)
         ws = _Workspace(root, self.defs)
+        self.ws = ws
         self.parents = ws.parents
         self.vc_refs = ws.vc_refs
         self.fns = {f.get("ID"): f for f in _fns(root)}
@@ -614,6 +640,17 @@ def _build_frame(show: _Show, work, pages: List[dict], acts) -> None:
 # analyse
 # ═════════════════════════════════════════════════════════════════════════════
 
+# ═════════════════════════════════════════════════════════════════════════════
+# 9. cross-universe fixtures (QLC+ 5.3.1)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def cross_plan(ws) -> List[Tuple[str, str]]:
+    """``(fixture id, name)`` of each fixture with an old cross-universe flag
+    that QLC+ 5.3.1 patches to other addresses than 5.3.0 (Doctor D027)."""
+    from core.doctor.checks import _d027_legacy_cross
+    return [(f.ref["fixture"], ws.fixtures[f.ref["fixture"]]["name"]) for f in _d027_legacy_cross(ws)]
+
+
 def analyse(root, defs=None, target: str = "5.3") -> dict:
     """What :func:`upgrade` can do on this show, step by step:
     ``{version, target, wizard, known, lights, steps: [{id, count, items,
@@ -621,9 +658,9 @@ def analyse(root, defs=None, target: str = "5.3") -> dict:
     if isinstance(root, ET.ElementTree):
         root = root.getroot()
     root = qxw_io.strip_ns(copy.deepcopy(root))
-    target = target if target in TARGETS else "5.3"
+    target = target_of(target)
     if P.is_wizard_show(root):
-        return _wizard_analysis(root, target)
+        return _known(root, _wizard_analysis(root, target, defs))
     show = _Show(root, defs)
     folders = folder_plan(show)
     by_folder: Dict[str, int] = {}
@@ -656,21 +693,35 @@ def analyse(root, defs=None, target: str = "5.3") -> dict:
          "note": "" if groups_frame(root) is None else f"The show already has a '{FRAME_CAPTION}' frame."},
         {"id": "hide", "count": len(hide), "items": [f"fixture {i}" for i in hide]},
         {"id": "lock", "count": len(lock), "items": []},
+        _cross_step(show.ws),
     ]
     for s in steps:
         s["only53"] = s["id"] in ONLY_53
         s.setdefault("note", "")
-    return {"version": root.findtext("Creator/Version") or "", "target": target,
-            "wizard": P.is_wizard_show(root), "known": known, "lights": lights,
-            "steps": steps,
-            "defaults": [s for s in DEFAULT_STEPS if not (target != "5.3" and s in ONLY_53)]}
+    return _known(root, {"version": root.findtext("Creator/Version") or "", "target": target,
+                         "wizard": P.is_wizard_show(root), "known": known, "lights": lights,
+                         "steps": steps,
+                         "defaults": [s for s in DEFAULT_STEPS if not (target != "5.3" and s in ONLY_53)]})
+
+
+def _cross_step(ws) -> dict:
+    plan = cross_plan(ws)
+    return {"id": "crossuniverse", "count": len(plan),
+            "items": [f"fixture {fid} '{name}'" for fid, name in plan], "note": ""}
+
+
+def _known(root, out: dict) -> dict:
+    """The latest QLC+ Swiss Knife knows, and a note when the file is newer."""
+    out["latest"] = LATEST
+    out["newer"] = newer_than_known(out.get("version", ""))
+    return out
 
 
 WIZARD_NOTE = "The QLC+ Show Wizard made this show: Wizard Repair finishes it."
 WIZARD_OWN = ("folders", "palettes", "allgroup", "grids", "positions", "frame")
 
 
-def _wizard_analysis(root, target: str) -> dict:
+def _wizard_analysis(root, target: str, defs=None) -> dict:
     """A Show Wizard show already has folders, palettes, positions and a
     page per group; Wizard Repair finishes it.  Only hiding and locking are
     left here."""
@@ -682,13 +733,16 @@ def _wizard_analysis(root, target: str) -> dict:
             steps.append({"id": sid, "count": 0, "items": [], "note": WIZARD_NOTE})
         elif sid == "hide":
             steps.append({"id": sid, "count": len(hide), "items": [f"fixture {i}" for i in hide], "note": ""})
+        elif sid == "crossuniverse":
+            from core.doctor.checks import _Workspace
+            steps.append(_cross_step(_Workspace(root, _defs_dict(defs))))
         else:
             steps.append({"id": sid, "count": len(lock), "items": [], "note": ""})
     for s in steps:
         s["only53"] = s["id"] in ONLY_53
     return {"version": root.findtext("Creator/Version") or "", "target": target, "wizard": True,
             "known": 0, "lights": len(_lights(root)), "steps": steps,
-            "defaults": ["hide"]}
+            "defaults": ["hide", "crossuniverse"]}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -703,7 +757,7 @@ def upgrade(root, defs=None, steps: Iterable[str] = DEFAULT_STEPS,
     if isinstance(root, ET.ElementTree):
         root = root.getroot()
     work = qxw_io.strip_ns(copy.deepcopy(root))
-    target = target if target in TARGETS else "5.3"
+    target = target_of(target)
     want = [s for s in STEPS if s in set(steps) and not (target != "5.3" and s in ONLY_53)]
     if P.is_wizard_show(work):
         want = [s for s in want if s not in WIZARD_OWN]
@@ -787,6 +841,16 @@ def upgrade(root, defs=None, steps: Iterable[str] = DEFAULT_STEPS,
                 it.set("Locked", "True")
         if ids:
             act("lock", f"{len(ids)} fixture(s) locked in the 2D and 3D views (QLC+ 5.3)")
+
+    # 9. cross-universe fixtures (QLC+ 5.3.1)
+    if "crossuniverse" in want:
+        plan = dict(cross_plan(_Show(work, defs).ws))
+        for fx in _eng(work).findall("Fixture"):
+            fid = (fx.findtext("ID") or "").strip()
+            if fid in plan:
+                qlc531.set_cross_mode(fx, qlc531.FILL)
+                act("crossuniverse", f"fixture {fid} '{plan[fid]}': cross-universe flag set to 'Fill', "
+                                     f"the addresses QLC+ 5.3.0 gave it")
 
     acts.sort(key=lambda a: STEPS.index(a["step"]))
     return work, acts

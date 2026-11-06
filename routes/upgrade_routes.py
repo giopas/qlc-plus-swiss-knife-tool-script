@@ -27,7 +27,7 @@ def report(actions: list, source: str = '', target: str = '5.3') -> str:
     lines = ['═══ Upgrade to QLC+ 5.3 — Report ═══', '']
     if source:
         lines += [f'Show:    {source}']
-    lines += [f'Target:  QLC+ {target}', '']
+    lines += [f'Target:  QLC+ {upgrade53.LATEST if target == "5.3" else target}', '']
     for step in upgrade53.STEPS:
         acts = [a['action'] for a in actions if a['step'] == step]
         if acts:
@@ -45,7 +45,7 @@ def analyse():
     if root is None:
         return jsonify({'error': 'No workspace open.'}), 400
     try:
-        return jsonify(upgrade53.analyse(root, _defs(path), request.args.get('target', '5.3')))
+        return jsonify(upgrade53.analyse(root, _defs(path), upgrade53.target_of(request.args.get('target', '5.3'))))
     except Exception as e:  # noqa: BLE001
         return jsonify({'error': _safe_err(e)}), 500
 
@@ -56,7 +56,7 @@ def apply():
     if root is None:
         return jsonify({'error': 'No workspace open.'}), 400
     body = request.get_json(silent=True) or {}
-    target = body.get('target') if body.get('target') in upgrade53.TARGETS else '5.3'
+    target = upgrade53.target_of(body.get('target'))
     steps = [s for s in (body.get('steps') or []) if s in upgrade53.STEPS]
     if not steps:
         return jsonify({'error': 'Tick at least one step.'}), 400

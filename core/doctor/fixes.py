@@ -59,7 +59,7 @@ import xml.etree.ElementTree as ET  # nosec B405
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Set
 
-from core import qxw_io, script_cmds, vc_ops
+from core import qlc531, qxw_io, script_cmds, vc_ops
 from core.doctor.checks import (NONE_ID, UNNAMED_RE, PANIC_RE, _normalise_defs,
                                 _scene_pairs, _Workspace, check)
 from core.doctor.report import Finding, Report
@@ -67,10 +67,10 @@ from core.doctor.report import Finding, Report
 # Fixes that delete functions: offered, but not selected by default
 REMOVING = {"D004", "D015", "D016"}
 OPTION_CODES = {"D003", "D004", "D013", "D015"}      # fixes that take options
-DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017", "D019"}
+DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017", "D019", "D027"}
 
 FIX_ORDER = ["D002", "D003", "D019", "D004", "D005", "D006", "D007", "D010", "D011", "D013",
-             "D015", "D016", "D017", "D008"]
+             "D015", "D016", "D017", "D008", "D027"]
 
 
 @dataclass
@@ -129,7 +129,7 @@ def fixable(f: Finding) -> bool:
         return True
     if f.code in ("D004", "D013", "D019"):
         return True
-    if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017"):
+    if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017", "D027"):
         return True
     if f.code == "D008":
         return True
@@ -157,6 +157,7 @@ def fix_hint(f: Finding) -> str:
         "D016": "remove the unused function",
         "D017": "wrap the scene in a PANIC RESET script that stops everything first",
         "D019": "remove the reference to the missing palette or group",
+        "D027": "write 'Fill', which keeps the addresses of QLC+ 5.3.0",
     }.get(f.code, "") if fixable(f) else ""
 
 
@@ -680,6 +681,16 @@ def _fix_d011(root, f: Finding) -> List[str]:
     return out
 
 
+def _fix_d027(root, f: Finding) -> List[str]:
+    """Write ``Fill`` on an old cross-universe flag (3.13.0)."""
+    fid = (f.ref or {}).get("fixture")
+    for fx in _engine(root).findall("Fixture"):
+        if (fx.findtext("ID") or "").strip() == fid and qlc531.cross_mode(fx) == qlc531.LEGACY:
+            qlc531.set_cross_mode(fx, qlc531.FILL)
+            return ["cross-universe flag set to 'Fill' (channels run straight on, as in QLC+ 5.3.0)"]
+    return []
+
+
 def _fix_d017(root, f: Finding) -> List[str]:
     sid = f.ref["function"]
     scene = _fn(root, sid)
@@ -764,6 +775,8 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
                 acts = _fix_d011(work, f)
             elif code == "D008":
                 acts = _fix_d008(work, f, defs)
+            elif code == "D027":
+                acts = _fix_d027(work, f)
             else:
                 acts = []
             if acts:

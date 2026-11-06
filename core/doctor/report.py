@@ -39,6 +39,8 @@ TITLES = {
     "D023": "Scene sets a channel the fixture does not have",
     "D024": "Sound or video file not found",
     "D025": "Cue ends before its show does",
+    "D026": "Fixture does not fit its universe",
+    "D027": "Cross-universe fixture patched differently by QLC+ 5.3.1",
     "I001": "Caption-only button (used as a label)",
     "I002": "Virtual Console pages",
     "I003": "No fixture definition — channel checks skipped",

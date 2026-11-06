@@ -4545,5 +4545,12 @@
  "{0} value(s) brought down to the limit": "{0} 个值降到上限",
  "After your change: brightest scene {0}%": "更改后：最亮场景 {0}%",
  "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "从这里开始更改节奏，直到另一部分设定自己的节奏。留空则保持当前节奏。",
- "Changes the tempo from here on. Empty keeps the running tempo.": "从这里开始更改节奏。留空则保持当前节奏。"
+ "Changes the tempo from here on. Empty keeps the running tempo.": "从这里开始更改节奏。留空则保持当前节奏。",
+ "write 'Fill', which keeps the addresses of QLC+ 5.3.0": "写入 'Fill'，保留 QLC+ 5.3.0 的地址",
+ "A fixture runs past channel 512 of its universe, so QLC+ moves it to address 1.": "一台灯具超出了其宇宙的第 512 通道，因此 QLC+ 会把它移到地址 1。",
+ "A fixture that crosses universes gets other addresses in QLC+ 5.3.1 than in older versions.": "跨宇宙的灯具在 QLC+ 5.3.1 中得到的地址与旧版本不同。",
+ "Cross-universe fixtures for QLC+ 5.3.1": "适用于 QLC+ 5.3.1 的跨宇宙灯具",
+ "A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.": "延续到下一个宇宙的灯具会保留现在的地址。QLC+ 5.3.1 会把旧设置读成仅按整个灯头，并移动部分通道；Swiss Knife 写入能保留地址的设置，所有 QLC+ 5 都能读取。",
+ "Saved by a QLC+ newer than {0}: check the result in QLC+": "由比 {0} 更新的 QLC+ 保存：请在 QLC+ 中检查结果",
+ "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1（最新）"
 }

@@ -61,6 +61,8 @@ const _DOC_PLAIN = {
   D023: 'A scene sets a channel the fixture does not have.',
   D024: 'A sound or video file this show plays is not on this computer, so it plays in silence.',
   D025: 'A cue lasts less time than the show it plays, so the show is cut off before its end.',
+  D026: 'A fixture runs past channel 512 of its universe, so QLC+ moves it to address 1.',
+  D027: 'A fixture that crosses universes gets other addresses in QLC+ 5.3.1 than in older versions.',
   I001: 'A button used only as a text label.',
   I002: 'The pages of your Virtual Console.',
   I003: 'No fixture definition found, so channel checks are skipped.',

@@ -4521,5 +4521,12 @@
  "{0} value(s) brought down to the limit": "Valori portati al limite: {0}",
  "After your change: brightest scene {0}%": "Dopo la tua modifica: scena più luminosa {0}%",
  "Changes the tempo from here on, until another part sets its own. Empty keeps the tempo running.": "Cambia il tempo da qui in avanti, finché un'altra parte non imposta il proprio. Vuoto mantiene il tempo in corso.",
- "Changes the tempo from here on. Empty keeps the running tempo.": "Cambia il tempo da qui in avanti. Vuoto mantiene il tempo in corso."
+ "Changes the tempo from here on. Empty keeps the running tempo.": "Cambia il tempo da qui in avanti. Vuoto mantiene il tempo in corso.",
+ "write 'Fill', which keeps the addresses of QLC+ 5.3.0": "scrivi 'Fill', che mantiene gli indirizzi di QLC+ 5.3.0",
+ "A fixture runs past channel 512 of its universe, so QLC+ moves it to address 1.": "Una fixture va oltre il canale 512 del suo universo, quindi QLC+ la sposta all'indirizzo 1.",
+ "A fixture that crosses universes gets other addresses in QLC+ 5.3.1 than in older versions.": "Una fixture che passa all'universo successivo riceve in QLC+ 5.3.1 indirizzi diversi rispetto alle versioni precedenti.",
+ "Cross-universe fixtures for QLC+ 5.3.1": "Fixture su più universi per QLC+ 5.3.1",
+ "A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.": "Una fixture che continua nell'universo successivo mantiene gli indirizzi che ha oggi. QLC+ 5.3.1 legge la vecchia impostazione come solo teste intere e sposterebbe alcuni canali; Swiss Knife scrive l'impostazione che li mantiene, e ogni QLC+ 5 la legge.",
+ "Saved by a QLC+ newer than {0}: check the result in QLC+": "Salvato da un QLC+ più recente di {0}: controlla il risultato in QLC+",
+ "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1 (ultima)"
 }

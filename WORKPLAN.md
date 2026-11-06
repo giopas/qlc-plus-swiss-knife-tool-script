@@ -37,7 +37,30 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.12.0, Brightness levels** (giopas, 5 November 2026). 3.11.0, notes from a gig, was released the same morning: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. **Built the same day: 3.13.0, Song Builder tempo changes** (giopas, 5 November 2026), moved here from the wishlist. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.12.0, Brightness levels** (giopas, 5 November 2026). 3.11.0, notes from a gig, was released the same morning: (chosen by giopas on 23 October 2026, both being enhancements of existing tools). It is described after the 3.9.8 entry below. **Built the same day: 3.13.0, Song Builder tempo changes** (giopas, 5 November 2026), moved here from the wishlist. **Added to 3.13.0 on 6 November: ready for QLC+ 5.3.1.** Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+
+### 3.13.0 · Ready for QLC+ 5.3.1 (same release as the tempo changes)
+
+**Asked by giopas on 6 November 2026**, the morning after QLC+ 5.3.1 came out (tag `QLC+_5.3.1`, 5 November). Read in the QLC+ source (`debian/changelog-v5` and the diff from 5.3.0): two changes reach the files Swiss Knife reads and writes. Decided by giopas: Swiss Knife must read and fix 5.3.1 files and the upgrade tool must follow the latest QLC+; ship it with the tempo changes as 3.13.0.
+
+What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
+
+- **Virtual Console pages are saved without an `ID`.** QLC+ gives a page an ID while it runs and no longer writes it (commit "keep VC pages out of the widgets map"); an ID read from a file is ignored. Swiss Knife finds pages by `ID` in many places (Pages, Function Porter, Look Builder, VC Builder, group pages, Compare, the D010 fix). Fix: every show read through `core/xml_safe.py` gets an ID on each page that has none (`core/qlc531.py`, next free widget ID, in page order, so the same file always gets the same IDs). A page ID in a file is harmless in 5.3.1 and needed by 5.2.2 and 5.3.0.
+- **Cross-universe fixtures have a mode.** `<CrossUniverse>` was `True` (channels run straight on into the next universe); it is now `Pixel` (whole heads only, a head that would not fit starts the next universe) or `Fill` (straight on). 5.3.1 reads an old `True` as `Pixel`, 5.3.0 and 5.2.2 read any value as straight on, so the same file can patch a pixel bar to other addresses in 5.3.1. A fixture without the flag that runs past channel 512 is moved to address 1 when the show loads, in every QLC+ 5 (unchanged, but nothing reported it).
+- Smaller, nothing to do: Animation widget presets can carry MIDI/key bindings (`Input`/`Key` inside `Control`; the Input Manager and D012 already walk up to the widget); 3D generic items gain a `Color` attribute (kept as is).
+
+| # | What | Status |
+|---|---|---|
+| 1 | `core/qlc531.py`: page IDs at load; cross-universe addressing as QLC+ 5.3.1 does it (`Fixture::channelAddress`, `crossUniversePixelSize`). | done |
+| 2 | Doctor D009 (address overlap) uses that addressing, so a fixture crossing into the next universe is checked there. | done |
+| 3 | Doctor D026 (warning): a fixture without cross-universe that runs past channel 512; every QLC+ moves it to address 1 when it loads the show (`Fixture::loadXML`; checked in the source, the 5.3.1 changelog line about skipped channels does not apply to such a fixture). | done |
+| 4 | Doctor D027 (warning, with a fix ticked by default; made a warning rather than an info because it is reported only when the addresses really change): an old `True` flag that patches differently in 5.3.1 than in 5.3.0; the fix writes `Fill`, which keeps the 5.3.0 addresses in every version. | done |
+| 5 | Upgrade tool follows the latest QLC+: target *QLC+ 5.3.1 (latest)* or *QLC+ 5.2.2* (5.3.0 takes the same steps as 5.3.1), new step *Cross-universe fixtures* (same change as the D027 fix), labels and the seven languages. | done |
+| 6 | Tests (pages without ID through every page tool, addressing against the QLC+ code, the new rules and step), CHANGELOG, wiki pages *Upgrade-Older-Shows* and *Workspace-Doctor*, release notes. | done |
+
+**Built on 6 November 2026** (branch `feat/v3.13.0`). `core/qlc531.py`, called by `core/xml_safe.py` for every workspace read; Doctor D009 rewritten on it, D026 and D027 with its fix (ticked by default); `upgrade53`: step `crossuniverse` (ticked by default, every target), `target_of` takes 5.3, 5.3.0 and 5.3.1 as the same target, `latest` and `newer` in the analysis; MCP `upgrade_show` takes the step and 5.3.1. 20 tests in `tests/test_qlc531.py` (pages without ID through copy page, new page, the Doctor and the D010 fix, three corpus shows with page IDs taken out; addressing against the QLC+ code; the rules and the step). Seven languages, wiki *Workspace-Doctor* and *Upgrade-Older-Shows* (in the wiki repo, not committed there yet).
+
+**Left for giopas:** install QLC+ 5.3.1 on the Mac; open a show, save it in 5.3.1, then in Swiss Knife copy a page, port a function to a page and run the Doctor; commit and push the wiki changes with the release.
 
 ### 3.13.0 · Song Builder: tempo changes within a song
 

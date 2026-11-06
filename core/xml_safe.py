@@ -33,11 +33,20 @@ def parse(path: str, max_bytes: int = MAX_BYTES) -> ET.ElementTree:
     with open(path, "rb") as fh:
         data = fh.read()
     _check(data, max_bytes)
-    return ET.ElementTree(ET.fromstring(data))
+    return ET.ElementTree(_workspace(ET.fromstring(data)))
 
 
 def fromstring(data, max_bytes: int = MAX_BYTES) -> ET.Element:
     """Like ``ET.fromstring(data)``, after the size and entity checks."""
     raw = data.encode("utf-8") if isinstance(data, str) else bytes(data)
     _check(raw, max_bytes)
-    return ET.fromstring(raw)
+    return _workspace(ET.fromstring(raw))
+
+
+def _workspace(root: ET.Element) -> ET.Element:
+    """Every show passes here: Virtual Console pages saved by QLC+ 5.3.1 have
+    no ID, and Swiss Knife finds pages by ID, so each gets one (3.13.0,
+    core/qlc531.py).  Definitions and profiles are left as they are."""
+    from core import qlc531
+    qlc531.give_pages_ids(root)
+    return root

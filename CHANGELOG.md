@@ -30,6 +30,11 @@ QLC+ 5.3.1 came out on 5 November 2026. Two of its changes reach the show files,
 - Nothing to do for the other 5.3.1 changes: bindings on Animation widget presets and colours on 3D items are read and kept as they are.
 - The wiki pages *Workspace Doctor* and *Upgrade Older Shows* and the seven languages are updated.
 
+### Fixed
+
+- **Function Porter: porting Virtual Console widgets into the show in progress failed** with an error (in Safari: *The string did not match the expected pattern*) and changed nothing. It had been so since the porter learned to work on the show in progress; porting functions alone, or exporting a copy, worked. Found while testing a show saved by QLC+ 5.3.1.
+- **Pages of a show saved by QLC+ 5.3.1** could get numbers above QLC+'s range when a button had no function. Found on the same test, fixed before release.
+
 ---
 
 ## [3.12.0] — 2026-11-05 — Brightness levels

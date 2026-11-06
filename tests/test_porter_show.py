@@ -207,3 +207,31 @@ def test_copies_preview_is_thread_safe(c):
     [t.start() for t in ts]
     [t.join() for t in ts]
     assert not errors and len(porter.list_target_fixtures()) == n0
+
+
+def test_apply_with_vc_widgets_onto_a_chosen_page(c):
+    """3.13.0: porting widgets into the show in progress crashed the step
+    title (a count was taken as a list); Safari showed "The string did not
+    match the expected pattern".  Found on a show saved by QLC+ 5.3.1."""
+    from core import porter_vc, qlc531
+    pub = str(c.tmp / "Pub_6fix.qxw")
+    _ok(c.post("/api/load", json={"path": pub}))
+    _ok(c.post("/api/porter/source/load", json={"path": str(c.tmp / "Festival_14fix.qxw")}))
+    _ok(c.post("/api/porter/target/show", json={}))
+    src = porter_vc.list_source_vc(porter.source_root())
+    btn = next(w for w in src if w["tag"] == "Button" and w.get("functions", 1))
+    seeds = _ok(c.post("/api/porter/vc/seeds", json={"keys": [btn["key"]]})).get_json()["seed_ids"]
+    assert seeds
+    cl = porter.resolve_closure(seeds)
+    _ok(c.post("/api/vc/op", json={"op": "new_page", "caption": "Room"}))   # an empty page
+    _ok(c.post("/api/porter/target/show", json={}))
+    pages = c.get("/api/porter/target/pages").get_json()
+    last = next(p["id"] for p in pages if p["caption"] == "Room")
+    plan = dict(closure=cl, fixture_mapping=porter.auto_map(cl["fixture_ids"], "fan_in"),
+                fanout_mode="fan_in", drop_unmapped=True,
+                vc={"enabled": True, "target_page": last, "scope": [btn["key"]], "bindings": "keep_free"})
+    r = _ok(c.post("/api/porter/apply", json=plan)).get_json()
+    assert "VC widget" in r["step"]["title"]
+    root = qxw_io.loads_qxw(c.get("/api/show/file").data)
+    page = next(p for p in qlc531.pages(root) if p.get("ID") == str(last))
+    assert btn["caption"] in [e.get("Caption") for e in page.iter() if e.tag.endswith("Button")]

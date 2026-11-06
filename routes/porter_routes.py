@@ -399,8 +399,10 @@ def apply():
     if cp.get('groups'):
         bits.append(f'{len(cp["groups"])} group{"s" if len(cp["groups"]) != 1 else ""}')
     vc = res.get('vc') or {}
-    if vc.get('widgets'):
-        bits.append(f'{len(vc["widgets"])} VC widgets')
+    nw = vc.get('widgets') or 0                    # a count (porter_vc.port_vc)
+    nw = nw if isinstance(nw, int) else len(nw)
+    if nw:
+        bits.append(f'{nw} VC widget{"s" if nw != 1 else ""}')
     src = porter.get_state()['src_name'] or 'the source'
     return applied('porter', (', '.join(bits) or 'nothing') + f' from {src}', res['root'],
                    res.get('report', ''), '')

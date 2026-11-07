@@ -17,7 +17,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Bars, beats and `until`.** A part's length in bars or beats, and an `until bar 17` / `until beat 33` target, now follow the tempo in force at each point, part by part, instead of one BPM for the whole song.
 - **The coloured bar** shows a small ♩ BPM mark on a part whose tempo differs from the one before it; the preview (apply=false) also gives each part's tempo.
 - Claude's `song_builder` tool takes the same optional `bpm` on a part; the wiki *Song-Builder* page is updated.
-- Not yet followed: the click track (3.10.0) still runs at the song's own BPM throughout, even when a part sets its own.
+- **The click track follows the tempo changes.** *Make a click track* now clicks at each part's own BPM, and every change of tempo starts on a first beat of the bar. The file is named after its tempos (*Demo Song click 120-90 BPM.wav*) and lasts as long as the parts or the music, whichever is longer, so a last part *to the end* keeps its time.
 
 ### Added — ready for QLC+ 5.3.1 (3.13.0)
 

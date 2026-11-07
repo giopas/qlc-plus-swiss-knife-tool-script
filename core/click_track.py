@@ -20,7 +20,7 @@ import math
 import os
 import re
 import wave
-from typing import Dict
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from core import setlist_tempo
 
@@ -115,27 +115,48 @@ def check(bpm, beats_per_bar, length_ms):
     return bpm, bpb, length_ms
 
 
-def write_frames(fh, bpm: float, beats_per_bar: int, length_ms: int, sound: str = DEFAULT_SOUND) -> int:
+def clicks(bpm: float, beats_per_bar: int, total: int,
+           tempo: Optional[Sequence[Tuple[int, float]]] = None) -> List[Tuple[int, bool]]:
+    """``(frame, first beat of the bar)`` of every click.  *tempo* is the Song Builder's tempo
+    map (3.13.0): ``(start_ms, bpm)`` where a part changes the tempo.  Each change starts on a
+    first beat of the bar, as a tempo change does in a song; without one, one BPM throughout."""
+    points = [(0, float(bpm))]
+    for ms, b in sorted(tempo or []):
+        if ms <= 0:
+            points[0] = (0, float(b))
+        elif float(b) != points[-1][1]:
+            points.append((round(ms * RATE / 1000), float(b)))
+    out: List[Tuple[int, bool]] = []
+    for i, (start, b) in enumerate(points):
+        stop = points[i + 1][0] if i + 1 < len(points) else total
+        n = 0
+        while True:
+            at = start + beat_frames(n, b)
+            if at >= min(stop, total):
+                break
+            out.append((at, n % beats_per_bar == 0))
+            n += 1
+    return out
+
+
+def write_frames(fh, bpm: float, beats_per_bar: int, length_ms: int, sound: str = DEFAULT_SOUND,
+                 tempo: Optional[Sequence[Tuple[int, float]]] = None) -> int:
     """Write the click track as a WAV to the open binary file *fh*; returns the frames written."""
     total = round(length_ms * RATE / 1000)
     high, low = sounds(check_sound(sound))
+    marks = clicks(bpm, beats_per_bar, total, tempo)
     with wave.open(fh, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(RATE)
-        beat = 0
-        while True:
-            start = beat_frames(beat, bpm)
-            if start >= total:
-                break
-            end = min(beat_frames(beat + 1, bpm), total)
-            ring = (high if beat % beats_per_bar == 0 else low)[: end - start]
+        for k, (start, accent) in enumerate(marks):
+            end = marks[k + 1][0] if k + 1 < len(marks) else total
+            ring = (high if accent else low)[: end - start]
             seg = array.array("h", ring)
             seg.extend(array.array("h", bytes(2 * (end - start - len(ring)))))
             if _bigendian():
                 seg.byteswap()
             w.writeframes(seg.tobytes())
-            beat += 1
     return total
 
 
@@ -144,28 +165,36 @@ def _bigendian() -> bool:
     return sys.byteorder == "big"
 
 
-def plain_name(name: str, bpm: float) -> str:
-    """A safe file name (no folder, no dot at the start) for a click track of *name*."""
+def plain_name(name: str, bpm: float, tempos: Sequence[float] = ()) -> str:
+    """A safe file name (no folder, no dot at the start) for a click track of *name*;
+    with tempo changes, every tempo in order: ``Song click 120-90-120 BPM``."""
     base = _BAD.sub("", os.path.basename(str(name or "").replace("\\", "/"))).strip(" .")[:80]
     if base.lower().endswith(" click"):
         base = base[:-6]
-    return f"{base or 'Song'} click {round(bpm)} BPM"
+    seq = [round(bpm)]
+    for b in tempos:
+        if round(b) != seq[-1]:
+            seq.append(round(b))
+    return f"{base or 'Song'} click {'-'.join(str(x) for x in seq[:6])} BPM"
 
 
-def write(folder: str, name: str, bpm, beats_per_bar, length_ms, sound=None) -> Dict[str, object]:
-    """Make the file in *folder* under a free name.  Returns {path, name, length_ms, bpm, beats_per_bar, sound}."""
+def write(folder: str, name: str, bpm, beats_per_bar, length_ms, sound=None,
+          tempo: Optional[Sequence[Tuple[int, float]]] = None) -> Dict[str, object]:
+    """Make the file in *folder* under a free name.  Returns {path, name, length_ms, bpm, beats_per_bar, sound}.
+    *tempo*: where the tempo changes, ``(start_ms, bpm)`` (3.13.0)."""
     bpm, bpb, length_ms = check(bpm, beats_per_bar, length_ms)
+    tempo = [(int(ms), check(b, bpb, length_ms)[0]) for ms, b in (tempo or [])]
     sound = check_sound(sound)
     if not folder or not os.path.isdir(folder):
         raise ValueError("Open a show that is saved on this computer first: the click track is saved next to it.")
-    stem = plain_name(name, bpm)
+    stem = plain_name(name, bpm, [b for _ms, b in sorted(tempo)])
     n = 1
     while True:
         fname = f"{stem}.wav" if n == 1 else f"{stem} {n}.wav"
         path = os.path.join(folder, fname)
         try:
             with open(path, "xb") as fh:            # "x": never over an existing file
-                frames = write_frames(fh, bpm, bpb, length_ms, sound)
+                frames = write_frames(fh, bpm, bpb, length_ms, sound, tempo)
             break
         except FileExistsError:
             n += 1

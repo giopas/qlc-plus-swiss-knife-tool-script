@@ -2030,9 +2030,12 @@ def song_click(spec: dict) -> dict:
     from core import click_track, song_builder
     engine = _builder_engine()
     name = str(spec.get('name') or '').strip()
-    plan = song_builder.plan(engine, {**spec, 'music': {}}, lenient=True)
-    length = int(spec.get('length_ms') or plan['length_ms'] or 0)
-    return click_track.write(click_folder(), name, spec.get('bpm'), spec.get('beats_per_bar'), length, spec.get('sound'))
+    plan = song_builder.plan(engine, spec, lenient=True, base_dir=show_folder())
+    length = int(spec.get('length_ms') or max(plan['length_ms'] or 0, plan.get('music_ms') or 0))
+    # the click follows each part's own tempo (3.13.0): a point wherever a part changes it
+    tempo = [(r['start_ms'], r['bpm']) for r in plan['parts'] if r.get('bpm') and r['length_ms']]
+    return click_track.write(click_folder(), name, spec.get('bpm'), spec.get('beats_per_bar'), length,
+                             spec.get('sound'), tempo)
 
 
 def song_open(show_id: str) -> dict:

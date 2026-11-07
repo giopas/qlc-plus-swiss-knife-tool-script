@@ -68,6 +68,10 @@ What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
 
 **Song Builder music, 7 November (second screenshot):** the `.wav` *was* next to the show on his Desktop. Cause: `music_info` and `/api/songbuilder/music` read a relative path from the working directory of the app, not the show's folder (the corpus tests ran from the repo root, so they never saw it). Fixed: `song_builder.resolve` against `workspace.show_folder()` in plan, build and the route; new **Browse…** button (`sbdBrowseMusic`, the native picker) as he asked; a picked file inside the show's folder is written relative, as QLC+ stores it. Tests run from another folder.
 
+**Demo buzz, 7 November:** `SongBuilder_demo.wav` is a 220 Hz tone at 2 kHz, 8 bit (tools/make_songbuilder_sample.py), so it buzzes; the built Show was checked and its times are right (0, 4, 12, 20, 30.667 s). The demo looks are single scenes, so nothing steps: test with the chaser *Rock Loop* and Beats/step 1.
+
+**Next, asked by giopas on 7 November:** the Song Builder has many options and is hard to use in real life; after the tempo test passes, review it for clarity (what is needed for a first song, what can stay hidden until asked for).
+
 **Asked by giopas, 7 November:** the Doctor or the Upgrade should make a show 5.3.1-ready. Done: Upgrade shows *Ready for QLC+ 5.3.1* when nothing reads differently (no D026, no D027, not newer); D026 gets a fix (not ticked by default, `Fill`); the cross-universe step points to it. Decided not to strip page IDs or write 5.3.1 as the version: 5.3.1 ignores page IDs, 5.2.2 and 5.3.0 need them, and QLC+ writes its own version on save.
 
 **Release, 6 November:** version 3.13.0 in `core/workspace.py`, README, packaging; CHANGELOG `[3.13.0]` and `docs/release-notes/RELEASE_NOTES_v3.13.0.md` with both parts of the release. To push: merge `feat/v3.13.0` into `main`, tag `v3.13.0`, push `main`, the tag and the wiki (one local commit ahead).
@@ -90,7 +94,7 @@ What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
 | 4 | The coloured bar and the preview (`apply=false`) show each part's BPM when it differs from the one before it. | done |
 | 5 | Claude's `song_builder` tool and the wiki *Song-Builder* page updated for the optional per-part BPM. | done |
 
-**Settled, 5 November 2026:** a changed BPM does **not** yet feed the click track (built in 3.10.0); it keeps running at the song-level BPM throughout. A multi-tempo song keeps using its own backing track for now; feeding the click track a tempo map is left on the wishlist if it is ever asked for.
+**Settled, 5 November 2026:** a changed BPM did not feed the click track. **Changed on 7 November** (asked by giopas, to test the tempo change by ear): `click_track.clicks` takes the tempo map from the plan, `(start_ms, bpm)` per change, each change starting on a first beat; the click lasts max(parts, music) so *to the end* keeps its time; file name lists the tempos. Without changes the bytes are the same as before (test).
 
 **Left for giopas:** hand check in QLC+ — a song with a tempo change plays each part at its own speed and a chaser's steps follow it; `python3 tools/shots.py all` if the new BPM column should appear in a screenshot; then merge and tag. Decided on 6 November: it ships as `v3.13.0` together with *Ready for QLC+ 5.3.1*.
 

@@ -160,3 +160,47 @@ def test_same_input_same_bytes_and_bad_sound_refused(tmp_path):
     r = _ct.write(str(tmp_path), "Song", 120, 4, 2000, "wood")
     assert r["sound"] == "wood" and (tmp_path / r["name"]).exists()
     assert _ct.write(str(tmp_path), "Song", 120, 4, 2000, "wood")["name"] != r["name"]   # never over a file
+
+
+# ── 3.13.0: the click follows each part's own tempo ─────────────────────────
+
+def _starts(data, gap=200):
+    """Frames where a click starts (sound after at least *gap* frames of silence)."""
+    out, quiet = [], gap
+    for i, x in enumerate(data):
+        if abs(x) > 2000 and quiet >= gap:
+            out.append(i)
+        quiet = 0 if abs(x) > 2000 else quiet + 1
+    return out
+
+
+def test_the_click_changes_tempo_where_a_part_does(tmp_path):
+    # 2 bars at 120 (4 s), then 1 bar at 90 (2.667 s)
+    out = ct.write(str(tmp_path), "Song", 120, 4, 6650, tempo=[(0, 120), (4000, 90)])
+    _rate, _c, _w, data = read(out["path"])
+    s = _starts(data)
+    assert len(s) == 12
+    assert all(abs((s[k + 1] - s[k]) - ct.RATE // 2) <= 1 for k in range(7))           # 0.5 s apart
+    assert abs(s[8] - 4 * ct.RATE) <= 1                                                  # 90 starts at 4 s
+    assert all(abs((s[k + 1] - s[k]) - round(ct.RATE * 2 / 3)) <= 1 for k in range(8, 11))  # 0.667 s
+    loud = [max(abs(x) for x in data[p: p + 400]) for p in s]
+    assert loud[8] > loud[9]                                     # the new tempo starts on a first beat
+    assert out["name"] == "Song click 120-90 BPM.wav"
+
+
+def test_no_tempo_map_gives_the_same_bytes_as_before(tmp_path):
+    a = ct.write(str(tmp_path), "A", 97.5, 3, 5000)["path"]
+    b = ct.write(str(tmp_path), "B", 97.5, 3, 5000, tempo=[(0, 97.5)])["path"]
+    assert open(a, "rb").read() == open(b, "rb").read()
+
+
+def test_song_builder_click_follows_the_table_and_lasts_to_the_end_of_the_music(tmp_path):
+    for f in ("SongBuilder_demo.qxw", "SongBuilder_demo.wav"):
+        shutil.copy(os.path.join(CORPUS, f), tmp_path / f)
+    workspace.load_qxw(str(tmp_path / "SongBuilder_demo.qxw"))
+    songs = {s["name"]: s["id"] for s in workspace.song_list()}
+    spec = workspace.song_open(songs["Demo Song"])
+    spec["parts"][3]["bpm"] = "90"                                # the second verse at 90
+    out = workspace.song_click(spec)
+    assert out["name"].startswith("Demo Song click 120-90")
+    assert out["length_ms"] == 32000                              # as long as the music, Outro included

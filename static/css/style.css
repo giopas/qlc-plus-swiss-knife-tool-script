@@ -4919,3 +4919,6 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .cb-changed { font-weight: 600; color: var(--warning, #df8e1d); }
 .cb-stale { margin: 6px 0; padding: 6px 8px; border: 1px dashed var(--warning, #df8e1d); border-radius: 6px; }
 .cb-vs { margin-top: 4px; }
+
+/* 3.17.0: the stage size over the cabling plan */
+.cb-stage-dims { margin-left: auto; }

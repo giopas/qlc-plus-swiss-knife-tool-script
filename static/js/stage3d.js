@@ -48,23 +48,25 @@ function _stViewbarHtml() {
   </div>`;
 }
 
-/** Where a fixture points, roughly: the beam direction (x right, y up, z to the
- *  audience) from its rotation.  0° tilt points straight down; a positive tilt
- *  (XRot) points toward the audience, as the Aim tool writes it; pan (YRot)
- *  turns it around the vertical, roll (ZRot) to the side. */
+/** Where a fixture points: the beam direction (x right, y up, z to the
+ *  audience) from its rotation, as QLC+ turns it (3.17.0): the beam leaves the
+ *  fixture straight down, then XRot tilts it (positive: toward the audience),
+ *  YRot turns it round the vertical (positive: toward stage left, the high X
+ *  side, when it points at the audience), ZRot rolls it last.  The server sends
+ *  the same vector as ``f.dir``; this is the fallback for a fixture moved here. */
 function _stBeamDir(rot) {
   const r = v => (Number(v) || 0) * Math.PI / 180;
   const a = r(rot[0]), b = r(rot[1]), c = r(rot[2]);
-  let x = 0, y = -Math.cos(a), z = Math.sin(a);                 // tilt
-  [x, y] = [x * Math.cos(c) - y * Math.sin(c), x * Math.sin(c) + y * Math.cos(c)];   // roll
-  [x, z] = [x * Math.cos(b) + z * Math.sin(b), -x * Math.sin(b) + z * Math.cos(b)];  // pan
+  let x = 0, y = -Math.cos(a), z = Math.sin(a);                                      // XRot
+  [x, z] = [x * Math.cos(b) - z * Math.sin(b), x * Math.sin(b) + z * Math.cos(b)];   // YRot
+  [x, y] = [x * Math.cos(c) + y * Math.sin(c), -x * Math.sin(c) + y * Math.cos(c)];  // ZRot
   return [x, y, z];
 }
 
 /** The beam of fixture *f* in mm: apex, end (on the floor, or 4 m out when it
  *  does not reach the floor), width at the end, and whether it lands on the floor. */
 function _stBeam(f) {
-  const p = f.place, d = _stBeamDir(f.rot || [0, 0, 0]);
+  const p = f.place, d = Array.isArray(f.dir) && f.dir.length === 3 ? f.dir : _stBeamDir(f.rot || [0, 0, 0]);
   const A = [p.x, (p.bottom + p.top) / 2, p.z];
   let t = 4000, floor = false;
   if (d[1] < -0.05) { t = Math.min(A[1] / -d[1], 20000); floor = true; }

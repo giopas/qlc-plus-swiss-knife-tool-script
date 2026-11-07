@@ -962,6 +962,7 @@ function _cbPlan() {
   _cbPlotHits();
   _cbFxLink();
   _cbApprove();
+  _cbStageDims();
   const tt = _cb.evaluation.totals;
   document.getElementById('cb-plan-totals').textContent = _cb.plan.chains.length
     ? _cbT('{0} of cable · longest hop {1} · {2} adapter(s)', _cbLen(tt.cable_m), _cbLen(tt.longest_m), tt.adapters) : '';
@@ -1255,6 +1256,18 @@ function _cbTidyRadio(p) {
   p.chains = p.chains.filter(c => !(_cbKind(p, c.source.item) === 'wireless_tx' && !c.devices.some(d => d.fixture != null)));
   p.chains = p.chains.filter(c => !(c.devices.length === 1 && c.devices[0].item && _cbKind(p, c.devices[0].item) === 'wireless_tx'
     && !p.chains.some(o => o.source.item === c.devices[0].item)));
+}
+
+// ── 3.17.0: the stage size over the plan, and where to change it ────────────
+function _cbStageDims() {
+  const el = document.getElementById('cb-stage-dims');
+  if (!el || !_cb || !_cb.rig || !_cb.rig.stage) return;
+  const show = _cb.rig.stage, now = _cb.plan.stage || show;
+  const m = v => _cbLen(Math.round(v / 10) / 100);
+  const tonight = _cb.plan.stage && (_cb.plan.stage.w !== show.w || _cb.plan.stage.d !== show.d);
+  el.innerHTML = `${_cbE(_cbT('Stage {0} × {1}', m(now.w), m(now.d)))}`
+    + (tonight ? ` ${_cbE(_cbT('(tonight; the show says {0} × {1})', m(show.w), m(show.d)))}` : '')
+    + ` · <a href="#" onclick="go('stage');return false">${_cbE(_cbT('Change it in Stage & Meshes'))}</a>`;
 }
 
 // ── 3.16.0: the plan you approve ────────────────────────────────────────────

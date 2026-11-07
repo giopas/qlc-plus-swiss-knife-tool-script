@@ -186,6 +186,18 @@ def _rot_matrix(rx: float, ry: float, rz: float):
     return mul(mul(Rx, Ry), Rz)
 
 
+def beam_direction(rot) -> Tuple[float, float, float]:
+    """Where a fixture's beam points (3.17.0): a unit vector, x to the right,
+    y up, z toward the audience, from its XRot, YRot, ZRot.  The same rotation
+    as QLC+ (``MonitorProperties::fixtureRotationMatrix``: qZ·qY·qX with the
+    angles negated) applied to the beam, which leaves the fixture along its
+    own -Y when nothing is turned."""
+    from core.palettes import _norm3, _rotation
+    rx, ry, rz = (float(v or 0) for v in (list(rot or []) + [0, 0, 0])[:3])
+    x, y, z = _norm3(_rotation(rx, ry, rz)((0.0, -1.0, 0.0)))
+    return (round(x, 4), round(y, 4), round(z, 4))
+
+
 def _item(el: ET.Element) -> dict:
     return {"id": el.get("ID", ""), "name": el.get("Name", ""), "res": el.get("Res", ""),
             "pos": [_f(el, "XPos"), _f(el, "YPos"), _f(el, "ZPos")],
@@ -303,6 +315,7 @@ def fixtures(root: ET.Element, qxf_defs=None) -> List[dict]:
                     "name": (fx.findtext("Name") or "").strip() if fx is not None else f"Fixture {fid}",
                     "x": x, "y": y, "z": z, "size_known": known,
                     "rot": [_f(el, "XRot"), _f(el, "YRot"), _f(el, "ZRot")],
+                    "dir": list(beam_direction([_f(el, "XRot"), _f(el, "YRot"), _f(el, "ZRot")])),
                     "beam": beam, "beam_known": beam_known,
                     "place": {"x": round(x + w / 2), "z": round(z + d / 2), "bottom": bottom,
                               "top": round(bottom + h), "w": round(w), "h": round(h), "d": round(d),

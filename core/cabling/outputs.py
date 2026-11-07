@@ -96,6 +96,7 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     st = rig["stage"]
     sh: List[tuple] = []
     sh.append(("rect", 0, 0, st["w"], st["d"], "#f1f5f9", "#475569", None))
+    sh += _stage_dims(st, ev.get("controller") or {}, bool(rig.get("stage_show")))
     band = [] if plan.get("hide_band") else rig["keep_out"]   # 3.11.0: the meshes can be hidden
     for k in band:
         sh.append(("rect", k["x0"], k["z0"], k["x1"], k["z1"], "#fee2e2", "#ef4444", (4, 3)))
@@ -184,6 +185,30 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
         sh.append(("text", lx + 320, z1 - 190, "By radio, no cable (RX: receiver, TX: transmitter; "
                    "a dashed ring marks a fixture fed by radio)", 120, "#475569", "start"))
     return sh, (x0, z0, x1, z1)
+
+
+def _stage_dims(st: dict, ctl: dict, tonight: bool) -> List[tuple]:
+    """The stage's width over its back edge and its depth on the side away
+    from the computer, as dimension lines (3.17.0)."""
+    w, d = st["w"], st["d"]
+    grey = "#64748b"
+    out = []
+    zt = -330                                      # the width, over the back edge
+    out.append(("line", [(0, zt), (w, zt)], grey, 14, None))
+    for x in (0, w):
+        out.append(("line", [(x, zt - 90), (x, zt + 90)], grey, 14, None))
+    out.append(("line", [(0, zt), (110, zt - 55), (110, zt + 55), (0, zt)], grey, 14, None))
+    out.append(("line", [(w, zt), (w - 110, zt - 55), (w - 110, zt + 55), (w, zt)], grey, 14, None))
+    out.append(("text", w / 2, zt - 70, f"{fmt(w / 1000)} wide" + (" (tonight)" if tonight else ""), 140, grey, "middle"))
+    left = (ctl.get("x", w) or 0) >= w / 2         # the depth goes on the side away from the computer
+    xd = -330 if left else w + 330
+    out.append(("line", [(xd, 0), (xd, d)], grey, 14, None))
+    for z in (0, d):
+        out.append(("line", [(xd - 90, z), (xd + 90, z)], grey, 14, None))
+    out.append(("line", [(xd, 0), (xd - 55, 110), (xd + 55, 110), (xd, 0)], grey, 14, None))
+    out.append(("line", [(xd, d), (xd - 55, d - 110), (xd + 55, d - 110), (xd, d)], grey, 14, None))
+    out.append(("text", xd + (-90 if left else 90), d / 2, f"{fmt(d / 1000)} deep", 140, grey, "end" if left else "start"))
+    return out
 
 
 LABEL_SIZE = 125            # mm: the height of a cable label's text on the plot

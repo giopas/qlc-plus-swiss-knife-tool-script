@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.14.0] — 2026-11-07 — A clearer Song Builder
+
 ### Changed — a clearer Song Builder (3.14.0)
 
 - **Three blocks in order**: the song (name, tempo, time, how lengths are counted), the music, the parts. Opening a song built before is the first choice of the first block.
@@ -17,7 +21,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **To the end** is a button on the last row instead of typed text.
 - **No Preview button**: the bar and the starts follow every key. The line beside *Build the Show* says what is left to do.
 - **Start from a typical song** fills an empty table with Intro, Verse, Chorus, Verse, Chorus, Outro.
-- The wiki *Song-Builder* page and all seven languages are updated.
+- The wiki *Song-Builder* page, its screenshot and all seven languages are updated.
 
 ---
 

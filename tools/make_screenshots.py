@@ -142,13 +142,19 @@ def main():
         pg.wait_for_timeout(500)
         pg.get_by_role("button", name="Opened file").first.click()
         shot("17-compare.png", None, 2500)
-        # 25 · Song Builder (3.9.8): the demo song, its parts and the bar next to the music
+        # 25 · Song Builder (3.9.8; three blocks since 3.14.0): the demo song with the verses on
+        # the chaser Rock Loop, the second verse at 90 BPM and its ⋯ panel open
         load(os.path.join(CORPUS, "SongBuilder_demo.qxw"))
         pg.click("#sn-songbuilder")
         pg.wait_for_timeout(1200)
         try:
             pg.evaluate("async () => { const l = await (await fetch('/api/songbuilder/list')).json();"
-                        " const s = l.find(x => x.name === 'Demo Song'); await sbdOpen(s.id); }")
+                        " const s = l.find(x => x.name === 'Demo Song'); await sbdOpen(s.id);"
+                        " const c = _sbd.funcs.find(f => f.type === 'Chaser' && f.name === 'Rock Loop');"
+                        " if (c) [1, 3].forEach(i => { const p = _sbd.parts[i]; if (p) { p.function_id = c.id; p.look = c.name; p.beats = '1'; } });"
+                        " if (_sbd.parts[3]) { _sbd.parts[3].bpm = '90'; _sbd.parts[3]._open = true; }"
+                        " if (_sbd.parts[4]) _sbd.parts[4].fade_out = '1';"
+                        " _sbdRender(); await sbdPreview(); }")
         except Exception as e:  # noqa: BLE001
             print("  ! songbuilder:", str(e)[:120])
         shot("25-song-builder.png", None, 1500)

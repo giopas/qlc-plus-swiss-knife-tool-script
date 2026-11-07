@@ -37,9 +37,9 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.13.0, tempo changes and QLC+ 5.3.1** (giopas, 5 to 7 November 2026; branch `feat/v3.13.0`; all hand checks passed on 7 November, waiting for the push). **Next: 3.14.0, a clearer Song Builder** (proposal below, waiting for giopas). 3.12.0, Brightness levels, and 3.11.0, notes from a gig, were released on 5 November. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.14.0, a clearer Song Builder** (giopas, 7 November 2026; tested by giopas on the Mac the same morning; release commit on branch `feat/v3.14.0`, waiting for the screenshot and the push). 3.13.0, tempo changes and QLC+ 5.3.1, was released on 7 November (tag `v3.13.0`). Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
-### 3.14.0 · A clearer Song Builder (built, waiting for giopas's check, branch `feat/v3.14.0`)
+### 3.14.0 · A clearer Song Builder (tested by giopas on 7 November; release commit prepared, waiting for the screenshot and the push)
 
 **Asked by giopas on 7 November**, after the 3.13.0 tests: the Song Builder has many options and is no longer easy to use in real life. Seen during the tests: he put a tempo on the wrong row because it was not visible that a tempo carries on to the next parts; *Beats/step* was filled in on scenes, where it does nothing and nothing says so; the greyed `3:45` in the music length box looked like a value; *to the end* is cut to *to the er*; the music row holds seven controls; *Preview* repeats what the page already shows live.
 
@@ -57,9 +57,9 @@ Proposal, **confirmed by giopas on 7 November** (extras in a ⋯ panel per row, 
 
 **Built on 7 November.** Only the page changed (`templates/index.html`, `static/js/songbuilder.js`, CSS): the table sent to the server is the same, so recipes, Claude's `song_builder` tool and the tests are unchanged, except that steps are no longer sent for a look that is not a chaser. The table keeps the field being typed in when it is redrawn (ids `sbd-f-<field>-<row>`). Checked headless (jsdom) on the demo song with your test table: no script error, tags and grey/coloured tempo right, *to the end* on the last row, ⋯ panel with the five settings, footer *Ready: 5 parts, 0:32.0*; a new song with *Start from a typical song* and the click-track choice. Found and fixed there: a new song kept the previous song's music length. Seven languages; wiki *Song-Builder* rewritten for the three blocks; CHANGELOG under Unreleased.
 
-**Left for giopas:** look at it on the Mac (`git checkout feat/v3.14.0`, `bash run.sh`): open *Demo Song*, open a ⋯, build; start a new song with *Start from a typical song*. Say what is still unclear.
+**Checked by giopas on 7 November** on the Mac: passed, release asked the same morning. **Release:** version 3.14.0 in `core/workspace.py`, README, packaging; CHANGELOG `[3.14.0]`; `docs/release-notes/RELEASE_NOTES_v3.14.0.md`. Screenshot 25 now shows the three blocks with the second verse at 90 on the chaser *Rock Loop* and its ⋯ open (`tools/make_screenshots.py`). **Left for giopas:** `python3 tools/shots.py readme --only 25` on the Mac (Playwright is not available here), then merge, tag `v3.14.0`, push `main`, the tag and the wiki.
 
-### 3.13.0 · Ready for QLC+ 5.3.1 (same release as the tempo changes; finished, waiting for the push)
+### 3.13.0 · Ready for QLC+ 5.3.1 (released 7 November 2026, tag v3.13.0, with the tempo changes)
 
 **Asked by giopas on 6 November 2026**, the morning after QLC+ 5.3.1 came out (tag `QLC+_5.3.1`, 5 November). Read in the QLC+ source (`debian/changelog-v5` and the diff from 5.3.0): two changes reach the files Swiss Knife reads and writes. Decided by giopas: Swiss Knife must read and fix 5.3.1 files and the upgrade tool must follow the latest QLC+; ship it with the tempo changes as 3.13.0.
 

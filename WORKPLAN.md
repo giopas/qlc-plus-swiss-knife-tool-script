@@ -39,21 +39,25 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 **Release in progress: 3.13.0, tempo changes and QLC+ 5.3.1** (giopas, 5 to 7 November 2026; branch `feat/v3.13.0`; all hand checks passed on 7 November, waiting for the push). **Next: 3.14.0, a clearer Song Builder** (proposal below, waiting for giopas). 3.12.0, Brightness levels, and 3.11.0, notes from a gig, were released on 5 November. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
-### 3.14.0 · A clearer Song Builder (proposal, waiting for giopas)
+### 3.14.0 · A clearer Song Builder (built, waiting for giopas's check, branch `feat/v3.14.0`)
 
 **Asked by giopas on 7 November**, after the 3.13.0 tests: the Song Builder has many options and is no longer easy to use in real life. Seen during the tests: he put a tempo on the wrong row because it was not visible that a tempo carries on to the next parts; *Beats/step* was filled in on scenes, where it does nothing and nothing says so; the greyed `3:45` in the music length box looked like a value; *to the end* is cut to *to the er*; the music row holds seven controls; *Preview* repeats what the page already shows live.
 
-Proposal (to be confirmed before building):
+Proposal, **confirmed by giopas on 7 November** (extras in a ⋯ panel per row, not a switch for all columns; 3.13.0 is pushed first and this is its own release):
 
 | # | What | Status |
 |---|---|---|
-| 1 | Three blocks in order: **Song** (open a song built here or start a new one, name, tempo as BPM and 4/4, lengths in bars or seconds), **Music** (one choice: none, a file with Browse…, a sound already in the show, or a click track), **Parts**. | proposed |
-| 2 | Parts table, first view: Part, Look, Length, Starts. Repeat, fades, tempo change and steps go in a ⋯ panel per row; a row shows what is set there as small chips (×2, fade 0.5 s, ♩90, step every beat). | proposed |
-| 3 | Tempo shown on every row: the row that changes it in full, the rows that carry it on in grey, so it is plain where 90 starts and stops. | proposed |
-| 4 | Steps only for a chaser: *its own timing / every beat / every 2 beats / every bar*; not offered for a scene. | proposed |
-| 5 | Music length box only when the file's length cannot be read; *to the end* as a button state on the last row, not typed text. | proposed |
-| 6 | No Preview button (the bar and the starts update as you type); every message says what to do next. | proposed |
-| 7 | A *Load an example* link on an empty table: the demo song, so a first-time user sees how it is meant to be filled in. | proposed |
+| 1 | Three blocks in order: **Song** (open a song built here or start a new one, name, tempo as BPM and 4/4, lengths in bars or seconds), **Music** (one choice: none, a file with Browse…, a sound already in the show, or a click track), **Parts**. | done |
+| 2 | Parts table, first view: Part, Look, Length, Starts. Repeat, fades, tempo change and steps go in a ⋯ panel per row; a row shows what is set there as small chips (×2, fade 0.5 s, ♩90, step every beat). | done |
+| 3 | Tempo shown on every row: the row that changes it in full, the rows that carry it on in grey, so it is plain where 90 starts and stops. | done |
+| 4 | Steps only for a chaser: *its own timing / every beat / every 2 beats / every bar*; not offered for a scene. | done |
+| 5 | Music length box only when the file's length cannot be read; *to the end* as a button state on the last row, not typed text. | done |
+| 6 | No Preview button (the bar and the starts update as you type); every message says what to do next. | done |
+| 7 | A *Load an example* link on an empty table: the demo song, so a first-time user sees how it is meant to be filled in. | done |
+
+**Built on 7 November.** Only the page changed (`templates/index.html`, `static/js/songbuilder.js`, CSS): the table sent to the server is the same, so recipes, Claude's `song_builder` tool and the tests are unchanged, except that steps are no longer sent for a look that is not a chaser. The table keeps the field being typed in when it is redrawn (ids `sbd-f-<field>-<row>`). Checked headless (jsdom) on the demo song with your test table: no script error, tags and grey/coloured tempo right, *to the end* on the last row, ⋯ panel with the five settings, footer *Ready: 5 parts, 0:32.0*; a new song with *Start from a typical song* and the click-track choice. Found and fixed there: a new song kept the previous song's music length. Seven languages; wiki *Song-Builder* rewritten for the three blocks; CHANGELOG under Unreleased.
+
+**Left for giopas:** look at it on the Mac (`git checkout feat/v3.14.0`, `bash run.sh`): open *Demo Song*, open a ⋯, build; start a new song with *Start from a typical song*. Say what is still unclear.
 
 ### 3.13.0 · Ready for QLC+ 5.3.1 (same release as the tempo changes; finished, waiting for the push)
 

@@ -1,12 +1,16 @@
-/* Song Builder (3.9.8): a table of parts becomes one Show.
- * The table is kept in `_sbd` (name, BPM, music, parts); every edit marks it dirty,
- * Preview shows the starts and warnings, Build writes the Show into the show in progress. */
+/* Song Builder (3.9.8; clearer layout 3.14.0): a table of parts becomes one Show.
+ * Three blocks in order: the song (tempo, how lengths are counted), the music, the parts.
+ * A part shows its name, look, length, tempo and start; repeat, fades, a tempo change and
+ * the chaser's steps are in its ⋯ panel, and show as small tags when set.  Every edit
+ * refreshes the bar and the starts a moment later; Build writes the Show. */
 
 let _sbd = { parts: [], funcs: [], showId: '' };
 const _SBD_LOOK_TYPES = ['Scene', 'Chaser', 'Collection', 'RGBMatrix', 'EFX', 'Script'];
+const _SBD_END = /^(?:until the end|to the end|to end|until end|till the end|end)$/i;
 
 function _sbdEsc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function _sbdFmt(ms) { const s = ms / 1000, m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); }
+function _sbdEl(id) { return document.getElementById(id); }
 
 async function sbdInit() {
   try {
@@ -14,9 +18,12 @@ async function sbdInit() {
     _sbd.funcs = Array.isArray(f) ? f : [];
   } catch (e) { _sbd.funcs = []; }
   const audios = _sbd.funcs.filter(f => f.type === 'Audio');
-  document.getElementById('sbd-audio').innerHTML =
-    `<option value="">${_sbdEsc(t('— no music —'))}</option><option value="__path">${_sbdEsc(t('— music file by path —'))}</option>` +
-    audios.map(f => `<option value="${_sbdEsc(f.id)}">${_sbdEsc(f.name)}</option>`).join('');
+  _sbdEl('sbd-audio').innerHTML =
+    `<option value="">${_sbdEsc(t('No music'))}</option>`
+    + `<option value="__path">${_sbdEsc(t('A sound file…'))}</option>`
+    + `<option value="__click">${_sbdEsc(t('A click track, made for this song'))}</option>`
+    + (audios.length ? `<optgroup label="${_sbdEsc(t('Sounds already in the show'))}">`
+      + audios.map(f => `<option value="${_sbdEsc(f.id)}">${_sbdEsc(f.name)}</option>`).join('') + '</optgroup>' : '');
   await _sbdLoadList();
   if (!_sbd.parts.length) { sbdNew(); }
   else { _sbdRender(); sbdPreview(); }
@@ -26,26 +33,35 @@ async function _sbdLoadList() {
   let list = [];
   try { list = await (await fetch('/api/songbuilder/list')).json(); } catch (e) { /* none */ }
   if (!Array.isArray(list)) list = [];
-  document.getElementById('sbd-open').innerHTML =
-    `<option value="">${_sbdEsc(t('— a new song —'))}</option>` +
-    list.map(s => `<option value="${_sbdEsc(s.id)}"${s.id === _sbd.showId ? ' selected' : ''}>${_sbdEsc(s.name)}</option>`).join('');
+  _sbdEl('sbd-open').innerHTML =
+    `<option value="">${_sbdEsc(t('A new song'))}</option>` +
+    (list.length ? `<optgroup label="${_sbdEsc(t('Built here'))}">` + list.map(s => `<option value="${_sbdEsc(s.id)}"${s.id === _sbd.showId ? ' selected' : ''}>${_sbdEsc(s.name)}</option>`).join('') + '</optgroup>' : '');
+}
+
+function _sbdSetBpb(v) {
+  const sel = _sbdEl('sbd-bpb'), val = String(v || 4);
+  if (![...sel.options].some(o => o.value === val)) sel.insertAdjacentHTML('beforeend', `<option value="${_sbdEsc(val)}">${_sbdEsc(val)}/4</option>`);
+  sel.value = val;
 }
 
 function sbdNew() {
   _sbd.showId = '';
-  document.getElementById('sbd-name').value = '';
-  document.getElementById('sbd-bpm').value = '';
-  document.getElementById('sbd-bpb').value = '4';
-  document.getElementById('sbd-unit').value = 'seconds';
-  document.getElementById('sbd-audio').value = '';
+  _sbd.musicMs = 0;
+  _sbd.plan = null;
+  _sbdEl('sbd-name').value = '';
+  _sbdEl('sbd-bpm').value = '';
+  _sbdSetBpb(4);
+  _sbdEl('sbd-unit').value = 'seconds';
+  _sbdEl('sbd-audio').value = '';
+  _sbdEl('sbd-path').value = '';
+  _sbdEl('sbd-mlen').value = '';
+  _sbd.mlenNeeded = false;
   _sbdMusicShow();
-  document.getElementById('sbd-path').value = '';
-  document.getElementById('sbd-mlen').value = '';
-  document.getElementById('sbd-music-note').textContent = '';
+  _sbdEl('sbd-music-note').textContent = '';
   _sbd.parts = [_sbdBlank('Intro'), _sbdBlank('Verse'), _sbdBlank('Chorus')];
-  document.getElementById('sbd-out').innerHTML = '';
+  _sbdEl('sbd-out').innerHTML = '';
   _sbdRender();
-  sbdPreview();
+  sbdMusicChanged();
 }
 
 function _sbdBlank(name) { return { name: name || '', look: '', function_id: '', length: '', repeat: 1, fade_in: '', fade_out: '', beats: '', bpm: '' }; }
@@ -55,28 +71,44 @@ async function sbdOpen(id) {
   const d = await (await fetch('/api/songbuilder/open?id=' + encodeURIComponent(id))).json();
   if (d.error) { _sbdOut(_sbdEsc(d.error), 'err'); return; }
   _sbd.showId = id;
-  document.getElementById('sbd-name').value = d.name || '';
-  document.getElementById('sbd-bpm').value = d.bpm || '';
-  document.getElementById('sbd-bpb').value = d.beats_per_bar || 4;
-  document.getElementById('sbd-unit').value = ['seconds', 'bars', 'beats'].includes(d.unit) ? d.unit : 'seconds';
+  _sbdEl('sbd-name').value = d.name || '';
+  _sbdEl('sbd-bpm').value = d.bpm || '';
+  _sbdSetBpb(d.beats_per_bar || 4);
+  _sbdEl('sbd-unit').value = ['seconds', 'bars', 'beats'].includes(d.unit) ? d.unit : 'seconds';
   const m = d.music || {};
-  document.getElementById('sbd-audio').value = m.function_id || (m.path ? '__path' : '');
-  _sbdMusicShow();
-  document.getElementById('sbd-path').value = m.path || '';
-  document.getElementById('sbd-mlen').value = m.length || '';
+  _sbdEl('sbd-audio').value = m.function_id || (m.path ? '__path' : '');
+  _sbdEl('sbd-path').value = m.path || '';
+  _sbdEl('sbd-mlen').value = m.length || '';
+  _sbd.mlenNeeded = !!m.length;
   _sbd.parts = (d.parts || []).map(p => ({ ...p, look: (_sbd.funcs.find(f => f.id === p.function_id) || {}).name || '' }));
   _sbdRender();
   sbdMusicChanged();
-  sbdPreview();
 }
 
-function _sbdUnit() { return document.getElementById('sbd-unit').value || 'seconds'; }
+// ── tempo, units, positions ──────────────────────────────────────────────────
+function _sbdSongBpm() { return parseFloat(String(_sbdEl('sbd-bpm').value).replace(',', '.')) || 0; }
+function _sbdUnit() { return _sbdEl('sbd-unit').value || 'seconds'; }
 function _sbdLenHint() { return t('e.g. {0}', { seconds: '8s', bars: '8', beats: '16' }[_sbdUnit()]); }
 function sbdUnitChanged() { _sbdRender(); sbdChanged(); }
-// Beats gone by at *ms*, each part counted at its own tempo (3.13.0): a part with its own BPM
-// changes how many beats a second is from there on.  Before the first preview, the song's BPM.
+// Typing a tempo into a song still counted in seconds, with no length typed yet, switches it
+// to bars: that is what a tempo is for.
+function sbdTempoChanged() {
+  if (_sbdSongBpm() && _sbdUnit() === 'seconds' && !_sbd.parts.some(p => String(p.length || '').trim())) _sbdEl('sbd-unit').value = 'bars';
+  _sbdRender();
+  sbdChanged();
+}
+// The tempo each part plays at: its own when set, else the one running from the parts before it.
+function _sbdTempos() {
+  let run = _sbdSongBpm();
+  return _sbd.parts.map(p => {
+    const own = parseFloat(String(p.bpm || '').replace(',', '.'));
+    if (own > 0) { run = own; return { bpm: own, own: true }; }
+    return { bpm: run, own: false };
+  });
+}
+// Beats gone by at *ms*, each part counted at its own tempo (3.13.0).
 function _sbdBeats(ms) {
-  let bpm = parseFloat(document.getElementById('sbd-bpm').value) || 0, beats = 0, at = 0;
+  let bpm = _sbdSongBpm(), beats = 0, at = 0;
   for (const r of (_sbd.plan && _sbd.plan.parts) || []) {
     if (!(r.end_ms > r.start_ms)) continue;
     const b = parseFloat(r.bpm) || bpm;
@@ -85,42 +117,127 @@ function _sbdBeats(ms) {
   }
   return beats + (ms - at) * bpm / 60000;
 }
-// Where a moment falls in the song, in the unit of the song: "bar 3", "beat 9" (counted from 1) or the time.
+// Where a moment falls in the song: "bar 3", "beat 9" (counted from 1) or the time.
 function _sbdPos(ms) {
-  const bpm = parseFloat(document.getElementById('sbd-bpm').value), bpb = parseFloat(document.getElementById('sbd-bpb').value) || 4, u = _sbdUnit();
-  if (u === 'seconds' || !(bpm > 0)) return _sbdFmt(ms);
+  const bpb = parseFloat(_sbdEl('sbd-bpb').value) || 4, u = _sbdUnit();
+  if (u === 'seconds' || !(_sbdSongBpm() > 0)) return _sbdFmt(ms);
   const beat = _sbdBeats(ms);
   return u === 'bars' ? t('bar {0}', +(beat / bpb + 1).toFixed(2)) : t('beat {0}', +(beat + 1).toFixed(2));
 }
-function _sbdSpan(ms, from = 0) {                        // a duration: "0:20" or "10 bars" / "40 beats"
-  const bpm = parseFloat(document.getElementById('sbd-bpm').value), bpb = parseFloat(document.getElementById('sbd-bpb').value) || 4, u = _sbdUnit();
-  if (u === 'seconds' || !(bpm > 0)) return _sbdFmt(ms);
+function _sbdSpan(ms, from = 0) {
+  const bpb = parseFloat(_sbdEl('sbd-bpb').value) || 4, u = _sbdUnit();
+  if (u === 'seconds' || !(_sbdSongBpm() > 0)) return _sbdFmt(ms);
   const beats = _sbdBeats(from + ms) - _sbdBeats(from);
   return u === 'bars' ? t('{0} bars', +(beats / bpb).toFixed(2)) : t('{0} beats', +beats.toFixed(2));
 }
 
+// ── the parts table ──────────────────────────────────────────────────────────
+function _sbdType(p) { return (_sbd.funcs.find(f => f.id === p.function_id) || {}).type || ''; }
+function _sbdIsEnd(p) { return _SBD_END.test(String(p.length || '').trim()); }
+function _sbdStepsLabel(beats) {
+  const b = parseFloat(String(beats || '').replace(',', '.')), bpb = parseFloat(_sbdEl('sbd-bpb').value) || 4;
+  if (!(b > 0)) return '';
+  if (b === 1) return t('a step every beat');
+  if (b === bpb) return t('a step every bar');
+  return t('a step every {0} beats', +b);
+}
+// Small tags for what the ⋯ panel holds, so a closed row still says it.
+function _sbdChips(p) {
+  const out = [], rep = parseInt(p.repeat, 10) || 1;
+  if (rep > 1) out.push(t('× {0}', rep));
+  if (String(p.fade_in || '').trim()) out.push(t('fade in {0} s', p.fade_in));
+  if (String(p.fade_out || '').trim()) out.push(t('fade out {0} s', p.fade_out));
+  if (_sbdType(p) === 'Chaser' && _sbdStepsLabel(p.beats)) out.push(_sbdStepsLabel(p.beats));
+  return out.map(c => `<span class="sbd-chip">${_sbdEsc(c)}</span>`).join('');
+}
+
 function _sbdRender() {
-  const body = document.getElementById('sbd-rows');
+  const body = _sbdEl('sbd-rows');
   if (!body) return;
+  const act = document.activeElement, keep = act && act.id && act.id.startsWith('sbd-f-') ? [act.id, act.selectionStart] : null;
+  const tempos = _sbdTempos(), last = _sbd.parts.length - 1, hasTempo = tempos.some(x => x.bpm > 0);
+  _sbdEl('sbd-th-tempo').classList.toggle('sbd-hidden', !hasTempo);
   body.innerHTML = _sbd.parts.map((p, i) => {
     const swatch = `<span class="sbd-swatch" style="background:${_sbdColor(p.name)}"></span>`;
-    return `<tr data-i="${i}">
-      <td>${swatch}${i + 1}</td>
-      <td><input class="field-input" type="text" value="${_sbdEsc(p.name)}" oninput="sbdCell(${i},'name',this.value)" placeholder="${_sbdEsc(t('Part'))}"></td>
-      <td><input class="field-input sbd-look" type="text" readonly value="${_sbdEsc(p.function_id ? p.look : '')}" onclick="sbdPick(${i})" placeholder="${_sbdEsc(t('Pick a scene or chaser…'))}"></td>
-      <td style="width:120px"><div class="sbd-len"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" oninput="sbdCell(${i},'length',this.value)" placeholder="${_sbdEsc(_sbdLenHint())}"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdFillEnd(${i})" aria-label="${_sbdEsc(t('Fill to the end of the music'))}" data-tooltip="${_sbdEsc(t('Fill to the end of the music'))}">⇥</button></div></td>
-      <td style="width:60px"><input class="field-input" type="text" value="${_sbdEsc(p.repeat)}" oninput="sbdCell(${i},'repeat',this.value)"></td>
-      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" oninput="sbdCell(${i},'fade_in',this.value)" placeholder="–"></td>
-      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" oninput="sbdCell(${i},'fade_out',this.value)" placeholder="–"></td>
-      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.beats)}" oninput="sbdCell(${i},'beats',this.value)" placeholder="–"></td>
-      <td style="width:70px"><input class="field-input" type="text" value="${_sbdEsc(p.bpm)}" oninput="sbdCell(${i},'bpm',this.value)" placeholder="–" data-tooltip="${_sbdEsc(t('Changes the tempo from here on. Empty keeps the running tempo.'))}"></td>
+    const end = _sbdIsEnd(p), canEnd = i === last;
+    const len = end
+      ? `<div class="sbd-len"><span class="sbd-endpill">${_sbdEsc(t('to the end'))}</span><button class="btn btn-surface sbd-ibtn sbd-on" onclick="sbdToggleEnd(${i})" aria-pressed="true" data-tooltip="${_sbdEsc(t('Give this part a length instead'))}">⇥</button></div>`
+      : `<div class="sbd-len"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" id="sbd-f-length-${i}" oninput="sbdCell(${i},'length',this.value)" placeholder="${_sbdEsc(_sbdLenHint())}" aria-label="${_sbdEsc(t('Length'))}">`
+        + (canEnd ? `<button class="btn btn-surface sbd-ibtn" onclick="sbdToggleEnd(${i})" aria-pressed="false" data-tooltip="${_sbdEsc(t('Play this last part to the end of the music'))}">⇥</button>` : '') + '</div>';
+    const tp = tempos[i];
+    const tempo = !hasTempo ? '' : `<td class="sbd-tempo">${tp.bpm > 0
+      ? `<button class="sbd-tempo-btn${tp.own ? ' sbd-tempo-own' : ''}" onclick="sbdMore(${i}, 'bpm')" data-tooltip="${_sbdEsc(tp.own ? t('This part changes the tempo to {0}', tp.bpm) : t('Carries on at {0}: change it in ⋯', tp.bpm))}">${tp.own ? '♩' : ''}${_sbdEsc(+tp.bpm.toFixed(2))}</button>` : '–'}</td>`;
+    const row = `<tr data-i="${i}" class="sbd-row${p._open ? ' sbd-row-open' : ''}">
+      <td class="sbd-num">${swatch}${i + 1}</td>
+      <td><input class="field-input" type="text" value="${_sbdEsc(p.name)}" id="sbd-f-name-${i}" oninput="sbdCell(${i},'name',this.value)" placeholder="${_sbdEsc(t('Part'))}" aria-label="${_sbdEsc(t('Part'))}"></td>
+      <td><input class="field-input sbd-look" type="text" readonly value="${_sbdEsc(p.function_id ? p.look : '')}" onclick="sbdPick(${i})" placeholder="${_sbdEsc(t('Pick a scene or chaser…'))}" aria-label="${_sbdEsc(t('Look'))}">
+        <div class="sbd-chips" id="sbd-chips-${i}">${_sbdChips(p)}</div></td>
+      <td style="width:150px">${len}</td>
+      ${tempo}
       <td class="sbd-start" id="sbd-start-${i}">${p.start_ms === undefined ? '' : _sbdEsc(_sbdPos(p.start_ms))}</td>
-      <td style="white-space:nowrap"><button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},-1)" aria-label="${_sbdEsc(t('Up'))}">↑</button>
-        <button class="btn btn-surface" style="padding:0 6px" onclick="sbdMove(${i},1)" aria-label="${_sbdEsc(t('Down'))}">↓</button>
-        <button class="btn btn-surface" style="padding:0 6px" onclick="sbdCopy(${i})" aria-label="${_sbdEsc(t('Copy this row'))}" data-tooltip="${_sbdEsc(t('Copy this row'))}">⧉</button>
-        <button class="btn btn-surface" style="padding:0 6px" onclick="sbdRemove(${i})" aria-label="${_sbdEsc(t('Remove'))}">×</button></td>
+      <td class="sbd-acts"><button class="btn btn-surface sbd-ibtn${p._open ? ' sbd-on' : ''}" onclick="sbdMore(${i})" aria-expanded="${p._open ? 'true' : 'false'}" data-tooltip="${_sbdEsc(t('Repeat, fades, tempo change, steps'))}">⋯</button>
+        <button class="btn btn-surface sbd-ibtn" onclick="sbdMove(${i},-1)" aria-label="${_sbdEsc(t('Up'))}">↑</button>
+        <button class="btn btn-surface sbd-ibtn" onclick="sbdMove(${i},1)" aria-label="${_sbdEsc(t('Down'))}">↓</button>
+        <button class="btn btn-surface sbd-ibtn" onclick="sbdCopy(${i})" aria-label="${_sbdEsc(t('Copy this row'))}" data-tooltip="${_sbdEsc(t('Copy this row'))}">⧉</button>
+        <button class="btn btn-surface sbd-ibtn" onclick="sbdRemove(${i})" aria-label="${_sbdEsc(t('Remove'))}">×</button></td>
     </tr>`;
+    return row + (p._open ? _sbdMoreRow(p, i, tempos, hasTempo) : '');
   }).join('');
+  _sbdEl('sbd-shape').classList.toggle('sbd-hidden', _sbd.parts.some(p => p.function_id || String(p.length || '').trim()));
+  if (keep) { const el = _sbdEl(keep[0]); if (el) { el.focus(); try { el.setSelectionRange(keep[1], keep[1]); } catch (e) { /* select */ } } }
+}
+
+// The ⋯ panel of a part: what most songs never need.
+function _sbdMoreRow(p, i, tempos, hasTempo) {
+  const before = i > 0 ? tempos[i - 1].bpm : _sbdSongBpm();
+  const bpb = parseFloat(_sbdEl('sbd-bpb').value) || 4, b = String(p.beats || '').trim();
+  const opts = [['', t('its own timing')], ['1', t('every beat')], ['2', t('every 2 beats')], [String(bpb), t('every bar')]];
+  if (b && !opts.some(o => o[0] === b)) opts.push([b, t('every {0} beats', b)]);
+  const steps = _sbdType(p) === 'Chaser'
+    ? `<label class="sbd-more-f"><span>${_sbdEsc(t('Chaser steps'))}</span><select class="field-input" onchange="sbdCell(${i},'beats',this.value,true)"${hasTempo ? '' : ' disabled'}>`
+      + opts.map(([v, l]) => `<option value="${_sbdEsc(v)}"${v === b ? ' selected' : ''}>${_sbdEsc(l)}</option>`).join('') + '</select>'
+      + `<small>${_sbdEsc(hasTempo ? t('A step lasts that long at the tempo of the part.') : t('Needs the tempo of the song.'))}</small></label>`
+    : `<div class="sbd-more-f"><span>${_sbdEsc(t('Chaser steps'))}</span><small>${_sbdEsc(p.function_id ? t('Only for a chaser: this look is a {0}.', _sbdType(p) || t('look')) : t('Pick a chaser as the look to time its steps.'))}</small></div>`;
+  return `<tr class="sbd-more"><td></td><td colspan="${hasTempo ? 6 : 5}"><div class="sbd-more-grid">
+    <label class="sbd-more-f"><span>${_sbdEsc(t('Repeat'))}</span><input class="field-input" type="text" value="${_sbdEsc(p.repeat)}" id="sbd-f-repeat-${i}" oninput="sbdCell(${i},'repeat',this.value,true)"><small>${_sbdEsc(t('times in a row'))}</small></label>
+    <label class="sbd-more-f"><span>${_sbdEsc(t('Fade in'))}</span><input class="field-input" type="text" value="${_sbdEsc(p.fade_in)}" id="sbd-f-fade_in-${i}" oninput="sbdCell(${i},'fade_in',this.value,true)" placeholder="${_sbdEsc(t('look’s own'))}"><small>${_sbdEsc(t('seconds; 0 for none'))}</small></label>
+    <label class="sbd-more-f"><span>${_sbdEsc(t('Fade out'))}</span><input class="field-input" type="text" value="${_sbdEsc(p.fade_out)}" id="sbd-f-fade_out-${i}" oninput="sbdCell(${i},'fade_out',this.value,true)" placeholder="${_sbdEsc(t('look’s own'))}"><small>${_sbdEsc(t('seconds; 0 for none'))}</small></label>
+    <label class="sbd-more-f"><span>${_sbdEsc(t('Tempo from here'))}</span><input id="sbd-f-bpm-${i}" class="field-input" type="text" value="${_sbdEsc(p.bpm)}" oninput="sbdCell(${i},'bpm',this.value,true)" placeholder="${_sbdEsc(before > 0 ? String(+before.toFixed(2)) : 'BPM')}"><small>${_sbdEsc(before > 0 ? t('Empty: carries on at {0}. A new tempo lasts until a later part sets another.', +before.toFixed(2)) : t('BPM. It lasts until a later part sets another.'))}</small></label>
+    ${steps}
+  </div></td></tr>`;
+}
+
+function sbdMore(i, focus) {
+  const p = _sbd.parts[i];
+  if (!p) return;
+  p._open = focus ? true : !p._open;
+  _sbdRender();
+  if (focus === 'bpm') _sbdEl('sbd-f-bpm-' + i)?.focus();
+}
+
+function sbdToggleEnd(i) {
+  const p = _sbd.parts[i];
+  if (!p) return;
+  if (_sbdIsEnd(p)) { p.length = ''; }
+  else {
+    if (!_sbd.musicMs) { _sbdOut(_sbdEsc(t('“To the end” needs the music: choose it in step 2 first.')), 'hint'); return; }
+    p.length = 'to the end'; p.repeat = 1;
+  }
+  _sbdRender();
+  sbdChanged();
+}
+
+// A typical song shape, so an empty table shows how it is meant to be filled in.
+function sbdShape() {
+  const bars = _sbdSongBpm() > 0 && _sbdUnit() !== 'seconds', beats = _sbdUnit() === 'beats';
+  const bpb = parseFloat(_sbdEl('sbd-bpb').value) || 4;
+  const len = n => bars ? String(beats ? n * bpb : n) : (n * 2) + 's';
+  const shape = [['Intro', 4], ['Verse', 8], ['Chorus', 8], ['Verse', 8], ['Chorus', 8], ['Outro', 4]];
+  _sbd.parts = shape.map(([n, l]) => ({ ..._sbdBlank(n), length: len(l) }));
+  if (_sbd.musicMs) _sbd.parts[_sbd.parts.length - 1].length = 'to the end';
+  _sbdRender();
+  sbdChanged();
+  _sbdOut(_sbdEsc(t('A typical song is filled in. Pick a look for each part, then change the lengths to fit.')), 'hint');
 }
 
 // Colours by part name in order of first appearance: the same as the tracks of the Show (core/song_builder.py).
@@ -182,28 +299,23 @@ function sbdPickChoose(id) {
 }
 
 let _sbdTimer = null;
-// Every edit refreshes the preview (and the bars) a moment after the last key.
+// Every edit refreshes the bar and the starts a moment after the last key.
 function sbdChanged() { clearTimeout(_sbdTimer); _sbdTimer = setTimeout(sbdPreview, 350); }
-function sbdCell(i, key, val) { if (_sbd.parts[i]) { _sbd.parts[i][key] = val; if (key === 'name') _sbdRecolor(); sbdChanged(); } }
-function _sbdRecolor() { document.querySelectorAll('#sbd-rows tr').forEach((tr, i) => { const sw = tr.querySelector('.sbd-swatch'); if (sw && _sbd.parts[i]) sw.style.background = _sbdColor(_sbd.parts[i].name); }); }
-function sbdAddRow() { _sbd.parts.push(_sbdBlank('')); _sbdRender(); sbdChanged(); }
-// ⇥ writes the number that makes this part end exactly where the music ends (what is left after the parts above it).
-function sbdFillEnd(i) {
-  const p = _sbd.parts[i], music = _sbd.musicMs || 0, start = p && p.start_ms;
-  if (!p || !music || start === undefined || music <= start) { _sbdOut(_sbdEsc(t('Pick the music first, and put this part after the ones before it.')), 'hint'); return; }
-  const rem = music - start, bpm = parseFloat(document.getElementById('sbd-bpm').value), bpb = parseFloat(document.getElementById('sbd-bpb').value) || 4, u = _sbdUnit();
-  let txt;
-  if (u === 'seconds' || !(bpm > 0)) txt = (+(rem / 1000).toFixed(2)) + 's';
-  else { const beats = rem / (60000 / bpm); txt = String(+(u === 'bars' ? beats / bpb : beats).toFixed(2)); }
-  p.length = txt; p.repeat = 1;
-  _sbdRender();
+// *redraw*: the edit changes what other rows show (tags, tempo), so the table is drawn again;
+// the field being typed in keeps its place.
+function sbdCell(i, key, val, redraw) {
+  if (!_sbd.parts[i]) return;
+  _sbd.parts[i][key] = val;
+  if (key === 'name') _sbdRecolor();
+  if (redraw) _sbdRender();
   sbdChanged();
 }
-
+function _sbdRecolor() { document.querySelectorAll('#sbd-rows tr.sbd-row').forEach(tr => { const i = +tr.dataset.i, sw = tr.querySelector('.sbd-swatch'); if (sw && _sbd.parts[i]) sw.style.background = _sbdColor(_sbd.parts[i].name); }); }
+function sbdAddRow() { _sbd.parts.push(_sbdBlank('')); _sbdRender(); sbdChanged(); }
 function sbdCopy(i) {
   const p = _sbd.parts[i];
   if (!p) return;
-  _sbd.parts.splice(i + 1, 0, { ...p, start_ms: undefined });
+  _sbd.parts.splice(i + 1, 0, { ...p, start_ms: undefined, _open: false });
   _sbdRender();
   sbdChanged();
 }
@@ -216,11 +328,13 @@ function sbdMove(i, d) {
   sbdChanged();
 }
 
+// ── music ────────────────────────────────────────────────────────────────────
 function _sbdMusicShow() {
-  const on = document.getElementById('sbd-audio').value === '__path';
-  document.getElementById('sbd-path').classList.toggle('sbd-hidden', !on);
-  document.getElementById('sbd-browse')?.classList.toggle('sbd-hidden', !on);
-  document.getElementById('sbd-mlen').classList.toggle('sbd-hidden', !on);
+  const v = _sbdEl('sbd-audio').value;
+  _sbdEl('sbd-path').classList.toggle('sbd-hidden', v !== '__path');
+  _sbdEl('sbd-browse').classList.toggle('sbd-hidden', v !== '__path');
+  _sbdEl('sbd-mlen-wrap').classList.toggle('sbd-hidden', !(v === '__path' && (_sbd.mlenNeeded || _sbdEl('sbd-mlen').value.trim())));
+  _sbdEl('sbd-click-wrap').classList.toggle('sbd-hidden', v !== '__click');
 }
 
 // Pick the music with the computer's own file dialog (3.13.0).  A file in the show's folder
@@ -229,48 +343,61 @@ async function sbdBrowseMusic() {
   const path = await nativePick('Select the music file',
     [{ label: 'Sound', exts: ['.wav', '.mp3', '.ogg', '.flac', '.m4a', '.aac'] }]);
   if (!path) {
-    if (nativePick.unavailable) document.getElementById('sbd-music-note').textContent = t('No file dialog here: type the path of the file.');
+    if (nativePick.unavailable) _sbdEl('sbd-music-note').textContent = t('No file dialog here: type the path of the file.');
     return;
   }
-  document.getElementById('sbd-path').value = path;
+  _sbdEl('sbd-path').value = path;
   await sbdMusicChanged();
 }
 
 async function sbdMusicChanged() {
+  const note = _sbdEl('sbd-music-note');
+  const v = _sbdEl('sbd-audio').value;
+  const path = _sbdEl('sbd-path').value.trim();
   _sbdMusicShow();
   sbdChanged();
-  const note = document.getElementById('sbd-music-note');
-  const fid = document.getElementById('sbd-audio').value;
-  const path = document.getElementById('sbd-path').value.trim();
-  if (fid && fid !== '__path') {
-    const f = _sbd.funcs.find(x => x.id === fid);
-    note.textContent = f ? t('Uses the sound function “{0}” already in the show.', f.name) : '';
+  if (v === '') { note.textContent = t('No music: the Show lasts as long as its parts.'); return; }
+  if (v === '__click') {
+    note.textContent = _sbdSongBpm() > 0
+      ? t('A sound file with a click on every beat, at the tempo of each part, as long as the song. It is saved next to the show and becomes the music. Make it again after you change the parts.')
+      : t('A click track needs the tempo of the song: type it in step 1.');
     return;
   }
-  if (!path) { note.textContent = ''; return; }
+  if (v !== '__path') {
+    const f = _sbd.funcs.find(x => x.id === v);
+    note.textContent = f ? t('Uses the sound “{0}” already in the show.', f.name) : '';
+    return;
+  }
+  if (!path) { note.textContent = t('Press Browse… to pick the file.'); return; }
   const d = await (await fetch('/api/songbuilder/music', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) })).json();
   if (d.error) { note.textContent = d.error; return; }
-  if (d.path && d.path !== path) { document.getElementById('sbd-path').value = d.path; sbdChanged(); }
-  if (!d.found) { note.textContent = t('Not found on this computer: check the path, or pick the file with Browse….'); return; }
-  note.textContent = d.length_ms ? t('Found, {0} long.', _sbdFmt(d.length_ms)) : t('Found, but its length cannot be read: type it in the box (for example 3:45).');
+  if (d.path && d.path !== path) { _sbdEl('sbd-path').value = d.path; sbdChanged(); }
+  _sbd.mlenNeeded = !d.found || !d.length_ms;
+  _sbdMusicShow();
+  if (!d.found) { note.textContent = t('Not found on this computer: pick it with Browse…, or type its length in the box to carry on.'); return; }
+  note.textContent = d.length_ms ? t('Found, {0} long.', _sbdFmt(d.length_ms)) : t('Its length can’t be read from this file: type it in the box (m:ss).');
 }
 
 function _sbdSpec() {
-  const fid = document.getElementById('sbd-audio').value;
-  const path = document.getElementById('sbd-path').value.trim();
+  const v = _sbdEl('sbd-audio').value;
+  const path = _sbdEl('sbd-path').value.trim();
+  const music = (v && !v.startsWith('__')) ? { function_id: v }
+    : (v === '__path' && path ? { path, length: _sbdEl('sbd-mlen').value.trim() } : {});
   return {
-    name: document.getElementById('sbd-name').value.trim(),
-    bpm: document.getElementById('sbd-bpm').value.trim(),
-    beats_per_bar: document.getElementById('sbd-bpb').value.trim(),
+    name: _sbdEl('sbd-name').value.trim(),
+    bpm: _sbdEl('sbd-bpm').value.trim(),
+    beats_per_bar: _sbdEl('sbd-bpb').value.trim(),
     unit: _sbdUnit(),
     show_id: _sbd.showId,
-    music: (fid && fid !== '__path') ? { function_id: fid } : (fid === '__path' && path ? { path, length: document.getElementById('sbd-mlen').value.trim() } : {}),
+    music,
+    // steps only mean something on a chaser: on any other look they are not sent (3.14.0)
     parts: _sbd.parts.map(p => ({ name: p.name, function_id: p.function_id, length: p.length, repeat: p.repeat,
-                                  fade_in: p.fade_in, fade_out: p.fade_out, beats: p.beats, bpm: p.bpm })),
+                                  fade_in: p.fade_in, fade_out: p.fade_out,
+                                  beats: _sbdType(p) === 'Chaser' ? p.beats : '', bpm: p.bpm })),
   };
 }
 
-function _sbdOut(html, cls) { document.getElementById('sbd-out').innerHTML = `<div class="${cls === 'err' ? 'sbd-err' : cls === 'hint' ? 'sbd-hint' : ''}">${html}</div>`; }
+function _sbdOut(html, cls) { _sbdEl('sbd-out').innerHTML = `<div class="${cls === 'err' ? 'sbd-err' : cls === 'hint' ? 'sbd-hint' : ''}">${html}</div>`; }
 
 function _sbdBars(res) {
   const total = res.length_ms || 0, music = res.music_ms || 0, scale = Math.max(total, music, 1);
@@ -295,12 +422,28 @@ function _sbdBars(res) {
        + `<div class="sbd-bar-row"><span class="sbd-bar-lbl"></span><div class="sbd-ruler"><span>${_sbdEsc(_sbdPos(0))}</span><span>${_sbdEsc(_sbdPos(scale))}</span></div></div>`;
 }
 
+// The line beside Build: what is left to do, or that the song is ready.
+function _sbdFoot(res) {
+  const el = _sbdEl('sbd-foot-note');
+  if (!el) return;
+  const noLook = _sbd.parts.filter(p => !p.function_id).length;
+  const bad = (res.parts || []).filter(r => r.issue).length;
+  if (!_sbdEl('sbd-name').value.trim()) el.textContent = t('Give the song a name in step 1.');
+  else if (noLook) el.textContent = t('Pick a look for {0} part(s).', noLook);
+  else if (bad) el.textContent = t('Fix the parts listed above the button.');
+  else el.textContent = t('Ready: {0} parts, {1}.', _sbd.parts.length, _sbdFmt(res.length_ms || 0));
+}
+
 function _sbdShowPlan(res) {
   _sbd.plan = res;                                        // the tempo map for bar and beat numbers
-  (res.parts || []).forEach((r, i) => { const el = document.getElementById('sbd-start-' + i); if (_sbd.parts[i]) _sbd.parts[i].start_ms = r.start_ms; if (el) el.textContent = _sbdPos(r.start_ms); });
-  document.getElementById('sbd-bars').innerHTML = _sbdBars(res);
+  (res.parts || []).forEach((r, i) => { const el = _sbdEl('sbd-start-' + i); if (_sbd.parts[i]) _sbd.parts[i].start_ms = r.start_ms; if (el) el.textContent = _sbdPos(r.start_ms); });
+  _sbdEl('sbd-bars').innerHTML = _sbdBars(res);
+  _sbdFoot(res);
   const total = t('Total {0}', _sbdSpan(res.length_ms || 0)) + (res.music_ms ? ' · ' + t('music {0}', _sbdFmt(res.music_ms)) : '') + ((res.free_ms || 0) > 0 ? ' · ' + t('Free {0}', _sbdSpan(res.free_ms, res.length_ms || 0)) : '');
-  const issues = (res.parts || []).map((r, i) => r.issue ? `<div class="sbd-hint">${_sbdEsc(t('Row {0}: {1}', i + 1, r.issue))}</div>` : '').join('');
+  const issues = (res.parts || []).map((r, i) => r.issue && _sbd.parts[i] && (_sbd.parts[i].function_id || String(_sbd.parts[i].length || '').trim())
+    ? `<div class="sbd-hint">${_sbdEsc(t('Row {0}: {1}', i + 1, r.issue))}</div>` : '').join('');
+  const song = _sbdEl('sbd-song-note');
+  if (song) song.textContent = (_sbdUnit() !== 'seconds' && !(_sbdSongBpm() > 0)) ? t('Bars and beats need the tempo: type the BPM, or count in seconds.') : '';
   const warns = (res.warnings || []).map(w => `<div class="sbd-warn">⚠ ${_sbdEsc(w)}</div>`).join('');
   return `<div>${_sbdEsc(total)}</div>${issues}${warns}`;
 }
@@ -309,7 +452,7 @@ async function sbdPreview() {
   const res = await _sbdPost('/api/songbuilder/preview');
   if (!res.error) _sbd.musicMs = res.music_ms || 0;
   if (res.error) { _sbdOut(_sbdEsc(res.error), 'hint'); return; }
-  document.getElementById('sbd-out').innerHTML = _sbdShowPlan(res);
+  _sbdEl('sbd-out').innerHTML = _sbdShowPlan(res);
 }
 
 async function _sbdPost(url, extra) {
@@ -324,20 +467,20 @@ async function sbdBuild() {
   if (res.error) { _sbdOut(_sbdEsc(res.error), 'err'); return; }
   _sbd.showId = res.show_id;
   await _sbdLoadList();
-  document.getElementById('sbd-out').innerHTML =
+  _sbdEl('sbd-out').innerHTML =
     `<div>${_sbdEsc(t('✓ Show “{0}” built (ID {1}). Assign it to a song in the Setlist Manager.', res.name, res.show_id))}</div>` + _sbdShowPlan(res);
   if (typeof showRefresh === 'function') showRefresh();
   if (typeof setStatus === 'function') setStatus(t('✓ Show “{0}” built — Save as new file… when you’re ready.', res.name), (res.warnings || []).length ? 'warn' : 'ok');
 }
 
-// A click track (3.10.0): a .wav with a click on every beat, saved next to the show and used as the music.
+// A click track (3.10.0; follows each part's tempo since 3.13.0): saved next to the show and used as the music.
 async function sbdClick() {
-  const res = await _sbdPost('/api/songbuilder/click', { sound: document.getElementById('sbd-click-sound').value });
+  const res = await _sbdPost('/api/songbuilder/click', { sound: _sbdEl('sbd-click-sound').value });
   if (res.error) { _sbdOut(_sbdEsc(res.error), 'err'); return; }
-  document.getElementById('sbd-audio').value = '__path';
-  _sbdMusicShow();
-  document.getElementById('sbd-path').value = res.path;
-  document.getElementById('sbd-mlen').value = '';
+  _sbdEl('sbd-audio').value = '__path';
+  _sbdEl('sbd-path').value = res.path;
+  _sbdEl('sbd-mlen').value = '';
+  _sbd.mlenNeeded = false;
   await sbdMusicChanged();
   sbdPreview();
   setStatus(t('✓ Click track saved: {0}', res.name), 'ok');

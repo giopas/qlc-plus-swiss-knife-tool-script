@@ -4789,6 +4789,31 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .sbd-len { display: flex; gap: 4px; }
 .sbd-ruler { flex: 1; display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .sbd-hidden { display: none; }
+/* 3.14.0: a clearer Song Builder — three numbered blocks, a short table, a ⋯ panel per part */
+.sbd-block { margin-bottom: 18px; }
+.sbd-block-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.sbd-step { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 11px; }
+.sbd-dim { font-weight: 400; font-size: 11px; color: var(--text-dim); }
+.sbd-music-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sbd-music-row > span { display: inline-flex; gap: 8px; align-items: center; }
+.sbd-under { display: flex; gap: 8px; align-items: center; }
+.sbd-num { white-space: nowrap; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.sbd-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.sbd-chips:empty { display: none; }
+.sbd-chip { font-size: 11px; padding: 1px 6px; border-radius: var(--radius-pill, 999px); background: var(--surface-2); color: var(--text-dim); white-space: nowrap; }
+.sbd-endpill { flex: 1; display: inline-flex; align-items: center; padding: 0 8px; min-height: 28px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); font-size: 12px; white-space: nowrap; }
+.sbd-ibtn { padding: 0 7px; }
+.sbd-on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.sbd-acts { white-space: nowrap; }
+.sbd-tempo { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sbd-tempo-btn { background: none; border: 0; padding: 2px 4px; cursor: pointer; color: var(--text-faint); font: inherit; font-size: 12px; }
+.sbd-tempo-btn.sbd-tempo-own { color: var(--accent); font-weight: 600; }
+.sbd-row-open td { border-bottom: 0; }
+.sbd-more td { padding-top: 0; }
+.sbd-more-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 14px; padding: 10px 12px; margin: 2px 0 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.sbd-more-f { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+.sbd-more-f > span { font-weight: 600; color: var(--text); }
+.sbd-more-f small { color: var(--text-dim); font-size: 11px; line-height: 1.35; }
 .sbd-pick-list .pool-type-header { top: 0; }
 .sbd-pick-box { width: 520px; max-width: 94vw; max-height: 80vh; display: flex; flex-direction: column; }
 .sbd-pick-type { margin-top: 6px; }

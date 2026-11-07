@@ -425,12 +425,73 @@ def _best_splitter(base, rig, router, trs, splitter, iface):
     return best
 
 
+def _free_output(p: dict) -> Optional[dict]:
+    """A free DMX output for the transmitter: on a splitter the plan feeds,
+    then on an interface (3.16.0)."""
+    items = {it["id"]: it for it in p["tonight"]["items"] if it.get("count", 0) > 0}
+    busy = {(c["source"]["item"], c["source"]["port"]) for c in p["chains"]}
+    fed = {d.get("item") for c in p["chains"] for d in c["devices"]}
+    cands = [it for it in items.values() if it["kind"] == "splitter" and it["id"] in fed]
+    cands += [it for it in items.values() if it["kind"] == "interface"]
+    for it in cands:
+        outs = [q for q in it["ports"] if q["role"] in ("out", "thru")]
+        for k, q in enumerate(outs):
+            if q["role"] == "out" and q["conn"] in ("xlr3", "xlr5") and (it["id"], k) not in busy:
+                return {"item": it["id"], "port": k}
+    return None
+
+
+def _with_radio(a: dict, groups: List[dict], tx: str, rig: dict) -> dict:
+    """Alternative *a* with the fixtures you sent by radio added back as you
+    chose them: the transmitter on a free output (or, with none free, after the
+    last fixture of the first chain), one chain per receiver (3.16.0)."""
+    p = copy.deepcopy(a["plan"])
+    src = _free_output(p)
+    if any(d.get("item") == tx for c in p["chains"] for d in c["devices"]):
+        pass                                       # the transmitter is on a chain already (the feed by radio)
+    elif src is not None:
+        p["chains"].append({"source": src, "devices": [{"item": tx}], "label": "Radio transmitter"})
+    else:
+        ch = next((c for c in p["chains"] if any(d.get("fixture") is not None for d in c["devices"])), None)
+        if ch is None:
+            return a
+        ch["devices"].append({"item": tx})
+        ch["cables"] = []
+    for g in groups:
+        p["chains"].append({"source": {"item": tx, "port": 0}, "devices": copy.deepcopy(g["devices"]), "label": "Radio"})
+    p = plan_mod.clean_plan(p)
+    n = sum(1 for g in groups for d in g["devices"] if d.get("fixture") is not None)
+    note = (a.get("note") or "") + (" · " if a.get("note") else "") + f"{n} by radio, as you chose"
+    out = _alt(a["key"], a["name"], p, rig, note)
+    out["radio_kept"] = n
+    return out
+
+
 def alternatives(plan: dict, rig: dict) -> List[dict]:
     """Two or three alternatives for the plan's controller preference, best
     first.  The input plan's tonight, owners, walkways, outlets and slack are
-    kept; its chains and places are replaced (a placed controller stays)."""
+    kept; its chains and places are replaced (a placed controller stays).
+
+    3.16.0: fixtures you sent by radio stay by radio in every alternative
+    (each with its receiver, from one transmitter); the planner cables the
+    others.  When the plan has an approved version, each alternative carries
+    ``vs_approved`` (cable, errors, warnings: this one minus the approved)."""
     base = plan_mod.clean_plan(plan)
-    rig = plan_mod.with_extras(rig, base)
+    full = plan_mod.with_extras(rig, base)
+    groups = plan_mod.radio_groups(base)
+    items0 = {it["id"]: it for it in base["tonight"]["items"]}
+    tx = next((c["source"]["item"] for c in base["chains"]
+               if (items0.get(c["source"]["item"]) or {}).get("kind") == "wireless_tx"), None) or \
+        next((d["item"] for c in base["chains"] for d in c["devices"]
+              if d.get("item") and (items0.get(d["item"]) or {}).get("kind") == "wireless_tx"), None)
+    if not tx and groups:
+        tx = next((it["id"] for it in kit_mod.by_kind(base["tonight"], "wireless_tx")), None)
+    if not tx:
+        groups = []
+    by_radio = {d["fixture"] for g in groups for d in g["devices"] if d.get("fixture") is not None}
+    rig = {**full, "fixtures": [f for f in full["fixtures"] if f["id"] not in by_radio]} if by_radio else full
+    if not rig["fixtures"]:
+        rig, groups = full, []
     base["chains"] = []
     base["places"] = {k: v for k, v in base["places"].items() if k == "controller"}
     tonight = base["tonight"]
@@ -497,8 +558,16 @@ def alternatives(plan: dict, rig: dict) -> List[dict]:
             if wp:
                 out.append(_alt("", "Wireless to the stage", wp, rig,
                                 f"transmitter at the computer, receiver by the splitter ({best[1]})"))
+    if groups:
+        out = [_with_radio(a, groups, tx, full) for a in out]
     out.sort(key=lambda a: (a["score"], a["name"]))
     for k, a in enumerate(out):
         a["key"] = "ABCDEF"[k]
         a["best"] = k == 0
+    if base.get("approved"):                       # 3.16.0: compared with the plan you approved
+        ap = plan_mod.evaluate(plan_mod.back_to_approved(base), full)
+        for a in out:
+            a["vs_approved"] = {"cable_m": round(a["cable_m"] - ap["totals"]["cable_m"], 1),
+                                "error": a["summary"]["error"] - ap["summary"]["error"],
+                                "warning": a["summary"]["warning"] - ap["summary"]["warning"]}
     return out

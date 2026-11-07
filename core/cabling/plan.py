@@ -27,6 +27,9 @@ every version of the show shares it (like the Stage Monitor's
 * ``preferred`` (3.11.0) — the alternative you prefer, ``{"key", "name"}``;
 * ``hide_band`` (3.11.0) — the meshes (band floor) are not drawn; cables
   still go round them.
+* ``approved`` (3.16.0) — the plan you approved: ``{"at", "chains",
+  "places", "cable_marks"}``, a copy kept so a later change (a new
+  proposal picked, a chain moved) can be seen and undone.
 
 Stage left is the performers' left, the audience's right: the high X side.
 
@@ -37,6 +40,7 @@ returns the chains with their links and all the checks.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import os
 import re
@@ -253,6 +257,78 @@ def _clean_preferred(v) -> Optional[dict]:
     return {"key": str(v["key"]), "name": str(v.get("name") or "")[:60]}
 
 
+def _clean_approved(v) -> Optional[dict]:
+    """The approved plan (3.16.0): when, and a copy of its chains, places and
+    cable marks."""
+    if not isinstance(v, dict) or not isinstance(v.get("chains"), list):
+        return None
+    at = str(v.get("at") or "")[:19]
+    if not re.match(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?)?$", at):
+        return None
+    return {"at": at, "chains": [c for c in (_clean_chain(x) for x in v["chains"]) if c],
+            "places": _clean_places(v.get("places")), "cable_marks": _clean_marks(v.get("cable_marks"))}
+
+
+def _sig(chains, places, marks) -> str:
+    data = json.dumps({"c": [{"s": c["source"], "d": c["devices"], "x": c.get("cables") or []} for c in chains],
+                       "p": {k: v for k, v in (places or {}).items()}, "m": marks or {}}, sort_keys=True)
+    return hashlib.sha1(data.encode("utf-8")).hexdigest()[:12]
+
+
+def approval(plan: dict) -> Optional[dict]:
+    """``{"at", "same"}`` when a plan was approved: *same* is true while the
+    chains, places and cable marks are still the approved ones (3.16.0)."""
+    ap = plan.get("approved")
+    if not ap:
+        return None
+    now = _sig(plan["chains"], plan.get("places"), plan.get("cable_marks"))
+    then = _sig(ap["chains"], ap.get("places"), ap.get("cable_marks"))
+    return {"at": ap["at"], "same": now == then, "chains": len(ap["chains"])}
+
+
+def approve(plan: dict, at: str) -> dict:
+    """The plan with its chains, places and cable marks approved at *at*
+    (``YYYY-MM-DDTHH:MM``)."""
+    p = clean_plan(copy.deepcopy(plan))
+    p["approved"] = {"at": at, "chains": copy.deepcopy(p["chains"]), "places": copy.deepcopy(p["places"]),
+                     "cable_marks": copy.deepcopy(p.get("cable_marks") or {})}
+    return clean_plan(p)
+
+
+def back_to_approved(plan: dict) -> dict:
+    """The plan with the approved chains, places and cable marks put back."""
+    p = clean_plan(copy.deepcopy(plan))
+    ap = p.get("approved")
+    if ap:
+        p["chains"] = copy.deepcopy(ap["chains"])
+        p["places"] = copy.deepcopy(ap["places"])
+        if ap.get("cable_marks"):
+            p["cable_marks"] = copy.deepcopy(ap["cable_marks"])
+        else:
+            p.pop("cable_marks", None)
+    return clean_plan(p)
+
+
+def radio_groups(plan: dict) -> List[dict]:
+    """The fixtures you sent by radio, as they hang on their receivers
+    (3.16.0): ``[{"rx": kit item id, "devices": [the receiver, fixtures…]}]``
+    from the chains whose receiver feeds fixtures.  A new proposal keeps them."""
+    items = _items(plan["tonight"])
+    kind = lambda iid: (items.get(iid) or {}).get("kind")
+    out = []
+    for c in plan["chains"]:
+        if kind(c["source"]["item"]) == "wireless_rx":
+            devs = [{"item": c["source"]["item"]}] + list(c["devices"])
+        else:
+            k = next((i for i, d in enumerate(c["devices"]) if d.get("item") and kind(d["item"]) == "wireless_rx"), None)
+            if k is None:
+                continue
+            devs = list(c["devices"][k:])
+        if any(d.get("fixture") is not None for d in devs[1:]):
+            out.append({"rx": devs[0]["item"], "devices": devs})
+    return out
+
+
 def device_key(d: dict) -> str:
     """The key a cable mark uses for the device a cable goes *to*."""
     return f"f:{d['fixture']}" if d.get("fixture") is not None else f"i:{d.get('item', '')}"
@@ -275,6 +351,7 @@ def clean_plan(p) -> dict:
            **({"cable_marks": _clean_marks(p.get("cable_marks"))} if _clean_marks(p.get("cable_marks")) else {}),
            **({"preferred": _clean_preferred(p.get("preferred"))} if _clean_preferred(p.get("preferred")) else {}),
            **({"hide_band": True} if p.get("hide_band") is True else {}),
+           **({"approved": _clean_approved(p.get("approved"))} if _clean_approved(p.get("approved")) else {}),
            "chains": [c for c in (_clean_chain(x) for x in p.get("chains") or []) if c]}
     out["tonight"].pop("dropped", None)
     return out
@@ -695,7 +772,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
               "chains": len(walked)}
     return {"fixtures": list(fx.values()), "chains": walked, "issues": issues, "summary": summary,
             "totals": totals, "controller": ctl, "trusses": trs, "shopping": shopping(walked, issues, assigned),
-            "keep_out": rig.get("keep_out", []), "units": units}
+            "keep_out": rig.get("keep_out", []), "units": units, "approved": approval(plan)}
 
 
 def _universe_checks(plan, rig, fx, items) -> List[dict]:

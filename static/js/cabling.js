@@ -891,6 +891,7 @@ function cablingSet(key, value) { _cb.plan[key] = value; _cbChanged(); }
 // ── 3 · Plan ─────────────────────────────────────────────────────────────────
 async function cablingPropose() {
   if (!_cb) return;
+  _cbAltsStale = false;
   const el = document.getElementById('cb-alts');
   if (el) el.innerHTML = `<div class="porter-placeholder">${_cbE(_cbT('Working out the alternatives…'))}</div>`;
   try {
@@ -923,7 +924,8 @@ function cablingPrefer(k) {
 function cablingPickAlt(k, extra) {
   const a = (_cbAlts || [])[k];
   if (!a) return;
-  const keep = { cable_marks: _cb.plan.cable_marks, hide_band: _cb.plan.hide_band, preferred: _cb.plan.preferred, ...(extra || {}) };
+  const keep = { cable_marks: _cb.plan.cable_marks, hide_band: _cb.plan.hide_band, preferred: _cb.plan.preferred,
+    approved: _cb.plan.approved, ...(extra || {}) };
   _cb.plan = JSON.parse(JSON.stringify(a.plan));
   Object.entries(keep).forEach(([key, v]) => { if (v !== undefined) _cb.plan[key] = v; else delete _cb.plan[key]; });
   Object.assign(_cb, { evaluation: a.evaluation, svg: a.svg });
@@ -934,7 +936,13 @@ function cablingPickAlt(k, extra) {
 function _cbPlan() {
   const al = document.getElementById('cb-alts');
   const prefKey = _cb.plan.preferred && _cb.plan.preferred.key;
-  if (_cbAlts) al.innerHTML = _cbAlts.length ? _cbAlts.map((a, k) => `
+  const stale = _cbAltsStale && _cbAlts && _cbAlts.length
+    ? `<div class="cb-dim cb-stale">${_cbE(_cbT('You changed the plan by hand. Propose again: fixtures you sent by radio stay by radio.'))}</div>` : '';
+  const sg = v => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v);
+  const vs = a => a.vs_approved ? `<div class="cb-dim cb-vs">${_cbE(_cbT('Compared with your approved plan: cable {0}, errors {1}, warnings {2}',
+    (a.vs_approved.cable_m > 0 ? '+' : a.vs_approved.cable_m < 0 ? '−' : '±') + _cbLen(Math.abs(a.vs_approved.cable_m)),
+    sg(a.vs_approved.error), sg(a.vs_approved.warning)))}</div>` : '';
+  if (_cbAlts) al.innerHTML = stale + (_cbAlts.length ? _cbAlts.map((a, k) => `
     <button class="cb-alt${a.chosen ? ' on' : ''}${prefKey === a.key ? ' pref' : ''}" onclick="cablingPickAlt(${k})">
       <div class="cb-alt-h"><b>${a.key}</b> ${_cbE(_cbT(a.name))}${a.best ? ` <span class="cb-best">${_cbE(_cbT('SUGGESTED'))}</span>` : ''}
         <span class="cb-star${prefKey === a.key ? ' on' : ''}" role="button" tabindex="0"
@@ -946,12 +954,14 @@ function _cbPlan() {
         <span>${_cbE(_cbT('Crossings'))}</span><b>${a.crossings}</b><span>${_cbE(_cbT('Adapters'))}</span><b>${a.adapters}</b></div>
       <div class="${a.missing.length ? 'cb-bad' : 'cb-good'}">${a.missing.length
         ? _cbE(_cbT('Missing: {0}', a.missing.map(m => `${m.count} × ${m.what}`).join(', '))) : _cbE(_cbT('Nothing missing'))}</div>
-    </button>`).join('') : `<div class="porter-placeholder">${_cbE(_cbT('No alternative: the show has no fixtures.'))}</div>`;
+      ${vs(a)}
+    </button>`).join('') : `<div class="porter-placeholder">${_cbE(_cbT('No alternative: the show has no fixtures.'))}</div>`);
   document.getElementById('cb-plot').innerHTML = _cb.plan.chains.length ? (_cb.svg || '')
     : `<div class="porter-placeholder">${_cbE(_cbT('No chains yet: Propose, or start a chain by hand.'))}</div>`;
   const bpl = document.getElementById('cb-band-plan'); if (bpl) bpl.checked = !_cb.plan.hide_band;
   _cbPlotHits();
   _cbFxLink();
+  _cbApprove();
   const tt = _cb.evaluation.totals;
   document.getElementById('cb-plan-totals').textContent = _cb.plan.chains.length
     ? _cbT('{0} of cable · longest hop {1} · {2} adapter(s)', _cbLen(tt.cable_m), _cbLen(tt.longest_m), tt.adapters) : '';
@@ -1164,6 +1174,7 @@ function _cbFxLink() {
  *  receiver, 'src:<item>|<port>' first on that output, 'off' off every chain. */
 function cablingFxLink(fid, how) {
   if (!how) { setStatus(_cbT('Choose where its DMX comes from.'), 'warn'); return; }
+  if (_cbAlts && _cbAlts.length) _cbAltsStale = true;
   fid = String(fid);
   const p = _cb.plan, items = p.tonight.items;
   const take = () => p.chains.forEach(c => {
@@ -1244,6 +1255,65 @@ function _cbTidyRadio(p) {
   p.chains = p.chains.filter(c => !(_cbKind(p, c.source.item) === 'wireless_tx' && !c.devices.some(d => d.fixture != null)));
   p.chains = p.chains.filter(c => !(c.devices.length === 1 && c.devices[0].item && _cbKind(p, c.devices[0].item) === 'wireless_tx'
     && !p.chains.some(o => o.source.item === c.devices[0].item)));
+}
+
+// ── 3.16.0: the plan you approve ────────────────────────────────────────────
+let _cbAltsStale = false;     // the plan was changed by hand after the alternatives were made
+
+function _cbWhen(at) {
+  const d = new Date(at.length === 10 ? at + 'T00:00' : at);
+  if (isNaN(d)) return at;
+  try { return d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+  catch (e) { return at; }
+}
+
+/** The bar over the plan: approve it, see that it changed since, go back to it. */
+function _cbApprove() {
+  const box = document.getElementById('cb-approve');
+  if (!box || !_cb) return;
+  const st = _cb.evaluation && _cb.evaluation.approved;
+  if (!_cb.plan.chains.length && !st) { box.innerHTML = ''; return; }
+  if (!st) {
+    box.className = 'cb-approve';
+    box.innerHTML = `<button class="btn btn-accent btn-sm" onclick="cablingApprove()">✓ ${_cbE(_cbT('Approve this plan'))}</button>
+      <span class="cb-hint">${_cbE(_cbT('Keeps this plan as the one you want. A new proposal is then compared with it, and you can always come back to it.'))}</span>`;
+  } else if (st.same) {
+    box.className = 'cb-approve ok';
+    box.innerHTML = `<span class="cb-approved">✓ ${_cbE(_cbT('Approved plan · {0}', _cbWhen(st.at)))}</span>
+      <button class="btn btn-surface btn-sm" onclick="cablingUnapprove()">${_cbE(_cbT('Remove the approval'))}</button>`;
+  } else {
+    box.className = 'cb-approve changed';
+    box.innerHTML = `<span class="cb-changed">${_cbE(_cbT('Changed since you approved it ({0}).', _cbWhen(st.at)))}</span>
+      <button class="btn btn-accent btn-sm" onclick="cablingApprove()">✓ ${_cbE(_cbT('Approve the changes'))}</button>
+      <button class="btn btn-surface btn-sm" onclick="cablingBackToApproved()">↶ ${_cbE(_cbT('Back to the approved plan'))}</button>`;
+  }
+}
+
+function cablingApprove() {
+  if (!_cb || !_cb.plan.chains.length) return;
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  const at = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`;
+  const p = _cb.plan;
+  p.approved = { at, chains: JSON.parse(JSON.stringify(p.chains)), places: JSON.parse(JSON.stringify(p.places || {})),
+    cable_marks: JSON.parse(JSON.stringify(p.cable_marks || {})) };
+  _cb.evaluation.approved = { at, same: true, chains: p.chains.length };
+  setStatus(_cbT('Plan approved. Propose again any time: the alternatives are compared with it.'), 'ok');
+  _cbChanged();
+}
+
+function cablingUnapprove() { delete _cb.plan.approved; if (_cb.evaluation) _cb.evaluation.approved = null; _cbChanged(); }
+
+function cablingBackToApproved() {
+  const ap = _cb && _cb.plan.approved;
+  if (!ap) return;
+  const p = _cb.plan;
+  p.chains = JSON.parse(JSON.stringify(ap.chains));
+  p.places = JSON.parse(JSON.stringify(ap.places || {}));
+  if (ap.cable_marks && Object.keys(ap.cable_marks).length) p.cable_marks = JSON.parse(JSON.stringify(ap.cable_marks));
+  else delete p.cable_marks;
+  if (_cbAlts) _cbAlts.forEach(x => { x.chosen = false; });
+  setStatus(_cbT('Back to the plan you approved.'), 'ok');
+  _cbChanged();
 }
 
 /** The request for Claude: the user's words and how to wire them with the cabling tool. */

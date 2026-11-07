@@ -4911,3 +4911,11 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 /* 3.15.0: fixtures fed by radio */
 .cb-radio-tag { font-size: var(--fs-small); padding: 0 5px; border-radius: 8px; border: 1px dashed #7c3aed; color: #a78bfa; margin-left: 4px; }
 .cb-link.cb-radio .cb-to { color: #a78bfa; }
+
+/* 3.16.0: the approved plan */
+.cb-approve { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 8px; }
+.cb-approve .cb-hint { flex: 1 1 260px; }
+.cb-approved { font-weight: 600; color: var(--success, #40a02b); padding: 2px 10px; border: 1px solid var(--success, #40a02b); border-radius: 10px; }
+.cb-changed { font-weight: 600; color: var(--warning, #df8e1d); }
+.cb-stale { margin: 6px 0; padding: 6px 8px; border: 1px dashed var(--warning, #df8e1d); border-radius: 6px; }
+.cb-vs { margin-top: 4px; }

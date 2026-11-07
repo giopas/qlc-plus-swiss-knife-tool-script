@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.16.0] — 2026-11-07 — Your cabling decisions
+
 ### Added — your decisions kept in Cabling (3.16.0)
 
 - **Fixtures you send by radio stay by radio.** *Propose* used to start from scratch, so a fixture you had put on a wireless receiver went back on a cable. Now every alternative keeps your fixtures by radio, each with its receiver, from one transmitter on a free output, and cables the other fixtures around them. The note of each alternative says how many it kept.

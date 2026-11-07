@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-14,       label: macos-arm64 }
+          - { os: macos-15,       label: macos-arm64 }   # macos-14 retired by GitHub (Nov 2026)
           - { os: macos-15-intel,  label: macos-x86_64 }
           - { os: windows-latest, label: windows-x64 }
           - { os: ubuntu-22.04,   label: linux-x64 }

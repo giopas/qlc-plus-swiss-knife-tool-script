@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.17.0] — 2026-11-07 — Beams as in QLC+
+
 ### Fixed — beams that point the right way (3.17.0)
 
 - **Stage & Meshes drew many beams in the wrong direction.** Pan was turned the wrong way and roll was applied too early, so a PAR on a PA stack turned toward the middle was drawn pointing off the stage, and ceiling spots panned to one side were drawn going to the other. The beams now turn exactly as in QLC+'s 3D view (the same rotation QLC+ uses), on the plan and in the front view. Positions were right and are unchanged.

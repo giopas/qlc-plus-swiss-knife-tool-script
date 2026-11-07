@@ -4528,5 +4528,8 @@
  "Cross-universe fixtures for QLC+ 5.3.1": "Fixture su più universi per QLC+ 5.3.1",
  "A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.": "Una fixture che continua nell'universo successivo mantiene gli indirizzi che ha oggi. QLC+ 5.3.1 legge la vecchia impostazione come solo teste intere e sposterebbe alcuni canali; Swiss Knife scrive l'impostazione che li mantiene, e ogni QLC+ 5 la legge.",
  "Saved by a QLC+ newer than {0}: check the result in QLC+": "Salvato da un QLC+ più recente di {0}: controlla il risultato in QLC+",
- "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1 (ultima)"
+ "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1 (ultima)",
+ "let it continue in the next universe ('Fill'), keeping its address": "lasciala continuare nell'universo successivo ('Fill'), mantenendo il suo indirizzo",
+ "Ready for QLC+ {0}: nothing in the file reads differently there": "Pronto per QLC+ {0}: nel file non c'è niente che venga letto in modo diverso",
+ "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} fixture vanno oltre il canale 512 e QLC+ le sposta all'indirizzo 1: il Workspace Doctor (D026) può farle continuare nell'universo successivo."
 }

@@ -70,7 +70,7 @@ OPTION_CODES = {"D003", "D004", "D013", "D015"}      # fixes that take options
 DEFAULT_CODES = {"D002", "D003", "D005", "D006", "D007", "D008", "D011", "D017", "D019", "D027"}
 
 FIX_ORDER = ["D002", "D003", "D019", "D004", "D005", "D006", "D007", "D010", "D011", "D013",
-             "D015", "D016", "D017", "D008", "D027"]
+             "D015", "D016", "D017", "D008", "D026", "D027"]
 
 
 @dataclass
@@ -129,7 +129,7 @@ def fixable(f: Finding) -> bool:
         return True
     if f.code in ("D004", "D013", "D019"):
         return True
-    if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017", "D027"):
+    if f.code in ("D005", "D006", "D007", "D010", "D011", "D016", "D017", "D026", "D027"):
         return True
     if f.code == "D008":
         return True
@@ -157,6 +157,7 @@ def fix_hint(f: Finding) -> str:
         "D016": "remove the unused function",
         "D017": "wrap the scene in a PANIC RESET script that stops everything first",
         "D019": "remove the reference to the missing palette or group",
+        "D026": "let it continue in the next universe ('Fill'), keeping its address",
         "D027": "write 'Fill', which keeps the addresses of QLC+ 5.3.0",
     }.get(f.code, "") if fixable(f) else ""
 
@@ -681,6 +682,19 @@ def _fix_d011(root, f: Finding) -> List[str]:
     return out
 
 
+def _fix_d026(root, f: Finding) -> List[str]:
+    """A fixture past channel 512: let it run on into the next universe
+    (``Fill``) instead of QLC+ moving it to address 1 (3.13.0).  Not ticked by
+    default: it changes the patch of the next universe."""
+    fid = (f.ref or {}).get("fixture")
+    for fx in _engine(root).findall("Fixture"):
+        if (fx.findtext("ID") or "").strip() == fid and qlc531.cross_mode(fx) == qlc531.NONE:
+            qlc531.set_cross_mode(fx, qlc531.FILL)
+            return ["set to continue in the next universe ('Fill'): it keeps its address; "
+                    "check the next universe for overlaps (D009)"]
+    return []
+
+
 def _fix_d027(root, f: Finding) -> List[str]:
     """Write ``Fill`` on an old cross-universe flag (3.13.0)."""
     fid = (f.ref or {}).get("fixture")
@@ -775,6 +789,8 @@ def fix(root, qxf_defs=None, *, keys: Optional[Iterable[str]] = None,
                 acts = _fix_d011(work, f)
             elif code == "D008":
                 acts = _fix_d008(work, f, defs)
+            elif code == "D026":
+                acts = _fix_d026(work, f)
             elif code == "D027":
                 acts = _fix_d027(work, f)
             else:

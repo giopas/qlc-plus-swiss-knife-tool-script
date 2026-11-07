@@ -110,10 +110,12 @@ function _upSync() {
   const chosen = _upChosen();
   if (b) b.disabled = !chosen.length;
   const ver = _up && _up.version ? _esc(`Version in the file: ${_up.version}`) : _esc('No version in the file');
+  const ready = _up && _up.ready && _up.target === '5.3'
+    ? ` <span class="doc-chip">${_esc(`Ready for QLC+ ${_up.latest}: nothing in the file reads differently there`)}</span>` : '';
   const newer = _up && _up.newer
     ? ` <span class="doc-chip doc-warning">${_esc(`Saved by a QLC+ newer than ${_up.latest}: check the result in QLC+`)}</span>` : '';
   if (s) s.innerHTML = _up
-    ? `<span class="doc-chip">${ver}</span>` + newer
+    ? `<span class="doc-chip">${ver}</span>` + ready + newer
       + ` <span class="doc-chip">${_esc(`${_up.steps.filter(x => x.count > 0 && _upUsable(x)).length} step(s) possible`)}</span>`
     : '';
   if (!chosen.length) { setOutcome('upgrade', ''); return; }

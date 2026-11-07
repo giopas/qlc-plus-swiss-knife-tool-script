@@ -705,15 +705,22 @@ def analyse(root, defs=None, target: str = "5.3") -> dict:
 
 
 def _cross_step(ws) -> dict:
+    from core.doctor.checks import _d026_no_fit
     plan = cross_plan(ws)
+    nofit = list(_d026_no_fit(ws))
+    note = (f"{len(nofit)} fixture(s) run past channel 512 and QLC+ moves them to address 1: "
+            f"the Workspace Doctor (D026) can let them continue in the next universe.") if nofit else ""
     return {"id": "crossuniverse", "count": len(plan),
-            "items": [f"fixture {fid} '{name}'" for fid, name in plan], "note": ""}
+            "items": [f"fixture {fid} '{name}'" for fid, name in plan], "note": note,
+            "ready": not plan and not nofit}
 
 
 def _known(root, out: dict) -> dict:
     """The latest QLC+ Swiss Knife knows, and a note when the file is newer."""
     out["latest"] = LATEST
     out["newer"] = newer_than_known(out.get("version", ""))
+    cross = next((s for s in out.get("steps", []) if s["id"] == "crossuniverse"), {})
+    out["ready"] = bool(cross.get("ready")) and not out["newer"]   # nothing 5.3.1 reads differently
     return out
 
 

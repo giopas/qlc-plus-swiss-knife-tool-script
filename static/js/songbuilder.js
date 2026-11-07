@@ -73,17 +73,29 @@ async function sbdOpen(id) {
 function _sbdUnit() { return document.getElementById('sbd-unit').value || 'seconds'; }
 function _sbdLenHint() { return t('e.g. {0}', { seconds: '8s', bars: '8', beats: '16' }[_sbdUnit()]); }
 function sbdUnitChanged() { _sbdRender(); sbdChanged(); }
+// Beats gone by at *ms*, each part counted at its own tempo (3.13.0): a part with its own BPM
+// changes how many beats a second is from there on.  Before the first preview, the song's BPM.
+function _sbdBeats(ms) {
+  let bpm = parseFloat(document.getElementById('sbd-bpm').value) || 0, beats = 0, at = 0;
+  for (const r of (_sbd.plan && _sbd.plan.parts) || []) {
+    if (!(r.end_ms > r.start_ms)) continue;
+    const b = parseFloat(r.bpm) || bpm;
+    if (ms <= r.end_ms) return beats + (ms - r.start_ms) * b / 60000;
+    beats += (r.end_ms - r.start_ms) * b / 60000; at = r.end_ms; bpm = b;
+  }
+  return beats + (ms - at) * bpm / 60000;
+}
 // Where a moment falls in the song, in the unit of the song: "bar 3", "beat 9" (counted from 1) or the time.
 function _sbdPos(ms) {
   const bpm = parseFloat(document.getElementById('sbd-bpm').value), bpb = parseFloat(document.getElementById('sbd-bpb').value) || 4, u = _sbdUnit();
   if (u === 'seconds' || !(bpm > 0)) return _sbdFmt(ms);
-  const beat = ms / (60000 / bpm);
+  const beat = _sbdBeats(ms);
   return u === 'bars' ? t('bar {0}', +(beat / bpb + 1).toFixed(2)) : t('beat {0}', +(beat + 1).toFixed(2));
 }
-function _sbdSpan(ms) {                                   // a duration: "0:20" or "10 bars" / "40 beats"
+function _sbdSpan(ms, from = 0) {                        // a duration: "0:20" or "10 bars" / "40 beats"
   const bpm = parseFloat(document.getElementById('sbd-bpm').value), bpb = parseFloat(document.getElementById('sbd-bpb').value) || 4, u = _sbdUnit();
   if (u === 'seconds' || !(bpm > 0)) return _sbdFmt(ms);
-  const beats = ms / (60000 / bpm);
+  const beats = _sbdBeats(from + ms) - _sbdBeats(from);
   return u === 'bars' ? t('{0} bars', +(beats / bpb).toFixed(2)) : t('{0} beats', +beats.toFixed(2));
 }
 
@@ -259,7 +271,7 @@ function _sbdBars(res) {
   };
   const lights = (res.parts || []).map((r, i, arr) => seg(r, i, arr)).join('');
   const free = (res.free_ms || 0) > 0
-    ? `<div class="sbd-gap" style="left:${pct(total)};width:${pct(res.free_ms)}" data-tooltip="${_sbdEsc(t('Free: {0} not covered by any part', _sbdSpan(res.free_ms)))}"><span>${_sbdEsc(t('Free {0}', _sbdSpan(res.free_ms)))}</span></div>` : '';
+    ? `<div class="sbd-gap" style="left:${pct(total)};width:${pct(res.free_ms)}" data-tooltip="${_sbdEsc(t('Free: {0} not covered by any part', _sbdSpan(res.free_ms, total)))}"><span>${_sbdEsc(t('Free {0}', _sbdSpan(res.free_ms, total)))}</span></div>` : '';
   const empty = scale <= 1 ? `<div class="sbd-gap sbd-gap-all" style="left:0;width:100%"><span>${_sbdEsc(t('Give the parts a length to see the song here'))}</span></div>` : '';
   const musicBar = music ? `<div class="sbd-seg" style="left:0;width:${pct(music)};background:${_SBD_MUSIC}"><span>${_sbdEsc(t('Music'))} ${_sbdFmt(music)}</span></div>` : '';
   const over = (music && total > music) ? `<div class="sbd-gap" style="left:${pct(music)};width:${pct(total - music)}" data-tooltip="${_sbdEsc(t('Past the end of the music'))}"></div>` : '';
@@ -269,9 +281,10 @@ function _sbdBars(res) {
 }
 
 function _sbdShowPlan(res) {
+  _sbd.plan = res;                                        // the tempo map for bar and beat numbers
   (res.parts || []).forEach((r, i) => { const el = document.getElementById('sbd-start-' + i); if (_sbd.parts[i]) _sbd.parts[i].start_ms = r.start_ms; if (el) el.textContent = _sbdPos(r.start_ms); });
   document.getElementById('sbd-bars').innerHTML = _sbdBars(res);
-  const total = t('Total {0}', _sbdSpan(res.length_ms || 0)) + (res.music_ms ? ' · ' + t('music {0}', _sbdFmt(res.music_ms)) : '') + ((res.free_ms || 0) > 0 ? ' · ' + t('Free {0}', _sbdSpan(res.free_ms)) : '');
+  const total = t('Total {0}', _sbdSpan(res.length_ms || 0)) + (res.music_ms ? ' · ' + t('music {0}', _sbdFmt(res.music_ms)) : '') + ((res.free_ms || 0) > 0 ? ' · ' + t('Free {0}', _sbdSpan(res.free_ms, res.length_ms || 0)) : '');
   const issues = (res.parts || []).map((r, i) => r.issue ? `<div class="sbd-hint">${_sbdEsc(t('Row {0}: {1}', i + 1, r.issue))}</div>` : '').join('');
   const warns = (res.warnings || []).map(w => `<div class="sbd-warn">⚠ ${_sbdEsc(w)}</div>`).join('');
   return `<div>${_sbdEsc(total)}</div>${issues}${warns}`;

@@ -27,6 +27,9 @@ QLC+ 5.3.1 came out on 5 November 2026. Two of its changes reach the show files,
 - **Fixtures that cross universes.** The setting now has two choices, *Pixel* (whole heads only) and *Fill* (straight on). QLC+ 5.3.1 reads the old setting as *Pixel*, older versions as straight on, so a pixel bar can end up on other addresses. Swiss Knife places the channels as QLC+ 5.3.1 does.
 - **Workspace Doctor.** D009 (address overlap) checks a fixture that crosses universes in the next universe too. New **D026**: a fixture runs past channel 512 without crossing universes, so QLC+ moves it to address 1. New **D027**: the old cross-universe setting gives other addresses in QLC+ 5.3.1; the fix writes *Fill*, which keeps the 5.3.0 addresses in every version (ticked by default).
 - **Upgrade to QLC+ 5.3** follows the latest QLC+: the target reads *QLC+ 5.3.1 (latest)*, a new step *Cross-universe fixtures for QLC+ 5.3.1* does the same as the D027 fix, and the screen says when a show was saved by a QLC+ newer than the one Swiss Knife knows. Claude's `upgrade_show` tool takes the new step.
+- **Ready for QLC+ 5.3.1** shows at the top of the Upgrade screen when nothing in the show reads differently in 5.3.1. The Doctor's D026 has a fix, not ticked by default: let the fixture continue in the next universe (*Fill*).
+- **Song Builder:** bar and beat numbers (*Starts*, the total, the coloured bar) now count each part at its own tempo. Before, a part after a tempo change showed a bar number counted at the song's BPM (bar 12.33 instead of bar 11).
+- **Doctor D006:** a look whose name says *sound* or *reactive* counts as an intended effect, like *audio* already did, so a music-reactive mode is no longer offered for "fixing".
 - Nothing to do for the other 5.3.1 changes: bindings on Animation widget presets and colours on 3D items are read and kept as they are.
 - The wiki pages *Workspace Doctor* and *Upgrade Older Shows* and the seven languages are updated.
 

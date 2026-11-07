@@ -250,3 +250,24 @@ def test_upgrade_targets():
     root = _rig(BAR_FILL)
     root.find("{http://www.qlcplus.org/Workspace}Creator/{http://www.qlcplus.org/Workspace}Version").text = "5.4.0"
     assert U.analyse(root, DEFS)["newer"] is True
+
+
+def test_d026_fix_lets_the_fixture_continue_and_is_not_ticked_by_default():
+    root = _rig(("Bar", "12ch", 0, 508, 12, ""))
+    assert "D026" not in F.DEFAULT_CODES
+    res = F.fix(root, DEFS, codes={"D026"})
+    assert res.actions and res.root.find("Engine/Fixture/CrossUniverse").text == "Fill"
+    assert not [f for f in res.after.findings if f.code == "D026"]
+
+
+def test_upgrade_says_when_a_show_is_ready_for_531():
+    assert U.analyse(_rig(BAR_FILL), DEFS)["ready"] is True
+    assert U.analyse(_rig(BAR_TRUE), DEFS)["ready"] is False
+    a = U.analyse(_rig(("Bar", "12ch", 0, 508, 12, "")), DEFS)
+    step = next(s for s in a["steps"] if s["id"] == "crossuniverse")
+    assert a["ready"] is False and "D026" in step["note"]
+
+
+def test_music_reactive_looks_count_as_fx():
+    from core.doctor.checks import FX_NAME_RE
+    assert FX_NAME_RE.search("Utility: Music Reactive Mode") and FX_NAME_RE.search("Sound active")

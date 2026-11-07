@@ -4552,5 +4552,8 @@
  "Cross-universe fixtures for QLC+ 5.3.1": "适用于 QLC+ 5.3.1 的跨宇宙灯具",
  "A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.": "延续到下一个宇宙的灯具会保留现在的地址。QLC+ 5.3.1 会把旧设置读成仅按整个灯头，并移动部分通道；Swiss Knife 写入能保留地址的设置，所有 QLC+ 5 都能读取。",
  "Saved by a QLC+ newer than {0}: check the result in QLC+": "由比 {0} 更新的 QLC+ 保存：请在 QLC+ 中检查结果",
- "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1（最新）"
+ "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1（最新）",
+ "let it continue in the next universe ('Fill'), keeping its address": "让它延续到下一个宇宙（'Fill'），保留其地址",
+ "Ready for QLC+ {0}: nothing in the file reads differently there": "已适配 QLC+ {0}：文件中没有任何内容会被不同地读取",
+ "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} 台灯具超出第 512 通道，QLC+ 会把它们移到地址 1：Workspace Doctor（D026）可以让它们延续到下一个宇宙。"
 }

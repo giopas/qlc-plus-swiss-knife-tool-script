@@ -31,10 +31,10 @@ CONTAINER_TAGS = {"Frame", "SoloFrame"}
 
 # A scene is intentional FX when its own name, or the name of any function
 # that (transitively) contains it, matches this (WORKPLAN §3, 2026-09-23).
-# "macro" / "program" / "audio" mark scenes that deliberately run a fixture's
+# "macro" / "program" / "audio" / "sound" / "reactive" (3.13.0) mark scenes that deliberately run a fixture's
 # internal programs or sound-active mode.  Anything else: use allow_fx.
 FX_NAME_RE = re.compile(
-    r"strob|flash|\*|punk|macro|program|audio|(?<![a-z])fx(?![a-z])", re.I)
+    r"strob|flash|\*|punk|macro|program|audio|sound|reactive|(?<![a-z])fx(?![a-z])", re.I)
 PANIC_RE = re.compile(r"panic\s*reset", re.I)
 UNNAMED_RE = re.compile(r"^\[\d+\]\s+\S+\s+-\s+Unassigned$")
 

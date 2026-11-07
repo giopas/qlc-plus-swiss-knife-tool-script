@@ -15,9 +15,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **The counts follow too.** One transmitter can feed any number of receivers. When the plan needs more receivers than tonight's kit has, the rest go on the shopping list. The pick list counts one receiver per fixture by radio, and the load-in order says where each one goes.
 - **Claude** can wire the same: a chain from a free splitter output to the transmitter, then one chain per fixture from the transmitter through a receiver.
 
-### Fixed — the plot legend (3.15.0)
+### Changed — a cabling plot you can read (3.15.0)
 
-- The legend at the bottom of the cabling plot was cut off at the right edge. It now stays inside the picture.
+- **Cable lengths on tags.** Each length (and *to buy*, *venue*, *borrowed*) sits on a small white tag in the colour of its chain. The tag goes on its cable when there is room. Otherwise it moves beside the cable, away from fixtures, names, boxes, other cables and other tags, and a thin line with a dot points back to the cable it belongs to. Tags never cover each other.
+- **Fixture names where they are free.** A name goes under its fixture, or above or beside it when another fixture or box is in the way.
+- **Every word has a white halo**, so it stays readable where it crosses a line or the band floor.
+- The legend at the bottom was cut off at the right edge. It now stays inside the picture.
 
 ---
 

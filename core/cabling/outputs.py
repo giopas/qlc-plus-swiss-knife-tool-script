@@ -107,21 +107,22 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     for t in ev.get("trusses", []):
         sh.append(("line", [(t["x0"] - 200, t["z"]), (t["x1"] + 200, t["z"])], "#334155", 120, None))
     nums = numbered(ev, plan)
+    wanted = []                                    # 3.15.0: cable labels, placed once everything is drawn
     for w in ev["chains"]:
         colour = w.get("colour", COLOURS[0])
         for link in w["links"]:
             pts = [tuple(p) for p in link["route"]["points"]]
             sh.append(("line", pts, colour, 45, (6, 3) if link["conn"] in ("rj45", "wireless") else None))
             if len(pts) >= 2 and (link.get("cables") or link.get("missing_m")):
-                a, b = pts[len(pts) // 2 - 1], pts[len(pts) // 2]
                 if link.get("cables"):
                     L, col = " + ".join(fmt(c["length"]) for c in link["cables"]), colour
                     if link.get("mark") in ("borrowed", "venue"):
                         L += f" ({link['mark']})"
                 else:                              # none in the kit is long enough: the length to buy
                     L, col = f"{fmt(link['missing_m'])} to buy", "#dc2626"
-                sh.append(("text", (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 80, L, 150, col, "middle"))
+                wanted.append((pts, L, col))
     terms = []
+    names: List[tuple] = []                        # 3.15.0: fixture names, placed where they are free
     for w in ev["chains"]:
         if w.get("terminator"):
             last = w["links"][-1]["route"]["points"][-1] if w["links"] else None
@@ -138,7 +139,7 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
             sh.append(("ring", x, z, 250, RADIO, (3, 2)))
             sh.append(("text", x - 290, z + 40, "radio", 110, RADIO, "end"))
         sh.append(("circle", x, z, 170, "#ffffff" if venue else "#fecaca", "#334155"))
-        sh.append(("text", x, z + 330, f["name"], 120, "#0f172a", "middle"))
+        names.append((x, z, f["name"]))
     for u in ev.get("units", []):                  # 3.15.0: wireless units the plan places
         if u["item"] in plan.get("places", {}) and u["kind"] == "wireless_tx":
             continue
@@ -157,8 +158,14 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
         sh.append(("rect", p["x"] - 180, p["z"] - 110, p["x"] + 180, p["z"] + 110, "#ccfbf1", "#0f766e", None))
         name = next((it["name"] for it in plan["tonight"]["items"] if it["id"] == iid), iid)
         sh.append(("text", p["x"], p["z"] + 300, name.split(" ")[0], 120, "#0f766e", "middle"))
+    sh += _fixture_names(names, sh)
+    sh += _cable_labels(wanted, sh)
     xs = [s[1] for s in sh if s[0] in ("rect", "circle", "ring", "text")] + [s[3] for s in sh if s[0] == "rect"]
     zs = [s[2] for s in sh if s[0] in ("rect", "circle", "ring", "text")] + [s[4] for s in sh if s[0] == "rect"]
+    for s in sh:
+        if s[0] == "tag":
+            xs += [s[1] - s[6] / 2, s[1] + s[6] / 2]
+            zs += [s[2] - s[7] / 2, s[2] + s[7] / 2]
     for s in sh:
         if s[0] == "line":
             xs += [p[0] for p in s[1]]
@@ -177,6 +184,112 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
         sh.append(("text", lx + 320, z1 - 190, "By radio, no cable (RX: receiver, TX: transmitter; "
                    "a dashed ring marks a fixture fed by radio)", 120, "#475569", "start"))
     return sh, (x0, z0, x1, z1)
+
+
+LABEL_SIZE = 125            # mm: the height of a cable label's text on the plot
+LABEL_PAD = 45
+
+
+def _text_box(x, z, txt, size, anchor) -> tuple:
+    """The box (x0, z0, x1, z1) a text takes on the plot, roughly."""
+    w = len(str(txt)) * size * 0.56
+    x0 = x - w / 2 if anchor == "middle" else (x - w if anchor == "end" else x)
+    return (x0, z - size * 0.85, x0 + w, z + size * 0.2)
+
+
+def _overlap(a, b) -> float:
+    dx = min(a[2], b[2]) - max(a[0], b[0])
+    dz = min(a[3], b[3]) - max(a[1], b[1])
+    return dx * dz if dx > 0 and dz > 0 else 0.0
+
+
+def _seg_hits_box(p, q, bx) -> bool:
+    """Does the segment p-q pass through the box?"""
+    x0, z0, x1, z1 = bx
+    if max(p[0], q[0]) < x0 or min(p[0], q[0]) > x1 or max(p[1], q[1]) < z0 or min(p[1], q[1]) > z1:
+        return False
+    for k in range(9):                             # a few points along it are enough at this scale
+        t = k / 8
+        x, z = p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t
+        if x0 <= x <= x1 and z0 <= z <= z1:
+            return True
+    return False
+
+
+def _fixture_names(names, sh) -> List[tuple]:
+    """Each fixture's name under it, or above, beside it when that covers
+    less of the other fixtures, boxes and names (3.15.0)."""
+    boxes = [(s[1] - s[3], s[2] - s[3], s[1] + s[3], s[2] + s[3]) for s in sh if s[0] == "circle"]
+    boxes += [(s[1], s[2], s[3], s[4]) for s in sh if s[0] == "rect" and (s[3] - s[1]) * (s[4] - s[2]) < 400 * 400 * 4]
+    out = []
+    for x, z, name in names:
+        best = None
+        for k, (dx, dz, anchor) in enumerate(((0, 330, "middle"), (0, -230, "middle"), (230, 45, "start"),
+                                             (-230, 45, "end"), (0, 470, "middle"), (0, -370, "middle"))):
+            bx = _text_box(x + dx, z + dz, name, 120, anchor)
+            cost = sum(_overlap(bx, b) for b in boxes) + k * 2000
+            if best is None or cost < best[0]:
+                best = (cost, ("text", x + dx, z + dz, name, 120, "#0f172a", anchor), bx)
+        out.append(best[1])
+        boxes.append(best[2])
+    return out
+
+
+def _cable_labels(wanted, sh) -> List[tuple]:
+    """Cable lengths as labels on a white tag (3.15.0), each where it covers
+    least: on its cable when that is free, else beside it with a thin leader
+    to the cable.  Deterministic: tried in the order of the chains, each
+    against the fixtures, names, boxes, other cables and labels already set."""
+    boxes = []
+    for s in sh:
+        if s[0] == "circle":
+            boxes.append((s[1] - s[3], s[2] - s[3], s[1] + s[3], s[2] + s[3]))
+        elif s[0] == "text":
+            boxes.append(_text_box(s[1], s[2], s[3], s[4], s[6]))
+        elif s[0] == "rect" and (s[3] - s[1]) * (s[4] - s[2]) < 400 * 400 * 4:   # small boxes, not the stage
+            boxes.append((s[1], s[2], s[3], s[4]))
+    segs = [(i, (s[1][k], s[1][k + 1])) for i, s in enumerate(sh) if s[0] == "line"
+            for k in range(len(s[1]) - 1)]
+    out: List[tuple] = []
+    placed = []
+    for pts, txt, col in wanted:
+        own = [(pts[k], pts[k + 1]) for k in range(len(pts) - 1)]
+        w = len(txt) * LABEL_SIZE * 0.56 + 2 * LABEL_PAD
+        h = LABEL_SIZE + 2 * LABEL_PAD
+        best = None
+        order = sorted(range(len(own)), key=lambda k: -((own[k][1][0] - own[k][0][0]) ** 2
+                                                       + (own[k][1][1] - own[k][0][1]) ** 2))
+        for rank, k in enumerate(order[:4]):
+            (ax, az), (bx_, bz) = own[k]
+            L = ((bx_ - ax) ** 2 + (bz - az) ** 2) ** 0.5 or 1.0
+            nx, nz = -(bz - az) / L, (bx_ - ax) / L        # across the cable
+            for t in (0.5, 0.3, 0.7):
+                px, pz = ax + (bx_ - ax) * t, az + (bz - az) * t
+                for d in (0, 260, -260, 420, -420, 650, -650):
+                    cx, cz = px + nx * d, pz + nz * d
+                    if d:                          # keep the tag clear of its own cable
+                        cx += nx * (w / 2 if d > 0 else -w / 2) * abs(nx) * 0.6
+                        cz += nz * (h / 2 if d > 0 else -h / 2) * abs(nz) * 0.6
+                    box = (cx - w / 2, cz - h / 2, cx + w / 2, cz + h / 2)
+                    cost = sum(_overlap(box, b) for b in boxes) / 1000 * 3
+                    cost += sum(_overlap(box, b) for b in placed) / 1000 * 6
+                    cost += sum(40 for _, (p, q) in segs if (p, q) not in own and _seg_hits_box(p, q, box))
+                    cost += abs(d) / 25 + rank * 8 + abs(t - 0.5) * 20
+                    if not d and L < w * 1.1:
+                        cost += 60                 # the tag would hide a short cable
+                    if best is None or cost < best[0] - 1e-6:
+                        best = (cost, cx, cz, px, pz, d, box)
+        if best is None:
+            continue
+        _, cx, cz, px, pz, d, box = best
+        placed.append(box)
+        if d:                                      # a leader from the tag to its cable
+            ex = min(max(px, box[0]), box[2])
+            ez = min(max(pz, box[1]), box[3])
+            out.append(("line", [(ex, ez), (px, pz)], col, 14, None))
+            out.append(("circle", px, pz, 38, col, col))
+        out.append(("tag", cx, cz, txt, LABEL_SIZE, col, w, h))
+    return out
 
 
 def _esc(s) -> str:
@@ -203,13 +316,20 @@ def plot_svg(ev: dict, plan: dict, rig: dict, title: str = "") -> str:
         elif s[0] == "circle":
             _, x, z, r, fill, stroke = s
             out.append(f'<circle cx="{x:.0f}" cy="{z:.0f}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="25"/>')
+        elif s[0] == "tag":
+            _, x, z, txt, size, col, w, h = s
+            out.append(f'<rect x="{x - w / 2:.0f}" y="{z - h / 2:.0f}" width="{w:.0f}" height="{h:.0f}" rx="{h / 2:.0f}" '
+                       f'fill="#ffffff" fill-opacity="0.94" stroke="{col}" stroke-width="18"/>'
+                       f'<text x="{x:.0f}" y="{z + size * 0.36:.0f}" font-size="{size}" font-weight="600" fill="{col}" '
+                       f'text-anchor="middle">{_esc(txt)}</text>')
         elif s[0] == "ring":
             _, x, z, r, stroke, dash = s
             out.append(f'<circle cx="{x:.0f}" cy="{z:.0f}" r="{r}" fill="none" stroke="{stroke}" stroke-width="35" '
                        f'stroke-dasharray="{dash[0] * 20} {dash[1] * 20}"/>')
         elif s[0] == "text":
             _, x, z, txt, size, col, anchor = s
-            out.append(f'<text x="{x:.0f}" y="{z:.0f}" font-size="{size}" fill="{col}" '
+            out.append(f'<text x="{x:.0f}" y="{z:.0f}" font-size="{size}" fill="{col}" '      # 3.15.0: a white halo
+                       f'stroke="#ffffff" stroke-width="{size * 0.28:.0f}" stroke-linejoin="round" paint-order="stroke" '
                        f'text-anchor="{anchor}">{_esc(txt)}</text>')
     out.append(f'<text x="{x0 + 200:.0f}" y="{z1 - 150:.0f}" font-size="160" fill="#475569">AUDIENCE ↓</text>')
     out.append("</svg>")
@@ -253,6 +373,14 @@ def _plot_stream(ev, plan, rig, title, W, H, top_pad=40, bottom=20, side=20) -> 
                        f"{cx - c:.2f} {cy + rr:.2f} {cx - rr:.2f} {cy + c:.2f} {cx - rr:.2f} {cy:.2f} c "
                        f"{cx - rr:.2f} {cy - c:.2f} {cx - c:.2f} {cy - rr:.2f} {cx:.2f} {cy - rr:.2f} c "
                        f"{cx + c:.2f} {cy - rr:.2f} {cx + rr:.2f} {cy - c:.2f} {cx + rr:.2f} {cy:.2f} c B")
+        elif s[0] == "tag":
+            _, x, z, txt, size, col, w, h = s
+            ops.append(f"1 1 1 rg {_hexrgb(col)} RG 0.5 w [] 0 d "
+                       f"{X(x - w / 2):.2f} {Y(z + h / 2):.2f} {w * k:.2f} {h * k:.2f} re B")
+            sz = max(5.0, size * k)
+            t = _clean(txt)
+            ops.append(f"{_hexrgb(col)} rg BT /F2 {sz:.1f} Tf {X(x) - len(t) * sz * 0.27:.2f} "
+                       f"{Y(z + size * 0.36):.2f} Td ({_pdf_str(t)}) Tj ET")
         elif s[0] == "ring":
             _, x, z, r, stroke, dash = s
             cx, cy, rr = X(x), Y(z), r * k

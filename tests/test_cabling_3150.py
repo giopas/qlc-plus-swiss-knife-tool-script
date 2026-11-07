@@ -120,3 +120,20 @@ def test_wire_by_name_with_a_transmitter_as_source(festival):
     assert new["chains"][-1]["source"] == {"item": tx, "port": 0}
     ev = plan.evaluate(new, festival)
     assert next(f for f in ev["fixtures"] if f["id"] == "0")["radio"]
+
+
+def test_cable_labels_are_tags_that_do_not_overlap(festival):
+    """Lengths sit on white tags, never on top of each other; a tag moved off
+    its cable has a leader back to it.  Names are placed where they are free."""
+    p, tx, rx = radio_plan()
+    ev = plan.evaluate(p, festival)
+    sh, _ = outputs._drawing(ev, p, plan.with_extras(festival, p))
+    tags = [s for s in sh if s[0] == "tag"]
+    assert tags and all(s[3].endswith("m") or "to buy" in s[3] or s[3].endswith(")") for s in tags)
+    boxes = [(s[1] - s[6] / 2, s[2] - s[7] / 2, s[1] + s[6] / 2, s[2] + s[7] / 2) for s in tags]
+    assert not any(outputs._overlap(a, b) for i, a in enumerate(boxes) for b in boxes[i + 1:])
+    names = {f["name"] for f in ev["fixtures"] if f.get("place")}
+    assert names <= {s[3] for s in sh if s[0] == "text"}
+    svg = outputs.plot_svg(ev, p, plan.with_extras(festival, p))
+    assert 'rx="' in svg and 'paint-order="stroke"' in svg
+    assert sh == outputs._drawing(ev, p, plan.with_extras(festival, p))[0]      # same plan, same drawing

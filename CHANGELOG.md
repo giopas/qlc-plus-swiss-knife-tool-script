@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.15.0] — 2026-11-07 — Cabling by radio
+
 ### Added — single fixtures by radio in Cabling (3.15.0)
 
 - **A fixture can get its DMX by radio.** Click it on the plan and choose *by radio, a receiver of its own* under *Gets DMX*. The first time, the wireless transmitter goes on a free output of the splitter (or of the interface when no splitter is fed) and stands next to it. Every fixture sent by radio gets its own receiver, which stands by the fixture (on its truss when the fixture hangs), so two fixtures on opposite sides of the stage no longer share a cable.

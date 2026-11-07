@@ -285,8 +285,17 @@ def _clean(spec: dict, lenient: bool = False) -> dict:
             "show_id": str(spec.get("show_id") or "")}
 
 
-def music_info(music: dict, funcs: Dict[str, object]) -> Dict[str, object]:
-    """Where the music is and how long: {'name','path','length_ms','source'}; length_ms may be None."""
+def resolve(path: str, base_dir: str = "") -> str:
+    """The file a music path names: a relative path counts from the show's folder, as QLC+
+    reads it (3.13.0; before, it was looked up from where Swiss Knife was started)."""
+    if not path or os.path.isabs(path) or not base_dir:
+        return path
+    return os.path.join(base_dir, path)
+
+
+def music_info(music: dict, funcs: Dict[str, object], base_dir: str = "") -> Dict[str, object]:
+    """Where the music is and how long: {'name','path','length_ms','source'}; length_ms may be None.
+    *path* stays as written (QLC+ stores it so); the file is read from the show's folder."""
     if music.get("function_id"):
         f = funcs.get(music["function_id"])
         if f is None or f.get("Type") != "Audio":
@@ -298,13 +307,13 @@ def music_info(music: dict, funcs: Dict[str, object]) -> Dict[str, object]:
     path = music["path"]
     if os.path.splitext(path)[1].lower() not in media.AUDIO_EXTS:
         raise ValueError("the music must be a sound file (.wav, .mp3, .ogg, .flac, .m4a)")
-    length = media.audio_length_ms(path)
+    length = media.audio_length_ms(resolve(path, base_dir))
     if length is None and music.get("length"):
         length = parse_length(music["length"])
     return {"name": music.get("name") or os.path.basename(path), "path": path, "length_ms": length, "source": "path"}
 
 
-def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
+def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[str, object]:
     """What the table makes, without changing anything: part starts, the length, the free
     time and warnings.  *lenient* is for the live preview: a part with no look or a length
     that cannot be read is listed with its ``issue`` and counts for nothing, instead of stopping.
@@ -317,7 +326,7 @@ def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
     mlen, minfo, warns = None, None, []
     if s["music"]:
         try:
-            minfo = music_info(s["music"], funcs)
+            minfo = music_info(s["music"], funcs, base_dir)
             mlen = minfo["length_ms"]
         except ValueError as e:
             if not lenient:
@@ -386,17 +395,17 @@ def plan(engine, spec: dict, lenient: bool = False) -> Dict[str, object]:
             warns.append(f"the music is {clock(mlen - t)} longer than the parts: the lights stop first")
         elif mlen < t:
             warns.append(f"the parts run {clock(t - mlen)} past the end of the music")
-        if minfo["path"] and media.media_status(minfo["path"]) == "missing":
+        if minfo["path"] and media.media_status(minfo["path"], base_dir) == "missing":
             warns.append("the music file is not found on this computer")
     free = max(mlen - t, 0) if mlen else 0
     return {"parts": rows, "length_ms": t, "music_ms": mlen, "free_ms": free, "warnings": warns}
 
 
-def build(engine, spec: dict, next_id: int):
+def build(engine, spec: dict, next_id: int, base_dir: str = ""):
     """Add (or replace) the Show of *spec* in *engine*.  Returns the summary:
     {'show_id', 'name', 'copies': [ids], 'audio_id' (new), 'next_id' (first unused), + plan}."""
     import xml.etree.ElementTree as ET  # nosec B405
-    p = plan(engine, spec)
+    p = plan(engine, spec, base_dir=base_dir)
     s = _clean(spec)
     ns = _ns(engine)
     funcs = _funcs(engine)
@@ -474,7 +483,7 @@ def build(engine, spec: dict, next_id: int):
 
     audio_id = ""
     if s["music"]:
-        mi = music_info(s["music"], funcs)
+        mi = music_info(s["music"], funcs, base_dir)
         mid = s["music"].get("function_id")
         if not mid:                                  # the same file already has a function: use it
             for f in funcs.values():

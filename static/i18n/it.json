@@ -4531,5 +4531,10 @@
  "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1 (ultima)",
  "let it continue in the next universe ('Fill'), keeping its address": "lasciala continuare nell'universo successivo ('Fill'), mantenendo il suo indirizzo",
  "Ready for QLC+ {0}: nothing in the file reads differently there": "Pronto per QLC+ {0}: nel file non c'è niente che venga letto in modo diverso",
- "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} fixture vanno oltre il canale 512 e QLC+ le sposta all'indirizzo 1: il Workspace Doctor (D026) può farle continuare nell'universo successivo."
+ "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} fixture vanno oltre il canale 512 e QLC+ le sposta all'indirizzo 1: il Workspace Doctor (D026) può farle continuare nell'universo successivo.",
+ "Sound": "Suono",
+ "Select the music file": "Scegli il file musicale",
+ "Pick the sound file on this computer": "Scegli il file audio su questo computer",
+ "No file dialog here: type the path of the file.": "Qui non c'è una finestra per scegliere i file: scrivi il percorso del file.",
+ "Not found on this computer: check the path, or pick the file with Browse….": "Non trovato su questo computer: controlla il percorso, oppure scegli il file con Sfoglia…."
 }

@@ -4555,5 +4555,10 @@
  "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1（最新）",
  "let it continue in the next universe ('Fill'), keeping its address": "让它延续到下一个宇宙（'Fill'），保留其地址",
  "Ready for QLC+ {0}: nothing in the file reads differently there": "已适配 QLC+ {0}：文件中没有任何内容会被不同地读取",
- "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} 台灯具超出第 512 通道，QLC+ 会把它们移到地址 1：Workspace Doctor（D026）可以让它们延续到下一个宇宙。"
+ "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} 台灯具超出第 512 通道，QLC+ 会把它们移到地址 1：Workspace Doctor（D026）可以让它们延续到下一个宇宙。",
+ "Sound": "声音",
+ "Select the music file": "选择音乐文件",
+ "Pick the sound file on this computer": "在此电脑上选择声音文件",
+ "No file dialog here: type the path of the file.": "这里没有文件对话框：请输入文件路径。",
+ "Not found on this computer: check the path, or pick the file with Browse….": "在此电脑上找不到：请检查路径，或用“浏览…”选择文件。"
 }

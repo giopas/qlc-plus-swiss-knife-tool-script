@@ -56,8 +56,19 @@ def song_music():
         return jsonify({'error': 'Give the path of the music file.'}), 400
     if os.path.splitext(path)[1].lower() not in media.AUDIO_EXTS:
         return jsonify({'error': 'The music must be a sound file (.wav, .mp3, .ogg, .flac, .m4a).'}), 400
-    return jsonify({'name': os.path.basename(path), 'found': os.path.isfile(path),
-                    'length_ms': media.audio_length_ms(path)})
+    # a relative path counts from the show's folder, as QLC+ reads it; a file picked inside
+    # that folder is written relative, so the show and its music can move together (3.13.0)
+    folder = ws.show_folder()
+    if folder and os.path.isabs(path):
+        try:
+            rel = os.path.relpath(path, folder)
+            if not rel.startswith('..') and not os.path.isabs(rel):
+                path = rel.replace(os.sep, '/')
+        except ValueError:                       # another drive (Windows)
+            pass
+    full = song_builder.resolve(path, folder)
+    return jsonify({'name': os.path.basename(path), 'path': path, 'found': os.path.isfile(full),
+                    'length_ms': media.audio_length_ms(full)})
 
 
 @bp.route('/build', methods=['POST'])

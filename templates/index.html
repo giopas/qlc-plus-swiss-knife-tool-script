@@ -696,6 +696,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <select id="sbd-audio" class="field-input" style="width:230px" onchange="sbdMusicChanged()"></select>
           <input id="sbd-path" class="field-input sbd-hidden" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()">
+          <button id="sbd-browse" class="btn btn-surface sbd-hidden" type="button" onclick="sbdBrowseMusic()" data-tooltip="Pick the sound file on this computer">Browse…</button>
           <input id="sbd-mlen" class="field-input sbd-hidden" type="text" placeholder="3:45" style="width:80px" data-tooltip="Only needed when the length of the file cannot be read (mp3 with no header, flac, m4a)." onchange="sbdChanged()">
           <select id="sbd-click-sound" class="field-input" style="width:120px" aria-label="Click sound" data-tooltip="The sound of the click: the first beat of each bar is always higher or fuller and louder."><option value="beep">Beep</option><option value="wood">Wood block</option><option value="tick">Soft tick</option></select>
           <button class="btn btn-surface" id="sbd-click-btn" onclick="sbdClick()" data-tooltip="Makes a click-track sound file at this BPM, as long as the parts, next to the show.">Make a click track</button>

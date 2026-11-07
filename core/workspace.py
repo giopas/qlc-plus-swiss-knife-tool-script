@@ -1988,19 +1988,27 @@ def _builder_engine():
     return engine
 
 
+def show_folder() -> str:
+    """The folder of the open show, or '' (relative music paths count from here, 3.13.0)."""
+    try:
+        return click_folder()
+    except ValueError:
+        return ''
+
+
 def song_plan(spec: dict, lenient: bool = False) -> dict:
     from core import song_builder
-    return song_builder.plan(_builder_engine(), spec, lenient)
+    return song_builder.plan(_builder_engine(), spec, lenient, base_dir=show_folder())
 
 
 def song_build(spec: dict) -> dict:
     """Build (or rebuild) the Show of a Song Builder table in the show in progress."""
     from core import song_builder
     engine = _builder_engine()
-    song_builder.plan(engine, spec)                       # refuse a bad table before a step opens
+    song_builder.plan(engine, spec, base_dir=show_folder())   # refuse a bad table before a step opens
     _show_touch('songbuilder', f"Song Builder: {spec.get('name', '')}")
     first = max([_int(f.get('ID')) for f in engine.findall('q:Function', NS)] + [_state['highest_func_id']]) + 1
-    out = song_builder.build(engine, spec, first)
+    out = song_builder.build(engine, spec, first, base_dir=show_folder())
     _state['highest_func_id'] = max(_state['highest_func_id'], out['next_id'] - 1)
     reparse_after_vc_edit()
     return out

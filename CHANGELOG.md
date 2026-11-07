@@ -36,6 +36,7 @@ QLC+ 5.3.1 came out on 5 November 2026. Two of its changes reach the show files,
 ### Fixed
 
 - **Function Porter: porting Virtual Console widgets into the show in progress failed** with an error (in Safari: *The string did not match the expected pattern*) and changed nothing. It had been so since the porter learned to work on the show in progress; porting functions alone, or exporting a copy, worked. Found while testing a show saved by QLC+ 5.3.1.
+- **Song Builder: the music file.** A music path with no folder (such as `SongBuilder_demo.wav`) was looked for where Swiss Knife was started, not next to the show, so it was "not found" and *to the end* had no length. It is now looked for in the show's folder, as QLC+ does. A **Browse…** button picks the file with the computer's own dialog; a file in the show's folder is written by its name only.
 - **Pages of a show saved by QLC+ 5.3.1** could get numbers above QLC+'s range when a button had no function. Found on the same test, fixed before release.
 
 ---

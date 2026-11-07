@@ -219,7 +219,21 @@ function sbdMove(i, d) {
 function _sbdMusicShow() {
   const on = document.getElementById('sbd-audio').value === '__path';
   document.getElementById('sbd-path').classList.toggle('sbd-hidden', !on);
+  document.getElementById('sbd-browse')?.classList.toggle('sbd-hidden', !on);
   document.getElementById('sbd-mlen').classList.toggle('sbd-hidden', !on);
+}
+
+// Pick the music with the computer's own file dialog (3.13.0).  A file in the show's folder
+// is written relative to it, like QLC+ does, so the two can move together.
+async function sbdBrowseMusic() {
+  const path = await nativePick('Select the music file',
+    [{ label: 'Sound', exts: ['.wav', '.mp3', '.ogg', '.flac', '.m4a', '.aac'] }]);
+  if (!path) {
+    if (nativePick.unavailable) document.getElementById('sbd-music-note').textContent = t('No file dialog here: type the path of the file.');
+    return;
+  }
+  document.getElementById('sbd-path').value = path;
+  await sbdMusicChanged();
 }
 
 async function sbdMusicChanged() {
@@ -236,7 +250,8 @@ async function sbdMusicChanged() {
   if (!path) { note.textContent = ''; return; }
   const d = await (await fetch('/api/songbuilder/music', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) })).json();
   if (d.error) { note.textContent = d.error; return; }
-  if (!d.found) { note.textContent = t('Not found on this computer: check the path.'); return; }
+  if (d.path && d.path !== path) { document.getElementById('sbd-path').value = d.path; sbdChanged(); }
+  if (!d.found) { note.textContent = t('Not found on this computer: check the path, or pick the file with Browse….'); return; }
   note.textContent = d.length_ms ? t('Found, {0} long.', _sbdFmt(d.length_ms)) : t('Found, but its length cannot be read: type it in the box (for example 3:45).');
 }
 

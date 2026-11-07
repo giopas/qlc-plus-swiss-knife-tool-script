@@ -205,7 +205,7 @@ def test_routes_preview_build_open(tmp_path):
     with wave.open(str(w), "wb") as f:
         f.setnchannels(1); f.setsampwidth(2); f.setframerate(8000); f.writeframes(b"\0\0" * 8000)
     m = client.post("/api/songbuilder/music", json={"path": str(w)}).get_json()
-    assert m == {"name": "a.wav", "found": True, "length_ms": 1000}
+    assert m == {"name": "a.wav", "found": True, "length_ms": 1000, "path": "a.wav"}   # next to the show: relative (3.13.0)
     assert client.post("/api/songbuilder/music", json={"path": "/etc/passwd"}).status_code == 400
 
 

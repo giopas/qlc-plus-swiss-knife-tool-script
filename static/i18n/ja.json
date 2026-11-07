@@ -4555,5 +4555,10 @@
  "QLC+ 5.3.1 (latest)": "QLC+ 5.3.1（最新）",
  "let it continue in the next universe ('Fill'), keeping its address": "次のユニバースへ続けさせます（'Fill'）。アドレスはそのままです",
  "Ready for QLC+ {0}: nothing in the file reads differently there": "QLC+ {0} に対応済み：ファイル内に読み方が変わるものはありません",
- "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} 台のフィクスチャーがチャンネル512を超えるため、QLC+ はアドレス1に移動します。Workspace Doctor（D026）で次のユニバースへ続けられます。"
+ "{0} fixture(s) run past channel 512 and QLC+ moves them to address 1: the Workspace Doctor (D026) can let them continue in the next universe.": "{0} 台のフィクスチャーがチャンネル512を超えるため、QLC+ はアドレス1に移動します。Workspace Doctor（D026）で次のユニバースへ続けられます。",
+ "Sound": "サウンド",
+ "Select the music file": "音楽ファイルを選択",
+ "Pick the sound file on this computer": "このコンピュータのサウンドファイルを選択",
+ "No file dialog here: type the path of the file.": "ここではファイル選択画面が使えません。ファイルのパスを入力してください。",
+ "Not found on this computer: check the path, or pick the file with Browse….": "このコンピュータに見つかりません。パスを確認するか、参照…でファイルを選んでください。"
 }

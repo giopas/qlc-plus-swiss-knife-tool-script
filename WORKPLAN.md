@@ -37,7 +37,23 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.13.0, tempo changes and QLC+ 5.3.1** (giopas, 5 and 6 November 2026; release commit prepared on 6 November, branch `feat/v3.13.0`, waiting for the hand checks below and the push). 3.12.0, Brightness levels, and 3.11.0, notes from a gig, were released on 5 November. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.13.0, tempo changes and QLC+ 5.3.1** (giopas, 5 to 7 November 2026; branch `feat/v3.13.0`; all hand checks passed on 7 November, waiting for the push). **Next: 3.14.0, a clearer Song Builder** (proposal below, waiting for giopas). 3.12.0, Brightness levels, and 3.11.0, notes from a gig, were released on 5 November. Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+
+### 3.14.0 · A clearer Song Builder (proposal, waiting for giopas)
+
+**Asked by giopas on 7 November**, after the 3.13.0 tests: the Song Builder has many options and is no longer easy to use in real life. Seen during the tests: he put a tempo on the wrong row because it was not visible that a tempo carries on to the next parts; *Beats/step* was filled in on scenes, where it does nothing and nothing says so; the greyed `3:45` in the music length box looked like a value; *to the end* is cut to *to the er*; the music row holds seven controls; *Preview* repeats what the page already shows live.
+
+Proposal (to be confirmed before building):
+
+| # | What | Status |
+|---|---|---|
+| 1 | Three blocks in order: **Song** (open a song built here or start a new one, name, tempo as BPM and 4/4, lengths in bars or seconds), **Music** (one choice: none, a file with Browse…, a sound already in the show, or a click track), **Parts**. | proposed |
+| 2 | Parts table, first view: Part, Look, Length, Starts. Repeat, fades, tempo change and steps go in a ⋯ panel per row; a row shows what is set there as small chips (×2, fade 0.5 s, ♩90, step every beat). | proposed |
+| 3 | Tempo shown on every row: the row that changes it in full, the rows that carry it on in grey, so it is plain where 90 starts and stops. | proposed |
+| 4 | Steps only for a chaser: *its own timing / every beat / every 2 beats / every bar*; not offered for a scene. | proposed |
+| 5 | Music length box only when the file's length cannot be read; *to the end* as a button state on the last row, not typed text. | proposed |
+| 6 | No Preview button (the bar and the starts update as you type); every message says what to do next. | proposed |
+| 7 | A *Load an example* link on an empty table: the demo song, so a first-time user sees how it is meant to be filled in. | proposed |
 
 ### 3.13.0 · Ready for QLC+ 5.3.1 (same release as the tempo changes; finished, waiting for the push)
 
@@ -76,7 +92,7 @@ What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
 
 **Release, 6 November:** version 3.13.0 in `core/workspace.py`, README, packaging; CHANGELOG `[3.13.0]` and `docs/release-notes/RELEASE_NOTES_v3.13.0.md` with both parts of the release. To push: merge `feat/v3.13.0` into `main`, tag `v3.13.0`, push `main`, the tag and the wiki (one local commit ahead).
 
-**Left for giopas:** install QLC+ 5.3.1 on the Mac; open a show, save it in 5.3.1, then in Swiss Knife copy a page, port a function to a page and run the Doctor; commit and push the wiki changes with the release.
+**Hand checks passed** (giopas, 6 and 7 November, QLC+ 5.3.1 on the Mac): copy a page, port a function onto a page, Doctor. **Left for giopas:** merge `feat/v3.13.0` into `main`, tag `v3.13.0`, push `main`, the tag and the wiki.
 
 ### 3.13.0 · Song Builder: tempo changes within a song
 
@@ -96,7 +112,7 @@ What changed in QLC+ 5.3.1, and what Swiss Knife does about it:
 
 **Settled, 5 November 2026:** a changed BPM did not feed the click track. **Changed on 7 November** (asked by giopas, to test the tempo change by ear): `click_track.clicks` takes the tempo map from the plan, `(start_ms, bpm)` per change, each change starting on a first beat; the click lasts max(parts, music) so *to the end* keeps its time; file name lists the tempos. Without changes the bytes are the same as before (test).
 
-**Left for giopas:** hand check in QLC+ — a song with a tempo change plays each part at its own speed and a chaser's steps follow it; `python3 tools/shots.py all` if the new BPM column should appear in a screenshot; then merge and tag. Decided on 6 November: it ships as `v3.13.0` together with *Ready for QLC+ 5.3.1*.
+**Hand check passed, 7 November** (giopas): *Demo Song* with the second verse at 90 and the new tempo-following click track, played in QLC+: the parts land on the clicks. **Was left:** `python3 tools/shots.py all` if the new BPM column should appear in a screenshot; then merge and tag. Decided on 6 November: it ships as `v3.13.0` together with *Ready for QLC+ 5.3.1*.
 
 ### 3.6.1 · Ready for the gig (released 20 October, branch `fix/v3.6.1`)
 

@@ -292,3 +292,28 @@ def test_windows_installer_files_and_updater_keep_uninstaller(tmp_path):
     (old / "app.exe").write_text("a")
     update.keep_uninstaller(str(old), str(new))
     assert sorted(os.listdir(new)) == ["unins000.dat", "unins000.exe"]
+
+
+def test_a_release_without_this_computers_package_is_asked_again_soon(tmp_path, monkeypatch):
+    """3.14.1: GitHub builds the packages after the tag.  An answer cached in those minutes
+    (newer, but no package for this computer) hid Update and restart for 12 hours."""
+    monkeypatch.setattr(update, "is_frozen", lambda: True)
+    monkeypatch.setattr(update, "install_root", lambda: str(tmp_path))
+    monkeypatch.setenv("QSK_UPDATE_FEED", _feed(tmp_path))            # no assets yet
+    r = update.check(now=1000.0)
+    assert r["newer"] and r["asset"] is None and r["pending"]
+    os_, arch = update.platform_key()
+    ext = "tar.gz" if os_ == "linux" else "zip"
+    feed2 = tmp_path / "f2"
+    feed2.mkdir()
+    monkeypatch.setenv("QSK_UPDATE_FEED", _feed(feed2, assets=[
+        {"name": f"QLC-Swiss-Knife-99.0.0-{os_}-{arch}.{ext}", "browser_download_url": "https://github.com/x", "size": 1}]))
+    assert update.check(now=1000.0 + 60)["pending"]                    # still within the 10 minutes
+    r = update.check(now=1000.0 + 11 * 60)                              # asked again: the package is there
+    assert r["asset"] and not r["pending"]
+    assert update.check(now=1000.0 + 3 * 3600)["asset"]               # and that answer is kept for hours
+
+
+def test_release_notes_are_shown_as_text_not_markdown():
+    src = open(os.path.join(ROOT, "static", "js", "update.js"), encoding="utf-8").read()
+    assert "innerHTML = _updNotes(" in src and "replace(/&/g, '&amp;')" in src

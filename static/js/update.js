@@ -48,14 +48,31 @@ function updToggle(open) {
   card.hidden = !show;
   if (!show) return;
   document.getElementById('upd-title').textContent = `Swiss Knife v${_upd.latest} is out`;
-  document.getElementById('upd-sub').textContent = _upd.can_install
+  document.getElementById('upd-sub').textContent = _upd.pending
+    ? t('You have v{0}. The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Press Check now in a few minutes, or open the release page.', _upd.current)
+    : _upd.can_install
     ? `You have v${_upd.current}. Update and restart downloads the new version, checks it and starts it again — your shows and settings are not touched.`
     : (_upd.frozen
         ? `You have v${_upd.current}. Download the new version from the release page.`
         : `You have v${_upd.current}, run from the sources: update with  git pull  (then restart), or download the release.`);
-  document.getElementById('upd-notes').textContent = _upd.notes || '';
+  document.getElementById('upd-notes').innerHTML = _updNotes(_upd.notes || '');
   document.getElementById('upd-install').hidden = !(_upd.can_install && _upd.asset);
   document.getElementById('upd-msg').textContent = '';
+}
+
+// The release notes are Markdown: headings, bold, italics, code and bullets are shown as such
+// (3.14.1; they were shown as raw text).  The text is escaped first, so nothing in it can run.
+function _updNotes(md) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*?)\*/g, '$1<i>$2</i>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  return md.split('\n').filter(l => !/^\s*-{3,}\s*$/.test(l)).map(l => {
+    const h = l.match(/^#{1,6}\s+(.*)$/);
+    if (h) return `<b class="upd-h">${inline(h[1])}</b>`;
+    const li = l.match(/^\s*[-*]\s+(.*)$/);
+    if (li) return `<span class="upd-li">• ${inline(li[1])}</span>`;
+    return inline(l);
+  }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 async function updOpen() {

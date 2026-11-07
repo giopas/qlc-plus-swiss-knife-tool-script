@@ -4626,5 +4626,6 @@
  "to the end": "bis zum Ende",
  "× {0}": "× {0}",
  "“To the end” needs the music: choose it in step 2 first.": "„Bis zum Ende“ braucht die Musik: wähle sie zuerst in Schritt 2.",
- "/path/to/song.mp3": "/pfad/zum/song.mp3"
+ "/path/to/song.mp3": "/pfad/zum/song.mp3",
+ "You have v{0}. The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Press Check now in a few minutes, or open the release page.": "Du hast v{0}. Der Download für diesen Computer wird auf GitHub noch vorbereitet (etwa 15 Minuten nach einer Veröffentlichung). Drücke in ein paar Minuten Jetzt prüfen oder öffne die Release-Seite."
 }

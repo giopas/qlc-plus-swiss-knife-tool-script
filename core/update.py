@@ -45,6 +45,10 @@ from core.workspace import VERSION
 REPO = "giopas/qlc-plus-swiss-knife-tool-script"
 FEED = f"https://api.github.com/repos/{REPO}/releases/latest"
 CACHE_HOURS = 12
+# A release whose download for this computer is not built yet is asked again after this
+# long (3.14.1): GitHub builds the packages after the tag, and an answer cached in
+# those minutes hid *Update and restart* for 12 hours.
+CACHE_PENDING_MINUTES = 10
 TIMEOUT = 5
 MAX_DOWNLOAD = 400 * 1024 * 1024
 MAX_UNPACKED = 2 * 1024 * 1024 * 1024         # an archive that unpacks to more than this is refused (a zip bomb)
@@ -236,6 +240,8 @@ def status(result: Optional[dict] = None, error: str = "") -> dict:
     }
     if result:
         d.update(result)
+    # newer, installable here, but the package for this computer is not on the release yet
+    d["pending"] = bool(d.get("newer") and d["can_install"] and not d.get("asset"))
     return d
 
 
@@ -247,7 +253,9 @@ def check(force: bool = False, now: float = None) -> dict:
         if not st.get("check", True):
             return status(error="")
         c = st.get("cache")
-        if c and now - float(c.get("at", 0)) < CACHE_HOURS * 3600 and c.get("for") == VERSION:
+        r = (c or {}).get("result") or {}
+        ttl = CACHE_PENDING_MINUTES * 60 if (r.get("newer") and not r.get("asset")) else CACHE_HOURS * 3600
+        if c and now - float(c.get("at", 0)) < ttl and c.get("for") == VERSION:
             return status(c.get("result"))
     try:
         rel = json.loads(_read(_feed_url()).decode("utf-8"))

@@ -37,9 +37,13 @@ This is the living plan for Swiss Knife: where the project stands, what comes ne
 
 ## 2. Next releases
 
-**Release in progress: 3.14.0, a clearer Song Builder** (giopas, 7 November 2026; tested by giopas on the Mac the same morning; release commit on branch `feat/v3.14.0`, waiting for the screenshot and the push). 3.13.0, tempo changes and QLC+ 5.3.1, was released on 7 November (tag `v3.13.0`). Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
+**Release in progress: 3.14.1, the update card** (giopas, 7 November 2026; branch `fix/v3.14.1`, waiting for the push). 3.14.0, a clearer Song Builder, was released the same day (tag `v3.14.0`). Everything else waits in the wishlist in section 3; the two designed items (Teleprompter, Colour themes and porting by eye) are written out at the end of that section.
 
-### 3.14.0 · A clearer Song Builder (tested by giopas on 7 November; release commit prepared, waiting for the screenshot and the push)
+### 3.14.1 · The update card (fix)
+
+**Seen by giopas on 7 November**, in the installed 3.12.0 right after 3.13.0 came out: the card said *v3.13.0 is out* and *Update and restart downloads the new version…*, but had only *Open the release page*. Cause (`core/update.py`): the check had run while GitHub was still building the packages after the tag, found no download for this computer, and that answer was cached for 12 hours, so the button stayed hidden. Fixed: an answer with no package for this computer is kept only 10 minutes (`CACHE_PENDING_MINUTES`); the page gets `pending` and the card says the download is still being prepared and to press *Check now*. The release notes in the card are rendered (headings, bold, italics, code, bullets), escaped first. Two tests; seven languages for the new sentence. Already-installed copies (3.12.0 to 3.14.0) still have the old cache: **Check now** under the side menu asks again at once.
+
+### 3.14.0 · A clearer Song Builder (released 7 November 2026, tag v3.14.0)
 
 **Asked by giopas on 7 November**, after the 3.13.0 tests: the Song Builder has many options and is no longer easy to use in real life. Seen during the tests: he put a tempo on the wrong row because it was not visible that a tempo carries on to the next parts; *Beats/step* was filled in on scenes, where it does nothing and nothing says so; the greyed `3:45` in the music length box looked like a value; *to the end* is cut to *to the er*; the music row holds seven controls; *Preview* repeats what the page already shows live.
 

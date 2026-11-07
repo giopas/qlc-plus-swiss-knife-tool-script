@@ -9,6 +9,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [3.14.1] — 2026-11-07 — The update card
+
+### Fixed — the update card (3.14.1)
+
+- **Update and restart was missing** when Swiss Knife checked for updates in the minutes after a release, while GitHub was still building the downloads. That answer was kept for 12 hours, so the card showed only *Open the release page*. Now such an answer is asked again after 10 minutes, and the card says the download is still being prepared and to press *Check now* a little later.
+- **The release notes in the card** are shown with their headings, bold text and bullets, instead of raw `###` and `**` marks.
+
+---
+
 ## [3.14.0] — 2026-11-07 — A clearer Song Builder
 
 ### Changed — a clearer Song Builder (3.14.0)

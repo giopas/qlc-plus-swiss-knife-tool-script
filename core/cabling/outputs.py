@@ -30,6 +30,7 @@ from core.pdf import _pdf_str, assemble_pdf
 
 COLOURS = ["#14b8a6", "#d97706", "#7c3aed", "#2563eb", "#db2777", "#65a30d", "#dc2626", "#0891b2"]
 FEED = "#64748b"
+RADIO = "#7c3aed"            # 3.15.0: what goes by radio
 
 
 def _clean(s) -> str:
@@ -90,8 +91,8 @@ def numbered(ev: dict, plan: dict) -> List[dict]:
 
 def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
     """Shapes in mm: ("rect", x0, z0, x1, z1, fill, stroke, dash), ("line",
-    pts, colour, width, dash), ("circle", x, z, r, fill, stroke), ("text", x,
-    z, s, size, colour, anchor)."""
+    pts, colour, width, dash), ("circle", x, z, r, fill, stroke), ("ring", x,
+    z, r, stroke, dash), ("text", x, z, s, size, colour, anchor)."""
     st = rig["stage"]
     sh: List[tuple] = []
     sh.append(("rect", 0, 0, st["w"], st["d"], "#f1f5f9", "#475569", None))
@@ -133,8 +134,16 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
             continue
         x, z = f["place"]["x"], f["place"]["z"]
         venue = f["owner"] == "venue"
+        if f.get("radio"):                         # 3.15.0: fed by radio: a dashed ring and the word
+            sh.append(("ring", x, z, 250, RADIO, (3, 2)))
+            sh.append(("text", x - 290, z + 40, "radio", 110, RADIO, "end"))
         sh.append(("circle", x, z, 170, "#ffffff" if venue else "#fecaca", "#334155"))
         sh.append(("text", x, z + 330, f["name"], 120, "#0f172a", "middle"))
+    for u in ev.get("units", []):                  # 3.15.0: wireless units the plan places
+        if u["item"] in plan.get("places", {}) and u["kind"] == "wireless_tx":
+            continue
+        sh.append(("rect", u["x"] - 130, u["z"] - 90, u["x"] + 130, u["z"] + 90, "#ede9fe", RADIO, None))
+        sh.append(("text", u["x"], u["z"] + 45, "RX" if u["kind"] == "wireless_rx" else "TX", 100, RADIO, "middle"))
     # 3.11.0: the terminator sits inside the last device, drawn after the fixtures so it is never hidden
     for last, ok in terms:
         sh.append(("circle", last[0], last[1], 120, "#ffffff" if ok else "#fee2e2", "#16a34a" if ok else "#dc2626"))
@@ -148,19 +157,25 @@ def _drawing(ev: dict, plan: dict, rig: dict) -> Tuple[List[tuple], tuple]:
         sh.append(("rect", p["x"] - 180, p["z"] - 110, p["x"] + 180, p["z"] + 110, "#ccfbf1", "#0f766e", None))
         name = next((it["name"] for it in plan["tonight"]["items"] if it["id"] == iid), iid)
         sh.append(("text", p["x"], p["z"] + 300, name.split(" ")[0], 120, "#0f766e", "middle"))
-    xs = [s[1] for s in sh if s[0] in ("rect", "circle", "text")] + [s[3] for s in sh if s[0] == "rect"]
-    zs = [s[2] for s in sh if s[0] in ("rect", "circle", "text")] + [s[4] for s in sh if s[0] == "rect"]
+    xs = [s[1] for s in sh if s[0] in ("rect", "circle", "ring", "text")] + [s[3] for s in sh if s[0] == "rect"]
+    zs = [s[2] for s in sh if s[0] in ("rect", "circle", "ring", "text")] + [s[4] for s in sh if s[0] == "rect"]
     for s in sh:
         if s[0] == "line":
             xs += [p[0] for p in s[1]]
             zs += [p[1] for p in s[1]]
     pad = 500
     x0, z0, x1, z1 = min(xs) - pad, min(zs) - pad, max(xs) + pad, max(zs) + pad
-    if band:                                       # the legend, bottom right
+    lx = max(x0 + 2300, x1 - 6200)                 # the legend, bottom right (3.15.0: kept inside the plot)
+    if band:
         z1 += 250
-        sh.append(("rect", x1 - 3700, z1 - 330, x1 - 3450, z1 - 170, "#fee2e2", "#ef4444", (4, 3)))
-        sh.append(("text", x1 - 3380, z1 - 190, "Band floor (meshes and the space round them): cables go round it", 120,
+        sh.append(("rect", lx, z1 - 330, lx + 250, z1 - 170, "#fee2e2", "#ef4444", (4, 3)))
+        sh.append(("text", lx + 320, z1 - 190, "Band floor (meshes and the space round them): cables go round it", 120,
                    "#475569", "start"))
+    if any(l["conn"] == "wireless" for w in ev["chains"] for l in w["links"]):   # 3.15.0
+        z1 += 250
+        sh.append(("line", [(lx, z1 - 240), (lx + 250, z1 - 240)], RADIO, 45, (6, 3)))
+        sh.append(("text", lx + 320, z1 - 190, "By radio, no cable (RX: receiver, TX: transmitter; "
+                   "a dashed ring marks a fixture fed by radio)", 120, "#475569", "start"))
     return sh, (x0, z0, x1, z1)
 
 
@@ -188,6 +203,10 @@ def plot_svg(ev: dict, plan: dict, rig: dict, title: str = "") -> str:
         elif s[0] == "circle":
             _, x, z, r, fill, stroke = s
             out.append(f'<circle cx="{x:.0f}" cy="{z:.0f}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="25"/>')
+        elif s[0] == "ring":
+            _, x, z, r, stroke, dash = s
+            out.append(f'<circle cx="{x:.0f}" cy="{z:.0f}" r="{r}" fill="none" stroke="{stroke}" stroke-width="35" '
+                       f'stroke-dasharray="{dash[0] * 20} {dash[1] * 20}"/>')
         elif s[0] == "text":
             _, x, z, txt, size, col, anchor = s
             out.append(f'<text x="{x:.0f}" y="{z:.0f}" font-size="{size}" fill="{col}" '
@@ -234,6 +253,15 @@ def _plot_stream(ev, plan, rig, title, W, H, top_pad=40, bottom=20, side=20) -> 
                        f"{cx - c:.2f} {cy + rr:.2f} {cx - rr:.2f} {cy + c:.2f} {cx - rr:.2f} {cy:.2f} c "
                        f"{cx - rr:.2f} {cy - c:.2f} {cx - c:.2f} {cy - rr:.2f} {cx:.2f} {cy - rr:.2f} c "
                        f"{cx + c:.2f} {cy - rr:.2f} {cx + rr:.2f} {cy - c:.2f} {cx + rr:.2f} {cy:.2f} c B")
+        elif s[0] == "ring":
+            _, x, z, r, stroke, dash = s
+            cx, cy, rr = X(x), Y(z), r * k
+            c = 0.5523 * rr
+            ops.append(f"{_hexrgb(stroke)} RG 0.9 w [2 1.5] 0 d "
+                       f"{cx + rr:.2f} {cy:.2f} m {cx + rr:.2f} {cy + c:.2f} {cx + c:.2f} {cy + rr:.2f} {cx:.2f} {cy + rr:.2f} c "
+                       f"{cx - c:.2f} {cy + rr:.2f} {cx - rr:.2f} {cy + c:.2f} {cx - rr:.2f} {cy:.2f} c "
+                       f"{cx - rr:.2f} {cy - c:.2f} {cx - c:.2f} {cy - rr:.2f} {cx:.2f} {cy - rr:.2f} c "
+                       f"{cx + c:.2f} {cy - rr:.2f} {cx + rr:.2f} {cy - c:.2f} {cx + rr:.2f} {cy:.2f} c S")
         elif s[0] == "text":
             _, x, z, txt, size, col, anchor = s
             sz = max(5.0, size * k)
@@ -263,13 +291,18 @@ def pick_list(ev: dict, plan: dict) -> dict:
     def add(what, n=1):
         bag[what] = bag.get(what, 0) + n
     used_dev = set()
+    n_used: Dict[str, int] = {}
     for c in plan["chains"]:
         used_dev.add(c["source"]["item"])
         used_dev |= {d["item"] for d in c["devices"] if d.get("item")}
+        for d in c["devices"]:
+            if d.get("item"):
+                n_used[d["item"]] = n_used.get(d["item"], 0) + 1
     for iid in sorted(used_dev):
         it = items.get(iid)
         if it and it.get("count", 0) > 0 and it.get("owner") != "venue" and it.get("power") != "computer":
-            add(it["name"] + (" + power supply" if it.get("power") in ("mains", "dc adapter") else ""))
+            n = min(n_used.get(iid, 1), it["count"]) if it["kind"] == "wireless_rx" else 1   # 3.15.0
+            add(it["name"] + (" + power supply" if it.get("power") in ("mains", "dc adapter") else ""), n)
     for w in ev["chains"]:
         for a in w["adapters"]:
             if a in items:
@@ -440,6 +473,10 @@ def load_in(ev: dict, plan: dict) -> List[str]:
         if iid != "controller" and iid in items:
             steps.append(f"{items[iid]['name']} at {fmt(round(p['x'] / 1000, 1))} from the left, "
                          f"{fmt(round(p['z'] / 1000, 1))} from the back; power it.")
+    for u in ev.get("units", []):                  # 3.15.0
+        if u["item"] in plan.get("places", {}) and u["kind"] == "wireless_tx":
+            continue
+        steps.append(f"{u['name']} next to {u['near']}; power it.")
     by_chain: Dict[int, List[dict]] = {}
     for c in nums:
         by_chain.setdefault(c["chain_n"], []).append(c)

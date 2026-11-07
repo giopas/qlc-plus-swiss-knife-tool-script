@@ -958,6 +958,7 @@ function _cbPlan() {
   const ev = _cb.evaluation, p = _cb.plan;
   const byN = Object.fromEntries(ev.chains.map(w => [w.n, w]));
   const names = Object.fromEntries(ev.fixtures.map(f => [f.id, f.name]));
+  const radio = Object.fromEntries(ev.fixtures.filter(f => f.radio).map(f => [String(f.id), f.radio]));
   const items = Object.fromEntries(p.tonight.items.map(x => [x.id, x]));
   const opts = n => p.chains.map((c, m) => m === n ? '' : `<option value="${m}">${_cbE(_cbT('to chain {0}', m + 1))}</option>`).join('');
   const html = p.chains.map((c, n) => {
@@ -969,8 +970,10 @@ function _cbPlan() {
       const cab = (l.cables || []).map(x => _cbLen(x.length)).join(' + ') || (l.missing_m ? _cbT('{0} to buy', _cbLen(l.missing_m)) : '');
       const mark = (p.cable_marks || {})[_cbMarkKey(d)] || '';
       const mtag = mark && mark !== 'buy' ? `<span class="cb-mark-tag" title="${_cbE(_cbT(CB_MARKS[mark]))}">${_cbE(_cbT(mark === 'venue' ? 'Venue' : 'Borrowed'))}</span>` : '';
-      return `<div class="cb-link"><span class="cb-n">${i + 1}</span><span class="cb-to" data-i18n="off" ${d.fixture != null ? `onclick="_cbFxSel='${_cbE(d.fixture)}';_cbPlotHits();_cbFxLink()" style="cursor:pointer"` : ''}>${_cbE(nm)}</span>
-        <span class="cb-dim">${_cbE(cab)}</span>${mtag}
+      const rd = d.fixture != null && radio[String(d.fixture)];
+      const rtag = rd ? `<span class="cb-radio-tag" title="${_cbE(_cbT('By radio, through {0}.', rd.rx))}">${_cbE(_cbT('radio'))}</span>` : '';
+      return `<div class="cb-link${rd ? ' cb-radio' : ''}"><span class="cb-n">${i + 1}</span><span class="cb-to" data-i18n="off" ${d.fixture != null ? `onclick="_cbFxSel='${_cbE(d.fixture)}';_cbPlotHits();_cbFxLink()" style="cursor:pointer"` : ''}>${_cbE(nm)}</span>
+        <span class="cb-dim">${_cbE(cab)}</span>${mtag}${rtag}
         <button class="btn btn-surface btn-sm" onclick="cablingDev(${n}, ${i}, -1)" ${i === 0 ? 'disabled' : ''} title="${_cbE(_cbT('Earlier'))}">↑</button>
         <button class="btn btn-surface btn-sm" onclick="cablingDev(${n}, ${i}, 1)" ${i === c.devices.length - 1 ? 'disabled' : ''} title="${_cbE(_cbT('Later'))}">↓</button>
         <select class="field-input cb-move" onchange="cablingMove(${n}, ${i}, this.value)"><option value="">${_cbE(_cbT('move…'))}</option>${opts(n)}<option value="x">${_cbE(_cbT('off the chain'))}</option></select></div>`;
@@ -987,7 +990,7 @@ function _cbPlan() {
       <option value="">${_cbE(_cbT('add…'))}</option>${p.chains.map((c, m) => `<option value="${m}">${_cbE(_cbT('to chain {0}', m + 1))}</option>`).join('')}</select></div>`).join('') + '</div>' : '';
   document.getElementById('cb-chains').innerHTML = (html || `<div class="porter-placeholder">${_cbE(_cbT('No chains yet.'))}</div>`) + offHtml;
   const src = document.getElementById('cb-new-src');
-  src.innerHTML = p.tonight.items.filter(x => ['interface', 'splitter', 'node', 'wireless_rx'].includes(x.kind)).flatMap(x => {
+  src.innerHTML = p.tonight.items.filter(x => ['interface', 'splitter', 'node', 'wireless_tx', 'wireless_rx'].includes(x.kind)).flatMap(x => {
     const ports = (x.ports || []).filter(q => q.role === 'out' || q.role === 'thru');
     return ports.map((q, k) => q.role === 'out'
       ? `<option value="${_cbE(x.id)}|${k}" data-i18n="off">${_cbE(x.name)} · ${_cbE(q.name || 'out ' + (k + 1))}</option>` : '');
@@ -1016,7 +1019,7 @@ function cablingAddTo(fid, to) {
   _cbChanged();
 }
 
-function cablingChainRemove(n) { _cb.plan.chains.splice(n, 1); _cbChanged(); }
+function cablingChainRemove(n) { _cb.plan.chains.splice(n, 1); _cbTidyRadio(_cb.plan); _cbChanged(); }
 
 function cablingNewChain() {
   const v = document.getElementById('cb-new-src').value;
@@ -1092,7 +1095,7 @@ function _cbPlotHits() {
     if (!f.place) return;
     const c = document.createElementNS(ns, 'circle');
     c.setAttribute('cx', f.place.x); c.setAttribute('cy', f.place.z); c.setAttribute('r', 260);
-    c.setAttribute('class', 'cb-hit' + (String(_cbFxSel) === String(f.id) ? ' on' : ''));
+    c.setAttribute('class', 'cb-hit' + (String(_cbFxSel) === String(f.id) ? ' on' : '') + (f.radio ? ' radio' : ''));
     c.setAttribute('role', 'button');
     const tt = document.createElementNS(ns, 'title'); tt.textContent = f.name + ' · ' + _cbT('click: where its DMX comes from');
     c.appendChild(tt);
@@ -1127,13 +1130,15 @@ function _cbFxLink() {
     const c = p.chains[at.n];
     const prev = at.i > 0 ? c.devices[at.i - 1] : null;
     const src = items.find(x => x.id === c.source.item);
-    now = prev ? (prev.fixture != null ? _cbT('Chain {0}, after {1}.', at.n + 1, names[String(prev.fixture)] || prev.fixture)
+    if (f.radio) now = _cbT('By radio, through {0}.', f.radio.rx) + ' ';
+    else now = '';
+    now += prev ? (prev.fixture != null ? _cbT('Chain {0}, after {1}.', at.n + 1, names[String(prev.fixture)] || prev.fixture)
                                        : _cbT('Chain {0}, after {1}.', at.n + 1, (items.find(x => x.id === prev.item) || {}).name || prev.item))
                : _cbT('Chain {0}, first from {1}.', at.n + 1, src ? src.name : c.source.item);
   }
   const opts = [];
   const rx = items.filter(x => x.kind === 'wireless_rx');
-  rx.forEach(x => opts.push([`rx:${x.id}`, _cbT('by radio, through {0}', x.name)]));
+  rx.forEach(x => opts.push([`rx:${x.id}`, _cbT('by radio, a receiver of its own ({0})', x.name)]));
   items.filter(x => ['interface', 'splitter', 'node', 'wireless_rx'].includes(x.kind)).forEach(x => {
     (x.ports || []).filter(q => q.role === 'out' || q.role === 'thru').forEach((q, k) => {
       if (q.role === 'out') opts.push([`src:${x.id}|${k}`, _cbT('first from {0}', `${x.name} · ${q.name || 'out ' + (k + 1)}`)]);
@@ -1182,27 +1187,63 @@ function cablingFxLink(fid, how) {
     if (c) { c.devices.unshift(me); c.cables = []; }
     else p.chains.push({ source: { item, port: +port }, devices: [me], cables: [], label: '' });
   } else if (how.startsWith('rx:')) {
+    // 3.15.0: each fixture sent by radio gets a receiver of its own; one transmitter, on a free
+    // splitter output (or interface output), sends to all of them.  The receiver stands by the fixture.
     const rx = how.slice(3);
-    take();
-    const asSrc = p.chains.find(x => x.source.item === rx);
-    const asDev = p.chains.find(x => x.devices.some(d => d.item === rx));
-    if (asSrc) { asSrc.devices.unshift(me); asSrc.cables = []; }
-    else if (asDev) { const i = asDev.devices.findIndex(d => d.item === rx); asDev.devices.splice(i + 1, 0, me); asDev.cables = []; }
-    else {
-      const tx = items.find(x => x.kind === 'wireless_tx' && x.count > 0);
-      const busy = new Set(p.chains.map(c => c.source.item + '|' + c.source.port));
-      let src = null;
-      items.filter(x => x.kind === 'interface' && x.count > 0).some(x => (x.ports || []).filter(q => q.role === 'out' || q.role === 'thru')
-        .some((q, k) => { if (q.role === 'out' && !busy.has(x.id + '|' + k)) { src = { item: x.id, port: k }; return true; } return false; }));
-      if (!src) { setStatus(_cbT('No interface output is free for the radio link. Free one, or connect the transmitter by hand.'), 'warn'); return; }
-      p.chains.push({ source: src, devices: [...(tx ? [{ item: tx.id }] : []), { item: rx }, me], cables: [], label: _cbT('Radio') });
+    const tx = _cbTransmitter(p);
+    if (!tx) {
+      const t = items.find(x => x.kind === 'wireless_tx' && x.count > 0);
+      if (!t) { setStatus(_cbT('For a radio link, add a wireless transmitter and receiver to tonight\'s kit (Kit step).'), 'warn'); return; }
+      take();
+      const src = _cbFreeOutput(p);
+      if (!src) { setStatus(_cbT('No output is free for the radio transmitter. Free one, or connect it by hand.'), 'warn'); _cbChanged(); return; }
+      p.chains.push({ source: src, devices: [{ item: t.id }], cables: [], label: _cbT('Radio transmitter') });
+      p.chains.push({ source: { item: t.id, port: 0 }, devices: [{ item: rx }, me], cables: [], label: _cbT('Radio') });
+    } else {
+      take();
+      p.chains.push({ source: { item: tx, port: 0 }, devices: [{ item: rx }, me], cables: [], label: _cbT('Radio') });
     }
-    const f = _cb.evaluation.fixtures.find(x => String(x.id) === fid);
-    if (f && f.place && !(p.places || {})[rx]) { p.places = p.places || {}; p.places[rx] = { x: f.place.x + 300, z: f.place.z, h: 0 }; }
   }
+  _cbTidyRadio(p);
   p.chains = p.chains.filter(c => c.devices.length);
   _cbAlts = _cbAlts && _cbAlts.map(a => ({ ...a, chosen: false }));
   _cbChanged();
+}
+
+const _cbKind = (p, id) => ((p.tonight.items.find(x => x.id === id) || {}).kind);
+
+/** The transmitter the plan already uses (3.15.0): one that starts chains, or one on a chain. */
+function _cbTransmitter(p) {
+  const s = p.chains.find(c => _cbKind(p, c.source.item) === 'wireless_tx');
+  if (s) return s.source.item;
+  for (const c of p.chains) {
+    const d = c.devices.find(x => x.item && _cbKind(p, x.item) === 'wireless_tx');
+    if (d) return d.item;
+  }
+  return null;
+}
+
+/** A free output for the radio transmitter (3.15.0): a splitter the plan feeds first, then an interface. */
+function _cbFreeOutput(p) {
+  const busy = new Set(p.chains.map(c => c.source.item + '|' + c.source.port));
+  const fed = new Set(p.chains.flatMap(c => c.devices.filter(d => d.item).map(d => d.item)));
+  const its = p.tonight.items.filter(x => x.count > 0);
+  const order = its.filter(x => x.kind === 'splitter' && fed.has(x.id)).concat(its.filter(x => x.kind === 'interface'));
+  for (const x of order) {
+    const outs = (x.ports || []).filter(q => q.role === 'out' || q.role === 'thru');
+    for (let k = 0; k < outs.length; k++) {
+      if (outs[k].role === 'out' && outs[k].conn !== 'rj45' && !busy.has(x.id + '|' + k)) return { item: x.id, port: k };
+    }
+  }
+  return null;
+}
+
+/** After a change (3.15.0): a radio chain with no fixture left goes, and so does a
+ *  transmitter's chain when nothing is sent by radio any more. */
+function _cbTidyRadio(p) {
+  p.chains = p.chains.filter(c => !(_cbKind(p, c.source.item) === 'wireless_tx' && !c.devices.some(d => d.fixture != null)));
+  p.chains = p.chains.filter(c => !(c.devices.length === 1 && c.devices[0].item && _cbKind(p, c.devices[0].item) === 'wireless_tx'
+    && !p.chains.some(o => o.source.item === c.devices[0].item)));
 }
 
 /** The request for Claude: the user's words and how to wire them with the cabling tool. */

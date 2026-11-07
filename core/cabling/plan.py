@@ -373,6 +373,45 @@ def root_source(plan: dict, n: int, items: Dict[str, dict], seen=None) -> Option
     return None
 
 
+def _unit_uses(plan: dict, items: Dict[str, dict]) -> Dict[str, int]:
+    """How many units of each wireless device the chains use (3.15.0): one
+    per place it appears as a device, and one for a receiver that only starts
+    a chain."""
+    uses: Dict[str, int] = {}
+    for c in plan["chains"]:
+        for d in c["devices"]:
+            if d.get("item") and (items.get(d["item"]) or {}).get("kind") in ("wireless_rx", "wireless_tx"):
+                uses[d["item"]] = uses.get(d["item"], 0) + 1
+    for c in plan["chains"]:
+        iid = c["source"]["item"]
+        if (items.get(iid) or {}).get("kind") == "wireless_rx" and iid not in uses:
+            uses[iid] = 1
+    return uses
+
+
+def _free_unit(plan: dict, items: Dict[str, dict], iid: str, uses: Dict[str, int]) -> bool:
+    """A wireless unit the chain places (3.15.0): not placed by hand, or a
+    receiver used more than once (each unit stands by its own fixtures)."""
+    if (items.get(iid) or {}).get("kind") not in ("wireless_tx", "wireless_rx"):
+        return False
+    return iid not in plan.get("places", {}) or uses.get(iid, 0) > 1
+
+
+def radio_feeds(plan: dict, items: Dict[str, dict]) -> Dict[str, dict]:
+    """Fixtures fed by radio (3.15.0): ``{fixture id: {"rx": kit item id,
+    "chain": chain number}}``.  A fixture is fed by radio when a receiver
+    comes before it on its chain, or when its chain starts at a receiver."""
+    out: Dict[str, dict] = {}
+    for n, c in enumerate(plan["chains"]):
+        rx = c["source"]["item"] if (items.get(c["source"]["item"]) or {}).get("kind") == "wireless_rx" else None
+        for d in c["devices"]:
+            if d.get("item") and (items.get(d["item"]) or {}).get("kind") == "wireless_rx":
+                rx = d["item"]
+            elif d.get("fixture") is not None and rx:
+                out[str(d["fixture"])] = {"rx": rx, "chain": n + 1}
+    return out
+
+
 def evaluate(plan: dict, rig: dict) -> dict:
     """Walk every chain of *plan* on *rig* (:func:`core.cabling.rig.read_rig`):
     ports, routes on the floor, lengths, cables from tonight's stock, checks.
@@ -398,13 +437,28 @@ def evaluate(plan: dict, rig: dict) -> dict:
     hops = []
     marks = plan.get("cable_marks") or {}
     marked_buy: Dict[tuple, int] = {}        # (conn, length) -> count: cables you chose to buy
-    for n, ch in enumerate(plan["chains"]):
+    uses = _unit_uses(plan, items)
+    unit_at: Dict[str, dict] = {}            # 3.15.0: where an unplaced transmitter stands
+    units: List[dict] = []                   # wireless units the chains place (drawn on the plot)
+
+    def kind_of(iid):
+        return (items.get(iid) or {}).get("kind")
+    # chains that start at a transmitter go last: they start where it stands
+    for n in sorted(range(len(plan["chains"])),
+                    key=lambda m: (kind_of(plan["chains"][m]["source"]["item"]) == "wireless_tx", m)):
+        ch = plan["chains"][n]
         src = items.get(ch["source"]["item"])
         outs = [p for p in (src or {}).get("ports", []) if p["role"] in ("out", "thru")]
         if src is None or not 0 <= ch["source"]["port"] < len(outs):
             issues.append(chain_mod._issue("C006", f"Chain {n + 1} starts from an output that is not in tonight's kit."))
             continue
-        devs, pts, keys = [], [item_point(plan, rig, src["id"], items)], []
+        devs, keys = [], []
+        if src["id"] in unit_at:
+            pts = [dict(unit_at[src["id"]])]
+        elif _free_unit(plan, items, src["id"], uses):
+            pts = [None]
+        else:
+            pts = [item_point(plan, rig, src["id"], items)]
         for d in ch["devices"]:
             if "fixture" in d and d["fixture"] in fx:
                 f = fx[d["fixture"]]
@@ -414,8 +468,33 @@ def evaluate(plan: dict, rig: dict) -> dict:
                 keys.append(device_key(d))
             elif "item" in d and d["item"] in items:
                 devs.append(dict(items[d["item"]]))
-                pts.append(item_point(plan, rig, d["item"], items))
+                pts.append(None if _free_unit(plan, items, d["item"], uses) else item_point(plan, rig, d["item"], items))
                 keys.append(device_key(d))
+        # 3.15.0: a receiver stands by the fixture it feeds, a transmitter by what feeds it
+        names = [src["name"]] + [dv["name"] for dv in devs]
+        for j, pt in enumerate(pts):
+            if pt is not None:
+                continue
+            kind = src["kind"] if j == 0 else devs[j - 1]["kind"]
+            iid = src["id"] if j == 0 else devs[j - 1]["id"]
+            nxt = next((k for k in range(j + 1, len(pts)) if pts[k] is not None
+                        and devs[k - 1].get("fixture") is not None), None)
+            if kind == "wireless_rx" and nxt is not None:
+                pts[j] = {k: v for k, v in pts[nxt].items() if k != "estimated"}   # hung with it, on its truss
+                pts[j]["x"] = pts[nxt]["x"] + 300
+                near = names[nxt]
+            elif j > 0 and pts[j - 1] is not None:
+                pts[j] = {"x": pts[j - 1]["x"], "z": pts[j - 1]["z"] + 400, "h": 0}
+                near = names[j - 1]
+            else:
+                pts[j] = dict(controller_point(plan, rig))
+                near = "the computer"
+            if kind == "wireless_tx":
+                if iid in unit_at:
+                    continue
+                unit_at[iid] = pts[j]
+            units.append({"item": iid, "name": names[j], "kind": kind, "x": pts[j]["x"], "z": pts[j]["z"],
+                          "near": near, "chain": n + 1})
         fixed = [items.get(c) if c else None for c in ch["cables"]]
         fixed += [None] * (len(devs) - len(fixed))
         w = chain_mod.walk(src, outs[ch["source"]["port"]], devs, inv, fixed, ch["label"])
@@ -479,6 +558,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
                 link["cables"] = []
         w["points"] = pts
         walked.append(w)
+    walked.sort(key=lambda w: w["n"])
     assigned = cables_mod.assign(hops, inv)
     for n, w in enumerate(walked):
         total = 0.0
@@ -537,6 +617,8 @@ def evaluate(plan: dict, rig: dict) -> dict:
         it = items.get(iid)
         if it is not None and n > max(it["count"], 1):
             outs = [q for q in it["ports"] if q["role"] in ("out", "thru")]
+            if port < len(outs) and outs[port]["conn"] == "wireless":
+                continue                           # 3.15.0: one transmitter reaches every receiver
             pname = outs[port].get("name") or f"output {port + 1}" if port < len(outs) else f"output {port + 1}"
             issues.append(chain_mod._issue(
                 "C006", f"{n} chains start from {it['name']}, {pname}: one socket takes one cable.", it["name"],
@@ -567,6 +649,18 @@ def evaluate(plan: dict, rig: dict) -> dict:
                                            f"Add it to the kit, or buy one.",
                                            {"what": it["name"], "count": 1,
                                             "item": {k: v for k, v in it.items() if k not in ("id", "owner")}}))
+    for iid, n in sorted(uses.items()):              # 3.15.0: one receiver per radio chain
+        it = items.get(iid)
+        if it is not None and it["kind"] == "wireless_rx" and it["count"] >= 1 and n > it["count"]:
+            issues.append(chain_mod._issue(
+                "C005", f"The plan uses {n} × {it['name']}, tonight's kit has {it['count']}.", it["name"],
+                f"Add {n - it['count']} to the kit, or buy them.",
+                {"what": it["name"], "count": n - it["count"],
+                 "item": {k: v for k, v in it.items() if k not in ("id", "owner", "count")}}))
+    radio = radio_feeds(plan, items)
+    for fid, r in radio.items():
+        if fid in fx:
+            fx[fid]["radio"] = {"rx": (items.get(r["rx"]) or {}).get("name", r["rx"]), "chain": r["chain"]}
     missing = [f for f in fx.values() if f["id"] not in on_chain]
     if plan["chains"] and missing:
         issues.append(chain_mod._issue("C006", "Not on any chain: " + ", ".join(f["name"] for f in missing) + ".",
@@ -601,7 +695,7 @@ def evaluate(plan: dict, rig: dict) -> dict:
               "chains": len(walked)}
     return {"fixtures": list(fx.values()), "chains": walked, "issues": issues, "summary": summary,
             "totals": totals, "controller": ctl, "trusses": trs, "shopping": shopping(walked, issues, assigned),
-            "keep_out": rig.get("keep_out", [])}
+            "keep_out": rig.get("keep_out", []), "units": units}
 
 
 def _universe_checks(plan, rig, fx, items) -> List[dict]:

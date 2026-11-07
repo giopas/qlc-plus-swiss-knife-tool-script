@@ -4907,3 +4907,7 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .brt-allbar { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-0); padding: 8px 14px; }
 .brt-allbar .brt-level { font-size: var(--fs-ui); }
 .brt-room-after { color: var(--accent); font-weight: 600; }
+
+/* 3.15.0: fixtures fed by radio */
+.cb-radio-tag { font-size: var(--fs-small); padding: 0 5px; border-radius: 8px; border: 1px dashed #7c3aed; color: #a78bfa; margin-left: 4px; }
+.cb-link.cb-radio .cb-to { color: #a78bfa; }

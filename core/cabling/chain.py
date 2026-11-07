@@ -193,7 +193,9 @@ def walk(source: dict, out_port: dict, devices: List[dict], inventory: dict,
     if devices:
         last = devices[-1]
         splitter_end = bool(_ports(last, "out")) and last.get("fixture") is None
-        if splitter_end and last.get("termination") == "unknown":
+        if splitter_end and last.get("kind") == "wireless_tx" and not _ports(last, "thru"):
+            pass                                   # 3.15.0: a transmitter with no thru ends the line itself
+        elif splitter_end and last.get("termination") == "unknown":
             # a splitter or node whose termination we do not know (C009, not counted)
             issues.append(_issue("C009", f"{last['name']}: thru unused and input termination unknown.",
                                  last["name"], "Say in the kit whether it has a termination switch; "

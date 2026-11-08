@@ -1401,6 +1401,7 @@
  "with assignments ✓": "avec assignations ✓",
  "(names only — assign manually or Re-Match)": "(noms uniquement — assignez à la main ou utilisez Re-Match)",
  "Loaded {0} song(s){1}": "{0} morceau(x) chargé(s){1}",
+ "Loaded {0} song(s): {1} kept their function, {2} matched by name, {3} without one.": "{0} morceau(x) chargé(s) : {1} ont gardé leur fonction, {2} associé(s) par le nom, {3} sans fonction.",
  "No songs to save.": "Aucun morceau à enregistrer.",
  "Save setlist slot as…": "Enregistrer le slot de setlist sous…",
  "Saved {0} song(s) → {1} ✓": "{0} morceau(x) enregistré(s) → {1} ✓",

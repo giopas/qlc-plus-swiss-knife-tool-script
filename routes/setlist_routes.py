@@ -109,6 +109,25 @@ def patch_detail(slot_id, row_idx):
     return jsonify({'ok': True})
 
 
+@bp.route('/<slot_id>/merge', methods=['POST'])
+def merge_rows(slot_id):
+    """Merge song rows (from a paste or a file read in the browser) into the
+    songs the slot has, keeping their functions (3.17.1).  Nothing is saved.
+    Body: {rows: [...], current: [...]} (current: the page's rows; without
+    it, the slot's).  Returns {rows, kept}."""
+    if not ws.get_state()['loaded']:
+        return jsonify({'error': 'No workspace loaded.'}), 400
+    data = request.get_json(force=True) or {}
+    rows = data.get('rows', [])
+    if not isinstance(rows, list):
+        return jsonify({'error': 'rows must be a list.'}), 400
+    current = data.get('current')
+    if not isinstance(current, list):
+        current = ws.get_slot_details(slot_id)
+    merged, kept = ws.merge_loaded_rows(current, rows)
+    return jsonify({'rows': merged, 'kept': kept})
+
+
 # ── TXT load/save ─────────────────────────────────────────────────────────────
 
 @bp.route('/load', methods=['POST'])
@@ -198,8 +217,12 @@ def load_slot_file(slot_id):
       New (6 pipe-separated fields): txt_name|qxw_id|qxw_name|in|hold|out
       Old (plain text):              one song name per line (no assignments)
 
-    Body: {"path": "/abs/path/to/file.txt"}
-    Returns: {"ok": true, "count": N, "rows": [...], "has_assignments": bool}
+    Body: {"path": "/abs/path/to/file.txt", "merge": true}
+    Returns: {"ok": true, "count": N, "rows": [...], "has_assignments": bool,
+              "kept": N, "with_bpm": N}
+
+    With merge (the default, 3.17.1) songs already in the slot keep their
+    function, fades and hold; the file brings the order and the BPMs.
     """
     if not ws.get_state()['loaded']:
         return jsonify({'error': 'No workspace loaded.'}), 400
@@ -242,11 +265,18 @@ def load_slot_file(slot_id):
                         if len(parts) == 2 and setlist_tempo.parse_value(parts[1]) is not None:
                             row['bpm'] = parts[1].strip()
                         rows.append(ws._tempo_row(row))
+        # 3.17.1: merge into the songs the slot already has (from the show or
+        # edited here), so a file of names and BPMs keeps the looks already
+        # assigned.  "merge": false replaces the list as before.
+        kept = 0
+        if data.get('merge', True):
+            rows, kept = ws.merge_loaded_rows(ws.get_slot_details(slot_id), rows)
         ws.set_slot_details(slot_id, rows)
         sess.set_slot_path(slot_id, path)
         has_assign = any(r.get('qxw_id') for r in rows)
         return jsonify({'ok': True, 'count': len(rows), 'rows': rows,
-                        'has_assignments': has_assign})
+                        'has_assignments': has_assign, 'kept': kept,
+                        'with_bpm': sum(1 for r in rows if r.get('bpm'))})
     except Exception as e:
         return jsonify({'error': _safe_err(e)}), 500
 
@@ -319,6 +349,11 @@ def auto_match():
     results = []
     for s in songs:
         matched_name, matched_id = ws.find_best_match(str(s))
+        # 3.17.1: a copy made by an earlier Apply is named like the song, so it
+        # wins on name; assign the look it was copied from instead.
+        orig = ws.original_of(matched_id)
+        if orig:
+            matched_id, matched_name = orig
         results.append({
             'txt_name':     s,
             'matched_id':   matched_id,

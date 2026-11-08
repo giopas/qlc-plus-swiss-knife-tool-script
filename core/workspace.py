@@ -30,7 +30,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "3.17.0"  # single source of truth — must match CHANGELOG
+VERSION = "3.17.1"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -858,6 +858,57 @@ def set_slot_details(slot_id: str, rows: list):
     _slot_details[slot_id] = [_tempo_row(r) for r in rows]
     # Keep the simple string list in sync
     _slot_songs[slot_id] = [r.get('txt_name', '') for r in rows]
+
+
+def _song_key(name: str) -> str:
+    """A song name for matching rows: case and spaces ignored, a clone's
+    " (Setlist)" suffix dropped (3.17.1)."""
+    n = ' '.join(str(name or '').split()).lower()
+    return n[:-len(' (setlist)')] if n.endswith(' (setlist)') else n
+
+
+def merge_loaded_rows(current: list, loaded: list):
+    """Merge a setlist file into the songs a slot already has (3.17.1).
+
+    A loaded song without a function takes the function (and the fades and
+    hold the file leaves at their default) of the current song with the same name (the first unused one, so repeated names
+    such as "- Stage Patter" pair up in order).  Its BPM comes from the file;
+    when the file has none, the current one is kept.  Order and the list of
+    songs are the file's.  Returns ``(rows, kept)``: kept is how many songs
+    took their function from the current list."""
+    pool: dict = {}
+    for r in current or []:
+        if isinstance(r, dict) and r.get('qxw_id'):
+            pool.setdefault(_song_key(r.get('txt_name')), []).append(r)
+    rows, kept = [], 0
+    for r in loaded or []:
+        row = dict(r)
+        same = pool.get(_song_key(row.get('txt_name')))
+        if same:
+            old = same.pop(0)
+            if not row.get('qxw_id'):
+                row['qxw_id'] = old.get('qxw_id', '')
+                row['qxw_name'] = old.get('qxw_name', '')
+                for k, dflt in (('in', '0'), ('hold', '4294967294'), ('out', '0')):
+                    if k in old and str(row.get(k, dflt) or dflt) == dflt:
+                        row[k] = old[k]     # a time the file sets wins
+                kept += 1
+            if not row.get('bpm') and old.get('bpm'):
+                row['bpm'] = old['bpm']
+                if old.get('beats'):
+                    row['beats'] = old['beats']
+        rows.append(_tempo_row(row))
+    return rows, kept
+
+
+def original_of(fid: str):
+    """For a copy made by an earlier Apply, the function it was copied from, as
+    ``(id, name)``; ``None`` for anything else or when the original is gone
+    (3.17.1)."""
+    base = _state['clone_base_map'].get(fid or '')
+    if base and base in _state['func_by_id']:
+        return base, _state['func_by_id'][base]
+    return None
 
 
 def update_song_detail(slot_id: str, row_idx: int, patch: dict):

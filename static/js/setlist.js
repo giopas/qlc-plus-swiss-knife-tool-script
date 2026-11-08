@@ -945,22 +945,25 @@ function slClearAllAssignments() {
 
 // ── Auto-match ────────────────────────────────────────────────────────────────
 
-async function slAutoMatch() {
+// quiet (3.17.1): no status line; returns {matched, total} for the caller's own message
+async function slAutoMatch(quiet = false) {
   if (!_selectedSlot || !_songRows.length) {
-    setStatus('Select a slot with songs first.', 'warn'); return;
+    if (!quiet) setStatus('Select a slot with songs first.', 'warn');
+    return { matched: 0, total: 0 };
   }
   const unmatched = _songRows
     .map((r, i) => ({ idx: i, name: r.txt_name }))
     .filter(x => x.name && !_songRows[x.idx].qxw_id);
 
   if (!unmatched.length) {
-    setStatus('All songs already have a function assigned.', 'ok'); return;
+    if (!quiet) setStatus('All songs already have a function assigned.', 'ok');
+    return { matched: 0, total: 0 };
   }
-  setStatus(`Auto-matching ${unmatched.length} song(s)…`);
+  if (!quiet) setStatus(`Auto-matching ${unmatched.length} song(s)…`);
   const res = await _apiPost('/api/setlist/auto-match', {
     songs: unmatched.map(x => x.name),
   });
-  if (res.error) { setStatus(res.error, 'error'); return; }
+  if (res.error) { setStatus(res.error, 'error'); return { matched: 0, total: unmatched.length }; }
 
   let matched = 0;
   res.forEach((m, i) => {
@@ -973,7 +976,28 @@ async function slAutoMatch() {
   });
   _renderSongList();
   _renderFnPool(_poolFiltered);
-  setStatus(`Auto-matched ${matched} of ${unmatched.length} song(s).`, matched > 0 ? 'ok' : 'warn');
+  if (!quiet) setStatus(`Auto-matched ${matched} of ${unmatched.length} song(s).`, matched > 0 ? 'ok' : 'warn');
+  return { matched, total: unmatched.length };
+}
+
+// ── 3.17.1 Loading a setlist keeps the looks already assigned ─────────────────
+
+/** Merge loaded rows into the slot's songs on the server: songs with the same
+ *  name keep their function, the file brings the order and the BPMs. */
+async function _slMergeKeep(rows) {
+  const d = await _apiPost(`/api/setlist/${_selectedSlot}/merge`, { rows, current: _songRows });
+  return d && Array.isArray(d.rows) ? d : { rows, kept: 0 };
+}
+
+/** After a load: match the songs still without a function by name, save, say what happened. */
+async function _slAfterLoad(kept) {
+  const am = await slAutoMatch(true);
+  _renderSongList(); _updateSongCount(); _renderFnPool(_poolFiltered);
+  await slSaveDetails(true);
+  if (_songRows.some(r => r.bpm)) slCheckTempo();
+  const left = _songRows.filter(r => r.txt_name && !r.qxw_id).length;
+  setStatus(`Loaded ${_songRows.length} song(s): ${kept} kept their function, ${am.matched} matched by name, ${left} without one.`,
+    left ? 'warn' : 'ok');
 }
 
 // ── Chaser selector ───────────────────────────────────────────────────────────
@@ -1030,6 +1054,7 @@ async function slImportSlotFile() {
     : null;
 
   if (path) {
+    await slSaveDetails(true);              // the server merges into what the page shows
     const res = await _apiPost(`/api/setlist/${_selectedSlot}/load-file`, { path });
     if (res.error) { setStatus(res.error, 'error'); return; }
     _songRows = Array.isArray(res.rows) ? res.rows : [];
@@ -1039,8 +1064,7 @@ async function slImportSlotFile() {
     _updateSongCount();
     _clearTimingPanel();
     _renderFnPool(_poolFiltered);
-    const note = res.has_assignments ? ' with assignments ✓' : ' (names only — assign manually or Re-Match)';
-    setStatus(`Loaded ${res.count} song(s)${note}`, 'ok');
+    await _slAfterLoad(res.kept || 0);
     return;
   }
 
@@ -1103,20 +1127,16 @@ function slImportSongsTxt(input) {
     const lines = e.target.result.split(/\r?\n/)
       .map(l => l.trim()).filter(l => l && !l.startsWith('#'));
     if (!lines.length) { setStatus('File is empty.', 'warn'); return; }
-    if (_songRows.length > 0) {
-      if (!confirm(`Replace ${_songRows.length} song(s) with ${lines.length} from "${file.name}"?`)) {
-        input.value = ''; return;
-      }
-    }
-    _songRows = lines.map(name => ({
-      txt_name: name, qxw_id: '', qxw_name: '', in: '0', hold: '4294967294', out: '0',
-    }));
-    _renderSongList();
-    _updateSongCount();
+    const parsed = lines.map(line => {             // "Song | 128 BPM" keeps its tempo (3.17.1)
+      const m = line.match(/^(.*?)\s*\|\s*(\d{2,3}(?:[.,]\d+)?)\s*(?:bpm)?\s*$/i);
+      const row = { txt_name: m ? m[1].trim() : line, qxw_id: '', qxw_name: '', in: '0', hold: '4294967294', out: '0' };
+      if (m) row.bpm = m[2].replace(',', '.');
+      return row;
+    });
+    const merged = await _slMergeKeep(parsed);
+    _songRows = merged.rows;
     _clearTimingPanel();
-    _renderFnPool(_poolFiltered);
-    await slSaveDetails();
-    setStatus(`Imported ${lines.length} song(s) from "${file.name}".`, 'ok');
+    await _slAfterLoad(merged.kept || 0);
   };
   reader.readAsText(file, 'utf-8');
   input.value = '';
@@ -1438,14 +1458,16 @@ async function slImportApply() {
   const songs = _slImpSongs(); if (!songs.length) return;
   const mode = (document.getElementById('sl-imp-mode') || {}).value || 'replace';
   const rows = songs.map(s => ({ txt_name: s.txt_name, qxw_id: '', qxw_name: '', in: s.in, hold: s.hold, out: s.out, ...(s.bpm ? { bpm: s.bpm } : {}) }));
-  if (mode === 'replace' && _songRows.some(r => r.qxw_id) &&
-      !confirm('Replacing the songs drops the function assignments of this slot. Continue?')) return;
-  _songRows = mode === 'append' ? _songRows.concat(rows) : rows;
+  let kept = 0;
+  if (mode === 'append') _songRows = _songRows.concat(rows);
+  else {                                   // 3.17.1: songs already here keep their function
+    const merged = await _slMergeKeep(rows);
+    _songRows = merged.rows; kept = merged.kept || 0;
+  }
   _selectedSong = -1; _selectedSongs = new Set();
-  _renderSongList(); _updateSongCount(); _clearTimingPanel(); _renderFnPool(_poolFiltered);
-  await slSaveDetails();
+  _clearTimingPanel();
   slCloseImport();
-  setStatus(`Imported ${rows.length} song(s) — use Re-Match to give them functions.`, 'ok');
+  await _slAfterLoad(kept);
 }
 
 // ── v2.6.0 The tablet page ────────────────────────────────────────────────────

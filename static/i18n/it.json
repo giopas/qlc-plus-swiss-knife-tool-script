@@ -1424,6 +1424,7 @@
  "with assignments ✓": "con assegnazioni ✓",
  "(names only — assign manually or Re-Match)": "(solo nomi — assegna a mano o usa Re-Match)",
  "Loaded {0} song(s){1}": "Caricati {0} brano/i{1}",
+ "Loaded {0} song(s): {1} kept their function, {2} matched by name, {3} without one.": "Caricati {0} brano/i: {1} hanno tenuto la loro funzione, {2} abbinati per nome, {3} senza funzione.",
  "No songs to save.": "Nessun brano da salvare.",
  "Save setlist slot as…": "Salva slot scaletta come…",
  "Saved {0} song(s) → {1} ✓": "Salvati {0} brano/i → {1} ✓",

@@ -1424,6 +1424,7 @@
  "with assignments ✓": "含分配 ✓",
  "(names only — assign manually or Re-Match)": "（仅名称：请手动分配或重新匹配）",
  "Loaded {0} song(s){1}": "已载入 {0} 首歌曲{1}",
+ "Loaded {0} song(s): {1} kept their function, {2} matched by name, {3} without one.": "已载入 {0} 首歌曲：{1} 首保留原有功能，{2} 首按名称匹配，{3} 首没有功能。",
  "No songs to save.": "没有要保存的歌曲。",
  "Save setlist slot as…": "将曲目表槽位另存为…",
  "Saved {0} song(s) → {1} ✓": "已保存 {0} 首歌曲 → {1} ✓",

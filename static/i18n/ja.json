@@ -1424,6 +1424,7 @@
  "with assignments ✓": "割り当てあり ✓",
  "(names only — assign manually or Re-Match)": "（名前のみ：手動で割り当てるか 再マッチ）",
  "Loaded {0} song(s){1}": "{0} 曲を読み込みました{1}",
+ "Loaded {0} song(s): {1} kept their function, {2} matched by name, {3} without one.": "{0} 曲を読み込みました: {1} 曲は機能をそのまま保持、{2} 曲は名前で一致、{3} 曲は機能なし。",
  "No songs to save.": "保存する曲がありません。",
  "Save setlist slot as…": "セットリストのスロットを名前を付けて保存…",
  "Saved {0} song(s) → {1} ✓": "{0} 曲を保存しました → {1} ✓",

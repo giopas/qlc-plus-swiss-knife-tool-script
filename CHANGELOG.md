@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — the tablet's screen stays on (3.17.1)
+
+- **The Stage Monitor page keeps the tablet's screen on.** It plays a tiny silent video in a loop, so phones and tablets do not dim or lock the screen while the page is open. This works on the plain `http` address the page uses, where the browser's own keep-awake feature is not allowed. Touch the page once after it opens to start it. ☀ in the corner shows it is on; tap it to turn it off and on again. The tablet remembers the choice.
+
 ---
 
 ## [3.17.0] — 2026-11-07 — Beams as in QLC+

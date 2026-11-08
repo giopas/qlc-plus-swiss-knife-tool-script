@@ -328,7 +328,7 @@ def create_app():
         if request.path == '/api/stagemon/preview':
             # the Stage Monitor preview talks to QLC+ on this computer (its own port)
             response.headers['Content-Security-Policy'] = (
-                "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; media-src data:; "
                 "connect-src ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*; "
                 "base-uri 'none'; form-action 'none';"
             )

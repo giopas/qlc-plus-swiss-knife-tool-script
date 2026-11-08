@@ -55,7 +55,11 @@ header { display: flex; align-items: center; gap: calc(14px * var(--k));
 #dot.ok { background: var(--ok); } #dot.wait { background: var(--warn); }
 #clock { font-size: calc(22px * var(--k)); font-variant-numeric: tabular-nums; font-weight: 600; }
 button { font: inherit; color: inherit; background: none; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
-#fs { min-width: 56px; min-height: 56px; padding: 6px 10px; font-size: calc(18px * var(--k)); }
+#fs, #wk { min-width: 56px; min-height: 56px; padding: 6px 10px; font-size: calc(18px * var(--k)); }
+#wk { color: var(--dim); }
+#wk.on { color: var(--ok); border-color: var(--ok); }
+/* the keep-awake video: on the page (a hidden one may be paused), but too small and faint to see */
+#nosleep { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: .01; pointer-events: none; }
 
 #tabs { display: flex; gap: 8px; padding: 8px calc(16px * var(--k)) 0; flex: none; overflow-x: auto; }
 #tabs:empty { display: none; }
@@ -150,7 +154,10 @@ body[data-role="vocals"] #cardpane { border-left: 0; }
   <div id="title"></div>
   <div id="conn"><span id="dot"></span><span id="connText"></span></div>
   <div id="clock" hidden></div>
+  <button id="wk" type="button" aria-pressed="false">☾</button>
   <button id="fs" type="button" hidden aria-label="Full screen">⛶</button>
+  <video id="nosleep" muted loop playsinline webkit-playsinline preload="auto" aria-hidden="true" tabindex="-1"
+    src="data:video/mp4;base64,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YV9tZT0xIHRyZWxsaXM9MCA4eDhkY3Q9MCBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0wIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0xIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9MTAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAAD2WIhAXzn///D0UAAVefgAEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHAAAABkGaIBfOdQEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAH"></video>
 </header>
 <nav id="tabs"></nav>
 <div id="status"><span id="listName"></span><span><span id="pos"></span> <span id="state"></span></span></div>
@@ -495,11 +502,42 @@ if (fsReq) {
     wake();
   });
 }
-async function wake() {   // only on https or localhost; elsewhere set a long screen timeout
+async function wake() {   // only on https or localhost; elsewhere the video below does the job
   try { if (navigator.wakeLock) await navigator.wakeLock.request("screen"); } catch (e) { /* not allowed here */ }
 }
+// Keep the screen on (3.17.1). A tiny silent video plays in a loop: phones and tablets do not dim or
+// lock the screen while something plays. Unlike the Wake Lock API this works on plain http://.
+// Browsers start it only after a tap, so the first tap anywhere starts it; the ☀ button turns it off and on.
+const nosleep = $("nosleep");
+nosleep.muted = true;
+let awakeWanted = true;
+try { awakeWanted = localStorage.getItem("sk-stage-awake") !== "off"; } catch (e) { /* no storage here */ }
+function showAwake() {
+  const on = awakeWanted && !nosleep.paused, b = $("wk");
+  b.classList.toggle("on", on);
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  b.textContent = on ? "☀" : "☾";
+  b.title = on ? T("Screen stays on") : T("Keep screen on");
+  b.setAttribute("aria-label", b.title);
+}
+function keepAwake() {
+  if (!awakeWanted) return;
+  wake();
+  try { const p = nosleep.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* waits for a tap */ }
+}
+nosleep.addEventListener("playing", showAwake);
+nosleep.addEventListener("pause", showAwake);
+document.addEventListener("pointerdown", e => {
+  if (nosleep.paused && !(e.target.closest && e.target.closest("#wk"))) keepAwake();
+}, true);
+$("wk").addEventListener("click", () => {
+  awakeWanted = !(awakeWanted && !nosleep.paused);
+  try { localStorage.setItem("sk-stage-awake", awakeWanted ? "on" : "off"); } catch (e) { /* no storage here */ }
+  if (awakeWanted) keepAwake(); else nosleep.pause();
+  showAwake();
+});
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") { wake(); if (connected) pollAll(); else connect(); }
+  if (document.visibilityState === "visible") { keepAwake(); if (connected) pollAll(); else connect(); }
 });
 let taps = [];
 $("title").addEventListener("pointerdown", () => {
@@ -521,7 +559,8 @@ $("title").textContent = CFG.title || T("Stage Monitor");
 $("clock").hidden = !CFG.showClock;
 if (CFG.showClock) clock();
 renderTabs();
-wake();
+showAwake();
+keepAwake();
 connect();
 </script>
 </body>

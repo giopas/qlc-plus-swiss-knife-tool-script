@@ -455,6 +455,7 @@ PAGE_STRINGS = (
     "No cue list chosen. Choose one in Swiss Knife and export again.",
     "Every step of this list is hidden.", "Close",
     "NEXT UP", "TUNING CHANGE", "Tuning", "Tempo", "Starts", "Note", "BPM",
+    "Keep screen on", "Screen stays on",
 )
 LANGS = ("en", "it", "fr", "de", "es", "pt", "ja", "zh")
 _I18N = os.path.join(os.path.dirname(_HERE), "static", "i18n")
@@ -704,7 +705,7 @@ class _Quiet(SimpleHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Content-Security-Policy",
-                         "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; "
+                         "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src data:; "
                          "connect-src ws: wss: http:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
         super().end_headers()
 

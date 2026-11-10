@@ -244,7 +244,7 @@ The app opens `http://localhost:5731` automatically. Press **Ctrl+C** or use the
 
 Everything runs on your computer. The app listens on `127.0.0.1` only, so your network cannot reach it, and it checks the origin of every request.
 
-The internet is used in three optional ways. Once at start, the update check asks GitHub which version is the latest; nothing about you or your shows is sent, and you can switch it off under the menu. Swiss Knife can fetch a fixture definition from the official QLC+ fixture library on GitHub. The ID Browser can load its table library.
+The internet is used in three optional ways. Once at start, the update check asks GitHub which version is the latest; nothing about you or your shows is sent, and you can switch it off under the menu. Swiss Knife can fetch a fixture definition from the official QLC+ fixture library on GitHub. The ID Browser can load its table library. QLC+ Stage Monitor, the companion app, makes the same one update check for itself, also switchable off; the tablets it serves reach only the Stage Monitor page.
 
 The Claude connection is off until you set it up. When it is on, Claude gets only the folders you list and Swiss Knife's tools (see [Claude and your shows](#claude-and-your-shows)). Details: [DEVELOPMENT.md](DEVELOPMENT.md#security).
 

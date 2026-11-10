@@ -4663,5 +4663,6 @@
  "The page is open in QLC+ Stage Monitor.": "页面已在 QLC+ Stage Monitor 中打开。",
  "in it.": "。",
  "QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.": "QLC+ Stage Monitor 在演出时提供页面，检查 QLC+ 是否就绪，显示二维码并打印歌单。",
- "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "安装配套应用 QLC+ Stage Monitor，即可用二维码提供页面、检查 QLC+ 并打印歌单。没有它 ▶ 提供 也能用。"
+ "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "安装配套应用 QLC+ Stage Monitor，即可用二维码提供页面、检查 QLC+ 并打印歌单。没有它 ▶ 提供 也能用。",
+ "Light": "浅色"
 }

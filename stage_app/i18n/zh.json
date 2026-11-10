@@ -76,5 +76,9 @@
  "Update and restart downloads it, checks it and starts the new version; the folder stays chosen.": "“更新并重启”会下载、校验并启动新版本；所选文件夹保持不变。",
  "Downloading and checking the new version…": "正在下载并校验新版本…",
  "The new version is ready: QLC+ Stage Monitor quits and starts again.": "新版本已就绪：QLC+ Stage Monitor 将退出并重新启动。",
- "Updates are not available here.": "此处无法使用更新。"
+ "Updates are not available here.": "此处无法使用更新。",
+ "Open here": "在本机打开",
+ "Open the page in this computer's browser": "在这台电脑的浏览器中打开页面",
+ "Start serving first.": "请先开始提供页面。",
+ "No such view.": "没有这个视图。"
 }

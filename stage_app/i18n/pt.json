@@ -76,5 +76,9 @@
  "Update and restart downloads it, checks it and starts the new version; the folder stays chosen.": "Atualizar e reiniciar transfere-a, verifica-a e inicia a nova versão; a pasta continua escolhida.",
  "Downloading and checking the new version…": "A transferir e verificar a nova versão…",
  "The new version is ready: QLC+ Stage Monitor quits and starts again.": "A nova versão está pronta: o QLC+ Stage Monitor fecha e volta a abrir.",
- "Updates are not available here.": "As atualizações não estão disponíveis aqui."
+ "Updates are not available here.": "As atualizações não estão disponíveis aqui.",
+ "Open here": "Abrir aqui",
+ "Open the page in this computer's browser": "Abrir a página no navegador deste computador",
+ "Start serving first.": "Inicie primeiro o serviço.",
+ "No such view.": "Essa vista não existe."
 }

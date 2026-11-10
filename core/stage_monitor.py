@@ -44,7 +44,7 @@ EXPORT_DIR = "stage_monitor"
 SIDECAR_SUFFIX = ".stage.json"
 CONFIG_VERSION = 1
 FONT_SCALES = ("S", "M", "L", "XL")
-THEMES = ("dark", "contrast", "black", "dim")   # black: white song on black; dim: grey song on black
+THEMES = ("dark", "light", "contrast", "black", "dim")   # black: white song on black; dim: grey song on black
 MODES = ("read", "control")
 HOLD_CHOICES = (0, 300, 600, 1000, 1500)   # ms a Control button must be held; 0 = a tap acts
 STOP_HOLD_MIN = 1200                       # Stop needs at least this, and twice the hold
@@ -456,6 +456,7 @@ PAGE_STRINGS = (
     "Every step of this list is hidden.", "Close",
     "NEXT UP", "TUNING CHANGE", "Tuning", "Tempo", "Starts", "Note", "BPM",
     "Keep screen on", "Screen stays on",
+    "Colours", "Dark", "Light", "High contrast", "Black, white song", "Black, grey song",
 )
 LANGS = ("en", "it", "fr", "de", "es", "pt", "ja", "zh")
 _I18N = os.path.join(os.path.dirname(_HERE), "static", "i18n")

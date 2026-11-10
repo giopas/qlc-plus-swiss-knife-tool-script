@@ -76,5 +76,9 @@
  "Update and restart downloads it, checks it and starts the new version; the folder stays chosen.": "「更新して再起動」でダウンロード・確認して新しいバージョンを起動します。フォルダーの選択はそのままです。",
  "Downloading and checking the new version…": "新しいバージョンをダウンロードして確認しています…",
  "The new version is ready: QLC+ Stage Monitor quits and starts again.": "新しいバージョンの準備ができました：QLC+ Stage Monitor を終了して再起動します。",
- "Updates are not available here.": "ここでは更新を利用できません。"
+ "Updates are not available here.": "ここでは更新を利用できません。",
+ "Open here": "ここで開く",
+ "Open the page in this computer's browser": "このコンピューターのブラウザでページを開く",
+ "Start serving first.": "先に配信を開始してください。",
+ "No such view.": "そのビューはありません。"
 }

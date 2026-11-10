@@ -229,7 +229,7 @@ GUIDE: Dict[str, dict] = {
                             "order (the whole list): `mode` is `read` (default) or `control` (Previous and Next with "
                             "a long press, and the CueList's own Stop with a longer one, only while the list plays); `steps` maps a step index (from 0) to `{hide: true}`, `{label: \"…\"}` or `{card: {tuning, bpm, starts, note, players: [{who, note}]}}` (the song card). "
                             "`views` [{id, label, layout, fields, who}] are the role views, opened with `?role=<id>`: `layout` is `commander` (cues and card, with the buttons), `band` (small cue list, large card) or `vocals` (the card alone), `fields` any of `tuning`, `bpm`, `starts`, `players`, `note`, `who` one player's line only; give the whole list, leave it out for commander, band and vocals. "
-                            "Also `title`, `font` (S, M, L, XL), `theme` (`dark`, `contrast`, `black` for a white song "
+                            "Also `title`, `font` (S, M, L, XL), `theme` (`dark`, `light`, `contrast`, `black` for a white song "
                             "on black, `dim` for a grey song on black), `show_next`, `show_clock`, `show_numbers`, `show_notes` (the CueList step notes), "
                             "`hold_ms` (Control mode: how long Previous and Next must be held, 0 300 600 1000 1500; 0 = a tap acts; Stop needs at least 1200 and twice this), "
                             "`ws_port` (QLC+, 9999), `http_port` (the page, 8080)."),

@@ -17,9 +17,10 @@ import subprocess  # nosec B404 — fixed commands, no shell, to open the PDF
 import sys
 import threading
 import time
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable, Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 from core import qr
 from core import stage_monitor as sm
@@ -76,6 +77,7 @@ class App:
         self.server = sm.StageServer()
         self.probe_fn = probe
         self.opener = opener
+        self.browser: Callable[[str], bool] = webbrowser.open     # opens the page on this computer
         self.lang = lang if lang in settings.LANGS else st["lang"]
         self.folder = ""
         self.page: Optional[dict] = None
@@ -135,6 +137,18 @@ class App:
     def stop(self) -> dict:
         self.server.stop()
         return self.state()
+
+    def open_here(self, role: str = "") -> dict:
+        """Open the served page (or one player's view) in this computer's browser."""
+        sv = self.server.status()
+        if not sv.get("running"):
+            raise ValueError("Start serving first.")
+        url = f"http://localhost:{int(sv['port'])}/"
+        if role:
+            if role not in {v["id"] for v in (self.page or {}).get("views", [])}:
+                raise ValueError("No such view.")
+            url += "?role=" + quote(role)
+        return {"ok": bool(self.browser(url)), "url": url}
 
     # ── printing ─────────────────────────────────────────────────────────────
     def print_setlist(self, layout: str = "big") -> dict:
@@ -267,6 +281,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, app.start(body.get("port")))
             if path == "/api/stop":
                 return self._json(200, app.stop())
+            if path == "/api/open":
+                return self._json(200, app.open_here(str(body.get("role") or "")))
             if path == "/api/print":
                 return self._json(200, app.print_setlist(str(body.get("layout") or "big")))
             if path == "/api/lang":

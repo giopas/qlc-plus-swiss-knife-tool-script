@@ -108,7 +108,7 @@ def _ratio(a, b):
 def _themes(html):
     """{theme: {variable: hex}} from the page's :root blocks, later blocks over earlier ones."""
     css = html[html.index("<style>"):html.index("</style>")]
-    themes = {t: {} for t in ("dark", "contrast", "black", "dim")}
+    themes = {t: {} for t in ("dark", "light", "contrast", "black", "dim")}
     for sel, body in re.findall(r"([^{}]*:root[^{}]*)\{([^}]*)\}", css):
         named = re.findall(r'data-theme="(\w+)"', sel)
         vals = {k: ("#" + "".join(ch * 2 for ch in h) if len(h) == 3 else "#" + h)

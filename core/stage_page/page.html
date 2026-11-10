@@ -20,6 +20,14 @@
   --stale-bg: #3a3f46; --stale-fg: #c7ccd2; --banner-bg: #2a0d0d; --banner-fg: #ffd5d5;
   --tune: #ffb020; --card-fg: #f4f6f8; --card-bg: #14181d;   /* a tuning change, and the card text (7:1 and 4.5:1 or better) */
 }
+/* light: for daylight, a rehearsal room or a desk; not for a dark stage */
+:root[data-theme="light"] {
+  --bg: #f6f7f9; --fg: #111418; --dim: #56606b; --line: #d5dae0;
+  --cur-bg: #f5b301; --cur-fg: #111418; --ready: #9a6c00; --next: #0a5aa3;
+  --ok: #12803c; --warn: #9a6400; --bad: #c62828; --bar: #e8ebef;
+  --stale-bg: #c9ced6; --stale-fg: #2b3036; --banner-bg: #fdecec; --banner-fg: #7a1010;
+  --tune: #7a3e00; --card-fg: #111418; --card-bg: #ffffff;
+}
 :root[data-theme="contrast"] {
   --bg: #000; --fg: #fff; --dim: #c8c8c8; --line: #333;
   --cur-bg: #ffff00; --cur-fg: #000; --ready: #ffff00; --next: #00e5ff; --bar: #000;
@@ -55,8 +63,9 @@ header { display: flex; align-items: center; gap: calc(14px * var(--k));
 #dot.ok { background: var(--ok); } #dot.wait { background: var(--warn); }
 #clock { font-size: calc(22px * var(--k)); font-variant-numeric: tabular-nums; font-weight: 600; }
 button { font: inherit; color: inherit; background: none; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
-#fs, #wk { min-width: 56px; min-height: 56px; padding: 6px 10px; font-size: calc(18px * var(--k)); }
-#wk { color: var(--dim); }
+#fs, #wk, #th { min-width: 56px; min-height: 56px; padding: 6px 10px; font-size: calc(18px * var(--k)); }
+#wk, #th { color: var(--dim); display: inline-flex; align-items: center; justify-content: center; }
+#wk svg, #th svg { width: calc(26px * var(--k)); height: calc(26px * var(--k)); }
 #wk.on { color: var(--ok); border-color: var(--ok); }
 /* the keep-awake video: on the page (a hidden one may be paused), but too small and faint to see */
 #nosleep { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: .01; pointer-events: none; }
@@ -73,7 +82,7 @@ button { font: inherit; color: inherit; background: none; border: 1px solid var(
 
 #work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
 #list { min-width: 0; min-height: 0; overflow-y: auto; position: relative; padding: 0; }
-#list::before, #list::after { content: ""; display: block; height: 30vh; }   /* room to centre the first and last song; unlike padding it can shrink under the banner */   /* no smooth scrolling: no motion on the stage */
+#list::after { content: ""; display: block; height: 30vh; }   /* room to centre the first and last song; unlike padding it can shrink under the banner */   /* no smooth scrolling: no motion on the stage */
 .step { display: flex; gap: calc(14px * var(--k)); align-items: baseline;
   padding: calc(10px * var(--k)) calc(18px * var(--k)); border-bottom: 1px solid var(--line);
   font-size: calc(28px * var(--k)); line-height: 1.2; }
@@ -154,7 +163,8 @@ body[data-role="vocals"] #cardpane { border-left: 0; }
   <div id="title"></div>
   <div id="conn"><span id="dot"></span><span id="connText"></span></div>
   <div id="clock" hidden></div>
-  <button id="wk" type="button" aria-pressed="false">☾</button>
+  <button id="th" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+  <button id="wk" type="button" aria-pressed="false"></button>
   <button id="fs" type="button" hidden aria-label="Full screen">⛶</button>
   <video id="nosleep" muted loop playsinline webkit-playsinline preload="auto" aria-hidden="true" tabindex="-1"
     src="data:video/mp4;base64,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YV9tZT0xIHRyZWxsaXM9MCA4eDhkY3Q9MCBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0wIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0xIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9MTAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAAD2WIhAXzn///D0UAAVefgAEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHAAAABkGaIBfOdQEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAH"></video>
@@ -228,7 +238,20 @@ const params = new URLSearchParams(location.search);
 const qlcHost = params.get("qlc") || `${location.hostname || "localhost"}:${CFG.wsPort}`;
 const wsUrl = `ws://${qlcHost}${PROTOCOL.path}`;
 
-document.documentElement.dataset.theme = CFG.theme;
+const THEMES = [["dark", T("Dark")], ["light", T("Light")], ["contrast", T("High contrast")],
+  ["black", T("Black, white song")], ["dim", T("Black, grey song")]];
+let theme = CFG.theme;
+try { const t = localStorage.getItem("sk-stage-theme"); if (THEMES.some(x => x[0] === t)) theme = t; } catch (e) { /* no storage here */ }
+function setTheme(t) {
+  theme = t;
+  document.documentElement.dataset.theme = t;
+  const name = (THEMES.find(x => x[0] === t) || THEMES[0])[1];
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#000000";
+  const b = document.getElementById("th");
+  if (b) { b.title = `${T("Colours")}: ${name}`; b.setAttribute("aria-label", b.title); }
+}
+setTheme(theme);
 document.documentElement.dataset.font = CFG.font;
 document.documentElement.lang = CFG.lang || "en";
 
@@ -512,11 +535,13 @@ const nosleep = $("nosleep");
 nosleep.muted = true;
 let awakeWanted = true;
 try { awakeWanted = localStorage.getItem("sk-stage-awake") !== "off"; } catch (e) { /* no storage here */ }
+const EYE_ON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="2"/></svg>';
 function showAwake() {
   const on = awakeWanted && !nosleep.paused, b = $("wk");
   b.classList.toggle("on", on);
   b.setAttribute("aria-pressed", on ? "true" : "false");
-  b.textContent = on ? "☀" : "☾";
+  b.innerHTML = on ? EYE_ON : EYE_OFF;
   b.title = on ? T("Screen stays on") : T("Keep screen on");
   b.setAttribute("aria-label", b.title);
 }
@@ -530,6 +555,11 @@ nosleep.addEventListener("pause", showAwake);
 document.addEventListener("pointerdown", e => {
   if (nosleep.paused && !(e.target.closest && e.target.closest("#wk"))) keepAwake();
 }, true);
+$("th").addEventListener("click", () => {
+  const i = THEMES.findIndex(x => x[0] === theme);
+  setTheme(THEMES[(i + 1) % THEMES.length][0]);
+  try { localStorage.setItem("sk-stage-theme", theme); } catch (e) { /* no storage here */ }
+});
 $("wk").addEventListener("click", () => {
   awakeWanted = !(awakeWanted && !nosleep.paused);
   try { localStorage.setItem("sk-stage-awake", awakeWanted ? "on" : "off"); } catch (e) { /* no storage here */ }

@@ -95,7 +95,7 @@ function drawQlc(s) {
   $('qlc-hint').textContent = h;
 }
 
-function urlRow(u, withQr) {
+function urlRow(u, withQr, role) {
   const row = el('div', 'row');
   const inp = el('input', 'url');
   inp.readOnly = true;
@@ -106,7 +106,10 @@ function urlRow(u, withQr) {
     try { await navigator.clipboard.writeText(u); toast(t('Copied')); }
     catch (e) { inp.focus(); inp.select(); }
   });
-  row.append(inp, copy);
+  const open = el('button', 'btn btn-sm', t('Open here'));
+  open.title = t('Open the page in this computer\'s browser');
+  open.addEventListener('click', () => act(async () => { await api('/api/open', {role: role || ''}); }));
+  row.append(inp, copy, open);
   if (withQr) {
     const b = el('button', 'btn btn-sm', t('QR code'));
     b.addEventListener('click', () => { qrFor = u; drawServer(S); });
@@ -140,7 +143,7 @@ function drawServer(s) {
     box.append(el('div', 'hint', t('A view for each player:')));
     const vl = el('div', 'views');
     views.forEach(v => {
-      const r = urlRow(urls[0] + '?role=' + encodeURIComponent(v.id), true);
+      const r = urlRow(urls[0] + '?role=' + encodeURIComponent(v.id), true, v.id);
       r.prepend(el('span', 'view-label', v.label));
       vl.append(r);
     });

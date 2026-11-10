@@ -28,6 +28,7 @@ import json
 import os
 import sys
 import traceback
+import zlib
 from typing import Any, Callable, Dict, List, Optional
 
 from core import companion, mcp_config
@@ -897,6 +898,15 @@ class Server:
             return {"content": [{"type": "text", "text": _text(res)}]}
         except (ToolError, mcp_config.NotAllowed) as e:
             return {"content": [{"type": "text", "text": str(e)}], "isError": True}
+        except zlib.error as e:
+            # A bundled module could not be unpacked: the installation was replaced (an update)
+            # while this server kept running.  Not a problem with the show file.
+            print(traceback.format_exc(), file=sys.stderr)
+            return {"content": [{"type": "text", "text":
+                                 "Swiss Knife could not do that: its own files changed while Claude was running "
+                                 f"(an update?) and this server must be restarted ({e}). "
+                                 "Quit Claude Desktop completely and open it again. The show file is not the cause."}],
+                    "isError": True}
         except Exception as e:  # noqa: BLE001 — never let a tool kill the server
             print(traceback.format_exc(), file=sys.stderr)
             return {"content": [{"type": "text",

@@ -11,6 +11,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 - **Swiss Knife and QLC+ Stage Monitor no longer remove each other's update.** Both download into a temporary folder next to the app; each app, when it started, removed every such folder, so Stage Monitor restarting after its update could remove Swiss Knife's download halfway (*Could not update: No such file or directory*). Each app now names its folders after itself and removes only its own, and only once they are 15 minutes old.
 - **The release build tries `hdiutil` again** when macOS says the disk image is busy (v3.18.1 lost its Apple Silicon files to it until the job was run again).
+- **A server left running through an update now says so.** If Swiss Knife was updated while Claude Desktop kept its MCP server running, a tool could fail with *Error -3 while decompressing data: incorrect header check*, which looked like a damaged show. The tool now answers that its own files changed and that Claude Desktop must be quit completely and reopened.
 
 ---
 

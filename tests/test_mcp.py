@@ -500,3 +500,18 @@ def test_song_builder_tool_makes_a_click_track(work):
     assert again["file"]["name"] == "Clicky click 120 BPM 2.wav"             # never over a file
     p = _call(work, "song_builder", apply=False, music={"path": d["file"]["path"]}, **table)
     assert p["music_ms"] == 4000 and p["warnings"] == []
+
+
+def test_zlib_error_names_a_restart(tmp_path, monkeypatch):
+    """A zlib error inside a tool (a replaced installation) says to restart, not 'incorrect header check'."""
+    import zlib
+    c = Client([str(tmp_path)])
+
+    def boom(_a):
+        raise zlib.error("Error -3 while decompressing data: incorrect header check")
+
+    monkeypatch.setattr(c.srv, "t_show_summary", boom)
+    err, text = c.tool("show_summary")
+    assert err
+    assert "restart" in text.lower() and "Claude Desktop" in text
+    assert "not the cause" in text

@@ -2669,6 +2669,8 @@
             <button class="btn btn-surface btn-sm" onclick="stagemonPickFolder()">Choose…</button></div>
           <input id="sm-folder" class="field-input sm-folder-in" placeholder="Folder for the page (a stage_monitor folder next to the show by default)" onchange="stagemonFolder(this.value)">
           <div class="sm-actions">
+            <button class="btn btn-surface" id="sm-companion" onclick="stagemonCompanion()" data-tooltip="Serve the page, check QLC+, show the QR code and print the setlist in the companion app"><img class="sm-app-ic" src="/static/logo/stage-monitor.svg" alt="" width="16" height="16"> Open in QLC+ Stage Monitor</button>
+            <button class="btn btn-surface" id="sm-get-companion" onclick="stagemonGetCompanion()" hidden data-tooltip="Open the download page of QLC+ Stage Monitor, the companion app">Get QLC+ Stage Monitor</button>
             <button class="btn btn-surface" id="sm-serve" onclick="stagemonServe()" data-tooltip="Serve the exported folder to the tablet from this computer">▶ Serve</button>
             <button class="btn btn-surface" id="sm-stop" onclick="stagemonStop()" hidden>■ Stop</button>
             <button class="btn btn-surface" onclick="stagemonOpenFolder()" data-tooltip="The exported folder, with Start Stage Monitor to double-click at the gig"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Show the folder</button>
@@ -2677,8 +2679,8 @@
           <ol class="sm-how">
             <li>Start QLC+ with web access: <code>qlcplus -w</code>.</li>
             <li>The tablet joins the same network as this computer (on a Mac: Internet Sharing to Wi-Fi).</li>
-            <li>Export, Serve, then open the address above on the tablet, with <code>http://</code>.</li>
-            <li>At the gig Swiss Knife can stay closed: double-click <b>Start Stage Monitor</b> in the exported folder.</li>
+            <li>Export, then <b>Open in QLC+ Stage Monitor</b> (or Serve here), and open the address it shows on the tablet, with <code>http://</code>.</li>
+            <li>At the gig Swiss Knife can stay closed: open the folder in QLC+ Stage Monitor, or double-click <b>Start Stage Monitor</b> in it.</li>
           </ol>
         </div>
       </aside>

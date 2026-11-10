@@ -4649,5 +4649,19 @@
  "/path/to/song.mp3": "/path/to/song.mp3",
  "You have v{0}. The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Press Check now in a few minutes, or open the release page.": "現在 v{0} です。このコンピュータ用のダウンロードは GitHub でまだ準備中です（リリース後約15分）。数分後に「今すぐ確認」を押すか、リリースページを開いてください。",
  "Keep screen on": "画面をつけたままにする",
- "Screen stays on": "画面はつけたままです"
+ "Screen stays on": "画面はつけたままです",
+ "(or Serve here), and open the address it shows on the tablet, with": "（またはここで配信）し、表示されたアドレスをタブレットで開きます。使うのは",
+ "At the gig Swiss Knife can stay closed: open the folder in QLC+ Stage Monitor, or double-click": "ライブ中は Swiss Knife を閉じていても大丈夫です：フォルダーを QLC+ Stage Monitor で開くか、次をダブルクリック：",
+ "Could not open QLC+ Stage Monitor": "QLC+ Stage Monitor を開けませんでした",
+ "Export, then": "書き出してから",
+ "Get QLC+ Stage Monitor": "QLC+ Stage Monitor を入手",
+ "Open in QLC+ Stage Monitor": "QLC+ Stage Monitor で開く",
+ "Open the download page of QLC+ Stage Monitor, the companion app": "コンパニオンアプリ QLC+ Stage Monitor のダウンロードページを開く",
+ "QLC+ Stage Monitor is not installed.": "QLC+ Stage Monitor がインストールされていません。",
+ "QLC+ Stage Monitor is not installed. Get it from the download page, then try again.": "QLC+ Stage Monitor がインストールされていません。ダウンロードページから入手して、もう一度お試しください。",
+ "Serve the page, check QLC+, show the QR code and print the setlist in the companion app": "コンパニオンアプリでページ配信、QLC+ の確認、QR コード表示、セットリスト印刷を行います",
+ "The page is open in QLC+ Stage Monitor.": "ページを QLC+ Stage Monitor で開きました。",
+ "in it.": "（フォルダー内）。",
+ "QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.": "QLC+ Stage Monitor はライブでページを配信し、QLC+ の準備を確認し、QR コードを表示し、セットリストを印刷します。",
+ "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "コンパニオンアプリ QLC+ Stage Monitor をインストールすると、QR コード付きの配信、QLC+ の確認、セットリスト印刷ができます。▶ 配信 はなくても使えます。"
 }

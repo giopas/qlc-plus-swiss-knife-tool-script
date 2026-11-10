@@ -41,6 +41,9 @@ jobs:
       - name: Build
         run: pyinstaller --noconfirm packaging/swissknife.spec
         shell: bash
+      - name: Build QLC+ Stage Monitor (the companion app)
+        run: pyinstaller --noconfirm packaging/stagemonitor.spec
+        shell: bash
       - name: Smoke test the bundle
         shell: bash
         run: |
@@ -60,23 +63,40 @@ jobs:
           # the Stage Monitor launchers call the app with --serve-stage: the server script is in the bundle
           out=$("$MCP" --serve-stage "$RUNNER_TEMP/no-stage-page" 2>&1 || true)
           echo "$out" | grep -q "No index.html"
+      - name: Smoke test QLC+ Stage Monitor
+        shell: bash
+        run: |
+          case "${{ matrix.label }}" in
+            macos-*)   SM="dist/QLC Stage Monitor.app/Contents/MacOS/QLC Stage Monitor" ;;
+            windows-*) SM="dist/QLC Stage Monitor/QLC Stage Monitor.exe" ;;
+            linux-*)   SM="dist/QLC-Stage-Monitor/QLC-Stage-Monitor" ;;
+          esac
+          "$SM" --smoke
       - name: Inno Setup (Windows installer)
         if: runner.os == 'Windows'
         run: choco install innosetup -y --no-progress
         shell: bash
       - name: Pack
-        run: python packaging/make_archive.py
+        run: |
+          python packaging/make_archive.py
+          python packaging/make_archive.py --app stage-monitor
         shell: bash
       - name: Test the Windows installer (silent install, start, uninstall)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $setup = (Get-ChildItem release\*-setup.exe).FullName
+          $setup = (Get-ChildItem release\QLC-Swiss-Knife-*-setup.exe).FullName
           $dir = Join-Path $env:RUNNER_TEMP 'swk-install'
           Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir" -Wait
           $p = Start-Process "$dir\QLC Swiss Knife.exe" -ArgumentList '--smoke' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "smoke test of the installed app failed ($($p.ExitCode))" }
           if (-not (Test-Path "$dir\unins000.exe")) { throw "no uninstaller" }
+          Start-Process "$dir\unins000.exe" -ArgumentList '/VERYSILENT' -Wait
+          $setup = (Get-ChildItem release\QLC-Stage-Monitor-*-setup.exe).FullName
+          $dir = Join-Path $env:RUNNER_TEMP 'sm-install'
+          Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$dir" -Wait
+          $p = Start-Process "$dir\QLC Stage Monitor.exe" -ArgumentList '--smoke' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "smoke test of the installed Stage Monitor failed ($($p.ExitCode))" }
           Start-Process "$dir\unins000.exe" -ArgumentList '/VERYSILENT' -Wait
       - uses: actions/upload-artifact@v7
         with:
@@ -97,7 +117,7 @@ jobs:
           path: files
           merge-multiple: true
       - name: Checksums
-        run: cd files && sha256sum QLC-Swiss-Knife-* > SHA256SUMS && cat SHA256SUMS
+        run: cd files && sha256sum QLC-Swiss-Knife-* QLC-Stage-Monitor-* > SHA256SUMS && cat SHA256SUMS
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}

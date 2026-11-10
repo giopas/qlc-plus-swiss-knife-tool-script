@@ -573,6 +573,33 @@ async function stagemonServe() {
   _sm.server = d.server; _smServer(d.server);
 }
 
+// QLC+ Stage Monitor, the companion app (3.18.0): serves the folder, checks QLC+, QR code, prints the setlist
+async function stagemonCompanion() {
+  if (!_sm) return;
+  try {
+    const r = await fetch('/api/stagemon/companion', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({folder: _sm.folder}),
+    });
+    const d = await r.json();
+    if (r.status === 404 && d.installed === false) {
+      if (_sm.companion) _sm.companion.installed = false;
+      _smServer(_sm.server);
+      setStatus('QLC+ Stage Monitor is not installed. Get it from the download page, then try again.', 'warn');
+      return;
+    }
+    if (!r.ok) { setStatus(d.error || 'Could not open QLC+ Stage Monitor', 'error'); return; }
+    if (d.server) { _sm.server = d.server; _smServer(d.server); }
+    setStatus('The page is open in QLC+ Stage Monitor.');
+  } catch (e) { setStatus('Could not open QLC+ Stage Monitor', 'error'); }
+}
+
+async function stagemonGetCompanion() {
+  try {
+    const d = await (await fetch('/api/stagemon/get-companion', {method: 'POST'})).json();
+    if (!d.ok && d.url) window.open(d.url, '_blank');
+  } catch (e) { /* nothing to do */ }
+}
+
 async function stagemonOpenFolder() {
   const r = await fetch('/api/stagemon/open-folder', {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({folder: _sm ? _sm.folder : ''}),
@@ -591,7 +618,7 @@ async function stagemonStop() {
 async function _smStatus() {
   try {
     const d = await (await fetch('/api/stagemon/status')).json();
-    if (_sm) _sm.server = d.server;
+    if (_sm) { _sm.server = d.server; if (d.companion) _sm.companion = d.companion; }
     _smServer(d.server);
   } catch (e) { /* later */ }
 }
@@ -624,6 +651,9 @@ function _smServer(sv) {
   if (!el || !sv) return;
   document.getElementById('sm-serve').hidden = sv.running;
   document.getElementById('sm-stop').hidden = !sv.running;
+  const app = (_sm && _sm.companion) || {installed: false};
+  document.getElementById('sm-companion').hidden = !app.installed;
+  document.getElementById('sm-get-companion').hidden = !!app.installed;
   if (sv.running) {
     const urls = sv.urls.length ? sv.urls : [`http://localhost:${sv.port}/`];
     const copy = u => `<button class="btn btn-surface btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${_esc(u)}')">${_esc('Copy')}</button>`;
@@ -641,6 +671,9 @@ function _smServer(sv) {
     const where = ips.length ? _esc(`This computer: ${ips.join(', ')}`)
       : _esc('No network address found. Join or create a Wi-Fi network first.');
     el.innerHTML = `<div class="sm-meta" style="margin:0">${where}</div>`
-      + (sv.error ? `<div class="sm-warn">${_esc(sv.error)}</div>` : '');
+      + (sv.error ? `<div class="sm-warn">${_esc(sv.error)}</div>` : '')
+      + `<div class="sm-meta" style="margin:6px 0 0">${_esc(app.installed
+        ? 'QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.'
+        : 'Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.')}</div>`;
   }
 }

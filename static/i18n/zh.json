@@ -4649,5 +4649,19 @@
  "/path/to/song.mp3": "/path/to/song.mp3",
  "You have v{0}. The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Press Check now in a few minutes, or open the release page.": "你当前是 v{0}。适用于此电脑的下载仍在 GitHub 上准备中（发布后约 15 分钟）。请几分钟后点击“立即检查”，或打开发布页面。",
  "Keep screen on": "保持屏幕常亮",
- "Screen stays on": "屏幕保持常亮"
+ "Screen stays on": "屏幕保持常亮",
+ "(or Serve here), and open the address it shows on the tablet, with": "（或在此处提供），然后在平板上打开它显示的地址，使用",
+ "At the gig Swiss Knife can stay closed: open the folder in QLC+ Stage Monitor, or double-click": "演出时可以关闭 Swiss Knife：在 QLC+ Stage Monitor 中打开该文件夹，或双击其中的",
+ "Could not open QLC+ Stage Monitor": "无法打开 QLC+ Stage Monitor",
+ "Export, then": "导出，然后",
+ "Get QLC+ Stage Monitor": "获取 QLC+ Stage Monitor",
+ "Open in QLC+ Stage Monitor": "在 QLC+ Stage Monitor 中打开",
+ "Open the download page of QLC+ Stage Monitor, the companion app": "打开配套应用 QLC+ Stage Monitor 的下载页面",
+ "QLC+ Stage Monitor is not installed.": "QLC+ Stage Monitor 未安装。",
+ "QLC+ Stage Monitor is not installed. Get it from the download page, then try again.": "QLC+ Stage Monitor 未安装。请从下载页面获取后再试。",
+ "Serve the page, check QLC+, show the QR code and print the setlist in the companion app": "在配套应用中提供页面、检查 QLC+、显示二维码并打印歌单",
+ "The page is open in QLC+ Stage Monitor.": "页面已在 QLC+ Stage Monitor 中打开。",
+ "in it.": "。",
+ "QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.": "QLC+ Stage Monitor 在演出时提供页面，检查 QLC+ 是否就绪，显示二维码并打印歌单。",
+ "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "安装配套应用 QLC+ Stage Monitor，即可用二维码提供页面、检查 QLC+ 并打印歌单。没有它 ▶ 提供 也能用。"
 }

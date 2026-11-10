@@ -4922,3 +4922,4 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 
 /* 3.17.0: the stage size over the cabling plan */
 .cb-stage-dims { margin-left: auto; }
+.sm-app-ic { vertical-align: -3px; border-radius: 3px; margin-right: 2px; }

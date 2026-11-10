@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="token" content="__TOKEN__">
+<title>QLC+ Stage Monitor</title>
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="top">
+  <img class="logo" src="/icon.svg" alt="" width="40" height="40">
+  <div class="brand"><div class="name">QLC+ Stage Monitor</div><div class="sub" data-t>A companion of QLC+ Swiss Knife</div></div>
+  <select id="lang" aria-label="Language"></select>
+</header>
+
+<main>
+  <section class="card" id="sec-folder">
+    <h2 data-t>The page</h2>
+    <div class="row">
+      <input id="folder" class="field" placeholder="Folder that Swiss Knife exported" data-t-ph spellcheck="false">
+      <button class="btn" id="pick" data-t>Choose…</button>
+    </div>
+    <div id="page" class="page"></div>
+  </section>
+
+  <section class="card" id="sec-qlc">
+    <h2>QLC+</h2>
+    <div class="status"><span class="dot" id="qlc-dot"></span><div><div class="head" id="qlc-head"></div><div class="hint" id="qlc-hint"></div></div></div>
+    <button class="btn btn-quiet" id="recheck" data-t>Check again</button>
+  </section>
+
+  <section class="card" id="sec-tablet">
+    <h2 data-t>The tablet</h2>
+    <div class="row">
+      <button class="btn btn-primary" id="start" data-t>Start serving to the tablet</button>
+      <button class="btn" id="stop" hidden data-t>Stop</button>
+    </div>
+    <div id="server"></div>
+  </section>
+
+  <section class="card" id="sec-print">
+    <h2 data-t>Print the setlist</h2>
+    <div class="row">
+      <select id="layout" class="field">
+        <option value="big" data-t>Big, to tape to the floor (A4 portrait)</option>
+        <option value="cards" data-t>With the song cards (A4 landscape)</option>
+      </select>
+      <button class="btn" id="print" data-t>Make the PDF</button>
+    </div>
+    <div id="printed" class="hint"></div>
+  </section>
+</main>
+
+<footer><span id="version"></span> · <span data-t>Swiss Knife makes and changes the page; this app serves it and prints it.</span></footer>
+<div id="toast" class="toast" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>

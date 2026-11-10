@@ -12,6 +12,8 @@ show's CueLists, live from QLC+.  The show is only read.
     POST /api/stagemon/stop        stop serving
     GET  /api/stagemon/status      serving or not, this computer's addresses
     GET  /api/stagemon/qr?text=    a QR code (SVG) for the tablet's address
+    POST /api/stagemon/companion   {folder?}: open the folder in QLC+ Stage Monitor (3.18.0)
+    POST /api/stagemon/get-companion   open the download page of QLC+ Stage Monitor
 """
 
 import os
@@ -19,6 +21,7 @@ import re
 
 from flask import Blueprint, Response, current_app, jsonify, request
 
+from core import companion
 from core import qr
 from core import stage_monitor as sm
 from core import workspace
@@ -79,7 +82,7 @@ def lists():
     return jsonify({
         'lists': cls, 'config': rec['config'], 'missing': rec['missing'], 'new': rec['new'],
         'saved': bool(saved), 'sidecar': os.path.basename(side) if side else '',
-        'folder': folder, 'server': sm.server.status(),
+        'folder': folder, 'server': sm.server.status(), 'companion': companion.status(),
     })
 
 
@@ -214,7 +217,39 @@ def stop():
 
 @bp.route('/status')
 def status():
-    return jsonify({'server': sm.server.status()})
+    return jsonify({'server': sm.server.status(), 'companion': companion.status()})
+
+
+@bp.route('/companion', methods=['POST'])
+def open_companion():
+    """Hand the exported folder to QLC+ Stage Monitor, the companion app (3.18.0)."""
+    body = request.get_json(silent=True) or {}
+    folder = os.path.abspath(os.path.expanduser((body.get('folder') or '').strip() or _mem['folder'] or _default_folder()))
+    if sm.server.running and os.path.abspath(sm.server.folder) == folder:
+        sm.server.stop()                     # the app serves it now, on the same port
+    try:
+        res = companion.launch(folder)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except LookupError:
+        return jsonify({'error': 'QLC+ Stage Monitor is not installed.', 'installed': False,
+                        'download': companion.DOWNLOAD_URL}), 404
+    except OSError as e:
+        return jsonify({'error': _safe_err(e)}), 500
+    return jsonify({**res, 'server': sm.server.status()})
+
+
+@bp.route('/get-companion', methods=['POST'])
+def get_companion():
+    """Open the download page in the browser (the project's own release page only)."""
+    if current_app.config.get('TESTING'):
+        return jsonify({'ok': True, 'url': companion.DOWNLOAD_URL})
+    try:
+        import webbrowser
+        ok = bool(webbrowser.open(companion.DOWNLOAD_URL))
+    except Exception:  # noqa: BLE001
+        ok = False
+    return jsonify({'ok': ok, 'url': companion.DOWNLOAD_URL})
 
 
 @bp.route('/qr')

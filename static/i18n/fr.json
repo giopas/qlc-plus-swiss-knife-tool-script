@@ -4598,5 +4598,19 @@
  "/path/to/song.mp3": "/chemin/morceau.mp3",
  "You have v{0}. The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Press Check now in a few minutes, or open the release page.": "Vous avez la v{0}. Le téléchargement pour cet ordinateur est encore en préparation sur GitHub (environ 15 minutes après une version). Appuyez sur Vérifier maintenant dans quelques minutes, ou ouvrez la page de la version.",
  "Keep screen on": "Garder l’écran allumé",
- "Screen stays on": "L’écran reste allumé"
+ "Screen stays on": "L’écran reste allumé",
+ "(or Serve here), and open the address it shows on the tablet, with": "(ou Servir ici), puis ouvrez sur la tablette l’adresse qu’il affiche, avec",
+ "At the gig Swiss Knife can stay closed: open the folder in QLC+ Stage Monitor, or double-click": "Au concert, Swiss Knife peut rester fermé : ouvrez le dossier dans QLC+ Stage Monitor, ou double-cliquez sur",
+ "Could not open QLC+ Stage Monitor": "Impossible d’ouvrir QLC+ Stage Monitor",
+ "Export, then": "Exportez, puis",
+ "Get QLC+ Stage Monitor": "Obtenir QLC+ Stage Monitor",
+ "Open in QLC+ Stage Monitor": "Ouvrir dans QLC+ Stage Monitor",
+ "Open the download page of QLC+ Stage Monitor, the companion app": "Ouvrir la page de téléchargement de QLC+ Stage Monitor, l’application compagnon",
+ "QLC+ Stage Monitor is not installed.": "QLC+ Stage Monitor n’est pas installé.",
+ "QLC+ Stage Monitor is not installed. Get it from the download page, then try again.": "QLC+ Stage Monitor n’est pas installé. Téléchargez-le depuis la page de téléchargement, puis réessayez.",
+ "Serve the page, check QLC+, show the QR code and print the setlist in the companion app": "Servir la page, vérifier QLC+, afficher le code QR et imprimer la setlist dans l’application compagnon",
+ "The page is open in QLC+ Stage Monitor.": "La page est ouverte dans QLC+ Stage Monitor.",
+ "in it.": "dans ce dossier.",
+ "QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.": "QLC+ Stage Monitor sert la page au concert, vérifie que QLC+ est prêt, affiche le code QR et imprime la setlist.",
+ "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "Installez QLC+ Stage Monitor, l’application compagnon, pour servir la page avec un code QR, vérifier QLC+ et imprimer la setlist. ▶ Servir fonctionne sans elle."
 }

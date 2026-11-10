@@ -237,15 +237,20 @@ GUIDE: Dict[str, dict] = {
                  ("folder", "Where to export, inside a shared folder. Default: `stage_monitor` next to the show."),
                  ("replace", "true replaces a page from an earlier export in that folder. Without it the export stops "
                              "and names the files: ask the user first."),
-                 ("lang", "Language of the words on the page: en, it, fr, de, es, pt, ja or zh.")],
+                 ("lang", "Language of the words on the page: en, it, fr, de, es, pt, ja or zh."),
+                 ("open_app", "true opens the exported folder in QLC+ Stage Monitor, the companion app: it serves the "
+                              "page to the tablet, says whether QLC+ is ready, shows the QR code and prints the setlist. "
+                              "With `export` it opens the folder just written.")],
         "returns": "`cuelists` [{id, caption, where, chaser, steps, inputs}], `config`, `missing` (configured lists "
-                   "gone from the show), `not_on_page`, `settings_file`, and after an export `exported` and `next`.",
+                   "gone from the show), `not_on_page`, `settings_file`, after an export `exported` and `next`, and "
+                   "with `open_app` an `app` block (`opened`, or `installed: false` with the `download` page).",
         "example": '{"config": {"theme": "black", "lists": [{"id": "4001", "label": "Set 1", "mode": "read", '
                    '"steps": {"0": {"label": "Walk-in"}}}]}, "export": true}',
         "notes": "The show is never changed. Settings go to <show>.stage.json next to the show. An export replaces "
                  "a page and server the Stage Monitor wrote only with replace=true, after asking the user; files it did "
                  "not write are never replaced. The tablet needs QLC+ started with `-w`; at the gig, "
-                 "double-click Start Stage Monitor in the exported folder (or ▶ Serve in the Swiss Knife window).",
+                 "open the exported folder in QLC+ Stage Monitor (`open_app`), or double-click Start Stage Monitor in it "
+                 "(or ▶ Serve in the Swiss Knife window). QLC+ Stage Monitor is a separate download from the same release page.",
     },
     "cabling": {
         "use": "Plan the DMX cables of the show with the user's kit: which splitter output feeds which fixtures, in "

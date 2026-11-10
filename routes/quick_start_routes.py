@@ -446,10 +446,12 @@ def qxf_filename(manufacturer: str, model: str) -> str:
     return f"{manufacturer}-{model}.qxf".replace(" ", "-").replace("/", "-")
 
 
-def write_qxf(folder: str) -> dict:
+def write_qxf(folder: str, overwrite: bool = True) -> dict:
     """Write the fixture definitions of the Quick Start rig next to a saved
     workspace — only those the installed QLC+ doesn't already have.
-    ``{files, skipped, warnings, folder}``."""
+    ``{files, skipped, warnings, folder}``.  With ``overwrite=False`` (Claude's
+    ``new_show``, 3.19.0) a different file already there is left alone and named
+    in ``skipped``."""
     from core.quick_start import qlc_library
     written, skipped, warnings = [], [], []
     for key in sorted({e.get('key') for e in _qs_rig}):
@@ -477,6 +479,9 @@ def write_qxf(folder: str) -> dict:
                 same = fh.read() == raw
         except OSError:
             same = False
+        if not same and not overwrite and os.path.exists(dest):
+            skipped.append({'file': fname, 'reason': 'a different file with this name is already there; left as it is'})
+            continue
         if not same:
             with open(dest, 'wb') as fh:
                 fh.write(raw)

@@ -7,6 +7,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — Claude starts a show from scratch (3.19.0)
+
+- **A new show from nothing, straight from Claude.** Tell Claude which fixtures you have and where, and it makes the show: the patch, the groups, the functions and the Virtual Console that the Quick Start makes, checked by the Doctor and saved as a new file (`Club_night_v1.qxw`). The folder can be empty or not exist yet; it is made inside a folder you shared. The new show is then the show in progress, so Claude can go on with looks, buttons, a setlist and save the next version. New Claude tool `new_show`; `preview=true` shows the patch first and writes nothing.
+- **Claude finds the fixtures by name.** New Claude tool `find_fixtures` searches QLC+'s fixture library on your computer (only read, never changed) and the `.qxf` files in your shared folders, and gives the modes with their channel counts.
+- **Addresses and places.** A fixture line can have its own universe and start address; the others go in the first free channels. A line can hang at a place on the stage, otherwise it is spread across it.
+- **Nothing is written over.** A taken name becomes `_v2`. A fixture definition QLC+ lacks is put next to the show, but a different file of the same name already there is left alone and named in the answer.
+- **An empty folder says what to do.** `list_shows` in a folder with no shows points to `new_show`. Claude Desktop offers a new ready request, *Start a new show from scratch*.
+
 ### Fixed — updating both apps at once (3.18.2)
 
 - **Swiss Knife and QLC+ Stage Monitor no longer remove each other's update.** Both download into a temporary folder next to the app; each app, when it started, removed every such folder, so Stage Monitor restarting after its update could remove Swiss Knife's download halfway (*Could not update: No such file or directory*). Each app now names its folders after itself and removes only its own, and only once they are 15 minutes old.

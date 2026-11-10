@@ -158,5 +158,52 @@ def check(manufacturer: str, model: str, modes: List[str]) -> Tuple[str, str]:
     return "installed", path
 
 
+_cat_cache: Dict[Tuple[str, ...], List[dict]] = {}
+
+
+def catalogue() -> List[dict]:
+    """Every installed definition with its names as written (3.19.0):
+    ``[{manufacturer, model, path, library: "stock" | "user"}]``.  Used by
+    Claude's ``find_fixtures`` tool to search the library by name."""
+    cands = _candidates()
+    key = tuple(d for d, _k in cands)
+    if key in _cat_cache:
+        return _cat_cache[key]
+    out: List[dict] = []
+    seen = set()
+    for d, kind in cands:
+        fmap = os.path.join(d, "FixturesMap.xml")
+        if os.path.isfile(fmap):
+            try:
+                root = xml_safe.parse(fmap).getroot()
+                for m in root:
+                    for f in m:
+                        mfr, model = m.get("n", ""), f.get("m", "")
+                        k = (_norm(mfr), _norm(model))
+                        if mfr and model and k not in seen:
+                            seen.add(k)
+                            out.append({"manufacturer": mfr, "model": model, "library": kind,
+                                        "path": os.path.join(d, mfr, f.get("n", "") + ".qxf")})
+                continue
+            except ET.ParseError:
+                pass
+        for dirpath, _dirs, files in os.walk(d):
+            for fn in sorted(files):
+                if fn.lower().endswith(".qxf"):
+                    path = os.path.join(dirpath, fn)
+                    mm = _read_mfr_model(path)
+                    if mm and (_norm(mm[0]), _norm(mm[1])) not in seen:
+                        seen.add((_norm(mm[0]), _norm(mm[1])))
+                        out.append({"manufacturer": mm[0], "model": mm[1], "library": kind, "path": path})
+    _cat_cache[key] = out
+    return out
+
+
+def read_names(path: str) -> Optional[Tuple[str, str]]:
+    """(manufacturer, model) of a .qxf file, read from its first lines."""
+    return _read_mfr_model(path)
+
+
 def clear_cache() -> None:
     _cache.clear()
+    _cat_cache.clear()

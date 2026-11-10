@@ -113,7 +113,8 @@ def manifest(version: str) -> dict:
         "version": version,
         "description": "Let Claude open, check, fix and build on your QLC+ shows with Swiss Knife.",
         "long_description": (
-            "Connects Claude to the QLC+ Swiss Knife you have installed. Claude can open a show, run the "
+            "Connects Claude to the QLC+ Swiss Knife you have installed. Claude can start a new show from a "
+            "list of fixtures, even in an empty folder, or open one, run the "
             "Doctor, shrink a rig, port functions, build looks and chasers, edit the Virtual Console, apply "
             "a setlist, compare shows and draft the Dictionary descriptions. It only sees the folders you "
             "choose here, and always saves a NEW file: your originals are never changed. "

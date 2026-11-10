@@ -1,7 +1,7 @@
 """core/mcp_server.py — Swiss Knife as an MCP server (WORKPLAN Phase 4, v2.9.0).
 
 Lets Claude (Desktop, Code…) drive the same tools you use in the window:
-open a show, run the Doctor, reduce a rig, port functions, build looks,
+create a show from nothing (3.19.0) or open one, run the Doctor, reduce a rig, port functions, build looks,
 edit the Virtual Console, apply a setlist, compare, undo — and save the
 result as a **new** file.  The original is never touched.
 
@@ -26,6 +26,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import sys
 import traceback
 import zlib
@@ -94,6 +95,15 @@ TOOLS: List[dict] = [
     {"name": "open_show", "handler": "t_open_show",
      "description": "Open a .qxw show to work on. Starts a fresh History; the file itself is never changed.",
      "inputSchema": _obj({"path": _S}, ["path"])},
+    {"name": "find_fixtures", "handler": "t_find_fixtures",
+     "description": "Search the fixture definitions for a new show: QLC+'s own fixture library on this computer (read only) and the .qxf files in the shared folders. `query` is words of the model (all must match, e.g. \"par rgbw\"), `manufacturer` narrows it; with neither, lists the manufacturers. With 5 hits or fewer, or modes=true, each hit gives its type and modes with channel counts.",
+     "inputSchema": _obj({"query": _S, "manufacturer": _S, "modes": {"type": "boolean"}, "limit": {"type": "integer"}})},
+    {"name": "new_show", "handler": "t_new_show",
+     "description": "Create a NEW show from nothing, in a shared folder that may be empty or not exist yet (it is created inside a shared folder). Give `name` and `fixtures` [{manufacturer, model (exact names from find_fixtures) or qxf (a .qxf in a shared folder), mode (name or channel count; default the first), quantity, name, universe, address (1-512; leave out to patch by itself), at {x_m from the left, z_m from the back, height_m, spacing_m}}]. Optional: `stage_m` [width, depth, height], `groups` [{name, fixtures: [fixture or line names]}], `nomenclature`, `style`, `stage_layout`, `folder` (default: the only shared folder) or a .qxw path. It builds the patch, groups, functions and Virtual Console the Quick Start makes, checks it with the Doctor, writes it as a new file (never over one) with the definitions QLC+ lacks, and opens it as the show in progress. With preview=true nothing is written: it shows the patch, what it would make and the choices.",
+     "inputSchema": _obj({"name": _S, "fixtures": {"type": "array", "items": {"type": "object"}}, "folder": _S,
+                          "stage_m": {"type": "array", "items": {"type": "number"}},
+                          "groups": {"type": "array", "items": {"type": "object"}}, "nomenclature": _S, "style": _S,
+                          "stage_layout": _S, "preview": {"type": "boolean"}}, ["name", "fixtures"])},
     {"name": "show_summary", "handler": "t_show_summary",
      "description": "What is open now: name, how many steps and unsaved changes, Doctor counts, and a short overview of the show.",
      "inputSchema": _obj()},
@@ -206,11 +216,13 @@ TOOLS: List[dict] = [
 ]
 
 # MCP tool annotations: they let the client group the tools ("reads" vs "changes") and
-# ask once per group instead of once per tool.  None of the tools deletes or overwrites a file.
-READ_ONLY = {"guide", "list_shows", "show_summary", "doctor_check", "rig_fixtures", "source_functions",
+# ask once per group instead of once per tool.  None of the tools deletes or overwrites a file
+# (new_show writes a new one, like save_show).
+READ_ONLY = {"guide", "list_shows", "find_fixtures", "show_summary", "doctor_check", "rig_fixtures", "source_functions",
              "looks_options", "vc_pages", "compare", "dictionary_context", "show_history"}
 TITLES = {
-    "guide": "Guide: how to use a tool", "list_shows": "List shows", "open_show": "Open a show", "show_summary": "Show summary",
+    "guide": "Guide: how to use a tool", "list_shows": "List shows", "open_show": "Open a show",
+    "find_fixtures": "Find fixture definitions", "new_show": "New show from scratch", "show_summary": "Show summary",
     "doctor_check": "Doctor: check", "doctor_fix": "Doctor: fix", "rig_fixtures": "List fixtures",
     "wizard_repair": "Wizard Repair", "upgrade_show": "Upgrade to QLC+ 5.3",
     "reduce_rig": "Reduce the rig", "source_functions": "Porter: source functions",
@@ -236,6 +248,8 @@ INSTRUCTIONS = (
     "QLC+ Swiss Knife edits QLC+ show files (.qxw). Open a show with open_show, "
     "look at it (show_summary, doctor_check), change it with the tools, and finish "
     "with save_show, which writes a NEW file — the original is never modified. "
+    "To start from nothing (an empty folder, no show yet), find the fixtures with find_fixtures and create "
+    "the show with new_show (preview=true first); it writes a NEW .qxw and opens it, and the other tools go on from there. "
     "Every change is a History step you can show_history or undo. "
     "The show is open only in this server's own session, not in the Swiss Knife window: tell the user to open the saved file in the app. "
     "To describe functions in the Dictionary, use dictionary_context, propose the descriptions to the user, "
@@ -312,6 +326,9 @@ class Server:
         limit = max(1, min(int(a.get("limit") or 25), 200))
         off = max(0, int(a.get("offset") or 0))
         out: dict = {"folders": self.allow.folders(), "total": len(shows), "shows": shows[off:off + limit]}
+        if not shows and not problems:
+            out["hint"] = ("No shows here yet. new_show creates one from a list of fixtures "
+                           "(find_fixtures finds their definitions).")
         if len(shows) > off + limit:
             out["next_offset"] = off + limit
         if problems:
@@ -327,6 +344,351 @@ class Server:
         self.api("POST", "/api/load", {"path": p})
         self.opened_path = p
         return self.t_show_summary({})
+
+    # ── a new show from nothing (3.19.0) ──────────────────────────────────────
+    def _fixture_catalogue(self) -> List[dict]:
+        """The .qxf files in the shared folders first (the user's own wins), then QLC+'s library."""
+        from core.quick_start import qlc_library
+        out: List[dict] = []
+        for f in self.allow.folders():
+            base = os.path.expanduser(f)
+            if not os.path.isdir(base):
+                continue
+            for root, dirs, files in os.walk(base):
+                dirs[:] = [d for d in dirs if not d.startswith(".")]
+                for n in sorted(files):
+                    if n.lower().endswith(".qxf"):
+                        p = os.path.join(root, n)
+                        mm = qlc_library.read_names(p)
+                        if mm:
+                            out.append({"manufacturer": mm[0], "model": mm[1], "library": "shared", "path": p})
+                if len(out) > 3000:
+                    break
+        return out + qlc_library.catalogue()
+
+    @staticmethod
+    def _words(s: str) -> List[str]:
+        return [w for w in re.split(r"[\s\-_/.,()]+", str(s or "").lower()) if w]
+
+    def _fixture_modes(self, path: str) -> dict:
+        from core.qxf_parser import parse_qxf
+        try:
+            d = parse_qxf(path)
+        except Exception as e:  # noqa: BLE001
+            return {"error": f"could not read it: {e}"}
+        return {"type": d.get("type"), "modes": [{"name": n, "channels": c} for n, c in (d.get("modes") or {}).items()]}
+
+    def t_find_fixtures(self, a: dict) -> Any:
+        from core.quick_start import qlc_library
+        cat = self._fixture_catalogue()
+        words = self._words(a.get("query"))
+        mfr = " ".join(self._words(a.get("manufacturer")))
+        libs = {"qlc_library": qlc_library.library_dirs(), "shared_folders": self.allow.folders()}
+        if not cat:
+            return {**libs, "total": 0, "fixtures": [],
+                    "hint": "No fixture definitions found: QLC+'s fixture library is not on this computer and the "
+                            "shared folders hold no .qxf. Install QLC+, or put the .qxf files in a shared folder."}
+        if not words and not mfr:
+            names = sorted({r["manufacturer"] for r in cat}, key=str.lower)
+            return {**libs, "total": len(cat), "manufacturers": names[:400],
+                    "hint": "Give `query` (words of the model, e.g. \"par rgbw\") and/or `manufacturer`."}
+
+        def match(r):
+            hay = " ".join(self._words(r["manufacturer"] + " " + r["model"]))
+            flat = hay.replace(" ", "")              # "7ch" finds "7-Ch", "slimpar" finds "Slim PAR"
+            return all(w in hay or w in flat for w in words)
+        hits = [r for r in cat
+                if (not mfr or mfr in " ".join(self._words(r["manufacturer"])))
+                and match(r)]
+        limit = max(1, min(int(a.get("limit") or 20), 100))
+        rows = [dict(r) for r in hits[:limit]]
+        if a.get("modes") or len(rows) <= 5:
+            for r in rows[:10]:
+                r.update(self._fixture_modes(r["path"]))
+        out: dict = {"total": len(hits), "fixtures": rows}
+        if len(hits) > limit:
+            out["more"] = len(hits) - limit
+        if not hits:
+            out["hint"] = ("Nothing matches every word. Try fewer words, only the manufacturer, or the model "
+                           "number alone. A definition you made yourself: put its .qxf in a shared folder.")
+        return out
+
+    def _definition_path(self, sp: dict, i: int, cat: List[dict]) -> str:
+        q = sp.get("qxf") or sp.get("path")
+        if q:
+            try:
+                p = self.allow.check(str(q))
+            except mcp_config.NotAllowed as e:
+                raise ToolError(f"Fixture line {i}: {e}")
+            if not p.lower().endswith(".qxf") or not os.path.isfile(p):
+                raise ToolError(f"Fixture line {i}: {q} is not a .qxf file.")
+            return p
+        model = " ".join(self._words(sp.get("model")))
+        mfr = " ".join(self._words(sp.get("manufacturer")))
+        if not model:
+            raise ToolError(f"Fixture line {i}: give `manufacturer` and `model` (find_fixtures finds them), "
+                            "or `qxf`, the path of a .qxf in a shared folder.")
+        if not cat:
+            raise ToolError("QLC+'s fixture library was not found on this computer and the shared folders hold "
+                            "no .qxf. Install QLC+, or put the .qxf files in a shared folder and pass `qxf`.")
+        hits = [r for r in cat if " ".join(self._words(r["model"])) == model
+                and (not mfr or " ".join(self._words(r["manufacturer"])) == mfr)]
+        if hits:
+            return hits[0]["path"]
+        want = set(self._words(f"{mfr} {model}"))
+        scored = sorted(((len(want & set(self._words(r["manufacturer"] + " " + r["model"]))), r) for r in cat),
+                        key=lambda t: -t[0])
+        close = [f"{r['manufacturer']} / {r['model']}" for n, r in scored[:5] if n]
+        raise ToolError(f"Fixture line {i}: {sp.get('manufacturer') or ''} {sp.get('model')} is not in QLC+'s "
+                        "fixture library nor in the shared folders."
+                        + (f" Closest: {'; '.join(close)}." if close else "")
+                        + " Use find_fixtures for the exact names, or put its .qxf in a shared folder and pass `qxf`.")
+
+    @staticmethod
+    def _patch(rig: list, entries: list) -> None:
+        """DMX addresses: lines with an `address` first, exactly there; the others in the first free channels."""
+        used: Dict[int, set] = {}
+
+        def free(u, start, n):
+            return 0 <= start and start + n <= 512 and not (used.get(u, set()) & set(range(start, start + n)))
+
+        def take(u, start, n):
+            used.setdefault(u, set()).update(range(start, start + n))
+
+        def num(sp, key, lo, hi):
+            v = sp.get(key)
+            if v is None or v == "":
+                return None
+            try:
+                v = int(v)
+            except (TypeError, ValueError):
+                raise ToolError(f"`{key}` must be a whole number ({v!r}).")
+            if not lo <= v <= hi:
+                raise ToolError(f"`{key}` must be between {lo} and {hi} ({v}).")
+            return v - 1
+
+        for sp, idxs, _base in entries:
+            u, addr = num(sp, "universe", 1, 64), num(sp, "address", 1, 512)
+            if addr is None:
+                continue
+            u = u or 0
+            for k in idxs:
+                n = rig[k]["ch_count"]
+                if not free(u, addr, n):
+                    raise ToolError(f"{rig[k]['name']}: universe {u + 1}, channels {addr + 1} to {addr + n} go past "
+                                    "512 or overlap another fixture. Change `address`, or leave it out to patch it by itself.")
+                take(u, addr, n)
+                rig[k]["universe"], rig[k]["address"] = u, addr
+                addr += n
+        for sp, idxs, _base in entries:
+            if num(sp, "address", 1, 512) is not None:
+                continue
+            fixed_u = num(sp, "universe", 1, 64)
+            for k in idxs:
+                n = rig[k]["ch_count"]
+                u = fixed_u or 0
+                while True:
+                    start = next((s for s in range(0, 513 - n) if free(u, s, n)), None)
+                    if start is not None:
+                        break
+                    if fixed_u is not None:
+                        raise ToolError(f"{rig[k]['name']}: universe {u + 1} has no {n} free channels left.")
+                    u += 1
+                    if u > 63:
+                        raise ToolError("The rig does not fit in 64 universes.")
+                take(u, start, n)
+                rig[k]["universe"], rig[k]["address"] = u, start
+
+    @staticmethod
+    def _place(rig: list, entries: list, stage: dict) -> None:
+        """Positions in mm.  A line with `at` goes where it says (a row, `spacing_m` apart);
+        the others are spread across the stage width, one row per line from the back."""
+        free_lines = [e for e in entries if not isinstance(e[0].get("at"), dict)]
+
+        def mm(v, what):
+            try:
+                return int(round(float(v) * 1000))
+            except (TypeError, ValueError):
+                raise ToolError(f"`at.{what}` must be a number of metres ({v!r}).")
+        for sp, idxs, _base in entries:
+            at = sp.get("at")
+            if isinstance(at, dict):
+                x0 = mm(at.get("x_m", 0), "x_m")
+                z = mm(at.get("z_m", 0), "z_m")
+                step = mm(at.get("spacing_m", 0.5), "spacing_m")
+                y = mm(at["height_m"], "height_m") if at.get("height_m") is not None else None
+                for n, k in enumerate(idxs):
+                    rig[k].update(x_mm=x0 + n * step, z_mm=z, y_mm=y)
+            else:
+                row = free_lines.index((sp, idxs, _base))
+                z = int(stage["d_mm"] * (row + 0.5) / max(1, len(free_lines)))
+                for n, k in enumerate(idxs):
+                    rig[k].update(x_mm=int(stage["w_mm"] * (n + 0.5) / len(idxs)), z_mm=z)
+
+    def _new_show_target(self, where: str, fname: str) -> str:
+        try:
+            p = self.allow.check(where)
+        except mcp_config.NotAllowed as e:
+            raise ToolError(str(e))
+        target = p if p.lower().endswith(".qxw") else os.path.join(p, fname)
+        folder = os.path.dirname(target)
+        if os.path.exists(folder) and not os.path.isdir(folder):
+            raise ToolError(f"{folder} is a file, not a folder.")
+        os.makedirs(folder, exist_ok=True)       # inside a shared folder (checked above)
+        try:
+            return self.allow.new_file_path(target)
+        except mcp_config.NotAllowed as e:
+            raise ToolError(str(e))
+
+    def t_new_show(self, a: dict) -> Any:
+        from core import fixture as fx
+        from routes import quick_start_routes as qs
+        name = str(a.get("name") or "").strip()
+        if not name:
+            raise ToolError("Give the new show a `name`.")
+        specs = a.get("fixtures")
+        if not isinstance(specs, list) or not specs:
+            raise ToolError("List the fixtures: [{manufacturer, model, mode, quantity}]. find_fixtures finds the exact names.")
+        if len(specs) > 100:
+            raise ToolError("At most 100 fixture lines.")
+        preview = bool(a.get("preview"))
+        where = str(a.get("folder") or "").strip()
+        if not where and not preview:
+            folders = self.allow.folders()
+            if len(folders) == 1:
+                where = folders[0]
+            elif not folders:
+                raise ToolError("No folder is shared with Claude yet: Swiss Knife › Settings › Connect to Claude.")
+            else:
+                raise ToolError("Say in which folder to create it (`folder`): " + ", ".join(folders))
+
+        stage = dict(fx.get_stage_dims())
+        if a.get("stage_m") is not None:
+            sm = a.get("stage_m")
+            try:
+                vals = [float(v) for v in sm][:3]
+            except (TypeError, ValueError):
+                raise ToolError("`stage_m` is [width, depth] or [width, depth, height] in metres.")
+            if len(vals) < 2 or not all(1 <= v <= 100 for v in vals):
+                raise ToolError("`stage_m` is [width, depth] or [width, depth, height] in metres, each 1 to 100.")
+            stage.update(w_mm=int(vals[0] * 1000), d_mm=int(vals[1] * 1000),
+                         h_mm=int((vals[2] if len(vals) > 2 else 4) * 1000))
+
+        self.client                                # the app (and its Quick Start) is ready
+        qs._reset_qs()
+        cat = self._fixture_catalogue()
+        entries: list = []
+        names: Dict[str, int] = {}
+        for i, sp in enumerate(specs, 1):
+            if not isinstance(sp, dict):
+                raise ToolError(f"Fixture line {i} must be an object like {{\"manufacturer\": …, \"model\": …}}.")
+            path = self._definition_path(sp, i, cat)
+            try:
+                defn = qs._parse_qxf(path)
+            except Exception as e:  # noqa: BLE001
+                raise ToolError(f"Fixture line {i}: could not read {path}: {e}")
+            modes = defn.get("modes") or {}
+            want = str(sp.get("mode") or "").strip()
+            mode = next(iter(modes), "Default")
+            if want:
+                mode = next((m for m in modes if m.lower() == want.lower()), None)
+                if mode is None and want.rstrip("chCH ").isdigit():
+                    same = [m for m, c in modes.items() if c == int(want.rstrip("chCH "))]
+                    mode = same[0] if len(same) == 1 else None
+                if mode is None:
+                    raise ToolError(f"Fixture line {i} ({defn['manufacturer']} {defn['model']}): no mode {want!r}. "
+                                    "Its modes: " + "; ".join(f"{m} ({c} ch)" for m, c in modes.items()))
+            try:
+                qty = int(sp.get("quantity") or 1)
+            except (TypeError, ValueError):
+                raise ToolError(f"Fixture line {i}: `quantity` must be a whole number.")
+            if not 1 <= qty <= 100:
+                raise ToolError(f"Fixture line {i}: `quantity` must be 1 to 100.")
+            base = str(sp.get("name") or defn["model"]).strip()[:40] or defn["model"]
+            key = f"{defn['manufacturer']}::{defn['model']}"
+            idxs = []
+            for n in range(qty):
+                fname = base if qty == 1 else f"{base} {n + 1}"
+                if fname.lower() in names:
+                    raise ToolError(f"Two fixtures would be called {fname!r}: give each line its own `name`.")
+                names[fname.lower()] = len(qs._qs_rig)
+                qs._qs_rig.append({"key": key, "manufacturer": defn["manufacturer"], "model": defn["model"],
+                                   "mode": mode, "ch_count": modes.get(mode, 1), "name": fname, "quantity": 1,
+                                   "universe": 0, "address": 0, "x_mm": 0, "z_mm": 0, "y_mm": None,
+                                   "x_rot": None, "y_rot": None, "z_rot": None})
+                idxs.append(len(qs._qs_rig) - 1)
+            entries.append((sp, idxs, base))
+        self._patch(qs._qs_rig, entries)
+        self._place(qs._qs_rig, entries, stage)
+
+        opts = {k: a[k] for k in ("nomenclature", "style") if a.get(k)}
+        if opts:
+            self.api("POST", "/api/quickstart/options", opts)
+        if a.get("groups"):
+            groups = []
+            for g in a["groups"]:
+                if not isinstance(g, dict) or not str(g.get("name") or "").strip():
+                    raise ToolError("Each group is {name, fixtures: [fixture or line names]}.")
+                fx_idx: List[int] = []
+                for ref in g.get("fixtures") or []:
+                    r = str(ref).strip().lower()
+                    if r in names:
+                        fx_idx.append(names[r])
+                        continue
+                    line = [idxs for _sp, idxs, base in entries if base.lower() == r]
+                    if not line:
+                        raise ToolError(f"Group {g['name']!r}: no fixture or line called {ref!r}. "
+                                        "Fixtures: " + ", ".join(e["name"] for e in qs._qs_rig))
+                    fx_idx += line[0]
+                groups.append({"name": str(g["name"]).strip(), "fixtures": fx_idx})
+            self.api("POST", "/api/quickstart/groups", {"groups": groups})
+
+        def _row(e):
+            pos = [round(e["x_mm"] / 1000, 2), round(e["z_mm"] / 1000, 2)]
+            if e.get("y_mm") is not None:
+                pos.append(round(e["y_mm"] / 1000, 2))
+            return (f"{e['name']} · {e['manufacturer']} {e['model']} · {e['mode']} · universe {e['universe'] + 1} "
+                    f"ch {e['address'] + 1}-{e['address'] + e['ch_count']} · at {', '.join(map(str, pos))} m")
+        rows = [_row(e) for e in qs._qs_rig]
+        made = self.api("GET", "/api/quickstart/preview").get("stats")
+        grp = [{"name": g["name"], "fixtures": [qs._qs_rig[k]["name"] for k in g["fixtures"]]}
+               for g in self.api("GET", "/api/quickstart/groups").get("groups") or []]
+        body: Dict[str, Any] = {"project_name": name, "stage": {k: stage[k] for k in ("w_mm", "d_mm", "h_mm")}}
+        if a.get("stage_layout"):
+            body["stage_layout"] = str(a["stage_layout"])
+        if preview:
+            from core import stage_layouts
+            opt = self.api("GET", "/api/quickstart/options")
+            return {"preview": True, "name": name, "patch": rows, "groups": grp, "will_make": made,
+                    "stage_m": [stage["w_mm"] / 1000, stage["d_mm"] / 1000, stage["h_mm"] / 1000],
+                    "choices": {"nomenclature": [p.get("id") for p in opt.get("profiles") or []],
+                                "style": [s.get("id") for s in opt.get("styles") or []],
+                                "stage_layout": [l.get("id") for l in stage_layouts.list_layouts()]},
+                    "note": "Nothing was written. Positions are metres from the left, from the back, and height. "
+                            "Call again without preview to create the show."}
+        try:
+            data, fname = qs.build_workspace(body)
+        except qs.QsError as e:
+            raise ToolError(str(e) + (" Findings: " + "; ".join(e.findings[:20]) if e.findings else ""))
+        path = self._new_show_target(where, fname)
+        with open(path, "xb") as fh:              # a new file only: never written over
+            fh.write(data)
+        defs = qs.write_qxf(os.path.dirname(path), overwrite=False)
+        self.api("POST", "/api/load", {"path": path})
+        self.opened_path = path
+        out: Dict[str, Any] = {"created": path, "patch": rows, "groups": grp, "made": made, "doctor": self._counts(),
+                               "definitions_written": defs.get("files"),
+                               "next_save": (self.t_show_summary({}).get("show") or {}).get("suggested_name")}
+        if defs.get("warnings"):
+            out["warnings"] = defs["warnings"]
+        left = [x for x in defs.get("skipped") or [] if x.get("reason", "").startswith("a different file")]
+        if left:
+            out["definitions_left"] = left
+        out["note"] = ("The new show is now the show in progress, with the fixture groups, the functions and the "
+                       "Virtual Console the Quick Start makes (`made`). Go on with the other tools (looks_options and "
+                       "build_looks, edit_vc, setlist, song_builder…); save_show then writes the next version next to "
+                       "it. The file just created is never changed. Tell the user to open it in QLC+ or in Swiss Knife.")
+        return out
 
     def t_show_summary(self, a: dict) -> Any:
         st = self.api("GET", "/api/show/status")

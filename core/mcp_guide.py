@@ -45,6 +45,58 @@ GUIDE: Dict[str, dict] = {
         "notes": "The file on disk is never changed. The Swiss Knife window does not show this session: "
                  "the user opens the saved file there afterwards.",
     },
+    "find_fixtures": {
+        "use": "Find the fixture definitions for a new show: QLC+'s own fixture library on this computer and the "
+               ".qxf files in the shared folders.",
+        "args": [("query", "Words of the model; every word must match (spaces and dashes do not count, so `7ch` "
+                           "finds 7-Ch). Example: `par rgbw`, `slim spot`."),
+                 ("manufacturer", "Keep only this manufacturer (or part of its name)."),
+                 ("modes", "true: give the type and the modes (with channel counts) of every hit, not only when "
+                           "there are 5 or fewer."),
+                 ("limit", "How many hits (default 20, at most 100).")],
+        "returns": "`total`, `fixtures` [{manufacturer, model, library (stock, user or shared), path, type, modes "
+                   "[{name, channels}]}], `more` when there are more. With no query and no manufacturer: the list "
+                   "of manufacturers.",
+        "example": '{"query": "par", "manufacturer": "Eurolite"}',
+        "notes": "QLC+'s library is only read, never changed. A definition the user made in QLC+'s Fixture Editor is "
+                 "in the user library and is found too; one that is only a file: put it in a shared folder.",
+    },
+    "new_show": {
+        "use": "Create a new show from nothing, in a shared folder that may still be empty or not exist yet. It then "
+               "becomes the show in progress, so every other tool works on it.",
+        "args": [("name", "The show's name; the file is `<name>_v1.qxw`."),
+                 ("fixtures", "One line per kind of fixture: `manufacturer` and `model` exactly as `find_fixtures` "
+                              "gives them (or `qxf`, the path of a .qxf in a shared folder), `mode` (its name or its "
+                              "channel count; default the first mode), `quantity` (default 1), `name` (default the "
+                              "model; several become `PAR 1`, `PAR 2`…), `universe` and `address` (1 to 512: the "
+                              "first fixture of the line starts there and the others follow; leave out to patch it "
+                              "in the first free channels), `at` {x_m from the left, z_m from the back, height_m, "
+                              "spacing_m (default 0.5) between the fixtures of the line}. Without `at` the line is "
+                              "spread across the stage, one row per line from the back."),
+                 ("folder", "Where to create it: a shared folder or a folder inside one (made if missing), or a .qxw "
+                            "path. Default: the shared folder, when only one is shared."),
+                 ("stage_m", "[width, depth] or [width, depth, height] in metres (height default 4)."),
+                 ("groups", "Your own fixture groups [{name, fixtures: [fixture names like `PAR 2`, or line names "
+                            "like `PAR` for the whole line]}]. Default: one group per fixture name."),
+                 ("nomenclature", "How functions are named (`plain` default, `prefix`, or a profile of the user)."),
+                 ("style", "Look of the Virtual Console (`default`, `compact`, or a saved style)."),
+                 ("stage_layout", "A stage layout to start from (riser, members, backline as meshes), e.g. "
+                                  "`builtin:full_band`. The preview lists them."),
+                 ("preview", "true: write nothing; show the patch, the groups, what it would make and the choices "
+                             "for nomenclature, style and stage_layout.")],
+        "returns": "`created` (the new file), `patch` (one line per fixture: name, model, mode, universe, channels, "
+                   "position), `groups`, `made` (how many scenes, chasers, RGB matrices, functions), `doctor`, "
+                   "`definitions_written` (the .qxf QLC+ does not have, put next to the show), `next_save`.",
+        "example": '{"name": "Club night", "folder": "/Users/me/Shows/Club", "stage_m": [8, 5], '
+                   '"fixtures": [{"manufacturer": "Generic", "model": "7-Ch RGB LED PAR", "quantity": 4, '
+                   '"name": "PAR"}, {"manufacturer": "Eurolite", "model": "LED 4C-12 Silent Slim Spot", '
+                   '"quantity": 2, "name": "Spot", "address": 100, "at": {"x_m": 2, "z_m": 1, "height_m": 3, '
+                   '"spacing_m": 4}}], "preview": true}',
+        "notes": "Call it with preview=true first and show the user the patch. It builds what the window's Quick Start "
+                 "builds and the Doctor checks it; a show with Doctor errors is not written. It never writes over a "
+                 "file: a taken name becomes _v2, _v3…, and a different .qxf already in the folder is left alone. "
+                 "Then go on with the other tools and finish with save_show.",
+    },
     "show_summary": {
         "use": "Say what is open now: name, steps, unsaved changes, Doctor counts, a short overview.",
         "args": [],
@@ -379,6 +431,7 @@ EDIT_VC_OPS: Dict[str, str] = {
 
 WORKFLOWS = """Usual sequences:
 
+- A new show from nothing (empty folder): find_fixtures → new_show (preview) → new_show → looks_options → build_looks → edit_vc → save_show.
 - Check a show: list_shows → open_show → doctor_check → doctor_fix → save_show.
 - Smaller venue: open_show → rig_fixtures → reduce_rig (preview) → reduce_rig → doctor_check → save_show.
 - QLC+ 5.3 Show Wizard show: open_show → doctor_check → wizard_repair (no steps, to see) → wizard_repair (steps) → doctor_check → save_show.
@@ -393,7 +446,7 @@ WORKFLOWS = """Usual sequences:
 - DMX cables for tonight: cabling kit → cabling plan (show the alternatives) → cabling plan choose → cabling check (export).
 - A fixture for the kit: cabling fixture (proposal, shown to the user) → cabling fixture confirmed=true.
 
-Every change is a History step (show_history, undo). Only save_show and dictionary_save write files, always new ones; stage_monitor writes only its settings and its own page; cabling writes only the kit, the plan next to the show and new export files."""
+Every change is a History step (show_history, undo). Only new_show, save_show and dictionary_save write show files, always new ones; stage_monitor writes only its settings and its own page; cabling writes only the kit, the plan next to the show and new export files."""
 
 # ── ready requests (MCP prompts) ──────────────────────────────────────────────
 
@@ -405,6 +458,15 @@ PROMPTS: List[dict] = [
               "write one short plain sentence for each function that has a button or that I would recognise on stage, "
               "then call dictionary_set with your entries, auto_steps=true and draft_missing=true so the rest gets a "
               "first draft. Show me the descriptions you wrote, then save with dictionary_save next to the show.")},
+    {"name": "new_show", "title": "Start a new show from scratch",
+     "description": "From a list of fixtures to a new show file with its patch, groups, functions and buttons.",
+     "arguments": [{"name": "fixtures", "description": "The fixtures, in plain words (e.g. 4 RGB PARs, 2 moving heads)",
+                    "required": True},
+                   {"name": "folder", "description": "The folder for the new show (it may be empty)", "required": True}],
+     "text": ('Using the QLC+ Swiss Knife tool, create a new show from scratch in "{folder}" with these fixtures: '
+              "{fixtures}. Find each one with find_fixtures and tell me which definition and mode you chose; ask me "
+              "when there are several that fit. Then call new_show with preview=true and show me the patch and the "
+              "groups. Wait for my OK, create the show, and tell me what it made and where the file is.")},
     {"name": "check_show", "title": "Check and fix a show",
      "description": "Run the Doctor, explain the findings, fix what is safe and save a new file.",
      "arguments": [{"name": "show", "description": "Path or name of the .qxw", "required": True}],
@@ -561,7 +623,7 @@ def wiki_page(tools: List[dict], titles: Dict[str, str], read_only: set) -> str:
     md += ["", "## Usual sequences", "", WORKFLOWS.split("\n", 2)[2], "",
            "## The tools", "",
            "*Reads* tools only look. *Changes* tools change the show in progress, which you can undo; "
-           "only `save_show` and `dictionary_save` write a file, and always a new one.", "",
+           "only `new_show`, `save_show` and `dictionary_save` write a file, and always a new one.", "",
            "| Tool | Name in Claude | Kind | What it does |", "|---|---|---|---|"]
     for t in tools:
         n = t["name"]

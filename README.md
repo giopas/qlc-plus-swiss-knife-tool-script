@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.17.1
+# QLC+ Swiss Knife v3.18.0
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -69,6 +69,7 @@ The tools are in six groups, numbered 1 to 6 like the side menu and the Start sc
 | | [Trigger Manager](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Trigger-Manager) | Every key and MIDI control in one table, with clashes and gaps marked. |
 | | [Dictionary](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Dictionary-Manager) | A short description for every function, shown in the other tools. |
 | | [Tablet on stage](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tablet-on-stage) | A page for a tablet on stage: the cue playing now and the next one, a card for each song (tuning, tempo, who starts) and a view for each player. It follows QLC+ live, or it is one simple page that needs no network. |
+| | [QLC+ Stage Monitor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/QLC-Stage-Monitor) | The companion app for the gig, its own small download: it serves the tablet page, says whether QLC+ is ready (with web access and the right show open), shows the address and a QR code, and prints the setlist big for the floor or with the song cards. |
 | | [Cabling](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Cabling) | Plan the DMX cables with the kit you own: which cable goes where, adapters and terminators. A plot, a pick list, labels and a load-in order. |
 | **5 · Check & fix** | [Workspace Doctor](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Workspace-Doctor) | Reads the show for mistakes, explains each one and fixes what you tick. Also from the command line. |
 | | [Wizard Repair](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Wizard-Repair) | Finishes a show made by the QLC+ 5.3 Show Wizard: the effects it loses, buttons it leaves out, a PANIC RESET on every page. |
@@ -113,6 +114,8 @@ Swiss Knife can work with Claude, the AI assistant, through Claude Desktop or Cl
 | Cabling: three alternatives and the chains on the stage | Cabling: my kit, every show | Cabling: the checks, the load-in order and the files for the crew |
 | ![Song Builder](screenshots/25-song-builder.png) | ![VC Visual Editor: the new widgets and the resize handles](screenshots/26-vc-widgets.png) | ![The picture of a Show](screenshots/27-show-picture.png) |
 | Song Builder: parts, lengths and the bar | VC Visual Editor: knob, XY pad, speed dial, clock; resize handles | A Show as a picture, read only |
+| ![QLC+ Stage Monitor, the companion app](screenshots/28-stage-monitor-app.png) | | |
+| QLC+ Stage Monitor: QLC+ ready, the page served, the QR code | | |
 
 ---
 
@@ -127,6 +130,7 @@ Swiss Knife can work with Claude, the AI assistant, through Claude Desktop or Cl
 | Windows 10/11 | `QLC-Swiss-Knife-<version>-windows-x64-setup.exe` | run the installer (no administrator needed; Start menu entry, uninstaller). Or the `…-windows-x64.zip`: unzip, run `QLC Swiss Knife.exe` |
 | Linux | `QLC-Swiss-Knife-<version>-linux-x64.tar.gz` | unpack, run `QLC-Swiss-Knife` (opens in your browser) |
 | Claude Desktop (optional) | `QLC-Swiss-Knife-<version>-claude.mcpb` | double-click it after Swiss Knife is installed and has been started once |
+| QLC+ Stage Monitor (optional) | `QLC-Stage-Monitor-<version>-<computer>…` (`.dmg`, `-setup.exe`, `.tar.gz`) | the companion app for the gig; install it like Swiss Knife ([details](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/QLC-Stage-Monitor)) |
 
 The apps are not signed, so the system asks once. On macOS, right-click the app and choose *Open* (or run `xattr -dr com.apple.quarantine "/Applications/QLC Swiss Knife.app"`). On Windows, choose *More info › Run anyway*. Each release has a `SHA256SUMS` file to check the download.
 

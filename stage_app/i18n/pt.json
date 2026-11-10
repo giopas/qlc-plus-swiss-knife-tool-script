@@ -61,5 +61,20 @@
  "BPM": "BPM",
  "Tuning": "Afinação",
  "Starts": "Começa",
- "Note": "Nota"
+ "Note": "Nota",
+ "Update and restart": "Atualizar e reiniciar",
+ "Open the release page": "Abrir a página da versão",
+ "Check for updates": "Procurar atualizações",
+ "Check now": "Verificar agora",
+ "You already have the latest version.": "Já tens a versão mais recente.",
+ "This release has no download for this computer.": "Esta versão não tem transferência para este computador.",
+ "This release has no SHA256SUMS file — not installing it.": "Esta versão não tem ficheiro SHA256SUMS — não é instalada.",
+ "QLC+ Stage Monitor {0} is out.": "Saiu o QLC+ Stage Monitor {0}.",
+ "You have {0}.": "Tens a {0}.",
+ "The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Check again in a few minutes.": "A transferência para este computador ainda está a ser preparada no GitHub (cerca de 15 minutos após uma versão). Verifica de novo dentro de alguns minutos.",
+ "Run from the sources: update with git pull.": "A correr a partir das fontes: atualiza com git pull.",
+ "Update and restart downloads it, checks it and starts the new version; the folder stays chosen.": "Atualizar e reiniciar transfere-a, verifica-a e inicia a nova versão; a pasta continua escolhida.",
+ "Downloading and checking the new version…": "A transferir e verificar a nova versão…",
+ "The new version is ready: QLC+ Stage Monitor quits and starts again.": "A nova versão está pronta: o QLC+ Stage Monitor fecha e volta a abrir.",
+ "Updates are not available here.": "As atualizações não estão disponíveis aqui."
 }

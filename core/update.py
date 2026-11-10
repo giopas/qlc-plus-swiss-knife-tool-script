@@ -56,7 +56,21 @@ MAX_UNPACKED = 2 * 1024 * 1024 * 1024         # an archive that unpacks to more 
 _GITHUB_HOSTS = ("github.com", "api.github.com", "objects.githubusercontent.com",
                  "release-assets.githubusercontent.com", "github-releases.githubusercontent.com",
                  "raw.githubusercontent.com")
-_ASSET_RE = re.compile(r"^QLC-Swiss-Knife-(?P<ver>\d+\.\d+\.\d+)-(?P<os>macos|windows|linux)-(?P<arch>arm64|x86_64|x64)\.(?P<ext>zip|tar\.gz|dmg)$")
+_ASSET_TPL = r"^{prefix}-(?P<ver>\d+\.\d+\.\d+)-(?P<os>macos|windows|linux)-(?P<arch>arm64|x86_64|x64)\.(?P<ext>zip|tar\.gz|dmg)$"
+_ASSET_RE = re.compile(_ASSET_TPL.format(prefix="QLC-Swiss-Knife"))
+
+# Which app this process is (3.18.0).  Swiss Knife never changes it.  QLC+ Stage
+# Monitor, the companion app, calls configure() once at start: it then looks for
+# its own downloads (QLC-Stage-Monitor-…) and keeps its own settings and cache,
+# so the two apps never update each other.
+APP = {"prefix": "QLC-Swiss-Knife", "name": "Swiss Knife", "file": ""}
+
+
+def configure(prefix: str, name: str, settings_file: str) -> None:
+    """Make this process update another app of the same release (the companion)."""
+    global _ASSET_RE
+    APP.update(prefix=prefix, name=name, file=settings_file)
+    _ASSET_RE = re.compile(_ASSET_TPL.format(prefix=re.escape(prefix)))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +78,8 @@ _ASSET_RE = re.compile(r"^QLC-Swiss-Knife-(?P<ver>\d+\.\d+\.\d+)-(?P<os>macos|wi
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _file() -> str:
+    if APP["file"]:
+        return APP["file"]
     return os.environ.get("QSK_UPDATE") or os.path.join(
         os.path.expanduser("~"), ".qlc_swiss_knife", "update.json")
 
@@ -198,7 +214,7 @@ def _read(url: str, limit: int = 2_000_000) -> bytes:
     if not url.startswith("https://"):
         raise ValueError("only https:// or a local file")
     _check_host(url)
-    req = urllib.request.Request(url, headers={"User-Agent": f"QLC-Swiss-Knife/{VERSION}",
+    req = urllib.request.Request(url, headers={"User-Agent": f"{APP['prefix']}/{VERSION}",
                                                "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_ssl_context()) as r:
         return r.read(limit)
@@ -298,7 +314,7 @@ def _download(url: str, dest: str) -> None:
     if not url.startswith("https://"):
         raise ValueError("only https:// downloads")
     _check_host(url)
-    req = urllib.request.Request(url, headers={"User-Agent": f"QLC-Swiss-Knife/{VERSION}"})
+    req = urllib.request.Request(url, headers={"User-Agent": f"{APP['prefix']}/{VERSION}"})
     got = 0
     with urllib.request.urlopen(req, timeout=30, context=_ssl_context()) as r, open(dest, "wb") as f:
         while True:
@@ -478,7 +494,7 @@ def install(info: dict = None) -> dict:
             subprocess.Popen(["/bin/sh", script], start_new_session=True, close_fds=True,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return {"ok": True, "restart": True,
-                "message": f"Version {info.get('latest')} is ready — Swiss Knife quits and starts again."}
+                "message": f"Version {info.get('latest')} is ready — {APP['name']} quits and starts again."}
     except Exception as e:  # noqa: BLE001
         shutil.rmtree(work, ignore_errors=True)
         return {"ok": False, "message": f"Could not update: {e}"}

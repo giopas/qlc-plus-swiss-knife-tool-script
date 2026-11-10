@@ -61,5 +61,20 @@
  "BPM": "BPM",
  "Tuning": "チューニング",
  "Starts": "開始",
- "Note": "メモ"
+ "Note": "メモ",
+ "Update and restart": "更新して再起動",
+ "Open the release page": "リリースページを開く",
+ "Check for updates": "アップデートを確認",
+ "Check now": "今すぐ確認",
+ "You already have the latest version.": "すでに最新バージョンです。",
+ "This release has no download for this computer.": "このリリースにはこのコンピューター用のダウンロードがありません。",
+ "This release has no SHA256SUMS file — not installing it.": "このリリースには SHA256SUMS ファイルがありません — インストールしません。",
+ "QLC+ Stage Monitor {0} is out.": "QLC+ Stage Monitor {0} が公開されました。",
+ "You have {0}.": "現在のバージョンは {0} です。",
+ "The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Check again in a few minutes.": "このコンピューター用のダウンロードは GitHub でまだ準備中です（リリース後約 15 分）。数分後にもう一度確認してください。",
+ "Run from the sources: update with git pull.": "ソースから実行中：git pull で更新してください。",
+ "Update and restart downloads it, checks it and starts the new version; the folder stays chosen.": "「更新して再起動」でダウンロード・確認して新しいバージョンを起動します。フォルダーの選択はそのままです。",
+ "Downloading and checking the new version…": "新しいバージョンをダウンロードして確認しています…",
+ "The new version is ready: QLC+ Stage Monitor quits and starts again.": "新しいバージョンの準備ができました：QLC+ Stage Monitor を終了して再起動します。",
+ "Updates are not available here.": "ここでは更新を利用できません。"
 }

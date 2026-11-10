@@ -47,4 +47,9 @@ code, .url { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospa
 footer { color: var(--muted); font-size: 12px; padding: 4px 18px 18px; }
 .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #2a2d34;
   border: 1px solid #3a3e47; padding: 8px 14px; border-radius: 8px; }
+.card-update { border-color: var(--accent); }
+.upd-actions { margin-top: 10px; }
+.upd-row { margin-top: 6px; gap: 12px; }
+.upd-row .btn-quiet { margin-top: 0; }
+.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 [hidden] { display: none !important; }

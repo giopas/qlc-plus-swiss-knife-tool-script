@@ -157,8 +157,30 @@ function drawServer(s) {
   if (sv.https_from) box.append(el('div', 'warnbox', t('{0} asked for https://. On that device type the address with http://, as shown above.', sv.https_from)));
 }
 
+function drawUpdate(s) {
+  const u = s.update;
+  $('upd-row').hidden = !u;
+  if (!u) { $('sec-update').hidden = true; return; }
+  $('upd-on').checked = !!u.enabled;
+  $('upd-note').textContent = u.error ? t(u.error) : '';
+  const show = !!(u.enabled && u.newer);
+  $('sec-update').hidden = !show;
+  if (!show) return;
+  $('upd-head').textContent = t('QLC+ Stage Monitor {0} is out.', u.latest);
+  let hint = t('You have {0}.', u.current);
+  const canInstall = u.can_install && u.asset && !u.pending;
+  if (u.pending) hint += ' ' + t('The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Check again in a few minutes.');
+  else if (!u.frozen) hint += ' ' + t('Run from the sources: update with git pull.');
+  else if (u.can_install && !u.asset) hint += ' ' + t('This release has no download for this computer.');
+  else if (canInstall) hint += ' ' + t('Update and restart downloads it, checks it and starts the new version; the folder stays chosen.');
+  $('upd-hint').textContent = hint;
+  $('upd-install').hidden = !canInstall;
+  $('upd-install').disabled = busy;
+}
+
 function draw(s) {
   S = s;
+  drawUpdate(s);
   drawPage(s);
   drawQlc(s);
   drawServer(s);
@@ -197,6 +219,19 @@ $('print').addEventListener('click', () => act(async () => {
     : t('Saved as {0} in the page folder.', d.name);
   if (d.unprintable) msg += ' ' + t('Some names use letters the PDF fonts cannot print; they show as ?.');
   $('printed').textContent = msg;
+}));
+
+$('upd-on').addEventListener('change', e => act(async () => draw(await api('/api/update/enable', {check: e.target.checked}))));
+$('upd-now').addEventListener('click', () => act(async () => {
+  const s = await api('/api/update/check', {});
+  draw(s);
+  if (s.update && !s.update.error && !s.update.newer) toast(t('You already have the latest version.'));
+}));
+$('upd-open').addEventListener('click', () => act(async () => { await api('/api/update/open', {}); }));
+$('upd-install').addEventListener('click', () => act(async () => {
+  $('upd-hint').textContent = t('Downloading and checking the new version…');
+  const d = await api('/api/update/install', {});
+  $('upd-hint').textContent = d.restart ? t('The new version is ready: QLC+ Stage Monitor quits and starts again.') : t(d.message || '');
 }));
 
 (async function init() {

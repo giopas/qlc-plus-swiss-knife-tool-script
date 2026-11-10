@@ -69,8 +69,10 @@ class App:
     """Everything the window can ask for, without the HTTP part (tests use it directly)."""
 
     def __init__(self, folder: str = "", lang: str = "", probe: Callable = qlc_probe.probe,
-                 opener: Callable = open_file):
+                 opener: Callable = open_file, updater=None):
         st = settings.load()
+        self.updater = updater                 # stage_app.updates.Updater in the app; None: no update check
+        self.quit: Optional[Callable[[], None]] = None      # set by the window: close the app
         self.server = sm.StageServer()
         self.probe_fn = probe
         self.opener = opener
@@ -83,7 +85,7 @@ class App:
         self._lock = threading.Lock()
         self.picker: Optional[Callable[[], str]] = None      # set by the window (native folder dialog)
         self.raise_window: Optional[Callable[[], None]] = None
-        self.set_folder(folder or st["folder"], remember=False)
+        self.set_folder(folder or st["folder"], remember=bool(folder))   # a folder given at start is the one to reopen (after an update too)
 
     # ── the folder ───────────────────────────────────────────────────────────
     def set_folder(self, folder: str, remember: bool = True) -> dict:
@@ -163,7 +165,18 @@ class App:
                               "songs": len(lst["songs"])} for lst in self.page["lists"]]
         return {"app": APP_NAME, "version": VERSION, "folder": self.folder, "page": page, "error": self.error,
                 "server": sv, "qlc": self.qlc, "lang": self.lang or "en", "langs": list(settings.LANGS),
-                "can_pick": self.picker is not None, "home": HOME_URL}
+                "can_pick": self.picker is not None, "home": HOME_URL,
+                "update": self.updater.status() if self.updater else None}
+
+    # ── updates ──────────────────────────────────────────────────────────────
+    def install_update(self) -> dict:
+        if not self.updater:
+            raise ValueError("Updates are not available here.")
+        res = self.updater.install()
+        if res.get("restart") and self.quit:
+            self.server.stop()
+            threading.Timer(1.0, self.quit).start()      # the swap waits for this process to end
+        return res
 
     def close(self) -> None:
         self.server.stop()
@@ -262,6 +275,21 @@ class Handler(BaseHTTPRequestHandler):
                     app.lang = lang
                     settings.save(lang=lang)
                 return self._json(200, app.state())
+            if path == "/api/update/check":
+                if not app.updater:
+                    raise ValueError("Updates are not available here.")
+                app.updater.check(force=True)
+                return self._json(200, app.state())
+            if path == "/api/update/enable":
+                if not app.updater:
+                    raise ValueError("Updates are not available here.")
+                app.updater.set_enabled(bool(body.get("check", True)))
+                return self._json(200, app.state())
+            if path == "/api/update/install":
+                res = app.install_update()
+                return self._json(200 if res.get("ok") else 400, {**res, "error": "" if res.get("ok") else res.get("message", "")})
+            if path == "/api/update/open":
+                return self._json(200, {"ok": bool(app.updater and app.updater.open_releases())})
             if path == "/api/raise":           # a second start handed its folder over
                 if app.raise_window:
                     app.raise_window()

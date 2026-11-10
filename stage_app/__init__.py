@@ -11,11 +11,12 @@ checks it), and nothing in Swiss Knife imports it:
 * ``core.stage_monitor``: the page server and this computer's addresses;
 * ``core.qr``: the QR code;
 * ``core.pdf``: the PDF writer;
-* ``core.workspace``: ``VERSION`` only (one release, one version).
+* ``core.workspace``: ``VERSION`` only (one release, one version);
+* ``core.update``: the updater, set up for this app (``stage_app/updates.py``).
 
 Standard library only, plus ``pywebview`` for the window when it is there.
 """
 
-ALLOWED_CORE = ("core.stage_monitor", "core.qr", "core.pdf", "core.workspace")
+ALLOWED_CORE = ("core.stage_monitor", "core.qr", "core.pdf", "core.workspace", "core.update")
 APP_NAME = "QLC+ Stage Monitor"
 FILE_NAME = "QLC Stage Monitor"

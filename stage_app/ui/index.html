@@ -16,6 +16,15 @@
 </header>
 
 <main>
+  <section class="card card-update" id="sec-update" hidden>
+    <div class="head" id="upd-head"></div>
+    <div class="hint" id="upd-hint"></div>
+    <div class="row upd-actions">
+      <button class="btn btn-primary" id="upd-install" data-t>Update and restart</button>
+      <button class="btn" id="upd-open" data-t>Open the release page</button>
+    </div>
+  </section>
+
   <section class="card" id="sec-folder">
     <h2 data-t>The page</h2>
     <div class="row">
@@ -53,7 +62,14 @@
   </section>
 </main>
 
-<footer><span id="version"></span> · <span data-t>Swiss Knife makes and changes the page; this app serves it and prints it.</span></footer>
+<footer>
+  <div><span id="version"></span> · <span data-t>Swiss Knife makes and changes the page; this app serves it and prints it.</span></div>
+  <div class="row upd-row" id="upd-row" hidden>
+    <label class="check"><input type="checkbox" id="upd-on"> <span data-t>Check for updates</span></label>
+    <button class="btn btn-quiet" id="upd-now" data-t>Check now</button>
+    <span id="upd-note"></span>
+  </div>
+</footer>
 <div id="toast" class="toast" hidden></div>
 <script src="/app.js"></script>
 </body>

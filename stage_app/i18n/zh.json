@@ -61,5 +61,20 @@
  "BPM": "BPM",
  "Tuning": "调弦",
  "Starts": "起拍",
- "Note": "备注"
+ "Note": "备注",
+ "Update and restart": "更新并重启",
+ "Open the release page": "打开发布页面",
+ "Check for updates": "检查更新",
+ "Check now": "立即检查",
+ "You already have the latest version.": "你已是最新版本。",
+ "This release has no download for this computer.": "此发布版没有适用于此电脑的下载。",
+ "This release has no SHA256SUMS file — not installing it.": "此发布版没有 SHA256SUMS 文件 — 不予安装。",
+ "QLC+ Stage Monitor {0} is out.": "QLC+ Stage Monitor {0} 已发布。",
+ "You have {0}.": "你的版本是 {0}。",
+ "The download for this computer is still being prepared on GitHub (about 15 minutes after a release). Check again in a few minutes.": "此电脑的下载仍在 GitHub 上准备中（发布后约 15 分钟）。请几分钟后再检查。",
+ "Run from the sources: update with git pull.": "从源码运行：请用 git pull 更新。",
+ "Update and restart downloads it, checks it and starts the new version; the folder stays chosen.": "“更新并重启”会下载、校验并启动新版本；所选文件夹保持不变。",
+ "Downloading and checking the new version…": "正在下载并校验新版本…",
+ "The new version is ready: QLC+ Stage Monitor quits and starts again.": "新版本已就绪：QLC+ Stage Monitor 将退出并重新启动。",
+ "Updates are not available here.": "此处无法使用更新。"
 }

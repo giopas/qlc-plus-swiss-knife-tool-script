@@ -378,3 +378,107 @@ def test_a_set_of_25_songs_fits_on_one_floor_page():
     page = {"title": "Gig", "lists": [{"label": "Set", "songs": [
         {"name": f"Song {i}", "card": {}, "note": ""} for i in range(25)]}]}
     assert setlist_pdf.build(page, "big").count(b"/Type /Page ") == 1
+
+
+# ── updates (3.18.0) ─────────────────────────────────────────────────────────
+
+from core import update  # noqa: E402
+from stage_app import updates  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _swiss_knife_updater_untouched():
+    """Whatever a test does to the updater, Swiss Knife's own tests get it back as it was."""
+    saved, rx = dict(update.APP), update._ASSET_RE
+    yield
+    update.APP.clear()
+    update.APP.update(saved)
+    update._ASSET_RE = rx
+
+
+def _assets(ver="9.9.9"):
+    return [{"name": f"{p}-{ver}-macos-arm64.{e}", "browser_download_url": f"https://github.com/x/{p}.{e}"}
+            for p in ("QLC-Swiss-Knife", "QLC-Stage-Monitor") for e in ("tar.gz", "dmg")]
+
+
+def test_each_app_updates_only_itself(tmp_path, monkeypatch):
+    assert update.pick_asset(_assets(), "macos", "arm64")["name"].startswith("QLC-Swiss-Knife-")
+    monkeypatch.setenv("QLC_STAGE_MONITOR_HOME", str(tmp_path))
+    updates.configure()
+    assert update.pick_asset(_assets(), "macos", "arm64")["name"] == "QLC-Stage-Monitor-9.9.9-macos-arm64.tar.gz"
+    assert update._file() == str(tmp_path / "update.json")               # its own settings and cache
+    update.set_enabled(False)
+    assert json.load(open(tmp_path / "update.json"))["check"] is False
+    assert "QLC+ Stage Monitor" in update.install({"newer": True, "latest": "9.9.9"})["message"] \
+        or not update.is_frozen()
+
+
+def test_the_companion_check_reads_its_own_downloads(tmp_path, monkeypatch):
+    monkeypatch.setenv("QLC_STAGE_MONITOR_HOME", str(tmp_path))
+    feed = tmp_path / "feed.json"
+    feed.write_text(json.dumps({"tag_name": "v9.9.9", "assets": _assets() + [
+        {"name": "SHA256SUMS", "browser_download_url": "https://github.com/x/SHA256SUMS"}]}))
+    monkeypatch.setenv("QSK_UPDATE_FEED", str(feed))
+    monkeypatch.setattr(update, "platform_key", lambda: ("macos", "arm64"))
+    updates.configure()
+    info = updates.Updater().check(force=True)
+    assert info["newer"] and info["latest"] == "9.9.9"
+    assert info["asset"]["name"].startswith("QLC-Stage-Monitor-")
+
+
+class FakeUpdater:
+    def __init__(self):
+        self.info = {"current": "3.18.0", "enabled": True, "frozen": True, "can_install": True,
+                     "newer": True, "latest": "3.19.0", "asset": {"name": "QLC-Stage-Monitor-3.19.0-x.tar.gz"},
+                     "pending": False, "error": ""}
+        self.checked = self.installed = 0
+
+    def status(self):
+        return self.info
+
+    def check(self, force=False):
+        self.checked += 1
+        return self.info
+
+    def set_enabled(self, on):
+        self.info["enabled"] = on
+        return self.info
+
+    def install(self):
+        self.installed += 1
+        return {"ok": True, "restart": True, "message": "ready"}
+
+    @staticmethod
+    def open_releases():
+        return True
+
+
+def test_update_from_the_window(exported):
+    quit_called = threading.Event()
+    upd = FakeUpdater()
+    app = control.App(folder=exported, probe=lambda **k: {"state": "off"}, updater=upd)
+    app.quit = quit_called.set
+    ctl = control.Control(app).start()
+    try:
+        st = json.loads(_call(ctl, "/api/state")[1])
+        assert st["update"]["newer"] and st["update"]["latest"] == "3.19.0"
+        assert json.loads(_call(ctl, "/api/update/check", {})[1])["update"]["latest"] == "3.19.0" and upd.checked
+        assert json.loads(_call(ctl, "/api/update/enable", {"check": False})[1])["update"]["enabled"] is False
+        assert _call(ctl, "/api/update/install", {}, token=False)[0] == 403
+        code, body = _call(ctl, "/api/update/install", {})
+        assert code == 200 and json.loads(body)["restart"] and upd.installed == 1
+        assert quit_called.wait(3)                     # the app quits so the swap can run
+    finally:
+        app.close()
+        ctl.stop()
+
+
+def test_no_updater_no_update(exported):
+    app = control.App(folder=exported, probe=lambda **k: {"state": "off"})
+    ctl = control.Control(app).start()
+    try:
+        assert json.loads(_call(ctl, "/api/state")[1])["update"] is None
+        assert _call(ctl, "/api/update/install", {})[0] == 400
+    finally:
+        app.close()
+        ctl.stop()

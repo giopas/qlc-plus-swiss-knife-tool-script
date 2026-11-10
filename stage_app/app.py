@@ -17,11 +17,10 @@ import os
 import sys
 import tempfile
 import threading
-import time
 import urllib.request
 import webbrowser
 
-from stage_app import APP_NAME, settings
+from stage_app import APP_NAME, settings, updates
 from stage_app.control import App, Control
 
 
@@ -66,6 +65,19 @@ def smoke() -> int:
     for f in ("index.html", "app.js", "app.css", "icon.svg"):
         assert os.path.isfile(os.path.join(UI, f)), f
     assert translations("it")
+    from core import update
+    from stage_app import updates
+    with tempfile.TemporaryDirectory() as d:
+        saved = dict(update.APP), update._ASSET_RE
+        update.configure(updates.PREFIX, APP_NAME, os.path.join(d, "update.json"))
+        o, a = update.platform_key()
+        names = [f"QLC-Swiss-Knife-9.9.9-{o}-{a}.zip", f"QLC-Stage-Monitor-9.9.9-{o}-{a}.zip",
+                 f"QLC-Stage-Monitor-9.9.9-{o}-{a}.tar.gz"]
+        pick = update.pick_asset([{"name": n} for n in names])
+        assert pick and pick["name"].startswith("QLC-Stage-Monitor-"), pick
+        update.APP.clear()
+        update.APP.update(saved[0])
+        update._ASSET_RE = saved[1]
     print(f"{APP_NAME} smoke test: ok")
     return 0
 
@@ -83,9 +95,15 @@ def main(argv=None) -> int:
     folder = a.folder or a.folder_arg
     if hand_over(folder):
         return 0
-    app = App(folder=folder, lang=a.lang)
+    updates.configure()                         # this process updates QLC+ Stage Monitor, never Swiss Knife
+    from core import update
+    update.cleanup_after_update()               # the previous version, kept until this one started
+    upd = updates.Updater()
+    app = App(folder=folder, lang=a.lang, updater=upd)
     ctl = Control(app).start()
     settings.write_instance(ctl.port, ctl.token)
+    upd.check_soon()
+    stop = threading.Event()
     try:
         webview = None
         if not a.browser:
@@ -107,12 +125,14 @@ def main(argv=None) -> int:
                 except Exception:  # noqa: BLE001
                     pass
             app.picker, app.raise_window = pick, raise_window
+            app.quit = win.destroy
             webview.start()
         else:
             print(f"{APP_NAME}: {ctl.url}  (close with Ctrl+C)")
             threading.Timer(0.3, lambda: webbrowser.open(ctl.url)).start()
-            while True:
-                time.sleep(1)
+            app.quit = stop.set
+            while not stop.wait(1):
+                pass
     except KeyboardInterrupt:
         pass
     finally:

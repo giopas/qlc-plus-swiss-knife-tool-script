@@ -434,18 +434,47 @@ def keep_uninstaller(old: str, new: str) -> None:
         pass
 
 
+def _work_prefix() -> str:
+    """This app's own update folders: ``swk-update-QLC-Swiss-Knife-…`` or
+    ``swk-update-QLC-Stage-Monitor-…``, so one app never clears the other's."""
+    return f"swk-update-{APP['prefix']}-"
+
+
+LEFTOVER_AGE = 15 * 60     # an update folder this old is no longer in use
+
+
+def _leftovers(parent: str, now: float = None) -> List[str]:
+    """Update folders in *parent* that this app may remove: its own, and the old
+    shared-name ones (before 3.18.2), only when older than ``LEFTOVER_AGE``.  A
+    download still running, this app's or the other app's, is never touched
+    (3.18.1: Stage Monitor starting again removed Swiss Knife's download)."""
+    now = time.time() if now is None else now
+    own, out = _work_prefix(), []
+    for n in os.listdir(parent):
+        p = os.path.join(parent, n)
+        if not n.startswith("swk-update-") or not os.path.isdir(p):
+            continue
+        legacy = not n.startswith("swk-update-QLC-")       # 3.18.1 and earlier, any app
+        if not (n.startswith(own) or legacy):
+            continue                                      # the other app's
+        try:
+            if now - os.path.getmtime(p) >= LEFTOVER_AGE:
+                out.append(p)
+        except OSError:
+            pass
+    return out
+
+
 def cleanup_after_update() -> None:
     """At start of a packaged app: remove the previous version (``<name>.old``)
-    and the leftovers of the swap.  Never raises."""
+    and the old leftovers of its own swaps.  Never raises."""
     root = install_root()
     if not root:
         return
     try:
         shutil.rmtree(root + ".old", ignore_errors=True)
-        parent = os.path.dirname(root)
-        for n in os.listdir(parent):
-            if n.startswith("swk-update-") and os.path.isdir(os.path.join(parent, n)):
-                shutil.rmtree(os.path.join(parent, n), ignore_errors=True)
+        for p in _leftovers(os.path.dirname(root)):
+            shutil.rmtree(p, ignore_errors=True)
     except OSError:
         pass
 
@@ -466,7 +495,7 @@ def install(info: dict = None) -> dict:
         return {"ok": False, "message": "This release has no download for this computer."}
     if not sums_url:
         return {"ok": False, "message": "This release has no SHA256SUMS file — not installing it."}
-    work = tempfile.mkdtemp(prefix="swk-update-", dir=os.path.dirname(root) if os.access(os.path.dirname(root), os.W_OK) else None)
+    work = tempfile.mkdtemp(prefix=_work_prefix(), dir=os.path.dirname(root) if os.access(os.path.dirname(root), os.W_OK) else None)
     try:
         sums = parse_sums(_read(sums_url).decode("utf-8", "replace"))
         want = sums.get(asset["name"])

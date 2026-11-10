@@ -213,7 +213,8 @@ function _smRender() {
   if (_sm.missing.length)
     warn.push(_esc(`Gone from the show since the last export: ${_sm.missing.map(m => m.label || m.id).join(', ')}`));
   if (_sm.new.length && _sm.saved)
-    warn.push(_esc(`New in the show, not on the page yet: ${_sm.new.map(id => (_smList(id) || {}).caption || id).join(', ')}`));
+    warn.push(_esc(`New in the show, not on the page yet: ${_sm.new.map(id => (_smList(id) || {}).caption || id).join(', ')}`)
+      + ` <button class="btn btn-surface btn-sm" onclick="stagemonAddNew()" title="${_esc('The tablet then shows whichever of them QLC+ plays')}">${_esc('Add them to the page')}</button>`);
   note.innerHTML = warn.map(w => `<div class="sm-warn">${w}</div>`).join('');
 
   if (!_sm.lists.length) {
@@ -457,6 +458,17 @@ function stagemonTick(id, on) {
   const c = _smCfg();
   if (on && !_smItem(id)) c.lists.push({id: String(id), label: '', mode: 'read', steps: {}});
   if (!on) { c.lists = c.lists.filter(x => x.id !== String(id)); _smSel = -1; }
+  _smChanged(true);
+}
+
+// The cue lists new in the show go on the page (with a chaser only): the tablet follows the one that plays.
+function stagemonAddNew() {
+  const c = _smCfg();
+  (_sm.new || []).forEach(id => {
+    const cl = _smList(id);
+    if (cl && cl.chaser && !_smItem(id)) c.lists.push({id: String(id), label: '', mode: 'read', steps: {}});
+  });
+  _sm.new = (_sm.new || []).filter(id => !_smItem(id));
   _smChanged(true);
 }
 

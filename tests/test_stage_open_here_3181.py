@@ -39,3 +39,18 @@ def test_light_theme_and_colours_button():
 def test_no_empty_space_above_the_first_song():
     html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
     assert "#list::before" not in html and "#list::after" in html
+
+
+def test_the_page_follows_the_list_that_starts_playing():
+    html = open(sm.PAGE_TEMPLATE, encoding="utf-8").read()
+    assert "function started(id, was)" in html and html.count("started(") >= 3
+    assert "#tabs button.play::before" in html
+
+
+def test_add_the_new_cue_lists_and_a_red_stop():
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    js = open(os.path.join(root, "static", "js", "stagemon.js"), encoding="utf-8").read()
+    assert "function stagemonAddNew()" in js and "stagemonAddNew()" in js
+    ui = open(os.path.join(root, "stage_app", "ui", "index.html"), encoding="utf-8").read()
+    assert 'class="btn btn-danger" id="stop"' in ui

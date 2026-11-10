@@ -4664,5 +4664,7 @@
  "in it.": "darin.",
  "QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.": "QLC+ Stage Monitor stellt die Seite beim Gig bereit, prüft, ob QLC+ bereit ist, zeigt den QR-Code und druckt die Setlist.",
  "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "Installiere QLC+ Stage Monitor, die Begleit-App, um die Seite mit QR-Code bereitzustellen, QLC+ zu prüfen und die Setlist zu drucken. ▶ Bereitstellen geht auch ohne.",
- "Light": "Hell"
+ "Light": "Hell",
+ "Add them to the page": "Zur Seite hinzufügen",
+ "The tablet then shows whichever of them QLC+ plays": "Das Tablet zeigt dann die, die QLC+ gerade spielt"
 }

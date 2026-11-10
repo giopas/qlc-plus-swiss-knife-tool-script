@@ -24,6 +24,8 @@ select { background: var(--bg); color: var(--text); border: 1px solid var(--line
 .btn:disabled { opacity: .45; cursor: default; }
 .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 .btn-primary:hover { border-color: #ffd08a; }
+.btn-danger { background: var(--bad); color: #fff; border-color: var(--bad); font-weight: 600; }
+.btn-danger:hover { border-color: #ff8a80; }
 .btn-quiet { background: transparent; border-color: transparent; color: var(--muted); padding: 4px 0; margin-top: 6px; }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 .page { margin-top: 10px; }

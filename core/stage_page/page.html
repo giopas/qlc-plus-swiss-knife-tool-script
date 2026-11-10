@@ -74,6 +74,7 @@ button { font: inherit; color: inherit; background: none; border: 1px solid var(
 #tabs:empty { display: none; }
 #tabs button { padding: calc(8px * var(--k)) calc(14px * var(--k)); min-height: 56px; font-size: calc(18px * var(--k)); white-space: nowrap; position: relative; }
 #tabs button.on { background: var(--tab-bg); color: var(--tab-fg); border-color: var(--tab-bg); font-weight: 700; }
+#tabs button.play::before { content: "▶ "; color: var(--ok); }   /* the list QLC+ plays now */
 
 #status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
   padding: calc(8px * var(--k)) calc(16px * var(--k)); color: var(--dim); font-size: calc(18px * var(--k)); flex: none; }
@@ -343,7 +344,7 @@ function onMessage(msg) {
     const s = st[id];
     if (!s) return;
     s.missing = m.id === null || m.status === null;
-    if (m.status === 1) { s.status = s.status === 2 ? 2 : 1; s.idx = m.idx; }
+    if (m.status === 1) { started(id, s.status); s.status = s.status === 2 ? 2 : 1; s.idx = m.idx; }
     else if (m.status === 0) { if (s.status !== 2) { s.status = 0; } }
   } else {
     const s = st[m.id];
@@ -355,10 +356,19 @@ function onMessage(msg) {
       if (moved && m.idx >= 0) { follow(m.id); upFor = m.id; }
     } else {
       if (s.idx !== m.idx && m.idx >= 0) upFor = m.id;
+      if (m.status === 1) started(m.id, s.status);
       s.status = m.status; s.idx = m.idx; s.next = m.next;
     }
   }
   render();
+}
+// A list that starts playing (another setlist started from QLC+, a pedal, a button) comes on screen.
+// Right after connecting (status still unknown) it does so only when the shown list is not playing.
+function started(id, was) {
+  if (was === 1 || was === 2) return;
+  const shown = st[(lists[cur] || {}).id];
+  if (was === null && shown && (shown.status === 1 || shown.status === 2) && lists[cur].id !== id) return;
+  follow(id);
 }
 // The pedal drives one list at a time: show the list that just moved.
 function follow(id) {
@@ -461,6 +471,10 @@ function render() {
     b.innerHTML = `${esc(T("Not connected to QLC+"))}<small>${esc(T("Start QLC+ with web access (qlcplus -w). Trying again by itself."))}<br>${esc(wsUrl)}</small>`;
   } else b.hidden = true;
 
+  document.querySelectorAll("#tabs button[data-i]").forEach(b => {
+    const x = st[(lists[+b.dataset.i] || {}).id] || {};
+    b.classList.toggle("play", connected && (x.status === 1 || x.status === 2));
+  });
   renderPane(l, idx, nxt);
   if (upFor === l.id) { upFor = null; showNextUp(l, nxt); }
 

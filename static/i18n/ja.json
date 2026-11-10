@@ -4664,5 +4664,7 @@
  "in it.": "（フォルダー内）。",
  "QLC+ Stage Monitor serves the page at the gig, checks that QLC+ is ready, shows the QR code and prints the setlist.": "QLC+ Stage Monitor はライブでページを配信し、QLC+ の準備を確認し、QR コードを表示し、セットリストを印刷します。",
  "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "コンパニオンアプリ QLC+ Stage Monitor をインストールすると、QR コード付きの配信、QLC+ の確認、セットリスト印刷ができます。▶ 配信 はなくても使えます。",
- "Light": "ライト"
+ "Light": "ライト",
+ "Add them to the page": "ページに追加",
+ "The tablet then shows whichever of them QLC+ plays": "タブレットはQLC+が再生中のものを表示します"
 }

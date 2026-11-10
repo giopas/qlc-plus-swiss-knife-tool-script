@@ -39,6 +39,22 @@ def asset_name(ext: str, os_name: str = None, arch: str = None, version: str = V
     return f"{APPS[app or CURRENT]['asset']}-{version}-{o}-{a}.{ext}"
 
 
+def hdiutil_create(volname: str, src: str, dmg: str, tries: int = 5) -> None:
+    """hdiutil create, tried again when the disk is busy.  On GitHub's macOS runners
+    "hdiutil: create failed - Resource busy" comes and goes (a helper still holds the
+    image of the build before): release v3.18.1 lost its Apple Silicon files to it."""
+    import time
+    cmd = ["hdiutil", "create", "-volname", volname, "-srcfolder", src, "-ov", "-format", "UDZO", dmg]
+    for n in range(1, tries + 1):
+        if subprocess.call(cmd) == 0:
+            return
+        if n == tries:
+            raise subprocess.CalledProcessError(1, cmd)
+        print(f"hdiutil busy, trying again in {5 * n} s ({n}/{tries - 1})", flush=True)
+        subprocess.call(["hdiutil", "info"], stdout=subprocess.DEVNULL)   # lets diskimages-helper settle
+        time.sleep(5 * n)
+
+
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     key = argv[argv.index("--app") + 1] if "--app" in argv else "swiss-knife"
@@ -64,8 +80,7 @@ def main(argv=None) -> int:
         os.makedirs(stage)
         subprocess.check_call(["ditto", app, os.path.join(stage, f"{NAME}.app")])
         os.symlink("/Applications", os.path.join(stage, "Applications"))
-        subprocess.check_call(["hdiutil", "create", "-volname", NAME, "-srcfolder", stage,
-                               "-ov", "-format", "UDZO", os.path.join(out, asset_name("dmg"))])
+        hdiutil_create(NAME, stage, os.path.join(out, asset_name("dmg")))
         shutil.rmtree(stage)
     elif system == "Windows":
         folder = os.path.join(dist, NAME)

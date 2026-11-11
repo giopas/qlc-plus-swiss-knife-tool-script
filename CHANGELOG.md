@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — a pitch video (a tool for the repository, the app does not change)
+
+- **`tools/make_pitch_video.py`** makes a short vertical video about Swiss Knife from the README screenshots and GIFs, with captions, a voice (macOS `say`, `espeak-ng` or `edge-tts`) and a groove made from Swiss Knife's own click sounds. `--stills` also writes one picture per slide and a PDF. It needs Pillow and ffmpeg; Swiss Knife itself still needs neither. The files go to `dist/marketing/`.
+
 ### Added — Claude starts a show from scratch (3.19.0)
 
 - **A new show from nothing, straight from Claude.** Tell Claude which fixtures you have and where, and it makes the show: the patch, the groups, the functions and the Virtual Console that the Quick Start makes, checked by the Doctor and saved as a new file (`Club_night_v1.qxw`). The folder can be empty or not exist yet; it is made inside a folder you shared. The new show is then the show in progress, so Claude can go on with looks, buttons, a setlist and save the next version. New Claude tool `new_show`; `preview=true` shows the patch first and writes nothing.

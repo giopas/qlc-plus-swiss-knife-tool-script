@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Fixed — the video of a release (CI only)
+
+- **A release's own video run no longer skips itself.** Called by `release.yml`, `pitch.yml` saw the tag's `push` event and took the release for a commit pushed to `main`, so it skipped making the video while showing green. It now skips only a push to `main` with no tag given, and a change to `pitch.yml` itself runs it once for the latest release.
+
 ### Added — the pitch video on every release (the app does not change)
 
 - **The pitch video and the slides are made and attached to each release by GitHub.** A new workflow runs `tools/make_pitch_video.py` with the online voice after every release and attaches `QLC_Swiss_Knife_Pitch.mp4` and `QLC_Swiss_Knife_Pitch.pdf`; it also refreshes them when the slides or the screenshots change. The README opens with *See it in two minutes*, linking to the latest ones. The files are not in the repository, and *Update and restart* ignores them.

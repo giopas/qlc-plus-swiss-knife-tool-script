@@ -28,6 +28,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/pitch.yml"
       - "tools/make_pitch_video.py"
       - "screenshots/**"
       - "static/logo/**"
@@ -56,8 +57,10 @@ jobs:
       - name: Which release
         id: which
         run: |
-          # A push of a release commit is handled by release.yml (it calls this workflow with the tag).
-          if [ "$GITHUB_EVENT_NAME" = "push" ] && git tag --points-at HEAD | grep -q '^v'; then
+          # A push to main of a commit that is also a release is handled by release.yml,
+          # which calls this workflow with the tag. Called that way, GITHUB_EVENT_NAME
+          # is still "push" (the tag's), so look at the branch and the input instead.
+          if [ -z "$IN_TAG" ] && [ "$GITHUB_REF" = "refs/heads/main" ] && git tag --points-at HEAD | grep -q '^v'; then
             echo "This commit is a release: release.yml makes the video."; echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0
           fi
           TAG="$IN_TAG"

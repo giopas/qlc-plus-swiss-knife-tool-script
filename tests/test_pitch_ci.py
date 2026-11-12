@@ -74,3 +74,14 @@ def test_the_readme_poster_opens_the_page_that_plays_the_video():
     html = (ROOT / "tools" / "pitch_page" / "index.html").read_text(encoding="utf-8")
     assert 'src="QLC_Swiss_Knife_Pitch.mp4"' in html and "<video controls playsinline" in html
     assert "__VERSION__" in html
+
+
+def test_a_release_call_does_not_skip_itself():
+    """Called by release.yml, GITHUB_EVENT_NAME is the tag's "push": the skip for a
+    release commit pushed to main must look at the branch and the input instead."""
+    text = (WF / "pitch.yml").read_text(encoding="utf-8")
+    line = next(l for l in text.splitlines() if "git tag --points-at HEAD" in l)
+    assert '-z "$IN_TAG"' in line
+    assert '"$GITHUB_REF" = "refs/heads/main"' in line
+    assert "GITHUB_EVENT_NAME" not in line
+    assert '      - ".github/workflows/pitch.yml"' in text     # pushing a fix makes the missing video

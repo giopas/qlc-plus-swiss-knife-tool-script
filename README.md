@@ -14,9 +14,9 @@
 
 ### See it in two minutes
 
-[![Watch the two-minute video about QLC+ Swiss Knife](screenshots/pitch-poster.png)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.mp4)
+[![Watch the two-minute video about QLC+ Swiss Knife](screenshots/pitch-poster.png)](https://giopas.github.io/qlc-plus-swiss-knife-tool-script/)
 
-A short vertical video (about 10 MB) and the same slides as a PDF: [video](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.mp4) · [slides](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.pdf). Both are made again with every release.
+The picture opens a page that plays the video. To keep a copy: [the video](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.mp4) (about 10 MB) · [the slides as a PDF](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.pdf). Both are made again with every release.
 
 ---
 

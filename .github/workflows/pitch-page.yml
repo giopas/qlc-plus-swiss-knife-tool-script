@@ -1,0 +1,60 @@
+name: pitch-page
+
+# The page that plays the pitch video in the browser:
+#   https://giopas.github.io/qlc-plus-swiss-knife-tool-script/
+# A file attached to a release is always downloaded, never played, so the
+# README's poster opens this page instead.  It takes the video and the slides
+# from the latest release (pitch.yml attaches them) and publishes them with
+# tools/pitch_page/index.html on GitHub Pages.  Nothing is committed.
+#
+# pitch.yml starts it on main after it attached new files (a deploy from a tag
+# is refused by the github-pages environment), and runs by itself when the
+# page or its poster change on main.  It can also be run by hand.
+# Once, in the repository: Settings > Pages > Source: GitHub Actions.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/pitch_page/**"
+      - "screenshots/pitch-poster.png"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pitch-page
+  cancel-in-progress: true
+
+jobs:
+  page:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the page from the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          mkdir -p _site
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p 'QLC_Swiss_Knife_Pitch.*' -D _site
+          # the video's own first slide as its poster (9:16); the 16:9 README picture for link previews
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
+          ffmpeg -loglevel error -ss 2 -i _site/QLC_Swiss_Knife_Pitch.mp4 -frames:v 1 -q:v 3 _site/poster.jpg
+          cp screenshots/pitch-poster.png _site/share.png
+          cp static/logo/icon-512.png _site/icon.png
+          sed "s/__VERSION__/Swiss Knife $TAG/" tools/pitch_page/index.html > _site/index.html
+          ls -la _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

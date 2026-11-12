@@ -138,5 +138,8 @@ jobs:
     needs: publish
     if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
     uses: ./.github/workflows/pitch.yml
+    permissions:
+      contents: write
+      actions: write
     with:
       tag: ${{ github.ref_name }}

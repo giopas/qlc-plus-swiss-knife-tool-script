@@ -35,6 +35,7 @@ on:
 
 permissions:
   contents: write
+  actions: write        # to start pitch-page.yml, the page that plays the video
 
 jobs:
   pitch:
@@ -99,3 +100,14 @@ jobs:
           fi
           ls -la QLC_Swiss_Knife_Pitch.mp4 QLC_Swiss_Knife_Pitch.pdf
           gh release upload "$TAG" QLC_Swiss_Knife_Pitch.mp4 QLC_Swiss_Knife_Pitch.pdf --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Refresh the page that plays the video (pitch-page.yml, on main)
+        if: steps.which.outputs.skip != '1'
+        run: |
+          TAG="${{ steps.which.outputs.tag }}"
+          LATEST="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          if [ "$TAG" = "$LATEST" ]; then
+            gh workflow run pitch-page.yml --repo "$GITHUB_REPOSITORY" --ref main
+          else
+            echo "$TAG is not the latest release ($LATEST): the page stays as it is."
+          fi

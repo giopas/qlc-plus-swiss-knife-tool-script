@@ -58,3 +58,19 @@ def test_claude_slide_says_it_can_start_a_show():
     slide = next(s for s in m.SLIDES if s["title"] == "Undo It, or Ask Claude")
     assert "Claude can even start a new show from scratch" in slide["bullets"]
     assert "from scratch" in slide["vo"]
+
+
+def test_the_readme_poster_opens_the_page_that_plays_the_video():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "](https://giopas.github.io/qlc-plus-swiss-knife-tool-script/)" in readme
+    page = (WF / "pitch-page.yml").read_text(encoding="utf-8")
+    for needed in ("pages: write", "id-token: write", "name: github-pages", "actions/deploy-pages@",
+                   "gh release download", "tools/pitch_page/index.html"):
+        assert needed in page, needed
+    # started on main by pitch.yml (a deploy from a tag is refused by the environment)
+    pitch = (WF / "pitch.yml").read_text(encoding="utf-8")
+    assert "gh workflow run pitch-page.yml" in pitch and "--ref main" in pitch
+    assert "actions: write" in pitch
+    html = (ROOT / "tools" / "pitch_page" / "index.html").read_text(encoding="utf-8")
+    assert 'src="QLC_Swiss_Knife_Pitch.mp4"' in html and "<video controls playsinline" in html
+    assert "__VERSION__" in html

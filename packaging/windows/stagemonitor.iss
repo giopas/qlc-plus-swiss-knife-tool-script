@@ -1,5 +1,5 @@
 ; Inno Setup script for QLC+ Stage Monitor (Windows), the companion app of QLC Swiss Knife.
-; Build:  ISCC /DAppVersion=3.18.1 packaging\windows\stagemonitor.iss   (after pyinstaller packaging/stagemonitor.spec)
+; Build:  ISCC /DAppVersion=3.19.0 packaging\windows\stagemonitor.iss   (after pyinstaller packaging/stagemonitor.spec)
 ; Per-user install (no administrator), in %LOCALAPPDATA%\Programs\QLC Stage Monitor,
 ; which is where Swiss Knife looks for it (core/companion.py).
 #ifndef AppVersion

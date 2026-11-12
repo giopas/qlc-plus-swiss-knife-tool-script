@@ -22,7 +22,7 @@
      aria-label="Session file">
   <div class="sess-modal-header">
     <span><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Session</span>
-    <button class="sess-close-btn" onclick="sessionCloseModal()" title="Close">✕</button>
+    <button class="sess-close-btn" onclick="sessionCloseModal()" title="Close" aria-label="Close">✕</button>
   </div>
 
   <div id="session-modal-body" class="sess-modal-body">
@@ -68,11 +68,7 @@
       <span>Start</span>
     </button>
 
-    <!-- Recent tools (3.9.5): the last three you used, filled by skRenderRecentTools() -->
-    <div class="sn-recent" id="sn-recent" hidden>
-      <div class="sn-label">Recent tools</div>
-      <div id="sn-recent-list"></div>
-    </div>
+    <!-- Recent tools moved to Go to… (3.19.0): the side menu keeps its height for the tools -->
 
     <!-- 1 · New show -->
     <div class="sn-group-label" id="sn-grp-1"><span class="sn-gnum">1</span><span class="sn-gtxt">New show</span></div>
@@ -191,39 +187,48 @@
       </div>
       <ol class="sc-list" id="sc-list"></ol>
     </div>
-    <div class="fp-title">Files</div>
-    <div class="fp-item" id="fp-workspace">
-      <span class="fp-label">Workspace</span>
-      <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
-    </div>
-    <div class="fp-item" id="fp-dictionary">
-      <span class="fp-label">Dictionary</span>
-      <span id="fp-dict-name">—</span>
-    </div>
-    <div class="fp-item" id="fp-qxf">
-      <span class="fp-label">QXF</span>
-      <span id="fp-qxf-name">—</span>
-    </div>
-    <div class="fp-item" id="fp-lang">
-      <span class="fp-label" data-tip="Language"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#globe"/></svg> </span>
-      <select id="lang-select" class="filter-input" onchange="I18N.set(this.value)" aria-label="Language" title="Language of the interface (shows, reports and the wiki stay as they are)" data-i18n="off">
-        <option value="en">English</option><option value="it">Italiano</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="pt">Português</option><option value="ja">日本語</option><option value="zh">中文</option>
-      </select>
-    </div>
-    <div class="fp-item" id="fp-update">
-      <label class="fp-label upd-opt" title="Once at start, Swiss Knife asks GitHub which version is the latest. Nothing about you or your shows is sent.">
-        <input type="checkbox" id="upd-enabled" checked onchange="updSetEnabled(this.checked)"> Check for updates
-      </label>
-      <div class="upd-now"><span class="net-dot" data-net title="Internet: checking…" role="img" aria-label="Internet: checking…" onclick="netCheck(true)"></span><button class="sc-link" id="upd-now" onclick="updCheckNow()">Check now</button><span class="upd-msg" id="upd-now-msg"></span></div>
-    </div>
-    <div class="fp-item" id="fp-mcp">
-      <span class="net-dot" data-net title="Internet: checking…" role="img" aria-label="Internet: checking…" onclick="netCheck(true)"></span>
-      <button class="sc-link" onclick="mcpToggle()" title="Let Claude open, check and fix your shows"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#cable"/></svg> Connect to Claude</button>
-    </div>
-    <div class="fp-session">
-      <span id="session-badge" class="session-badge"></span>
-      <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Session</button>
-    </div>
+    <details class="fp-settings" id="fp-settings">
+      <summary class="fp-settings-sum" title="Files, colours, language, updates and Claude"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> <span>Settings</span></summary>
+      <div class="fp-settings-body">
+        <div class="fp-title">Files</div>
+        <div class="fp-item" id="fp-workspace">
+          <span class="fp-label">Workspace</span>
+          <span id="ws-name" class="ws-unloaded">No workspace loaded</span>
+        </div>
+        <div class="fp-item" id="fp-dictionary">
+          <span class="fp-label">Dictionary</span>
+          <span id="fp-dict-name">—</span>
+        </div>
+        <div class="fp-item" id="fp-qxf">
+          <span class="fp-label">QXF</span>
+          <span id="fp-qxf-name">—</span>
+        </div>
+        <div class="fp-item" id="fp-lang">
+          <span class="fp-label" data-tip="Language"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#globe"/></svg> </span>
+          <select id="lang-select" class="filter-input" onchange="I18N.set(this.value)" aria-label="Language" title="Language of the interface (shows, reports and the wiki stay as they are)" data-i18n="off">
+            <option value="en">English</option><option value="it">Italiano</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="pt">Português</option><option value="ja">日本語</option><option value="zh">中文</option>
+          </select>
+        </div>
+        <div class="fp-item" id="fp-update">
+          <label class="fp-label upd-opt" title="Once at start, Swiss Knife asks GitHub which version is the latest. Nothing about you or your shows is sent.">
+            <input type="checkbox" id="upd-enabled" checked onchange="updSetEnabled(this.checked)"> Check for updates
+          </label>
+          <div class="upd-now"><span class="net-dot" data-net title="Internet: checking…" role="img" aria-label="Internet: checking…" onclick="netCheck(true)"></span><button class="sc-link" id="upd-now" onclick="updCheckNow()">Check now</button><span class="upd-msg" id="upd-now-msg"></span></div>
+        </div>
+        <div class="fp-item" id="fp-mcp">
+          <span class="net-dot" data-net title="Internet: checking…" role="img" aria-label="Internet: checking…" onclick="netCheck(true)"></span>
+          <button class="sc-link" onclick="mcpToggle()" title="Let Claude open, check and fix your shows"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#cable"/></svg> Connect to Claude</button>
+        </div>
+        <div class="fp-item" id="fp-theme">
+          <span class="fp-label">Colours</span>
+          <button class="sc-link" id="fp-theme-btn" onclick="cycleTheme()" title="Dark, grey or light"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#moon"/></svg> <span id="fp-theme-name">Dark</span></button>
+        </div>
+        <div class="fp-session">
+          <span id="session-badge" class="session-badge"></span>
+          <button class="btn btn-surface btn-sm" onclick="sessionOpenModal()" title="Session file"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Session</button>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- Quit -->
@@ -233,7 +238,7 @@
   </button>
 
   <!-- Collapse -->
-  <button class="sn-collapse" id="sn-collapse" onclick="toggleSidebar()" title="Collapse sidebar">
+  <button class="sn-collapse" id="sn-collapse" onclick="toggleSidebar()" title="Collapse sidebar" aria-label="Collapse sidebar">
     <svg class="ic"><use href="/static/icons.svg#chevron-left"/></svg>
   </button>
 </aside>
@@ -262,10 +267,10 @@
       <button class="btn btn-surface btn-sm cp-open" onclick="cpOpen()"
               data-tooltip="Go to any tool or action — type a few letters"><span class="cp-lbl">Go to… </span><kbd class="kbd" id="cp-kbd">⌘K</kbd></button>
       <button class="btn btn-surface btn-sm" id="sb-undo" onclick="showUndo()" disabled
-              data-tooltip="Undo the last change to the show (any tool)">↶ Undo</button>
+              data-tooltip="Undo the last change to the show (any tool)" aria-label="Undo">↶<span class="ms-tl"> Undo</span></button>
       <button class="btn btn-surface btn-sm" onclick="showHistoryToggle()"
-              data-tooltip="Every change to the show, step by step — open a tool again, go back to any step"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clock"/></svg> History</button>
-      <button class="btn btn-accent btn-sm" id="sb-save" onclick="showSave()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file…</button>
+              data-tooltip="Every change to the show, step by step — open a tool again, go back to any step"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clock"/></svg><span class="ms-tl"> History</span></button>
+      <button class="btn btn-accent btn-sm" id="sb-save" onclick="showSave()" title="Save as new file…"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> <span class="ms-long">Save as new file…</span><span class="ms-short">Save…</span></button>
       <div class="split" id="open-split">
         <button class="btn btn-surface btn-sm split-main" onclick="browseWorkspace()"
                 data-tooltip="Open a .qxw workspace — every tool works on it"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Open…</button>
@@ -282,7 +287,7 @@
 
   <!-- Update card (v2.8.0): what is new, and how to get it -->
   <div class="upd-card" id="upd-card" hidden>
-    <div class="upd-head"><b id="upd-title">New version</b><button class="btn btn-surface btn-sm" onclick="updToggle(false)">✕</button></div>
+    <div class="upd-head"><b id="upd-title">New version</b><button class="btn btn-surface btn-sm" onclick="updToggle(false)" aria-label="Close">✕</button></div>
     <div class="upd-sub" id="upd-sub"></div>
     <pre class="upd-notes" id="upd-notes"></pre>
     <div class="upd-actions">
@@ -294,7 +299,7 @@
 
   <!-- Connect to Claude (v2.9.0): folders Claude may use + the settings snippet -->
   <div class="upd-card mcp-card" id="mcp-card" hidden>
-    <div class="upd-head"><b>Connect to Claude</b><button class="btn btn-surface btn-sm" onclick="mcpToggle(false)">✕</button></div>
+    <div class="upd-head"><b>Connect to Claude</b><button class="btn btn-surface btn-sm" onclick="mcpToggle(false)" aria-label="Close">✕</button></div>
     <div class="upd-sub">Let Claude open, check and fix your shows with these tools. Claude gets only the folders you add here and Swiss Knife itself, nothing else on your computer. It saves its work as a new file, so your originals never change.</div>
     <div class="upd-msg" id="mcp-status"></div>
     <div class="upd-msg net-line"><span class="net-dot" data-net role="img" aria-label="Internet: checking…"></span> <span id="net-text">Internet: checking…</span></div>
@@ -318,7 +323,7 @@
 
   <!-- Ask Claude to write the Dictionary (v3.0.1) -->
   <div class="upd-card mcp-card" id="dict-claude-card" hidden>
-    <div class="upd-head"><b>Ask Claude to write the Dictionary</b><button class="btn btn-surface btn-sm" onclick="dictClaudeToggle(false)">✕</button></div>
+    <div class="upd-head"><b>Ask Claude to write the Dictionary</b><button class="btn btn-surface btn-sm" onclick="dictClaudeToggle(false)" aria-label="Close">✕</button></div>
     <div class="upd-sub">Swiss Knife cannot start Claude: Claude Desktop starts Swiss Knife. Copy this request, paste it in a new chat in Claude Desktop, and Claude does the work through the Swiss Knife connection.</div>
     <div class="upd-msg" id="dict-claude-status"></div>
     <div class="mcp-h">What Claude should write</div>
@@ -342,7 +347,7 @@
 
   <!-- Ask Claude about a fixture for the Cabling kit (3.6.0) -->
   <div class="upd-card mcp-card" id="cb-claude-card" hidden>
-    <div class="upd-head"><b>Ask Claude about a fixture</b><button class="btn btn-surface btn-sm" onclick="document.getElementById('cb-claude-card').hidden = true">✕</button></div>
+    <div class="upd-head"><b>Ask Claude about a fixture</b><button class="btn btn-surface btn-sm" onclick="document.getElementById('cb-claude-card').hidden = true" aria-label="Close">✕</button></div>
     <div class="upd-sub">Swiss Knife cannot start Claude: Claude Desktop starts Swiss Knife. Copy this request, paste it in a new chat in Claude Desktop, and attach a photo of the fixture's back panel or a link to its manual if you have one.</div>
     <div class="upd-msg" id="cb-claude-status"></div>
     <div class="mcp-h">The request</div>
@@ -374,7 +379,7 @@
         <h3>History of the show in progress</h3>
         <div class="sh-intro">Opened from <b id="sh-source"></b>. Every tool you apply adds a step: open that tool again, or go back to how the show was before any step.</div>
       </div>
-      <button class="btn btn-surface btn-sm" onclick="showHistoryToggle(false)" title="Close">✕</button>
+      <button class="btn btn-surface btn-sm" onclick="showHistoryToggle(false)" title="Close" aria-label="Close">✕</button>
     </div>
     <ol class="sh-list" id="sh-list"></ol>
     <div class="sh-redo" id="sh-redo" hidden><button class="btn btn-surface btn-sm" onclick="showRedo()">↷ Redo the undone steps</button></div>
@@ -436,7 +441,7 @@
             and <b><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save as new file…</b> writes it with a report — the file you opened is never touched.</p>
         </div>
         <div class="spacer"></div>
-        <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained">?</button>
+        <button class="help-btn" onclick="openHelp('Home')" title="The wiki: every tool explained" aria-label="Help">?</button>
       </div>
 
       <!-- Top zone: follows the state of the show (start_state.js) -->
@@ -582,8 +587,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#folder"/></svg></div>
       <div><h2>Library</h2><div class="p-desc">Share your templates and presets as one file, or install what others shared.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Community-Library')" title="How this tool works — opens the Community Library page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Community-Library')" title="How this tool works — opens the Community Library page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="lib-cols">
@@ -626,8 +630,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#merge"/></svg></div>
       <div><h2>Compare</h2><div class="p-desc">See what differs between the show in progress and another show.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Compare')" title="How this tool works — opens the Compare page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Compare')" title="How this tool works — opens the Compare page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="tab-toolbar">
@@ -651,7 +654,7 @@
       <div class="spacer"></div>
       <button class="btn btn-surface" onclick="compareCopy()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy report</button>
       <button class="btn btn-surface" onclick="compareSaveReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#save"/></svg> Save report…</button>
-      <button class="btn btn-accent" onclick="compareRun()">⇄ Compare</button>
+      <button class="btn btn-accent" id="cmp-run-btn" onclick="compareRun()" disabled data-needs="Pick the other show first (Other show…)." data-needs-show>⇄ Compare again</button>
     </div>
 
   </section>
@@ -671,8 +674,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#list"/></svg></div>
       <div><h2>Song Builder</h2><div class="p-desc">Build a song’s Show from a table of parts, with one music track.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Song-Builder')" title="How this tool works — opens the Song Builder page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Song-Builder')" title="How this tool works — opens the Song Builder page of the wiki" aria-label="Help">?</button>
     </div>
     <div id="sbd-pick-modal" class="modal-overlay sbd-hidden">
       <div class="modal-box sbd-pick-box">
@@ -723,10 +725,11 @@
         <div id="sbd-out" class="sbd-out"></div>
       </div>
     </div>
-    <div class="tool-foot">
-      <span id="sbd-foot-note" class="sbd-dim"></span>
+    <div class="out-footer">
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
+      <span class="out-outcome" id="sbd-foot-note" aria-live="polite"></span>
       <div class="spacer"></div>
-      <button class="btn btn-accent" onclick="sbdBuild()">Build the Show</button>
+      <button class="btn btn-accent" id="sbd-build-btn" onclick="sbdBuild()" disabled data-needs="Give the song a name in step 1." data-needs-show>Build the Show</button>
     </div>
   </section>
 
@@ -736,8 +739,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#music"/></svg></div>
       <div><h2>Setlist Manager</h2><div class="p-desc">Match each song to its look, set the timing and build the setlist chaser.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Setlist-Manager')" title="How this tool works — opens the Setlist Manager page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Setlist-Manager')" title="How this tool works — opens the Setlist Manager page of the wiki" aria-label="Help">?</button>
     </div>
 
     <!-- Hidden file input fallback for per-slot TXT import (when native picker unavailable) -->
@@ -782,13 +784,13 @@
         </div>
         <div class="pane-footer" style="gap:3px">
           <button class="btn btn-surface btn-sm" id="btn-add-song"     onclick="slAddRow()"    disabled
-                  data-tooltip="Add a new empty song row"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#plus-circle"/></svg> </button>
+                  data-tooltip="Add a new empty song row" aria-label="Add a new empty song row"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#plus-circle"/></svg> </button>
           <button class="btn btn-surface btn-sm" id="btn-remove-song"  onclick="slRemoveRow()" disabled
-                  data-tooltip="Remove the selected song"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button>
+                  data-tooltip="Remove the selected song" aria-label="Remove the selected song"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> </button>
           <button class="btn btn-surface btn-sm" id="btn-move-song-up" onclick="slMoveRow(-1)" disabled
-                  data-tooltip="Move selected song up"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#upload"/></svg> </button>
+                  data-tooltip="Move selected song up" aria-label="Move selected song up"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#upload"/></svg> </button>
           <button class="btn btn-surface btn-sm" id="btn-move-song-dn" onclick="slMoveRow(1)"  disabled
-                  data-tooltip="Move selected song down"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> </button>
+                  data-tooltip="Move selected song down" aria-label="Move selected song down"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> </button>
           <span style="flex:1"></span>
           <span id="song-count" class="hint-text"></span>
         </div>
@@ -805,7 +807,7 @@
           <div class="fb-group-label">Assign</div>
           <button class="btn fb-wide-btn pool-toggle" id="btn-pool-toggle" onclick="slTogglePool()" aria-pressed="false"
                   data-tooltip="Open the show's functions on the right, pick one, then press Assign (or double-click it).">Show QLC+ functions ▸</button>
-          <button class="btn btn-accent fb-wide-btn" id="btn-pool-assign"
+          <button class="btn btn-surface fb-wide-btn" id="btn-pool-assign"
                   onclick="slAssignFromPool()" disabled
                   data-tooltip="Give the selected function to the selected songs. Ctrl+click or Shift+click to select several songs.">◀ Assign</button>
           <button class="btn btn-surface fb-wide-btn" id="btn-clear-assign"
@@ -920,7 +922,7 @@
         <div class="pane-header" style="display:flex;align-items:center;justify-content:space-between">
           <span>QLC+ Functions</span>
           <span><button class="btn btn-surface btn-sm" onclick="refreshFnPool()"
-                  data-tooltip="Re-fetch functions with latest descriptions from Dictionary">↺</button>
+                  data-tooltip="Re-fetch functions with latest descriptions from Dictionary" aria-label="Re-fetch functions with latest descriptions from Dictionary">↺</button>
           <button class="btn btn-surface btn-sm" onclick="slTogglePool(false)" data-tooltip="Hide this list" aria-label="Hide the function list">✕</button></span>
         </div>
         <div class="fn-pool-search">
@@ -990,8 +992,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
       <div><h2>Trigger Manager</h2><div class="p-desc">See and edit every keyboard and MIDI trigger of the Virtual Console.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Trigger-Manager')" title="How this tool works — opens the Trigger Manager page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Trigger-Manager')" title="How this tool works — opens the Trigger Manager page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="tab-toolbar">
@@ -1119,8 +1120,7 @@
       </button>
       <input id="dict-path" type="hidden">
       <span id="dict-path-name" class="file-chip" title="">no dictionary loaded</span>
-      <button class="help-btn" onclick="openHelp('Dictionary-Manager')" title="How this tool works — opens the Dictionary Manager page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Dictionary-Manager')" title="How this tool works — opens the Dictionary Manager page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="tab-toolbar" style="flex-wrap:wrap;gap:4px">
@@ -1185,8 +1185,7 @@
       <span id="fix-qxf-name" class="file-chip">no QXF loaded</span>
       <button class="btn btn-surface" onclick="fixBrowseQxf()"
               data-tooltip="Choose a QLC+ fixture definition file (.qxf) as the fixture template"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Browse QXF…</button>
-      <button class="help-btn" onclick="openHelp('Fixture-Configurator')" title="How this tool works — opens the Fixture Configurator page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Fixture-Configurator')" title="How this tool works — opens the Fixture Configurator page of the wiki" aria-label="Help">?</button>
     </div>
 
     <!-- Toolbar row 1: fixture operations -->
@@ -1196,9 +1195,9 @@
       <button class="btn btn-danger"  onclick="fixRemoveSelected()"
               data-tooltip="Remove the selected fixture from the rig"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#trash"/></svg> Remove</button>
       <button class="btn btn-surface" onclick="fixMoveRow(-1)"
-              data-tooltip="Move selected fixture up in the list"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#upload"/></svg> </button>
+              data-tooltip="Move selected fixture up in the list" aria-label="Move selected fixture up in the list"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#upload"/></svg> </button>
       <button class="btn btn-surface" onclick="fixMoveRow(1)"
-              data-tooltip="Move selected fixture down in the list"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> </button>
+              data-tooltip="Move selected fixture down in the list" aria-label="Move selected fixture down in the list"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#download"/></svg> </button>
       <button class="btn btn-surface" onclick="fixAutoDmx()"
               data-tooltip="Auto-assign DMX addresses sequentially based on rig order"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sliders"/></svg> Auto-DMX</button>
       <button class="btn btn-surface" onclick="fixImportWorkspace()"
@@ -1357,8 +1356,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sun"/></svg></div>
       <div><h2>Brightness</h2><div class="p-desc">Make the whole show brighter or dimmer without changing its colours.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Brightness')" title="How this tool works — opens the Brightness page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Brightness')" title="How this tool works — opens the Brightness page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="tab-toolbar brt-toolbar">
@@ -1429,8 +1427,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#search"/></svg></div>
       <div><h2>ID Browser</h2><div class="p-desc">Find any function or Virtual Console widget by name or ID.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('ID-Browser')" title="How this tool works — opens the ID Browser page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('ID-Browser')" title="How this tool works — opens the ID Browser page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div id="id-browser-subtabs">
@@ -1476,8 +1473,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#layout"/></svg></div>
       <div><h2>VC Visual Editor</h2><div class="p-desc">Build and tidy the Virtual Console on a canvas.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('VC-Visual-Editor')" title="How this tool works — opens the VC Visual Editor page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('VC-Visual-Editor')" title="How this tool works — opens the VC Visual Editor page of the wiki" aria-label="Help">?</button>
     </div>
 
     <style>
@@ -1586,9 +1582,9 @@
         <div class="vce-sep"></div>
 
         <!-- Zoom -->
-        <button class="vce-xb" onclick="vceZoom(-1)" title="Zoom out (⌘−)">−</button>
+        <button class="vce-xb" onclick="vceZoom(-1)" title="Zoom out (⌘−)" aria-label="Zoom out (⌘−)">−</button>
         <span id="vce-zoom-lbl" style="font-size:11px;color:var(--text-muted);min-width:34px;text-align:center;font-family:var(--font-mono)">—</span>
-        <button class="vce-xb" onclick="vceZoom(+1)" title="Zoom in (⌘+ or pinch)">+</button>
+        <button class="vce-xb" onclick="vceZoom(+1)" title="Zoom in (⌘+ or pinch)" aria-label="Zoom in (⌘+ or pinch)">+</button>
         <button class="vce-xb" onclick="vceFit()" title="Fit page (⌘0)">fit</button>
         <div class="vce-sep"></div>
 
@@ -1616,7 +1612,7 @@
         <!-- Right panel: three tabs — Selection · Add & wire · Pages (WORKPLAN 2.4) -->
         <div id="vce-right" class="open">
           <!-- Duplicate widget-ID warning (filled by _vceCheckDuplicates) -->
-          <div id="vce-dup-warn" style="display:none;font-size:11px;color:var(--warning);padding:8px;
+          <div id="vce-dup-warn" style="display:none;font-size:11px;color:var(--warning-text);padding:8px;
                border-bottom:0.5px solid var(--border);background:var(--surface-0)"></div>
 
           <div class="vce-tabs">
@@ -1717,7 +1713,7 @@
       <div class="spacer"></div>
       <button class="btn btn-surface btn-ghost" onclick="vceApplyAndExport()"
               data-tooltip="Save the show with these edits as a separate file">Export a copy…</button>
-      <button class="btn btn-accent" onclick="vceApply()"
+      <button class="btn btn-accent" id="vce-apply-btn" onclick="vceApply()" disabled data-needs="Move, resize or recolour a widget first." data-needs-show
               data-tooltip="Put the moved / resized / recoloured widgets into the show (pages, new widgets and wiring are in it already)">✓ Apply to the show</button>
     </div>
 
@@ -1735,8 +1731,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
       <div><h2>Function Porter</h2><div class="p-desc">Bring looks, chasers and effects from another show into this one.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Function-Porter')" title="How this tool works — opens the Function Porter page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Function-Porter')" title="How this tool works — opens the Function Porter page of the wiki" aria-label="Help">?</button>
     </div>
 
     <!-- Its steps (3.4.0: the shared stepper; inside a route they move up under the route strip) -->
@@ -1775,7 +1770,12 @@
       </div>
 
       <div class="porter-plans">
-        <div class="porter-plan"><canvas id="porter-plan-source-1"></canvas></div>
+        <div class="porter-plan"><canvas id="porter-plan-source-1"></canvas>
+          <div class="porter-plan-empty" id="porter-src-empty">
+            <p>Pick the show to bring functions from.</p>
+            <button class="btn btn-accent" onclick="porterBrowseSrc()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder"/></svg> Browse…</button>
+          </div>
+        </div>
         <div class="porter-plan"><canvas id="porter-plan-target-1"></canvas></div>
       </div>
 
@@ -1970,8 +1970,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#book"/></svg></div>
       <div><h2>Show Paperwork</h2><div class="p-desc">Choose who the paper is for, then export it as a PDF or a CSV.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Show-Paperwork')" title="How this tool works — opens the Show Paperwork page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Show-Paperwork')" title="How this tool works — opens the Show Paperwork page of the wiki" aria-label="Help">?</button>
     </div>
 
     <!-- 1 · 2 · 3: who, what, header -->
@@ -2094,8 +2093,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#grid"/></svg></div>
       <div><h2>Stage &amp; Meshes</h2><div class="p-desc">Place meshes on the 3D stage; every edit goes into the show in progress.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Stage-and-Meshes')" title="How this tool works — opens the Stage and Meshes page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Stage-and-Meshes')" title="How this tool works — opens the Stage and Meshes page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="doc-toolbar">
@@ -2125,8 +2123,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
       <div><h2>Look &amp; Chaser Builder</h2><div class="p-desc">Pick fixture groups and effects, and add the looks and chasers to the show.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Look-Builder')" title="How this tool works — opens the Look Builder page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Look-Builder')" title="How this tool works — opens the Look Builder page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="doc-toolbar">
@@ -2141,7 +2138,7 @@
       <div class="spacer"></div>
       <button id="lb-export" class="btn btn-surface btn-ghost" onclick="looksBuild()" disabled
               data-tooltip="Save a copy with the looks as a separate file; the show in progress stays as it is">Export a copy…</button>
-      <button id="lb-go" class="btn btn-accent" onclick="looksApply()" disabled data-needs="Pick groups and tick effects first." data-needs-show>✓ Add to the show</button>
+      <button id="lb-go" class="btn btn-accent" onclick="looksApply()" disabled data-needs="Pick groups and tick effects first." data-needs-show>✓ Apply to the show</button>
     </div>
 
   </section>
@@ -2155,8 +2152,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#sliders"/></svg></div>
       <div><h2>Rig Reducer</h2><div class="p-desc">Adapt your show to a smaller rig.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Rig-Reducer')" title="How this tool works — opens the Rig Reducer page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Rig-Reducer')" title="How this tool works — opens the Rig Reducer page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="doc-toolbar">
@@ -2192,14 +2188,16 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#check-square"/></svg></div>
       <div><h2>Workspace Doctor</h2><div class="p-desc">Check the show for problems and fix the ones you tick.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Workspace-Doctor')" title="How this tool works — opens the Workspace Doctor page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Workspace-Doctor')" title="How this tool works — opens the Workspace Doctor page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="doc-toolbar">
       <button class="btn btn-surface" onclick="doctorCheck()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#search"/></svg> Check</button>
       <span id="doc-summary" class="doc-summary"></span>
       <div class="spacer"></div>
+      <button class="btn btn-surface btn-ghost btn-sm" onclick="showTravel()"
+              data-tooltip="The show, its extra fixture definitions and side files, and a short note, in one zip for another computer."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
+      <button class="btn btn-surface btn-sm" onclick="doctorCopyReport()" data-tooltip="Every finding as text, to paste into a message or a note"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy Report</button>
       <button class="btn btn-surface btn-sm" onclick="doctorSelect('default')" data-tooltip="Tick every fix that doesn't delete functions">✓ Recommended</button>
       <button class="btn btn-surface btn-sm" onclick="doctorSelect('all')" data-tooltip="Tick every fixable finding, removals included">✓ All</button>
       <button class="btn btn-surface btn-sm" onclick="doctorSelect('none')">✗ None</button>
@@ -2215,9 +2213,6 @@
       <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
       <span class="out-outcome" id="oc-doctor" aria-live="polite"></span>
       <div class="spacer"></div>
-      <button class="btn btn-surface" onclick="doctorCopyReport()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#clipboard"/></svg> Copy Report</button>
-      <button class="btn btn-surface btn-ghost" onclick="showTravel()"
-              data-tooltip="The show, its extra fixture definitions and side files, and a short note, in one zip for another computer."><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#package"/></svg> Take the show elsewhere (.zip)…</button>
       <button id="doc-export-btn" class="btn btn-surface btn-ghost" onclick="doctorFix()" disabled
               data-tooltip="Fix only a copy: save it as a separate file, the show in progress stays as it is">Export a fixed copy…</button>
       <button id="doc-fix-btn" class="btn btn-accent" onclick="doctorApply()" disabled data-needs="Tick the problems you want fixed." data-needs-show>✓ Fix selected in the show</button>
@@ -2234,8 +2229,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#wrench"/></svg></div>
       <div><h2>Wizard Repair</h2><div class="p-desc">Finish a show made by the QLC+ 5.3 Show Wizard. Nothing is removed.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Wizard-Repair')" title="How this tool works — opens the Wizard Repair page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Wizard-Repair')" title="How this tool works — opens the Wizard Repair page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="doc-toolbar">
@@ -2266,8 +2260,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#upload"/></svg></div>
       <div><h2>Upgrade to QLC+ 5.3</h2><div class="p-desc">Give an older show what QLC+ 5.3 offers. Nothing is removed.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Upgrade-Older-Shows')" title="How this tool works — opens the Upgrade to QLC+ 5.3 page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Upgrade-Older-Shows')" title="How this tool works — opens the Upgrade to QLC+ 5.3 page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="doc-toolbar">
@@ -2304,8 +2297,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#cable"/></svg></div>
       <div><h2>Cabling</h2><div class="p-desc">Plan tonight's DMX cables and what to pack. The show is only read.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Cabling')" title="How this tool works — opens the Cabling page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Cabling')" title="How this tool works — opens the Cabling page of the wiki" aria-label="Help">?</button>
     </div>
 
     <div class="tool-stepper" data-tool="cabling"></div>
@@ -2590,8 +2582,7 @@
       <div class="kit-head-icon"><svg class="ic"><use href="/static/icons.svg#tablet"/></svg></div>
       <div><h2>Tablet on stage</h2><div class="kit-head-sub">Put tonight’s setlist on a tablet for the band.</div></div>
       <div class="kit-head-tools">
-        <button class="help-btn" onclick="openHelp('Tablet-on-stage')" title="How this tool works — opens the Tablet on stage page of the wiki">?</button>
-        <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+        <button class="help-btn" onclick="openHelp('Tablet-on-stage')" title="How this tool works — opens the Tablet on stage page of the wiki" aria-label="Help">?</button>
       </div>
     </div>
 
@@ -2719,8 +2710,7 @@
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#bolt"/></svg></div>
       <div><h2>Quick Start</h2><div class="p-desc">Build a ready-to-run show from your fixtures in about five minutes.</div></div>
       <div class="spacer"></div>
-      <button class="help-btn" onclick="openHelp('Quick-Start')" title="How this tool works — opens the Quick Start page of the wiki">?</button>
-      <button class="theme-btn" onclick="cycleTheme()" title="Theme"><svg class="ic"><use href="/static/icons.svg#moon"/></svg></button>
+      <button class="help-btn" onclick="openHelp('Quick-Start')" title="How this tool works — opens the Quick Start page of the wiki" aria-label="Help">?</button>
     </div>
 
     <!-- Its steps (3.4.0: the shared stepper; inside a route they move up under the route strip) -->
@@ -2994,7 +2984,7 @@
       .qs-preset-grid td { text-align:center; padding:2px; }
       .qs-preset-label { font-weight:600; font-size:11px; color:var(--overlay0); text-align:right !important; padding-right:6px !important; }
       .btn-xs { font-size:11px !important; padding:2px 8px !important; min-width:28px; }
-      .btn-view-active { background:var(--blue) !important; color:#fff !important; border-color:var(--blue) !important; }
+      .btn-view-active { background:var(--accent) !important; color:var(--accent-contrast) !important; border-color:var(--accent) !important; }
       .qs-card { background:var(--surface); border:1px solid var(--overlay0); border-radius:8px; padding:16px; margin-bottom:12px; }
       .qs-card h3 { margin:0 0 10px; font-size:14px; }
       .qs-empty { padding:16px; color:var(--overlay0); font-size:12px; text-align:center; }

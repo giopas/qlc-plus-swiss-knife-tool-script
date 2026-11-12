@@ -52,6 +52,10 @@ def test_no_literal_font_size_below_11px():
     for name, text in (("style.css", CSS), ("kit.css", KIT)):
         for m in re.finditer(r"font-size:\s*([0-9.]+)px", text):
             assert float(m.group(1)) >= 11, "%s:%d %s" % (name, text.count("\n", 0, m.start()) + 1, m.group(0))
+    # 3.19.0: the font shorthand too (".kbd { font: 10px … }" slipped through)
+    for name, text in (("style.css", CSS), ("kit.css", KIT)):
+        for m in re.finditer(r"\bfont:\s*(?:[a-z0-9-]+\s+)*?([0-9.]+)px", text):
+            assert float(m.group(1)) >= 11, "%s:%d %s" % (name, text.count("\n", 0, m.start()) + 1, m.group(0))
 
 
 def test_no_inline_style_in_the_shell_and_the_kit():

@@ -364,7 +364,7 @@ function _stRender() {
           const off = p && p.bottom !== 0;
           return `<div class="st-item ${_stSet.has(m.id) ? 'on' : ''}" onclick="stageSelect('${m.id}', event)">
             <span>${m.found ? '' : '⚠ '}${m.hidden ? '<span title="Hidden in the 3D view"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#eye-off"/></svg> </span>' : ''}${_esc(m.label)}</span>
-            <span class="vce-hint">${p ? `${off ? `<b style="color:var(--warning)">${p.bottom > 0 ? 'floats ' + p.bottom : 'sinks ' + (-p.bottom)} mm</b>` : 'on the floor'}` : 'file not found'}</span></div>`;
+            <span class="vce-hint">${p ? `${off ? `<b style="color:var(--warning-text)">${p.bottom > 0 ? 'floats ' + p.bottom : 'sinks ' + (-p.bottom)} mm</b>` : 'on the floor'}` : 'file not found'}</span></div>`;
         }).join('') || '<div class="vce-hint">No meshes yet — add one below.</div>'}</div>
         <div class="lb-row">
           <button class="btn btn-surface btn-sm" onclick="stageSelectAll(true)">Select all</button>

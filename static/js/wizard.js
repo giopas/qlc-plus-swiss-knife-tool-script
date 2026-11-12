@@ -64,7 +64,12 @@ function _wzRender() {
   const el = document.getElementById('wz-steps');
   if (!el || !_wz) return;
   if (!_wz.wizard) {
-    el.innerHTML = '<div class="porter-placeholder">This show was not made with the QLC+ Show Wizard: there is nothing for this tool to repair. The Workspace Doctor checks it.</div>';
+    // 3.19.0: an empty state with its next step, centred over the whole width
+    el.innerHTML = '';
+    const box = skEmpty({ text: 'This show was not made with the QLC+ Show Wizard: there is nothing for this tool to repair. The Workspace Doctor checks it.',
+                          button: { label: 'Open the Doctor', onclick: () => go('doctor') } });
+    box.classList.add('kit-empty-wide');
+    el.append(box);
     _wzSync();
     return;
   }

@@ -61,6 +61,7 @@ function sbdNew() {
   _sbd.parts = [_sbdBlank('Intro'), _sbdBlank('Verse'), _sbdBlank('Chorus')];
   _sbdEl('sbd-out').innerHTML = '';
   _sbdRender();
+  _sbdBuildState();
   sbdMusicChanged();
 }
 
@@ -82,6 +83,7 @@ async function sbdOpen(id) {
   _sbd.mlenNeeded = !!m.length;
   _sbd.parts = (d.parts || []).map(p => ({ ...p, look: (_sbd.funcs.find(f => f.id === p.function_id) || {}).name || '' }));
   _sbdRender();
+  _sbdBuildState();
   sbdMusicChanged();
 }
 
@@ -161,9 +163,9 @@ function _sbdRender() {
     const swatch = `<span class="sbd-swatch" style="background:${_sbdColor(p.name)}"></span>`;
     const end = _sbdIsEnd(p), canEnd = i === last;
     const len = end
-      ? `<div class="sbd-len"><span class="sbd-endpill">${_sbdEsc(t('to the end'))}</span><button class="btn btn-surface sbd-ibtn sbd-on" onclick="sbdToggleEnd(${i})" aria-pressed="true" data-tooltip="${_sbdEsc(t('Give this part a length instead'))}">⇥</button></div>`
+      ? `<div class="sbd-len"><span class="sbd-endpill">${_sbdEsc(t('to the end'))}</span><button class="btn btn-surface sbd-ibtn sbd-on" onclick="sbdToggleEnd(${i})" aria-pressed="true" aria-label="${_sbdEsc(t('Give this part a length instead'))}" data-tooltip="${_sbdEsc(t('Give this part a length instead'))}">⇥</button></div>`
       : `<div class="sbd-len"><input class="field-input" type="text" value="${_sbdEsc(p.length)}" id="sbd-f-length-${i}" oninput="sbdCell(${i},'length',this.value)" placeholder="${_sbdEsc(_sbdLenHint())}" aria-label="${_sbdEsc(t('Length'))}">`
-        + (canEnd ? `<button class="btn btn-surface sbd-ibtn" onclick="sbdToggleEnd(${i})" aria-pressed="false" data-tooltip="${_sbdEsc(t('Play this last part to the end of the music'))}">⇥</button>` : '') + '</div>';
+        + (canEnd ? `<button class="btn btn-surface sbd-ibtn" onclick="sbdToggleEnd(${i})" aria-pressed="false" aria-label="${_sbdEsc(t('Play this last part to the end of the music'))}" data-tooltip="${_sbdEsc(t('Play this last part to the end of the music'))}">⇥</button>` : '') + '</div>';
     const tp = tempos[i];
     const tempo = !hasTempo ? '' : `<td class="sbd-tempo">${tp.bpm > 0
       ? `<button class="sbd-tempo-btn${tp.own ? ' sbd-tempo-own' : ''}" onclick="sbdMore(${i}, 'bpm')" data-tooltip="${_sbdEsc(tp.own ? t('This part changes the tempo to {0}', tp.bpm) : t('Carries on at {0}: change it in ⋯', tp.bpm))}">${tp.own ? '♩' : ''}${_sbdEsc(+tp.bpm.toFixed(2))}</button>` : '–'}</td>`;
@@ -175,7 +177,7 @@ function _sbdRender() {
       <td style="width:150px">${len}</td>
       ${tempo}
       <td class="sbd-start" id="sbd-start-${i}">${p.start_ms === undefined ? '' : _sbdEsc(_sbdPos(p.start_ms))}</td>
-      <td class="sbd-acts"><button class="btn btn-surface sbd-ibtn${p._open ? ' sbd-on' : ''}" onclick="sbdMore(${i})" aria-expanded="${p._open ? 'true' : 'false'}" data-tooltip="${_sbdEsc(t('Repeat, fades, tempo change, steps'))}">⋯</button>
+      <td class="sbd-acts"><button class="btn btn-surface sbd-ibtn${p._open ? ' sbd-on' : ''}" onclick="sbdMore(${i})" aria-expanded="${p._open ? 'true' : 'false'}" aria-label="${_sbdEsc(t('Repeat, fades, tempo change, steps'))}" data-tooltip="${_sbdEsc(t('Repeat, fades, tempo change, steps'))}">⋯</button>
         <button class="btn btn-surface sbd-ibtn" onclick="sbdMove(${i},-1)" aria-label="${_sbdEsc(t('Up'))}">↑</button>
         <button class="btn btn-surface sbd-ibtn" onclick="sbdMove(${i},1)" aria-label="${_sbdEsc(t('Down'))}">↓</button>
         <button class="btn btn-surface sbd-ibtn" onclick="sbdCopy(${i})" aria-label="${_sbdEsc(t('Copy this row'))}" data-tooltip="${_sbdEsc(t('Copy this row'))}">⧉</button>
@@ -300,7 +302,15 @@ function sbdPickChoose(id) {
 
 let _sbdTimer = null;
 // Every edit refreshes the bar and the starts a moment after the last key.
-function sbdChanged() { clearTimeout(_sbdTimer); _sbdTimer = setTimeout(sbdPreview, 350); }
+// Build waits for a name, like Apply on the other tools (3.19.0)
+function _sbdBuildState() {
+  const b = _sbdEl('sbd-build-btn');
+  if (b) b.disabled = !_sbdEl('sbd-name').value.trim();
+}
+function sbdChanged() {
+  _sbdBuildState();
+  clearTimeout(_sbdTimer); _sbdTimer = setTimeout(sbdPreview, 350);
+}
 // *redraw*: the edit changes what other rows show (tags, tempo), so the table is drawn again;
 // the field being typed in keeps its place.
 function sbdCell(i, key, val, redraw) {
@@ -428,9 +438,10 @@ function _sbdFoot(res) {
   if (!el) return;
   const noLook = _sbd.parts.filter(p => !p.function_id).length;
   const bad = (res.parts || []).filter(r => r.issue).length;
-  if (!_sbdEl('sbd-name').value.trim()) el.textContent = t('Give the song a name in step 1.');
+  _sbdBuildState();
+  if (!_sbdEl('sbd-name').value.trim()) el.textContent = '';       // the reason sits by the button
   else if (noLook) el.textContent = t('Pick a look for {0} part(s).', noLook);
-  else if (bad) el.textContent = t('Fix the parts listed above the button.');
+  else if (bad) el.textContent = t('Fix the parts listed above.');
   else el.textContent = t('Ready: {0} parts, {1}.', _sbd.parts.length, _sbdFmt(res.length_ms || 0));
 }
 

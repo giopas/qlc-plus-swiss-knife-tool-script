@@ -4666,5 +4666,18 @@
  "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "コンパニオンアプリ QLC+ Stage Monitor をインストールすると、QR コード付きの配信、QLC+ の確認、セットリスト印刷ができます。▶ 配信 はなくても使えます。",
  "Light": "ライト",
  "Add them to the page": "ページに追加",
- "The tablet then shows whichever of them QLC+ plays": "タブレットはQLC+が再生中のものを表示します"
+ "The tablet then shows whichever of them QLC+ plays": "タブレットはQLC+が再生中のものを表示します",
+ "Back to all the effects with these settings; Apply to the show puts them in the show": "この設定ですべてのエフェクトに戻ります。ショーに適用で反映されます",
+ "Dark, grey or light": "ダーク、グレー、ライト",
+ "Every finding as text, to paste into a message or a note": "すべての指摘をテキストで。メッセージやメモに貼り付けられます",
+ "Files, colours, language, updates and Claude": "ファイル、色、言語、アップデート、Claude",
+ "Fix the parts listed above.": "上に挙げたパートを直してください。",
+ "Grey": "グレー",
+ "Help": "ヘルプ",
+ "Pick the show to bring functions from.": "ファンクションを持ってくるショーを選んでください。",
+ "Settings": "設定",
+ "⇄ Compare again": "⇄ もう一度比較",
+ "Tools": "ツール",
+ "Actions": "操作",
+ "Move, resize or recolour a widget first.": "先にウィジェットを移動、サイズ変更、または色変更してください。"
 }

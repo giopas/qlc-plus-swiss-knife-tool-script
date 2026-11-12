@@ -4066,7 +4066,7 @@ body { font-size: var(--fs-body); }
 .sb-doctor.sb-card.sb-warn { background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 35%, transparent); }
 .sb-doctor.sb-card.sb-warn b { color: var(--warning); }
 .sb-doctor.sb-card.sb-good b { color: var(--success); }
-.kbd { font: 10px var(--mono); color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+.kbd { font: 11px var(--mono); color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
 @media (max-width: 1360px) { .cp-open .cp-lbl { display: none; } .ms-file { max-width: 170px; } }
 
 /* ── Side menu: groups read as groups; the History is always there ─────── */
@@ -4923,3 +4923,113 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 /* 3.17.0: the stage size over the cabling plan */
 .cb-stage-dims { margin-left: auto; }
 .sm-app-ic { vertical-align: -3px; border-radius: 3px; margin-right: 2px; }
+
+/* ══ 3.19.0: the UI review ════════════════════════════════════════════════════
+   One block, read last: each rule says which finding it answers. */
+
+/* 1 · the header keeps Open and Save on screen at any width: the actions never
+   shrink, the file name and the show's state give way first, and below 1280 px
+   History and Undo keep only their icons and Save says Save… */
+.ms-file { flex: 0 1 auto; min-width: 0; }
+.show-bar { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.show-bar .sb-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ms-actions { flex: none; }
+.ms-short { display: none; }
+@media (max-width: 1280px) {
+  .ms-tl, .ms-long { display: none; }
+  .ms-short { display: inline; }
+}
+@media (max-width: 1100px) { .ms-file-txt small { display: none; } }
+
+/* 2 · the side menu gives its height to the tools: files, colours, language,
+   updates and Claude fold into Settings (closed by default, remembered) */
+.fp-settings { margin: var(--sp-1) 0 0; }
+.fp-settings-sum {
+  list-style: none; display: flex; align-items: center; gap: var(--sp-2); min-height: 28px;
+  padding: 4px 8px; margin: 0 -8px; border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--text-dim); font-size: var(--fs-ui); font-weight: 600;
+}
+.fp-settings-sum::-webkit-details-marker { display: none; }
+.fp-settings-sum::after { content: "▸"; margin-left: auto; font-size: var(--fs-small); }
+.fp-settings[open] > .fp-settings-sum::after { content: "▾"; }
+.fp-settings-sum:hover { background: var(--surface-1); color: var(--text); }
+.fp-settings-body { padding: var(--sp-2) 0 var(--sp-1); }
+.fp-settings-body > .fp-title { margin-top: 0; }
+#fp-theme .sc-link { display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0; }
+body.nav-min .fp-settings-sum span, body.nav-min .fp-settings-sum::after, body.nav-min .fp-settings-body { display: none; }
+body.nav-min .fp-settings-sum { justify-content: center; margin: 0; }
+@media (max-height: 860px) {     /* the old rule hid these rows when short; inside Settings they may stay */
+  .fp-settings-body > .fp-title:not(.sc-head), .fp-settings-body #fp-workspace,
+  .fp-settings-body #fp-dictionary, .fp-settings-body #fp-qxf { display: flex; }
+  .fp-settings-body > .fp-title { display: block; }
+}
+
+/* 3 · readable small text: the keyboard hint reaches the 11 px floor */
+.kbd { font-size: var(--fs-small); }
+.lbx-new { color: var(--warning-text); }
+
+/* 4 · Workspace Doctor: the Show/Hide toggle stays on one line, long text keeps
+   a margin on the right, and the main button stays on the right when the footer wraps */
+.doc-group-h { min-width: 0; }
+.doc-title { min-width: 0; }
+.doc-hint { min-width: 0; text-align: right; }
+.doc-caret { width: auto; flex: none; white-space: nowrap; padding-left: var(--sp-2); }
+.doc-row { padding-right: var(--sp-4); }
+.doc-msg { min-width: 0; overflow-wrap: anywhere; }
+.doc-plain { padding-right: var(--sp-4); }
+.out-footer > .btn-accent:last-child { margin-left: auto; }
+
+/* 6 · a select with no class of its own wears the theme, not the system's white box */
+select:not([class]) {
+  background: var(--surface-1); color: var(--text); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 3px 6px; min-height: 26px;
+  font: inherit; font-size: var(--fs-ui);
+}
+select:not([class]):focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 1px; }
+
+/* 8 · Setlist Manager: one filled button per screen (Apply, in the footer);
+   the functions toggle stays a clear button, outlined */
+#btn-pool-toggle { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+#btn-pool-toggle.on { background: var(--accent-soft); }
+#btn-pool-assign:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+
+/* 9 · empty states with their next step */
+.porter-plan { position: relative; }
+.porter-plan-empty {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--sp-3); padding: var(--sp-4); text-align: center; color: var(--text-dim); background: var(--surface-0);
+}
+.porter-plan-empty[hidden] { display: none; }
+.porter-plan-empty p { margin: 0; }
+
+/* 10 · click targets of at least 24 px */
+.sc-link { min-height: 24px; padding: 2px 4px; border-radius: var(--radius-sm); }
+.sc-link:hover { background: var(--surface-1); }
+.sbd-ibtn { min-width: 26px; min-height: 26px; }
+.lb-chip, .lbx-gchip { min-height: 24px; }
+
+/* 12 · Start: the state banner is as wide as the cards under it */
+.start-state { max-width: 980px; }
+.doc-toolbar { flex-wrap: wrap; row-gap: var(--sp-2); }
+.doc-block { white-space: nowrap; }
+
+/* 3 · coloured words use the theme's text shades (tested at 4.5:1), not the fill colours */
+.badge-Scene { color: var(--success-text); }
+.brt-badge-ok { color: var(--success-text); }
+.brt-room-full { color: var(--warning-text); }
+.app-statusbar.status-error { color: var(--error-text); }
+.btn.btn-view-active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.lbx-seg button.on { color: var(--accent-contrast); }
+.ver { color: var(--text-dim); }
+
+/* 10 · small buttons and the ribbon's links reach 24 px */
+.btn-sm { min-height: 24px; }
+.sb-link { min-height: 24px; }
+.app-statusbar.status-warn { color: var(--warning-text); }
+.slot-item.active .slot-caption { color: var(--text); }
+/* 3 · a bare <small> never drops under the 11 px floor (Show Paperwork's legends did) */
+small { font-size: max(var(--fs-small), .85em); }
+/* tool headers: the title gives way before the buttons, so ? never drops to its own line */
+.page-h { flex-wrap: nowrap; }
+.page-h > div:nth-child(2) { min-width: 0; }
+.page-h > .btn, .page-h > .help-btn, .page-h > .file-chip { flex: none; }

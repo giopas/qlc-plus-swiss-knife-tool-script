@@ -9,6 +9,8 @@ function compareSetPath(p) {
   p = (p || '').trim();
   if (!p) return;
   document.getElementById('cmp-path').value = p;
+  const b = document.getElementById('cmp-run-btn');       // 3.19.0: lit once there is a show to compare with
+  if (b) b.disabled = false;
   setFileChip('cmp-chip', p);
   compareRun();
 }

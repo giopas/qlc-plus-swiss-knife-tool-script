@@ -4666,5 +4666,18 @@
  "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "Installiere QLC+ Stage Monitor, die Begleit-App, um die Seite mit QR-Code bereitzustellen, QLC+ zu prüfen und die Setlist zu drucken. ▶ Bereitstellen geht auch ohne.",
  "Light": "Hell",
  "Add them to the page": "Zur Seite hinzufügen",
- "The tablet then shows whichever of them QLC+ plays": "Das Tablet zeigt dann die, die QLC+ gerade spielt"
+ "The tablet then shows whichever of them QLC+ plays": "Das Tablet zeigt dann die, die QLC+ gerade spielt",
+ "Back to all the effects with these settings; Apply to the show puts them in the show": "Zurück zu allen Effekten mit diesen Einstellungen; Auf die Show anwenden bringt sie in die Show",
+ "Dark, grey or light": "Dunkel, grau oder hell",
+ "Every finding as text, to paste into a message or a note": "Jeder Befund als Text, zum Einfügen in eine Nachricht oder Notiz",
+ "Files, colours, language, updates and Claude": "Dateien, Farben, Sprache, Updates und Claude",
+ "Fix the parts listed above.": "Korrigiere die oben aufgelisteten Teile.",
+ "Grey": "Grau",
+ "Help": "Hilfe",
+ "Pick the show to bring functions from.": "Wähle die Show, aus der die Funktionen kommen.",
+ "Settings": "Einstellungen",
+ "⇄ Compare again": "⇄ Erneut vergleichen",
+ "Tools": "Werkzeuge",
+ "Actions": "Aktionen",
+ "Move, resize or recolour a widget first.": "Verschiebe, skaliere oder färbe zuerst ein Widget um."
 }

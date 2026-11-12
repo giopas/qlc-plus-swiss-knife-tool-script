@@ -2,9 +2,10 @@
 
 Text pairs must reach 4.5:1 in the three themes (DESIGN_v2.md section 5).  A soft
 background is a translucent colour, so it is laid over the surface it sits on
-before the ratio is computed.  ``--text-faint`` is for placeholders, disabled
-controls and drawn guides, not for reading; it only has to reach 3:1 against
-the surface (the sidebar labels move to ``--text-dim`` in stage B).
+before the ratio is computed.  ``--text-faint`` was meant for placeholders,
+disabled controls and drawn guides only (3:1), but the UI review of 3.19.0
+found it on real content (ID columns, table headers, notes); since 3.19.0 it
+reaches 4.5:1 too, so it can be read wherever it is used.
 """
 import re
 from pathlib import Path
@@ -71,7 +72,7 @@ def _pairs(t):
     bg = _over(_rgba(t["--accent-soft"]), surf["--surface-0"])
     out.append(("--accent on --accent-soft", _rgba(t["--accent"]), bg, 4.5))
     for s in ("--bg", "--surface-0", "--surface-1"):
-        out.append(("--text-faint on " + s + " (3:1)", _rgba(t["--text-faint"]), surf[s], 3.0))
+        out.append(("--text-faint on " + s, _rgba(t["--text-faint"]), surf[s], 4.5))
     return out
 
 
@@ -88,3 +89,11 @@ def test_every_theme_declares_the_same_tokens():
     base = names["dark"]
     for th, n in names.items():
         assert n == base, (th, sorted(n ^ base))
+
+
+@pytest.mark.parametrize("theme", list(THEMES))
+def test_faint_stays_quieter_than_dim(theme):
+    """3.19.0: --text-faint was raised to 4.5:1, but must still read as the quieter one."""
+    t = _block(theme)
+    bg = _rgba(t["--surface-0"])
+    assert ratio(_rgba(t["--text-faint"]), bg) < ratio(_rgba(t["--text-dim"]), bg)

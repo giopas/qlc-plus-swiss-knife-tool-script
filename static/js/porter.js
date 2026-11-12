@@ -960,6 +960,11 @@ function _pDrawPlans() {
     const ctx = cv.getContext('2d');
     ctx.clearRect(0, 0, cv.width, cv.height);
     const plan = _pPlans[side];
+    if (side === 'source' && step === 1) {       // 3.19.0: an empty source says what to do, with the button in it
+      const e = document.getElementById('porter-src-empty');
+      if (e) e.hidden = !!plan;
+      if (!plan) continue;
+    }
     const name = side === 'source' ? _pSrcName : _pTgtName;
     const title = `${side === 'source' ? 'Source' : 'Target'}${name ? ': ' + name : ''}`;
     if (!plan || !plan.has_positions) {
@@ -987,7 +992,7 @@ function _pDrawPlans() {
       : f => (hlTargets.includes(String(f.id)) ? _cv('--text') : null));
     drawStageTopView(ctx, cv.width, cv.height, plan.stage, rig, {
       title: title + '  (top view)',
-      label: f => `[${f.id}] ${(f.name || '').substring(0, 12)}`,
+      label: f => `[${f.id}] ${f.name || ''}`,      // cut to fit, with …, by drawStageTopView
       ring,
     });
   }

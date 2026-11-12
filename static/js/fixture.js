@@ -568,7 +568,7 @@ function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
   ctx.fillRect(ox, oy + drawH, drawW, 24);
   ctx.fillStyle = cBlue;
   ctx.font = '11px monospace';
-  ctx.fillText('AUDIENCE', ox + drawW / 2 - 32, oy + drawH + 16);
+  ctx.fillText('AUDIENCE', ox + 8, oy + drawH + 16);     // 3.19.0: at the side, where front fixtures rarely stand
 
   // SL / SR labels
   ctx.fillStyle = cOverlay0;
@@ -616,7 +616,8 @@ function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
   ctx.fillText(`${(_stage.d_mm/1000).toFixed(1)} m`, -18, 0);
   ctx.restore();
 
-  // Fixtures
+  // Fixtures: the dots first, then the labels, so no dot covers a label
+  const pts = [];
   for (let i = 0; i < _rig.length; i++) {
     const f   = _rig[i];
     const [px, py] = _topViewPx(f.x_mm || 0, f.z_mm || 0, ox, oy, drawW, drawH, _stage);
@@ -628,20 +629,58 @@ function drawStageTopView(ctx, W, H, stage, rig, opts = {}) {
       ctx.beginPath(); ctx.arc(px, py, 12, 0, 2 * Math.PI);
       ctx.strokeStyle = ring; ctx.lineWidth = 3; ctx.stroke();
     }
-    ctx.font = '9px monospace';
-    const lbl = opts.label ? opts.label(f) : (f.name || '').substring(0, 10);
+    pts.push([f, px, py]);
+  }
+  // 3.19.0: labels never overlap and never leave the canvas; a long name is cut with …
+  // the title, AUDIENCE and every dot are taken before the first label
+  const taken = [[0, 0, W, 24], [ox + 4, oy + drawH + 4, 72, 16]]
+    .concat(pts.map(([, px, py]) => [px - 8, py - 8, 16, 16]))
+    .concat(pts.filter(([f]) => f.grid).map(([, px, py]) => [px - 8, py - 22, 22, 12]));
+  for (const [f, px, py] of pts) {
+    ctx.font = '10px monospace';
+    const lbl = _fitLabel(ctx, opts.label ? opts.label(f) : (f.name || ''), Math.max(60, Math.min(130, drawW / 5)));
+    const tw = ctx.measureText(lbl).width;
+    const [lx, ly] = _placeLabel(taken, px, py, tw, W, H);
     // v2.2: the label on a small plate, readable over the grid and other dots
-    const tw = ctx.measureText(lbl).width, lx = px - tw / 2, ly = py + 14;
     ctx.fillStyle = _labelPlate();
-    _roundRect(ctx, lx - 4, ly - 9, tw + 8, 12, 3); ctx.fill();
+    _roundRect(ctx, lx - 4, ly - 10, tw + 8, 13, 3); ctx.fill();
     ctx.fillStyle = cText;
     ctx.fillText(lbl, lx, ly);
     if (f.grid) {
       ctx.fillStyle = cSubtext0;
-      ctx.font = '8px monospace';
+      ctx.font = '10px monospace';
       ctx.fillText(f.grid, px - 6, py - 12);
     }
   }
+}
+
+/** Cut a label to a width in pixels, ending with … (3.19.0). */
+function _fitLabel(ctx, text, maxW) {
+  text = String(text || '');
+  if (ctx.measureText(text).width <= maxW) return text;
+  while (text.length > 1 && ctx.measureText(text + '…').width > maxW) text = text.slice(0, -1);
+  return text.trimEnd() + '…';
+}
+
+/**
+ * Where a label goes so it covers no label already drawn (3.19.0): under the dot,
+ * else above it, else further down or up, and always inside the canvas.
+ * taken: rectangles [x, y, w, h] already used; the new one is added.
+ */
+function _placeLabel(taken, px, py, tw, W, H) {
+  const h = 13, w = tw + 8;
+  const hits = (x, y) => taken.some(([a, b, c, d]) => x < a + c && x + w > a && y < b + d && y + h > b);
+  const tries = [19, -14, 32, -27, 45, -40, 58];
+  for (const dx of [0, -w / 2 - 6, w / 2 + 6]) {
+    for (const dy of tries) {
+      const lx = Math.min(Math.max(px - tw / 2 + dx, 6), W - tw - 6);
+      const ly = Math.min(Math.max(py + dy, 14), H - 4);
+      if (!hits(lx - 4, ly - 10)) { taken.push([lx - 4, ly - 10, w, h]); return [lx, ly]; }
+    }
+  }
+  const lx = Math.min(Math.max(px - tw / 2, 6), W - tw - 6), ly = Math.min(py + 19, H - 4);
+  taken.push([lx - 4, ly - 10, w, h]);
+  return [lx, ly];
 }
 
 function _topViewPx(x_mm, z_mm, ox, oy, drawW, drawH, stage = _stage) {
@@ -704,7 +743,8 @@ function _drawElevationView(axis, W, H) {
   ctx.fillText(`${(_stage.h_mm/1000).toFixed(1)} m`, -18, 0);
   ctx.restore();
 
-  // Fixtures
+  // Fixtures: dots first, labels after (3.19.0)
+  const pts = [];
   for (let i = 0; i < _rig.length; i++) {
     const f   = _rig[i];
     const hPos = isfront ? (f.x_mm || 0) : (f.z_mm || 0);
@@ -713,10 +753,18 @@ function _drawElevationView(axis, W, H) {
     const clr  = f.color || '#888';
     const fg   = _contrastColor(clr);
     _drawFixtureDot(ctx, px, py, clr, fg, i === _selectedIdx);
-    ctx.fillStyle = fg;
-    ctx.font = '9px monospace';
-    const lbl = (f.name || '').substring(0, 10);
-    ctx.fillText(lbl, px - lbl.length * 2.8, py + 14);
+    pts.push([f, px, py]);
+  }
+  const taken = [[0, 0, W, 24]].concat(pts.map(([, px, py]) => [px - 8, py - 8, 16, 16]));
+  for (const [f, px, py] of pts) {
+    ctx.font = '10px monospace';
+    const lbl = _fitLabel(ctx, f.name || '', Math.max(60, Math.min(120, drawW / 6)));
+    const tw = ctx.measureText(lbl).width;
+    const [lx, ly] = _placeLabel(taken, px, py, tw, W, H);
+    ctx.fillStyle = _labelPlate();
+    _roundRect(ctx, lx - 4, ly - 10, tw + 8, 13, 3); ctx.fill();
+    ctx.fillStyle = _cv('--text');
+    ctx.fillText(lbl, lx, ly);
   }
 }
 

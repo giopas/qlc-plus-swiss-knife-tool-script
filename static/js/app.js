@@ -221,6 +221,9 @@ function _applyTheme(theme) {
   if (theme === 'light') document.body.classList.add('theme-light');
   if (theme === 'grey')  document.body.classList.add('theme-grey');
   try { localStorage.setItem('sk-theme', theme); } catch {}
+  // the Colours row under Settings says which one is on (3.19.0: one place instead of a button per tool)
+  const nm = document.getElementById('fp-theme-name');
+  if (nm) nm.textContent = t({ dark: 'Dark', grey: 'Grey', light: 'Light' }[theme] || theme);
   // Redraw canvas if fixture module is loaded
   if (typeof _drawCanvas === 'function') _drawCanvas();
 }
@@ -406,24 +409,24 @@ function skRememberTool(id) {
   skRenderRecentTools();
 }
 
-function skRenderRecentTools() {
-  const box = document.getElementById('sn-recent'), list = document.getElementById('sn-recent-list');
-  if (!box || !list) return;
+/** The last tools used, newest first: Go to… lists them before anything else (3.19.0). */
+function skRecentTools() {
   let ids = [];
   try { ids = JSON.parse(localStorage.getItem('sk-recent-tools') || '[]'); } catch { /* none */ }
-  ids = ids.filter(id => document.getElementById('sn-' + id));
-  box.hidden = !ids.length;
-  list.innerHTML = '';
-  ids.forEach(id => {
-    const src = document.getElementById('sn-' + id);
-    const b = document.createElement('button');
-    b.className = 'sn-item sn-recent-item' + (src.classList.contains('active') ? ' active' : '');
-    b.innerHTML = src.innerHTML.replace(/<i class="sn-dot"[^>]*><\/i>/, '');
-    b.addEventListener('click', () => go(id));
-    list.appendChild(b);
-  });
+  return ids.filter(id => document.getElementById('sn-' + id));
 }
-document.addEventListener('DOMContentLoaded', skRenderRecentTools);
+function skRenderRecentTools() { /* the side menu no longer lists them (3.19.0); kept for old callers */ }
+
+/** Settings under the side menu stay open or closed as left (3.19.0). */
+document.addEventListener('DOMContentLoaded', () => {
+  const d = document.getElementById('fp-settings');
+  if (!d) return;
+  try { d.open = localStorage.getItem('sk-settings-open') === '1'; } catch { /* closed */ }
+  d.addEventListener('toggle', () => { try { localStorage.setItem('sk-settings-open', d.open ? '1' : '0'); } catch { /* per-browser */ } });
+  const nm = document.getElementById('fp-theme-name');
+  const th = document.documentElement.getAttribute('data-theme') || 'dark';
+  if (nm) nm.textContent = t({ dark: 'Dark', grey: 'Grey', light: 'Light' }[th] || th);
+});
 
 /** Groups of the side menu fold away; the choice is remembered (3.9.5). */
 function skGroupToggle(label) {

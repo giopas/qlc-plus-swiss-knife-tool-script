@@ -66,7 +66,8 @@ def test_only_tablet_on_stage_uses_the_kit_so_far():
     outside = re.sub(r'<section class="screen[^"]*" id="scr-stagemon">.*?</section>', "", shell, flags=re.S)
     assert not own.search(outside)
     for p in (ROOT / "static/js").glob("*.js"):
-        if p.name not in ("kit.js", "stagemon.js", "show.js"):
+        # 3.19.0: Wizard Repair's "not a wizard show" state is the kit's empty state
+        if p.name not in ("kit.js", "stagemon.js", "show.js", "wizard.js"):
             text = p.read_text(encoding="utf-8")
             assert not api.search(text) and not own.search(text), p.name
     show = (ROOT / "static/js/show.js").read_text(encoding="utf-8")

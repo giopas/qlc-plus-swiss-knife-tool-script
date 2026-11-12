@@ -15,7 +15,7 @@ function _cpTools() {
       return;
     }
     const id = el.id.slice(3);
-    out.push({ label: el.dataset.tip || el.textContent.trim(), sub: grp, kind: 'tool',
+    out.push({ id, label: el.dataset.tip || el.textContent.trim(), sub: grp, kind: 'tool',
                desc: el.dataset.desc || '', run: () => go(id) });
   });
   return out;
@@ -91,12 +91,19 @@ function _cpRender() {
   _cpHits = _cpItems.map(it => ({ it, s: Math.max(_cpScore(q, it.label), _cpScore(q, it.sub) * .5, _cpScore(q, it.desc || '') * .3) }))
     .filter(x => x.s > 0).sort((a, b) => (b.s - a.s) || 0).slice(0, 14).map(x => x.it)
     .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'tool' ? -1 : 1));      // tools, then actions
-  if (!q) _cpHits = _cpItems.filter(x => x.kind === 'tool').slice(0, 7).concat(_cpItems.filter(x => x.kind === 'action').slice(0, 7));
+  if (!q) {
+    // 3.19.0: the tools used last come first (they used to sit in the side menu)
+    const rec = typeof skRecentTools === 'function' ? skRecentTools() : [];
+    const recent = rec.map(id => _cpItems.find(x => x.kind === 'tool' && x.id === id)).filter(Boolean)
+      .map(x => ({ ...x, kind: 'recent' }));
+    _cpHits = recent.concat(_cpItems.filter(x => x.kind === 'tool' && !rec.includes(x.id)).slice(0, 7 - Math.min(recent.length, 3)))
+      .concat(_cpItems.filter(x => x.kind === 'action').slice(0, 7));
+  }
   _cpSel = Math.min(_cpSel, Math.max(0, _cpHits.length - 1));
   const list = document.getElementById('cp-list');
   let html = '', kind = '';
   _cpHits.forEach((it, i) => {
-    if (it.kind !== kind) { kind = it.kind; html += `<li class="cp-sec">${kind === 'tool' ? 'Tools' : 'Actions'}</li>`; }
+    if (it.kind !== kind) { kind = it.kind; html += `<li class="cp-sec">${t(kind === 'recent' ? 'Recent tools' : kind === 'tool' ? 'Tools' : 'Actions')}</li>`; }
     html += `<li class="cp-row${i === _cpSel ? ' on' : ''}" data-i="${i}" title="${(it.desc || '').replace(/"/g, '&quot;')}">
       <span>${_cpMark(it.label, q)}</span><small>${_cpMark(it.sub || '', '')}</small></li>`;
   });

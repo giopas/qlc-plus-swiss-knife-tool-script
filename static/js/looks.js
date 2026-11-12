@@ -567,7 +567,7 @@ function looksEdit(eid) {
 }
 
 /** 3.4.0: while the effect panel is open, the footer is the panel's: Cancel
- *  and Keep these settings, the one way back; Add to the show waits. */
+ *  and Keep these settings, the one way back; Apply to the show waits. */
 function _lbEditFooter(eid) {
   const foot = document.querySelector('#scr-looks .out-footer');
   if (!foot) return;
@@ -581,7 +581,7 @@ function _lbEditFooter(eid) {
   box.innerHTML = `<button class="btn btn-surface" onclick="looksEditClose(false)">Cancel</button>
     <span class="lbx-foot-note">Nothing is added to the show yet.</span><span class="spacer"></span>
     <button class="btn btn-accent" id="lb-edit-done" onclick="looksEditClose(true)"
-      title="Back to all the effects with these settings; Add to the show puts them in the show">${eid === 'new' ? '+ Add chaser' : 'Keep these settings ›'}</button>`;
+      title="Back to all the effects with these settings; Apply to the show puts them in the show">${eid === 'new' ? '+ Add chaser' : 'Keep these settings ›'}</button>`;
   foot.appendChild(box);
 }
 

@@ -4666,5 +4666,18 @@
  "Install QLC+ Stage Monitor, the companion app, to serve the page with a QR code, check QLC+ and print the setlist. ▶ Serve works without it.": "安装配套应用 QLC+ Stage Monitor，即可用二维码提供页面、检查 QLC+ 并打印歌单。没有它 ▶ 提供 也能用。",
  "Light": "浅色",
  "Add them to the page": "添加到页面",
- "The tablet then shows whichever of them QLC+ plays": "平板会显示 QLC+ 正在播放的那一个"
+ "The tablet then shows whichever of them QLC+ plays": "平板会显示 QLC+ 正在播放的那一个",
+ "Back to all the effects with these settings; Apply to the show puts them in the show": "用这些设置回到全部效果；“应用到演出”才会放进演出",
+ "Dark, grey or light": "深色、灰色或浅色",
+ "Every finding as text, to paste into a message or a note": "每条发现都以文字列出，可粘贴到消息或笔记中",
+ "Files, colours, language, updates and Claude": "文件、颜色、语言、更新和 Claude",
+ "Fix the parts listed above.": "请修正上方列出的段落。",
+ "Grey": "灰色",
+ "Help": "帮助",
+ "Pick the show to bring functions from.": "选择要从中取用功能的演出。",
+ "Settings": "设置",
+ "⇄ Compare again": "⇄ 重新比较",
+ "Tools": "工具",
+ "Actions": "操作",
+ "Move, resize or recolour a widget first.": "请先移动、缩放或重新着色一个控件。"
 }

@@ -354,7 +354,14 @@ function _vceSizeCanvas() {
   cv.style.height = cv.height + 'px';
 }
 
+/** Apply is lit only when there is something to put into the show (3.19.0). */
+function _vceSyncApply() {
+  const b = document.getElementById('vce-apply-btn');
+  if (b) b.disabled = !(Object.keys(_vceChanges || {}).length || _vceDirty);
+}
+
 function _vceRender() {
+  _vceSyncApply();
   const cv = document.getElementById(VCE_CV_ID);
   if (!cv) return;
   _vceSizeCanvas();
@@ -1375,6 +1382,7 @@ async function vceApplyAndExport() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function _vceStatus(msg, type) {
+  _vceSyncApply();
   const el = document.getElementById('vce-status');
   if (!el) return;
   el.textContent = msg;

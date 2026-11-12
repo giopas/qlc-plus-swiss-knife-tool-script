@@ -1,0 +1,101 @@
+name: pitch
+
+# The pitch video and the slide deck (tools/make_pitch_video.py), made here and
+# attached to a GitHub release as QLC_Swiss_Knife_Pitch.mp4 and .pdf, so that
+# nobody has to make or upload them by hand.  The README links to
+#   releases/latest/download/QLC_Swiss_Knife_Pitch.mp4   (and .pdf)
+# which always points to the newest release.  The files are never committed.
+#
+# When it runs:
+#   * after every release, called by release.yml once the release exists;
+#   * on a push to main that changes the slides or the pictures they use
+#     (it then refreshes the files on the latest release);
+#   * by hand from the Actions tab (optionally for one tag).
+# The updater ignores these files: it only takes QLC-Swiss-Knife-X.Y.Z-… names.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (empty: the latest release)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths:
+      - "tools/make_pitch_video.py"
+      - "screenshots/**"
+      - "static/logo/**"
+      - "core/click_track.py"
+
+permissions:
+  contents: write
+
+jobs:
+  pitch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: pitch-video
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      IN_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Which release
+        id: which
+        run: |
+          # A push of a release commit is handled by release.yml (it calls this workflow with the tag).
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && git tag --points-at HEAD | grep -q '^v'; then
+            echo "This commit is a release: release.yml makes the video."; echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          TAG="$IN_TAG"
+          [ -n "$TAG" ] || TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          echo "Release: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Tools (ffmpeg, Arial-like fonts, Pillow, edge-tts)
+        if: steps.which.outputs.skip != '1'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-liberation
+          python3 -m pip install --user --quiet Pillow edge-tts
+
+      - name: Make the video and the deck
+        id: make
+        if: steps.which.outputs.skip != '1'
+        continue-on-error: true
+        run: |
+          # The online voice can fail for a moment: three tries, and never a video without a voice.
+          for n in 1 2 3; do
+            python3 tools/make_pitch_video.py --stills --tts edge --strict-voice && exit 0
+            echo "Try $n failed; waiting a minute."; sleep 60
+          done
+          exit 1
+
+      - name: Attach to the release
+        if: steps.which.outputs.skip != '1'
+        run: |
+          TAG="${{ steps.which.outputs.tag }}"
+          mkdir -p dist/marketing && cd dist/marketing
+          if [ "${{ steps.make.outcome }}" != "success" ]; then
+            if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qx 'QLC_Swiss_Knife_Pitch.mp4'; then
+              echo "::error::The video could not be made; $TAG keeps the files it has."; exit 1
+            fi
+            # A new release without the files: keep the README link working with the release before's.
+            PREV="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 10 --json tagName -q '.[].tagName' | grep -vx "$TAG" | head -1)"
+            echo "::warning::The video could not be made; the files of $PREV are attached to $TAG instead."
+            gh release download "$PREV" --repo "$GITHUB_REPOSITORY" -p 'QLC_Swiss_Knife_Pitch.*' --clobber
+          fi
+          ls -la QLC_Swiss_Knife_Pitch.mp4 QLC_Swiss_Knife_Pitch.pdf
+          gh release upload "$TAG" QLC_Swiss_Knife_Pitch.mp4 QLC_Swiss_Knife_Pitch.pdf --repo "$GITHUB_REPOSITORY" --clobber

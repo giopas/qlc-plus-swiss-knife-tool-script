@@ -256,10 +256,12 @@ SLIDES = [
         "bullets": [
             "Undo and redo any step, or replay it on another show",
             "Optional: ask Claude in plain words, it uses the same tools",
+            "Claude can even start a new show from scratch",
             "Claude gets only the folders you list, nothing else",
         ],
         "vo": "Every change can be undone. And if you like, ask Claude in plain words: "
-              "it uses the same tools, on the folders you choose.",
+              "it uses the same tools, on the folders you choose, "
+              "and can even start a new show from scratch.",
     },
     {
         "kicker": "10 · YOUR TURN",
@@ -625,10 +627,14 @@ def mix_soundtrack(total: float, plan: list, vo_wavs: list, music_on: bool, kit:
 
 FONT_FILES = {
     False: ["/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Arial.ttf",
-            "C:/Windows/Fonts/arial.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",   # Arial's metrics, on Linux and CI
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "/usr/share/fonts/TTF/DejaVuSans.ttf"],
     True: ["/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/Library/Fonts/Arial Bold.ttf",
-           "C:/Windows/Fonts/arialbd.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+           "C:/Windows/Fonts/arialbd.ttf",
+           "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+           "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
            "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"],
 }
 _fonts: dict = {}
@@ -1047,6 +1053,31 @@ def caption_track(text: str, start: float, length: float) -> list:
 # Main
 # ---------------------------------------------------------------------------
 
+def draw_poster(path: str, width: int = 1280, height: int = 720) -> None:
+    """The picture at the top of the README that links to the video: the icon,
+    the name, the tagline and a play button, in the app's dark colours.  It has
+    no version and no screenshot on it, so it never needs to be made again."""
+    img = Image.new("RGB", (width, height), BG)
+    d = ImageDraw.Draw(img)
+    for y in range(height):                                   # the slides' soft top glow
+        k = max(0.0, 1.0 - y / (height * 0.75)) * 0.35
+        d.line([(0, y), (width, y)], fill=tuple(int(BG[c] * (1 - k) + VIOLET[c] * k * 0.35) for c in range(3)))
+    cx, cy, r = width // 2, int(height * 0.62), 74
+    if os.path.exists(ICON):
+        icon = Image.open(ICON).convert("RGBA").resize((120, 120), Image.LANCZOS)
+        img.paste(icon, (cx - 60, 70), icon)
+    def centred(text, y, f, fill):
+        w = d.textlength(text, font=f)
+        d.text((cx - w / 2, y), text, font=f, fill=fill)
+    centred(NAME, 210, font(64, True), WHITE)
+    centred(TAGLINE, 292, font(32), DIM)
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=TEAL)
+    d.polygon([(cx - 22, cy - 36), (cx - 22, cy + 36), (cx + 40, cy)], fill=BG)
+    centred("Watch the two-minute video", cy + r + 26, font(30, True), TEXT)
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    img.save(path, optimize=True)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Make the QLC+ Swiss Knife vertical pitch video (and stills).")
     ap.add_argument("--out", default=os.path.join(OUT_DIR, FILE_STEM + ".mp4"), help="output .mp4")
@@ -1061,6 +1092,11 @@ def main() -> None:
     ap.add_argument("--stills", action="store_true", help="also save one PNG per slide and a PDF deck")
     ap.add_argument("--stills-only", action="store_true", help="only the PNGs and the PDF, no video (no ffmpeg needed)")
     ap.add_argument("--only", type=int, metavar="N", help="render just slide N (1-based), for a quick check")
+    ap.add_argument("--strict-voice", action="store_true",
+                    help="stop with an error when the asked voice is missing or a slide gets no voice "
+                         "(the release workflow uses it, so a video without a voice is never published)")
+    ap.add_argument("--poster", metavar="PNG",
+                    help="only draw the README picture that links to the video (16:9, no version on it), and stop")
     ap.add_argument("--crf", type=int, help="H.264 quality, lower is better/bigger (default 24, 22 with --hd)")
     args = ap.parse_args()
 
@@ -1074,6 +1110,11 @@ def main() -> None:
             pick = "   <- picked now" if name == auto else ""
             print(f"  {name:<28} {loc}{star}{pick}")
         print("\n* = picked automatically when installed (first one in the list wins).")
+        return
+
+    if args.poster:
+        draw_poster(args.poster)
+        print(f"Poster: {args.poster}")
         return
 
     slides = SLIDES
@@ -1123,6 +1164,8 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="swissknife-pitch-") as tmp:
         voice = Voice.choose(args.tts, args.voice, args.rate)
+        if args.strict_voice and args.tts not in ("auto", "none") and voice.engine != args.tts:
+            sys.exit(f"--strict-voice: asked for {args.tts}, got {voice.label}.")
         print(f"1/3 Voice-over with {voice.label}...")
         vo_wavs, vo_lens = [], []
         for i, sl in enumerate(slides):
@@ -1132,6 +1175,8 @@ def main() -> None:
                     vo_lens.append(w.getnframes() / float(w.getframerate()))
                 vo_wavs.append(wav)
             else:
+                if args.strict_voice:
+                    sys.exit(f"--strict-voice: slide {i + 1} got no voice.")
                 vo_lens.append(estimate_speech(sl["vo"]))
                 vo_wavs.append(None)
         plan = plan_timing(slides, vo_lens)

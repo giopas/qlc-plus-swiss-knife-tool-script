@@ -12,6 +12,12 @@
 
 *A real festival show rebuilt for a small pub (6 lights, tonight's 34 songs) in 12 minutes with the guided route. Step by step: [the tutorial](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Tutorial-Big-Venue-to-Pub).*
 
+### See it in two minutes
+
+[![Watch the two-minute video about QLC+ Swiss Knife](screenshots/pitch-poster.png)](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.mp4)
+
+A short vertical video (about 10 MB) and the same slides as a PDF: [video](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.mp4) · [slides](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest/download/QLC_Swiss_Knife_Pitch.pdf). Both are made again with every release.
+
 ---
 
 ## Who it is for

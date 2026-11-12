@@ -7,6 +7,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — the pitch video on every release (the app does not change)
+
+- **The pitch video and the slides are made and attached to each release by GitHub.** A new workflow runs `tools/make_pitch_video.py` with the online voice after every release and attaches `QLC_Swiss_Knife_Pitch.mp4` and `QLC_Swiss_Knife_Pitch.pdf`; it also refreshes them when the slides or the screenshots change. The README opens with *See it in two minutes*, linking to the latest ones. The files are not in the repository, and *Update and restart* ignores them.
+- **The Claude slide** says that Claude can even start a new show from scratch.
+- `make_pitch_video.py`: `--strict-voice` (never a video without a voice) and `--poster` (the README picture).
+
 ---
 
 ## [3.19.0] — 2026-11-12 — New shows, tidier screens

@@ -9,6 +9,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ---
 
+## [3.20.1] — 2026-11-13 — Music and click, all downloads
+
+### Fixed — the release builds (3.20.1)
+
+- **3.20.0 has its Mac and Linux downloads in 3.20.1.** The release build runs the tests before it packs the app, and two tests of the pitch video loaded the video tool, which needs Pillow; the release builds do not install it (only the video does), so the macOS and Linux builds stopped there and 3.20.0 came out with the Windows downloads only. The two tests now skip where Pillow is missing, and the test workflow installs Pillow so they still run there. Nothing else changed: everything in 3.20.0 below is in this version.
+
+---
+
 ## [3.20.0] — 2026-11-13 — Music and click
 
 ### Added — the Song Builder plays the music and a click together (3.20.0)

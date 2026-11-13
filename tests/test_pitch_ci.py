@@ -9,11 +9,16 @@ import os
 import re
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 WF = ROOT / ".github" / "workflows"
 
 
 def _tool():
+    # the pitch tool needs Pillow (only it does, not Swiss Knife): the release builds do not
+    # install it, so these tests run where it is (tests.yml, a developer's Mac) and skip there
+    pytest.importorskip("PIL", reason="the pitch video tool needs Pillow")
     spec = importlib.util.spec_from_file_location("pitch", ROOT / "tools" / "make_pitch_video.py")
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)

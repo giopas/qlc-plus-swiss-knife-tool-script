@@ -30,7 +30,7 @@ QLC_NS_URI = 'http://www.qlcplus.org/Workspace'
 NS = {'q': QLC_NS_URI}
 ET.register_namespace('', QLC_NS_URI)
 
-VERSION = "3.19.0"  # single source of truth — must match CHANGELOG
+VERSION = "3.20.0"  # single source of truth — must match CHANGELOG
 
 # ── Safety limits (same as the tkinter version) ───────────────────────────────
 _MAX_XML_BYTES = 50 * 1024 * 1024   # 50 MB
@@ -2085,8 +2085,40 @@ def song_click(spec: dict) -> dict:
     length = int(spec.get('length_ms') or max(plan['length_ms'] or 0, plan.get('music_ms') or 0))
     # the click follows each part's own tempo (3.13.0): a point wherever a part changes it
     tempo = [(r['start_ms'], r['bpm']) for r in plan['parts'] if r.get('bpm') and r['length_ms']]
+    # the click starts on the song's first beat, with the lead-in counted back from there (3.20.0)
     return click_track.write(click_folder(), name, spec.get('bpm'), spec.get('beats_per_bar'), length,
-                             spec.get('sound'), tempo)
+                             spec.get('sound'), tempo, plan.get('lead_ms') or 0)
+
+
+def song_devices() -> list:
+    """The sound outputs the show's sounds already name (``<Source Device="…">``), sorted:
+    the click's output box offers them (3.20.0)."""
+    if not _state['loaded']:
+        return []
+    out = set()
+    for f in _builder_engine().findall('q:Function', NS):
+        src = f.find('q:Source', NS) if f.get('Type') == 'Audio' else None
+        if src is not None and (src.get('Device') or '').strip():
+            out.add(src.get('Device').strip())
+    return sorted(out, key=str.lower)
+
+
+def song_tempo(music: dict, beats_per_bar=4) -> dict:
+    """Listen to the music of a Song Builder table and propose its BPM and first beat
+    (3.20.0).  *music* is the table's ({path} or {function_id}); the file is only read."""
+    from core import song_builder, tempo_detect
+    engine = _builder_engine()
+    if not (music.get('function_id') or str(music.get('path') or '').strip()):
+        raise ValueError('Choose the music first: the tempo is found by listening to it.')
+    funcs = {f.get('ID'): f for f in engine.findall('q:Function', NS)}
+    info = song_builder.music_info(song_builder._clean({'music': music}, lenient=True)['music'], funcs, show_folder())
+    if not info['path']:
+        raise ValueError('That sound has no file set.')
+    try:
+        bpb = int(beats_per_bar)
+    except (TypeError, ValueError):
+        raise ValueError('The beats per bar must be a whole number.')
+    return tempo_detect.detect(song_builder.resolve(info['path'], show_folder()), bpb)
 
 
 def song_open(show_id: str) -> dict:

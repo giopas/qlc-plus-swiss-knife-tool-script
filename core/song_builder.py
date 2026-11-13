@@ -24,6 +24,14 @@ A part can also carry its own ``bpm`` (3.13.0): when set it becomes the tempo in
 force from that part onward, so a song that changes speed mid-way (a bridge, an
 outro) still works out its bars and beats correctly, part by part, rather than
 off one BPM for the whole song.
+
+Music, click and the first beat (3.20.0): besides the music, a song can carry a click
+track on a track of its own (``click``: a sound file or a sound in the show, with an
+optional output ``device`` that QLC+ stores on the sound's ``<Source Device="…">``), so
+the drummer hears the click while the music stays clean.  ``first_beat`` is where bar 1
+starts in the music (most recordings do not start on the beat at 0:00): the first part
+starts at 0:00 and covers that lead-in, and every bar and beat, the parts after it and
+the click count from there.
 """
 
 from __future__ import annotations
@@ -42,6 +50,7 @@ NONE_ID = "4294967295"
 LOOK_TYPES = ("Scene", "Chaser", "Collection", "RGBMatrix", "EFX", "Script")
 COLORS = ["#d9534f", "#f0ad4e", "#5cb85c", "#5bc0de", "#9b59b6", "#e67e22", "#1abc9c", "#e91e63"]
 MUSIC_COLOR = "#4a90d9"
+CLICK_COLOR = "#7f8c8d"
 
 MAX_PARTS = 300                       # a table this long is a mistake, and a Show of it would be slow
 MAX_ITEMS = 3000                      # parts x repeats in one Show
@@ -154,6 +163,15 @@ def _until_dur(text, t_so_far: int, beats_so_far: float, bpm: float, beats_per_b
     if bpm <= 0:
         raise ValueError(f"'{s}' needs a tempo: fill in the BPM")
     return round((target_beats - beats_so_far) * 60000 / bpm)
+
+
+def _is_clock_point(text, unit: str) -> bool:
+    """True when an 'until' target is a time counted from 0:00 (1:20, 92s), False for a
+    bar or a beat (counted from the first beat)."""
+    s = str(text or "").strip()
+    if re.match(r"^(?:bar|measure|beat)\s*\d", s, re.I):
+        return False
+    return not (re.match(r"^\d+(?:[.,]\d+)?$", s) and unit in ("bars", "beats"))
 
 
 def parse_fade(text) -> int:
@@ -281,8 +299,43 @@ def _clean(spec: dict, lenient: bool = False) -> dict:
             raise ValueError("the music path is not a path")
         out_music = {"path": path, "name": str(music.get("name") or "").strip()[:200],
                      "length": str(music.get("length") or "").strip()}
+    lead_text = str(spec.get("first_beat") or "").strip()
+    lead = parse_first_beat(lead_text)
+    click = spec.get("click") or {}
+    out_click = {}
+    device = str(click.get("device") or "").strip()
+    if len(device) > 200 or any(ord(c) < 32 for c in device):
+        raise ValueError("the click's output is not the name of a sound device")
+    if click.get("function_id"):
+        out_click = {"function_id": str(click["function_id"])}
+    elif str(click.get("path") or "").strip():
+        path = str(click["path"]).strip()
+        if len(path) > 1000 or any(ord(c) < 32 for c in path):
+            raise ValueError("the click path is not a path")
+        out_click = {"path": path, "name": str(click.get("name") or "").strip()[:200]}
+    if out_click and device:
+        out_click["device"] = device
     return {"name": name, "bpm": bpm, "beats_per_bar": bpb, "unit": unit, "parts": parts, "music": out_music,
+            "first_beat": lead_text if lead else "", "lead_ms": lead, "click": out_click,
             "show_id": str(spec.get("show_id") or "")}
+
+
+MAX_LEAD_MS = 10 * 60 * 1000          # a first beat ten minutes in is a typing mistake
+
+
+def parse_first_beat(text) -> int:
+    """Where bar 1 starts in the music (3.20.0): '0:01.25', '1.25' (seconds), '1250ms' → ms;
+    empty or 0 is the very start."""
+    s = str(text if text is not None else "").strip()
+    if not s or re.match(r"^0+(?:[.,]0*)?\s*(?:s|sec|ms)?$", s, re.I) or re.match(r"^0+:0{1,2}(?:[.,]0*)?$", s):
+        return 0
+    try:
+        ms = parse_length(s, 0, 4, "seconds")
+    except ValueError:
+        raise ValueError(f"'{s}' is not a time for the first beat (1.25, 0:01.25, 1250ms)")
+    if ms > MAX_LEAD_MS:
+        raise ValueError("the first beat must be in the first ten minutes of the music")
+    return ms
 
 
 def resolve(path: str, base_dir: str = "") -> str:
@@ -293,20 +346,21 @@ def resolve(path: str, base_dir: str = "") -> str:
     return os.path.join(base_dir, path)
 
 
-def music_info(music: dict, funcs: Dict[str, object], base_dir: str = "") -> Dict[str, object]:
-    """Where the music is and how long: {'name','path','length_ms','source'}; length_ms may be None.
-    *path* stays as written (QLC+ stores it so); the file is read from the show's folder."""
+def music_info(music: dict, funcs: Dict[str, object], base_dir: str = "", what: str = "music") -> Dict[str, object]:
+    """Where the music (or the click, *what*) is and how long: {'name','path','length_ms','source'};
+    length_ms may be None.  *path* stays as written (QLC+ stores it so); the file is read from
+    the show's folder."""
     if music.get("function_id"):
         f = funcs.get(music["function_id"])
         if f is None or f.get("Type") != "Audio":
-            raise ValueError("the music function is not in the show")
+            raise ValueError(f"the {what} function is not in the show")
         sp = _child(f, "Speed")
         src = _child(f, "Source")
         return {"name": f.get("Name", ""), "path": (src.text or "").strip() if src is not None else "",
                 "length_ms": int(sp.get("Duration", "0")) if sp is not None else None, "source": "function"}
     path = music["path"]
     if os.path.splitext(path)[1].lower() not in media.AUDIO_EXTS:
-        raise ValueError("the music must be a sound file (.wav, .mp3, .ogg, .flac, .m4a)")
+        raise ValueError(f"the {what} must be a sound file (.wav, .mp3, .ogg, .flac, .m4a)")
     length = media.audio_length_ms(resolve(path, base_dir))
     if length is None and music.get("length"):
         length = parse_length(music["length"])
@@ -319,7 +373,9 @@ def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[
     that cannot be read is listed with its ``issue`` and counts for nothing, instead of stopping.
     A part's own BPM (3.13.0), when set, becomes the tempo for it and every part after it
     until the next one that sets its own; lengths and 'until' targets are then worked out
-    with that running tempo, part by part, instead of one BPM for the whole song."""
+    with that running tempo, part by part, instead of one BPM for the whole song.
+    With a first beat (3.20.0) the first part starts at 0:00 and also covers the lead-in
+    before it; its length, and every bar and beat, count from the first beat."""
     s = _clean(spec, lenient)
     funcs = _funcs(engine)
     unit, bpb = s["unit"], s["beats_per_bar"]
@@ -332,6 +388,12 @@ def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[
             if not lenient:
                 raise
             warns.append(str(e))
+    lead = s["lead_ms"]
+    if lead and mlen is not None and lead >= mlen:
+        msg = f"the first beat ({clock(lead)}) is not before the end of the music ({clock(mlen)})"
+        if not lenient:
+            raise ValueError(msg)
+        warns.append(msg)
     t, rows, items = 0, [], 0
     beats_elapsed, running_bpm = 0.0, s["bpm"]
     last = len(s["parts"]) - 1
@@ -343,6 +405,7 @@ def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[
                 pass
         bpm = running_bpm
         issue, dur, f = p["issue"], 0, None
+        absolute = False                     # a length that already counts from 0:00 (to the end, until 1:20)
         try:
             if not issue:
                 f = funcs.get(p["function_id"])
@@ -358,13 +421,15 @@ def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[
                     raise ValueError(f"part {n} '{p['name']}': 'to the end' cannot be repeated")
                 if mlen is None:
                     raise ValueError(f"part {n} '{p['name']}': 'to the end' needs the length of the music")
-                dur = mlen - t
+                dur, absolute = mlen - t, True
                 if dur <= 0:
                     raise ValueError(f"part {n} '{p['name']}': nothing is left before the end of the music")
             elif _UNTIL.match(text):
                 if p["repeat"] != 1:
                     raise ValueError(f"part {n} '{p['name']}': 'until' cannot be repeated")
-                dur = _until_dur(_UNTIL.match(text).group(1), t, beats_elapsed, bpm, bpb, unit)
+                target = _UNTIL.match(text).group(1)
+                dur = _until_dur(target, t, beats_elapsed, bpm, bpb, unit)
+                absolute = _is_clock_point(target, unit)
                 if dur <= 0:
                     raise ValueError(f"part {n} '{p['name']}': '{text}' is not after the start of the part ({clock(t)})")
             else:
@@ -382,11 +447,23 @@ def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[
         items += p["repeat"] if dur else 0
         if items > MAX_ITEMS:
             raise ValueError(f"the table makes more than {MAX_ITEMS} items: lower the repeats")
-        total = dur * p["repeat"]
-        rows.append({"name": p["name"], "look": f.get("Name", "") if f is not None else "", "start_ms": t,
-                     "length_ms": dur, "repeat": p["repeat"], "end_ms": t + total, "issue": issue, "bpm": bpm})
-        if total and bpm:
-            beats_elapsed += total * bpm / 60000.0
+        # the first part also covers the lead-in before the first beat (3.20.0); a length
+        # that counts from 0:00 (to the end, until 1:20) already holds it
+        extra = lead if (n == 1 and lead and dur and not absolute) else 0
+        if n == 1 and lead and absolute and 0 < dur <= lead and not issue:
+            issue = f"part 1 '{p['name']}' ends before the first beat ({clock(lead)})"
+            if not lenient:
+                raise ValueError(issue)
+            dur = 0
+        total = dur * p["repeat"] + extra
+        row = {"name": p["name"], "look": f.get("Name", "") if f is not None else "", "start_ms": t,
+               "length_ms": dur, "repeat": p["repeat"], "end_ms": t + total, "issue": issue, "bpm": bpm}
+        if extra:
+            row["lead_ms"] = extra
+        rows.append(row)
+        counted = total - lead if (n == 1 and lead and total) else total     # the lead-in is before bar 1
+        if counted > 0 and bpm:
+            beats_elapsed += counted * bpm / 60000.0
         t += total
     if minfo:
         if mlen is None:
@@ -397,8 +474,22 @@ def plan(engine, spec: dict, lenient: bool = False, base_dir: str = "") -> Dict[
             warns.append(f"the parts run {clock(t - mlen)} past the end of the music")
         if minfo["path"] and media.media_status(minfo["path"], base_dir) == "missing":
             warns.append("the music file is not found on this computer")
+    clen = None
+    if s["click"]:
+        try:
+            cinfo = music_info(s["click"], funcs, base_dir, "click")
+            clen = cinfo["length_ms"]
+            if cinfo["path"] and media.media_status(cinfo["path"], base_dir) == "missing":
+                warns.append("the click file is not found on this computer")
+            elif clen and clen + 50 < max(t, mlen or 0):
+                warns.append(f"the click track stops {clock(max(t, mlen or 0) - clen)} before the song: make it again")
+        except ValueError as e:
+            if not lenient:
+                raise
+            warns.append(str(e))
     free = max(mlen - t, 0) if mlen else 0
-    return {"parts": rows, "length_ms": t, "music_ms": mlen, "free_ms": free, "warnings": warns}
+    return {"parts": rows, "length_ms": t, "music_ms": mlen, "free_ms": free, "lead_ms": lead,
+            "click_ms": clen, "warnings": warns}
 
 
 def build(engine, spec: dict, next_id: int, base_dir: str = ""):
@@ -438,6 +529,10 @@ def build(engine, spec: dict, next_id: int, base_dir: str = ""):
     show.set("Name", s["name"])
     keep = dict(s, parts=[{k: v for k, v in p.items() if k != "issue"} for p in s["parts"]])
     keep.pop("show_id", None)                              # the Show's own ID is read from the Show
+    keep.pop("lead_ms", None)                              # worked out again from first_beat
+    for k in ("first_beat", "click"):                      # a table without them stays as before 3.20.0
+        if not keep.get(k):
+            keep.pop(k, None)
     show.set(SONG_ATTR, json.dumps(keep, ensure_ascii=False, separators=(",", ":"), sort_keys=True))
 
     copies: List[str] = []
@@ -476,36 +571,61 @@ def build(engine, spec: dict, next_id: int, base_dir: str = ""):
             tracks[key] = tr
             colour[key] = COLORS[(len(tracks) - 1) % len(COLORS)]
         for r in range(row["repeat"]):
+            dur = row["length_ms"] + (row.get("lead_ms", 0) if r == 0 else 0)   # the lead-in (3.20.0)
             ET.SubElement(tracks[key], f"{ns}ShowFunction",
-                          {"ID": use.get("ID"), "StartTime": str(t), "Duration": str(row["length_ms"]),
+                          {"ID": use.get("ID"), "StartTime": str(t), "Duration": str(dur),
                            "Color": colour[key]})
-            t += row["length_ms"]
+            t += dur
 
-    audio_id = ""
-    if s["music"]:
-        mi = music_info(s["music"], funcs, base_dir)
-        mid = s["music"].get("function_id")
+    def sound_track(spec_part: dict, what: str, track_name: str, colour_: str, device: str = "") -> str:
+        """Put a sound on a track of its own from 0:00; returns the id of a new Audio function or ''."""
+        mi = music_info(spec_part, funcs, base_dir, what)
+        mid, made = spec_part.get("function_id"), ""
         if not mid:                                  # the same file already has a function: use it
-            for f in funcs.values():
-                src = _child(f, "Source")
-                if f.get("Type") == "Audio" and src is not None and (src.text or "").strip() == mi["path"]:
-                    mid = f.get("ID")
-                    break
+            same = [f for f in funcs.values() if f.get("Type") == "Audio" and _child(f, "Source") is not None
+                    and (_child(f, "Source").text or "").strip() == mi["path"]]
+            if what == "click":
+                # a click this tool made follows the output chosen now; any other sound of the
+                # same file is used only when it already plays on that output
+                own = [f for f in same if f.get(PART_ATTR) == "click"]
+                if own:
+                    src = _child(own[0], "Source")
+                    if device:
+                        src.set("Device", device)
+                    else:
+                        src.attrib.pop("Device", None)
+                    same = own
+                else:
+                    same = [f for f in same if (_child(f, "Source").get("Device") or "") == device]
+            if same:
+                mid = same[0].get("ID")
         if not mid:
-            mid = audio_id = new_id()
+            mid = made = new_id()
             a = ET.SubElement(engine, f"{ns}Function", {"ID": mid, "Type": "Audio", "Name": mi["name"]})
             ET.SubElement(a, f"{ns}Speed", {"FadeIn": "0", "FadeOut": "0", "Duration": str(mi["length_ms"] or 0)})
             ET.SubElement(a, f"{ns}RunOrder").text = "SingleShot"
-            ET.SubElement(a, f"{ns}Source").text = mi["path"]
-            a.set(PART_ATTR, "music")
-        tr = ET.SubElement(show, f"{ns}Track", {"ID": str(len(tracks)), "Name": "Music",
+            src = ET.SubElement(a, f"{ns}Source")
+            if device:                               # QLC+ plays it on that output (Audio::saveXML)
+                src.set("Device", device)
+            src.text = mi["path"]
+            a.set(PART_ATTR, what)
+        tr = ET.SubElement(show, f"{ns}Track", {"ID": str(len(tracks) + len(extra_tracks)), "Name": track_name,
                                                 "SceneID": NONE_ID, "isMute": "0"})
+        extra_tracks.append(tr)
         ET.SubElement(tr, f"{ns}ShowFunction", {"ID": mid, "StartTime": "0",
                                                 "Duration": str(mi["length_ms"] or p["length_ms"]),
-                                                "Color": MUSIC_COLOR})
+                                                "Color": colour_})
+        return made
+
+    extra_tracks: List[object] = []
+    audio_id = click_id = ""
+    if s["music"]:
+        audio_id = sound_track(s["music"], "music", "Music", MUSIC_COLOR)
+    if s["click"]:
+        click_id = sound_track(s["click"], "click", "Click", CLICK_COLOR, s["click"].get("device", ""))
     refreshed = _refresh_setlist_copies(engine, show)
     return {"show_id": show_id, "name": s["name"], "copies": copies, "audio_id": audio_id,
-            "next_id": nid, "setlist_copies": refreshed, **p}
+            "click_id": click_id, "next_id": nid, "setlist_copies": refreshed, **p}
 
 
 def _refresh_setlist_copies(engine, show) -> List[str]:

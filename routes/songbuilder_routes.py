@@ -9,6 +9,8 @@ Flask routes for the Song Builder (3.9.8): a table of parts becomes one Show.
   POST /api/songbuilder/music     — name and length of a sound file (by path)
   POST /api/songbuilder/build     — build or rebuild the Show in the show in progress
   POST /api/songbuilder/click     — make a click track (.wav) next to the show (3.10.0)
+  POST /api/songbuilder/tempo     — listen to the music: its BPM and first beat (3.20.0; reads only)
+  GET  /api/songbuilder/devices   — the sound outputs already named in the show (3.20.0)
 """
 
 import os
@@ -29,6 +31,14 @@ def _err(e):
 def song_list():
     try:
         return jsonify(ws.song_list())
+    except ValueError as e:
+        return _err(e)
+
+
+@bp.route('/devices')
+def song_devices():
+    try:
+        return jsonify(ws.song_devices())
     except ValueError as e:
         return _err(e)
 
@@ -97,3 +107,20 @@ def song_click():
         return _err(e)
     except OSError as e:
         return jsonify({'error': 'The click track could not be saved: ' + str(e.strerror or e)[:200]}), 500
+
+
+@bp.route('/tempo', methods=['POST'])
+def song_tempo():
+    """Propose the music's BPM and first beat (3.20.0).  The page sends the music as it is in
+    the table ({path} or {function_id}); the file is only read, never changed."""
+    from core import tempo_detect
+    d = request.get_json(force=True) or {}
+    why = tempo_detect.available()
+    if why:
+        return jsonify({'error': why, 'missing': True}), 400
+    try:
+        out = ws.song_tempo(d.get('music') or {}, d.get('beats_per_bar') or 4)
+    except ValueError as e:
+        return _err(e)
+    out['first_beat'] = tempo_detect.first_beat_text(out['first_beat_ms'])
+    return jsonify(out)

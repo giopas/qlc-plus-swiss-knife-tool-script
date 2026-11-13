@@ -1,2 +1,4 @@
 flask>=3.0
 pywebview>=5.0  # optional — native window mode (falls back to browser if missing)
+numpy>=1.24     # optional — Song Builder: find a song's tempo (with soundfile)
+soundfile>=0.12 # optional — reads .wav .mp3 .ogg .flac for the tempo (libsndfile is inside the wheel)

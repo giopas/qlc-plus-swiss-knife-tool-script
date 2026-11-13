@@ -415,6 +415,24 @@ def create_app():
     return app
 
 
+def _smoke_tempo() -> list:
+    """The Song Builder finds a tempo in the bundle: a 120 BPM click, written and heard back."""
+    import tempfile
+    from core import click_track, tempo_detect
+    why = tempo_detect.available()
+    if why:
+        return [f'tempo: {why}']
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, 'smoke.wav')
+            with open(p, 'xb') as fh:
+                click_track.write_frames(fh, 120, 4, 12000, 'wood')
+            got = tempo_detect.detect(p)['bpm']
+        return [] if abs(got - 120) < 1 else [f'tempo: heard {got} BPM in a 120 BPM click']
+    except Exception as e:  # noqa: BLE001
+        return [f'tempo: {e!r}']
+
+
 def _smoke(app) -> int:
     """Release-build check: the page, its scripts and the bundled data files
     all answer.  Prints one line per failure; exit 0 when none."""
@@ -434,6 +452,8 @@ def _smoke(app) -> int:
             bad.append('no naming profiles')
     except Exception as e:  # noqa: BLE001
         bad.append(f'data files: {e!r}')
+    if getattr(sys, 'frozen', False):     # the app must carry numpy and soundfile for the tempo (3.20.0)
+        bad += _smoke_tempo()
     from core.workspace import VERSION
     for b in bad:
         print('SMOKE FAIL:', b)

@@ -72,6 +72,7 @@ const _DOC_PLAIN = {
   I007: 'A Show Wizard effect that was never created.',
   I008: 'QLC+ 5.3 content that QLC+ 5.2.2 ignores.',
   I009: 'A fixture definition QLC+ does not ship; it travels with the show.',
+  I010: 'A sound sent to an output of its own, like a click for the drummer. If that device is missing, QLC+ uses the main output.',
 };
 
 function doctorInit() {

@@ -1113,6 +1113,23 @@ def _i008_qlc53_only(ws: _Workspace):
                       {"items": {w: n for w, n in rows}})
 
 
+def _i010_sound_output(ws: _Workspace):
+    """A sound that QLC+ plays on an output of its own (``<Source Device="…">``, set in
+    QLC+'s Audio editor or by the Song Builder's click, 3.20.0).  QLC+ looks the device up
+    by name when the sound starts and, when it is not there, plays the sound on the main
+    output without a word: a click meant for the drummer would come out of the PA."""
+    for f in ws.function_els:
+        if f.get("Type") != "Audio":
+            continue
+        src = f.find("Source")
+        dev = (src.get("Device") or "").strip() if src is not None else ""
+        if dev:
+            yield Finding("I010", INFO, ws.fn_loc(f.get("ID")),
+                          f"plays on the output '{dev}'. If that device is not connected when the show "
+                          "runs, QLC+ plays it on the main output instead: check it at the venue",
+                          {"function": f.get("ID"), "device": dev})
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Public API
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1144,7 +1161,7 @@ def check(root, qxf_defs=None, *, allow_fx: Iterable[str] = (),
                 _i007_wizard_lost(ws), _i008_qlc53_only(ws),
                 _d021_mode_missing(ws), _d022_channel_count(ws), _d023_channel_beyond(ws),
                 _d024_media_missing(ws), _d025_show_cut(ws),
-                _i009_travels(ws)):
+                _i009_travels(ws), _i010_sound_output(ws)):
         findings.extend(gen)
     stats = {"fixtures": len(ws.fixture_els), "functions": len(ws.function_els),
              "vc_widgets": len(ws.widgets), "vc_pages": len(ws.pages)}

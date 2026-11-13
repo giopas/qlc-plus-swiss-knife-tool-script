@@ -50,6 +50,7 @@ TITLES = {
     "I007": "QLC+ Show Wizard effect never created",
     "I008": "QLC+ 5.3 content that QLC+ 5.2.2 ignores",
     "I009": "Definition not in QLC+'s stock library (travels with the show)",
+    "I010": "Sound on an output of its own (check the device at the venue)",
 }
 
 

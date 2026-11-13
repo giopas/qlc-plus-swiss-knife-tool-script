@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for QLC+ Swiss Knife (v3.19.0).  One-folder build:
+# PyInstaller spec for QLC+ Swiss Knife (v3.20.0).  One-folder build:
 #
-#     pip install pyinstaller flask pywebview
+#     pip install pyinstaller flask pywebview numpy soundfile
 #     pyinstaller --noconfirm packaging/swissknife.spec
 #
 # → dist/QLC Swiss Knife/ (Windows), dist/QLC Swiss Knife.app (macOS),
@@ -26,6 +26,9 @@ for sub in ('doctor', 'quick_start'):
             datas.append((os.path.join(d, f), os.path.join('core', sub)))
 
 hidden = ['webview', 'routes', 'core', 'app']   # 'app': the MCP server imports it
+# Song Builder's tempo (3.20.0): imported inside a function, so named here; soundfile's own
+# libsndfile (in _soundfile_data) is collected by the soundfile hook of pyinstaller-hooks-contrib
+hidden += ['core.tempo_detect', 'numpy', 'soundfile']
 for name in os.listdir(os.path.join(ROOT, 'routes')):
     if name.endswith('.py') and name != '__init__.py':
         hidden.append('routes.' + name[:-3])

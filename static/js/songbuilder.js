@@ -1,10 +1,12 @@
 /* Song Builder (3.9.8; clearer layout 3.14.0): a table of parts becomes one Show.
- * Three blocks in order: the song (tempo, how lengths are counted), the music, the parts.
+ * Three blocks in order: the song (tempo, how lengths are counted), the music and the click
+ * (3.20.0: both at once, the click on an output of its own; the tempo and the first beat
+ * found by listening to the music), the parts.
  * A part shows its name, look, length, tempo and start; repeat, fades, a tempo change and
  * the chaser's steps are in its ⋯ panel, and show as small tags when set.  Every edit
  * refreshes the bar and the starts a moment later; Build writes the Show. */
 
-let _sbd = { parts: [], funcs: [], showId: '' };
+let _sbd = { parts: [], funcs: [], showId: '', click: null };
 const _SBD_LOOK_TYPES = ['Scene', 'Chaser', 'Collection', 'RGBMatrix', 'EFX', 'Script'];
 const _SBD_END = /^(?:until the end|to the end|to end|until end|till the end|end)$/i;
 
@@ -21,10 +23,10 @@ async function sbdInit() {
   _sbdEl('sbd-audio').innerHTML =
     `<option value="">${_sbdEsc(t('No music'))}</option>`
     + `<option value="__path">${_sbdEsc(t('A sound file…'))}</option>`
-    + `<option value="__click">${_sbdEsc(t('A click track, made for this song'))}</option>`
     + (audios.length ? `<optgroup label="${_sbdEsc(t('Sounds already in the show'))}">`
       + audios.map(f => `<option value="${_sbdEsc(f.id)}">${_sbdEsc(f.name)}</option>`).join('') + '</optgroup>' : '');
   await _sbdLoadList();
+  _sbdLoadDevices();
   if (!_sbd.parts.length) { sbdNew(); }
   else { _sbdRender(); sbdPreview(); }
 }
@@ -36,6 +38,14 @@ async function _sbdLoadList() {
   _sbdEl('sbd-open').innerHTML =
     `<option value="">${_sbdEsc(t('A new song'))}</option>` +
     (list.length ? `<optgroup label="${_sbdEsc(t('Built here'))}">` + list.map(s => `<option value="${_sbdEsc(s.id)}"${s.id === _sbd.showId ? ' selected' : ''}>${_sbdEsc(s.name)}</option>`).join('') + '</optgroup>' : '');
+}
+
+// The outputs already named in the show's sounds, offered for the click (3.20.0).
+async function _sbdLoadDevices() {
+  let list = [];
+  try { list = await (await fetch('/api/songbuilder/devices')).json(); } catch (e) { /* none */ }
+  const dl = _sbdEl('sbd-devices');
+  if (dl) dl.innerHTML = (Array.isArray(list) ? list : []).map(d => `<option value="${_sbdEsc(d)}"></option>`).join('');
 }
 
 function _sbdSetBpb(v) {
@@ -55,7 +65,9 @@ function sbdNew() {
   _sbdEl('sbd-audio').value = '';
   _sbdEl('sbd-path').value = '';
   _sbdEl('sbd-mlen').value = '';
+  _sbdEl('sbd-first').value = '';
   _sbd.mlenNeeded = false;
+  _sbdSetClick(null, '', false);
   _sbdMusicShow();
   _sbdEl('sbd-music-note').textContent = '';
   _sbd.parts = [_sbdBlank('Intro'), _sbdBlank('Verse'), _sbdBlank('Chorus')];
@@ -80,7 +92,10 @@ async function sbdOpen(id) {
   _sbdEl('sbd-audio').value = m.function_id || (m.path ? '__path' : '');
   _sbdEl('sbd-path').value = m.path || '';
   _sbdEl('sbd-mlen').value = m.length || '';
+  _sbdEl('sbd-first').value = d.first_beat || '';
   _sbd.mlenNeeded = !!m.length;
+  const c = d.click || {};
+  _sbdSetClick(c.path || c.function_id ? c : null, c.device || '', !!(c.path || c.function_id));
   _sbd.parts = (d.parts || []).map(p => ({ ...p, look: (_sbd.funcs.find(f => f.id === p.function_id) || {}).name || '' }));
   _sbdRender();
   _sbdBuildState();
@@ -108,14 +123,18 @@ function _sbdTempos() {
     return { bpm: run, own: false };
   });
 }
-// Beats gone by at *ms*, each part counted at its own tempo (3.13.0).
+// Beats gone by at *ms*, each part counted at its own tempo (3.13.0), from the first beat
+// (3.20.0): before it the count is below 0.
+function _sbdLead() { return (_sbd.plan && _sbd.plan.lead_ms) || 0; }
 function _sbdBeats(ms) {
-  let bpm = _sbdSongBpm(), beats = 0, at = 0;
+  let bpm = _sbdSongBpm(), beats = 0, at = _sbdLead();
+  if (ms < at) return (ms - at) * bpm / 60000;
   for (const r of (_sbd.plan && _sbd.plan.parts) || []) {
-    if (!(r.end_ms > r.start_ms)) continue;
+    const from = Math.max(r.start_ms, at);
+    if (!(r.end_ms > from)) continue;
     const b = parseFloat(r.bpm) || bpm;
-    if (ms <= r.end_ms) return beats + (ms - r.start_ms) * b / 60000;
-    beats += (r.end_ms - r.start_ms) * b / 60000; at = r.end_ms; bpm = b;
+    if (ms <= r.end_ms) return beats + (ms - from) * b / 60000;
+    beats += (r.end_ms - from) * b / 60000; at = r.end_ms; bpm = b;
   }
   return beats + (ms - at) * bpm / 60000;
 }
@@ -124,6 +143,7 @@ function _sbdPos(ms) {
   const bpb = parseFloat(_sbdEl('sbd-bpb').value) || 4, u = _sbdUnit();
   if (u === 'seconds' || !(_sbdSongBpm() > 0)) return _sbdFmt(ms);
   const beat = _sbdBeats(ms);
+  if (beat < -1e-6) return _sbdFmt(ms);                 // the lead-in, before bar 1
   return u === 'bars' ? t('bar {0}', +(beat / bpb + 1).toFixed(2)) : t('beat {0}', +(beat + 1).toFixed(2));
 }
 function _sbdSpan(ms, from = 0) {
@@ -344,7 +364,8 @@ function _sbdMusicShow() {
   _sbdEl('sbd-path').classList.toggle('sbd-hidden', v !== '__path');
   _sbdEl('sbd-browse').classList.toggle('sbd-hidden', v !== '__path');
   _sbdEl('sbd-mlen-wrap').classList.toggle('sbd-hidden', !(v === '__path' && (_sbd.mlenNeeded || _sbdEl('sbd-mlen').value.trim())));
-  _sbdEl('sbd-click-wrap').classList.toggle('sbd-hidden', v !== '__click');
+  _sbdEl('sbd-tempo-row').classList.toggle('sbd-hidden', !v);
+  _sbdEl('sbd-click-wrap').classList.toggle('sbd-hidden', !_sbdEl('sbd-click-on').checked);
 }
 
 // Pick the music with the computer's own file dialog (3.13.0).  A file in the show's folder
@@ -367,12 +388,6 @@ async function sbdMusicChanged() {
   _sbdMusicShow();
   sbdChanged();
   if (v === '') { note.textContent = t('No music: the Show lasts as long as its parts.'); return; }
-  if (v === '__click') {
-    note.textContent = _sbdSongBpm() > 0
-      ? t('A sound file with a click on every beat, at the tempo of each part, as long as the song. It is saved next to the show and becomes the music. Make it again after you change the parts.')
-      : t('A click track needs the tempo of the song: type it in step 1.');
-    return;
-  }
   if (v !== '__path') {
     const f = _sbd.funcs.find(x => x.id === v);
     note.textContent = f ? t('Uses the sound “{0}” already in the show.', f.name) : '';
@@ -393,8 +408,12 @@ function _sbdSpec() {
   const path = _sbdEl('sbd-path').value.trim();
   const music = (v && !v.startsWith('__')) ? { function_id: v }
     : (v === '__path' && path ? { path, length: _sbdEl('sbd-mlen').value.trim() } : {});
+  const click = _sbdEl('sbd-click-on').checked && _sbd.click
+    ? { ..._sbd.click, device: _sbdEl('sbd-click-device').value.trim() } : {};
   return {
     name: _sbdEl('sbd-name').value.trim(),
+    first_beat: v ? _sbdEl('sbd-first').value.trim() : '',
+    click,
     bpm: _sbdEl('sbd-bpm').value.trim(),
     beats_per_bar: _sbdEl('sbd-bpb').value.trim(),
     unit: _sbdUnit(),
@@ -410,7 +429,8 @@ function _sbdSpec() {
 function _sbdOut(html, cls) { _sbdEl('sbd-out').innerHTML = `<div class="${cls === 'err' ? 'sbd-err' : cls === 'hint' ? 'sbd-hint' : ''}">${html}</div>`; }
 
 function _sbdBars(res) {
-  const total = res.length_ms || 0, music = res.music_ms || 0, scale = Math.max(total, music, 1);
+  const total = res.length_ms || 0, music = res.music_ms || 0, click = res.click_ms || 0, lead = res.lead_ms || 0;
+  const scale = Math.max(total, music, 1);
   const pct = ms => (100 * ms / scale).toFixed(3) + '%';
   const seg = (r, i, arr) => {
     const bad = r.issue ? ' sbd-seg-bad' : '';
@@ -427,8 +447,12 @@ function _sbdBars(res) {
   const empty = scale <= 1 ? `<div class="sbd-gap sbd-gap-all" style="left:0;width:100%"><span>${_sbdEsc(t('Give the parts a length to see the song here'))}</span></div>` : '';
   const musicBar = music ? `<div class="sbd-seg" style="left:0;width:${pct(music)};background:${_SBD_MUSIC}"><span>${_sbdEsc(t('Music'))} ${_sbdFmt(music)}</span></div>` : '';
   const over = (music && total > music) ? `<div class="sbd-gap" style="left:${pct(music)};width:${pct(total - music)}" data-tooltip="${_sbdEsc(t('Past the end of the music'))}"></div>` : '';
-  return `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Parts'))}</span><div class="sbd-bar">${lights}${free}${empty}</div></div>`
-       + (music ? `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Music'))}</span><div class="sbd-bar">${musicBar}${over}</div></div>` : '')
+  const beat1 = lead && lead < scale
+    ? `<div class="sbd-lead" style="width:${pct(lead)}"></div><div class="sbd-beat1" style="left:${pct(lead)}" data-tooltip="${_sbdEsc(t('Bar 1 starts here, at {0}', _sbdFmt(lead)))}"></div>` : '';
+  const clickBar = click ? `<div class="sbd-seg" style="left:0;width:${pct(Math.min(click, scale))};background:#7f8c8d"><span>${_sbdEsc(t('Click'))} ${_sbdFmt(click)}</span></div>` : '';
+  return `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Parts'))}</span><div class="sbd-bar">${lights}${free}${empty}${beat1}</div></div>`
+       + (music ? `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Music'))}</span><div class="sbd-bar">${musicBar}${over}${beat1}</div></div>` : '')
+       + (click ? `<div class="sbd-bar-row"><span class="sbd-bar-lbl">${_sbdEsc(t('Click'))}</span><div class="sbd-bar">${clickBar}${beat1}</div></div>` : '')
        + `<div class="sbd-bar-row"><span class="sbd-bar-lbl"></span><div class="sbd-ruler"><span>${_sbdEsc(_sbdPos(0))}</span><span>${_sbdEsc(_sbdPos(scale))}</span></div></div>`;
 }
 
@@ -442,6 +466,7 @@ function _sbdFoot(res) {
   if (!_sbdEl('sbd-name').value.trim()) el.textContent = '';       // the reason sits by the button
   else if (noLook) el.textContent = t('Pick a look for {0} part(s).', noLook);
   else if (bad) el.textContent = t('Fix the parts listed above.');
+  else if (_sbdEl('sbd-click-on').checked && !_sbd.click) el.textContent = t('Make the click track in step 2, or untick it.');
   else el.textContent = t('Ready: {0} parts, {1}.', _sbd.parts.length, _sbdFmt(res.length_ms || 0));
 }
 
@@ -484,15 +509,62 @@ async function sbdBuild() {
   if (typeof setStatus === 'function') setStatus(t('✓ Show “{0}” built — Save as new file… when you’re ready.', res.name), (res.warnings || []).length ? 'warn' : 'ok');
 }
 
-// A click track (3.10.0; follows each part's tempo since 3.13.0): saved next to the show and used as the music.
+// A click track (3.10.0; follows each part's tempo since 3.13.0): saved next to the show.
+// Since 3.20.0 it goes on a track of its own beside the music, starting on the first beat,
+// and can play on an output of its own (the drummer's in-ears).
 async function sbdClick() {
   const res = await _sbdPost('/api/songbuilder/click', { sound: _sbdEl('sbd-click-sound').value });
-  if (res.error) { _sbdOut(_sbdEsc(res.error), 'err'); return; }
-  _sbdEl('sbd-audio').value = '__path';
-  _sbdEl('sbd-path').value = res.path;
-  _sbdEl('sbd-mlen').value = '';
-  _sbd.mlenNeeded = false;
-  await sbdMusicChanged();
-  sbdPreview();
+  if (res.error) { _sbdEl('sbd-click-note').textContent = res.error; return; }
+  _sbdSetClick({ path: res.path, name: res.name }, _sbdEl('sbd-click-device').value, true);
+  sbdChanged();
   setStatus(t('✓ Click track saved: {0}', res.name), 'ok');
 }
+
+function _sbdSetClick(c, device, on) {
+  _sbd.click = c ? (c.function_id ? { function_id: c.function_id } : { path: c.path, name: c.name || '' }) : null;
+  _sbdEl('sbd-click-on').checked = !!on;
+  _sbdEl('sbd-click-device').value = device || '';
+  _sbdClickNote();
+  _sbdMusicShow();
+}
+
+function _sbdClickNote() {
+  const el = _sbdEl('sbd-click-note');
+  if (!_sbdEl('sbd-click-on').checked) { el.textContent = ''; return; }
+  const name = _sbd.click ? (_sbd.click.path || '').split(/[\\/]/).pop() || (_sbd.funcs.find(f => f.id === _sbd.click.function_id) || {}).name : '';
+  if (name) el.textContent = t('The click is “{0}”, on a track of its own. Make it again after you change the tempo, the first beat or the parts.', name);
+  else el.textContent = _sbdSongBpm() > 0
+    ? t('A click on every beat, at the tempo of each part, from the first beat to the end of the song. It is saved next to the show.')
+    : t('A click track needs the tempo of the song: type it in step 1, or find it from the music.');
+}
+
+function sbdClickToggle() { _sbdClickNote(); _sbdMusicShow(); sbdChanged(); }
+
+// Listen to the music for its tempo and first beat (3.20.0).  It fills the two boxes; the
+// person checks them by ear with the click, and can take half or double the tempo.
+async function sbdFindTempo() {
+  const note = _sbdEl('sbd-music-note'), btn = _sbdEl('sbd-find-btn');
+  const music = _sbdSpec().music;
+  if (!music.path && !music.function_id) { note.textContent = t('Choose the music first: the tempo is found by listening to it.'); return; }
+  btn.disabled = true;
+  note.textContent = t('Listening to the music…');
+  let res;
+  try {
+    res = await (await fetch('/api/songbuilder/tempo', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ music, beats_per_bar: _sbdEl('sbd-bpb').value }) })).json();
+  } catch (e) { res = { error: String(e) }; }
+  btn.disabled = false;
+  if (res.error) { note.textContent = res.error; return; }
+  _sbdEl('sbd-bpm').value = res.bpm;
+  _sbdEl('sbd-first').value = res.first_beat;
+  sbdTempoChanged();
+  _sbdClickNote();
+  const alt = [res.half, res.double].filter(Boolean)
+    .map(b => `<button class="btn btn-ghost btn-sm sbd-alt" type="button" onclick="sbdUseBpm(${+b})">${_sbdEsc(t('{0} BPM', b))}</button>`).join('');
+  note.innerHTML = _sbdEsc(res.sure
+    ? t('Found {0} BPM, first beat at {1}. Check it by ear with the click track.', res.bpm, res.first_beat)
+    : t('Not sure: {0} BPM, first beat at {1}. The beat is weak or uneven here: check it by ear, or type the tempo.', res.bpm, res.first_beat))
+    + (alt ? ' ' + _sbdEsc(t('Half or double:')) + alt : '');
+}
+
+function sbdUseBpm(b) { _sbdEl('sbd-bpm').value = b; sbdTempoChanged(); _sbdClickNote(); }

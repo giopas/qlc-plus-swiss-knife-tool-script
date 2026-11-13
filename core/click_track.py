@@ -116,17 +116,25 @@ def check(bpm, beats_per_bar, length_ms):
 
 
 def clicks(bpm: float, beats_per_bar: int, total: int,
-           tempo: Optional[Sequence[Tuple[int, float]]] = None) -> List[Tuple[int, bool]]:
+           tempo: Optional[Sequence[Tuple[int, float]]] = None, first_beat_ms: int = 0) -> List[Tuple[int, bool]]:
     """``(frame, first beat of the bar)`` of every click.  *tempo* is the Song Builder's tempo
     map (3.13.0): ``(start_ms, bpm)`` where a part changes the tempo.  Each change starts on a
-    first beat of the bar, as a tempo change does in a song; without one, one BPM throughout."""
-    points = [(0, float(bpm))]
+    first beat of the bar, as a tempo change does in a song; without one, one BPM throughout.
+    *first_beat_ms* (3.20.0) is where bar 1 starts in the music: the clicks before it count
+    back from there at the first tempo, so the lead-in has a click too (a pick-up bar)."""
+    offset = round(max(0, first_beat_ms) * RATE / 1000)
+    points = [(offset, float(bpm))]
     for ms, b in sorted(tempo or []):
-        if ms <= 0:
-            points[0] = (0, float(b))
+        if round(ms * RATE / 1000) <= offset:
+            points[0] = (offset, float(b))
         elif float(b) != points[-1][1]:
             points.append((round(ms * RATE / 1000), float(b)))
     out: List[Tuple[int, bool]] = []
+    k = 1                                        # the lead-in, counted back from the first beat
+    while offset and offset - beat_frames(k, points[0][1]) >= 0:
+        out.append((offset - beat_frames(k, points[0][1]), k % beats_per_bar == 0))
+        k += 1
+    out.reverse()
     for i, (start, b) in enumerate(points):
         stop = points[i + 1][0] if i + 1 < len(points) else total
         n = 0
@@ -140,15 +148,17 @@ def clicks(bpm: float, beats_per_bar: int, total: int,
 
 
 def write_frames(fh, bpm: float, beats_per_bar: int, length_ms: int, sound: str = DEFAULT_SOUND,
-                 tempo: Optional[Sequence[Tuple[int, float]]] = None) -> int:
+                 tempo: Optional[Sequence[Tuple[int, float]]] = None, first_beat_ms: int = 0) -> int:
     """Write the click track as a WAV to the open binary file *fh*; returns the frames written."""
     total = round(length_ms * RATE / 1000)
     high, low = sounds(check_sound(sound))
-    marks = clicks(bpm, beats_per_bar, total, tempo)
+    marks = clicks(bpm, beats_per_bar, total, tempo, first_beat_ms)
     with wave.open(fh, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(RATE)
+        if marks and marks[0][0] > 0:            # silence before the first click
+            w.writeframes(bytes(2 * marks[0][0]))
         for k, (start, accent) in enumerate(marks):
             end = marks[k + 1][0] if k + 1 < len(marks) else total
             ring = (high if accent else low)[: end - start]
@@ -179,9 +189,10 @@ def plain_name(name: str, bpm: float, tempos: Sequence[float] = ()) -> str:
 
 
 def write(folder: str, name: str, bpm, beats_per_bar, length_ms, sound=None,
-          tempo: Optional[Sequence[Tuple[int, float]]] = None) -> Dict[str, object]:
+          tempo: Optional[Sequence[Tuple[int, float]]] = None, first_beat_ms: int = 0) -> Dict[str, object]:
     """Make the file in *folder* under a free name.  Returns {path, name, length_ms, bpm, beats_per_bar, sound}.
-    *tempo*: where the tempo changes, ``(start_ms, bpm)`` (3.13.0)."""
+    *tempo*: where the tempo changes, ``(start_ms, bpm)`` (3.13.0); *first_beat_ms*: where
+    bar 1 starts (3.20.0)."""
     bpm, bpb, length_ms = check(bpm, beats_per_bar, length_ms)
     tempo = [(int(ms), check(b, bpb, length_ms)[0]) for ms, b in (tempo or [])]
     sound = check_sound(sound)
@@ -194,7 +205,7 @@ def write(folder: str, name: str, bpm, beats_per_bar, length_ms, sound=None,
         path = os.path.join(folder, fname)
         try:
             with open(path, "xb") as fh:            # "x": never over an existing file
-                frames = write_frames(fh, bpm, bpb, length_ms, sound, tempo)
+                frames = write_frames(fh, bpm, bpb, length_ms, sound, tempo, int(first_beat_ms or 0))
             break
         except FileExistsError:
             n += 1

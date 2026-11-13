@@ -247,7 +247,8 @@ GUIDE: Dict[str, dict] = {
                  "tempo and chasers that wait for the pedal are left alone and listed in `left_alone`.",
     },
     "song_builder": {
-        "use": "Build a song's Show from a table of parts (intro, verse, chorus…) with one music track that is never cut.",
+        "use": "Build a song's Show from a table of parts (intro, verse, chorus…) with its music and, if wanted, a click "
+               "track on a track of its own (both never cut).",
         "args": [("name", "The Show's name (usually the song's)."),
                  ("unit", "seconds, bars or beats: one for the whole song. Bars and beats need `bpm`."),
                  ("bpm", "Beats per minute; `beats_per_bar` defaults to 4."),
@@ -258,12 +259,21 @@ GUIDE: Dict[str, dict] = {
                            "(3.13.0) is optional: when set, it becomes the tempo from that part on, until another part "
                            "sets its own; leave it out to keep the tempo already running (a bridge or an outro at a "
                            "different speed)."),
+                 ("first_beat", "(3.20.0) Where bar 1 starts in the music, e.g. \"0:01.250\" or \"1.25\". The first part "
+                                "starts at 0:00 and also covers the time before it; bars, beats and the click count "
+                                "from the first beat. Empty: the music starts on the beat."),
+                 ("click", "(3.20.0) {path} of a click track (or {function_id} of a sound in the show), with an optional "
+                           "`device`: the name of the sound output QLC+ plays it on, as QLC+'s Audio editor lists it "
+                           "(the drummer's interface). Empty device: QLC+'s main output. It goes on a track of its own "
+                           "beside the music. `true` instead makes the click track file (see below)."),
+                 ("find_tempo", "(3.20.0) true, with `music`: listen to it and propose `bpm` and `first_beat`, plus "
+                                "`half`, `double` and `sure`. Changes nothing. Needs numpy and soundfile; .m4a cannot be read."),
                  ("show_id", "Rebuild this Show instead of making a new one."),
                  ("apply", "false: only show the starts, the free time, each part's tempo and warnings."),
-                 ("click", "true: make a click track instead (needs `bpm` and `parts` with lengths): a new .wav next to "
-                           "the show, as long as the parts, at the song-level `bpm` throughout (a part's own `bpm` is "
-                           "not yet followed by the click track). Then call again with music {path} set to the file it "
-                           "returns."),
+                 ("click=true", "Make a click track instead of building (needs `bpm` and `parts` with lengths): a new "
+                                ".wav next to the show, at the tempo of each part, from `first_beat` (the lead-in counted "
+                                "back from it) to the end of the parts or the music. Then call again with click {path, "
+                                "device} set to the file it returns; the music stays."),
                  ("sound", "With click: beep (default), wood (a wood block) or tick (a soft tick). The first beat of each "
                            "bar is always higher or fuller, and louder.")],
         "returns": "Preview: parts with start_ms, end_ms, bpm and any issue, length_ms, music_ms, free_ms, warnings. "
@@ -272,7 +282,8 @@ GUIDE: Dict[str, dict] = {
                  "`until 1:20` / `until bar 17` (a point counted from the start of the song; a bar or beat target is "
                  "worked out with each part's own tempo along the way, so it still lands right across a tempo change). "
                  "Show the preview first. The music is never cut and QLC+ always plays it from its start. A fade makes "
-                 "a copy of the scene.",
+                 "a copy of the scene. A tempo found by listening is a proposal: say so, and offer half or double if the "
+                 "user hears it wrong. QLC+ plays the click on the main output when its device is missing (Doctor I010).",
     },
     "stage_monitor": {
         "use": "Make the Stage Monitor page: a tablet on stage shows the cue that is playing and the next one, "

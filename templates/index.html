@@ -672,7 +672,7 @@
   <section class="screen" id="scr-songbuilder">
     <div class="page-h">
       <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#list"/></svg></div>
-      <div><h2>Song Builder</h2><div class="p-desc">Build a song’s Show from a table of parts, with one music track.</div></div>
+      <div><h2>Song Builder</h2><div class="p-desc">Build a song’s Show from a table of parts, with its music and a click track.</div></div>
       <div class="spacer"></div>
       <button class="help-btn" onclick="openHelp('Song-Builder')" title="How this tool works — opens the Song Builder page of the wiki" aria-label="Help">?</button>
     </div>
@@ -698,18 +698,29 @@
         <div id="sbd-song-note" class="sbd-note"></div>
       </div>
       <div class="sbd-block">
-        <div class="sbd-block-h"><span class="sbd-step">2</span> Music <span class="sbd-dim">one track, never cut</span></div>
+        <div class="sbd-block-h"><span class="sbd-step">2</span> Music and click <span class="sbd-dim">each on its own track, never cut</span></div>
         <div class="sbd-music-row">
-          <select id="sbd-audio" class="field-input" style="width:260px" onchange="sbdMusicChanged()"></select>
-          <input id="sbd-path" class="field-input sbd-hidden" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()">
+          <select id="sbd-audio" class="field-input" style="width:260px" onchange="sbdMusicChanged()" aria-label="Music"></select>
+          <input id="sbd-path" class="field-input sbd-hidden" type="text" placeholder="/path/to/song.mp3" style="flex:1;min-width:220px" onchange="sbdMusicChanged()" aria-label="Music file">
           <button id="sbd-browse" class="btn btn-surface sbd-hidden" type="button" onclick="sbdBrowseMusic()" data-tooltip="Pick the sound file on this computer">Browse…</button>
           <span id="sbd-mlen-wrap" class="sbd-hidden"><input id="sbd-mlen" class="field-input" type="text" placeholder="m:ss" style="width:80px" aria-label="Length of the music" onchange="sbdChanged()"></span>
-          <span id="sbd-click-wrap" class="sbd-hidden">
-            <select id="sbd-click-sound" class="field-input" style="width:130px" aria-label="Click sound"><option value="beep">Beep</option><option value="wood">Wood block</option><option value="tick">Soft tick</option></select>
-            <button class="btn btn-accent" id="sbd-click-btn" onclick="sbdClick()">Make the click track</button>
-          </span>
+        </div>
+        <div class="sbd-music-row sbd-tempo-row sbd-hidden" id="sbd-tempo-row">
+          <button class="btn btn-surface" id="sbd-find-btn" type="button" onclick="sbdFindTempo()" data-tooltip="Listens to the music and fills in the tempo and the first beat; check them by ear.">Find the tempo</button>
+          <label class="sbd-inline" for="sbd-first">First beat at</label>
+          <input id="sbd-first" class="field-input" type="text" placeholder="0:00" style="width:90px" oninput="sbdChanged()" data-tooltip="Where bar 1 starts in the music; the first part also covers the time before it.">
         </div>
         <div id="sbd-music-note" class="sbd-note"></div>
+        <div class="sbd-music-row sbd-click-row">
+          <label class="sbd-inline"><input type="checkbox" id="sbd-click-on" onchange="sbdClickToggle()"> Click track</label>
+          <span id="sbd-click-wrap" class="sbd-hidden">
+            <select id="sbd-click-sound" class="field-input" style="width:130px" aria-label="Click sound"><option value="beep">Beep</option><option value="wood">Wood block</option><option value="tick">Soft tick</option></select>
+            <input id="sbd-click-device" class="field-input" type="text" list="sbd-devices" placeholder="Main output" style="width:200px" aria-label="Output for the click" oninput="sbdChanged()" data-tooltip="The sound output for the click, named as in QLC+'s Audio editor; empty plays it on the main output.">
+            <datalist id="sbd-devices"></datalist>
+            <button class="btn btn-surface" id="sbd-click-btn" type="button" onclick="sbdClick()">Make the click track</button>
+          </span>
+        </div>
+        <div id="sbd-click-note" class="sbd-note"></div>
       </div>
       <div class="sbd-block">
         <div class="sbd-block-h"><span class="sbd-step">3</span> Parts <span class="sbd-dim">in the order they play</span></div>

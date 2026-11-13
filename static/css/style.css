@@ -4800,6 +4800,13 @@ body.nav-min .sn-recent, body.nav-min .sn-group-label::after { display: none; }
 .sbd-music-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .sbd-music-row > span { display: inline-flex; gap: 8px; align-items: center; }
 .sbd-under { display: flex; gap: 8px; align-items: center; }
+/* 3.20.0: music and click, the tempo found by listening, the first beat */
+.sbd-tempo-row, .sbd-click-row { margin-top: 8px; }
+.sbd-inline { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--text-dim); }
+.sbd-beat1 { position: absolute; top: 0; bottom: 0; width: 2px; pointer-events: auto;
+  background: linear-gradient(to bottom, var(--text) 0 6px, transparent 6px calc(100% - 6px), var(--text) calc(100% - 6px)); }
+.sbd-lead { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(0,0,0,.22); }
+.sbd-alt { margin-left: 6px; }
 .sbd-num { white-space: nowrap; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .sbd-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
 .sbd-chips:empty { display: none; }

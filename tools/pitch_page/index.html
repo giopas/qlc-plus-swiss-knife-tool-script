@@ -6,7 +6,20 @@
 <title>QLC+ Swiss Knife in two minutes</title>
 <meta name="description" content="A two-minute video about QLC+ Swiss Knife, a free app for QLC+ 5 show files.">
 <meta property="og:title" content="QLC+ Swiss Knife in two minutes">
-<meta property="og:image" content="share.png">
+<meta property="og:description" content="A free app that does the long, fiddly jobs on QLC+ 5 show files.">
+<meta property="og:type" content="video.other">
+<meta property="og:site_name" content="QLC+ Swiss Knife">
+<!-- Absolute URLs: WhatsApp and the other chat apps ignore relative ones,
+     and then send the link with no picture. -->
+<meta property="og:url" content="https://giopas.github.io/qlc-plus-swiss-knife-tool-script/">
+<meta property="og:image" content="https://giopas.github.io/qlc-plus-swiss-knife-tool-script/share.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="QLC+ Swiss Knife: a free app that does the long, fiddly jobs on QLC+ 5 show files">
+<meta property="og:video" content="https://giopas.github.io/qlc-plus-swiss-knife-tool-script/QLC_Swiss_Knife_Pitch.mp4">
+<meta property="og:video:type" content="video/mp4">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="icon.png">
 <style>
   :root { --bg: #0d1117; --card: #1a2130; --line: #273043; --text: #e8ecf5; --dim: #98a2b8; --accent: #2dd4bf; }
@@ -19,14 +32,26 @@
   header img { width: 56px; height: 56px; border-radius: 12px; }
   h1 { font-size: 26px; margin: 0; line-height: 1.2; }
   header p { margin: 2px 0 0; color: var(--dim); }
-  video { width: min(100%, calc(78vh * 9 / 16)); aspect-ratio: 9 / 16; background: #000;
+  video { width: 100%; aspect-ratio: 9 / 16; background: #000;
           border: 1px solid var(--line); border-radius: 14px; }
   nav { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-  nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: 10px;
+  nav a, .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: 10px;
           border: 1px solid var(--line); background: var(--card); color: var(--text); text-decoration: none; font-weight: 600; }
-  nav a.main { background: var(--accent); border-color: var(--accent); color: #062a26; }
-  nav a:hover { border-color: var(--accent); }
-  nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.btn { font: inherit; cursor: pointer; }
+  nav a.main, .btn.main { background: var(--accent); border-color: var(--accent); color: #062a26; }
+  nav a:hover, .btn:hover { border-color: var(--accent); }
+  nav a:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .player { position: relative; width: min(100%, calc(78vh * 9 / 16)); }
+  .player video { width: 100%; display: block; }
+  .end { position: absolute; inset: 0; border-radius: 14px; padding: 24px;
+         background: rgba(13, 17, 23, 0.9); display: flex; flex-direction: column;
+         align-items: center; justify-content: center; gap: 12px; text-align: center; }
+  .end[hidden] { display: none; }
+  .end p { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+  .end small { color: var(--dim); font-size: 14px; }
+  .share { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .btn.wa { background: #1f3a2c; border-color: #2f6b4b; }
+  .note { color: var(--accent); font-size: 14px; min-height: 1.5em; margin: -14px 0 0; }
   footer { color: var(--dim); font-size: 14px; text-align: center; max-width: 60ch; }
   footer a { color: var(--accent); }
 </style>
@@ -40,9 +65,28 @@
       <p>A free app that does the long, fiddly jobs on QLC+ 5 show files.</p>
     </div>
   </header>
-  <video controls playsinline preload="metadata" poster="poster.jpg" src="QLC_Swiss_Knife_Pitch.mp4">
-    Your browser cannot play this video. <a href="QLC_Swiss_Knife_Pitch.mp4">Download it</a>.
-  </video>
+  <div class="player">
+    <video controls playsinline preload="metadata" poster="poster.jpg" src="QLC_Swiss_Knife_Pitch.mp4">
+      Your browser cannot play this video. <a href="QLC_Swiss_Knife_Pitch.mp4">Download it</a>.
+    </video>
+    <!-- Shown when the video ends: the next step is trying it. -->
+    <div class="end" id="end" hidden>
+      <p>Try it on your show</p>
+      <a class="btn main" href="https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest">Download Swiss Knife</a>
+      <small>Free, for Mac, Windows and Linux</small>
+      <button class="btn" type="button" id="again">Watch again</button>
+    </div>
+  </div>
+
+  <!-- Sends the link to this page, not the file: in WhatsApp it shows as a
+       card with the picture, and the video plays in the browser, with
+       nothing to download. The message also has the download link. -->
+  <div class="share" role="group" aria-label="Share">
+    <button class="btn" type="button" id="share" hidden>Share the video</button>
+    <a class="btn wa" id="wa" href="https://wa.me/?text=" target="_blank" rel="noopener">Send on WhatsApp</a>
+    <button class="btn" type="button" id="copy">Copy the link</button>
+  </div>
+  <p class="note" id="note" aria-live="polite"></p>
   <nav>
     <a class="main" href="https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest">Download Swiss Knife</a>
     <a href="QLC_Swiss_Knife_Pitch.pdf">The slides (PDF)</a>
@@ -52,5 +96,47 @@
   <footer>Made from __VERSION__. Swiss Knife is an independent project, not connected to the QLC+ team.
     All credit for QLC+ goes to <a href="https://www.qlcplus.org/">the QLC+ team</a>.</footer>
 </main>
+<script>
+  const PAGE = "https://giopas.github.io/qlc-plus-swiss-knife-tool-script/";
+  const TRY = "https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest";
+  const TEXT = "QLC+ Swiss Knife: a free app that does the long, fiddly jobs on QLC+ 5 show files.";
+  // the video link first, so WhatsApp makes its preview from it
+  const MESSAGE = TEXT + "\n\u25B6 The video: " + PAGE +
+    "\nTry it now: " + TRY;
+
+  const video = document.querySelector("video");
+  const end = document.getElementById("end");
+  const note = document.getElementById("note");
+  const say = (msg) => { note.textContent = msg; setTimeout(() => { note.textContent = ""; }, 3000); };
+
+  video.addEventListener("ended", () => { end.hidden = false; });
+  video.addEventListener("play", () => { end.hidden = true; });
+  document.getElementById("again").addEventListener("click", () => {
+    video.currentTime = 0; video.play();
+  });
+
+  document.getElementById("wa").href = "https://wa.me/?text=" + encodeURIComponent(MESSAGE);
+
+  // The phone's own share menu (WhatsApp, Messages, Mail...), where there is one.
+  // Everything goes in text, not url: WhatsApp keeps only one of them.
+  const share = document.getElementById("share");
+  if (navigator.share) {
+    share.hidden = false;
+    share.addEventListener("click", async () => {
+      try {
+        await navigator.share({ title: "QLC+ Swiss Knife in two minutes", text: MESSAGE });
+      } catch (e) { /* closed without sharing */ }
+    });
+  }
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(PAGE);
+      say("Link copied");
+    } catch (e) {
+      window.prompt("Copy the link:", PAGE);
+    }
+  });
+</script>
 </body>
 </html>

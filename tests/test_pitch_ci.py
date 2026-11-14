@@ -90,3 +90,24 @@ def test_a_release_call_does_not_skip_itself():
     assert '"$GITHUB_REF" = "refs/heads/main"' in line
     assert "GITHUB_EVENT_NAME" not in line
     assert '      - ".github/workflows/pitch.yml"' in text     # pushing a fix makes the missing video
+
+
+def test_the_page_shares_well_on_whatsapp():
+    html = (ROOT / "tools" / "pitch_page" / "index.html").read_text(encoding="utf-8")
+    site = "https://giopas.github.io/qlc-plus-swiss-knife-tool-script/"
+    # chat apps skip relative og: URLs, and the link then comes with no picture
+    assert f'property="og:url" content="{site}"' in html
+    assert f'property="og:image" content="{site}share.png"' in html
+    assert f'property="og:video" content="{site}QLC_Swiss_Knife_Pitch.mp4"' in html
+    for meta in ('property="og:image:alt"', 'property="og:site_name"',
+                 'property="og:video:type" content="video/mp4"',
+                 'name="twitter:card" content="summary_large_image"'):
+        assert meta in html, meta
+    assert not re.search(r'property="og:(?:url|image|video)" content="(?!https://)', html)
+    assert "https://wa.me/?text=" in html
+    call = re.search(r"navigator\.share\(\{[^}]*\}\)", html)
+    assert call and "text: MESSAGE" in call.group(0) and "url:" not in call.group(0)  # links in text
+    assert f'const PAGE = "{site}";' in html
+    assert 'const TRY = "https://github.com/giopas/qlc-plus-swiss-knife-tool-script/releases/latest";' in html
+    assert html.index('"\\n\\u25B6 The video: " + PAGE') < html.index('"\\nTry it now: " + TRY')
+    assert 'video.addEventListener("ended"' in html and 'id="again"' in html  # the try-it card

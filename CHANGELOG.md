@@ -7,6 +7,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+### Added — share the video page
+
+- **Share buttons on the video page.** Under the video: *Share the video* (the phone's own share menu, shown only where the browser has one), *Send on WhatsApp* and *Copy the link*. They send the link to the page, never the video file, so in WhatsApp it comes as a preview card and the video plays in the browser with nothing to download. The message says what Swiss Knife is, then the video link, then the download page of the latest release.
+- **When the video ends**, a card over it offers *Download Swiss Knife* (free, for Mac, Windows and Linux) and *Watch again*. It goes away when the video plays.
+
+### Fixed — the video page's link preview
+
+- **Shared links to the video page had no picture.** Its `og:image` was a relative URL, which WhatsApp and the other chat apps ignore. `og:url`, `og:image` and `og:video` are now absolute, with `og:image:alt`, `og:site_name`, `og:video:type` and a large Twitter card.
+
 ---
 
 ## [3.20.1] — 2026-11-13 — Music and click, all downloads

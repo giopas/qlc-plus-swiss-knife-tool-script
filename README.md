@@ -1,4 +1,4 @@
-# QLC+ Swiss Knife v3.20.1
+# QLC+ Swiss Knife v3.21.0
 
 <p align="center"><img src="static/logo/icon-512.png" alt="QLC+ Swiss Knife logo" width="140"></p>
 
@@ -25,6 +25,8 @@ The picture opens a page that plays the video. To keep a copy: [the video](https
 Anyone who plays lights with [QLC+](https://www.qlcplus.org/): a band that runs its own lights, a small venue, a DJ, a theatre or church crew, a technician who moves one show between rigs. You do not need to program anything.
 
 A typical use: your band plays a festival with 14 lights, then a pub with 6. Instead of rebuilding the show by hand, you open the festival show, tick the 6 lights the pub has, and Swiss Knife cleans up everything that used the others. It also makes tonight's setlist, checks the show for mistakes and prints the paper for the venue.
+
+Swiss Knife started as one user's way of working, and QLC+ can do much of it by itself: Fixture Remap, palettes, channel modifiers, the Show Wizard. Swiss Knife is a companion to QLC+, not a replacement. The wiki page [Swiss Knife and QLC+](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Swiss-Knife-and-QLC) says, tool by tool, when to use QLC+ itself and what Swiss Knife adds.
 
 Swiss Knife is tested with QLC+ 5.2.2 and 5.3.0. If a word in this page is new to you, the wiki has a page that explains each one: [Words used here](https://github.com/giopas/qlc-plus-swiss-knife-tool-script/wiki/Words-used-here).
 

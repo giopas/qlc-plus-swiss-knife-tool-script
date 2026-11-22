@@ -17,6 +17,15 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - **Also scale the Dimmer palettes** (off by default) makes those looks follow. When only the scaled lights use a palette, the palette is scaled. When other lights share it, a scaled copy is made (*Dimmer Full 70%*) and only the looks of the scaled lights point to it; the other lights keep the original. A look that mixes lights at different levels stays as it is and is counted. A fanned palette has its end value scaled too. Lights with no dimmer channel do not count, since a Dimmer palette does nothing on them.
 - The footer and the History step count the palette looks that follow.
 
+### Added — Upgrade to QLC+ 5.3: Dimmer from palettes, where it fits
+
+- **A new step, never ticked by default.** A look whose lit lights all share one dimmer level takes that level from a Dimmer palette: an existing flat one at that level (*Dimmer Full*), or a new one named by its level (*Dimmer 90%*). Change the palette in QLC+ and those looks follow. Dark lights keep their 0 as their own value, which wins over the palette in QLC+; the rest of the look is not touched.
+- **Only where the look plays exactly the same.** Each look is worked out before and after, channel by channel, with the same rules QLC+ 5.3 uses (palettes on the look's own lights, then its own values win); any difference and the look stays. Looks with lit lights at different levels, a light with no definition, the PANIC RESET family, looks bound to a sequence, layer looks and looks that already use palettes stay too. The card says how many move per palette and how many stay, and why. QLC+ 5.3 only.
+- On the test shows: Festival 23 of 139 looks, Pub 16 of 133, FloorShow 102 of 150.
+- **The tools follow.** The Doctor counts the channels a look's palettes set on its own lights as declared (D005), so moved looks raise no new warning. Brightness counts moved looks in *Brightest scene* and in the palette bar, and scales them through their palettes. The Function Porter writes the palette's level back into a look it ports that has values of its own and palettes (and drops the palette when no group needs it), so fan-in, translation and the neutral completion see the whole look; the result lists those looks under `inlined`.
+- Claude's `upgrade_show` takes `dimmerpal`; the guide says to ask first.
+- Tests: `tests/test_upgrade_dimmerpal_3210.py` (every look plays the same on three shows, palettes reused, a second run moves nothing, Doctor counts unchanged, Brightness and Porter on a migrated show). 12 new screen strings in the seven languages.
+
 ### Added — the Function Porter's mapping as a file
 
 - **Save mapping… / Load mapping…** in step 3 keep the targets of each light, the lights not ported, Mirror Pan and the step's options in a small file (`<source>_to_<target>.portermap.json`). Loaded in the next port between the same rigs, lights are found by ID and name, then by name with model and mode, then by name; a show that numbers its lights differently still works. Lights the file does not know are auto-mapped, and the status line says how many. QLC+'s Fixture Remap cannot reopen a mapping once it is made.
@@ -36,7 +45,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 ### Changed
 
 - The **?** links can open a section of a wiki page (`Brightness#…`). The help route still accepts only wiki page names, now with an optional lowercase anchor.
-- 26 new screen strings in the seven languages.
+- 38 new screen strings in the seven languages (26 + 12).
 - Tests: `tests/test_brightness_palettes_3210.py`, `tests/test_porter_map_3210.py`, and the help route's anchor in `tests/test_ui_consistency.py`.
 
 ### Added — share the video page

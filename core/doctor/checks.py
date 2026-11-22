@@ -402,12 +402,19 @@ def _d005_incomplete(ws: _Workspace, layers: Dict[str, str]):
         if fam:
             layers[fid] = fam
             continue
+        pals = [ws.resolver.palettes.get(pid) for pid in palettes.scene_palettes(f)]
+        pals = [p for p in pals if p is not None]
         for v in f.findall("FixtureVal"):
             fx = ws.fixtures.get(v.get("ID"))
             pairs = _scene_pairs(v)
             if fx is None or not pairs or fx["channels"] <= 0 or fx["id"] in ws.infra:
                 continue
-            missing = [c for c in range(fx["channels"]) if c not in pairs]
+            # 3.21.0: channels the scene's palettes set on its own fixture
+            # (a look that takes its dimmer from a Dimmer palette) are declared
+            given = set()
+            for pal in pals:
+                given |= set(ws.resolver.palette_on(pal, [fx["id"]]).get(fx["id"], {}))
+            missing = [c for c in range(fx["channels"]) if c not in pairs and c not in given]
             if missing:
                 labels = ", ".join(_ch_label(fx, c) for c in missing)
                 yield Finding(

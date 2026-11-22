@@ -1671,6 +1671,8 @@ def _build(plan: dict) -> dict:
     new_groups: list[ET.Element] = []
     palette_map: dict[str, str | None] = {}
     new_palettes: list[ET.Element] = []
+    inlined: list[str] = []              # 3.21.0: looks ported with their palette values written in
+    _src_resolver: dict = {}
     src_palettes = {p.get("ID", ""): p for p in src_engine.findall("Palette")}
     for src_fid in func_ids:
         src_fn = src_func_by_id.get(src_fid)
@@ -1691,6 +1693,8 @@ def _build(plan: dict) -> dict:
             new_fn.set("Path", import_path)
 
         _remap_func_refs(new_fn, func_id_map)
+        if _inline_palettes(new_fn, src_root, defs, _src_resolver):
+            inlined.append(src_fid)
         before, after = _remap_fixture_refs(new_fn, blocks, mirror_fixtures,
                                             pan_channel_map, intensity, neutral,
                                             translate, plan.get("strobe", "keep"),
@@ -1805,6 +1809,7 @@ def _build(plan: dict) -> dict:
         "groups": [{"id": g.get("ID"), "name": g.findtext("Name", "")} for g in new_groups],
         "palettes": [{"id": p.get("ID"), "name": p.get("Name", ""), "type": p.get("Type", "")}
                      for p in new_palettes],
+        "inlined": inlined,
         "vc": vc_result,
         "panic": panic,
         "removed_vc": removed_vc,
@@ -2105,6 +2110,39 @@ def _parse_seq_step(text: str) -> list[tuple[str, str]]:
             out.append((fid, parts[i + 1].strip()))
     return out
 
+
+
+def _inline_palettes(fn: ET.Element, src_root, defs, cache: dict) -> bool:
+    """A look with values of its own **and** palettes (a look that takes its
+    dimmer from a Dimmer palette, 3.21.0): write what the palettes give its
+    own fixtures into its values, so the fan-in, the translation and the
+    neutral completion see the whole look.  With no fixture group left to
+    serve, the palette references go (the values say the same).  True when
+    something was written."""
+    if fn.get("Type") != "Scene":
+        return False
+    own = fn.findall("FixtureVal")
+    prefs = fn.findall("Palette")
+    if not own or not prefs:
+        return False
+    from core import palettes as P
+    if "r" not in cache:
+        from core.doctor.checks import _normalise_defs
+        cache["r"] = P.Resolver(src_root, _normalise_defs(defs))
+    vals = cache["r"].resolve(fn)
+    changed = False
+    for v in own:
+        f = v.get("ID")
+        if f in vals and vals[f]:
+            text = P.fixture_val_text(vals[f])
+            if text != (v.text or "").strip():
+                v.text = text
+                changed = True
+    if not fn.findall("FixtureGroup"):
+        for p in prefs:
+            fn.remove(p)
+        changed = True
+    return changed
 
 def _remap_fixture_refs(fn_el: ET.Element,
                         blocks: dict[str, list[str]],

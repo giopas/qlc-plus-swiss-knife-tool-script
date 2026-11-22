@@ -575,6 +575,23 @@ def fetch_fixtures_from_github(missing_fixtures: list, save_dir: str) -> dict:
 # BASELINE STATS
 # =============================================================================
 
+def _palette_reach(fn, groups, doffs: dict) -> set:
+    """Fixtures a scene's palettes reach (3.21.0): its groups' fixtures, and
+    its own fixtures that do not set their dimmer themselves (an own value
+    wins over the palette in QLC+)."""
+    from core import palettes as P
+    fx = {f for g in P.scene_groups(fn) if g in groups for f in P.group_fixture_ids(groups[g])}
+    for v in P._children(fn, 'FixtureVal'):
+        f = v.get('ID')
+        d = doffs.get(f)
+        if f is None or d is None:
+            continue
+        nums = [x.strip() for x in (v.text or '').split(',') if x.strip()]
+        if str(d) not in nums[0::2]:
+            fx.add(f)
+    return fx
+
+
 def get_fixture_baseline_stats() -> list:
     """
     Scan all Scene functions and return per-fixture dimmer channel statistics,
@@ -637,6 +654,22 @@ def get_fixture_baseline_stats() -> list:
                         break
             except (ValueError, IndexError):
                 continue
+
+    # 3.21.0: looks that take their dimmer from a Dimmer palette count too
+    from core import palettes as P
+    pals = P.read_palettes(root)
+    groups = P.groups_by_id(root)
+    doffs = {k: v.get('dimmer_offset') for k, v in fi_map.items()}
+    for func in engine.findall('q:Function', NS):
+        if func.get('Type') != 'Scene':
+            continue
+        levels = [int((pals[p].numbers() or [0])[0]) for p in P.scene_palettes(func)
+                  if pals.get(p) is not None and pals[p].type == 'Dimmer' and pals[p].numbers()]
+        if not levels:
+            continue
+        for fid in _palette_reach(func, groups, doffs):
+            if fid in buckets and doffs.get(fid) is not None:
+                buckets[fid]['values'].append(max(0, min(255, levels[-1])))
 
     result = []
     for fid, b in buckets.items():
@@ -920,9 +953,11 @@ def palette_plan(root, scales: dict, caps: dict | None = None) -> dict:
     # lights with no dimmer channel don't follow a Dimmer palette and can't be
     # scaled here, so they don't make a look "mixed"
     try:
-        dimmable = {fi['id'] for fi in get_fixture_info() if fi.get('dimmer_offset') is not None}
+        infos = get_fixture_info()
+        dimmable = {fi['id'] for fi in infos if fi.get('dimmer_offset') is not None}
+        doffs = {fi['id']: fi.get('dimmer_offset') for fi in infos}
     except Exception:                     # no definitions known: judge every light
-        dimmable = None
+        dimmable, doffs = None, {}
     per_pal: dict = {}
     lit_users: dict = {}
     for fn in P._children(engine, 'Function'):
@@ -932,8 +967,7 @@ def palette_plan(root, scales: dict, caps: dict | None = None) -> dict:
                 if pals.get(pid) is not None and pals[pid].type == 'Dimmer']
         if not dims:
             continue
-        fx = {f for g in P.scene_groups(fn) if g in groups
-              for f in P.group_fixture_ids(groups[g])}
+        fx = _palette_reach(fn, groups, doffs)
         if dimmable is not None:
             fx &= dimmable
         if fx:                            # a look the palette really dims

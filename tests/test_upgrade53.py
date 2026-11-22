@@ -75,7 +75,7 @@ def test_target_522_leaves_out_the_53_steps(defs):
     root = _root(QUICK)
     a = U.analyse(root, defs, "5.2.2")
     assert "positions" not in a["defaults"]
-    assert {s["id"] for s in a["steps"] if s["only53"]} == {"positions", "lock"}
+    assert {s["id"] for s in a["steps"] if s["only53"]} == {"positions", "lock", "dimmerpal"}   # dimmerpal: 3.21.0
     _new, acts = U.upgrade(root, defs, U.STEPS, "5.2.2")
     assert not [x for x in acts if x["step"] in ("positions", "lock")]
 

@@ -28,6 +28,11 @@ frame      a *Groups* page: one page per group in a multipage frame,   5.2.2
            frame, its effects, and an XY pad for moving heads
 hide       page-switch fixtures hidden in 2D and 3D                     5.2.2
 lock       placed fixtures locked in 2D and 3D                          5.3
+dimmerpal  looks whose lit lights all share one dimmer level take it  5.3
+           from a Dimmer palette (*Dimmer Full*, *Dimmer 80%* …); dark
+           lights keep their 0, the rest of the look is unchanged; only
+           when the look plays exactly the same (3.21.0, not ticked by
+           default)
 crossuni…  an old cross-universe flag (``True``) written as ``Fill``    5.3.1
            where QLC+ 5.3.1 would patch the fixture to other
            addresses (Doctor D027); ``Fill`` keeps the 5.3.0
@@ -60,9 +65,9 @@ from core import qlc531, qxw_io
 from core import wizard_repair as W
 
 STEPS = ("folders", "palettes", "allgroup", "grids", "positions", "frame", "hide", "lock",
-         "crossuniverse")
+         "dimmerpal", "crossuniverse")
 DEFAULT_STEPS = ("folders", "palettes", "allgroup", "positions", "hide", "crossuniverse")
-ONLY_53 = ("positions", "lock")
+ONLY_53 = ("positions", "lock", "dimmerpal")
 TARGETS = ("5.3", "5.2.2")
 LATEST = qlc531.LATEST_TEXT
 
@@ -693,6 +698,7 @@ def analyse(root, defs=None, target: str = "5.3") -> dict:
          "note": "" if groups_frame(root) is None else f"The show already has a '{FRAME_CAPTION}' frame."},
         {"id": "hide", "count": len(hide), "items": [f"fixture {i}" for i in hide]},
         {"id": "lock", "count": len(lock), "items": []},
+        _dimmer_step(show),
         _cross_step(show.ws),
     ]
     for s in steps:
@@ -702,6 +708,15 @@ def analyse(root, defs=None, target: str = "5.3") -> dict:
                          "wizard": P.is_wizard_show(root), "known": known, "lights": lights,
                          "steps": steps,
                          "defaults": [s for s in DEFAULT_STEPS if not (target != "5.3" and s in ONLY_53)]})
+
+
+def _dimmer_step(show: _Show) -> dict:
+    plan = dimmer_plan(show)
+    need = show.known() < len(show.lights)
+    note = _dimmer_note(plan)
+    if need and not plan["moves"]:
+        note = "Needs the fixture definitions: only %d of %d lights have one." % (show.known(), len(show.lights))
+    return {"id": "dimmerpal", "count": len(plan["moves"]), "items": _dimmer_items(plan), "note": note}
 
 
 def _cross_step(ws) -> dict:
@@ -725,7 +740,7 @@ def _known(root, out: dict) -> dict:
 
 
 WIZARD_NOTE = "The QLC+ Show Wizard made this show: Wizard Repair finishes it."
-WIZARD_OWN = ("folders", "palettes", "allgroup", "grids", "positions", "frame")
+WIZARD_OWN = ("folders", "palettes", "allgroup", "grids", "positions", "frame", "dimmerpal")
 
 
 def _wizard_analysis(root, target: str, defs=None) -> dict:
@@ -750,6 +765,197 @@ def _wizard_analysis(root, target: str, defs=None) -> dict:
     return {"version": root.findtext("Creator/Version") or "", "target": target, "wizard": True,
             "known": 0, "lights": len(_lights(root)), "steps": steps,
             "defaults": ["hide", "crossuniverse"]}
+
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 9. dimmer from palettes (3.21.0)
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# A look moves to a Dimmer palette only when it will play exactly as before.
+# QLC+ 5.3 applies a scene's palettes to its own fixtures, then the scene's
+# own values win (``Scene::write``, mirrored in ``palettes.Resolver``).  So:
+#
+# * every lit light of the look (one with a dimmer above 0) must set *all*
+#   the channels a Dimmer palette sets on it (the master dimmer and each
+#   head's dimmer) to the same level L, the same L for every lit light;
+# * those channels leave the look, and a ``<Palette>`` of level L comes in;
+# * a dark light keeps its 0 as its own value, which wins over the palette;
+#   a dark light that never declared its dimmer gets an explicit 0 (dimmer is
+#   a highest-value-wins channel, so 0 and "not set" play the same);
+# * looks bound to a Sequence, layer scenes, the PANIC family and looks with
+#   a light of unknown definition are left alone;
+# * the result is checked with the Resolver: what the look sets after must
+#   equal what it set before, or the look is left as it was.
+
+def _dimmer_channels(show: _Show, fid: str) -> List[int]:
+    """Channels a Dimmer palette sets on fixture *fid* (empty when unknown)."""
+    m = show.R.models.get(fid)
+    if m is None:
+        return []
+    vals = P.palette_values(P.Palette("x", "Dimmer", "", "255"), [m], show.R.stage)
+    return sorted(vals.get(fid, {}).keys())
+
+
+def _pairs(text: str) -> Dict[int, int]:
+    nums = [x.strip() for x in (text or "").split(",") if x.strip()]
+    out: Dict[int, int] = {}
+    for c, v in zip(nums[0::2], nums[1::2]):
+        try:
+            out[int(c)] = int(v)
+        except ValueError:
+            pass
+    return out
+
+
+def _sequence_scenes(root) -> set:
+    return {f.get("BoundScene") for f in _fns(root)
+            if f.get("Type") == "Sequence" and f.get("BoundScene") is not None}
+
+
+def _dimmer_candidate(show: _Show, fn: ET.Element, skip: set):
+    """``(level, {fixture id: new FixtureVal text})`` when *fn* can take its
+    dimmer from a palette, else ``(None, reason)``."""
+    fid = fn.get("ID")
+    if fn.get("Type") != "Scene" or fid in skip:
+        return None, "skip"
+    if P.scene_palettes(fn) or P.scene_groups(fn):
+        return None, "palette"                  # already a palette or group look
+    vals = _children_fixture_vals(fn)
+    if not vals:
+        return None, "empty"
+    level = None
+    new: Dict[str, str] = {}
+    lit_any = False
+    for v in vals:
+        f = v.get("ID")
+        chans = _dimmer_channels(show, f)
+        if not chans:
+            return None, "unknown"
+        pairs = _pairs(v.text or "")
+        dims = [pairs.get(c) for c in chans]
+        if all(d in (None, 0) for d in dims):
+            for c in chans:                     # dark: an explicit 0 wins over the palette
+                pairs[c] = 0
+            new[f] = P.fixture_val_text(pairs)
+            continue
+        if any(d is None for d in dims) or len(set(dims)) != 1:
+            return None, "levels"
+        if level is None:
+            level = dims[0]
+        elif dims[0] != level:
+            return None, "levels"
+        lit_any = True
+        for c in chans:
+            pairs.pop(c, None)
+        new[f] = P.fixture_val_text(pairs)
+    if not lit_any:
+        return None, "dark"
+    return level, new
+
+
+def _children_fixture_vals(fn: ET.Element) -> List[ET.Element]:
+    return [c for c in fn if c.tag == "FixtureVal" or c.tag.endswith("}FixtureVal")]
+
+
+def _plays_same(show: _Show, before: ET.Element, after: ET.Element, extra_pal: P.Palette) -> bool:
+    """The look after the change sets the same values as before (dimmer
+    channels not set before count as 0)."""
+    R = show.R
+    old = R.resolve(before)
+    saved = dict(R.palettes)
+    R.palettes[extra_pal.id] = extra_pal
+    try:
+        nw = R.resolve(after)
+    finally:
+        R.palettes = saved
+    for f in set(old) | set(nw):
+        a, b = dict(old.get(f, {})), dict(nw.get(f, {}))
+        for c in _dimmer_channels(show, f):
+            a.setdefault(c, 0)
+            b.setdefault(c, 0)
+        if a != b:
+            return False
+    return True
+
+
+def dimmer_plan(show: _Show) -> dict:
+    """What *dimmerpal* would do: ``{moves: [(scene id, level, new texts)],
+    levels: {level: n}, left: {reason: n}, total}``."""
+    skip = _sequence_scenes(show.root) | set(show.panic)
+    moves, left = [], {}
+    levels: Dict[int, int] = {}
+    total = 0
+    for fn in _fns(show.root):
+        if fn.get("Type") != "Scene":
+            continue
+        if not _children_fixture_vals(fn) or not P.has_values(fn):
+            continue
+        if P.scene_layer(fn, show.R):
+            left["layer"] = left.get("layer", 0) + 1
+            total += 1
+            continue
+        total += 1
+        level, new = _dimmer_candidate(show, fn, skip)
+        if level is None:
+            left[new] = left.get(new, 0) + 1
+            continue
+        after = copy.deepcopy(fn)
+        for v in _children_fixture_vals(after):
+            v.text = new.get(v.get("ID"), v.text)
+        ET.SubElement(after, "Palette", {"ID": "__dimmer__"})
+        if not _plays_same(show, fn, after, P.Palette("__dimmer__", "Dimmer", "", str(level))):
+            left["different"] = left.get("different", 0) + 1
+            continue
+        moves.append((fn.get("ID"), level, new))
+        levels[level] = levels.get(level, 0) + 1
+    return {"moves": moves, "levels": levels, "left": left, "total": total}
+
+
+DIMMER_NAMES = {255: "Dimmer Full", 128: "Dimmer Half", 0: "Dimmer Off"}
+LEFT_WORDS = {
+    "levels": "Stay as they are: {0} look(s) with lit lights at different levels",
+    "unknown": "Stay as they are: {0} look(s) with a light that has no definition",
+    "dark": "Stay as they are: {0} look(s) with every light dark",
+    "skip": "Stay as they are: {0} look(s) that are the PANIC RESET or belong to a sequence",
+    "layer": "Stay as they are: {0} layer look(s)",
+    "different": "Stay as they are: {0} look(s) that would not play the same",
+    "palette": "Stay as they are: {0} look(s) that already use palettes",
+    "empty": "Stay as they are: {0} look(s) with no values",
+}
+
+
+def _dimmer_palette_for(root, level: int) -> str:
+    """The id of a flat Dimmer palette at *level*, made when there is none."""
+    for p in _eng(root).findall("Palette"):
+        if p.get("Type") == "Dimmer" and p.get("Value") == str(level) \
+                and (p.get("Fan") or "Flat") == "Flat":
+            return p.get("ID")
+    name = DIMMER_NAMES.get(level) or f"Dimmer {int(round(level * 100 / 255))}%"
+    taken = {p.get("Name") for p in _eng(root).findall("Palette")}
+    if name in taken:
+        name = f"{name} ({level})"
+    return _add_palette(root, name, "Dimmer", str(level))
+
+
+def _level_name(lv: int) -> str:
+    return DIMMER_NAMES.get(lv) or "Dimmer %d%%" % round(lv * 100 / 255)
+
+
+def _dimmer_items(plan: dict, reasons: bool = True) -> List[str]:
+    items = [f"{_level_name(lv)}: {n} look(s)" for lv, n in sorted(plan["levels"].items(), reverse=True)]
+    if reasons:
+        items += [LEFT_WORDS.get(k, k + ": {0}").replace("{0}", str(n))
+                  for k, n in sorted(plan["left"].items(), key=lambda kv: -kv[1])]
+    return items
+
+
+def _dimmer_note(plan: dict) -> str:
+    if not plan["total"]:
+        return ""
+    stay = sum(plan["left"].values())
+    return (f"{len(plan['moves'])} of {plan['total']} looks can take their dimmer from a palette; "
+            f"the other {stay} stay as they are.")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -848,6 +1054,24 @@ def upgrade(root, defs=None, steps: Iterable[str] = DEFAULT_STEPS,
                 it.set("Locked", "True")
         if ids:
             act("lock", f"{len(ids)} fixture(s) locked in the 2D and 3D views (QLC+ 5.3)")
+
+    # dimmer from palettes (3.21.0): last of the look changes, on a fresh read
+    if "dimmerpal" in want:
+        plan = dimmer_plan(_Show(work, defs))
+        fns = {f.get("ID"): f for f in _fns(work)}
+        pal_ids: Dict[int, str] = {}
+        for sid, level, new in plan["moves"]:
+            if level not in pal_ids:
+                pal_ids[level] = _dimmer_palette_for(work, level)
+            fn = fns[sid]
+            for v in _children_fixture_vals(fn):
+                if v.get("ID") in new:
+                    v.text = new[v.get("ID")] or None
+            ET.SubElement(fn, "Palette", {"ID": pal_ids[level]})
+        for lv, n in sorted(plan["levels"].items(), reverse=True):
+            act("dimmerpal", f"{n} look(s) now take their dimmer from the palette '{_level_name(lv)}'")
+        if plan["moves"]:
+            act("dimmerpal", _dimmer_note(plan))
 
     # 9. cross-universe fixtures (QLC+ 5.3.1)
     if "crossuniverse" in want:

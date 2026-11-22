@@ -4730,5 +4730,17 @@
  "✓ Mapping loaded: {0} fixture(s) mapped from the file.": "✓ マッピングを読み込みました：ファイルから{0}台の灯体をマッピングしました。",
  "{0} fixture(s) of the file are not in these shows: Auto-Map filled the rest. Check the list.": "ファイルの{0}台の灯体はこれらのショーにありません：残りは自動マッピングで補いました。一覧を確認してください。",
  "Function Porter mapping": "ファンクション移植のマッピング",
- "This mapping was saved by a newer Swiss Knife.": "このマッピングは新しいバージョンの Swiss Knife で保存されました。"
+ "This mapping was saved by a newer Swiss Knife.": "このマッピングは新しいバージョンの Swiss Knife で保存されました。",
+ "Dimmer from palettes, where it fits": "ディマーをパレットから（可能な場合）",
+ "A look whose lit lights all share one dimmer level takes that level from a Dimmer palette (Dimmer Full, Dimmer 80% …). Change the palette in QLC+ and those looks follow. Dark lights keep their 0 and the rest of the look stays as it is. A look changes only if it plays exactly the same; the others are listed. Not ticked by default.": "点灯している灯体がすべて同じディマーレベルのルックは、そのレベルをディマーパレット（Dimmer Full、Dimmer 80% …）から取ります。QLC+ でパレットを変えると、それらのルックが従います。消灯の灯体は 0 のまま、ルックのほかの部分は変わりません。まったく同じに再生される場合だけルックを変え、それ以外は一覧にします。既定ではオフです。",
+ "{0}: {1} look(s)": "{0}：{1}個のルック",
+ "Stay as they are: {0} look(s) with lit lights at different levels": "そのまま：点灯中の灯体のレベルが異なる{0}個のルック",
+ "Stay as they are: {0} look(s) with a light that has no definition": "そのまま：定義のない灯体を含む{0}個のルック",
+ "Stay as they are: {0} look(s) with every light dark": "そのまま：すべての灯体が消灯の{0}個のルック",
+ "Stay as they are: {0} look(s) that are the PANIC RESET or belong to a sequence": "そのまま：PANIC RESET またはシーケンスに属する{0}個のルック",
+ "Stay as they are: {0} layer look(s)": "そのまま：{0}個のレイヤールック",
+ "Stay as they are: {0} look(s) that would not play the same": "そのまま：同じに再生されない{0}個のルック",
+ "Stay as they are: {0} look(s) that already use palettes": "そのまま：すでにパレットを使う{0}個のルック",
+ "Stay as they are: {0} look(s) with no values": "そのまま：値のない{0}個のルック",
+ "{0} of {1} looks can take their dimmer from a palette; the other {2} stay as they are.": "{1}個中{0}個のルックがパレットからディマーを取れます。残りの{2}個はそのままです。"
 }

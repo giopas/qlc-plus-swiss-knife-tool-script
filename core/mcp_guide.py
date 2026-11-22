@@ -146,9 +146,11 @@ GUIDE: Dict[str, dict] = {
                            "group holds the whole rig), `grids` (group grids from the stage; changes how matrices "
                            "run), `positions` (Position3D palettes: centre, audience, each musician model; QLC+ 5.3), "
                            "`frame` (a Groups page: one page per group with an intensity slider, its looks, its "
-                           "effects and an XY pad for moving heads), `hide` (hide page-switch fixtures) and `lock` "
-                           "(lock fixtures in 2D/3D; QLC+ 5.3). The app ticks folders, palettes, allgroup, "
-                           "positions and hide by default."),
+                           "effects and an XY pad for moving heads), `hide` (hide page-switch fixtures), `lock` "
+                           "(lock fixtures in 2D/3D; QLC+ 5.3) and `dimmerpal` (looks whose lit lights share one "
+                           "dimmer level take it from a Dimmer palette, only where the look plays exactly the same; "
+                           "QLC+ 5.3; ask the user first, it is never ticked by default). The app ticks folders, "
+                           "palettes, allgroup, positions and hide by default."),
                  ("target", "`5.3` (default) or `5.2.2`: with 5.2.2 the 5.3-only steps are skipped.")],
         "returns": "Without steps: `version` (in the file), `wizard`, `steps` [{id, count, items, only53, note}]. "
                    "With steps: what was done and the Doctor counts after.",

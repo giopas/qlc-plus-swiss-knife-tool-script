@@ -4706,5 +4706,17 @@
  "✓ Mapping loaded: {0} fixture(s) mapped from the file.": "✓ Mappatura caricata: {0} luci abbinate dal file.",
  "{0} fixture(s) of the file are not in these shows: Auto-Map filled the rest. Check the list.": "{0} luci del file non sono in questi show: l'abbinamento automatico ha completato il resto. Controlla l'elenco.",
  "Function Porter mapping": "Mappatura del Trasferimento funzioni",
- "This mapping was saved by a newer Swiss Knife.": "Questa mappatura è stata salvata da uno Swiss Knife più recente."
+ "This mapping was saved by a newer Swiss Knife.": "Questa mappatura è stata salvata da uno Swiss Knife più recente.",
+ "Dimmer from palettes, where it fits": "Dimmer dalle palette, dove possibile",
+ "A look whose lit lights all share one dimmer level takes that level from a Dimmer palette (Dimmer Full, Dimmer 80% …). Change the palette in QLC+ and those looks follow. Dark lights keep their 0 and the rest of the look stays as it is. A look changes only if it plays exactly the same; the others are listed. Not ticked by default.": "Un look le cui luci accese hanno tutte lo stesso livello di dimmer prende quel livello da una palette Dimmer (Dimmer Full, Dimmer 80% …). Cambia la palette in QLC+ e quei look la seguono. Le luci spente restano a 0 e il resto del look non cambia. Un look cambia solo se resta identico; gli altri sono elencati. Non spuntato di default.",
+ "{0}: {1} look(s)": "{0}: {1} look",
+ "Stay as they are: {0} look(s) with lit lights at different levels": "Restano come sono: {0} look con luci accese a livelli diversi",
+ "Stay as they are: {0} look(s) with a light that has no definition": "Restano come sono: {0} look con una luce senza definizione",
+ "Stay as they are: {0} look(s) with every light dark": "Restano come sono: {0} look con tutte le luci spente",
+ "Stay as they are: {0} look(s) that are the PANIC RESET or belong to a sequence": "Restano come sono: {0} look che sono il PANIC RESET o appartengono a una sequenza",
+ "Stay as they are: {0} layer look(s)": "Restano come sono: {0} look a strati",
+ "Stay as they are: {0} look(s) that would not play the same": "Restano come sono: {0} look che non resterebbero identici",
+ "Stay as they are: {0} look(s) that already use palettes": "Restano come sono: {0} look che usano già palette",
+ "Stay as they are: {0} look(s) with no values": "Restano come sono: {0} look senza valori",
+ "{0} of {1} looks can take their dimmer from a palette; the other {2} stay as they are.": "{0} look su {1} possono prendere il dimmer da una palette; gli altri {2} restano come sono."
 }

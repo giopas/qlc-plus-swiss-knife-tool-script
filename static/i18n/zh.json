@@ -4730,5 +4730,17 @@
  "✓ Mapping loaded: {0} fixture(s) mapped from the file.": "✓ 映射已载入：从文件映射了 {0} 台灯具。",
  "{0} fixture(s) of the file are not in these shows: Auto-Map filled the rest. Check the list.": "文件中有 {0} 台灯具不在这些演出中：其余已由自动映射补全。请检查列表。",
  "Function Porter mapping": "功能移植映射",
- "This mapping was saved by a newer Swiss Knife.": "此映射由较新版本的 Swiss Knife 保存。"
+ "This mapping was saved by a newer Swiss Knife.": "此映射由较新版本的 Swiss Knife 保存。",
+ "Dimmer from palettes, where it fits": "在合适时由调色板提供调光",
+ "A look whose lit lights all share one dimmer level takes that level from a Dimmer palette (Dimmer Full, Dimmer 80% …). Change the palette in QLC+ and those looks follow. Dark lights keep their 0 and the rest of the look stays as it is. A look changes only if it plays exactly the same; the others are listed. Not ticked by default.": "所有亮着的灯具调光级别相同的外观，会改为从调光调色板（Dimmer Full、Dimmer 80% …）取得该级别。在 QLC+ 中更改调色板，这些外观就会跟随。熄灭的灯具保持 0，外观的其余部分不变。只有播放效果完全相同时才会更改外观，其余的会列出。默认不勾选。",
+ "{0}: {1} look(s)": "{0}：{1} 个外观",
+ "Stay as they are: {0} look(s) with lit lights at different levels": "保持不变：{0} 个外观的亮灯级别不同",
+ "Stay as they are: {0} look(s) with a light that has no definition": "保持不变：{0} 个外观含有没有定义的灯具",
+ "Stay as they are: {0} look(s) with every light dark": "保持不变：{0} 个外观所有灯具都熄灭",
+ "Stay as they are: {0} look(s) that are the PANIC RESET or belong to a sequence": "保持不变：{0} 个外观是 PANIC RESET 或属于序列",
+ "Stay as they are: {0} layer look(s)": "保持不变：{0} 个分层外观",
+ "Stay as they are: {0} look(s) that would not play the same": "保持不变：{0} 个外观播放效果会不同",
+ "Stay as they are: {0} look(s) that already use palettes": "保持不变：{0} 个外观已使用调色板",
+ "Stay as they are: {0} look(s) with no values": "保持不变：{0} 个外观没有数值",
+ "{0} of {1} looks can take their dimmer from a palette; the other {2} stay as they are.": "{1} 个外观中有 {0} 个可以从调色板取得调光；其余 {2} 个保持不变。"
 }

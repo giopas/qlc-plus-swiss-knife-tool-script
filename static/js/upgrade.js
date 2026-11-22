@@ -26,6 +26,8 @@ const _UP_TEXT = {
               'The 1-channel dimmers that switch frame pages are hidden in the 2D and 3D views.'],
   lock:      ['Lock the fixtures in 2D and 3D',
               'Placed fixtures can’t be dragged by mistake.'],
+  dimmerpal: ['Dimmer from palettes, where it fits',
+              'A look whose lit lights all share one dimmer level takes that level from a Dimmer palette (Dimmer Full, Dimmer 80% …). Change the palette in QLC+ and those looks follow. Dark lights keep their 0 and the rest of the look stays as it is. A look changes only if it plays exactly the same; the others are listed. Not ticked by default.'],
   crossuniverse: ['Cross-universe fixtures for QLC+ 5.3.1',
               'A fixture that runs on into the next universe keeps the addresses it has today. QLC+ 5.3.1 reads the old setting as whole heads only and would move some channels; Swiss Knife writes the setting that keeps them, and every QLC+ 5 reads it.'],
 };

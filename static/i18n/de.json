@@ -4730,5 +4730,17 @@
  "✓ Mapping loaded: {0} fixture(s) mapped from the file.": "✓ Zuordnung geladen: {0} Lampe(n) aus der Datei zugeordnet.",
  "{0} fixture(s) of the file are not in these shows: Auto-Map filled the rest. Check the list.": "{0} Lampe(n) aus der Datei sind nicht in diesen Shows: die automatische Zuordnung hat den Rest ergänzt. Prüfe die Liste.",
  "Function Porter mapping": "Zuordnung des Funktions-Porters",
- "This mapping was saved by a newer Swiss Knife.": "Diese Zuordnung wurde mit einem neueren Swiss Knife gespeichert."
+ "This mapping was saved by a newer Swiss Knife.": "Diese Zuordnung wurde mit einem neueren Swiss Knife gespeichert.",
+ "Dimmer from palettes, where it fits": "Dimmer aus Paletten, wo es passt",
+ "A look whose lit lights all share one dimmer level takes that level from a Dimmer palette (Dimmer Full, Dimmer 80% …). Change the palette in QLC+ and those looks follow. Dark lights keep their 0 and the rest of the look stays as it is. A look changes only if it plays exactly the same; the others are listed. Not ticked by default.": "Ein Look, dessen eingeschaltete Lampen alle denselben Dimmerpegel haben, nimmt diesen Pegel aus einer Dimmer-Palette (Dimmer Full, Dimmer 80% …). Ändere die Palette in QLC+, und diese Looks folgen. Dunkle Lampen behalten ihre 0, der Rest des Looks bleibt, wie er ist. Ein Look ändert sich nur, wenn er genau gleich spielt; die anderen werden aufgelistet. Standardmäßig nicht angehakt.",
+ "{0}: {1} look(s)": "{0}: {1} Look(s)",
+ "Stay as they are: {0} look(s) with lit lights at different levels": "Bleiben, wie sie sind: {0} Look(s) mit eingeschalteten Lampen auf verschiedenen Pegeln",
+ "Stay as they are: {0} look(s) with a light that has no definition": "Bleiben, wie sie sind: {0} Look(s) mit einer Lampe ohne Definition",
+ "Stay as they are: {0} look(s) with every light dark": "Bleiben, wie sie sind: {0} Look(s), in denen alle Lampen dunkel sind",
+ "Stay as they are: {0} look(s) that are the PANIC RESET or belong to a sequence": "Bleiben, wie sie sind: {0} Look(s), die der PANIC RESET sind oder zu einer Sequenz gehören",
+ "Stay as they are: {0} layer look(s)": "Bleiben, wie sie sind: {0} Ebenen-Look(s)",
+ "Stay as they are: {0} look(s) that would not play the same": "Bleiben, wie sie sind: {0} Look(s), die nicht gleich spielen würden",
+ "Stay as they are: {0} look(s) that already use palettes": "Bleiben, wie sie sind: {0} Look(s), die schon Paletten nutzen",
+ "Stay as they are: {0} look(s) with no values": "Bleiben, wie sie sind: {0} Look(s) ohne Werte",
+ "{0} of {1} looks can take their dimmer from a palette; the other {2} stay as they are.": "{0} von {1} Looks können ihren Dimmer aus einer Palette nehmen; die anderen {2} bleiben, wie sie sind."
 }

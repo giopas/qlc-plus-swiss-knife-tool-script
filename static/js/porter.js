@@ -1028,6 +1028,75 @@ function porterAutoMap() {
   _pRenderMapFixtures();
 }
 
+// ── Save / load the mapping (3.21.0) ────────────────────────────────────────
+// The step-3 choices as a small file, to use again for the next show between
+// the same two rigs. QLC+'s Fixture Remap cannot reopen a mapping.
+
+async function porterSaveMap() {
+  if (!Object.keys(_pFixMapping).length) { _pStatus(t('Nothing to save yet: map the fixtures first.'), 'warn'); return; }
+  let d;
+  try {
+    const r = await fetch('/api/porter/map/export', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mapping: _pFixMapping, mirror: [..._pMirrorFixtures], skip: [..._pSkipFx],
+        options: { fanout: _pFanoutMode, strategy: _pStrategy(), drop_unmapped: _pDropUnmapped,
+                   complete_channels: _pCompleteCh, convert_panic: _pConvertPanic },
+      }),
+    });
+    d = await r.json();
+    if (!r.ok || d.error) { _pStatus(d.error || 'Failed.', 'error'); return; }
+  } catch (e) { _pStatus('Network error: ' + e.message, 'error'); return; }
+  const base = ((_pSrcName || 'source') + '_to_' + (_pTgtName || 'target')).replace(/\.qxw/gi, '').replace(/[^\w.-]+/g, '_');
+  const blob = new Blob([JSON.stringify(d, null, 1)], { type: 'application/json' });
+  const saved = await saveFileWithPicker(blob, base + '.portermap.json',
+    [{ description: 'Function Porter mapping', accept: { 'application/json': ['.json'] } }],
+    t('Save the fixture mapping as'));
+  if (saved) _pStatus(t('✓ Mapping saved as {0}. Load it in step 3 of the next port between the same rigs.', saved), 'ok');
+}
+
+function porterLoadMap() {
+  const inp = document.getElementById('porter-map-file');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+async function porterMapFileChosen(inp) {
+  const f = inp && inp.files && inp.files[0];
+  if (!f) return;
+  let data;
+  try { data = JSON.parse(await f.text()); }
+  catch (e) { _pStatus(t('This file is not a Function Porter mapping.'), 'error'); return; }
+  let d;
+  try {
+    const r = await fetch('/api/porter/map/import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+    });
+    d = await r.json();
+    if (!r.ok || d.error) { _pStatus(d.error || 'Failed.', 'error'); return; }
+  } catch (e) { _pStatus('Network error: ' + e.message, 'error'); return; }
+  const inClosure = new Set((_pClosure ? _pClosure.fixture_ids : []).map(String));
+  let used = 0;
+  for (const [sid, tids] of Object.entries(d.mapping || {})) {
+    if (inClosure.size && !inClosure.has(sid)) continue;
+    _pFixMapping[sid] = tids; used++;
+  }
+  const o = d.options || {};
+  if (o.fanout) _pFanoutMode = o.fanout;
+  if (typeof o.drop_unmapped === 'boolean') _pDropUnmapped = o.drop_unmapped;
+  if (typeof o.complete_channels === 'boolean') _pCompleteCh = o.complete_channels;
+  if (typeof o.convert_panic === 'boolean') _pConvertPanic = o.convert_panic;
+  const st = document.getElementById('porter-automap-strategy');
+  if (st && o.strategy && [...st.options].some(x => x.value === o.strategy)) st.value = o.strategy;
+  _pMirrorFixtures = new Set((o.mirror || []).map(String));
+  const skips = (o.skip || []).map(String).filter(s => !inClosure.size || inClosure.has(s));
+  for (const s of skips) await porterSkipFixture(s, true);
+  if (!skips.length) await _pRenderMapFixtures();
+  const miss = (d.not_found || []).length + (d.targets_not_found || []).length;
+  const msg = t('✓ Mapping loaded: {0} fixture(s) mapped from the file.', used)
+    + (miss ? ' ' + t('{0} fixture(s) of the file are not in these shows: Auto-Map filled the rest. Check the list.', miss) : '');
+  _pStatus(msg, miss ? 'warn' : 'ok');
+}
+
 // ── VC options (step 4) ─────────────────────────────────────────────────────
 
 async function _pRenderVcOptions() {

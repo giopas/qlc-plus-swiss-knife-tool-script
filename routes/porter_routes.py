@@ -235,6 +235,42 @@ def auto_map():
         return jsonify({'error': _safe_err(e)}), 500
 
 
+# ── The mapping as a file (3.21.0) ───────────────────────────────────────────
+
+@bp.route('/map/export', methods=['POST'])
+def map_export():
+    """The step-3 mapping as a file's content.
+    Body: { mapping: {src: [tgt]}, options: {...}, mirror: [src ids], skip: [src ids] }"""
+    from core import porter_map
+    data = request.get_json(force=True) or {}
+    try:
+        src, tgt = porter.list_source_fixtures(), porter.list_target_fixtures()
+        opts = dict(data.get('options') or {})
+        for key in ('mirror', 'skip'):
+            if data.get(key):
+                opts[key] = porter_map.idents([str(x) for x in data[key]], src)
+        st = porter.get_state() if hasattr(porter, 'get_state') else {}
+        return jsonify(porter_map.export_map(
+            {str(k): [str(t) for t in (v or [])] for k, v in (data.get('mapping') or {}).items()},
+            src, tgt, opts, (st or {}).get('src_name') or '', (st or {}).get('tgt_name') or ''))
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
+@bp.route('/map/import', methods=['POST'])
+def map_import():
+    """Bind a saved mapping to the shows loaded now. Body: the file's content."""
+    from core import porter_map
+    data = request.get_json(force=True) or {}
+    try:
+        return jsonify(porter_map.import_map(data, porter.list_source_fixtures(),
+                                             porter.list_target_fixtures()))
+    except porter_map.MapError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': _safe_err(e)}), 500
+
+
 # ── Virtual Console ──────────────────────────────────────────────────────────
 
 @bp.route('/source/vc')

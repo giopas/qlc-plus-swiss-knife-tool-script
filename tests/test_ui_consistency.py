@@ -116,6 +116,12 @@ def test_help_route_opens_only_wiki_pages():
     assert r.status_code == 200 and r.get_json()["url"].endswith("/wiki/Function-Porter")
     r = c.post("/api/help", json={"page": "../../evil"}, headers={"Origin": "http://127.0.0.1:5731"})
     assert r.status_code == 400
+    # 3.21.0: a section anchor is allowed, nothing else after it
+    r = c.post("/api/help", json={"page": "Brightness#brightness-palettes-and-channel-modifiers"},
+               headers={"Origin": "http://127.0.0.1:5731"})
+    assert r.status_code == 200 and r.get_json()["url"].endswith("/wiki/Brightness#brightness-palettes-and-channel-modifiers")
+    for bad in ("Brightness#x/../y", "Brightness#A B", "Brightness##x"):
+        assert c.post("/api/help", json={"page": bad}, headers={"Origin": "http://127.0.0.1:5731"}).status_code == 400
 
 
 def test_one_save_verb_for_new_files():

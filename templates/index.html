@@ -1397,6 +1397,15 @@
       </button>
     </div>
 
+    <!-- 3.21.0: looks that take their dimmer from a QLC+ Dimmer palette -->
+    <div id="brt-palettes" class="brt-palettes" hidden>
+      <span id="brt-palettes-text" class="brt-palettes-text"></span>
+      <label class="brt-palettes-opt" title="Scale the Dimmer palettes these looks use. A palette that other lights share is copied, and only these looks use the scaled copy">
+        <input type="checkbox" id="brt-scale-pal" onchange="_brtSchedulePreview()"> Also scale the Dimmer palettes
+      </label>
+      <button class="sc-link" onclick="openHelp('Brightness#brightness-palettes-and-channel-modifiers')">Palettes and Brightness</button>
+    </div>
+
     <!-- Help banner -->
     <details class="brt-help">
       <summary><strong>How it works</strong> — sliders scale each fixture's master dimmer in every scene; colours stay as they are</summary>
@@ -1890,6 +1899,11 @@
           <option value="fan_in">Fan-in by stage position</option>
         </select>
         <button class="btn btn-surface" onclick="porterAutoMap()"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#refresh"/></svg> Auto-Map</button>
+        <button class="btn btn-surface btn-ghost" onclick="porterSaveMap()"
+                data-tooltip="Save this mapping as a small file, to use it again for the next show between the same rigs">Save mapping…</button>
+        <button class="btn btn-surface btn-ghost" onclick="porterLoadMap()"
+                data-tooltip="Load a mapping saved before. Fixtures are found by name and ID; Auto-Map fills what is not in the file">Load mapping…</button>
+        <input type="file" id="porter-map-file" accept=".json,application/json" hidden onchange="porterMapFileChosen(this)">
         <div class="spacer"></div>
         <button class="btn btn-accent" onclick="porterGoStep(4)">Next: Validate →</button>
       </div>

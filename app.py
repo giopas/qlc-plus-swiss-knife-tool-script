@@ -365,10 +365,11 @@ def create_app():
     @app.route('/api/help', methods=['POST'])
     def api_help():
         """Open the tool's wiki page. Only page names (letters, digits, '-')
-        under the project wiki are accepted."""
+        under the project wiki are accepted, with an optional section anchor
+        (``Brightness#some-section``, 3.21.0)."""
         import re
         page = str((request.get_json(silent=True) or {}).get('page') or 'Home')
-        if not re.fullmatch(r'[A-Za-z0-9-]{1,60}', page):
+        if not re.fullmatch(r'[A-Za-z0-9-]{1,60}(#[a-z0-9-]{1,80})?', page):
             return jsonify({'ok': False, 'error': 'bad page'}), 400
         url = WIKI_URL + page
         if app.config.get('TESTING'):

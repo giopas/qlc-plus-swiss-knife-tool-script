@@ -457,7 +457,9 @@ WORKFLOWS = """Usual sequences:
 - DMX cables for tonight: cabling kit → cabling plan (show the alternatives) → cabling plan choose → cabling check (export).
 - A fixture for the kit: cabling fixture (proposal, shown to the user) → cabling fixture confirmed=true.
 
-Every change is a History step (show_history, undo). Only new_show, save_show and dictionary_save write show files, always new ones; stage_monitor writes only its settings and its own page; cabling writes only the kit, the plan next to the show and new export files."""
+Every change is a History step (show_history, undo). Only new_show, save_show and dictionary_save write show files, always new ones; stage_monitor writes only its settings and its own page; cabling writes only the kit, the plan next to the show and new export files.
+
+QLC+ itself first (3.21.0): when a request fits a feature QLC+ already has, say so before using a tool, and let the user choose. Same show, and the new lights are the same kind as the old ones (a PAR for another PAR): QLC+'s Fixture Remap. Every palette look of a Show Wizard show should follow one level: change the Dimmer palette in QLC+. A fixed output trim that changes no scene: a QLC+ channel modifier, made in QLC+. The Swiss Knife tools are for what those do not cover: looks from another show file (port_functions), fewer lights than before (fan-in), lights of another kind (values translated by capability), and removing lights with everything that used them (reduce_rig)."""
 
 # ── ready requests (MCP prompts) ──────────────────────────────────────────────
 

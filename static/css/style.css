@@ -2542,6 +2542,19 @@ tr:hover td.gridjs-td { background: var(--surface-1) !important; }
   border: 1px solid var(--orange);
 }
 
+/* 3.21.0: palette looks bar */
+.brt-palettes {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+  padding: 8px 16px;
+  font-size: var(--fs-ui);
+  color: var(--text-dim);
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+}
+.brt-palettes[hidden] { display: none; }
+.brt-palettes-text { flex: 1 1 320px; line-height: 1.5; }
+.brt-palettes-opt { display: inline-flex; align-items: center; gap: 6px; color: var(--text); cursor: pointer; }
+
 /* Preview counter */
 .brt-preview-count {
   font-size: var(--fs-ui);

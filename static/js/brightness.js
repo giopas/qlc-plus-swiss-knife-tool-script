@@ -540,9 +540,13 @@ function _brtSetPreview(stats) {
   const el = document.getElementById('brt-preview');
   if (!el) return;
   if (!stats) { el.textContent = ''; el.className = 'brt-preview-count'; setOutcome('brightness', ''); return; }
+  _brtSetPaletteLooks(stats.palette_looks);
   const { fixtures_active: f, scenes: s, values: v } = stats;
-  setOutcome('brightness', v ? [skPlural(f, '{0} fixture', '{0} fixtures'), skPlural(s, '{0} scene', '{0} scenes'), skPlural(v, '{0} value', '{0} values')]
-    : 'nothing yet — move a slider', '', v ? 'Apply will change' : 'Apply will do');
+  const pl = stats.palette_looks || {};
+  const pv = _brtScalePalettes() ? Math.max(0, (pl.scenes || 0) - (pl.mixed || 0)) : 0;
+  const oc = v ? [skPlural(f, '{0} fixture', '{0} fixtures'), skPlural(s, '{0} scene', '{0} scenes'), skPlural(v, '{0} value', '{0} values')] : [];
+  if (pv) oc.push(skPlural(pv, '{0} palette look', '{0} palette looks'));
+  setOutcome('brightness', oc.length ? oc : 'nothing yet — move a slider', '', oc.length ? 'Apply will change' : 'Apply will do');
   el.textContent = t('{0} will change', [skPlural(f, '{0} fixture', '{0} fixtures'), skPlural(s, '{0} scene', '{0} scenes'), skPlural(v, '{0} value', '{0} values')].join(', '));
   el.className   = `brt-preview-count ${v > 0 ? 'brt-preview-active' : ''}`;
   // 3.11.0: say when going brighter cuts scenes at full, or dimming switches lit scenes off
@@ -551,6 +555,34 @@ function _brtSetPreview(stats) {
   if (stats.to_zero) warn.push(t('{0} lit value(s) would go dark', stats.to_zero));
   if (stats.capped) el.textContent += ' · ' + t('{0} value(s) brought down to the limit', stats.capped);
   if (warn.length) { el.textContent += ' · ⚠ ' + warn.join(' · '); el.classList.add('brt-preview-warn'); }
+}
+
+// 3.21.0: looks that take their dimmer from a QLC+ Dimmer palette
+function _brtScalePalettes() {
+  const box = document.getElementById('brt-scale-pal');
+  const bar = document.getElementById('brt-palettes');
+  return !!(box && box.checked && bar && !bar.hidden);
+}
+
+function _brtSetPaletteLooks(pl) {
+  const bar = document.getElementById('brt-palettes');
+  const txt = document.getElementById('brt-palettes-text');
+  if (!bar || !txt) return;
+  if (!pl || !pl.scenes) { bar.hidden = true; txt.textContent = ''; return; }
+  bar.hidden = false;
+  const names = (pl.palettes || []).map(p => p.name).filter(Boolean);
+  const parts = [skPlural(pl.scenes, '{0} look takes its dimmer from a Dimmer palette', '{0} looks take their dimmer from a Dimmer palette')];
+  if (names.length) parts[0] += ' (' + names.join(', ') + ')';
+  if (!_brtScalePalettes()) {
+    parts.push(t('they stay as they are unless you tick the box'));
+  } else {
+    const inPlace = (pl.palettes || []).filter(p => p.in_place).length;
+    const copies = (pl.palettes || []).filter(p => !p.in_place).length;
+    if (inPlace) parts.push(skPlural(inPlace, '{0} palette scaled', '{0} palettes scaled'));
+    if (copies) parts.push(skPlural(copies, '{0} palette is shared with other lights: a scaled copy is made', '{0} palettes are shared with other lights: scaled copies are made'));
+  }
+  if (pl.mixed) parts.push(skPlural(pl.mixed, '{0} look mixes lights at different levels and stays as it is', '{0} looks mix lights at different levels and stay as they are'));
+  txt.textContent = parts.join(' · ');
 }
 
 // ── Generate QXW ──────────────────────────────────────────────────────────────
@@ -567,7 +599,7 @@ async function brtGenerateQxw() {
   try {
     resp = await fetch('/api/brightness/apply', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scales, caps, manual_dimmer_offsets: _brtManual }),
+      body: JSON.stringify({ scales, caps, manual_dimmer_offsets: _brtManual, scale_palettes: _brtScalePalettes() }),
     });
   } catch (e) { setStatus('Network error: ' + e.message, 'error'); return; }
   if (!resp.ok) {

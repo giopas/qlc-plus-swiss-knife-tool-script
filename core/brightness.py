@@ -768,6 +768,7 @@ def apply_brightness_scales(
     scales: dict,
     manual_dimmer_offsets: dict | None = None,
     caps: dict | None = None,
+    scale_palettes: bool = False,
 ) -> tuple:
     """
     Apply per-fixture brightness scales to a deep copy of the loaded workspace.
@@ -778,11 +779,14 @@ def apply_brightness_scales(
 
     caps:                  {fixture_id_str: limit in % of full} (3.12.0):
                            after the scale, no value goes above it.
+    scale_palettes:        also scale the Dimmer palettes of the palette
+                           looks of the scaled lights (3.21.0).
 
     Returns (suggested_filename: str, xml_bytes: bytes, stats: dict)
     """
     if not _state.get('loaded') or _state['qxw_root'] is None:
         raise RuntimeError('No workspace loaded.')
+    raw_caps = caps
     caps = clean_caps(caps)
     scales = dict(scales or {})
     if not scales and not caps:
@@ -841,24 +845,17 @@ def apply_brightness_scales(
         if scene_touched:
             scenes_modified += 1
 
-    # QLC+ 5 palette scenes take their dimmer from a Dimmer palette shared by
-    # many scenes: scaling it would change them all, so they are left alone
-    # and counted (3.1.0)
-    from core import palettes
-    pals = palettes.read_palettes(root_copy)
-    groups = palettes.groups_by_id(root_copy)
-    scaled = {k for k, v in scales.items() if abs(v - 1.0) >= 0.001} | set(caps)
-    palette_left = 0
-    for func in engine.findall('q:Function', NS):
-        if func.get('Type') != 'Scene':
-            continue
-        if not any(pals.get(p) is not None and pals[p].type == 'Dimmer'
-                   for p in palettes.scene_palettes(func)):
-            continue
-        fx = {f for g in palettes.scene_groups(func) if g in groups
-              for f in palettes.group_fixture_ids(groups[g])}
-        if fx & scaled:
-            palette_left += 1
+    # QLC+ 5 palette looks take their dimmer from a Dimmer palette.  By
+    # default they are left alone and counted; with scale_palettes the
+    # palette is scaled, or a scaled copy is made for the looks of the scaled
+    # lights (3.21.0, see palette_plan)
+    plan = palette_plan(root_copy, scales, raw_caps)   # it cleans the limits itself
+    palette_left = plan['left']
+    palettes_scaled = palettes_copied = palette_scenes = 0
+    if scale_palettes:
+        done = _apply_palette_plan(root_copy, plan)
+        palettes_scaled, palettes_copied, palette_scenes = done
+        palette_left = plan['mixed']
 
     # Build suggested output filename
     orig = _state.get('original_name')
@@ -868,8 +865,190 @@ def apply_brightness_scales(
         'scenes_modified': scenes_modified,
         'values_changed':  values_changed,
         'palette_scenes_left': palette_left,
+        'palette_scenes_scaled': palette_scenes,
+        'palettes_scaled': palettes_scaled,
+        'palettes_copied': palettes_copied,
     }
 
+
+
+# =============================================================================
+# PALETTE LOOKS (3.21.0): looks that take their dimmer from a Dimmer palette
+# =============================================================================
+
+def _pct(scale: float) -> int:
+    return int(round(scale * 100))
+
+
+def _label(scale: float, cap) -> str:
+    """``70%``, ``limit 80%`` or ``70% limit 80%`` for a palette copy's name."""
+    parts = []
+    if abs(scale - 1.0) >= 0.001:
+        parts.append(f"{_pct(scale)}%")
+    if cap is not None:
+        parts.append(f"limit {int(round(cap * 100 / 255))}%")
+    return ' '.join(parts) or '100%'
+
+
+def palette_plan(root, scales: dict, caps: dict | None = None) -> dict:
+    """What Brightness would do to the *palette looks* of the scaled lights.
+
+    A palette look is a QLC+ 5 scene with ``<FixtureGroup>`` and ``<Palette>``
+    and no values of its own: its dimmer comes from a Dimmer palette when it
+    runs.  For each such scene whose group holds a scaled light:
+
+    * all the lights of its groups have the same scale and limit → the scene
+      can follow: it gets the palette value scaled by that factor;
+    * the lights have different scales → *mixed*: left as it is.
+
+    Then, per Dimmer palette: when every scene that uses it gets the same new
+    value, the palette itself is scaled (``in_place``); otherwise a scaled copy
+    is made per new value and only those scenes point to it.
+
+    Returns ``{'scenes', 'left', 'mixed', 'palettes': [...]}`` where each
+    palette entry is ``{id, name, value, new_values: {value: [scene ids]},
+    users, in_place, shared}``.
+    """
+    from core import palettes as P
+    caps = clean_caps(caps)
+    pals = P.read_palettes(root)
+    groups = P.groups_by_id(root)
+    engine = P._engine(root)
+    out = {'scenes': 0, 'left': 0, 'mixed': 0, 'palettes': []}
+    if engine is None:
+        return out
+    # lights with no dimmer channel don't follow a Dimmer palette and can't be
+    # scaled here, so they don't make a look "mixed"
+    try:
+        dimmable = {fi['id'] for fi in get_fixture_info() if fi.get('dimmer_offset') is not None}
+    except Exception:                     # no definitions known: judge every light
+        dimmable = None
+    per_pal: dict = {}
+    lit_users: dict = {}
+    for fn in P._children(engine, 'Function'):
+        if fn.get('Type') != 'Scene':
+            continue
+        dims = [pid for pid in P.scene_palettes(fn)
+                if pals.get(pid) is not None and pals[pid].type == 'Dimmer']
+        if not dims:
+            continue
+        fx = {f for g in P.scene_groups(fn) if g in groups
+              for f in P.group_fixture_ids(groups[g])}
+        if dimmable is not None:
+            fx &= dimmable
+        if fx:                            # a look the palette really dims
+            for pid in dims:
+                lit_users[pid] = lit_users.get(pid, 0) + 1
+        if not any(_touched(f, scales, caps) for f in fx):
+            continue
+        keys = {(round(scales.get(f, 1.0), 4), caps.get(f)) for f in fx}
+        if len(keys) != 1:
+            if any((pals[pid].numbers() or [0])[0] > 0 for pid in dims):
+                out['mixed'] += 1
+            continue
+        scale, cap = next(iter(keys))
+        for pid in dims:
+            pal = pals[pid]
+            nums = pal.numbers()
+            if not nums:
+                continue
+            new = _new_value(int(nums[0]), scale, cap)
+            entry = per_pal.setdefault(pid, {
+                'id': pid, 'name': pal.name, 'value': int(nums[0]),
+                'new_values': {}, 'factors': {}, 'users': 0})
+            entry['new_values'].setdefault(new, []).append(fn.get('ID'))
+            entry['factors'][new] = (scale, cap)
+    changing: set = set()
+    for pid, e in per_pal.items():
+        e['users'] = lit_users.get(pid, 0)
+        if set(e['new_values']) == {e['value']}:
+            continue                      # Dimmer Off, or a level that stays
+        followed = sum(len(v) for v in e['new_values'].values())
+        e['in_place'] = len(e['new_values']) == 1 and followed == e['users']
+        e['shared'] = not e['in_place']
+        out['palettes'].append(e)
+        for new, sids in e['new_values'].items():
+            if new != e['value']:
+                changing.update(sids)
+    out['scenes'] = len(changing) + out['mixed']
+    out['left'] = out['scenes']
+    return out
+
+
+def _apply_palette_plan(root, plan: dict) -> tuple:
+    """Write *plan* into *root*: (palettes scaled, copies made, scenes moved)."""
+    from core import palettes as P
+    engine = P._engine(root)
+    if engine is None or not plan['palettes']:
+        return 0, 0, 0
+    pal_el = {p.get('ID'): p for p in P._children(engine, 'Palette')}
+    fn_el = {f.get('ID'): f for f in P._children(engine, 'Function')}
+    ids = [int(i) for i in pal_el if str(i).isdigit()]
+    next_id = (max(ids) + 1) if ids else 0
+    scaled = copied = moved = 0
+
+    def _scale_fan(el, scale, cap):
+        fv = el.get('FanValue')
+        if fv:
+            try:
+                el.set('FanValue', str(_new_value(int(float(fv)), scale, cap)))
+            except ValueError:
+                pass
+
+    for e in plan['palettes']:
+        src = pal_el.get(e['id'])
+        if src is None:
+            continue
+        if e['in_place']:
+            (new, scenes), = e['new_values'].items()
+            scale, cap = e['factors'][new]
+            src.set('Value', str(new))
+            _scale_fan(src, scale, cap)
+            scaled += 1
+            moved += len(scenes)
+            continue
+        for new, scenes in sorted(e['new_values'].items()):
+            if new == e['value']:
+                continue
+            scale, cap = e['factors'][new]
+            name = f"{e['name']} {_label(scale, cap)}"
+            twin = next((p for p in P._children(engine, 'Palette')
+                         if p.get('Type') == 'Dimmer' and p.get('Name') == name
+                         and p.get('Value') == str(new)), None)
+            if twin is None:
+                twin = copy.deepcopy(src)
+                twin.set('ID', str(next_id))
+                next_id += 1
+                twin.set('Name', name)
+                twin.set('Value', str(new))
+                _scale_fan(twin, scale, cap)
+                engine.insert(list(engine).index(src) + 1, twin)
+                copied += 1
+            for sid in scenes:
+                fn = fn_el.get(sid)
+                if fn is None:
+                    continue
+                for ref in P._children(fn, 'Palette'):
+                    if ref.get('ID') == e['id']:
+                        ref.set('ID', twin.get('ID'))
+                moved += 1
+    return scaled, copied, moved
+
+
+def palette_preview(scales: dict, caps: dict | None = None) -> dict:
+    """The palette looks of the loaded show for the preview (3.21.0)."""
+    if not _state.get('loaded') or _state.get('qxw_root') is None:
+        return {'scenes': 0, 'mixed': 0, 'palettes': []}
+    plan = palette_plan(_state['qxw_root'], scales, caps)
+    return {
+        'scenes': plan['scenes'],
+        'mixed': plan['mixed'],
+        'palettes': [{'name': e['name'], 'value': e['value'],
+                      'scenes': sum(len(v) for v in e['new_values'].values()),
+                      'users': e['users'], 'in_place': e['in_place'],
+                      'new_values': sorted(e['new_values'])}
+                     for e in plan['palettes']],
+    }
 
 # =============================================================================
 # HISTORY (3.11.0): was the brightness changed before?

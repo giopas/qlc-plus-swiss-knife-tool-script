@@ -659,7 +659,8 @@ async function brtApply() {
   if (!Object.values(scales).some(v => Math.abs(v - 1.0) > 0.001) && !Object.keys(caps).length) {
     setStatus('All fixtures are at 100% — nothing to change.', 'warn'); return;
   }
-  const d = await showApply('/api/brightness/apply-show', { scales, caps, manual_dimmer_offsets: _brtManual },
+  const d = await showApply('/api/brightness/apply-show', { scales, caps, manual_dimmer_offsets: _brtManual,
+    scale_palettes: typeof _brtScalePalettes === 'function' && _brtScalePalettes() },
     'Scaling the brightness…');
   if (d) { _brtLoaded = false; invalidateBrightness(); ensureBrightnessLoaded(); }
 }

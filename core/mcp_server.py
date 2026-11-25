@@ -215,6 +215,11 @@ TOOLS: List[dict] = [
     {"name": "save_show", "handler": "t_save_show",
      "description": "Save the show in progress as a NEW .qxw (+ report + recipe) in a shared folder. Never overwrites: a taken name becomes _v2, _v3… `where` is a folder or a .qxw path; default: next to the opened file. `with_definitions` also writes a zip for another computer: the show, the fixture definitions QLC+ does not ship with, the side files and a short text.",
      "inputSchema": _obj({"where": _S, "with_definitions": {"type": "boolean"}})},
+    {"name": "batch", "handler": "t_batch",
+     "description": "Do the same steps on many shows in one call, and get one short table back instead of every answer. `shows` is a list of .qxw paths, or `query` picks the shows of list_shows whose path contains it (both in path order, at most 50). `steps` is a list of {tool, args}: the tools you would call after open_show (e.g. doctor_check, doctor_fix, upgrade_show with steps, wizard_repair with steps, build_looks, edit_vc, setlist). Each show is opened, the steps run in order, and with save=true a show that changed is saved as a NEW file (with its report and recipe) next to it or in `where`. save=false (the default) writes nothing: try that first. A step that fails stops that show only (nothing saved for it); the others go on. The last show of the batch stays open.",
+     "inputSchema": _obj({"shows": {"type": "array", "items": {"type": "string"}}, "query": _S,
+                          "steps": {"type": "array", "items": {"type": "object"}}, "save": {"type": "boolean"},
+                          "where": _S}, ["steps"])},
 ]
 
 # MCP tool annotations: they let the client group the tools ("reads" vs "changes") and
@@ -235,7 +240,16 @@ TITLES = {
     "stage_monitor": "Tablet on stage page", "cabling": "Cabling: DMX cables",
     "dictionary_load": "Dictionary: load", "dictionary_save": "Dictionary: save as new file",
     "show_history": "History", "undo": "Undo", "redo": "Redo", "save_show": "Save as a new file",
+    "batch": "Batch: the same steps on many shows",
 }
+
+# Tools a batch step may call: what you would do between open_show and save_show.  Opening,
+# saving, new shows, History moves, side files (Dictionary, tablet page, cabling) and batch
+# itself are left out, so a batch can only change shows the way save_show then writes them.
+BATCH_MAX = 50
+BATCH_STEPS = {"show_summary", "doctor_check", "doctor_fix", "wizard_repair", "upgrade_show", "rig_fixtures",
+               "reduce_rig", "source_functions", "port_functions", "looks_options", "build_looks", "vc_pages",
+               "edit_vc", "setlist", "song_builder"}
 
 
 def _annotations(name: str) -> dict:
@@ -1261,13 +1275,121 @@ class Server:
                         + "The original file was not changed. The recipe replays this to the same file: "
                         "python -m core.recipe replay <recipe>"}
 
+    # ── batch (3.22.0) ──────────────────────────────────────────────────────
+    @staticmethod
+    def _step_brief(tool: str, res: Any) -> Any:
+        """A short answer for the batch table: Doctor findings counted by code, big answers counted."""
+        if tool == "doctor_check" and isinstance(res, dict):
+            return {"total": res.get("total"), "by_code": dict(sorted((res.get("by_code") or {}).items()))}
+        if isinstance(res, dict):
+            keep = {k: res[k] for k in ("done", "doctor", "unsaved_steps") if k in res}
+            return keep or _brief(res)
+        if isinstance(res, list):
+            return f"{len(res)} items"
+        return res
+
+    def _batch_shows(self, a: dict) -> List[str]:
+        given = a.get("shows")
+        if given:
+            if not isinstance(given, list) or not all(isinstance(x, str) for x in given):
+                raise ToolError("`shows` is a list of .qxw paths.")
+            paths = []
+            for x in given:
+                p = self.allow.check(x)
+                if not p.lower().endswith(".qxw"):
+                    raise ToolError(f"Not a .qxw file: {x}")
+                if not os.path.isfile(p):
+                    raise ToolError(f"No such show: {x}")
+                if p not in paths:
+                    paths.append(p)
+        else:
+            q = str(a.get("query") or "").lower()
+            if not q:
+                raise ToolError("Give `shows` (paths) or `query` (part of their path).")
+            paths = sorted({str(x["path"]) for x in self.allow.list_shows()
+                            if q in str(x.get("path", "")).lower()})
+        paths = sorted(paths)
+        if not paths:
+            raise ToolError("No show matches. list_shows lists them.")
+        if len(paths) > BATCH_MAX:
+            raise ToolError(f"{len(paths)} shows: a batch takes at most {BATCH_MAX}. Narrow `query` or split the list.")
+        return paths
+
+    def t_batch(self, a: dict) -> Any:
+        steps = a.get("steps")
+        if not isinstance(steps, list) or not steps:
+            raise ToolError("`steps` is a list of {tool, args}, e.g. [{\"tool\": \"doctor_check\"}].")
+        plan = []
+        for i, st in enumerate(steps, 1):
+            if not isinstance(st, dict) or not isinstance(st.get("tool"), str):
+                raise ToolError(f"Step {i} needs a `tool`.")
+            if st["tool"] not in BATCH_STEPS:
+                raise ToolError(f"Step {i}: {st['tool']} cannot be a batch step. Steps can be: "
+                                + ", ".join(sorted(BATCH_STEPS)) + ".")
+            args = st.get("args") or {}
+            if not isinstance(args, dict):
+                raise ToolError(f"Step {i}: `args` must be an object.")
+            plan.append((st["tool"], args))
+        save = bool(a.get("save"))
+        where = a.get("where") or ""
+        if where:
+            self.allow.check(where)
+        rows: List[dict] = []
+        for path in self._batch_shows(a):
+            row: Dict[str, Any] = {"show": path, "steps": []}
+            at = "open_show"
+            try:
+                self.call_raw("open_show", {"path": path})
+                for tool, args in plan:
+                    at = tool
+                    row["steps"].append({"tool": tool, "answer": self._step_brief(tool, self.call_raw(tool, args))})
+                at = "save_show"
+                hist = self.api("GET", "/api/show/history")
+                changed = bool((hist.get("show") or {}).get("unsaved"))
+                row["changed"] = changed
+                row["doctor"] = self._counts()
+                if save and changed:
+                    r = self.call_raw("save_show", {"where": where} if where else {})
+                    row["saved"] = r.get("saved")
+                    row["recipe"] = r.get("recipe")
+                row["ok"] = True
+            except (ToolError, mcp_config.NotAllowed) as e:
+                row["ok"] = False
+                row["error"] = f"{at}: {e}"
+            except Exception as e:  # noqa: BLE001 — one bad show never stops the others
+                print(traceback.format_exc(), file=sys.stderr)
+                row["ok"] = False
+                row["error"] = f"{at}: {type(e).__name__}: {e}"
+            rows.append(row)
+        saved = sum(1 for r in rows if r.get("saved"))
+        out: Dict[str, Any] = {"shows": len(rows), "ok": sum(1 for r in rows if r["ok"]),
+                               "failed": sum(1 for r in rows if not r["ok"]), "saved": saved, "rows": rows}
+        if not save:
+            out["note"] = ("Nothing was written (save=false). Call again with save=true to write each changed "
+                           "show as a new file with its report and recipe.")
+        else:
+            out["note"] = ("Each saved file has its recipe next to it: python -m core.recipe replay <recipe> "
+                           "rebuilds it byte for byte. The originals were not changed.")
+        return out
+
     # ── protocol ────────────────────────────────────────────────────────────
-    def call_tool(self, name: str, args: dict) -> dict:
+    def call_raw(self, name: str, args: Optional[dict] = None) -> Any:
+        """Run one tool and give its answer as Python data (not cut to MAX_TEXT).
+
+        The one way into the tools: call_tool (Claude over MCP), batch and core.sk_api
+        (scripts) all come through here, so the folder list, new-files-only and the Doctor
+        gate are the same for each.  Raises ToolError or mcp_config.NotAllowed.
+        """
         spec = next((t for t in TOOLS if t["name"] == name), None)
         if spec is None:
-            return {"content": [{"type": "text", "text": f"Unknown tool: {name}"}], "isError": True}
+            raise ToolError(f"Unknown tool: {name}")
+        if args is not None and not isinstance(args, dict):
+            raise ToolError(f"The arguments of {name} must be an object.")
+        return getattr(self, spec["handler"])(args or {})
+
+    def call_tool(self, name: str, args: dict) -> dict:
         try:
-            res = getattr(self, spec["handler"])(args or {})
+            res = self.call_raw(name, args)
             return {"content": [{"type": "text", "text": _text(res)}]}
         except (ToolError, mcp_config.NotAllowed) as e:
             return {"content": [{"type": "text", "text": str(e)}], "isError": True}

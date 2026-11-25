@@ -405,6 +405,24 @@ GUIDE: Dict[str, dict] = {
         "returns": "`saved`, `report`, `recipe`, the Doctor counts; with `with_definitions` also `zip`, `definitions_in_zip`, `definitions_not_found`.",
         "notes": "Never overwrites: a taken name becomes _v2, _v3. Setlist cue notes are brought up to date first.",
     },
+    "batch": {
+        "use": "Do the same steps on many shows in one call and get one short table back.",
+        "args": [("shows", "A list of .qxw paths in the shared folders."),
+                 ("query", "Instead of `shows`: the shows of list_shows whose path contains this text."),
+                 ("steps", "A list of {tool, args}, run in order on each show after it is opened. A step can be: "
+                           "show_summary, doctor_check, doctor_fix, wizard_repair, upgrade_show, rig_fixtures, reduce_rig, "
+                           "source_functions, port_functions, looks_options, build_looks, vc_pages, edit_vc, setlist, song_builder."),
+                 ("save", "true: save each show that changed as a NEW file with its report and recipe. "
+                          "false (default): nothing is written."),
+                 ("where", "A shared folder for the new files (default: next to each show).")],
+        "returns": "`shows`, `ok`, `failed`, `saved` and one row per show: its steps with a short answer "
+                   "(doctor_check gives `total` and `by_code`), `changed`, the Doctor counts, `saved` and `recipe`, or `error`.",
+        "notes": "Shows run in path order, at most 50. A failing step stops that show only and nothing is saved for it. "
+                 "IDs differ from show to show: use steps without IDs (doctor_fix with no keys, upgrade_show steps) unless "
+                 "the shows share them. The last show stays open. Run with save=false first.",
+        "example": '{"query": "Venues/", "steps": [{"tool": "upgrade_show", "args": {"steps": ["crossuniverse"]}}, '
+                   '{"tool": "doctor_fix"}, {"tool": "doctor_check"}], "save": false}',
+    },
 }
 
 # ── the operations of edit_vc ─────────────────────────────────────────────────
@@ -446,6 +464,7 @@ WORKFLOWS = """Usual sequences:
 
 - A new show from nothing (empty folder): find_fixtures → new_show (preview) → new_show → looks_options → build_looks → edit_vc → save_show.
 - Check a show: list_shows → open_show → doctor_check → doctor_fix → save_show.
+- The same on many shows: list_shows → batch (save=false, to see) → batch (save=true).
 - Smaller venue: open_show → rig_fixtures → reduce_rig (preview) → reduce_rig → doctor_check → save_show.
 - QLC+ 5.3 Show Wizard show: open_show → doctor_check → wizard_repair (no steps, to see) → wizard_repair (steps) → doctor_check → save_show.
 - Older show to QLC+ 5.3: open_show → doctor_check → upgrade_show (no steps, to see) → upgrade_show (steps) → doctor_check → save_show.

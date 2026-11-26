@@ -16,6 +16,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 - Guide entry and a *Usual sequences* line for `batch`; wiki *Claude Tools* regenerated, *Connect Claude to Swiss Knife* gets *Many shows at once* and *Scripts with Claude Code*.
 - Tests: `tests/test_batch_api_3220.py` (nothing written without `save`; saved files replay byte for byte and the originals are untouched; the same batch twice gives the same files; a show with no change is not saved; refused steps, paths outside the folders, the cap; one failing show does not stop the others; the API has every tool, keeps the same rules and is never cut; MCP, batch and the API go through `call_raw`). No screen text changed, so no translations.
 
+### Fixed — pictures that change on every computer
+
+- **The Start page in the pictures says "Welcome".** It greets the login name of the computer, with the hour ("Good morning, …"), so `tools/shots.py` run on a Mac put the login name in the README pictures and changed them with the time of day. The app it starts now gets `SK_NO_USER_NAME`, and `/api/settings` then gives no name. The window you use is unchanged. Test: `tests/test_shots_greeting_3220.py`.
+
 ---
 
 ## [3.21.0] — 2026-11-22 — Alongside QLC+

@@ -343,6 +343,9 @@ def create_app():
     @app.route('/api/settings')
     def api_settings():
         import json as _json, getpass as _getpass
+        if os.environ.get('SK_NO_USER_NAME'):
+            # tools/shots.py: the pictures say "Welcome", never the login name or the hour
+            return jsonify({'user_name': None})
         here = os.path.dirname(os.path.abspath(__file__))
         settings_file = os.path.join(here, 'settings.json')
         name = None

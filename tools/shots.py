@@ -58,7 +58,9 @@ class App:
         # a scratch cabling kit: the pictures never read or change yours
         kit = os.path.join(tempfile.mkdtemp(prefix="sk-kit-"), "cabling_kit.json")
         self.kit = kit
-        env = dict(os.environ, SK_NO_BROWSER="1", QLCPLUS_FIXTURES="", QSK_CABLING_KIT=kit)
+        # SK_NO_USER_NAME: the Start page says "Welcome", not your login name or the hour,
+        # so the pictures are the same on every computer and at any time of day
+        env = dict(os.environ, SK_NO_BROWSER="1", SK_NO_USER_NAME="1", QLCPLUS_FIXTURES="", QSK_CABLING_KIT=kit)
         code = f"import app; a = app.create_app(); a.run(port={port}, threaded=True)"
         self.proc = subprocess.Popen([sys.executable, "-c", code], cwd=ROOT, env=env,
                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

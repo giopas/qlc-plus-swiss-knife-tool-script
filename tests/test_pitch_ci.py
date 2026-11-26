@@ -61,8 +61,8 @@ def test_readme_links_the_latest_release_files_and_the_poster_exists():
 def test_claude_slide_says_it_can_start_a_show():
     m = _tool()
     slide = next(s for s in m.SLIDES if s["title"] == "Undo It, or Ask Claude")
-    assert "Claude can even start a new show from scratch" in slide["bullets"]
-    assert "from scratch" in slide["vo"]
+    assert "Claude can start a new show, or do one job on many shows" in slide["bullets"]
+    assert "from scratch" in slide["vo"] and "many shows at once" in slide["vo"]
 
 
 def test_the_readme_poster_opens_the_page_that_plays_the_video():

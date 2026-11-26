@@ -256,12 +256,13 @@ SLIDES = [
         "bullets": [
             "Undo and redo any step, or replay it on another show",
             "Optional: ask Claude in plain words, it uses the same tools",
-            "Claude can even start a new show from scratch",
+            "Claude can start a new show, or do one job on many shows",
             "Claude gets only the folders you list, nothing else",
         ],
         "vo": "Every change can be undone. And if you like, ask Claude in plain words: "
               "it uses the same tools, on the folders you choose, "
-              "and can even start a new show from scratch.",
+              "can start a new show from scratch, "
+              "or do one job on many shows at once.",
     },
     {
         "kicker": "10 · YOUR TURN",

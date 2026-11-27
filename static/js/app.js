@@ -47,6 +47,7 @@ const _LAZY = {
   showbook:   () => typeof showbookInit           === 'function' && showbookInit(),
   doctor:     () => typeof doctorInit             === 'function' && doctorInit(),
   reducer:    () => typeof reducerInit            === 'function' && reducerInit(),
+  colours:    () => typeof coloursInit            === 'function' && coloursInit(),
   wizard:     () => typeof wizardInit             === 'function' && wizardInit(),
   upgrade:    () => typeof upgradeInit            === 'function' && upgradeInit(),
   stagemon:   () => typeof stagemonInit           === 'function' && stagemonInit(),
@@ -679,6 +680,7 @@ function _invalidateAllTabs() {
   if (typeof invalidateShowbook === 'function') invalidateShowbook();
   if (typeof invalidateDoctor === 'function') invalidateDoctor();
   if (typeof invalidateReducer === 'function') invalidateReducer();
+  if (typeof invalidateColours === 'function') invalidateColours();
   if (typeof invalidateLooks === 'function') invalidateLooks();
   if (typeof invalidateStage === 'function') invalidateStage();
   if (typeof invalidateVcEditor === 'function') invalidateVcEditor();
@@ -730,7 +732,7 @@ function _updateHeader(state) {
 // so "where do I load the file?" has one answer everywhere: Open… (header,
 // banner or Start screen). Merger / Porter / Quick Start pick their own files.
 const _WS_SCREENS = ['setlist', 'songbuilder', 'triggers', 'dictionary',
-                     'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'looks', 'stage',
+                     'brightness', 'idbrowser', 'vceditor', 'showbook', 'doctor', 'reducer', 'colours', 'looks', 'stage',
                      'wizard', 'upgrade', 'stagemon', 'cabling'];
 
 let _wsLoadedKnown = false;   // the last state we were told: a late DOMContentLoaded must not undo it

@@ -91,6 +91,10 @@
       <svg class="ic"><use href="/static/icons.svg#upload"/></svg>
       <span>Function Porter</span>
     </button>
+    <button class="sn-item" id="sn-colours" data-tip="Copy Colours" data-desc="Give a fixture the colours another one shows, in every look of the show. It keeps its own brightness." onclick="go('colours')">
+      <svg class="ic"><use href="/static/icons.svg#palette"/></svg>
+      <span>Copy Colours</span>
+    </button>
     <button class="sn-item" id="sn-brightness" data-tip="Brightness" data-desc="Scale the master dimmer of each fixture group across every scene." onclick="go('brightness')">
       <svg class="ic"><use href="/static/icons.svg#sun"/></svg>
       <span>Brightness</span>
@@ -481,7 +485,7 @@
         <div class="wf-card" data-grp="2">
           <div class="wf-head"><div class="wf-num">2</div><div class="wf-title">Adapt a show</div></div>
           <div class="wf-desc">Take a show to a smaller or different rig: keep the fixtures you have, bring functions across from another show, even the brightness out.</div>
-          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
+          <div class="wf-chips"><button class="wf-chip" onclick="go('reducer')">Rig Reducer</button><button class="wf-chip" onclick="go('porter')">Function Porter</button><button class="wf-chip" onclick="go('colours')">Copy Colours</button><button class="wf-chip" onclick="go('brightness')">Brightness</button></div>
         </div>
         <div class="wf-card" data-grp="3">
           <div class="wf-head"><div class="wf-num">3</div><div class="wf-title">Create</div></div>
@@ -1361,6 +1365,43 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        BRIGHTNESS
   ══════════════════════════════════════════════════════════════════════ -->
+  <!-- ======================================================================
+       COPY COLOURS (3.23.0)
+  ====================================================================== -->
+  <section class="screen" id="scr-colours">
+
+    <div class="page-h">
+      <div class="p-icon"><svg class="ic"><use href="/static/icons.svg#palette"/></svg></div>
+      <div><h2>Copy Colours</h2><div class="p-desc">Give a fixture the colours another one shows, in every look of the show.</div></div>
+      <div class="spacer"></div>
+      <button class="help-btn" onclick="openHelp('Copy-Colours')" title="How this tool works — opens the Copy Colours page of the wiki" aria-label="Help">?</button>
+    </div>
+
+    <div class="doc-toolbar cc-toolbar">
+      <fieldset class="cc-opts">
+        <legend>Brightness</legend>
+        <label title="Its dimmer is not touched, and it stays as bright as it was in each look. A look where it is dark stays dark."><input type="radio" name="cc-bright" value="keep" checked onchange="coloursOptionsChanged()"> Keep its own brightness</label>
+        <label title="It also takes the other fixture's level, so it looks the same in every look, dark where the other is dark."><input type="radio" name="cc-bright" value="source" onchange="coloursOptionsChanged()"> Same brightness as the other</label>
+      </fieldset>
+      <label class="cc-add" title="In the looks that light the other fixture but not this one, add this one too. There it plays like the other fixture, with its brightness."><input type="checkbox" id="cc-add" onchange="coloursOptionsChanged()"> Also add it to the looks it is not in</label>
+      <div class="spacer"></div>
+      <button class="btn btn-surface btn-sm" onclick="coloursAdd()">＋ Another fixture</button>
+    </div>
+
+    <div class="rr-body">
+      <div id="cc-rows" class="rr-table cc-rows"><div class="porter-placeholder">Open a workspace to list its fixtures.</div></div>
+      <div id="cc-preview" class="rr-preview"></div>
+    </div>
+
+    <div class="out-footer">
+      <span class="out-note kit-chip kit-chip-apply" data-verb="apply" title="Keep it with Save as new file… in the header — the file you opened is never touched">Changes the show in progress</span>
+      <span class="out-outcome" id="oc-colours" aria-live="polite"></span>
+      <div class="spacer"></div>
+      <button id="cc-go" class="btn btn-accent" onclick="coloursApply()" disabled data-needs="Choose two fixtures whose colours differ." data-needs-show>✓ Apply to the show</button>
+    </div>
+
+  </section>
+
   <section class="screen" id="scr-brightness">
 
     <div class="page-h">
@@ -3075,6 +3116,7 @@
 <script src="/static/js/showbook.js?v={{ asset_v }}"></script>
 <script src="/static/js/doctor.js?v={{ asset_v }}"></script>
 <script src="/static/js/reducer.js?v={{ asset_v }}"></script>
+<script src="/static/js/colours.js?v={{ asset_v }}"></script>
 <script src="/static/js/wizard.js?v={{ asset_v }}"></script>
 <script src="/static/js/upgrade.js?v={{ asset_v }}"></script>
 <script src="/static/js/stagemon.js?v={{ asset_v }}"></script>

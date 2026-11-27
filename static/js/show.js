@@ -13,7 +13,7 @@ const _SHOW_INVALIDATE = {
   idbrowser: '_invalidateIdBrowser', setlist: 'invalidateSetlist', dictionary: 'invalidateDictionary',
   checklist: 'invalidateChecklist', techrider: 'invalidateTechRider', triggers: 'invalidateTriggers',
   fixtures: 'invalidateFixtures', brightness: 'invalidateBrightness', showbook: 'invalidateShowbook',
-  doctor: 'invalidateDoctor', reducer: 'invalidateReducer', looks: 'invalidateLooks',
+  doctor: 'invalidateDoctor', reducer: 'invalidateReducer', colours: 'invalidateColours', looks: 'invalidateLooks',
   stage: 'invalidateStage', vceditor: 'invalidateVcEditor', porter: 'invalidatePorter',
   compare: 'invalidateCompare', inputs: 'invalidateInputs', wizard: 'invalidateWizard', upgrade: 'invalidateUpgrade',
   stagemon: 'invalidateStagemon', cabling: 'invalidateCabling',

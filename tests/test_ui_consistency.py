@@ -84,6 +84,7 @@ WIKI_PAGES = {
     "Setlist-Manager", "Trigger-Manager", "Dictionary-Manager", "Workspace-Doctor",
     "ID-Browser", "Show-Paperwork", "Show-in-Progress", "Compare", "Community-Library",
     "Wizard-Repair", "Upgrade-Older-Shows", "Tablet-on-stage", "Cabling", "Song-Builder",
+    "Copy-Colours",
 }
 
 

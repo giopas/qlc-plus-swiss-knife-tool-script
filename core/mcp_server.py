@@ -125,6 +125,11 @@ TOOLS: List[dict] = [
     {"name": "reduce_rig", "handler": "t_reduce_rig",
      "description": "Shrink the rig to the fixtures in `keep` (ids), dropping what only they-not-kept used. `repatch` maps id → {name, universe, address}. With preview=true nothing changes.",
      "inputSchema": _obj({"keep": _IDS, "repatch": {"type": "object"}, "preview": {"type": "boolean"}}, ["keep"])},
+    {"name": "copy_colours", "handler": "t_copy_colours",
+     "description": "Give fixtures the colours other fixtures show, in every scene and sequence step of the show in progress. `pairs` maps the fixture that changes → the fixture it copies (ids from rig_fixtures). `brightness`: \"keep\" (default: its own dimmer and level stay, only the colour changes) or \"source\" (it also takes the other's level). `add`: also put it into the looks that set the other fixture but not it (it plays like the other there). Different models are translated (RGB, RGBW, colour wheel). PANIC RESET, palette looks and RGB matrices are left as they are. With preview=true nothing changes.",
+     "inputSchema": _obj({"pairs": {"type": "object", "additionalProperties": _S},
+                          "brightness": {"type": "string", "enum": ["keep", "source"]},
+                          "add": {"type": "boolean"}, "preview": {"type": "boolean"}}, ["pairs"])},
     {"name": "source_functions", "handler": "t_source_functions",
      "description": "Open another show as the source for porting and list its functions (id, name, type, path). Filter with `query` (name contains) and `type` (Scene, Chaser, …).",
      "inputSchema": _obj({"source_path": _S, "query": _S, "type": _S}, ["source_path"])},
@@ -232,7 +237,7 @@ TITLES = {
     "find_fixtures": "Find fixture definitions", "new_show": "New show from scratch", "show_summary": "Show summary",
     "doctor_check": "Doctor: check", "doctor_fix": "Doctor: fix", "rig_fixtures": "List fixtures",
     "wizard_repair": "Wizard Repair", "upgrade_show": "Upgrade to QLC+ 5.3",
-    "reduce_rig": "Reduce the rig", "source_functions": "Porter: source functions",
+    "reduce_rig": "Reduce the rig", "copy_colours": "Copy colours between fixtures", "source_functions": "Porter: source functions",
     "port_functions": "Porter: port functions", "looks_options": "Looks: options",
     "build_looks": "Build looks and chasers", "vc_pages": "Virtual Console pages",
     "edit_vc": "Edit the Virtual Console", "setlist": "Setlist to chaser", "song_builder": "Song Builder: a song as a Show", "compare": "Compare shows",
@@ -248,7 +253,7 @@ TITLES = {
 # itself are left out, so a batch can only change shows the way save_show then writes them.
 BATCH_MAX = 50
 BATCH_STEPS = {"show_summary", "doctor_check", "doctor_fix", "wizard_repair", "upgrade_show", "rig_fixtures",
-               "reduce_rig", "source_functions", "port_functions", "looks_options", "build_looks", "vc_pages",
+               "reduce_rig", "copy_colours", "source_functions", "port_functions", "looks_options", "build_looks", "vc_pages",
                "edit_vc", "setlist", "song_builder"}
 
 
@@ -778,6 +783,21 @@ class Server:
             return self.api("POST", "/api/reducer/preview", body)
         r = self.api("POST", "/api/reducer/apply", body)
         return self._written(r, "Rig reduced")
+
+    def t_copy_colours(self, a: dict) -> Any:
+        self.need_show()
+        pairs = a.get("pairs") or {}
+        if not isinstance(pairs, dict) or not pairs:
+            raise ToolError('pairs is empty: give {"<fixture that changes>": "<fixture it copies>"}. '
+                            "Use rig_fixtures to see the ids.")
+        body = {"pairs": [{"target": str(t), "source": str(s)} for t, s in pairs.items()],
+                "brightness": a.get("brightness") or "keep", "add": bool(a.get("add"))}
+        if a.get("preview"):
+            return self.api("POST", "/api/colours/preview", body)
+        r = self.api("POST", "/api/colours/apply", body)
+        out = self._written(r, f"Colours copied: {r.get('total', 0)} look(s) changed")
+        out["lines"] = r.get("lines") or []
+        return out
 
     def t_source_functions(self, a: dict) -> Any:
         self.need_show()

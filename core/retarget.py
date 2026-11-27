@@ -178,6 +178,7 @@ RULES: List[Tuple[str, str, list]] = [
                                                 ("manual_dimmer_offsets.{}", "fx")]),
     ("POST", r"^/api/looks/(apply|check)$", [("looks.*.group", "grp"), ("chasers.*.group", "grp")]),
     ("POST", r"^/api/reducer/apply$", [("keep.*", "fx"), ("repatch.{}", "fx")]),
+    ("POST", r"^/api/colours/apply$", [("pairs.*.target", "fx"), ("pairs.*.source", "fx")]),
     ("POST", r"^/api/porter/(apply|validate)$", [("fixture_mapping.{*}.*", "fx"),
                                                  ("vc.target_page", _W), ("vc.remove.*", _W)]),
     ("POST", r"^/api/setlist/[^/]+/", [("@seg3", _W), ("rows.*.qxw_id", "fn"),

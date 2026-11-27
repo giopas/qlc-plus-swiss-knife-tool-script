@@ -172,6 +172,18 @@ GUIDE: Dict[str, dict] = {
         "returns": "The preview, or what was removed and the Doctor counts after.",
         "example": '{"keep": ["6", "7", "8"], "preview": true}',
     },
+    "copy_colours": {
+        "use": "Give a fixture the colours another fixture shows, in every scene and sequence step. Its own brightness stays unless asked.",
+        "args": [("pairs", 'Fixture that changes → fixture it copies (ids from `rig_fixtures`): `{"7": "6", "8": "6"}`.'),
+                 ("brightness", '`keep` (default): its dimmer and level stay, only the colour changes; a look where either is dark is left as it is. '
+                                '`source`: it also takes the other fixture\'s level, so it looks the same.'),
+                 ("add", "true: also put it into the looks that set the other fixture but not it; there it plays like the other."),
+                 ("preview", "true: say what would change and change nothing.")],
+        "returns": "The preview (`pairs` with scenes, steps, added, same, dark per fixture, `problems`, `lines`, the Doctor), or the step and the Doctor counts after, with `lines`.",
+        "example": '{"pairs": {"7": "6"}, "brightness": "keep", "preview": true}',
+        "notes": "Different models are translated by capability (RGB, RGBW, the nearest colour-wheel slot). Both need their .qxf. "
+                 "PANIC RESET, palette looks (QLC+ 5.3) and RGB matrices are left as they are and named in `lines`. Doing it twice changes nothing more.",
+    },
     "source_functions": {
         "use": "Open another show as the source for porting and list its functions.",
         "args": [("source_path", "The other .qxw, in a shared folder."),
@@ -410,7 +422,7 @@ GUIDE: Dict[str, dict] = {
         "args": [("shows", "A list of .qxw paths in the shared folders."),
                  ("query", "Instead of `shows`: the shows of list_shows whose path contains this text."),
                  ("steps", "A list of {tool, args}, run in order on each show after it is opened. A step can be: "
-                           "show_summary, doctor_check, doctor_fix, wizard_repair, upgrade_show, rig_fixtures, reduce_rig, "
+                           "show_summary, doctor_check, doctor_fix, wizard_repair, upgrade_show, rig_fixtures, reduce_rig, copy_colours, "
                            "source_functions, port_functions, looks_options, build_looks, vc_pages, edit_vc, setlist, song_builder."),
                  ("save", "true: save each show that changed as a NEW file with its report and recipe. "
                           "false (default): nothing is written."),
@@ -466,6 +478,7 @@ WORKFLOWS = """Usual sequences:
 - Check a show: list_shows → open_show → doctor_check → doctor_fix → save_show.
 - The same on many shows: list_shows → batch (save=false, to see) → batch (save=true).
 - Smaller venue: open_show → rig_fixtures → reduce_rig (preview) → reduce_rig → doctor_check → save_show.
+- One light takes another's colours: open_show → rig_fixtures → copy_colours (preview) → copy_colours → save_show.
 - QLC+ 5.3 Show Wizard show: open_show → doctor_check → wizard_repair (no steps, to see) → wizard_repair (steps) → doctor_check → save_show.
 - Older show to QLC+ 5.3: open_show → doctor_check → upgrade_show (no steps, to see) → upgrade_show (steps) → doctor_check → save_show.
 - Bring looks from another show: source_functions → port_functions (preview) → port_functions → save_show.

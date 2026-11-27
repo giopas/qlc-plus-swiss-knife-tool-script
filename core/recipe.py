@@ -194,7 +194,7 @@ def _swap(obj: Any, mapping: dict) -> Any:
     return obj
 
 
-_TOOLS = [("/api/reducer", "Rig Reducer"), ("/api/doctor", "Workspace Doctor"),
+_TOOLS = [("/api/reducer", "Rig Reducer"), ("/api/colours", "Copy Colours"), ("/api/doctor", "Workspace Doctor"),
           ("/api/looks", "Look Builder"), ("/api/vc", "VC Editor"), ("/api/stage", "Stage & Meshes"),
           ("/api/setlist", "Setlist Manager"), ("/api/songbuilder", "Song Builder"), ("/api/brightness", "Brightness"),
           ("/api/porter", "Function Porter"), ("/api/triggers", "Trigger Manager"),

@@ -5053,3 +5053,15 @@ small { font-size: max(var(--fs-small), .85em); }
 .page-h { flex-wrap: nowrap; }
 .page-h > div:nth-child(2) { min-width: 0; }
 .page-h > .btn, .page-h > .help-btn, .page-h > .file-chip { flex: none; }
+
+/* 3.23.0 Copy Colours */
+.cc-toolbar { flex-wrap: wrap; gap: 12px; }
+.cc-opts { display: flex; gap: 14px; align-items: center; border: 0; margin: 0; padding: 0; }
+.cc-opts legend { float: left; margin-right: 6px; font-weight: 600; }
+.cc-opts label, .cc-add { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.cc-rows { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.cc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.cc-sel { width: 100%; min-width: 0; }
+.cc-takes { color: var(--text-dim, inherit); white-space: nowrap; }
+.cc-lines { margin: 6px 0 0; padding-left: 18px; }
+.cc-lines li { margin: 4px 0; }

@@ -7,6 +7,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) co
 
 ## [Unreleased]
 
+---
+
+## [3.23.0] — 2026-11-27 — Copy Colours
+
 ### Added: Copy Colours
 
 - **Copy Colours** (side menu, 2 · Adapt a show). One light takes the colours another light shows, in every scene and sequence step of the show in progress. Choose *Front Left (Singer)* takes the colours of *Drums Floor*, and wherever the drums go blue, the singer's light goes blue too. Several lights can change in one step.
